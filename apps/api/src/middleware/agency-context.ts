@@ -1,17 +1,16 @@
-import { createMiddleware } from 'hono/factory';
-import { db } from '../../../packages/db/client';
+import type { Context, Next } from 'hono';
+import { db } from '../../../../packages/db/client';
 import { sql } from 'drizzle-orm';
 
-export const agencyContextMiddleware = createMiddleware(async (c, next) => {
-  const agencyId = c.get('agencyId');
+export async function agencyContextMiddleware(c: Context, next: Next) {
+  const user = c.get('user') as { agency_id?: string } | undefined;
 
-  if (!agencyId) {
-    return c.json({ error: 'No agency context' }, 400);
+  if (!user?.agency_id) {
+    return c.json({ error: 'No agency context' }, 403);
   }
 
-  // Set the agency context for RLS — every query in this request
-  // will be scoped to this agency automatically by Postgres
-  await db.execute(sql`SELECT set_config('app.current_agency_id', ${agencyId}, TRUE)`);
+  await db.execute(sql`SELECT set_config('app.current_agency_id', ${user.agency_id}, true)`);
 
+  c.set('agencyId', user.agency_id);
   await next();
-});
+}

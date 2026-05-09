@@ -1,11 +1,16 @@
 {
-    "extends": "../../tsconfig.json",
-    "compilerOptions": {
-      "outDir": "../../dist/apps/api",
-      "rootDir": "."
-    },
-    "include": [
-      "src/**/*",
-      "../../packages/**/*"
-    ]
-  }
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "../../",
+    "outDir": "../../dist",
+    "noEmit": false
+  },
+  "include": [
+    "src/**/*",
+    "../../packages/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "../../apps/*/node_modules"
+  ]
+}

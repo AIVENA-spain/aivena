@@ -12,7 +12,7 @@ export async function authMiddleware(c: Context, next: Next) {
   const token = authHeader.slice(7);
 
   try {
-    const payload = await verify(token, env.JWT_SECRET);
+    const payload = await verify(token, env.JWT_SECRET, 'HS256');
     c.set('user', payload);
     await next();
   } catch (err) {

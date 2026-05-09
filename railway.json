@@ -1,0 +1,8 @@
+{
+    "$schema": "https://railway.com/railway.schema.json",
+    "deploy": {
+      "startCommand": "npx ts-node --transpile-only -r tsconfig-paths/register apps/api/src/index.ts",
+      "healthcheckPath": "/health",
+      "restartPolicyType": "ON_FAILURE"
+    }
+  }

@@ -30,6 +30,7 @@
     "hono": "^4.12.18",
     "ioredis": "^5.10.1",
     "postgres": "^3.4.9",
+    "tsconfig-paths": "^4.2.0",
     "winston": "^3.19.0",
     "zod": "^4.4.3"
   }

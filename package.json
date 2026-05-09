@@ -18,12 +18,19 @@
     "typescript": "^6.0.3"
   },
   "dependencies": {
+    "@hono/node-server": "^2.0.2",
+    "@logtail/node": "^0.5.8",
+    "@logtail/winston": "^0.5.8",
+    "@sentry/node": "^10.52.0",
     "@supabase/supabase-js": "^2.105.4",
     "bullmq": "^5.76.6",
     "dotenv": "^17.4.2",
     "drizzle-kit": "^0.31.10",
     "drizzle-orm": "^0.45.2",
+    "hono": "^4.12.18",
     "ioredis": "^5.10.1",
-    "postgres": "^3.4.9"
+    "postgres": "^3.4.9",
+    "winston": "^3.19.0",
+    "zod": "^4.4.3"
   }
 }

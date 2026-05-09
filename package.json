@@ -19,9 +19,11 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.105.4",
+    "bullmq": "^5.76.6",
     "dotenv": "^17.4.2",
     "drizzle-kit": "^0.31.10",
     "drizzle-orm": "^0.45.2",
+    "ioredis": "^5.10.1",
     "postgres": "^3.4.9"
   }
 }

@@ -1,5 +1,6 @@
 import { createMiddleware } from 'hono/factory';
 import * as crypto from 'crypto';
+import { env } from '../../../../packages/config/env';
 
 export const whatsappSignatureMiddleware = createMiddleware(async (c, next) => {
   const signature = c.req.header('x-hub-signature-256');
@@ -9,14 +10,18 @@ export const whatsappSignatureMiddleware = createMiddleware(async (c, next) => {
   }
 
   const body = await c.req.text();
-  const appSecret = process.env.META_WHATSAPP_APP_SECRET!;
+  const appSecret = env.META_WHATSAPP_APP_SECRET;
 
   const expectedSignature = 'sha256=' + crypto
     .createHmac('sha256', appSecret)
     .update(body)
     .digest('hex');
 
-  if (signature !== expectedSignature) {
+  // Timing-safe comparison — protects against signature byte-by-byte attacks
+  const sigBuf = Buffer.from(signature);
+  const expectedBuf = Buffer.from(expectedSignature);
+
+  if (sigBuf.length !== expectedBuf.length || !crypto.timingSafeEqual(sigBuf, expectedBuf)) {
     return c.json({ error: 'Invalid signature' }, 401);
   }
 

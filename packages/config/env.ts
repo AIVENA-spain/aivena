@@ -22,6 +22,9 @@ const envSchema = z.object({
   SENTRY_DSN:              z.string().url(),
   BETTERSTACK_SOURCE_TOKEN: z.string().min(1),
 
+  // Provider webhooks
+  META_WHATSAPP_APP_SECRET: z.string().min(1),
+
   // App
   API_BASE_URL:       z.string().url(),
   DASHBOARD_URL:      z.string().url(),

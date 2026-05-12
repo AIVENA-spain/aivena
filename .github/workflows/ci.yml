@@ -1,23 +1,49 @@
 name: CI
 
+# ======================================================================
+# CI IS CURRENTLY DISABLED
+# ======================================================================
+#
+# Status: disabled May 12, 2026
+#
+# Reason: npm 11's Arborist dependency-tree builder crashes on Linux
+# (GitHub-hosted ubuntu-latest runner) when resolving packages with
+# many platform-specific optional native binaries (Rolldown, Rollup,
+# esbuild, etc). The crash manifests as:
+#
+#     npm error Invalid Version:
+#     at PlaceDep.pruneDedupable (...arborist/lib/place-dep.js:426:14)
+#     at Node.canDedupe (...arborist/lib/node.js:1137:32)
+#
+# Local `npm ci` works on macOS arm64. The same lockfile fails on
+# Linux x64 in CI. Not an AIVENA bug — known issue with npm + Linux
+# runner + multi-platform optional native deps.
+#
+# Local quality gates until CI is restored:
+#   - npx tsc --noEmit
+#   - APP_PW='...' npm test
+#
+# To re-enable CI later, pick ONE:
+#   1. Migrate repo to pnpm.
+#   2. Use a self-hosted runner.
+#   3. Wait for npm to fix the Arborist optional-deps crash.
+#
+# ======================================================================
+
+# Automatic triggers are disabled.
+#
+# on:
+#   push:
+#     branches: ['**']
+#   pull_request:
+#     branches: ['**']
+
 on:
-  push:
-    branches: ['**']
-  pull_request:
-    branches: ['**']
+  workflow_dispatch:  # manual trigger only
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
-
-# NOTE: The Vitest test step is intentionally not run in CI right now.
-# Reason: npm 11's Arborist dedupe crashes on Linux when resolving packages
-# with many platform-specific optional native dependencies (Rolldown, Rollup,
-# etc). This is a known npm bug, not an AIVENA bug. Until npm fixes it or we
-# move to pnpm, the RLS Vitest suite runs locally with:
-#   APP_PW='...' npm test
-# CI here covers TypeScript correctness only. Re-enable vitest run below
-# when the upstream npm issue is resolved.
 
 jobs:
   test:
@@ -36,7 +62,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci --omit=optional  # workaround: npm 11 Arborist crashes on Linux when walking optional native deps (see comment block above)
+        run: npm ci
 
       - name: TypeScript check (no emit)
         run: npx tsc --noEmit

@@ -12,6 +12,10 @@ export const whatsappSignatureMiddleware = createMiddleware(async (c, next) => {
   const body = await c.req.text();
   const appSecret = env.META_WHATSAPP_APP_SECRET;
 
+  if (!appSecret) {
+    return c.json({ error: 'WhatsApp signature validation not configured' }, 503);
+  }
+
   const expectedSignature = 'sha256=' + crypto
     .createHmac('sha256', appSecret)
     .update(body)

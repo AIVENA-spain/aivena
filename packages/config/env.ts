@@ -23,7 +23,7 @@ const envSchema = z.object({
   BETTERSTACK_SOURCE_TOKEN: z.string().min(1),
 
   // Provider webhooks
-  META_WHATSAPP_APP_SECRET: z.string().min(1),
+  META_WHATSAPP_APP_SECRET: z.string().min(1).optional(),
 
   // App
   API_BASE_URL:       z.string().url(),

@@ -36,7 +36,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --omit=optional  # workaround: npm 11 Arborist crashes on Linux when walking optional native deps (see comment block above)
 
       - name: TypeScript check (no emit)
         run: npx tsc --noEmit

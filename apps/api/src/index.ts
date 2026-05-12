@@ -5,6 +5,7 @@ import { sql } from 'drizzle-orm';
 import { env } from '../../../packages/config/env';
 import { authMiddleware } from './middleware/auth';
 import { agencyContextMiddleware } from './middleware/agency-context';
+import { whatsappSignatureMiddleware, twilioSignatureMiddleware } from './middleware/webhook-signature';
 
 Sentry.init({
   dsn: env.SENTRY_DSN,
@@ -22,6 +23,12 @@ app.get('/health', (c) => {
 // Order matters: auth must run before agencyContext so user.agency_id is available.
 app.use('/api/*', authMiddleware);
 app.use('/api/*', agencyContextMiddleware);
+
+// Webhook signature validation — provider-specific.
+// WhatsApp uses x-hub-signature-256 (Meta HMAC SHA-256 of raw body).
+// Twilio uses x-twilio-signature (validation stub until Phase 4).
+app.use('/webhooks/whatsapp/*', whatsappSignatureMiddleware);
+app.use('/webhooks/twilio/*', twilioSignatureMiddleware);
 
 // Test route to prove the full stack works:
 // - authMiddleware verifies JWT and sets c.set('user', payload)

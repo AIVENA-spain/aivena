@@ -3,6 +3,7 @@ import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { sql } from 'drizzle-orm';
 import { env } from '../../../packages/config/env';
+import { logger } from '../../../packages/config/logger';
 import { authMiddleware } from './middleware/auth';
 import { agencyContextMiddleware } from './middleware/agency-context';
 import { whatsappSignatureMiddleware, twilioSignatureMiddleware } from './middleware/webhook-signature';
@@ -58,7 +59,7 @@ app.get('/api/v1/test-rls', async (c) => {
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 
 serve({ fetch: app.fetch, port: PORT }, () => {
-  console.log(`AIVENA API running on port ${PORT}`);
+  logger.info('AIVENA API running', { port: PORT });
 });
 
 export default app;

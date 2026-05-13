@@ -1,0 +1,15 @@
+{
+  "$schema": "https://schema.railpack.com",
+  "steps": {
+    "install": {
+      "commands": ["npm install"]
+    },
+    "build": {
+      "inputs": [{ "step": "install" }],
+      "commands": ["npx tsc --project apps/api/tsconfig.json"]
+    }
+  },
+  "deploy": {
+    "startCommand": "node dist/apps/api/src/index.js"
+  }
+}

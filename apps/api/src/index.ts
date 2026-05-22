@@ -1,12 +1,15 @@
 import * as Sentry from '@sentry/node';
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
+import { cors } from 'hono/cors';
 import { sql } from 'drizzle-orm';
 import { env } from '../../../packages/config/env';
 import { logger } from '../../../packages/config/logger';
 import { authMiddleware } from './middleware/auth';
 import { agencyContextMiddleware } from './middleware/agency-context';
 import { whatsappSignatureMiddleware, twilioSignatureMiddleware } from './middleware/webhook-signature';
+import meRoute from './routes/me';
+import tasksRoute from './routes/tasks';
 
 Sentry.init({
   dsn: env.SENTRY_DSN,
@@ -15,15 +18,34 @@ Sentry.init({
 
 const app = new Hono();
 
+// CORS — allow the dashboard origin to call the API with the Supabase Bearer
+// token. In dev that's http://localhost:3000; in production it's whatever
+// DASHBOARD_URL is set to. We allow both so the same binary runs in either.
+const ALLOWED_ORIGINS = Array.from(
+  new Set([env.DASHBOARD_URL, 'http://localhost:3000']),
+);
+app.use(
+  '*',
+  cors({
+    origin: ALLOWED_ORIGINS,
+    allowHeaders: ['Authorization', 'Content-Type'],
+    allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    credentials: true,
+  }),
+);
+
 // Public routes — no auth, no RLS context.
 app.get('/health', (c) => {
   return c.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Protected API routes — require JWT and run inside an agency-scoped transaction.
-// Order matters: auth must run before agencyContext so user.agency_id is available.
+// Protected API routes — require a verified Supabase access token AND a
+// transaction-scoped agency context for RLS.
 app.use('/api/*', authMiddleware);
 app.use('/api/*', agencyContextMiddleware);
+
+app.route('/api/v1/me', meRoute);
+app.route('/api/v1/tasks', tasksRoute);
 
 // Webhook signature validation — provider-specific.
 // WhatsApp uses x-hub-signature-256 (Meta HMAC SHA-256 of raw body).

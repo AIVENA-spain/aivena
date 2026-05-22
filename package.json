@@ -2,6 +2,11 @@
   "name": "aivena",
   "version": "1.0.0",
   "license": "ISC",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "dependencies": {
     "@hono/node-server": "^2.0.2",
     "@logtail/node": "^0.5.8",
@@ -14,6 +19,7 @@
     "drizzle-orm": "^0.45.2",
     "hono": "^4.12.18",
     "ioredis": "^5.10.1",
+    "jose": "^6.2.3",
     "postgres": "^3.4.9",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^6.0.3",
@@ -25,9 +31,12 @@
     "eslint": "^10.3.0",
     "prettier": "^3.8.3",
     "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
     "vitest": "^3.2.4"
   },
   "scripts": {
-    "test": "vitest run"
+    "test": "vitest run",
+    "dev:api": "PORT=4000 tsx watch --env-file=.env apps/api/src/index.ts",
+    "dev:dashboard": "npm run dev -w dashboard"
   }
 }

@@ -1,0 +1,151 @@
+"use client";
+
+import { ChevronsUpDown, LogOut, ShieldCheck, UserCircle2 } from "lucide-react";
+
+import { logoutAction } from "@/app/(auth)/actions";
+import type { UserContext } from "@/lib/auth/context";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+const triggerClass =
+  "flex h-9 items-center gap-2 rounded-md px-2 text-left font-normal hover:bg-neutral-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-300";
+
+function StatusBadge({ status }: { status: string }) {
+  const tone =
+    status === "active"
+      ? "bg-green-50 text-green-700 ring-green-200"
+      : status === "trial" || status === "pilot"
+        ? "bg-amber-50 text-amber-700 ring-amber-200"
+        : "bg-neutral-100 text-neutral-600 ring-neutral-200";
+  return (
+    <span
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ring-1 ring-inset ${tone}`}
+    >
+      {status}
+    </span>
+  );
+}
+
+export function Topbar({ ctx }: { ctx: UserContext }) {
+  const active = ctx.activeAgency;
+  const showSwitcher = ctx.memberships.length > 1 || ctx.isAivenaStaff;
+
+  return (
+    <header className="flex h-14 items-center justify-between border-b border-neutral-200 bg-white px-6">
+      <div className="flex min-w-0 items-center gap-3">
+        {active ? (
+          showSwitcher ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger className={triggerClass}>
+                <AgencyLabel
+                  name={active.agency.displayName}
+                  region={active.agency.region}
+                  status={active.agency.status}
+                />
+                <ChevronsUpDown
+                  className="h-3.5 w-3.5 text-neutral-400"
+                  aria-hidden
+                />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-72">
+                <DropdownMenuLabel className="text-xs font-medium uppercase tracking-wide text-neutral-400">
+                  Switch agency
+                </DropdownMenuLabel>
+                {ctx.memberships.map((m) => (
+                  <DropdownMenuItem
+                    key={m.agencyId}
+                    className="flex flex-col items-start gap-0.5 py-2"
+                    disabled
+                  >
+                    <span className="text-sm font-medium text-neutral-900">
+                      {m.agency.displayName}
+                    </span>
+                    <span className="text-xs text-neutral-500">
+                      {m.role} · {m.agency.region ?? "—"}
+                    </span>
+                  </DropdownMenuItem>
+                ))}
+                {ctx.isAivenaStaff ? (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem disabled className="gap-2">
+                      <ShieldCheck className="h-4 w-4" aria-hidden />
+                      All agencies (AIVENA admin)
+                    </DropdownMenuItem>
+                  </>
+                ) : null}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <div className="px-2">
+              <AgencyLabel
+                name={active.agency.displayName}
+                region={active.agency.region}
+                status={active.agency.status}
+              />
+            </div>
+          )
+        ) : (
+          <span className="px-2 text-sm text-neutral-500">No active agency</span>
+        )}
+      </div>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger className={triggerClass} aria-label="User menu">
+          <UserCircle2 className="h-5 w-5 text-neutral-500" aria-hidden />
+          <span className="hidden text-sm text-neutral-700 sm:inline">
+            {ctx.email}
+          </span>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-64">
+          <DropdownMenuLabel className="flex flex-col gap-0.5">
+            <span className="text-[10px] font-medium uppercase tracking-wide text-neutral-400">
+              Signed in as
+            </span>
+            <span className="truncate text-sm font-medium text-neutral-900">
+              {ctx.email}
+            </span>
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <form action={logoutAction}>
+            <button
+              type="submit"
+              className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-neutral-700 hover:bg-neutral-100"
+            >
+              <LogOut className="h-4 w-4" aria-hidden />
+              Log out
+            </button>
+          </form>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </header>
+  );
+}
+
+function AgencyLabel({
+  name,
+  region,
+  status,
+}: {
+  name: string;
+  region: string | null;
+  status: string;
+}) {
+  return (
+    <span className="flex min-w-0 items-center gap-2">
+      <span className="truncate text-sm font-medium text-neutral-900">
+        {name}
+      </span>
+      {region ? (
+        <span className="text-xs text-neutral-500">· {region}</span>
+      ) : null}
+      <StatusBadge status={status} />
+    </span>
+  );
+}

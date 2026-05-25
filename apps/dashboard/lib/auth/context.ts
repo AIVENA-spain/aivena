@@ -42,12 +42,6 @@ type UserAgencyRow = {
   is_default: boolean;
 };
 
-type EmbeddedRow = UserAgencyRow & {
-  // PostgREST returns the embedded record as an object for many-to-one,
-  // but Supabase's generated typings often widen it to object | array | null.
-  agencies: AgencyRow | AgencyRow[] | null;
-};
-
 const ALLOWED_ROLES: ReadonlySet<AgencyRole> = new Set([
   "owner",
   "agent",
@@ -59,12 +53,6 @@ function normalizeRole(value: string): AgencyRole {
   return ALLOWED_ROLES.has(value as AgencyRole)
     ? (value as AgencyRole)
     : "viewer";
-}
-
-function pickAgency(value: AgencyRow | AgencyRow[] | null): AgencyRow | null {
-  if (!value) return null;
-  if (Array.isArray(value)) return value[0] ?? null;
-  return value;
 }
 
 function buildMembership(
@@ -104,57 +92,41 @@ export async function getCurrentUserContext(): Promise<UserContext | null> {
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  let memberships: AgencyMembership[] = [];
-
-  const embedded = await supabase
+  // Two-step explicit query: we don't rely on PostgREST's embedded FK join
+  // between user_agencies and agencies — its schema cache for that relationship
+  // is fragile and goes cold often enough that the embed isn't worth the risk.
+  const ua = await supabase
     .from("user_agencies")
-    .select(
-      "agency_id, role, is_default, agencies ( id, slug, trading_name, legal_name, status, primary_region, supported_languages )",
-    );
+    .select("agency_id, role, is_default");
 
-  if (!embedded.error && embedded.data) {
-    const rows = embedded.data as unknown as EmbeddedRow[];
-    memberships = rows.map((r) =>
-      buildMembership(
-        { agency_id: r.agency_id, role: r.role, is_default: r.is_default },
-        pickAgency(r.agencies),
-      ),
-    );
-  } else {
-    // Fallback: two queries if the embed relationship can't be resolved.
-    const ua = await supabase
-      .from("user_agencies")
-      .select("agency_id, role, is_default");
-
-    if (ua.error || !ua.data) {
-      return {
-        userId: user.id,
-        email: user.email ?? "",
-        memberships: [],
-        activeAgency: null,
-        isAivenaStaff: false,
-      };
-    }
-
-    const uaRows = ua.data as unknown as UserAgencyRow[];
-    const ids = uaRows.map((r) => r.agency_id);
-    let agencyById = new Map<string, AgencyRow>();
-    if (ids.length > 0) {
-      const ags = await supabase
-        .from("agencies")
-        .select(
-          "id, slug, trading_name, legal_name, status, primary_region, supported_languages",
-        )
-        .in("id", ids);
-      if (!ags.error && ags.data) {
-        const agRows = ags.data as unknown as AgencyRow[];
-        agencyById = new Map(agRows.map((a) => [a.id, a]));
-      }
-    }
-    memberships = uaRows.map((r) =>
-      buildMembership(r, agencyById.get(r.agency_id) ?? null),
-    );
+  if (ua.error || !ua.data) {
+    return {
+      userId: user.id,
+      email: user.email ?? "",
+      memberships: [],
+      activeAgency: null,
+      isAivenaStaff: false,
+    };
   }
+
+  const uaRows = ua.data as unknown as UserAgencyRow[];
+  const ids = uaRows.map((r) => r.agency_id);
+  let agencyById = new Map<string, AgencyRow>();
+  if (ids.length > 0) {
+    const ags = await supabase
+      .from("agencies")
+      .select(
+        "id, slug, trading_name, legal_name, status, primary_region, supported_languages",
+      )
+      .in("id", ids);
+    if (!ags.error && ags.data) {
+      const agRows = ags.data as unknown as AgencyRow[];
+      agencyById = new Map(agRows.map((a) => [a.id, a]));
+    }
+  }
+  const memberships: AgencyMembership[] = uaRows.map((r) =>
+    buildMembership(r, agencyById.get(r.agency_id) ?? null),
+  );
 
   const activeAgency =
     memberships.find((m) => m.isDefault) ?? memberships[0] ?? null;

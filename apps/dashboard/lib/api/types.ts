@@ -48,3 +48,35 @@ export type ApiTask = {
 export type TasksResponse = {
   tasks: ApiTask[];
 };
+
+export type ThreadMessage = {
+  id: string;
+  direction: string;
+  messageType: string;
+  content: string | null;
+  createdAt: string;
+};
+
+export type TaskDetailResponse = {
+  task: {
+    id: string;
+    taskType: string;
+    status: string;
+    subject: string | null;
+    body: string;
+    conversationId: string | null;
+    createdAt: string;
+  };
+  lead: ApiTask["lead"];
+  originalMessage: string | null;
+  thread: ThreadMessage[];
+};
+
+export type ApproveResponse = {
+  ok: true;
+  sendQueueId: string;
+  conversationMessageId: string;
+  finalSubject: string | null;
+  finalBody: string | null;
+  wasEdited: boolean;
+};

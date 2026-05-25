@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 import { apiFetch, ApiError } from "@/lib/api/client";
 import type { ApiTask, TasksResponse } from "@/lib/api/types";
@@ -15,22 +16,24 @@ function languageLabel(code: string | null): string {
 function TemperatureBadge({
   temperature,
   score,
+  noTempLabel,
 }: {
   temperature: string | null;
   score: number | null;
+  noTempLabel: string;
 }) {
   const t = (temperature ?? "").toLowerCase();
   const tone =
     t === "super_hot"
-      ? "bg-red-50 text-red-700 ring-red-200"
+      ? "bg-red-500/15 text-red-700 dark:text-red-300 ring-red-500/30"
       : t === "hot"
-        ? "bg-orange-50 text-orange-700 ring-orange-200"
+        ? "bg-orange-500/15 text-orange-700 dark:text-orange-300 ring-orange-500/30"
         : t === "warm"
-          ? "bg-amber-50 text-amber-700 ring-amber-200"
+          ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 ring-amber-500/30"
           : t === "cold"
-            ? "bg-sky-50 text-sky-700 ring-sky-200"
-            : "bg-neutral-100 text-neutral-700 ring-neutral-200";
-  const label = temperature ? temperature.replace("_", " ") : "no temperature";
+            ? "bg-sky-500/15 text-sky-700 dark:text-sky-300 ring-sky-500/30"
+            : "bg-muted text-muted-foreground ring-border";
+  const label = temperature ? temperature.replace("_", " ") : noTempLabel;
   return (
     <span
       className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ring-1 ring-inset ${tone}`}
@@ -43,52 +46,68 @@ function TemperatureBadge({
   );
 }
 
-function TaskCard({ task }: { task: ApiTask }) {
+function TaskCard({
+  task,
+  labels,
+}: {
+  task: ApiTask;
+  labels: {
+    subject: string;
+    noSubject: string;
+    emptyDraft: string;
+    noTemperature: string;
+  };
+}) {
   const lead = task.lead;
   return (
     <Link
       href={`/approvals/${task.id}`}
-      className="block transition-shadow hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-300 rounded-lg"
+      className="block rounded-lg transition-shadow hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       <Card className="cursor-pointer">
         <CardContent className="flex flex-col gap-3 p-5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex min-w-0 flex-wrap items-center gap-3">
-              <span className="truncate text-sm font-medium text-neutral-900">
+              <span className="truncate text-sm font-medium text-foreground">
                 {lead.fullName ?? "Unknown buyer"}
               </span>
-              <span className="inline-flex items-center rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-neutral-700 ring-1 ring-inset ring-neutral-200">
+              <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground ring-1 ring-inset ring-border">
                 {languageLabel(lead.language)}
               </span>
               <TemperatureBadge
                 temperature={lead.temperature}
                 score={lead.score}
+                noTempLabel={labels.noTemperature}
               />
               {lead.listingId ? (
-                <span className="inline-flex items-center rounded-full bg-neutral-900 px-2 py-0.5 font-mono text-[10px] font-medium uppercase tracking-wide text-white">
+                <span className="inline-flex items-center rounded-full bg-foreground px-2 py-0.5 font-mono text-[10px] font-medium uppercase tracking-wide text-background">
                   {lead.listingId}
                 </span>
               ) : null}
             </div>
-            <span className="text-[11px] text-neutral-500">
+            <span className="text-[11px] text-muted-foreground">
               {new Date(task.createdAt).toLocaleString()}
             </span>
           </div>
 
-          <div className="rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2">
-            <div className="text-[10px] font-medium uppercase tracking-wide text-neutral-500">
-              Subject
+          <div className="rounded-md border border-border bg-muted/40 px-3 py-2">
+            <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              {labels.subject}
             </div>
-            <div className="text-sm text-neutral-900">
+            <div className="text-sm text-foreground">
               {task.subject ?? (
-                <span className="italic text-neutral-500">(no subject)</span>
+                <span className="italic text-muted-foreground">
+                  {labels.noSubject}
+                </span>
               )}
             </div>
           </div>
 
-          <div className="whitespace-pre-wrap rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-800">
+          <div className="whitespace-pre-wrap rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground">
             {task.body || (
-              <span className="italic text-neutral-500">(empty draft)</span>
+              <span className="italic text-muted-foreground">
+                {labels.emptyDraft}
+              </span>
             )}
           </div>
         </CardContent>
@@ -97,13 +116,9 @@ function TaskCard({ task }: { task: ApiTask }) {
   );
 }
 
-function SuccessBanner({ kind }: { kind: "approved" | "dismissed" }) {
-  const text =
-    kind === "approved"
-      ? "Reply approved and queued for send."
-      : "Task dismissed.";
+function SuccessBanner({ text }: { text: string }) {
   return (
-    <div className="rounded-md border border-green-200 bg-green-50 px-4 py-2 text-sm text-green-800">
+    <div className="rounded-md border border-green-500/30 bg-green-500/10 px-4 py-2 text-sm text-green-700 dark:text-green-300">
       {text}
     </div>
   );
@@ -115,6 +130,7 @@ export default async function ApprovalsPage({
   searchParams: Promise<{ approved?: string; dismissed?: string }>;
 }) {
   const params = await searchParams;
+  const t = await getTranslations("approvals");
   const banner: "approved" | "dismissed" | null =
     params.approved === "1"
       ? "approved"
@@ -132,8 +148,6 @@ export default async function ApprovalsPage({
     tasks = res.tasks;
   } catch (err) {
     loadFailed = true;
-    // Log the technical detail server-side so we can debug, but never surface
-    // the raw text to the user.
     const detail =
       err instanceof ApiError
         ? `${err.status} ${err.message}`
@@ -143,32 +157,40 @@ export default async function ApprovalsPage({
     console.error("[/approvals] failed to load tasks:", detail);
   }
 
+  const cardLabels = {
+    subject: t("subject"),
+    noSubject: t("noSubject"),
+    emptyDraft: t("emptyDraft"),
+    noTemperature: t("noTemperature"),
+  };
+
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">
-          Approvals
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+          {t("title")}
         </h1>
-        <p className="text-sm text-neutral-500">
-          AI-drafted replies awaiting human approval. Click a card to review,
-          edit, and approve or dismiss.
-        </p>
+        <p className="text-sm text-muted-foreground">{t("description")}</p>
       </header>
 
-      {banner ? <SuccessBanner kind={banner} /> : null}
+      {banner ? (
+        <SuccessBanner
+          text={banner === "approved" ? t("approvedBanner") : t("dismissedBanner")}
+        />
+      ) : null}
 
       {loadFailed ? (
         <PageLoadError />
       ) : tasks.length === 0 ? (
         <Card>
-          <CardContent className="p-10 text-center text-sm text-neutral-500">
-            Nothing waiting. New AI drafts will appear here as buyers reply.
+          <CardContent className="p-10 text-center text-sm text-muted-foreground">
+            {t("empty")}
           </CardContent>
         </Card>
       ) : (
         <div className="flex flex-col gap-3">
           {tasks.map((task) => (
-            <TaskCard key={task.id} task={task} />
+            <TaskCard key={task.id} task={task} labels={cardLabels} />
           ))}
         </div>
       )}

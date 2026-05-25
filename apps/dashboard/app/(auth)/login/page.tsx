@@ -41,7 +41,7 @@ export default function LoginPage() {
               <Label htmlFor="password">Password</Label>
               <Link
                 href="/forgot-password"
-                className="text-xs text-neutral-500 hover:text-neutral-900"
+                className="text-xs text-muted-foreground hover:text-foreground"
               >
                 Forgot?
               </Link>
@@ -64,7 +64,7 @@ export default function LoginPage() {
           <Button type="submit" className="w-full" disabled={pending}>
             {pending ? "Signing in..." : "Sign in"}
           </Button>
-          <p className="text-center text-xs text-neutral-500">
+          <p className="text-center text-xs text-muted-foreground">
             Access is invite-only. Contact your administrator.
           </p>
         </CardFooter>

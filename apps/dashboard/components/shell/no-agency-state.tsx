@@ -11,7 +11,7 @@ import {
 
 export function NoAgencyState({ email }: { email: string }) {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-neutral-50 px-4 py-12">
+    <main className="flex min-h-screen items-center justify-center bg-muted/40 px-4 py-12">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Almost there</CardTitle>
@@ -21,11 +21,11 @@ export function NoAgencyState({ email }: { email: string }) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border bg-white px-3 py-2 text-sm">
-            <div className="text-xs uppercase tracking-wide text-neutral-500">
+          <div className="rounded-md border border-border bg-card px-3 py-2 text-sm">
+            <div className="text-xs uppercase tracking-wide text-muted-foreground">
               Signed in as
             </div>
-            <div className="font-medium text-neutral-900">{email}</div>
+            <div className="font-medium text-foreground">{email}</div>
           </div>
         </CardContent>
         <CardFooter>

@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import { getCurrentUserContext } from "@/lib/auth/context";
 import { apiFetch } from "@/lib/api/client";
@@ -34,41 +35,42 @@ export default async function OverviewPage() {
   if (!ctx) redirect("/login");
   const active = ctx.activeAgency;
   const awaitingApproval = await getPendingApprovalsCount();
+  const t = await getTranslations("overview");
 
   const stats: { label: string; value: string | number }[] = [
-    { label: "New leads today", value: "—" },
-    {
-      label: "Awaiting approval",
-      value: awaitingApproval ?? "—",
-    },
-    { label: "Active conversations", value: "—" },
-    { label: "Response time", value: "—" },
+    { label: t("stats.newLeadsToday"), value: "—" },
+    { label: t("stats.awaitingApproval"), value: awaitingApproval ?? "—" },
+    { label: t("stats.activeConversations"), value: "—" },
+    { label: t("stats.responseTime"), value: "—" },
   ];
 
   return (
     <div className="flex flex-col gap-8">
       <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">
-          Welcome back
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+          {t("welcomeBack")}
         </h1>
-        <p className="text-sm text-neutral-500">{ctx.email}</p>
+        <p className="text-sm text-muted-foreground">{ctx.email}</p>
       </header>
 
       {active ? (
         <Card>
           <CardHeader>
             <CardTitle>{active.agency.displayName}</CardTitle>
-            <CardDescription>
-              Your active agency context. All data on this dashboard is scoped
-              to this agency.
-            </CardDescription>
+            <CardDescription>{t("activeAgencyDescription")}</CardDescription>
           </CardHeader>
           <CardContent>
             <dl className="grid gap-4 sm:grid-cols-3">
-              <Field label="Role" value={capitalize(active.role)} />
-              <Field label="Region" value={active.agency.region ?? "—"} />
               <Field
-                label="Languages"
+                label={t("fields.role")}
+                value={capitalize(active.role)}
+              />
+              <Field
+                label={t("fields.region")}
+                value={active.agency.region ?? "—"}
+              />
+              <Field
+                label={t("fields.languages")}
                 value={
                   active.agency.languages.length > 0
                     ? active.agency.languages.join(", ")
@@ -84,12 +86,12 @@ export default async function OverviewPage() {
         {stats.map((s) => (
           <Card key={s.label}>
             <CardHeader className="pb-2">
-              <CardDescription className="text-xs uppercase tracking-wide text-neutral-500">
+              <CardDescription className="text-xs uppercase tracking-wide text-muted-foreground">
                 {s.label}
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-semibold tracking-tight text-neutral-900">
+              <div className="text-3xl font-semibold tracking-tight text-foreground">
                 {s.value}
               </div>
             </CardContent>
@@ -103,10 +105,10 @@ export default async function OverviewPage() {
 function Field({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-col gap-1">
-      <dt className="text-xs uppercase tracking-wide text-neutral-500">
+      <dt className="text-xs uppercase tracking-wide text-muted-foreground">
         {label}
       </dt>
-      <dd className="text-sm font-medium text-neutral-900">{value}</dd>
+      <dd className="text-sm font-medium text-foreground">{value}</dd>
     </div>
   );
 }

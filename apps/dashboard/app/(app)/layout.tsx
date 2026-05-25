@@ -18,7 +18,7 @@ export default async function AppLayout({
   }
 
   return (
-    <div className="flex min-h-screen bg-neutral-50">
+    <div className="flex min-h-screen bg-muted/40">
       <Sidebar ctx={ctx} />
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar ctx={ctx} />

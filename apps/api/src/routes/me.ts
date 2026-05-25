@@ -1,14 +1,49 @@
 import { Hono } from 'hono';
-import { listMembershipsForUser } from '../lib/supabase-admin';
+import {
+  listMembershipsForUser,
+  supabaseAdmin,
+} from '../lib/supabase-admin';
 
 const route = new Hono();
 
-function displayName(agency: {
-  id: string;
-  slug: string | null;
-  trading_name: string | null;
-  legal_name: string | null;
-} | null, fallbackId: string): string {
+const SUPPORTED_LANGUAGES = new Set([
+  'en',
+  'es',
+  'pl',
+  'nb',
+  'fr',
+  'nl',
+  'de',
+  'ru',
+  'sv',
+  'it',
+]);
+const SUPPORTED_THEMES = new Set(['light', 'dark', 'system']);
+
+const DEFAULT_PREFERENCES = {
+  uiLanguage: 'en',
+  messageLanguage: 'en',
+  theme: 'system',
+};
+
+type PreferencesRow = {
+  user_id: string;
+  ui_language: string;
+  message_language: string;
+  theme: string;
+  created_at: string;
+  updated_at: string;
+};
+
+function displayName(
+  agency: {
+    id: string;
+    slug: string | null;
+    trading_name: string | null;
+    legal_name: string | null;
+  } | null,
+  fallbackId: string,
+): string {
   if (!agency) return fallbackId;
   return agency.trading_name || agency.legal_name || agency.slug || agency.id;
 }
@@ -44,6 +79,118 @@ route.get('/', async (c) => {
       isDefault: Boolean(m.is_default),
       displayName: displayName(m.agencies, m.agency_id),
     })),
+  });
+});
+
+/**
+ * GET /api/v1/me/preferences — read the caller's own user_preferences row.
+ *
+ * Self-data flow: we never expose user_preferences to the browser via a
+ * client-side Supabase query. The verified token's `sub` is the only thing
+ * that selects a row. supabaseAdmin (service role) bypasses RLS at this one
+ * guarded door, scoped by user_id = sub.
+ */
+route.get('/preferences', async (c) => {
+  const user = c.get('user');
+
+  const { data, error } = await supabaseAdmin
+    .from('user_preferences')
+    .select('user_id, ui_language, message_language, theme, created_at, updated_at')
+    .eq('user_id', user.sub)
+    .maybeSingle();
+
+  if (error) {
+    return c.json(
+      { error: `Failed to load preferences: ${error.message}` },
+      500,
+    );
+  }
+
+  const row = (data ?? null) as PreferencesRow | null;
+  return c.json({
+    uiLanguage: row?.ui_language ?? DEFAULT_PREFERENCES.uiLanguage,
+    messageLanguage: row?.message_language ?? DEFAULT_PREFERENCES.messageLanguage,
+    theme: row?.theme ?? DEFAULT_PREFERENCES.theme,
+  });
+});
+
+/**
+ * PATCH /api/v1/me/preferences — partial update of the caller's own row.
+ *
+ * Accepts any subset of { uiLanguage, messageLanguage, theme }. Each provided
+ * value is validated against the same CHECK constraints the DB enforces, so
+ * the API rejects bad input with 400 instead of relying on a DB error message
+ * leaking out as 500. Upserts so callers who somehow never got the auto-row
+ * still end up with a valid row.
+ */
+route.patch('/preferences', async (c) => {
+  const user = c.get('user');
+
+  let body: {
+    uiLanguage?: unknown;
+    messageLanguage?: unknown;
+    theme?: unknown;
+  } = {};
+  try {
+    body = await c.req.json();
+  } catch {
+    body = {};
+  }
+
+  const update: Record<string, string> = {};
+
+  if (body.uiLanguage !== undefined) {
+    if (
+      typeof body.uiLanguage !== 'string' ||
+      !SUPPORTED_LANGUAGES.has(body.uiLanguage)
+    ) {
+      return c.json({ error: 'Unsupported uiLanguage' }, 400);
+    }
+    update.ui_language = body.uiLanguage;
+  }
+  if (body.messageLanguage !== undefined) {
+    if (
+      typeof body.messageLanguage !== 'string' ||
+      !SUPPORTED_LANGUAGES.has(body.messageLanguage)
+    ) {
+      return c.json({ error: 'Unsupported messageLanguage' }, 400);
+    }
+    update.message_language = body.messageLanguage;
+  }
+  if (body.theme !== undefined) {
+    if (typeof body.theme !== 'string' || !SUPPORTED_THEMES.has(body.theme)) {
+      return c.json({ error: 'Unsupported theme' }, 400);
+    }
+    update.theme = body.theme;
+  }
+
+  if (Object.keys(update).length === 0) {
+    return c.json({ error: 'No valid fields to update' }, 400);
+  }
+
+  // Upsert keyed on user_id so callers without an auto-created row still end
+  // up with one. Includes user_id so an INSERT on a missing row has the PK.
+  const { data, error } = await supabaseAdmin
+    .from('user_preferences')
+    .upsert(
+      { user_id: user.sub, ...update },
+      { onConflict: 'user_id' },
+    )
+    .select('user_id, ui_language, message_language, theme, created_at, updated_at')
+    .single();
+
+  if (error) {
+    return c.json(
+      { error: `Failed to save preferences: ${error.message}` },
+      500,
+    );
+  }
+  const row = data as PreferencesRow;
+
+  return c.json({
+    uiLanguage: row.ui_language,
+    messageLanguage: row.message_language,
+    theme: row.theme,
   });
 });
 

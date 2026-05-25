@@ -1,3 +1,5 @@
+import { getTranslations } from "next-intl/server";
+
 import { Card, CardContent } from "@/components/ui/card";
 
 /**
@@ -7,12 +9,12 @@ import { Card, CardContent } from "@/components/ui/card";
  * "lead has opted out", "task already handled" — are surfaced separately by
  * each form's own error state.
  */
-export function PageLoadError() {
+export async function PageLoadError() {
+  const t = await getTranslations("errors");
   return (
     <Card>
-      <CardContent className="p-8 text-center text-sm text-neutral-600">
-        Something went wrong loading this page. Please refresh — if it keeps
-        happening, contact support.
+      <CardContent className="p-8 text-center text-sm text-muted-foreground">
+        {t("pageLoad")}
       </CardContent>
     </Card>
   );

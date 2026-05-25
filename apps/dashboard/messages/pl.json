@@ -1,0 +1,91 @@
+{
+  "nav": {
+    "overview": "Overview",
+    "approvals": "Approvals",
+    "leads": "Leads",
+    "inbox": "Inbox",
+    "properties": "Properties",
+    "tasks": "Tasks",
+    "voice": "Voice",
+    "ads": "Ads",
+    "team": "Team",
+    "settings": "Settings",
+    "adminSectionLabel": "AIVENA Admin",
+    "allAgencies": "All Agencies"
+  },
+  "topbar": {
+    "switchAgency": "Switch agency",
+    "allAgenciesAdmin": "All agencies (AIVENA admin)",
+    "noActiveAgency": "No active agency",
+    "userMenu": "User menu",
+    "signedInAs": "Signed in as",
+    "logOut": "Log out"
+  },
+  "overview": {
+    "welcomeBack": "Welcome back",
+    "activeAgencyDescription": "Your active agency context. All data on this dashboard is scoped to this agency.",
+    "fields": {
+      "role": "Role",
+      "region": "Region",
+      "languages": "Languages"
+    },
+    "stats": {
+      "newLeadsToday": "New leads today",
+      "awaitingApproval": "Awaiting approval",
+      "activeConversations": "Active conversations",
+      "responseTime": "Response time"
+    }
+  },
+  "approvals": {
+    "title": "Approvals",
+    "description": "AI-drafted replies awaiting human approval. Click a card to review, edit, and approve or dismiss.",
+    "empty": "Nothing waiting. New AI drafts will appear here as buyers reply.",
+    "approvedBanner": "Reply approved and queued for send.",
+    "dismissedBanner": "Task dismissed.",
+    "subject": "Subject",
+    "noSubject": "(no subject)",
+    "emptyDraft": "(empty draft)",
+    "noTemperature": "no temperature",
+    "back": "Back to approvals",
+    "buyerEnquiryTitle": "Buyer's enquiry",
+    "noEnquiry": "No original enquiry text on file.",
+    "conversationLabel": "Conversation",
+    "buyer": "Buyer",
+    "agency": "Agency",
+    "emptyMessage": "(empty)",
+    "draftReplyTitle": "Draft reply",
+    "replyBody": "Reply body",
+    "approveAndSend": "Approve & send",
+    "approving": "Approving...",
+    "dismiss": "Dismiss",
+    "confirmDismiss": "Confirm dismiss",
+    "dismissing": "Dismissing...",
+    "cancel": "Cancel",
+    "dismissReasonLabel": "Dismiss reason",
+    "dismissReasonPlaceholder": "Why are you dismissing this draft?",
+    "dismissReasonRequired": "A reason is required."
+  },
+  "settings": {
+    "title": "Settings",
+    "personal": "Personal",
+    "personalDescription": "Preferences for your account — these affect only you.",
+    "dashboardLanguageLabel": "Dashboard language",
+    "messageLanguageLabel": "Translate client messages into",
+    "messageLanguageHelp": "Most operators leave this the same as their dashboard language. Change it if you want messages translated into a different language.",
+    "themeLabel": "Theme",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "themeSystem": "System",
+    "saving": "Saving…",
+    "saved": "Saved",
+    "saveFailed": "Couldn't save that change. Please try again — if it keeps happening, contact support."
+  },
+  "stub": {
+    "comingSoon": "Coming soon."
+  },
+  "errors": {
+    "pageLoad": "Something went wrong loading this page. Please refresh — if it keeps happening, contact support.",
+    "approveFailed": "Something went wrong sending this reply. Please try again — if it keeps happening, contact support.",
+    "dismissFailed": "Something went wrong dismissing this task. Please try again — if it keeps happening, contact support."
+  }
+}

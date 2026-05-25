@@ -47,7 +47,7 @@ export default function ForgotPasswordPage() {
             </p>
           ) : null}
           {state.message ? (
-            <p className="text-sm text-neutral-700" role="status">
+            <p className="text-sm text-foreground" role="status">
               {state.message}
             </p>
           ) : null}
@@ -58,7 +58,7 @@ export default function ForgotPasswordPage() {
           </Button>
           <Link
             href="/login"
-            className="text-center text-xs text-neutral-500 hover:text-neutral-900"
+            className="text-center text-xs text-muted-foreground hover:text-foreground"
           >
             Back to sign in
           </Link>

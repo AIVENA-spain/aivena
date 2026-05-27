@@ -32,6 +32,7 @@ import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { RelativeTime } from "@/components/ui/relative-time";
 import {
   approveTaskAction,
   dismissTaskAction,
@@ -51,21 +52,6 @@ type NetSub = "find" | "convos";
 
 function isSeller(r: NeedsYouRow): boolean {
   return (r.leadType ?? "").toLowerCase() === "seller";
-}
-
-function relativeTime(iso: string, locale: string): string {
-  if (!iso) return "";
-  const then = new Date(iso).getTime();
-  if (Number.isNaN(then)) return "";
-  const seconds = Math.round((then - Date.now()) / 1000);
-  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
-  const abs = Math.abs(seconds);
-  if (abs < 60) return rtf.format(seconds, "second");
-  const minutes = Math.round(seconds / 60);
-  if (Math.abs(minutes) < 60) return rtf.format(minutes, "minute");
-  const hours = Math.round(minutes / 60);
-  if (Math.abs(hours) < 24) return rtf.format(hours, "hour");
-  return rtf.format(Math.round(hours / 24), "day");
 }
 
 function initialsOf(value: string | null | undefined): string {
@@ -510,7 +496,8 @@ function BuyersConvoView({
                   {r.aiReplyBody ?? "—"}
                 </div>
                 <div className="text-[10px] text-muted-foreground">
-                  {languageLabel(r.language)} · {relativeTime(r.taskCreatedAt, locale)}
+                  {languageLabel(r.language)} ·{" "}
+                  <RelativeTime iso={r.taskCreatedAt} />
                 </div>
               </button>
             </li>
@@ -656,9 +643,8 @@ function ThreadBubble({
         {msg.content ?? <span className="italic opacity-70">(empty)</span>}
       </div>
       <div className="mt-1.5 font-mono text-[9.5px] text-muted-foreground">
-        {inbound
-          ? t("inboundMeta", { time: relativeTime(msg.createdAt, locale) })
-          : t("outboundMeta", { time: relativeTime(msg.createdAt, locale) })}
+        {inbound ? t("inbound") : t("outbound")} ·{" "}
+        <RelativeTime iso={msg.createdAt} />
       </div>
     </div>
   );
@@ -930,9 +916,10 @@ function BuyersCardsView({
               <span className="truncate text-[14px] font-bold text-foreground">
                 {r.fullName ?? "Unknown"}
               </span>
-              <span className="font-mono text-[10px] text-muted-foreground">
-                {relativeTime(r.taskCreatedAt, locale)}
-              </span>
+              <RelativeTime
+                iso={r.taskCreatedAt}
+                className="font-mono text-[10px] text-muted-foreground"
+              />
             </div>
             <span
               className={cn(

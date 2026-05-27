@@ -108,7 +108,9 @@
       "noThread": "No prior conversation yet — this will be the first contact.",
       "subline": "{area} · {language}",
       "inboundMeta": "Inbound · {time}",
-      "outboundMeta": "Outbound · {time}"
+      "outboundMeta": "Outbound · {time}",
+      "inbound": "Inbound",
+      "outbound": "Outbound"
     },
     "summary": {
       "h": "Lead summary",

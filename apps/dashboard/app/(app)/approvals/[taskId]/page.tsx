@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 
 import { apiFetch, ApiError } from "@/lib/api/client";
+import { intlLocaleFor } from "@/lib/i18n/date-locale";
 import type { TaskDetailResponse, ThreadMessage } from "@/lib/api/types";
 import {
   Card,
@@ -58,11 +59,14 @@ function ThreadEntry({
   buyerLabel,
   agencyLabel,
   emptyLabel,
+  bcp47Locale,
 }: {
   msg: ThreadMessage;
   buyerLabel: string;
   agencyLabel: string;
   emptyLabel: string;
+  /** Pre-resolved BCP-47 locale tag (from intlLocaleFor on the server). */
+  bcp47Locale: string;
 }) {
   const inbound = msg.direction === "inbound";
   return (
@@ -82,7 +86,14 @@ function ThreadEntry({
         <span>
           {inbound ? buyerLabel : agencyLabel} · {msg.messageType}
         </span>
-        <span>{new Date(msg.createdAt).toLocaleString()}</span>
+        <span>
+          {new Date(msg.createdAt).toLocaleString(bcp47Locale, {
+            day: "numeric",
+            month: "short",
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
+        </span>
       </div>
       <div
         className={
@@ -103,6 +114,7 @@ export default async function ReviewPage({
 }) {
   const { taskId } = await params;
   const t = await getTranslations("approvals");
+  const bcp47Locale = intlLocaleFor(await getLocale());
 
   let detail: TaskDetailResponse;
   try {
@@ -197,6 +209,7 @@ export default async function ReviewPage({
                   buyerLabel={t("buyer")}
                   agencyLabel={t("agency")}
                   emptyLabel={t("emptyMessage")}
+                  bcp47Locale={bcp47Locale}
                 />
               ))}
             </div>

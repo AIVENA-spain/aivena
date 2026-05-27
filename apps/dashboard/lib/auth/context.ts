@@ -24,6 +24,13 @@ export type UserContext = {
   memberships: AgencyMembership[];
   activeAgency: AgencyMembership | null;
   isAivenaStaff: boolean;
+  /**
+   * The user's chosen UI language from `public.user_preferences.ui_language`
+   * (DB-authoritative). Used by `(app)/layout.tsx` to reconcile drift with the
+   * `aivena_ui_language` cookie. `null` if the row isn't readable for some
+   * reason (RLS denial, missing row, transient error) — callers must tolerate.
+   */
+  uiLanguage: string | null;
 };
 
 type AgencyRow = {
@@ -40,6 +47,10 @@ type UserAgencyRow = {
   agency_id: string;
   role: string;
   is_default: boolean;
+};
+
+type UserPreferencesRow = {
+  ui_language: string | null;
 };
 
 const ALLOWED_ROLES: ReadonlySet<AgencyRole> = new Set([
@@ -95,9 +106,24 @@ export async function getCurrentUserContext(): Promise<UserContext | null> {
   // Two-step explicit query: we don't rely on PostgREST's embedded FK join
   // between user_agencies and agencies — its schema cache for that relationship
   // is fragile and goes cold often enough that the embed isn't worth the risk.
-  const ua = await supabase
-    .from("user_agencies")
-    .select("agency_id, role, is_default");
+  //
+  // user_preferences is fetched in parallel with user_agencies so we don't add
+  // a serialised round-trip. RLS gates user_preferences on auth.uid(), so the
+  // user's session-bound Supabase client reads its own row natively.
+  const [ua, prefs] = await Promise.all([
+    supabase
+      .from("user_agencies")
+      .select("agency_id, role, is_default"),
+    supabase
+      .from("user_preferences")
+      .select("ui_language")
+      .maybeSingle(),
+  ]);
+
+  const uiLanguage =
+    prefs.error || !prefs.data
+      ? null
+      : ((prefs.data as unknown as UserPreferencesRow).ui_language ?? null);
 
   if (ua.error || !ua.data) {
     return {
@@ -106,6 +132,7 @@ export async function getCurrentUserContext(): Promise<UserContext | null> {
       memberships: [],
       activeAgency: null,
       isAivenaStaff: false,
+      uiLanguage,
     };
   }
 
@@ -138,5 +165,6 @@ export async function getCurrentUserContext(): Promise<UserContext | null> {
     memberships,
     activeAgency,
     isAivenaStaff,
+    uiLanguage,
   };
 }

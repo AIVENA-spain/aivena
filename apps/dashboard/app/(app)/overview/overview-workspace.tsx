@@ -30,6 +30,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { RelativeTime } from "@/components/ui/relative-time";
 import { approveTaskAction } from "@/app/(app)/approvals/[taskId]/actions";
 import type {
   ActivityRow,
@@ -38,24 +39,6 @@ import type {
 } from "@/lib/api/types";
 
 // ---------- formatting helpers ----------
-
-function relativeTime(iso: string, locale: string): string {
-  if (!iso) return "";
-  const now = Date.now();
-  const then = new Date(iso).getTime();
-  if (Number.isNaN(then)) return "";
-  const diffMs = then - now;
-  const seconds = Math.round(diffMs / 1000);
-  const abs = Math.abs(seconds);
-  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
-  if (abs < 60) return rtf.format(seconds, "second");
-  const minutes = Math.round(seconds / 60);
-  if (Math.abs(minutes) < 60) return rtf.format(minutes, "minute");
-  const hours = Math.round(minutes / 60);
-  if (Math.abs(hours) < 24) return rtf.format(hours, "hour");
-  const days = Math.round(hours / 24);
-  return rtf.format(days, "day");
-}
 
 function initialsOf(value: string | null | undefined): string {
   if (!value) return "—";
@@ -469,9 +452,10 @@ function NeedsYouCard({
                             <span className="truncate font-semibold text-foreground">
                               {r.fullName ?? "Unknown"}
                             </span>
-                            <span className="truncate font-mono text-[10px] text-muted-foreground">
-                              {relativeTime(r.taskCreatedAt, locale)}
-                            </span>
+                            <RelativeTime
+                              iso={r.taskCreatedAt}
+                              className="truncate font-mono text-[10px] text-muted-foreground"
+                            />
                           </div>
                         </div>
                       </td>
@@ -718,9 +702,10 @@ function RecentActivityCard({
                     </span>
                   ) : null}
                 </div>
-                <span className="whitespace-nowrap font-mono text-[10px] text-muted-foreground">
-                  {relativeTime(r.occurredAt, locale)}
-                </span>
+                <RelativeTime
+                  iso={r.occurredAt}
+                  className="whitespace-nowrap font-mono text-[10px] text-muted-foreground"
+                />
               </li>
             ))}
           </ul>

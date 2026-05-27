@@ -43,7 +43,8 @@
     },
     "needsAction": {
       "title": "Needs Action · Ready Replies",
-      "empty": "No replies waiting right now.",
+      "emptyTitle": "Nothing waiting",
+      "emptyText": "AI drafts appear here as buyers reply.",
       "columnLead": "Lead",
       "columnType": "Type",
       "columnArea": "Area",
@@ -101,7 +102,10 @@
     },
     "buyers": {
       "emptyConvo": "You're all caught up — no replies waiting.",
-      "emptyCards": "You're all caught up — no replies waiting.",
+      "emptyTitleConvo": "You're all caught up",
+      "emptyText": "AI-drafted replies appear here as buyers reply to your messages.",
+      "emptyTitleCards": "You're all caught up",
+      "emptyTextCards": "Each draft appears here as a quick-scan card once a buyer replies.",
       "listLanguageUnknown": "—"
     },
     "thread": {

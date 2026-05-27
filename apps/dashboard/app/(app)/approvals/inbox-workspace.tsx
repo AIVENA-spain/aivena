@@ -30,6 +30,7 @@ import {
 
 import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RelativeTime } from "@/components/ui/relative-time";
@@ -455,9 +456,11 @@ function BuyersConvoView({
   if (rows.length === 0) {
     return (
       <Card size="sm">
-        <CardContent className="px-6 py-12 text-center text-sm text-muted-foreground">
-          {t("buyers.emptyConvo")}
-        </CardContent>
+        <EmptyState
+          icon={MessageSquare}
+          title={t("buyers.emptyTitleConvo")}
+          description={t("buyers.emptyText")}
+        />
       </Card>
     );
   }
@@ -882,9 +885,11 @@ function BuyersCardsView({
   if (rows.length === 0) {
     return (
       <Card size="sm">
-        <CardContent className="px-6 py-12 text-center text-sm text-muted-foreground">
-          {t("emptyCards")}
-        </CardContent>
+        <EmptyState
+          icon={LayoutGrid}
+          title={t("emptyTitleCards")}
+          description={t("emptyTextCards")}
+        />
       </Card>
     );
   }

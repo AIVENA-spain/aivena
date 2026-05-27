@@ -15,6 +15,7 @@ import {
   Flame,
   Globe,
   Home,
+  Inbox,
   Mail,
   MessageCircle,
   MessageSquare,
@@ -29,6 +30,7 @@ import {
 
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { RelativeTime } from "@/components/ui/relative-time";
 import { approveTaskAction } from "@/app/(app)/approvals/[taskId]/actions";
@@ -400,9 +402,11 @@ function NeedsYouCard({
       </CardHeader>
       <CardContent className="p-0">
         {rows.length === 0 ? (
-          <p className="px-4 py-8 text-center text-sm text-muted-foreground">
-            {t("empty")}
-          </p>
+          <EmptyState
+            icon={Inbox}
+            title={t("emptyTitle")}
+            description={t("emptyText")}
+          />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full table-fixed border-collapse text-[12.5px]">
@@ -506,9 +510,11 @@ function SelectedLeadPanel({ lead }: { lead: NeedsYouRow | null }) {
   if (!lead) {
     return (
       <Card size="sm">
-        <CardContent className="flex items-center justify-center p-6 text-center text-sm text-muted-foreground">
-          {t("selectALead")}
-        </CardContent>
+        <EmptyState
+          icon={Users}
+          title={t("noSelection")}
+          description={t("selectALead")}
+        />
       </Card>
     );
   }

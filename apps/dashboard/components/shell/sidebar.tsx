@@ -17,6 +17,7 @@ import {
 
 import { logoutAction } from "@/app/(auth)/actions";
 import type { UserContext } from "@/lib/auth/context";
+import { userInitial } from "@/lib/auth/initials";
 import { ADMIN_NAV, PRIMARY_NAV, type NavItem } from "./nav-config";
 import { cn } from "@/lib/utils";
 import {
@@ -40,17 +41,6 @@ const ICONS: Record<NavItem["iconName"], LucideIcon> = {
 function isActive(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
   return pathname === href || pathname.startsWith(`${href}/`);
-}
-
-/**
- * Single user-initial derived from the email local-part (e.g.
- * `christian@aivena.es` → "C"). The user pin's avatar represents the OPERATOR,
- * not the agency — the agency name is shown as the subtitle line beneath.
- */
-function userInitialFromEmail(email: string): string {
-  const local = (email.split("@")[0] ?? "").trim();
-  if (!local) return "?";
-  return local.charAt(0).toUpperCase();
 }
 
 function NavLink({
@@ -128,7 +118,7 @@ export function Sidebar({
 
   const active = ctx.activeAgency;
   const showSwitcher = ctx.memberships.length > 1 || ctx.isAivenaStaff;
-  const userInitial = userInitialFromEmail(ctx.email);
+  const initial = userInitial(ctx);
   const userLabel = ctx.email;
   const subLabel = active?.agency.displayName ?? tBar("noActiveAgency");
 
@@ -191,7 +181,7 @@ export function Sidebar({
             aria-label={tBar("userMenu")}
           >
             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-foreground text-[12px] font-semibold text-background">
-              {userInitial}
+              {initial}
             </span>
             <span className="flex min-w-0 flex-1 flex-col leading-tight">
               <span className="truncate text-[12.5px] font-semibold text-foreground">

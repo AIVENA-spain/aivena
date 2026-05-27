@@ -1,17 +1,15 @@
 {
   "nav": {
     "overview": "Overview",
-    "approvals": "Approvals",
-    "leads": "Leads",
     "inbox": "Inbox",
-    "properties": "Properties",
-    "tasks": "Tasks",
-    "voice": "Voice",
-    "ads": "Ads",
-    "team": "Team",
+    "performance": "Performance",
+    "content": "Content",
     "settings": "Settings",
     "adminSectionLabel": "AIVENA Admin",
-    "allAgencies": "All Agencies"
+    "allAgencies": "All Agencies",
+    "brandName": "AIVENA",
+    "brandSubtitle": "AI real estate",
+    "soonBadge": "Soon"
   },
   "topbar": {
     "switchAgency": "Switch agency",
@@ -19,21 +17,164 @@
     "noActiveAgency": "No active agency",
     "userMenu": "User menu",
     "signedInAs": "Signed in as",
-    "logOut": "Log out"
+    "logOut": "Log out",
+    "greetingMorning": "Good morning",
+    "greetingAfternoon": "Good afternoon",
+    "greetingEvening": "Good evening",
+    "notificationsLabel": "Notifications",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "themeSystem": "System",
+    "themeLabel": "Theme",
+    "searchPlaceholder": "Search leads, conversations…"
   },
   "overview": {
-    "welcomeBack": "Welcome back",
-    "activeAgencyDescription": "Your active agency context. All data on this dashboard is scoped to this agency.",
-    "fields": {
-      "role": "Role",
-      "region": "Region",
-      "languages": "Languages"
+    "kpi": {
+      "newLeads": "New Leads",
+      "needsAction": "Needs Action",
+      "hotLeads": "Hot Leads",
+      "newSellers": "New Sellers",
+      "followupsSent": "Follow-ups Sent",
+      "callsRecovered": "Calls Recovered",
+      "vsLast7Days": "vs last 7 days",
+      "soon": "Soon",
+      "sellersTeaser": "starts when valuation form is live",
+      "callsTeaser": "starts when voice is live"
     },
-    "stats": {
-      "newLeadsToday": "New leads today",
-      "awaitingApproval": "Awaiting approval",
-      "activeConversations": "Active conversations",
-      "responseTime": "Response time"
+    "needsAction": {
+      "title": "Needs Action · Ready Replies",
+      "empty": "No replies waiting right now.",
+      "columnLead": "Lead",
+      "columnType": "Type",
+      "columnArea": "Area",
+      "columnSource": "Source",
+      "columnChannel": "Channel",
+      "columnStatus": "Status",
+      "columnReply": "AI suggested reply",
+      "leadTypeDefault": "Buyer",
+      "aiTag": "AI"
+    },
+    "panel": {
+      "selectALead": "Select a lead to see details.",
+      "noSelection": "Nothing selected",
+      "fields": {
+        "type": "Type",
+        "area": "Area",
+        "source": "Source",
+        "language": "Language",
+        "channel": "Channel",
+        "temperature": "Temperature",
+        "score": "Score",
+        "status": "Status"
+      },
+      "aiSuggested": "AI suggested reply",
+      "subject": "Subject",
+      "noSubject": "(no subject)",
+      "send": "Send",
+      "copy": "Copy",
+      "copied": "Copied",
+      "openInInbox": "Open in Inbox"
+    },
+    "activity": {
+      "title": "Recent Activity",
+      "empty": "No recent activity yet.",
+      "viewAll": "View all activity →",
+      "showLess": "Show less"
+    },
+    "network": {
+      "title": "Your Network",
+      "comingSoon": "Coming soon",
+      "teaserTitle": "Work with nearby agencies",
+      "teaser": "Opt-in cooperation with other AIVENA agencies — share buyers or listings on agreed terms, and split commission. Coming soon."
+    }
+  },
+  "inbox": {
+    "tabs": {
+      "buyers": "Buyers",
+      "sellers": "Sellers",
+      "network": "Network",
+      "soon": "Soon"
+    },
+    "view": {
+      "conversation": "Conversation",
+      "cards": "Cards"
+    },
+    "buyers": {
+      "emptyConvo": "You're all caught up — no replies waiting.",
+      "emptyCards": "You're all caught up — no replies waiting.",
+      "listLanguageUnknown": "—"
+    },
+    "thread": {
+      "noThread": "No prior conversation yet — this will be the first contact.",
+      "subline": "{area} · {language}",
+      "inboundMeta": "Inbound · {time}",
+      "outboundMeta": "Outbound · {time}"
+    },
+    "summary": {
+      "h": "Lead summary",
+      "area": "Area",
+      "score": "Score",
+      "scoreLine": "{score} · {temperature}",
+      "source": "Source",
+      "language": "Language",
+      "channel": "Channel"
+    },
+    "reply": {
+      "aiSuggested": "AI Suggested Reply",
+      "subjectLabel": "Subject",
+      "bodyLabel": "Body",
+      "send": "Send",
+      "sending": "Sending…",
+      "edit": "Edit",
+      "editing": "Editing",
+      "dismiss": "Dismiss",
+      "dismissing": "Dismissing…",
+      "confirmDismiss": "Confirm dismiss",
+      "cancel": "Cancel",
+      "dismissReasonLabel": "Dismiss reason",
+      "dismissReasonPlaceholder": "Why are you dismissing this draft?"
+    },
+    "sellers": {
+      "emptyTitleConvo": "No seller conversations yet",
+      "emptyTitleCards": "No seller leads to show as cards yet",
+      "emptyText": "Seller leads arrive automatically once your valuation form is live — when a homeowner asks what their property is worth, they appear here.",
+      "emptyTextCards": "Once your valuation form is live, each seller lead appears here as a quick-scan card.",
+      "setupButton": "Set up valuation form"
+    },
+    "network": {
+      "banner": "⚠ Preview · Sample data · Coming soon",
+      "subFind": "Find matches",
+      "subConvos": "Conversations",
+      "lookingForTitle": "Looking for: sample buyer",
+      "lookingForSubtitle": "Wants a 2-bed near Orihuela Costa · under €250k · NO",
+      "lookActionBtn": "Look for network matches",
+      "matchesCount": "3 LISTINGS FROM YOUR NETWORK MATCH THIS BUYER",
+      "heldBy": "Held by",
+      "price": "Price",
+      "beds": "Beds",
+      "requestContact": "Request contact",
+      "privacy": "Your buyer's details stay private. The other agency only sees that an agency wants to discuss their listing — never the buyer.",
+      "convoMeta": "Sample · network",
+      "agencySplit": "Splits are agreed between agencies — AIVENA takes no part in commission.",
+      "listingHead": "Listing",
+      "property": "Property",
+      "agency": "Agency",
+      "split": "Split",
+      "splitValue": "agency-to-agency"
+    },
+    "wizard": {
+      "title": "Set up your valuation form",
+      "subtitle": "A multilingual \"what's my home worth?\" form for your website — it captures sellers automatically.",
+      "langLabel": "Which languages should the form offer?",
+      "areasLabel": "Which areas do you cover?",
+      "areasPlaceholder": "e.g. Torrevieja, Orihuela Costa, La Zenia, Punta Prima",
+      "brandingLabel": "Match your branding",
+      "brandingNote": "Using your agency logo & brand colour",
+      "embedLabel": "Embed on your website",
+      "embedNote": "Paste this into your site, or send it to your web person.",
+      "cancel": "Cancel",
+      "activate": "Activate valuation form",
+      "close": "Close"
     }
   },
   "approvals": {

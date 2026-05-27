@@ -1,158 +1,115 @@
 "use client";
 
-import { ChevronsUpDown, LogOut, ShieldCheck, UserCircle2 } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { Bell, CalendarDays, Search } from "lucide-react";
 
-import { logoutAction } from "@/app/(auth)/actions";
 import type { UserContext } from "@/lib/auth/context";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { PRIMARY_NAV, ADMIN_NAV } from "./nav-config";
+import { ThemeSwitcher } from "./theme-switcher";
 
-const triggerClass =
-  "flex h-9 items-center gap-2 rounded-md px-2 text-left font-normal hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
-
-function StatusBadge({ status }: { status: string }) {
-  const tone =
-    status === "active"
-      ? "bg-green-500/15 text-green-700 dark:text-green-300 ring-green-500/30"
-      : status === "trial" || status === "pilot"
-        ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 ring-amber-500/30"
-        : "bg-muted text-muted-foreground ring-border";
-  return (
-    <span
-      className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ring-1 ring-inset ${tone}`}
-    >
-      {status}
-    </span>
-  );
+function activeNavTKey(
+  pathname: string,
+): (typeof PRIMARY_NAV)[number]["tKey"] | "allAgencies" | "overview" {
+  const all = [...PRIMARY_NAV, ...ADMIN_NAV];
+  // Longest-prefix match so /approvals/:id resolves to the inbox item.
+  const sorted = [...all].sort((a, b) => b.href.length - a.href.length);
+  for (const item of sorted) {
+    if (item.href === "/") {
+      if (pathname === "/") return item.tKey;
+    } else if (pathname === item.href || pathname.startsWith(`${item.href}/`)) {
+      return item.tKey;
+    }
+  }
+  return "overview";
 }
 
-export function Topbar({ ctx }: { ctx: UserContext }) {
-  const t = useTranslations("topbar");
-  const active = ctx.activeAgency;
-  const showSwitcher = ctx.memberships.length > 1 || ctx.isAivenaStaff;
+export function Topbar({
+  ctx,
+  greetingKey,
+  dateLabel,
+}: {
+  ctx: UserContext;
+  /** Pre-computed on the server so client hydration matches. */
+  greetingKey: "greetingMorning" | "greetingAfternoon" | "greetingEvening";
+  dateLabel: string;
+}) {
+  const pathname = usePathname();
+  const tNav = useTranslations("nav");
+  const tBar = useTranslations("topbar");
+
+  const titleKey = activeNavTKey(pathname);
+  const title = tNav(titleKey);
+  const agencyName = ctx.activeAgency?.agency.displayName ?? "";
+  const firstNameRaw = ctx.email.split("@")[0]?.split(".")[0] ?? "";
+  const firstName = firstNameRaw
+    ? firstNameRaw.charAt(0).toUpperCase() + firstNameRaw.slice(1)
+    : "";
+  const greeting = tBar(greetingKey);
 
   return (
-    <header className="flex h-14 items-center justify-between border-b border-border bg-card px-6">
-      <div className="flex min-w-0 items-center gap-3">
-        {active ? (
-          showSwitcher ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger className={triggerClass}>
-                <AgencyLabel
-                  name={active.agency.displayName}
-                  region={active.agency.region}
-                  status={active.agency.status}
-                />
-                <ChevronsUpDown
-                  className="h-3.5 w-3.5 text-muted-foreground"
-                  aria-hidden
-                />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-72">
-                <DropdownMenuLabel className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  {t("switchAgency")}
-                </DropdownMenuLabel>
-                {ctx.memberships.map((m) => (
-                  <DropdownMenuItem
-                    key={m.agencyId}
-                    className="flex flex-col items-start gap-0.5 py-2"
-                    disabled
-                  >
-                    <span className="text-sm font-medium text-foreground">
-                      {m.agency.displayName}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      {m.role} · {m.agency.region ?? "—"}
-                    </span>
-                  </DropdownMenuItem>
-                ))}
-                {ctx.isAivenaStaff ? (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem disabled className="gap-2">
-                      <ShieldCheck className="h-4 w-4" aria-hidden />
-                      {t("allAgenciesAdmin")}
-                    </DropdownMenuItem>
-                  </>
-                ) : null}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <div className="px-2">
-              <AgencyLabel
-                name={active.agency.displayName}
-                region={active.agency.region}
-                status={active.agency.status}
-              />
-            </div>
-          )
-        ) : (
-          <span className="px-2 text-sm text-muted-foreground">
-            {t("noActiveAgency")}
-          </span>
-        )}
+    <header className="flex h-16 items-center gap-3 border-b border-border bg-card px-6">
+      {/* Title + subtitle */}
+      <div className="flex min-w-0 flex-col leading-tight">
+        <h1 className="text-[19px] font-bold tracking-[-0.02em] text-foreground">
+          {title}
+        </h1>
+        <p className="truncate text-[12.5px] text-muted-foreground">
+          {greeting}
+          {firstName ? `, ${firstName}` : ""} 👋
+          {agencyName ? ` — ${agencyName}` : ""}
+        </p>
       </div>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger className={triggerClass} aria-label={t("userMenu")}>
-          <UserCircle2
-            className="h-5 w-5 text-muted-foreground"
-            aria-hidden
-          />
-          <span className="hidden text-sm text-foreground sm:inline">
-            {ctx.email}
-          </span>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-64">
-          <DropdownMenuLabel className="flex flex-col gap-0.5">
-            <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-              {t("signedInAs")}
-            </span>
-            <span className="truncate text-sm font-medium text-foreground">
-              {ctx.email}
-            </span>
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <form action={logoutAction}>
-            <button
-              type="submit"
-              className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-foreground hover:bg-muted"
-            >
-              <LogOut className="h-4 w-4" aria-hidden />
-              {t("logOut")}
-            </button>
-          </form>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </header>
-  );
-}
+      {/* Right cluster */}
+      <div className="ml-auto flex items-center gap-2">
+        {/*
+          Global search — visual only at this step. The form has no action
+          and submission is a no-op; wiring (typeahead, scope to active
+          agency) lands in a later step per the design plan.
+        */}
+        <form
+          role="search"
+          onSubmit={(e) => e.preventDefault()}
+          className="hidden lg:block"
+        >
+          <label className="relative block">
+            <span className="sr-only">{tBar("searchPlaceholder")}</span>
+            <Search
+              className="pointer-events-none absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
+              aria-hidden
+            />
+            <input
+              type="search"
+              autoComplete="off"
+              spellCheck={false}
+              placeholder={tBar("searchPlaceholder")}
+              className="h-9 w-64 rounded-lg border border-border bg-card pl-8 pr-3 text-[12.5px] text-foreground shadow-soft placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            />
+          </label>
+        </form>
 
-function AgencyLabel({
-  name,
-  region,
-  status,
-}: {
-  name: string;
-  region: string | null;
-  status: string;
-}) {
-  return (
-    <span className="flex min-w-0 items-center gap-2">
-      <span className="truncate text-sm font-medium text-foreground">
-        {name}
-      </span>
-      {region ? (
-        <span className="text-xs text-muted-foreground">· {region}</span>
-      ) : null}
-      <StatusBadge status={status} />
-    </span>
+        <div className="hidden items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-2 text-[12px] text-muted-foreground shadow-soft sm:flex">
+          <CalendarDays className="h-3.5 w-3.5" aria-hidden />
+          <span>{dateLabel}</span>
+        </div>
+
+        <ThemeSwitcher />
+
+        {/*
+          Notification bell — visual only at Phase 1. The unread count is a
+          // DATA-SEAM: bind to <notifications> read contract from Vega when ready.
+          We deliberately do NOT show a fabricated badge.
+        */}
+        <button
+          type="button"
+          aria-label={tBar("notificationsLabel")}
+          disabled
+          className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground shadow-soft transition-colors hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <Bell className="h-4 w-4" aria-hidden strokeWidth={1.7} />
+        </button>
+      </div>
+    </header>
   );
 }

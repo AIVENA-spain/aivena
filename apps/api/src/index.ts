@@ -9,6 +9,7 @@ import { authMiddleware } from './middleware/auth';
 import { agencyContextMiddleware } from './middleware/agency-context';
 import { whatsappSignatureMiddleware, twilioSignatureMiddleware } from './middleware/webhook-signature';
 import meRoute from './routes/me';
+import overviewRoute from './routes/overview';
 import tasksRoute from './routes/tasks';
 
 Sentry.init({
@@ -45,6 +46,7 @@ app.use('/api/*', authMiddleware);
 app.use('/api/*', agencyContextMiddleware);
 
 app.route('/api/v1/me', meRoute);
+app.route('/api/v1/overview', overviewRoute);
 app.route('/api/v1/tasks', tasksRoute);
 
 // Webhook signature validation — provider-specific.

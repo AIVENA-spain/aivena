@@ -80,3 +80,60 @@ export type ApproveResponse = {
   finalBody: string | null;
   wasEdited: boolean;
 };
+
+// ---- Overview ---------------------------------------------------------------
+
+export type KpiPoint = {
+  value: number;
+  prev: number;
+  delta: number;
+};
+export type KpiPointInTime = { value: number; point_in_time: true };
+export type KpiPreview = {
+  value: number;
+  prev?: number;
+  delta?: number;
+  pilot2_preview: true;
+};
+
+export type OverviewKpisResponse = {
+  period_days: number;
+  as_of: string;
+  new_buyers: KpiPoint;
+  followups_sent: KpiPoint;
+  new_sellers: KpiPreview;
+  needs_you: KpiPointInTime;
+  hot_leads: KpiPointInTime;
+};
+
+export type NeedsYouRow = {
+  taskId: string;
+  leadId: string;
+  fullName: string | null;
+  leadType: string | null;
+  area: string | null;
+  source: string | null;
+  channel: string | null;
+  language: string | null;
+  leadStatus: string | null;
+  temperature: string | null;
+  score: number | null;
+  aiReplySubject: string | null;
+  aiReplyBody: string | null;
+  priority: string;
+  taskCreatedAt: string;
+};
+
+export type NeedsYouResponse = { rows: NeedsYouRow[] };
+
+export type ActivityRow = {
+  eventId: string;
+  leadId: string | null;
+  fullName: string | null;
+  eventType: string;
+  label: string;
+  channel: string | null;
+  occurredAt: string;
+};
+
+export type ActivityResponse = { rows: ActivityRow[] };

@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -197,41 +198,51 @@ export function Sidebar({
             />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" side="top" className="w-60">
-            <DropdownMenuLabel className="flex flex-col gap-0.5">
-              <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                {tBar("signedInAs")}
-              </span>
-              <span className="truncate text-sm font-medium text-foreground">
-                {ctx.email}
-              </span>
-            </DropdownMenuLabel>
+            {/*
+             * Each DropdownMenuLabel must live inside a DropdownMenuGroup —
+             * Base UI's GroupLabel reads from MenuGroupContext and throws at
+             * runtime if it is missing. (Discovered via the click-crash bug
+             * "MenuGroupContext is missing." — 2026-05-27.)
+             */}
+            <DropdownMenuGroup>
+              <DropdownMenuLabel className="flex flex-col gap-0.5">
+                <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                  {tBar("signedInAs")}
+                </span>
+                <span className="truncate text-sm font-medium text-foreground">
+                  {ctx.email}
+                </span>
+              </DropdownMenuLabel>
+            </DropdownMenuGroup>
             {showSwitcher ? (
               <>
                 <DropdownMenuSeparator />
-                <DropdownMenuLabel className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                  {tBar("switchAgency")}
-                </DropdownMenuLabel>
-                {ctx.memberships.map((m) => (
-                  <DropdownMenuItem
-                    key={m.agencyId}
-                    className="flex flex-col items-start gap-0.5 py-2"
-                    disabled
-                  >
-                    <span className="text-sm font-medium text-foreground">
-                      {m.agency.displayName}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      {m.role}
-                      {m.agency.region ? ` · ${m.agency.region}` : ""}
-                    </span>
-                  </DropdownMenuItem>
-                ))}
-                {ctx.isAivenaStaff ? (
-                  <DropdownMenuItem disabled className="gap-2">
-                    <Shield className="h-4 w-4" aria-hidden />
-                    {tBar("allAgenciesAdmin")}
-                  </DropdownMenuItem>
-                ) : null}
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                    {tBar("switchAgency")}
+                  </DropdownMenuLabel>
+                  {ctx.memberships.map((m) => (
+                    <DropdownMenuItem
+                      key={m.agencyId}
+                      className="flex flex-col items-start gap-0.5 py-2"
+                      disabled
+                    >
+                      <span className="text-sm font-medium text-foreground">
+                        {m.agency.displayName}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {m.role}
+                        {m.agency.region ? ` · ${m.agency.region}` : ""}
+                      </span>
+                    </DropdownMenuItem>
+                  ))}
+                  {ctx.isAivenaStaff ? (
+                    <DropdownMenuItem disabled className="gap-2">
+                      <Shield className="h-4 w-4" aria-hidden />
+                      {tBar("allAgenciesAdmin")}
+                    </DropdownMenuItem>
+                  ) : null}
+                </DropdownMenuGroup>
               </>
             ) : null}
             <DropdownMenuSeparator />

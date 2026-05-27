@@ -28,15 +28,24 @@ export function Topbar({
   ctx,
   greetingKey,
   dateLabel,
+  inboxCount,
 }: {
   ctx: UserContext;
   /** Pre-computed on the server so client hydration matches. */
   greetingKey: "greetingMorning" | "greetingAfternoon" | "greetingEvening";
   dateLabel: string;
+  /**
+   * Same number the sidebar's Inbox badge uses — fetched once on the server
+   * in (app)/layout.tsx and threaded into both consumers. `null` when the
+   * fetch failed; the subtitle then falls back to the greeting line rather
+   * than lying with a fake count or zero state.
+   */
+  inboxCount: number | null;
 }) {
   const pathname = usePathname();
   const tNav = useTranslations("nav");
   const tBar = useTranslations("topbar");
+  const tRoot = useTranslations();
 
   const titleKey = activeNavTKey(pathname);
   const title = tNav(titleKey);
@@ -47,6 +56,28 @@ export function Topbar({
     : "";
   const greeting = tBar(greetingKey);
 
+  // Per-route topbar subline. `/` keeps the time-of-day greeting + agency
+  // name. Other routes get a fixed (or count-bearing) descriptor. Routes
+  // without a spec yet — /admin, /sellers, /network, /voice, future /buyers,
+  // the /inbox stub — fall back to the greeting; no fabricated copy.
+  let subtitle: string | null;
+  if (pathname.startsWith("/approvals")) {
+    subtitle =
+      inboxCount === null
+        ? null
+        : inboxCount === 0
+          ? tRoot("approvals.subtitleZero")
+          : tRoot("approvals.subtitle", { n: inboxCount });
+  } else if (pathname.startsWith("/performance")) {
+    subtitle = tRoot("performance.subtitle");
+  } else if (pathname.startsWith("/content")) {
+    subtitle = tRoot("content.subtitle");
+  } else if (pathname.startsWith("/settings")) {
+    subtitle = tRoot("settings.subtitle");
+  } else {
+    subtitle = null;
+  }
+
   return (
     <header className="flex h-16 items-center gap-3 border-b border-border bg-card px-6">
       {/* Title + subtitle */}
@@ -55,9 +86,13 @@ export function Topbar({
           {title}
         </h1>
         <p className="truncate text-[12.5px] text-muted-foreground">
-          {greeting}
-          {firstName ? `, ${firstName}` : ""} 👋
-          {agencyName ? ` — ${agencyName}` : ""}
+          {subtitle ?? (
+            <>
+              {greeting}
+              {firstName ? `, ${firstName}` : ""} 👋
+              {agencyName ? ` — ${agencyName}` : ""}
+            </>
+          )}
         </p>
       </div>
 

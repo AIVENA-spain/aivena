@@ -181,6 +181,8 @@
   },
   "approvals": {
     "title": "Approvals",
+    "subtitle": "{n} waiting · everything else auto-handled",
+    "subtitleZero": "You're all caught up · everything else auto-handled",
     "description": "AI-drafted replies awaiting human approval. Click a card to review, edit, and approve or dismiss.",
     "empty": "Nothing waiting. New AI drafts will appear here as buyers reply.",
     "approvedBanner": "Reply approved and queued for send.",
@@ -210,6 +212,7 @@
   },
   "settings": {
     "title": "Settings",
+    "subtitle": "Personal preferences",
     "personal": "Personal",
     "personalDescription": "Preferences for your account — these affect only you.",
     "dashboardLanguageLabel": "Dashboard language",
@@ -222,6 +225,12 @@
     "saving": "Saving…",
     "saved": "Saved",
     "saveFailed": "Couldn't save that change. Please try again — if it keeps happening, contact support."
+  },
+  "performance": {
+    "subtitle": "Reply volume, response time, lane mix"
+  },
+  "content": {
+    "subtitle": "AI-generated posts · drafted for your tone"
   },
   "stub": {
     "comingSoon": "Coming soon."

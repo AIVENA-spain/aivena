@@ -117,6 +117,50 @@ function scoreTemperatureLine(
   return "";
 }
 
+/** Per-conversation grouping metadata, keyed by the representative task id. */
+type ConvoGroupInfo = Map<string, { taskIds: string[]; pendingCount: number }>;
+
+/**
+ * Collapse multiple pending tasks for the same conversation into one row.
+ *
+ * The needs-you contract has no `conversation_id`, so we group by `leadId`
+ * (the explicit fallback). Each needs-you row is exactly one pending
+ * `suggested_reply` task, so a group's size IS its pending-task count. First
+ * occurrence wins, which preserves the server's sort order; the representative
+ * row's `taskId` is what the conversation pane loads when the row is clicked,
+ * while the full `taskIds` list lets the row stay highlighted even when the
+ * currently-selected task is a non-representative member of the group.
+ */
+function groupConversations(rows: NeedsYouRow[]): {
+  dedupedRows: NeedsYouRow[];
+  groupInfo: ConvoGroupInfo;
+} {
+  const order: string[] = [];
+  const repByKey = new Map<string, NeedsYouRow>();
+  const taskIdsByKey = new Map<string, string[]>();
+  for (const r of rows) {
+    const key = r.leadId;
+    const existing = taskIdsByKey.get(key);
+    if (existing) {
+      existing.push(r.taskId);
+    } else {
+      repByKey.set(key, r);
+      taskIdsByKey.set(key, [r.taskId]);
+      order.push(key);
+    }
+  }
+  const dedupedRows = order.map((k) => repByKey.get(k)!);
+  const groupInfo: ConvoGroupInfo = new Map();
+  for (const k of order) {
+    const taskIds = taskIdsByKey.get(k)!;
+    groupInfo.set(repByKey.get(k)!.taskId, {
+      taskIds,
+      pendingCount: taskIds.length,
+    });
+  }
+  return { dedupedRows, groupInfo };
+}
+
 // ---------- main workspace ----------
 
 export function InboxWorkspace({
@@ -132,6 +176,11 @@ export function InboxWorkspace({
 
   const buyers = useMemo(() => rows.filter((r) => !isSeller(r)), [rows]);
   const sellers = useMemo(() => rows.filter((r) => isSeller(r)), [rows]);
+
+  // Buyers stream is deduped by conversation (item D). Sellers/Network are
+  // intentionally left un-grouped per scope, so they pass their raw rows and
+  // no groupInfo below.
+  const buyerGroups = useMemo(() => groupConversations(buyers), [buyers]);
 
   // Default stream = first stream with items needing action; else buyers.
   const initialStream: Stream = (() => {
@@ -243,7 +292,8 @@ export function InboxWorkspace({
       {stream === "buyers" ? (
         view === "convo" ? (
           <BuyersConvoView
-            rows={buyers}
+            rows={buyerGroups.dedupedRows}
+            groupInfo={buyerGroups.groupInfo}
             selectedId={selectedBuyerId}
             onSelect={(id) => {
               setSelectedBuyerId(id);
@@ -259,7 +309,8 @@ export function InboxWorkspace({
           />
         ) : (
           <BuyersCardsView
-            rows={buyers}
+            rows={buyerGroups.dedupedRows}
+            groupInfo={buyerGroups.groupInfo}
             selectedId={selectedBuyerId}
             onCardClick={(id) => {
               setSelectedBuyerId(id);
@@ -438,6 +489,7 @@ function ViewToggleOpt({
 
 function BuyersConvoView({
   rows,
+  groupInfo,
   selectedId,
   onSelect,
   selected,
@@ -445,6 +497,8 @@ function BuyersConvoView({
   locale,
 }: {
   rows: NeedsYouRow[];
+  /** Present only for the buyers stream (item D). Undefined = no dedup/badge. */
+  groupInfo?: ConvoGroupInfo;
   selectedId: string | null;
   onSelect: (id: string) => void;
   selected: NeedsYouRow | null;
@@ -470,7 +524,11 @@ function BuyersConvoView({
       {/* Left: convo list */}
       <ul className="flex max-h-[640px] flex-col overflow-y-auto border-b border-border lg:border-b-0 lg:border-r">
         {rows.map((r) => {
-          const isSel = r.taskId === selectedId;
+          const group = groupInfo?.get(r.taskId);
+          const isSel = group
+            ? selectedId != null && group.taskIds.includes(selectedId)
+            : r.taskId === selectedId;
+          const pendingCount = group?.pendingCount ?? 1;
           return (
             <li key={r.taskId}>
               <button
@@ -498,9 +556,16 @@ function BuyersConvoView({
                 <div className="truncate text-[11.5px] text-muted-foreground">
                   {r.aiReplyBody ?? "—"}
                 </div>
-                <div className="text-[10px] text-muted-foreground">
-                  {languageLabel(r.language)} ·{" "}
-                  <RelativeTime iso={r.taskCreatedAt} />
+                <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                  <span>
+                    {languageLabel(r.language)} ·{" "}
+                    <RelativeTime iso={r.taskCreatedAt} />
+                  </span>
+                  {pendingCount > 1 ? (
+                    <span className="rounded-full bg-muted px-1.5 py-[1px] font-mono text-[9px] font-medium text-muted-foreground">
+                      · {t("buyers.pendingBadge", { n: pendingCount })}
+                    </span>
+                  ) : null}
                 </div>
               </button>
             </li>
@@ -871,11 +936,14 @@ function SummaryField({ label, value }: { label: string; value: string }) {
 
 function BuyersCardsView({
   rows,
+  groupInfo,
   selectedId,
   onCardClick,
   locale,
 }: {
   rows: NeedsYouRow[];
+  /** Present only for the buyers stream (item D). Undefined = no dedup/badge. */
+  groupInfo?: ConvoGroupInfo;
   selectedId: string | null;
   onCardClick: (id: string) => void;
   locale: string;
@@ -896,14 +964,20 @@ function BuyersCardsView({
 
   return (
     <div className="grid grid-cols-1 gap-3.5 md:grid-cols-2 lg:grid-cols-3">
-      {rows.map((r) => (
+      {rows.map((r) => {
+        const group = groupInfo?.get(r.taskId);
+        const isSel = group
+          ? selectedId != null && group.taskIds.includes(selectedId)
+          : r.taskId === selectedId;
+        const pendingCount = group?.pendingCount ?? 1;
+        return (
         <button
           key={r.taskId}
           type="button"
           onClick={() => onCardClick(r.taskId)}
           className={cn(
             "group rounded-xl border bg-card p-4 text-left shadow-elevated transition-transform hover:-translate-y-0.5",
-            r.taskId === selectedId
+            isSel
               ? "border-brand ring-1 ring-brand/40"
               : "border-border",
           )}
@@ -926,9 +1000,15 @@ function BuyersCardsView({
                 className="font-mono text-[10px] text-muted-foreground"
               />
             </div>
+            {pendingCount > 1 ? (
+              <span className="ml-auto rounded-full bg-muted px-1.5 py-[1px] font-mono text-[9px] font-medium text-muted-foreground">
+                {t("pendingBadge", { n: pendingCount })}
+              </span>
+            ) : null}
             <span
               className={cn(
-                "ml-auto h-2 w-2 shrink-0 rounded-full",
+                "h-2 w-2 shrink-0 rounded-full",
+                pendingCount > 1 ? "" : "ml-auto",
                 temperatureDot(r.temperature),
               )}
               aria-hidden
@@ -939,7 +1019,8 @@ function BuyersCardsView({
           <CardKV label="Language" value={languageLabel(r.language)} />
           <CardKV label="Channel" value={r.channel ?? "—"} />
         </button>
-      ))}
+        );
+      })}
     </div>
   );
 }

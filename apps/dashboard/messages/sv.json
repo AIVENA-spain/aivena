@@ -106,6 +106,7 @@
       "emptyText": "AI-drafted replies appear here as buyers reply to your messages.",
       "emptyTitleCards": "You're all caught up",
       "emptyTextCards": "Each draft appears here as a quick-scan card once a buyer replies.",
+      "pendingBadge": "{n} pending",
       "listLanguageUnknown": "—"
     },
     "thread": {

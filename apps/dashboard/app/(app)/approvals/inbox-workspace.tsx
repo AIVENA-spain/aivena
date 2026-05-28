@@ -40,7 +40,7 @@ import {
 } from "@/app/(app)/approvals/[taskId]/actions";
 import { loadTaskDetailAction } from "./inbox-actions";
 import type {
-  NeedsYouRow,
+  InboxRow,
   TaskDetailResponse,
   ThreadMessage,
 } from "@/lib/api/types";
@@ -51,7 +51,7 @@ type Stream = "buyers" | "sellers" | "network";
 type View = "convo" | "cards";
 type NetSub = "find" | "convos";
 
-function isSeller(r: NeedsYouRow): boolean {
+function isSeller(r: InboxRow): boolean {
   return (r.leadType ?? "").toLowerCase() === "seller";
 }
 
@@ -107,7 +107,7 @@ function languageLabel(code: string | null): string {
 }
 
 function scoreTemperatureLine(
-  score: number | null,
+  score: number | null | undefined,
   temperature: string | null,
 ): string {
   const t = temperature ? temperature.replace("_", " ") : null;
@@ -131,12 +131,12 @@ type ConvoGroupInfo = Map<string, { taskIds: string[]; pendingCount: number }>;
  * while the full `taskIds` list lets the row stay highlighted even when the
  * currently-selected task is a non-representative member of the group.
  */
-function groupConversations(rows: NeedsYouRow[]): {
-  dedupedRows: NeedsYouRow[];
+function groupConversations(rows: InboxRow[]): {
+  dedupedRows: InboxRow[];
   groupInfo: ConvoGroupInfo;
 } {
   const order: string[] = [];
-  const repByKey = new Map<string, NeedsYouRow>();
+  const repByKey = new Map<string, InboxRow>();
   const taskIdsByKey = new Map<string, string[]>();
   for (const r of rows) {
     const key = r.leadId;
@@ -169,13 +169,27 @@ export function InboxWorkspace({
   initialTaskId,
 }: {
   locale: string;
-  rows: NeedsYouRow[];
+  rows: InboxRow[];
   initialTaskId?: string;
 }) {
   const t = useTranslations("inbox");
 
-  const buyers = useMemo(() => rows.filter((r) => !isSeller(r)), [rows]);
-  const sellers = useMemo(() => rows.filter((r) => isSeller(r)), [rows]);
+  // B scopes the visible set to the needs_you bucket so the row set matches
+  // the pre-switch behaviour while we move onto dashboard_inbox. C removes this
+  // filter (stay-visible) and adds the state badges that make handled
+  // conversations legible.
+  const visibleRows = useMemo(
+    () => rows.filter((r) => r.bucket === "needs_you"),
+    [rows],
+  );
+  const buyers = useMemo(
+    () => visibleRows.filter((r) => !isSeller(r)),
+    [visibleRows],
+  );
+  const sellers = useMemo(
+    () => visibleRows.filter((r) => isSeller(r)),
+    [visibleRows],
+  );
 
   // Buyers stream is deduped by conversation (item D). Sellers/Network are
   // intentionally left un-grouped per scope, so they pass their raw rows and
@@ -205,7 +219,7 @@ export function InboxWorkspace({
       ? initialTaskId
       : (buyers[0]?.taskId ?? sellers[0]?.taskId ?? null);
   const [selectedBuyerId, setSelectedBuyerId] = useState<string | null>(
-    isSeller(rows.find((r) => r.taskId === initialSelected) ?? ({} as NeedsYouRow))
+    isSeller(rows.find((r) => r.taskId === initialSelected) ?? ({} as InboxRow))
       ? (buyers[0]?.taskId ?? null)
       : initialSelected,
   );
@@ -496,12 +510,12 @@ function BuyersConvoView({
   threadEntry,
   locale,
 }: {
-  rows: NeedsYouRow[];
+  rows: InboxRow[];
   /** Present only for the buyers stream (item D). Undefined = no dedup/badge. */
   groupInfo?: ConvoGroupInfo;
   selectedId: string | null;
   onSelect: (id: string) => void;
-  selected: NeedsYouRow | null;
+  selected: InboxRow | null;
   threadEntry?: { status: "loading" | "ok" | "failed"; data?: TaskDetailResponse };
   locale: string;
 }) {
@@ -554,7 +568,7 @@ function BuyersConvoView({
                   />
                 </div>
                 <div className="truncate text-[11.5px] text-muted-foreground">
-                  {r.aiReplyBody ?? "—"}
+                  {r.latestInboundPreview ?? r.aiReplyBody ?? "—"}
                 </div>
                 <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
                   <span>
@@ -603,7 +617,7 @@ function ThreadAndReply({
   threadEntry,
   locale,
 }: {
-  lead: NeedsYouRow;
+  lead: InboxRow;
   threadEntry?: { status: "loading" | "ok" | "failed"; data?: TaskDetailResponse };
   locale: string;
 }) {
@@ -899,7 +913,7 @@ function ReplyZone({
 
 // ---------- summary pane ----------
 
-function LeadSummary({ lead }: { lead: NeedsYouRow }) {
+function LeadSummary({ lead }: { lead: InboxRow }) {
   const t = useTranslations("inbox.summary");
   const scoreLine = scoreTemperatureLine(lead.score, lead.temperature);
   return (
@@ -947,7 +961,7 @@ function BuyersCardsView({
   onCardClick,
   locale,
 }: {
-  rows: NeedsYouRow[];
+  rows: InboxRow[];
   /** Present only for the buyers stream (item D). Undefined = no dedup/badge. */
   groupInfo?: ConvoGroupInfo;
   selectedId: string | null;

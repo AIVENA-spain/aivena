@@ -56,6 +56,30 @@ type ActivityRow = {
   occurred_at: Date | string;
 };
 
+type DashboardInboxRow = {
+  task_id: string;
+  lead_id: string;
+  conversation_id: string | null;
+  full_name: string | null;
+  channel: string | null;
+  language: string | null;
+  temperature: string | null;
+  lead_status: string | null;
+  task_status: string | null;
+  bucket: string | null;
+  ai_reply_subject: string | null;
+  ai_reply_body: string | null;
+  priority: string;
+  created_at: Date | string;
+  handled_at: Date | string | null;
+  handled_by: string | null;
+  age_seconds: number | null;
+  latest_inbound_preview: string | null;
+  latest_inbound_at: Date | string | null;
+  last_outbound_kind: string | null;
+  last_outbound_at: Date | string | null;
+};
+
 route.get('/kpis', async (c) => {
   const tx = c.get('tx');
   const periodDays = clampInt(c.req.query('period_days'), 7, 1, 365);
@@ -103,6 +127,49 @@ route.get('/needs-you', async (c) => {
   } catch (err) {
     console.error('[/api/v1/overview/needs-you] RPC failed:', err);
     return c.json({ error: 'Failed to load needs-you' }, 500);
+  }
+});
+
+route.get('/inbox', async (c) => {
+  const tx = c.get('tx');
+  const limit = clampInt(c.req.query('limit'), 100, 1, 200);
+  const days = clampInt(c.req.query('days'), 30, 1, 365);
+
+  try {
+    const result = await tx.execute(sql`
+      SELECT * FROM dashboard_inbox(${limit}::int, ${days}::int)
+    `);
+    const rows = result as unknown as DashboardInboxRow[];
+    return c.json({
+      rows: rows.map((r) => ({
+        taskId: r.task_id,
+        leadId: r.lead_id,
+        conversationId: r.conversation_id,
+        fullName: r.full_name,
+        channel: r.channel,
+        language: r.language,
+        temperature: r.temperature,
+        leadStatus: r.lead_status,
+        taskStatus: r.task_status,
+        bucket: r.bucket,
+        aiReplySubject: r.ai_reply_subject,
+        aiReplyBody: r.ai_reply_body,
+        priority: r.priority,
+        // dashboard_inbox exposes the task's created_at as `created_at`; the
+        // dashboard keeps the `taskCreatedAt` name it already renders against.
+        taskCreatedAt: toIso(r.created_at) ?? '',
+        handledAt: toIso(r.handled_at),
+        handledBy: r.handled_by,
+        ageSeconds: r.age_seconds,
+        latestInboundPreview: r.latest_inbound_preview,
+        latestInboundAt: toIso(r.latest_inbound_at),
+        lastOutboundKind: r.last_outbound_kind,
+        lastOutboundAt: toIso(r.last_outbound_at),
+      })),
+    });
+  } catch (err) {
+    console.error('[/api/v1/overview/inbox] RPC failed:', err);
+    return c.json({ error: 'Failed to load inbox' }, 500);
   }
 });
 

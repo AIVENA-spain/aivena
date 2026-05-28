@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Fragment,
   useActionState,
   useCallback,
   useEffect,
@@ -188,7 +189,13 @@ function groupConversations(rows: InboxRow[]): {
       state: resolveConvoState(rep, pendingRows.length),
     });
   }
-  return { dedupedRows, groupInfo };
+  // Surface actionable conversations first, handled ones below. filter() is
+  // stable, so the server's recency order is preserved within each group.
+  const sorted = [
+    ...dedupedRows.filter((r) => groupInfo.get(r.taskId)!.state === "needsYou"),
+    ...dedupedRows.filter((r) => groupInfo.get(r.taskId)!.state !== "needsYou"),
+  ];
+  return { dedupedRows: sorted, groupInfo };
 }
 
 // ---------- main workspace ----------
@@ -211,10 +218,10 @@ export function InboxWorkspace({
   const buyers = useMemo(() => rows.filter((r) => !isSeller(r)), [rows]);
   const sellers = useMemo(() => rows.filter((r) => isSeller(r)), [rows]);
 
-  // Buyers stream is deduped by conversation. Sellers/Network are
-  // intentionally left un-grouped per scope, so they pass their raw rows and
-  // no groupInfo below.
+  // Both streams are deduped by conversation, ordered needs-you-first, and
+  // carry per-conversation state for the badges + the "Handled" divider.
   const buyerGroups = useMemo(() => groupConversations(buyers), [buyers]);
+  const sellerGroups = useMemo(() => groupConversations(sellers), [sellers]);
 
   // Buyers tab badge = conversations still needing the operator (not the raw
   // task-row count, which now includes handled history).
@@ -370,7 +377,8 @@ export function InboxWorkspace({
         sellers.length > 0 ? (
           view === "convo" ? (
             <BuyersConvoView
-              rows={sellers}
+              rows={sellerGroups.dedupedRows}
+              groupInfo={sellerGroups.groupInfo}
               selectedId={selectedSellerId}
               onSelect={(id) => {
                 setSelectedSellerId(id);
@@ -386,7 +394,8 @@ export function InboxWorkspace({
             />
           ) : (
             <BuyersCardsView
-              rows={sellers}
+              rows={sellerGroups.dedupedRows}
+              groupInfo={sellerGroups.groupInfo}
               selectedId={selectedSellerId}
               onCardClick={(id) => {
                 setSelectedSellerId(id);
@@ -587,11 +596,17 @@ function BuyersConvoView({
     );
   }
 
+  // Rows arrive needs-you-first; the divider marks where handled rows begin.
+  // Only shown when both groups are non-empty (index > 0 ⇒ ≥1 needs-you above).
+  const firstHandledIdx = groupInfo
+    ? rows.findIndex((r) => groupInfo.get(r.taskId)?.state !== "needsYou")
+    : -1;
+
   return (
     <div className="grid grid-cols-1 overflow-hidden rounded-xl border border-border bg-card shadow-elevated lg:grid-cols-[270px_minmax(0,1fr)_240px]">
       {/* Left: convo list */}
       <ul className="flex max-h-[640px] flex-col overflow-y-auto border-b border-border lg:border-b-0 lg:border-r">
-        {rows.map((r) => {
+        {rows.map((r, i) => {
           const group = groupInfo?.get(r.taskId);
           const isSel = group
             ? selectedId != null && group.taskIds.includes(selectedId)
@@ -600,6 +615,11 @@ function BuyersConvoView({
           const state = group?.state;
           return (
             <li key={r.taskId}>
+              {firstHandledIdx > 0 && i === firstHandledIdx ? (
+                <div className="border-b border-border bg-muted/30 px-4 py-1.5 font-mono text-[9.5px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                  {t("handledDivider")}
+                </div>
+              ) : null}
               <button
                 type="button"
                 onClick={() => onSelect(r.taskId)}
@@ -1027,6 +1047,7 @@ function BuyersCardsView({
   locale: string;
 }) {
   const t = useTranslations("inbox.buyers");
+  const tInbox = useTranslations("inbox");
 
   if (rows.length === 0) {
     return (
@@ -1040,9 +1061,13 @@ function BuyersCardsView({
     );
   }
 
+  const firstHandledIdx = groupInfo
+    ? rows.findIndex((r) => groupInfo.get(r.taskId)?.state !== "needsYou")
+    : -1;
+
   return (
     <div className="grid grid-cols-1 gap-3.5 md:grid-cols-2 lg:grid-cols-3">
-      {rows.map((r) => {
+      {rows.map((r, i) => {
         const group = groupInfo?.get(r.taskId);
         const isSel = group
           ? selectedId != null && group.taskIds.includes(selectedId)
@@ -1050,8 +1075,13 @@ function BuyersCardsView({
         const pendingCount = group?.pendingCount ?? 1;
         const state = group?.state;
         return (
+        <Fragment key={r.taskId}>
+        {firstHandledIdx > 0 && i === firstHandledIdx ? (
+          <div className="col-span-full px-1 pt-1 font-mono text-[9.5px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            {tInbox("handledDivider")}
+          </div>
+        ) : null}
         <button
-          key={r.taskId}
           type="button"
           onClick={() => onCardClick(r.taskId)}
           className={cn(
@@ -1100,6 +1130,7 @@ function BuyersCardsView({
           <CardKV label="Language" value={languageLabel(r.language)} />
           <CardKV label="Channel" value={r.channel ?? "—"} />
         </button>
+        </Fragment>
         );
       })}
     </div>

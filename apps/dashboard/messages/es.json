@@ -106,6 +106,7 @@
       "autoHandled": "Auto-handled",
       "waiting": "Waiting"
     },
+    "handledDivider": "Handled",
     "buyers": {
       "emptyConvo": "You're all caught up — no replies waiting.",
       "emptyTitleConvo": "You're all caught up",

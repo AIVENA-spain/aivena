@@ -241,7 +241,8 @@
     "comingSoon": "Coming soon."
   },
   "errors": {
-    "pageLoad": "Something went wrong loading this page. Please refresh — if it keeps happening, contact support.",
+    "pageLoad": "Something went wrong loading this — please refresh, and contact support if it keeps happening.",
+    "retry": "Try again",
     "approveFailed": "Something went wrong sending this reply. Please try again — if it keeps happening, contact support.",
     "dismissFailed": "Something went wrong dismissing this task. Please try again — if it keeps happening, contact support."
   }

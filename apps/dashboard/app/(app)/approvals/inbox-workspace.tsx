@@ -609,6 +609,7 @@ function ThreadAndReply({
 }) {
   const t = useTranslations("inbox");
   const tThread = useTranslations("inbox.thread");
+  const tErr = useTranslations("errors");
 
   const headSubline = `${lead.area ?? "—"} · ${languageLabel(lead.language)}`;
 
@@ -640,7 +641,7 @@ function ThreadAndReply({
           <ThreadSkeleton />
         ) : threadEntry.status === "failed" ? (
           <div className="rounded-md border border-border bg-muted/40 p-3 text-[12px] text-muted-foreground">
-            Couldn&apos;t load this thread.
+            {tErr("pageLoad")}
           </div>
         ) : threadEntry.data && threadEntry.data.thread.length > 0 ? (
           threadEntry.data.thread.map((m) => (

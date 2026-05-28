@@ -100,6 +100,12 @@
       "conversation": "Conversation",
       "cards": "Cards"
     },
+    "state": {
+      "needsYou": "Needs you",
+      "replied": "Replied",
+      "autoHandled": "Auto-handled",
+      "waiting": "Waiting"
+    },
     "buyers": {
       "emptyConvo": "You're all caught up — no replies waiting.",
       "emptyTitleConvo": "You're all caught up",

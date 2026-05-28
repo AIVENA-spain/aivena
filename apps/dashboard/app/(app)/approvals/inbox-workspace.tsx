@@ -117,45 +117,75 @@ function scoreTemperatureLine(
   return "";
 }
 
+/**
+ * Conversation state for the row badge. Precedence is encoded in
+ * `resolveConvoState`: anything needing the operator ("needsYou") wins over
+ * the handled states.
+ */
+type ConvoState = "needsYou" | "replied" | "autoHandled" | "waiting";
+
 /** Per-conversation grouping metadata, keyed by the representative task id. */
-type ConvoGroupInfo = Map<string, { taskIds: string[]; pendingCount: number }>;
+type ConvoGroupInfo = Map<
+  string,
+  { taskIds: string[]; pendingCount: number; state: ConvoState }
+>;
+
+function resolveConvoState(rep: InboxRow, pendingCount: number): ConvoState {
+  // A buyer reply that landed AFTER our last outbound needs attention again,
+  // even if no task is pending yet.
+  const newInboundAfterOutbound =
+    rep.latestInboundAt != null &&
+    rep.lastOutboundAt != null &&
+    new Date(rep.latestInboundAt).getTime() >
+      new Date(rep.lastOutboundAt).getTime();
+  if (pendingCount > 0 || newInboundAfterOutbound) return "needsYou";
+  if (rep.lastOutboundKind === "operator") return "replied";
+  if (rep.lastOutboundKind === "auto") return "autoHandled";
+  return "waiting";
+}
 
 /**
- * Collapse multiple pending tasks for the same conversation into one row.
+ * Collapse every task row of a conversation into one list row.
  *
- * The needs-you contract has no `conversation_id`, so we group by `leadId`
- * (the explicit fallback). Each needs-you row is exactly one pending
- * `suggested_reply` task, so a group's size IS its pending-task count. First
- * occurrence wins, which preserves the server's sort order; the representative
- * row's `taskId` is what the conversation pane loads when the row is clicked,
- * while the full `taskIds` list lets the row stay highlighted even when the
- * currently-selected task is a non-representative member of the group.
+ * Grouping key is `conversation_id` (falling back to `leadId` only if a row
+ * lacks one). `dashboard_inbox` returns one row per task across all buckets,
+ * so a conversation can contribute several rows (its pending task plus handled
+ * history); we keep exactly one. The representative is the first PENDING task
+ * if any (so clicking opens the actionable task), else the first row. First
+ * occurrence sets the group's position, preserving the server sort order.
+ *
+ * `pendingCount` counts only rows whose task is still pending (drives the
+ * "· N pending" badge), and `state` is the conversation's badge state. The
+ * full `taskIds` list lets the row stay highlighted when the selected task is
+ * a non-representative member of the group.
  */
 function groupConversations(rows: InboxRow[]): {
   dedupedRows: InboxRow[];
   groupInfo: ConvoGroupInfo;
 } {
   const order: string[] = [];
-  const repByKey = new Map<string, InboxRow>();
-  const taskIdsByKey = new Map<string, string[]>();
+  const rowsByKey = new Map<string, InboxRow[]>();
   for (const r of rows) {
-    const key = r.leadId;
-    const existing = taskIdsByKey.get(key);
+    const key = r.conversationId ?? r.leadId;
+    const existing = rowsByKey.get(key);
     if (existing) {
-      existing.push(r.taskId);
+      existing.push(r);
     } else {
-      repByKey.set(key, r);
-      taskIdsByKey.set(key, [r.taskId]);
+      rowsByKey.set(key, [r]);
       order.push(key);
     }
   }
-  const dedupedRows = order.map((k) => repByKey.get(k)!);
+  const dedupedRows: InboxRow[] = [];
   const groupInfo: ConvoGroupInfo = new Map();
   for (const k of order) {
-    const taskIds = taskIdsByKey.get(k)!;
-    groupInfo.set(repByKey.get(k)!.taskId, {
-      taskIds,
-      pendingCount: taskIds.length,
+    const groupRows = rowsByKey.get(k)!;
+    const pendingRows = groupRows.filter((r) => r.taskStatus === "pending");
+    const rep = pendingRows[0] ?? groupRows[0];
+    dedupedRows.push(rep);
+    groupInfo.set(rep.taskId, {
+      taskIds: groupRows.map((r) => r.taskId),
+      pendingCount: pendingRows.length,
+      state: resolveConvoState(rep, pendingRows.length),
     });
   }
   return { dedupedRows, groupInfo };
@@ -174,27 +204,27 @@ export function InboxWorkspace({
 }) {
   const t = useTranslations("inbox");
 
-  // B scopes the visible set to the needs_you bucket so the row set matches
-  // the pre-switch behaviour while we move onto dashboard_inbox. C removes this
-  // filter (stay-visible) and adds the state badges that make handled
-  // conversations legible.
-  const visibleRows = useMemo(
-    () => rows.filter((r) => r.bucket === "needs_you"),
-    [rows],
-  );
-  const buyers = useMemo(
-    () => visibleRows.filter((r) => !isSeller(r)),
-    [visibleRows],
-  );
-  const sellers = useMemo(
-    () => visibleRows.filter((r) => isSeller(r)),
-    [visibleRows],
-  );
+  // dashboard_inbox spans every bucket, so a conversation stays in the list
+  // after Approve & Send (its badge flips needs_you → Replied/Auto-handled)
+  // instead of vanishing. We show all buckets and let the per-row state badge
+  // carry the meaning.
+  const buyers = useMemo(() => rows.filter((r) => !isSeller(r)), [rows]);
+  const sellers = useMemo(() => rows.filter((r) => isSeller(r)), [rows]);
 
-  // Buyers stream is deduped by conversation (item D). Sellers/Network are
+  // Buyers stream is deduped by conversation. Sellers/Network are
   // intentionally left un-grouped per scope, so they pass their raw rows and
   // no groupInfo below.
   const buyerGroups = useMemo(() => groupConversations(buyers), [buyers]);
+
+  // Buyers tab badge = conversations still needing the operator (not the raw
+  // task-row count, which now includes handled history).
+  const buyerNeedsYouCount = useMemo(
+    () =>
+      buyerGroups.dedupedRows.filter(
+        (r) => buyerGroups.groupInfo.get(r.taskId)?.state === "needsYou",
+      ).length,
+    [buyerGroups],
+  );
 
   // Default stream = first stream with items needing action; else buyers.
   const initialStream: Stream = (() => {
@@ -273,7 +303,7 @@ export function InboxWorkspace({
         <StreamTab
           label={t("tabs.buyers")}
           active={stream === "buyers"}
-          badge={buyers.length || null}
+          badge={buyerNeedsYouCount || null}
           onClick={() => setStream("buyers")}
         />
         <StreamTab
@@ -499,6 +529,30 @@ function ViewToggleOpt({
   );
 }
 
+// ---------- conversation state badge ----------
+
+function StateBadge({ state }: { state: ConvoState }) {
+  const t = useTranslations("inbox.state");
+  // Signal green (brand) is reserved for the one state that needs the operator;
+  // the handled states stay neutral/muted so green stays a signal, not decor.
+  const tone: Record<ConvoState, string> = {
+    needsYou: "bg-brand-soft text-brand",
+    replied: "bg-muted text-foreground",
+    autoHandled: "bg-muted text-muted-foreground",
+    waiting: "bg-muted text-muted-foreground",
+  };
+  return (
+    <span
+      className={cn(
+        "shrink-0 rounded-full px-1.5 py-[1px] font-mono text-[9px] font-medium uppercase tracking-[0.03em]",
+        tone[state],
+      )}
+    >
+      {t(state)}
+    </span>
+  );
+}
+
 // ---------- buyers convo view (3-pane) ----------
 
 function BuyersConvoView({
@@ -543,6 +597,7 @@ function BuyersConvoView({
             ? selectedId != null && group.taskIds.includes(selectedId)
             : r.taskId === selectedId;
           const pendingCount = group?.pendingCount ?? 1;
+          const state = group?.state;
           return (
             <li key={r.taskId}>
               <button
@@ -559,13 +614,16 @@ function BuyersConvoView({
                   <span className="truncate text-[13px] font-semibold text-foreground">
                     {r.fullName ?? "Unknown"}
                   </span>
-                  <span
-                    className={cn(
-                      "ml-auto h-1.5 w-1.5 shrink-0 rounded-full",
-                      temperatureDot(r.temperature),
-                    )}
-                    aria-hidden
-                  />
+                  <div className="ml-auto flex shrink-0 items-center gap-1.5">
+                    {state ? <StateBadge state={state} /> : null}
+                    <span
+                      className={cn(
+                        "h-1.5 w-1.5 shrink-0 rounded-full",
+                        temperatureDot(r.temperature),
+                      )}
+                      aria-hidden
+                    />
+                  </div>
                 </div>
                 <div className="truncate text-[11.5px] text-muted-foreground">
                   {r.latestInboundPreview ?? r.aiReplyBody ?? "—"}
@@ -990,6 +1048,7 @@ function BuyersCardsView({
           ? selectedId != null && group.taskIds.includes(selectedId)
           : r.taskId === selectedId;
         const pendingCount = group?.pendingCount ?? 1;
+        const state = group?.state;
         return (
         <button
           key={r.taskId}
@@ -1020,19 +1079,21 @@ function BuyersCardsView({
                 className="font-mono text-[10px] text-muted-foreground"
               />
             </div>
-            {pendingCount > 1 ? (
-              <span className="ml-auto rounded-full bg-muted px-1.5 py-[1px] font-mono text-[9px] font-medium text-muted-foreground">
-                {t("pendingBadge", { n: pendingCount })}
-              </span>
-            ) : null}
-            <span
-              className={cn(
-                "h-2 w-2 shrink-0 rounded-full",
-                pendingCount > 1 ? "" : "ml-auto",
-                temperatureDot(r.temperature),
-              )}
-              aria-hidden
-            />
+            <div className="ml-auto flex shrink-0 items-center gap-1.5">
+              {state ? <StateBadge state={state} /> : null}
+              {pendingCount > 1 ? (
+                <span className="rounded-full bg-muted px-1.5 py-[1px] font-mono text-[9px] font-medium text-muted-foreground">
+                  {t("pendingBadge", { n: pendingCount })}
+                </span>
+              ) : null}
+              <span
+                className={cn(
+                  "h-2 w-2 shrink-0 rounded-full",
+                  temperatureDot(r.temperature),
+                )}
+                aria-hidden
+              />
+            </div>
           </div>
           <CardKV label="Area" value={r.area ?? "—"} />
           <CardKV label="Source" value={r.source ?? "—"} />

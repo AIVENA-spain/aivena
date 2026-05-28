@@ -48,6 +48,7 @@ type ThreadRow = {
   direction: string;
   message_type: string;
   content: string | null;
+  body_clean: string | null;
   created_at: Date | string;
 };
 
@@ -219,7 +220,7 @@ route.get('/:id', async (c) => {
   let thread: ThreadRow[] = [];
   if (r.conversation_id) {
     const threadResult = await tx.execute(sql`
-      SELECT id, direction, message_type, content, created_at
+      SELECT id, direction, message_type, content, body_clean, created_at
       FROM public.conversation_messages
       WHERE conversation_id::text = ${r.conversation_id}
       ORDER BY created_at ASC
@@ -246,6 +247,7 @@ route.get('/:id', async (c) => {
       direction: t.direction,
       messageType: t.message_type,
       content: t.content,
+      bodyClean: t.body_clean,
       createdAt: toIso(t.created_at),
     })),
   });

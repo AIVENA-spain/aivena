@@ -54,6 +54,8 @@ export type ThreadMessage = {
   direction: string;
   messageType: string;
   content: string | null;
+  /** Server-cleaned inbound body (quote chain / footer stripped at ingestion). */
+  bodyClean: string | null;
   createdAt: string;
 };
 

@@ -656,6 +656,7 @@ function ThreadAndReply({
                   direction: "inbound",
                   messageType: "first_contact",
                   content: threadEntry.data.originalMessage,
+                  bodyClean: null,
                   createdAt: lead.taskCreatedAt,
                 }}
                 locale={locale}
@@ -699,6 +700,10 @@ function ThreadBubble({
   t: ReturnType<typeof useTranslations<"inbox.thread">>;
 }) {
   const inbound = msg.direction === "inbound";
+  // Inbound bodies carry the buyer's quote chain / footer in `content`;
+  // `bodyClean` is the server-stripped version. Outbound is composed in the
+  // dashboard and never quoted, so it renders raw `content`.
+  const body = inbound ? (msg.bodyClean ?? msg.content) : msg.content;
   return (
     <div
       className={cn(
@@ -709,7 +714,7 @@ function ThreadBubble({
       )}
     >
       <div className="whitespace-pre-wrap">
-        {msg.content ?? <span className="italic opacity-70">(empty)</span>}
+        {body ?? <span className="italic opacity-70">(empty)</span>}
       </div>
       <div className="mt-1.5 font-mono text-[9.5px] text-muted-foreground">
         {inbound ? t("inbound") : t("outbound")} ·{" "}

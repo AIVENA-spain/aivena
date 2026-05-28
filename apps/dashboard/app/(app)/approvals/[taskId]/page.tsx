@@ -69,6 +69,9 @@ function ThreadEntry({
   bcp47Locale: string;
 }) {
   const inbound = msg.direction === "inbound";
+  // Inbound: prefer the server-cleaned body (quote chain / footer stripped);
+  // outbound is dashboard-composed and never quoted, so it renders raw content.
+  const body = inbound ? (msg.bodyClean ?? msg.content) : msg.content;
   return (
     <div
       className={
@@ -101,7 +104,7 @@ function ThreadEntry({
           (inbound ? "text-foreground" : "text-background")
         }
       >
-        {msg.content ?? <span className="italic opacity-70">{emptyLabel}</span>}
+        {body ?? <span className="italic opacity-70">{emptyLabel}</span>}
       </div>
     </div>
   );

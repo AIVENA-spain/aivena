@@ -78,6 +78,10 @@ type DashboardInboxRow = {
   latest_inbound_at: Date | string | null;
   last_outbound_kind: string | null;
   last_outbound_at: Date | string | null;
+  lead_type: string | null;
+  area: string | null;
+  source: string | null;
+  score: number | null;
 };
 
 route.get('/kpis', async (c) => {
@@ -165,6 +169,10 @@ route.get('/inbox', async (c) => {
         latestInboundAt: toIso(r.latest_inbound_at),
         lastOutboundKind: r.last_outbound_kind,
         lastOutboundAt: toIso(r.last_outbound_at),
+        leadType: r.lead_type,
+        area: r.area,
+        source: r.source,
+        score: r.score,
       })),
     });
   } catch (err) {

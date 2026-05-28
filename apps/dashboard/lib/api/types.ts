@@ -129,16 +129,11 @@ export type NeedsYouRow = {
 export type NeedsYouResponse = { rows: NeedsYouRow[] };
 
 /**
- * Inbox left-list row from the `dashboard_inbox` RPC. Unlike `dashboard_needs_you`
- * this spans every bucket (needs_you + handled_*), carries the conversation id,
- * the latest cleaned inbound preview, and the last-outbound classification used
- * for the state badges.
- *
- * NOTE: `dashboard_inbox` does NOT currently return `leadType`, `area`, `source`,
- * or `score`. They're kept optional here so the Buyers/Sellers split, the
- * 3-pane lead summary, and the cards degrade gracefully (Sellers tab stays
- * empty; missing summary fields show "—") rather than break. If those surfaces
- * must show real values again, Vega needs to add the columns to dashboard_inbox.
+ * Inbox left-list row from the `dashboard_inbox` RPC — a 25-field superset of
+ * `dashboard_needs_you`. Spans every bucket (needs_you + handled_*), carries
+ * the conversation id, the latest cleaned inbound preview, the last-outbound
+ * classification used for the state badges, plus the leadType/area/source/score
+ * fields that drive the Buyers/Sellers split and the 3-pane lead summary.
  */
 export type InboxRow = {
   taskId: string;
@@ -162,11 +157,10 @@ export type InboxRow = {
   latestInboundAt: string | null;
   lastOutboundKind: string | null;
   lastOutboundAt: string | null;
-  // Not provided by dashboard_inbox today — see note above.
-  leadType?: string | null;
-  area?: string | null;
-  source?: string | null;
-  score?: number | null;
+  leadType: string | null;
+  area: string | null;
+  source: string | null;
+  score: number | null;
 };
 
 export type InboxResponse = { rows: InboxRow[] };

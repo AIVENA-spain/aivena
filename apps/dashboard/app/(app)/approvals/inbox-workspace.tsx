@@ -107,7 +107,7 @@ function languageLabel(code: string | null): string {
 }
 
 function scoreTemperatureLine(
-  score: number | null | undefined,
+  score: number | null,
   temperature: string | null,
 ): string {
   const t = temperature ? temperature.replace("_", " ") : null;

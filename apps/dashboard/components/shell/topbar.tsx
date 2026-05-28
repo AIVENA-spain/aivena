@@ -1,5 +1,6 @@
 "use client";
 
+import { type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Bell, CalendarDays, Search } from "lucide-react";
@@ -60,7 +61,7 @@ export function Topbar({
   // name. Other routes get a fixed (or count-bearing) descriptor. Routes
   // without a spec yet — /admin, /sellers, /network, /voice, future /buyers,
   // the /inbox stub — fall back to the greeting; no fabricated copy.
-  let subtitle: string | null;
+  let subtitle: ReactNode = null;
   if (pathname.startsWith("/approvals")) {
     subtitle =
       inboxCount === null
@@ -71,7 +72,12 @@ export function Topbar({
   } else if (pathname.startsWith("/performance")) {
     subtitle = tRoot("performance.subtitle");
   } else if (pathname.startsWith("/content")) {
-    subtitle = tRoot("content.subtitle");
+    // content.subtitle carries an <em> fragment (Instrument Serif italic).
+    subtitle = tRoot.rich("content.subtitle", {
+      em: (chunks) => (
+        <em className="font-serif italic text-foreground">{chunks}</em>
+      ),
+    });
   } else if (pathname.startsWith("/settings")) {
     subtitle = tRoot("settings.subtitle");
   } else {

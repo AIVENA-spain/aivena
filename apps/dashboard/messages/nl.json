@@ -242,7 +242,35 @@
     "subtitle": "Reply volume, response time, lane mix"
   },
   "content": {
-    "subtitle": "AI-generated posts · drafted for your tone"
+    "subtitle": "AI-generated posts & ad creative — <em>drafted in your voice</em>, ready when you are",
+    "bannerLabel": "PREVIEW · SAMPLE DATA · COMING SOON",
+    "bannerNote": "part of the Generate pillar",
+    "draftsHeading": "Recent drafts",
+    "draftsNote": "3 samples · not published",
+    "sampleTag": "SAMPLE",
+    "draftedInVoice": "Drafted in your voice",
+    "generateHeading": "Generate a post or ad",
+    "generateBody": "Describe a listing or pick one from your CRM and AIVENA drafts the caption, the ad copy and the creative — <em>in your agency's voice, your colours, your buyer languages.</em> You review and post it yourself; AIVENA never touches your ad budget.",
+    "generateButton": "Generate",
+    "generateSoon": "SOON",
+    "explainer": "<strong>Content</strong> is the output of AIVENA's <strong>Generate</strong> pillar — AI-written social posts and ad creative the agency posts itself. This page is a clearly-watermarked preview of what's coming; nothing here is live or published yet.",
+    "cards": {
+      "instagram": {
+        "platform": "INSTAGRAM",
+        "title": "Beachfront villa · Torrevieja",
+        "body": "Stunning 3-bed villa steps from the sea 🌊 Private terrace, sea views, walkable to everything. Book a viewing today…"
+      },
+      "facebook": {
+        "platform": "FACEBOOK",
+        "title": "New listing · Orihuela Costa",
+        "body": "Just listed! Modern 2-bed apartment with sea views in Orihuela Costa. Community pool, parking, move-in ready…"
+      },
+      "metaAd": {
+        "platform": "META AD",
+        "title": "Valuation ad · lead magnet",
+        "body": "What's your Costa Blanca home worth? Free instant valuation, no obligation. Trusted by foreign owners across the coast…"
+      }
+    }
   },
   "stub": {
     "comingSoon": "Coming soon."

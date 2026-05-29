@@ -70,7 +70,12 @@ export function Topbar({
           ? tRoot("approvals.subtitleZero")
           : tRoot("approvals.subtitle", { n: inboxCount });
   } else if (pathname.startsWith("/performance")) {
-    subtitle = tRoot("performance.subtitle");
+    // performance.subtitle carries an <em> fragment (Instrument Serif italic).
+    subtitle = tRoot.rich("performance.subtitle", {
+      em: (chunks) => (
+        <em className="font-serif italic text-foreground">{chunks}</em>
+      ),
+    });
   } else if (pathname.startsWith("/content")) {
     // content.subtitle carries an <em> fragment (Instrument Serif italic).
     subtitle = tRoot.rich("content.subtitle", {

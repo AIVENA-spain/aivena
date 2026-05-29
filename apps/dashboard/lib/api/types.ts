@@ -176,3 +176,72 @@ export type ActivityRow = {
 };
 
 export type ActivityResponse = { rows: ActivityRow[] };
+
+// ---- Performance --------------------------------------------------------------
+
+export type PerfRange = {
+  from: string;
+  to: string;
+  days: number;
+  prior_from: string;
+  prior_to: string;
+};
+
+export type PerfLeadsAnswered = {
+  count: number;
+  total: number;
+  pct: number;
+  /** Percentage-point change vs prior week. Null when no prior baseline. */
+  delta_pp: number | null;
+  prior: { count: number; total: number; pct: number };
+};
+
+export type PerfAvgReply = {
+  median_seconds: number | null;
+  sample_n: number;
+  low_sample: boolean;
+  delta_seconds: number | null;
+  prior_median_seconds: number | null;
+  prior_sample_n: number;
+};
+
+export type PerfLanguages = {
+  distinct: number;
+  unknown_count: number;
+  list: string[];
+};
+
+export type PerfDailyAnswered = { date: string; answered_count: number };
+
+export type PerfWeeklyReplyTime = {
+  week_start: string;
+  median_seconds: number | null;
+  n: number;
+};
+
+export type PerfLanguageBreakdown = { language: string; count: number };
+
+/** Honest-empty gated metric (Voice not live in Pilot 1). */
+export type PerfGatedMetric = {
+  value: number | null;
+  no_source: boolean;
+  reason: string;
+};
+
+export type PerformanceResponse = {
+  range: PerfRange;
+  /** ISO timestamp the snapshot was computed. */
+  as_of: string;
+  /** IANA tz the day/week buckets are computed in (e.g. "Europe/Madrid"). */
+  timezone: string;
+  kpis: {
+    leads_answered: PerfLeadsAnswered;
+    avg_reply: PerfAvgReply;
+    languages: PerfLanguages;
+  };
+  daily_answered: PerfDailyAnswered[];
+  weekly_reply_time: PerfWeeklyReplyTime[];
+  language_breakdown: PerfLanguageBreakdown[];
+  recovered_leads: PerfGatedMetric;
+  missed_call_recovery: PerfGatedMetric;
+};

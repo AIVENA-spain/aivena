@@ -1,31 +1,38 @@
-import { Card, CardContent } from "@/components/ui/card";
+import { apiFetch, ApiError } from "@/lib/api/client";
+import { PageLoadError } from "@/components/shell/page-error";
+import type { PerformanceResponse } from "@/lib/api/types";
+
+import { PerformanceWorkspace } from "./performance-workspace";
 
 export const dynamic = "force-dynamic";
 
 /**
- * Performance — Pilot 1 view. Layout + chart land in phase (d). The actual
- * aggregates are data-seams awaiting Vega's read contract; until then this
- * page shows a clean loading/empty state, not fabricated metrics.
+ * Performance — honesty-first (Law 1: NOT a demo-allowed surface). Wired to the
+ * dashboard_performance RPC; renders real aggregates or honest empty/low-sample
+ * states, never illustration numbers. Server-rendered (pure display, no
+ * interactivity); the Daily/Weekly/Monthly toggle is intentionally omitted —
+ * range is fixed week-to-date for the pilot (the RPC is already param'd).
  */
-// DATA-SEAM: bind to <performance> read contract from Vega — expects
-//   { period, leadsAnsweredByWeek: [{ weekStart, count }], aggregates: {...} }
-export default function PerformancePage() {
-  return (
-    <div className="flex flex-col gap-6">
-      <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          Performance
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Reply volume, response time, and lane mix. Aggregates land when the
-          data contract is wired.
-        </p>
-      </header>
-      <Card>
-        <CardContent className="p-10 text-center text-sm text-muted-foreground">
-          Loading — Performance data isn&apos;t wired yet.
-        </CardContent>
-      </Card>
-    </div>
-  );
+export default async function PerformancePage() {
+  let data: PerformanceResponse | null = null;
+  let loadFailed = false;
+
+  try {
+    data = await apiFetch<PerformanceResponse>("/api/v1/overview/performance");
+  } catch (err) {
+    loadFailed = true;
+    const detail =
+      err instanceof ApiError
+        ? `${err.status} ${err.message}`
+        : err instanceof Error
+          ? err.message
+          : String(err);
+    console.error("[/performance] failed to load performance:", detail);
+  }
+
+  if (loadFailed || !data) {
+    return <PageLoadError />;
+  }
+
+  return <PerformanceWorkspace data={data} />;
 }

@@ -181,6 +181,25 @@ route.get('/inbox', async (c) => {
   }
 });
 
+route.get('/performance', async (c) => {
+  const tx = c.get('tx');
+  // Optional ISO date params passed straight through; omitted → the RPC
+  // defaults to current week-to-date (Mon→today, Europe/Madrid).
+  const from = c.req.query('from') ?? null;
+  const to = c.req.query('to') ?? null;
+
+  try {
+    const result = await tx.execute(sql`
+      SELECT dashboard_performance(${from}::date, ${to}::date) AS perf
+    `);
+    const rows = result as unknown as Array<{ perf: unknown }>;
+    return c.json(rows[0]?.perf ?? null);
+  } catch (err) {
+    console.error('[/api/v1/overview/performance] RPC failed:', err);
+    return c.json({ error: 'Failed to load performance' }, 500);
+  }
+});
+
 route.get('/recent-activity', async (c) => {
   const tx = c.get('tx');
   const limit = clampInt(c.req.query('limit'), 20, 1, 100);

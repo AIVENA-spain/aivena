@@ -15,19 +15,11 @@ import {
 } from "../section-actions";
 import { intlLocaleFor } from "@/lib/i18n/date-locale";
 import { useLocale } from "next-intl";
+import { emailInitial } from "@/lib/auth/initials";
 import type { InvitationRow, SettingsResponse, TeamMember } from "@/lib/api/types";
 
-function emailInitial(email: string): string {
-  const head = email.split("@")[0] ?? "";
-  const parts = head.split(/[.\-_]/).filter(Boolean);
-  if (parts.length >= 2) {
-    return (parts[0][0]! + parts[1][0]!).toUpperCase();
-  }
-  return (head[0] ?? "?").toUpperCase();
-}
-
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-type InviteRole = "owner" | "agent" | "viewer";
+type InviteRole = "agent" | "viewer";
 
 /**
  * Team & access — real members from team.members[], real pending invitations
@@ -258,49 +250,45 @@ function InviteModal({
   onCreated: (row: InvitationRow) => void;
 }) {
   const t = useTranslations("settings.team");
+  const tErr = useTranslations("settings.team.errors");
   const emailId = useId();
   const roleId = useId();
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<InviteRole>("agent");
-  const [confirmOwner, setConfirmOwner] = useState(false);
   const [pending, startPending] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
   const onSubmit = useCallback(() => {
     setError(null);
-    if (!EMAIL_RE.test(email.trim())) {
-      setError(t("modalEmailLabel"));
-      return;
-    }
-    if (role === "owner" && !confirmOwner) {
-      setConfirmOwner(true);
+    const trimmed = email.trim();
+    if (!EMAIL_RE.test(trimmed)) {
+      setError(tErr("invalidEmail"));
       return;
     }
     startPending(async () => {
-      const res = await createInvitationAction(email.trim(), role);
+      const res = await createInvitationAction(trimmed, role);
       if (res.ok) {
         // Build a local row so the list reflects the new invite without waiting
-        // for a hard refresh. The next page revalidation will replace it with
-        // the canonical contract row.
+        // for a hard refresh. The revalidatePath in the action will replace it
+        // with the canonical contract row on the next render.
         const now = new Date().toISOString();
-        const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
         onCreated({
           id: res.data.invitation_id,
-          email: email.trim(),
+          email: trimmed,
           role,
           status: "pending",
           created_at: now,
-          expires_at: res.data.expires_at ?? expires,
+          expires_at: res.data.expires_at,
           send_attempts: 0,
           last_sent_at: null,
           invited_by: "",
         });
         onClose();
       } else {
-        setError(res.error);
+        setError(translateInviteError(tErr, res.error_code, res.email ?? trimmed) ?? res.error);
       }
     });
-  }, [email, role, confirmOwner, onClose, onCreated, t]);
+  }, [email, role, onClose, onCreated, tErr]);
 
   return (
     <div
@@ -335,10 +323,7 @@ function InviteModal({
               id={emailId}
               type="email"
               value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                setConfirmOwner(false);
-              }}
+              onChange={(e) => setEmail(e.target.value)}
               autoComplete="off"
               spellCheck={false}
             />
@@ -351,24 +336,13 @@ function InviteModal({
             <select
               id={roleId}
               value={role}
-              onChange={(e) => {
-                setRole(e.target.value as InviteRole);
-                setConfirmOwner(false);
-              }}
+              onChange={(e) => setRole(e.target.value as InviteRole)}
               className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <option value="agent">{t("modalRoleAgent")}</option>
               <option value="viewer">{t("modalRoleViewer")}</option>
-              <option value="owner">{t("modalRoleOwner")}</option>
             </select>
           </div>
-
-          {role === "owner" ? (
-            <div className="rounded-md border border-amber-300/50 bg-amber-50/60 p-3 text-[12px] text-amber-900 dark:border-amber-300/30 dark:bg-amber-500/10 dark:text-amber-100">
-              <div className="font-semibold">{t("ownerWarnTitle")}</div>
-              <div className="mt-1">{t("ownerWarnBody")}</div>
-            </div>
-          ) : null}
 
           {error ? (
             <p className="text-xs text-red-600 dark:text-red-300" role="alert">
@@ -381,17 +355,38 @@ function InviteModal({
               {t("modalCancel")}
             </Button>
             <Button type="button" size="sm" disabled={pending} onClick={onSubmit}>
-              {pending
-                ? t("modalSubmitting")
-                : role === "owner" && !confirmOwner
-                  ? t("ownerConfirm")
-                  : t("modalSubmit")}
+              {pending ? t("modalSubmitting") : t("modalSubmit")}
             </Button>
           </div>
         </div>
       </div>
     </div>
   );
+}
+
+function translateInviteError(
+  tErr: ReturnType<typeof useTranslations<"settings.team.errors">>,
+  code: string,
+  email: string,
+): string | null {
+  switch (code) {
+    case "context_error":
+      return tErr("contextError");
+    case "insufficient_role":
+      return tErr("insufficientRole");
+    case "invalid_email":
+      return tErr("invalidEmail");
+    case "invalid_invitation_role":
+      return tErr("invalidInvitationRole");
+    case "already_member":
+      return tErr("alreadyMember", { email });
+    case "pending_invite_exists":
+      return tErr("pendingInviteExists", { email });
+    case "unknown":
+      return tErr("generic");
+    default:
+      return null;
+  }
 }
 
 function roleLabel(

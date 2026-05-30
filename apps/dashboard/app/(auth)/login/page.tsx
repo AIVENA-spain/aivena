@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useId, useState, useTransition } from "react";
+import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import { createClient } from "@/lib/supabase/client";
@@ -22,10 +23,16 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
  * Magic-link sign-in. The client SDK calls signInWithOtp; on success Supabase
  * emails the user a link back to /auth/callback, where we trade the code for
  * a session and redirect into the app. No password is captured anywhere.
+ *
+ * `?next=<local-path>` (e.g. when redirected from /invite/accept) is threaded
+ * through the emailRedirectTo so the callback knows where to land the user.
+ * Only local paths are honoured — open-redirect is enforced again in
+ * /auth/callback before we follow the value.
  */
 export default function LoginPage() {
   const t = useTranslations("auth.login");
   const emailId = useId();
+  const searchParams = useSearchParams();
 
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
@@ -43,10 +50,17 @@ export default function LoginPage() {
       }
       startPending(async () => {
         const supabase = createClient();
-        const redirectTo = `${window.location.origin}/auth/callback`;
+        const nextRaw = searchParams.get("next");
+        const next =
+          nextRaw && nextRaw.startsWith("/") && !nextRaw.startsWith("//")
+            ? nextRaw
+            : null;
+        const callback = next
+          ? `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`
+          : `${window.location.origin}/auth/callback`;
         const { error: supaError } = await supabase.auth.signInWithOtp({
           email: trimmed,
-          options: { emailRedirectTo: redirectTo },
+          options: { emailRedirectTo: callback },
         });
         if (supaError) {
           console.error("[login] signInWithOtp failed:", supaError.message);
@@ -56,7 +70,7 @@ export default function LoginPage() {
         setSent(true);
       });
     },
-    [email, t],
+    [email, t, searchParams],
   );
 
   if (sent) {

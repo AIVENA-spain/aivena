@@ -4,31 +4,19 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
-  ChevronsUpDown,
   ImageIcon,
   Inbox,
   LayoutGrid,
   LineChart,
-  LogOut,
   Settings,
   Shield,
   type LucideIcon,
 } from "lucide-react";
 
-import { logoutAction } from "@/app/(auth)/actions";
 import type { UserContext } from "@/lib/auth/context";
-import { userInitial } from "@/lib/auth/initials";
 import { ADMIN_NAV, PRIMARY_NAV, type NavItem } from "./nav-config";
 import { cn } from "@/lib/utils";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { AccountChip } from "./account-chip";
 
 const ICONS: Record<NavItem["iconName"], LucideIcon> = {
   overview: LayoutGrid,
@@ -102,14 +90,21 @@ function NavLink({
 export function Sidebar({
   ctx,
   inboxCount,
+  brandName,
 }: {
   ctx: UserContext;
   /** Live count for the Inbox badge. Null while loading or unwired. */
   inboxCount: number | null;
+  /**
+   * Agency brand name from `dashboard_settings().branding.brand_name`. Threaded
+   * through from the layout so the account chip popover stays consistent with
+   * what Settings shows. Null tolerated — the chip falls back to displayName
+   * (and finally the email domain) so the line is never blank.
+   */
+  brandName: string | null;
 }) {
   const pathname = usePathname();
   const tNav = useTranslations("nav");
-  const tBar = useTranslations("topbar");
   const role = ctx.activeAgency?.role ?? null;
 
   const primary = role
@@ -117,14 +112,8 @@ export function Sidebar({
     : [];
   const admin = ctx.isAivenaStaff ? ADMIN_NAV : [];
 
-  const active = ctx.activeAgency;
-  const showSwitcher = ctx.memberships.length > 1 || ctx.isAivenaStaff;
-  const initial = userInitial(ctx);
-  const userLabel = ctx.email;
-  const subLabel = active?.agency.displayName ?? tBar("noActiveAgency");
-
   return (
-    <aside className="hidden h-screen w-[210px] shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground md:flex">
+    <aside className="hidden min-h-screen w-[210px] shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground md:flex">
       {/* Brand block */}
       <div className="flex items-center gap-2.5 px-4 pt-5 pb-4">
         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-foreground text-[14px] font-bold leading-none text-brand">
@@ -174,89 +163,20 @@ export function Sidebar({
         </div>
       ) : null}
 
-      {/* User / agency footer pin — dropdown for switcher + log-out */}
-      <div className="border-t border-sidebar-border p-2.5">
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            className="flex w-full items-center gap-2.5 rounded-[9px] p-1.5 text-left transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            aria-label={tBar("userMenu")}
-          >
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-foreground text-[12px] font-semibold text-background">
-              {initial}
-            </span>
-            <span className="flex min-w-0 flex-1 flex-col leading-tight">
-              <span className="truncate text-[12.5px] font-semibold text-foreground">
-                {userLabel}
-              </span>
-              <span className="truncate font-mono text-[10.5px] text-muted-foreground">
-                {subLabel}
-              </span>
-            </span>
-            <ChevronsUpDown
-              className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
-              aria-hidden
-            />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" side="top" className="w-60">
-            {/*
-             * Each DropdownMenuLabel must live inside a DropdownMenuGroup —
-             * Base UI's GroupLabel reads from MenuGroupContext and throws at
-             * runtime if it is missing. (Discovered via the click-crash bug
-             * "MenuGroupContext is missing." — 2026-05-27.)
-             */}
-            <DropdownMenuGroup>
-              <DropdownMenuLabel className="flex flex-col gap-0.5">
-                <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                  {tBar("signedInAs")}
-                </span>
-                <span className="truncate text-sm font-medium text-foreground">
-                  {ctx.email}
-                </span>
-              </DropdownMenuLabel>
-            </DropdownMenuGroup>
-            {showSwitcher ? (
-              <>
-                <DropdownMenuSeparator />
-                <DropdownMenuGroup>
-                  <DropdownMenuLabel className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                    {tBar("switchAgency")}
-                  </DropdownMenuLabel>
-                  {ctx.memberships.map((m) => (
-                    <DropdownMenuItem
-                      key={m.agencyId}
-                      className="flex flex-col items-start gap-0.5 py-2"
-                      disabled
-                    >
-                      <span className="text-sm font-medium text-foreground">
-                        {m.agency.displayName}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {m.role}
-                        {m.agency.region ? ` · ${m.agency.region}` : ""}
-                      </span>
-                    </DropdownMenuItem>
-                  ))}
-                  {ctx.isAivenaStaff ? (
-                    <DropdownMenuItem disabled className="gap-2">
-                      <Shield className="h-4 w-4" aria-hidden />
-                      {tBar("allAgenciesAdmin")}
-                    </DropdownMenuItem>
-                  ) : null}
-                </DropdownMenuGroup>
-              </>
-            ) : null}
-            <DropdownMenuSeparator />
-            <form action={logoutAction}>
-              <button
-                type="submit"
-                className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-foreground hover:bg-muted"
-              >
-                <LogOut className="h-4 w-4" aria-hidden />
-                {tBar("logOut")}
-              </button>
-            </form>
-          </DropdownMenuContent>
-        </DropdownMenu>
+      {/* Account chip — single-line footer row: avatar + email + chevron.
+          The chip owns its own px-3 py-3 so this wrapper is just the
+          top-border divider that anchors it to the sidebar foot. Popover
+          (DropdownMenu) opens upward on click with the full identity row
+          (full email, full brand name) and a sign-out action. Agency
+          switcher is intentionally absent — multi-agency switching isn't
+          supported yet, and the old switcher chip's double-ellipsis read
+          as broken. */}
+      <div className="mt-auto border-t border-foreground/10">
+        <AccountChip
+          email={ctx.email}
+          brandName={brandName}
+          agencyDisplayName={ctx.activeAgency?.agency.displayName ?? null}
+        />
       </div>
     </aside>
   );

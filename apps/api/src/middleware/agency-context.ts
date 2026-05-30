@@ -63,6 +63,15 @@ export async function agencyContextMiddleware(c: Context, next: Next) {
       await tx.execute(
         sql`SELECT set_config('app.current_user_role', ${role}, true)`,
       );
+      // And the caller's auth UUID. Vega's Phase-2 invite RPCs
+      // (create_invitation / accept_invitation / require_role) read this via
+      // current_setting('app.current_user_id', true) with auth.uid() as a
+      // fallback — but the pooled aivena_app connection has no auth.uid(),
+      // so we must set the GUC explicitly or those RPCs raise
+      // no_auth_context.
+      await tx.execute(
+        sql`SELECT set_config('app.current_user_id', ${user.sub}, true)`,
+      );
 
       c.set('tx', tx);
       c.set('agencyId', agencyId);

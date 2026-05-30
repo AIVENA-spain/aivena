@@ -3,22 +3,36 @@ import { getTranslations } from "next-intl/server";
 
 import {
   Card,
-  CardContent,
   CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
+import { createClient } from "@/lib/supabase/server";
+
+import { AcceptInvitationButton } from "./accept-button";
 
 export const dynamic = "force-dynamic";
 
 /**
- * Invitation acceptance — Phase 1 stub UI. The accept_invitation RPC isn't
- * shipped yet; today this page renders a calm "we'll finish setting this up"
- * message so an invitee who clicks the link doesn't hit a 404 or a stack
- * trace. Phase 2 swaps the body for a real token verification + sign-in
- * flow that calls accept_invitation(token).
+ * /invite/accept?token=… — Phase 2 wiring.
+ *
+ * Server-rendered orchestrator. We DO NOT call accept_invitation on page load
+ * (calling on render would consume the invite before the user has consented,
+ * and a refresh would silently produce a confusing "already used" branch).
+ * Instead we pick one of three branches:
+ *
+ *   1. No token in URL          → "invitation link missing token" card.
+ *   2. Token present, no session → "Sign in to accept this invitation" card
+ *                                   linking to /login?next=<encoded URL>.
+ *                                   The magic-link flow returns the user here
+ *                                   after sign-in.
+ *   3. Token present + session   → Server-render a consent card with an
+ *                                   "Accept invitation" button (a client
+ *                                   island). Only on click do we call the
+ *                                   RPC, branch on success or typed errors,
+ *                                   and auto-redirect on success.
  */
 export default async function InviteAcceptPage({
   searchParams,
@@ -48,26 +62,32 @@ export default async function InviteAcceptPage({
     );
   }
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t("stubTitle")}</CardTitle>
-        <CardDescription>{t("title")}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-3 text-sm text-muted-foreground">
-        <p>{t("stubBody")}</p>
-        <p className="break-all rounded-md bg-muted/60 px-3 py-2 font-mono text-[11px] text-foreground/80">
-          {token}
-        </p>
-      </CardContent>
-      <CardFooter>
-        <Link
-          href="/login"
-          className={buttonVariants({ variant: "outline" }) + " w-full"}
-        >
-          AIVENA
-        </Link>
-      </CardFooter>
-    </Card>
-  );
+  // Round-trip the full path so the user lands back here after magic-link
+  // sign-in. URL-encode the `?token=…` so it survives as a single `next=…`
+  // value through /login → /auth/callback.
+  const nextPath = `/invite/accept?token=${token}`;
+  const signInHref = `/login?next=${encodeURIComponent(nextPath)}`;
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("signInRequired")}</CardTitle>
+          <CardDescription>{t("signInRequiredBody")}</CardDescription>
+        </CardHeader>
+        <CardFooter>
+          <Link href={signInHref} className={buttonVariants() + " w-full"}>
+            {t("signInCta")}
+          </Link>
+        </CardFooter>
+      </Card>
+    );
+  }
+
+  return <AcceptInvitationButton token={token} signInHref={signInHref} />;
 }

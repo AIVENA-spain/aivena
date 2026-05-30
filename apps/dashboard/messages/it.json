@@ -391,19 +391,23 @@
       "modalTitle": "Invite a team member",
       "modalEmailLabel": "Email address",
       "modalRoleLabel": "Role",
-      "modalRoleOwner": "Owner",
       "modalRoleAgent": "Agent",
       "modalRoleViewer": "Viewer",
       "modalSubmit": "Send invite",
       "modalSubmitting": "Creating invite…",
       "modalCancel": "Cancel",
-      "ownerWarnTitle": "Owner has full access",
-      "ownerWarnBody": "Owners can manage billing, members, and every setting. Confirm you want to give this person owner access.",
-      "ownerConfirm": "Yes, invite as owner",
       "invitedToast": "Invite created — email will be sent when our invite system goes live (a few days).",
       "revokedToast": "Invite revoked.",
       "resentToast": "Invite resent.",
-      "inviteFailed": "Couldn't create that invite right now — please try again."
+      "errors": {
+        "contextError": "Something went wrong creating that invite. Please refresh and try again.",
+        "insufficientRole": "Only the agency owner can send invites.",
+        "invalidEmail": "Please enter a valid email address.",
+        "invalidInvitationRole": "Please choose Agent or Viewer for the role.",
+        "alreadyMember": "{email} is already on your team.",
+        "pendingInviteExists": "{email} already has a pending invitation.",
+        "generic": "Couldn't create that invite — please try again."
+      }
     }
   },
   "performance": {
@@ -479,6 +483,11 @@
     "approveFailed": "Something went wrong sending this reply. Please try again — if it keeps happening, contact support.",
     "dismissFailed": "Something went wrong dismissing this task. Please try again — if it keeps happening, contact support."
   },
+  "accountMenu": {
+    "signOut": "Sign out",
+    "signOutPending": "Signing out…",
+    "signInPrompt": "Sign in"
+  },
   "auth": {
     "login": {
       "title": "Sign in to AIVENA",
@@ -500,11 +509,33 @@
     },
     "invite": {
       "title": "You've been invited to AIVENA",
-      "stubTitle": "Invitation acceptance is being finalized",
-      "stubBody": "We'll email you the moment our team-invite flow is fully live — usually within a few days. Your invitation is saved and waiting.",
       "tokenMissing": "This invitation link doesn't include a token. Please check the email you received and use the original link.",
       "errorTitle": "We couldn't load this invitation",
-      "errorBody": "The link may have expired or been revoked. Please ask the person who invited you to resend it."
+      "errorBody": "The link may have expired or been revoked. Please ask the person who invited you to resend it.",
+      "signInRequired": "Sign in to accept this invitation",
+      "signInRequiredBody": "We need to verify it's you before adding you to the team.",
+      "signInCta": "Sign in",
+      "acceptTitle": "You've been invited to join an agency",
+      "acceptBody": "Click below to accept and join the team.",
+      "acceptCta": "Accept invitation",
+      "accepting": "Accepting…",
+      "invalidLink": "This invitation link is no longer valid",
+      "invalidLinkBody": "Please ask the person who invited you to resend the invite.",
+      "alreadyUsed": "This invitation has already been used",
+      "alreadyUsedBody": "Sign in normally to access the dashboard.",
+      "expired": "This invitation has expired",
+      "expiredBody": "Invitations are valid for 7 days. Please ask for a new one.",
+      "emailMismatch": "Please sign in with the email this invite was sent to",
+      "emailMismatchBody": "The signed-in account doesn't match the invitation. Sign out and use the right email.",
+      "signOutAndRetry": "Sign out and try again",
+      "welcomeTitle": "Welcome to {agencyName}",
+      "welcomeBody": "You've joined as {role}.",
+      "goToDashboard": "Go to dashboard",
+      "authMissingEmailTitle": "We couldn't read your email",
+      "authMissingEmailBody": "Your account doesn't expose an email address, so we can't match the invitation. Please contact support.",
+      "roleNameOwner": "Owner",
+      "roleNameAgent": "Agent",
+      "roleNameViewer": "Viewer"
     }
   }
 }

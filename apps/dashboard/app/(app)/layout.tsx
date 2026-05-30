@@ -5,7 +5,7 @@ import { getLocale } from "next-intl/server";
 import { apiFetch } from "@/lib/api/client";
 import { LOCALE_COOKIE, isLocale } from "@/lib/i18n/config";
 import { intlLocaleFor } from "@/lib/i18n/date-locale";
-import type { TasksResponse } from "@/lib/api/types";
+import type { SettingsResponse, TasksResponse } from "@/lib/api/types";
 import { getCurrentUserContext } from "@/lib/auth/context";
 import { NoAgencyState } from "@/components/shell/no-agency-state";
 import { Sidebar } from "@/components/shell/sidebar";
@@ -33,6 +33,20 @@ async function getInboxCount(): Promise<number | null> {
   } catch {
     // Silent fallback — the badge just doesn't show. The technical error
     // is already logged downstream by apiFetch's caller pattern.
+    return null;
+  }
+}
+
+async function getAgencyBrandName(): Promise<string | null> {
+  // The account chip's popover prefers `branding.brand_name` so what shows
+  // there matches what the operator set in /settings. Fetched in parallel
+  // with the inbox count; silent fallback to null if anything fails — the
+  // chip falls back to the auth-context displayName, and finally to the
+  // email domain, so the popover line is never blank.
+  try {
+    const res = await apiFetch<SettingsResponse>("/api/v1/settings");
+    return res.branding?.brand_name ?? null;
+  } catch {
     return null;
   }
 }
@@ -84,7 +98,10 @@ export default async function AppLayout({
     // Cookie write failed (e.g. headers already sent) — fall through.
   }
 
-  const inboxCount = await getInboxCount();
+  const [inboxCount, brandName] = await Promise.all([
+    getInboxCount(),
+    getAgencyBrandName(),
+  ]);
 
   // Server-time greeting + date label. Locale-aware date format (uses the
   // user's UI language). Server timezone may differ from the user's; for
@@ -100,7 +117,7 @@ export default async function AppLayout({
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
-      <Sidebar ctx={ctx} inboxCount={inboxCount} />
+      <Sidebar ctx={ctx} inboxCount={inboxCount} brandName={brandName} />
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar
           ctx={ctx}

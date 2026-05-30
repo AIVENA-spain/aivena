@@ -189,10 +189,20 @@ export type InvitationCreated = {
   sent: boolean;
 };
 
+export type CreateInvitationFailure = {
+  ok: false;
+  error_code: string;
+  email?: string;
+  error: string;
+};
+export type CreateInvitationResult =
+  | { ok: true; data: InvitationCreated }
+  | CreateInvitationFailure;
+
 export async function createInvitationAction(
   email: string,
-  role: "owner" | "agent" | "viewer",
-): Promise<ActionResult<InvitationCreated>> {
+  role: "agent" | "viewer",
+): Promise<CreateInvitationResult> {
   try {
     const res = await apiFetch<InvitationCreated>("/api/v1/invitations", {
       method: "POST",
@@ -201,7 +211,28 @@ export async function createInvitationAction(
     revalidatePath("/settings");
     return { ok: true, data: res };
   } catch (err) {
-    return actionError("createInvitationAction", err);
+    // We want the structured {error_code, email} from create_invitation
+    // mapping so the modal can localize. ApiError already carries the parsed
+    // body — pluck it out, falling back to a generic shape if it isn't a
+    // typed ApiError.
+    const detail =
+      err instanceof ApiError
+        ? `${err.status} ${err.message}`
+        : err instanceof Error
+          ? err.message
+          : String(err);
+    console.error("[settings] createInvitationAction failed:", detail);
+    if (err instanceof ApiError && err.body && typeof err.body === "object") {
+      const body = err.body as Record<string, unknown>;
+      return {
+        ok: false,
+        error_code:
+          typeof body.error_code === "string" ? body.error_code : "unknown",
+        email: typeof body.email === "string" ? body.email : undefined,
+        error: typeof body.error === "string" ? body.error : err.message,
+      };
+    }
+    return { ok: false, error_code: "unknown", error: CANONICAL_FAILURE };
   }
 }
 

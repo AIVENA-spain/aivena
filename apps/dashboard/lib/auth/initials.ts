@@ -9,3 +9,15 @@ import type { UserContext } from "./context";
 export function userInitial(ctx: UserContext): string {
   return ctx.email[0]?.toUpperCase() ?? "?";
 }
+
+/**
+ * First-letter initial from an email, uppercased. Single letter on purpose:
+ * the sidebar account chip and the Team & Access member rows both use this,
+ * and 1-character avatars read cleaner than 2-character at the chip's size
+ * than mixed-length avatars (christian → "C", agent.test → "A" rather than
+ * "CS" / "AT"). Falls back to "?" only when the email is somehow empty.
+ */
+export function emailInitial(email: string): string {
+  const head = email.split("@")[0] ?? "";
+  return (head[0] ?? "?").toUpperCase();
+}

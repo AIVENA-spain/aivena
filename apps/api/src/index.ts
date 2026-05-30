@@ -11,6 +11,8 @@ import { whatsappSignatureMiddleware, twilioSignatureMiddleware } from './middle
 import meRoute from './routes/me';
 import overviewRoute from './routes/overview';
 import tasksRoute from './routes/tasks';
+import settingsRoute from './routes/settings';
+import invitationsRoute from './routes/invitations';
 
 Sentry.init({
   dsn: env.SENTRY_DSN,
@@ -48,6 +50,8 @@ app.use('/api/*', agencyContextMiddleware);
 app.route('/api/v1/me', meRoute);
 app.route('/api/v1/overview', overviewRoute);
 app.route('/api/v1/tasks', tasksRoute);
+app.route('/api/v1/settings', settingsRoute);
+app.route('/api/v1/invitations', invitationsRoute);
 
 // Webhook signature validation — provider-specific.
 // WhatsApp uses x-hub-signature-256 (Meta HMAC SHA-256 of raw body).

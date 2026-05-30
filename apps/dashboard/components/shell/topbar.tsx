@@ -84,7 +84,12 @@ export function Topbar({
       ),
     });
   } else if (pathname.startsWith("/settings")) {
-    subtitle = tRoot("settings.subtitle");
+    // settings.subtitle carries an <em> fragment (Instrument Serif italic).
+    subtitle = tRoot.rich("settings.subtitle", {
+      em: (chunks) => (
+        <em className="font-serif italic text-foreground">{chunks}</em>
+      ),
+    });
   } else {
     subtitle = null;
   }

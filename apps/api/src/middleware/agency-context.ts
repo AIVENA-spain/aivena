@@ -56,6 +56,13 @@ export async function agencyContextMiddleware(c: Context, next: Next) {
       await tx.execute(
         sql`SELECT set_config('app.current_agency_id', ${agencyId}, true)`,
       );
+      // Also expose the caller's role to the transaction so RPCs that need to
+      // gate behaviour (or audit) by role can read it via
+      // current_setting('app.current_user_role', true). Unblocks Vega's
+      // role-check audit on the 12 existing RPCs.
+      await tx.execute(
+        sql`SELECT set_config('app.current_user_role', ${role}, true)`,
+      );
 
       c.set('tx', tx);
       c.set('agencyId', agencyId);

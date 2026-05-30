@@ -49,6 +49,115 @@ export type TasksResponse = {
   tasks: ApiTask[];
 };
 
+// ─── Settings (dashboard_settings(0)) ─────────────────────────────────────
+
+export type DaySlot = { enabled: boolean; start: string; end: string };
+
+export type WorkingHours = {
+  monday: DaySlot;
+  tuesday: DaySlot;
+  wednesday: DaySlot;
+  thursday: DaySlot;
+  friday: DaySlot;
+  saturday: DaySlot;
+  sunday: DaySlot;
+  timezone: string;
+};
+
+export type DashboardToggles = {
+  draft_replies_auto: boolean;
+  auto_send_cold: boolean;
+  require_approval_hot: boolean;
+  auto_whatsapp_recovery: boolean;
+};
+
+export type ChecklistItem = { completed: boolean; completed_at: string | null };
+
+export type TeamMember = {
+  user_id: string;
+  email: string;
+  role: string;
+  is_default: boolean;
+};
+
+export type InvitationRow = {
+  id: string;
+  email: string;
+  role: string;
+  status: string;
+  created_at: string;
+  expires_at: string;
+  send_attempts: number;
+  last_sent_at: string | null;
+  invited_by: string;
+};
+
+export type SettingsResponse = {
+  profile: {
+    agency_id: string;
+    name: string;
+    legal_name: string | null;
+    region: string | null;
+    status: string;
+    supported_languages: string[];
+    sending_domain: string;
+    from_email: string;
+    from_name: string;
+    reply_to: string;
+    domain_verified: boolean;
+  };
+  config: {
+    approve_before_sending: boolean;
+    auto_first_response: boolean;
+    reply_handling_mode: string;
+    fallback_mode: string;
+    timezone: string;
+    working_hours: WorkingHours;
+    followup_style: string;
+    daily_send_cap: number | null;
+    monthly_send_cap: number | null;
+    data_retention_days: number;
+    agency_paused: boolean;
+    dashboard_toggles: DashboardToggles;
+  };
+  channels: {
+    email: { enabled: boolean; live: boolean };
+    whatsapp: {
+      enabled: boolean;
+      connected: boolean;
+      live: boolean;
+      no_source: boolean;
+    };
+  };
+  branding: {
+    brand_name: string;
+    logo_url: string | null;
+    primary_color: string;
+    accent_color: string | null;
+    email_signature_name: string;
+    email_signature_role: string;
+    email_footer_text: string | null;
+    tone: string;
+    brand_voice: string;
+    content_style: string | null;
+    reviewed_at: string | null;
+  };
+  team: {
+    members: TeamMember[];
+    member_count: number;
+    invitations: InvitationRow[];
+    pending_invitation_count: number;
+  };
+  setup_checklist: {
+    domain_verified: ChecklistItem;
+    branding_added: ChecklistItem;
+    ai_rules_set: ChecklistItem;
+    team_invited: ChecklistItem;
+    whatsapp_connected: ChecklistItem;
+  };
+  network: { value: unknown; no_source: boolean; label: string };
+};
+
 export type ThreadMessage = {
   id: string;
   direction: string;

@@ -1,0 +1,236 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+
+import { apiFetch, ApiError } from "@/lib/api/client";
+
+/**
+ * Server actions for the Settings sections. Each action is a thin proxy onto
+ * the corresponding Hono endpoint — the API owns validation + the
+ * *_reviewed_at writes; this layer only translates ApiError into a friendly
+ * `{ ok: false, error }` shape the section components can render inline.
+ */
+
+type ActionOk<T> = { ok: true; data: T };
+type ActionErr = { ok: false; error: string };
+type ActionResult<T> = ActionOk<T> | ActionErr;
+
+const CANONICAL_FAILURE =
+  "Something went wrong saving that — please try again, and contact support if it keeps happening.";
+
+function actionError(scope: string, err: unknown): ActionErr {
+  const detail =
+    err instanceof ApiError
+      ? `${err.status} ${err.message}`
+      : err instanceof Error
+        ? err.message
+        : String(err);
+  console.error(`[settings] ${scope} failed:`, detail);
+  // Surface API-supplied friendly messages (400/404) when present; fall back
+  // to the canonical string for anything else (5xx, network blip).
+  if (err instanceof ApiError && err.status < 500 && err.message) {
+    return { ok: false, error: err.message };
+  }
+  return { ok: false, error: CANONICAL_FAILURE };
+}
+
+// ---------- branding (+ voice & tone share this save) ----------
+
+export type BrandingPayload = {
+  brand_name: string;
+  primary_color: string;
+  email_signature_name: string;
+  email_signature_role: string;
+  tone: string | null;
+  brand_voice: string;
+};
+
+export async function saveBrandingAction(
+  payload: BrandingPayload,
+): Promise<ActionResult<{ ok: true }>> {
+  try {
+    await apiFetch<{ ok: true }>("/api/v1/settings/branding", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    revalidatePath("/settings");
+    return { ok: true, data: { ok: true } };
+  } catch (err) {
+    return actionError("saveBrandingAction", err);
+  }
+}
+
+// ---------- sending identity (reply_to only) ----------
+
+export async function saveIdentityAction(
+  reply_to: string,
+): Promise<ActionResult<{ ok: true }>> {
+  try {
+    await apiFetch<{ ok: true }>("/api/v1/settings/identity", {
+      method: "POST",
+      body: JSON.stringify({ reply_to }),
+    });
+    revalidatePath("/settings");
+    return { ok: true, data: { ok: true } };
+  } catch (err) {
+    return actionError("saveIdentityAction", err);
+  }
+}
+
+// ---------- working hours (7-day shape) ----------
+
+export type DaySlotPayload = { enabled: boolean; start: string; end: string };
+export type WorkingHoursPayload = {
+  working_hours: {
+    monday: DaySlotPayload;
+    tuesday: DaySlotPayload;
+    wednesday: DaySlotPayload;
+    thursday: DaySlotPayload;
+    friday: DaySlotPayload;
+    saturday: DaySlotPayload;
+    sunday: DaySlotPayload;
+    timezone: string;
+  };
+  timezone: string;
+};
+
+export async function saveWorkingHoursAction(
+  payload: WorkingHoursPayload,
+): Promise<ActionResult<{ ok: true }>> {
+  try {
+    await apiFetch<{ ok: true }>("/api/v1/settings/working-hours", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    revalidatePath("/settings");
+    return { ok: true, data: { ok: true } };
+  } catch (err) {
+    return actionError("saveWorkingHoursAction", err);
+  }
+}
+
+// ---------- AI rules (4 toggles → reply_rules.dashboard_toggles) ----------
+
+export type AiRulesPayload = {
+  draft_replies_auto: boolean;
+  auto_send_cold: boolean;
+  require_approval_hot: boolean;
+  auto_whatsapp_recovery: boolean;
+};
+
+export async function saveAiRulesAction(
+  payload: AiRulesPayload,
+): Promise<ActionResult<AiRulesPayload>> {
+  try {
+    const res = await apiFetch<{ ok: true; dashboard_toggles: AiRulesPayload }>(
+      "/api/v1/settings/ai-rules",
+      { method: "POST", body: JSON.stringify(payload) },
+    );
+    revalidatePath("/settings");
+    return { ok: true, data: res.dashboard_toggles };
+  } catch (err) {
+    return actionError("saveAiRulesAction", err);
+  }
+}
+
+// ---------- supported languages ----------
+
+export async function saveLanguagesAction(
+  supported_languages: string[],
+): Promise<ActionResult<{ supported_languages: string[] }>> {
+  try {
+    const res = await apiFetch<{ ok: true; supported_languages: string[] }>(
+      "/api/v1/settings/languages",
+      { method: "POST", body: JSON.stringify({ supported_languages }) },
+    );
+    revalidatePath("/settings");
+    return { ok: true, data: { supported_languages: res.supported_languages } };
+  } catch (err) {
+    return actionError("saveLanguagesAction", err);
+  }
+}
+
+// ---------- logo upload (forwards base64 to Vega's Edge Function) ----------
+
+export type LogoPayload = {
+  filename: string;
+  content_type: string;
+  content_base64: string;
+};
+
+export async function uploadLogoAction(
+  payload: LogoPayload,
+): Promise<
+  ActionResult<{
+    branding: { logo_url: string | null } | null;
+  }>
+> {
+  try {
+    const res = await apiFetch<{
+      ok: true;
+      branding: { logo_url: string | null } | null;
+    }>("/api/v1/settings/logo", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    revalidatePath("/settings");
+    return { ok: true, data: { branding: res.branding } };
+  } catch (err) {
+    return actionError("uploadLogoAction", err);
+  }
+}
+
+// ---------- invitations (Phase 1: real INSERT, plain stubs for revoke/resend) ----------
+
+export type InvitationCreated = {
+  invitation_id: string;
+  token: string;
+  expires_at: string;
+  sent: boolean;
+};
+
+export async function createInvitationAction(
+  email: string,
+  role: "owner" | "agent" | "viewer",
+): Promise<ActionResult<InvitationCreated>> {
+  try {
+    const res = await apiFetch<InvitationCreated>("/api/v1/invitations", {
+      method: "POST",
+      body: JSON.stringify({ email, role }),
+    });
+    revalidatePath("/settings");
+    return { ok: true, data: res };
+  } catch (err) {
+    return actionError("createInvitationAction", err);
+  }
+}
+
+export async function revokeInvitationAction(
+  invitationId: string,
+): Promise<ActionResult<{ revoked: boolean; revoked_at: string }>> {
+  try {
+    const res = await apiFetch<{ revoked: boolean; revoked_at: string }>(
+      `/api/v1/invitations/${encodeURIComponent(invitationId)}/revoke`,
+      { method: "POST", body: "{}" },
+    );
+    revalidatePath("/settings");
+    return { ok: true, data: res };
+  } catch (err) {
+    return actionError("revokeInvitationAction", err);
+  }
+}
+
+export async function resendInvitationAction(
+  invitationId: string,
+): Promise<ActionResult<{ resent: boolean; sent_at: string; attempts: number }>> {
+  try {
+    const res = await apiFetch<{ resent: boolean; sent_at: string; attempts: number }>(
+      `/api/v1/invitations/${encodeURIComponent(invitationId)}/resend`,
+      { method: "POST", body: "{}" },
+    );
+    revalidatePath("/settings");
+    return { ok: true, data: res };
+  } catch (err) {
+    return actionError("resendInvitationAction", err);
+  }
+}

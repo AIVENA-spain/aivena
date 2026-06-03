@@ -14,6 +14,7 @@ import { useTranslations } from "next-intl";
 import {
   AlertTriangle,
   Building2,
+  CalendarClock,
   Globe,
   Home,
   Inbox as InboxIcon,
@@ -30,6 +31,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { GatedActionButton, GateNote } from "@/components/shell/launch-gate";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
@@ -705,6 +707,14 @@ function ThreadAndReply({
 
   const headSubline = `${lead.area ?? "—"} · ${languageLabel(lead.language)}`;
 
+  // W11-lite viewing pipeline (v1.14.1): when the task is a detected viewing
+  // intent, the operator confirms a time rather than (only) sending a reply.
+  // The confirm-time RPC + the extracted-times payload are Vega's; until they
+  // land this renders the affordance with the action gated.
+  const isViewing =
+    threadEntry?.status === "ok" &&
+    threadEntry.data?.task.taskType === "viewing_intent_detected";
+
   return (
     <div className="flex h-full min-w-0 flex-col">
       {/* Head */}
@@ -763,12 +773,81 @@ function ThreadAndReply({
         )}
       </div>
 
+      {/* Viewing confirm-time affordance (W11-lite) — only for viewing tasks. */}
+      {isViewing ? <ViewingConfirmCard /> : null}
+
       {/* Reply zone */}
       <ReplyZone
         taskId={lead.taskId}
         initialSubject={lead.aiReplySubject ?? ""}
         initialBody={lead.aiReplyBody ?? ""}
       />
+    </div>
+  );
+}
+
+// ---------- viewing confirm-time affordance (W11-lite, v1.14.1) ----------
+
+function ViewingConfirmCard() {
+  const t = useTranslations("viewing");
+  const [choice, setChoice] = useState<string>("custom");
+
+  // The extracted candidate times come from the viewing_intent_detected task
+  // payload once Vega ships it. Until then we show the shape: pick one of the
+  // detected times (placeholder slots) or enter a custom time; confirming is
+  // gated on the confirm-time RPC.
+  const slots = [
+    { id: "slot-1", label: t("slotPlaceholder1") },
+    { id: "slot-2", label: t("slotPlaceholder2") },
+  ];
+
+  return (
+    <div className="border-t border-border bg-card px-5 py-4">
+      <div className="rounded-[13px] border border-brand/20 bg-brand-soft/60 p-3.5">
+        <div className="mb-2 flex items-center gap-1.5 font-mono text-[9.5px] font-bold uppercase tracking-[0.05em] text-brand">
+          <CalendarClock className="h-3.5 w-3.5" aria-hidden />
+          {t("title")}
+        </div>
+        <p className="mb-3 text-[12px] text-muted-foreground">{t("subtitle")}</p>
+
+        <div className="flex flex-col gap-2">
+          {slots.map((s) => (
+            <label
+              key={s.id}
+              className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-[12.5px] text-foreground"
+            >
+              <input
+                type="radio"
+                name="viewing-slot"
+                checked={choice === s.id}
+                onChange={() => setChoice(s.id)}
+                className="h-3.5 w-3.5 accent-[var(--brand)]"
+              />
+              {s.label}
+            </label>
+          ))}
+          <label className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-[12.5px] text-foreground">
+            <input
+              type="radio"
+              name="viewing-slot"
+              checked={choice === "custom"}
+              onChange={() => setChoice("custom")}
+              className="h-3.5 w-3.5 accent-[var(--brand)]"
+            />
+            {t("customLabel")}
+            <input
+              type="datetime-local"
+              disabled={choice !== "custom"}
+              className="ml-2 rounded border border-border bg-background px-2 py-1 text-[12px] text-foreground disabled:opacity-50"
+            />
+          </label>
+        </div>
+      </div>
+
+      <div className="mt-3 flex flex-col gap-2">
+        <GatedActionButton label={t("confirm")} />
+        <GateNote />
+      </div>
     </div>
   );
 }

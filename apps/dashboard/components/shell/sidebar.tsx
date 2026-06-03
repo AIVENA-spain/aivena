@@ -10,6 +10,8 @@ import {
   LineChart,
   Settings,
   Shield,
+  Sparkles,
+  Users,
   type LucideIcon,
 } from "lucide-react";
 
@@ -23,6 +25,8 @@ const ICONS: Record<NavItem["iconName"], LucideIcon> = {
   inbox: Inbox,
   performance: LineChart,
   content: ImageIcon,
+  studio: Sparkles,
+  matches: Users,
   settings: Settings,
   admin: Shield,
 };

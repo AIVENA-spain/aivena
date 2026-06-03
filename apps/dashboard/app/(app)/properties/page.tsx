@@ -40,20 +40,15 @@ export default async function PropertiesPage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <header className="flex items-baseline justify-between gap-3">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-            {t("title")}
-          </h1>
-          <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
-        </div>
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
         <Link
           href="/settings#properties"
           className={buttonVariants({ size: "sm" })}
         >
           {t("importCta")}
         </Link>
-      </header>
+      </div>
 
       {rows.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border bg-card px-6 py-14 text-center">

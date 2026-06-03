@@ -7,6 +7,8 @@ export type NavItem = {
     | "inbox"
     | "performance"
     | "content"
+    | "studio"
+    | "matches"
     | "settings"
     | "allAgencies";
   href: string;
@@ -15,6 +17,8 @@ export type NavItem = {
     | "inbox"
     | "performance"
     | "content"
+    | "studio"
+    | "matches"
     | "settings"
     | "admin";
   roles: AgencyRole[];
@@ -37,6 +41,8 @@ export const PRIMARY_NAV: NavItem[] = [
   { tKey: "inbox", href: "/approvals", iconName: "inbox", roles: ["owner", "agent", "viewer"] },
   { tKey: "performance", href: "/performance", iconName: "performance", roles: ["owner", "agent", "viewer"] },
   { tKey: "content", href: "/content", iconName: "content", roles: ["owner", "agent", "viewer"], soon: true },
+  { tKey: "studio", href: "/studio", iconName: "studio", roles: ["owner", "agent", "viewer"], soon: true },
+  { tKey: "matches", href: "/matches", iconName: "matches", roles: ["owner", "agent", "viewer"], soon: true },
   { tKey: "settings", href: "/settings", iconName: "settings", roles: ["owner", "agent", "viewer"] },
 ];
 

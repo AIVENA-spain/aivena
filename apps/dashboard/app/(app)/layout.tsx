@@ -10,6 +10,7 @@ import { getCurrentUserContext } from "@/lib/auth/context";
 import { NoAgencyState } from "@/components/shell/no-agency-state";
 import { Sidebar } from "@/components/shell/sidebar";
 import { Topbar } from "@/components/shell/topbar";
+import { AssistantWidget } from "@/components/shell/assistant-widget";
 
 const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
 
@@ -125,6 +126,7 @@ export default async function AppLayout({
           <div className="mx-auto w-full max-w-6xl">{children}</div>
         </main>
       </div>
+      <AssistantWidget />
     </div>
   );
 }

@@ -48,8 +48,17 @@ export function Topbar({
   const tBar = useTranslations("topbar");
   const tRoot = useTranslations();
 
+  // Routes with their own page, intentionally NOT in the sidebar nav, still
+  // need a correct topbar title (otherwise activeNavTKey falls back to
+  // "Overview"). Map them to a root-namespace title key.
+  const NON_NAV_TITLES: Record<string, string> = {
+    "/properties": "properties.title",
+  };
+  const override = Object.keys(NON_NAV_TITLES).find(
+    (href) => pathname === href || pathname.startsWith(`${href}/`),
+  );
   const titleKey = activeNavTKey(pathname);
-  const title = tNav(titleKey);
+  const title = override ? tRoot(NON_NAV_TITLES[override]) : tNav(titleKey);
   const agencyName = ctx.activeAgency?.agency.displayName ?? "";
   const firstNameRaw = ctx.email.split("@")[0]?.split(".")[0] ?? "";
   const firstName = firstNameRaw

@@ -682,6 +682,20 @@
       "afterLabel": "After",
       "disclaimer": "Visualization only — not a guaranteed real-world result.",
       "generate": "Generate virtual staging"
+    },
+    "tabLibrary": "Library",
+    "library": {
+      "emptyTitle": "Nothing here yet",
+      "emptyBody": "Your generated content will appear here once you create ad creatives, social posts, or staged images.",
+      "close": "Close",
+      "status_draft": "Draft",
+      "status_pending_approval": "Pending approval",
+      "status_approved": "Approved",
+      "status_rejected": "Rejected",
+      "status_scheduled": "Scheduled",
+      "status_published": "Published",
+      "status_archived": "Archived",
+      "status_failed": "Failed"
     }
   },
   "assistant": {

@@ -222,6 +222,28 @@ export type BookingRow = {
 
 export type BookingsResponse = { bookings: BookingRow[] };
 
+// ── Content library (Studio Library tab) ──────────────────────────────────
+
+export type ContentItemRow = {
+  id: string;
+  content_type: string;
+  platform: string | null;
+  title: string;
+  body: string;
+  hashtags: string[] | null;
+  /** jsonb array of media URLs; media_urls[0] is the thumbnail. */
+  media_urls: string[];
+  media_type: string | null;
+  status: string;
+  property_id: string | null;
+  lead_id: string | null;
+  tone: string | null;
+  length: string | null;
+  created_at: string;
+};
+
+export type ContentItemsResponse = { items: ContentItemRow[] };
+
 export type ThreadMessage = {
   id: string;
   direction: string;

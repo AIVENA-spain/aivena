@@ -244,6 +244,19 @@ export type ContentItemRow = {
 
 export type ContentItemsResponse = { items: ContentItemRow[] };
 
+// ── Lead notes ────────────────────────────────────────────────────────────
+
+export type LeadNoteRow = {
+  id: string;
+  body: string;
+  author_user_id: string | null;
+  context_for_ai: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type LeadNotesResponse = { notes: LeadNoteRow[] };
+
 export type ThreadMessage = {
   id: string;
   direction: string;

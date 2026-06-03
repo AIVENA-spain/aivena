@@ -42,6 +42,7 @@ import {
   dismissTaskAction,
 } from "@/app/(app)/approvals/[taskId]/actions";
 import { loadTaskDetailAction } from "./inbox-actions";
+import { LeadNotes } from "./lead-notes";
 import type {
   InboxRow,
   TaskDetailResponse,
@@ -682,9 +683,14 @@ function BuyersConvoView({
         )}
       </div>
 
-      {/* Right: summary */}
-      <div className="border-t border-border p-5 lg:border-t-0 lg:border-l">
-        {selected ? <LeadSummary lead={selected} /> : null}
+      {/* Right: summary + notes */}
+      <div className="flex max-h-[640px] flex-col gap-4 overflow-y-auto border-t border-border p-5 lg:border-t-0 lg:border-l">
+        {selected ? (
+          <>
+            <LeadSummary lead={selected} />
+            <LeadNotes key={selected.leadId} leadId={selected.leadId} />
+          </>
+        ) : null}
       </div>
     </div>
   );

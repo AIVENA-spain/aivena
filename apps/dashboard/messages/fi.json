@@ -195,6 +195,23 @@
       "cancel": "Cancel",
       "activate": "Activate valuation form",
       "close": "Close"
+    },
+    "notes": {
+      "heading": "Notes",
+      "placeholder": "Add a note about this lead…",
+      "addButton": "Add note",
+      "adding": "Saving…",
+      "loading": "Loading notes…",
+      "empty": "No notes yet.",
+      "usedByAi": "Used by AI",
+      "usedByAiHint": "When on, the AI considers this note when drafting replies.",
+      "edit": "Edit",
+      "save": "Save",
+      "saving": "Saving…",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "deleteConfirm": "Delete this note?",
+      "deleteConfirmYes": "Delete"
     }
   },
   "approvals": {

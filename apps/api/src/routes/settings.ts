@@ -19,6 +19,11 @@ const SUPPORTED_LANGUAGES = new Set([
   'es', 'en', 'no', 'sv', 'da', 'de', 'nl', 'fr', 'it', 'pt', 'ru', 'pl', 'fi',
 ]);
 
+// Agency-level single-language fields (translation_target_language,
+// dashboard_display_language) gate on the same 13-code DB CHECK as above —
+// note these use 'no' (NOT the per-user 'nb' that user_preferences uses).
+const AGENCY_LANGUAGE_CODES = SUPPORTED_LANGUAGES;
+
 // Tone allowlist — the 5 chips the mockup exposes. The DB column has no CHECK,
 // so we gate on the API to prevent random strings ending up there. Existing
 // values outside the 5 (e.g. "professional") render in the UI as a muted
@@ -50,29 +55,57 @@ route.get('/', async (c) => {
   const tx = c.get('tx');
 
   try {
+    // dashboard_settings(0) is Vega's locked read contract. The v1.15 commerce
+    // columns (plan_tier, the four generator/voice quotas) and the v1.14
+    // agency-level language fields (translation_target_language,
+    // dashboard_display_language) are NOT in that contract yet, so we read them
+    // straight off agency_settings in the same agency-context tx (RLS-scoped)
+    // and merge them into the response. No RPC change needed — this route runs
+    // as aivena_app with app.current_agency_id set.
     const result = await tx.execute(sql`
       SELECT
         dashboard_settings(0)                AS settings,
-        (SELECT reply_rules
-           FROM agency_settings
-          WHERE agency_id = current_setting('app.current_agency_id', true)
-        )                                    AS reply_rules
+        (SELECT row_to_json(a) FROM (
+           SELECT reply_rules,
+                  plan_tier,
+                  voice_minutes_monthly_quota,  voice_minutes_used_this_month,
+                  ad_creative_monthly_quota,    ad_creative_used_this_month,
+                  social_post_monthly_quota,    social_post_used_this_month,
+                  renovation_monthly_quota,     renovation_used_this_month,
+                  translation_target_language,
+                  dashboard_display_language
+             FROM agency_settings
+            WHERE agency_id = current_setting('app.current_agency_id', true)
+         ) a)                                 AS agency_row
     `);
     const rows = result as unknown as Array<{
       settings: Settings | null;
-      reply_rules: Record<string, unknown> | null;
+      agency_row: AgencyRow | null;
     }>;
     const settings = rows[0]?.settings ?? null;
     if (!settings) {
       return c.json({ error: 'Failed to load settings' }, 500);
     }
+    const agencyRow = rows[0]?.agency_row ?? null;
 
-    const toggles = readDashboardToggles(rows[0]?.reply_rules ?? null);
+    const toggles = readDashboardToggles(agencyRow?.reply_rules ?? null);
     const config = (settings.config && typeof settings.config === 'object')
       ? (settings.config as Record<string, unknown>)
       : {};
     config.dashboard_toggles = toggles;
     settings.config = config;
+
+    // v1.15 plan + quota block. null quota = unlimited (the tier convention).
+    settings.plan_tier = agencyRow?.plan_tier ?? 'starter';
+    settings.quotas = {
+      voiceMinutes: quotaPair(agencyRow?.voice_minutes_monthly_quota, agencyRow?.voice_minutes_used_this_month),
+      adCreative: quotaPair(agencyRow?.ad_creative_monthly_quota, agencyRow?.ad_creative_used_this_month),
+      socialPost: quotaPair(agencyRow?.social_post_monthly_quota, agencyRow?.social_post_used_this_month),
+      renovation: quotaPair(agencyRow?.renovation_monthly_quota, agencyRow?.renovation_used_this_month),
+    };
+    // v1.14 agency-level language fields.
+    settings.translation_target_language = agencyRow?.translation_target_language ?? 'en';
+    settings.dashboard_display_language = agencyRow?.dashboard_display_language ?? 'en';
 
     return c.json(settings);
   } catch (err) {
@@ -80,6 +113,34 @@ route.get('/', async (c) => {
     return c.json({ error: 'Failed to load settings' }, 500);
   }
 });
+
+type AgencyRow = {
+  reply_rules: Record<string, unknown> | null;
+  plan_tier: string | null;
+  voice_minutes_monthly_quota: number | null;
+  voice_minutes_used_this_month: number | null;
+  ad_creative_monthly_quota: number | null;
+  ad_creative_used_this_month: number | null;
+  social_post_monthly_quota: number | null;
+  social_post_used_this_month: number | null;
+  renovation_monthly_quota: number | null;
+  renovation_used_this_month: number | null;
+  translation_target_language: string | null;
+  dashboard_display_language: string | null;
+};
+
+// Quota shape: `quota === null` means unlimited (tier='unlimited' or an
+// un-provisioned cap). `used` always coerces to a number so the UI bar maths
+// never divides by NaN.
+function quotaPair(
+  quota: number | null | undefined,
+  used: number | null | undefined,
+): { quota: number | null; used: number } {
+  return {
+    quota: typeof quota === 'number' ? quota : null,
+    used: typeof used === 'number' ? used : 0,
+  };
+}
 
 function readDashboardToggles(
   replyRules: Record<string, unknown> | null,
@@ -341,6 +402,67 @@ route.post('/languages', async (c) => {
   } catch (err) {
     console.error('[/api/v1/settings/languages] write failed:', err);
     return c.json({ error: 'Couldn\'t save languages. Please try again — if it keeps happening, contact support.' }, 500);
+  }
+});
+
+/**
+ * POST /api/v1/settings/agency-languages — writes the two agency-level
+ * single-language fields (v1.14.4 / v1.14.5):
+ *   - translation_target_language: what inbound messages + AI drafts are
+ *     translated INTO for the whole agency (Vega's auto-fill backend reads this).
+ *   - dashboard_display_language: the per-agency DEFAULT dashboard language a
+ *     new team member inherits before they set a personal preference.
+ *
+ * Both gate on the 13-code DB CHECK (using 'no', not the per-user 'nb'). This
+ * is SEPARATE from /api/v1/me/preferences, which owns the caller's PERSONAL
+ * ui_language (user_preferences) — that control is untouched. Accepts either
+ * field independently; at least one must be present.
+ */
+route.post('/agency-languages', async (c) => {
+  const tx = c.get('tx');
+  const body = await readJson(c);
+
+  const target = body.translation_target_language;
+  const display = body.dashboard_display_language;
+
+  const hasTarget = target !== undefined;
+  const hasDisplay = display !== undefined;
+  if (!hasTarget && !hasDisplay) {
+    return c.json({ error: 'Nothing to update.' }, 400);
+  }
+  if (hasTarget && (typeof target !== 'string' || !AGENCY_LANGUAGE_CODES.has(target))) {
+    return c.json({ error: 'That translation language isn\'t supported.' }, 400);
+  }
+  if (hasDisplay && (typeof display !== 'string' || !AGENCY_LANGUAGE_CODES.has(display))) {
+    return c.json({ error: 'That dashboard language isn\'t supported.' }, 400);
+  }
+
+  try {
+    // Build the SET list from only the provided fields. COALESCE-free because
+    // each branch is an explicit literal; the un-provided field keeps its value.
+    const result = await tx.execute(sql`
+      UPDATE agency_settings
+         SET translation_target_language = ${hasTarget ? (target as string) : sql`translation_target_language`},
+             dashboard_display_language  = ${hasDisplay ? (display as string) : sql`dashboard_display_language`},
+             updated_at                  = now()
+       WHERE agency_id = current_setting('app.current_agency_id', true)
+       RETURNING translation_target_language, dashboard_display_language
+    `);
+    const rows = result as unknown as Array<{
+      translation_target_language: string;
+      dashboard_display_language: string;
+    }>;
+    if (rows.length === 0) {
+      return c.json({ error: 'Settings row not found for this agency.' }, 404);
+    }
+    return c.json({
+      ok: true,
+      translation_target_language: rows[0].translation_target_language,
+      dashboard_display_language: rows[0].dashboard_display_language,
+    });
+  } catch (err) {
+    console.error('[/api/v1/settings/agency-languages] write failed:', err);
+    return c.json({ error: 'Couldn\'t save language settings. Please try again — if it keeps happening, contact support.' }, 500);
   }
 });
 

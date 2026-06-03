@@ -343,7 +343,11 @@
       "name_pt": "Português",
       "name_ru": "Русский",
       "name_pl": "Polski",
-      "name_fi": "Suomi"
+      "name_fi": "Suomi",
+      "translateInto": "Translate client messages into",
+      "translateIntoHelp": "Incoming messages and AI-drafted replies are translated into this language across your whole agency, so anyone on your team can read and approve them.",
+      "displayDefault": "Default dashboard language for new team members",
+      "displayDefaultHelp": "New team members see the dashboard in this language until they pick their own in Personal settings."
     },
     "channels": {
       "title": "Connected channels & integrations",
@@ -408,6 +412,45 @@
         "pendingInviteExists": "{email} already has a pending invitation.",
         "generic": "Couldn't create that invite — please try again."
       }
+    },
+    "plan": {
+      "title": "Plan & usage",
+      "subtitle": "Your subscription tier and this month’s usage.",
+      "currentPlan": "Current plan",
+      "tier_starter": "Starter",
+      "tier_pro": "Pro",
+      "tier_unlimited": "Unlimited",
+      "unlimited": "Unlimited",
+      "usageOf": "{used} of {quota} this month",
+      "quota_voiceMinutes": "Voice minutes",
+      "quota_adCreative": "Ad creatives",
+      "quota_socialPost": "Social posts",
+      "quota_renovation": "Renovations",
+      "provisioningNote": "Your plan is set when your account is provisioned. To change tiers, contact your AIVENA representative."
+    },
+    "properties": {
+      "title": "Properties",
+      "subtitle": "Import your active listings from a CSV so AIVENA can mention them accurately.",
+      "dropPrompt": "Upload a CSV of your listings",
+      "dropHint": "We map common Spanish CRM column names automatically.",
+      "uploading": "Reading your file…",
+      "previewSummary": "{valid} of {total} rows ready to import.",
+      "matchedColumns": "Matched columns",
+      "unmatchedColumns": "Unmatched columns",
+      "unmatchedHint": "These columns weren’t recognised and will be ignored. Everything else imports fine.",
+      "colRef": "Reference",
+      "colTitle": "Title",
+      "colPrice": "Price",
+      "colStatus": "Status",
+      "rowOk": "Ready",
+      "rowInvalid": "Needs a reference and title",
+      "confirmImport": "Confirm import",
+      "confirming": "Importing…",
+      "cancel": "Cancel",
+      "doneTitle": "{count} properties imported",
+      "doneNote": "Property search readiness finishes processing shortly in the background.",
+      "viewProperties": "View properties",
+      "importAnother": "Import another file"
     }
   },
   "performance": {
@@ -537,5 +580,21 @@
       "roleNameAgent": "Agent",
       "roleNameViewer": "Viewer"
     }
+  },
+  "properties": {
+    "title": "Properties",
+    "subtitle": "Your active listing catalog.",
+    "importCta": "Import CSV",
+    "emptyTitle": "No properties yet",
+    "emptyBody": "Import your listings from a CSV to get started.",
+    "colRef": "Reference",
+    "colTitle": "Title",
+    "colType": "Type",
+    "colLocation": "Location",
+    "colPrice": "Price",
+    "colStatus": "Status",
+    "status_active": "Active",
+    "status_reserved": "Reserved",
+    "status_sold": "Sold"
   }
 }

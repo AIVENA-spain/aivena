@@ -150,6 +150,46 @@ export async function saveLanguagesAction(
   }
 }
 
+// ---------- agency-level languages (translation target + display default) ----
+
+/**
+ * Writes the agency-level single-language fields (v1.14.4 / v1.14.5):
+ * translation_target_language and/or dashboard_display_language. Distinct from
+ * the per-user ui_language in /me/preferences — this is agency scope. Pass only
+ * the field(s) you want to change.
+ */
+export async function saveAgencyLanguagesAction(payload: {
+  translation_target_language?: string;
+  dashboard_display_language?: string;
+}): Promise<
+  ActionResult<{
+    translation_target_language: string;
+    dashboard_display_language: string;
+  }>
+> {
+  try {
+    const res = await apiFetch<{
+      ok: true;
+      translation_target_language: string;
+      dashboard_display_language: string;
+    }>("/api/v1/settings/agency-languages", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    revalidatePath("/settings");
+    revalidatePath("/", "layout");
+    return {
+      ok: true,
+      data: {
+        translation_target_language: res.translation_target_language,
+        dashboard_display_language: res.dashboard_display_language,
+      },
+    };
+  } catch (err) {
+    return actionError("saveAgencyLanguagesAction", err);
+  }
+}
+
 // ---------- logo upload (forwards base64 to Vega's Edge Function) ----------
 
 export type LogoPayload = {

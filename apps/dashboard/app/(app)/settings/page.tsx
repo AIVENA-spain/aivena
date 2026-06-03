@@ -14,10 +14,12 @@ import type { SettingsResponse } from "@/lib/api/types";
 
 import { PreferencesForm } from "./preferences-form";
 import { ChecklistSection } from "./sections/checklist-section";
+import { PlanSection } from "./sections/plan-section";
 import { BrandingAndVoiceSection } from "./sections/branding-section";
 import { IdentitySection } from "./sections/identity-section";
 import { AiRulesSection } from "./sections/ai-rules-section";
 import { LanguagesSection } from "./sections/languages-section";
+import { PropertiesSection } from "./sections/properties-section";
 import { ChannelsSection } from "./sections/channels-section";
 import { TeamSection } from "./sections/team-section";
 
@@ -70,6 +72,11 @@ export default async function SettingsPage() {
 
   const currentUserId =
     ctx.status === "fulfilled" && ctx.value ? ctx.value.userId : "";
+  const role =
+    ctx.status === "fulfilled" && ctx.value
+      ? ctx.value.activeAgency?.role ?? null
+      : null;
+  const isOwner = role === "owner";
 
   return (
     <div className="flex flex-col gap-6">
@@ -86,6 +93,8 @@ export default async function SettingsPage() {
 
       <ChecklistSection checklist={settings.setup_checklist} />
 
+      <PlanSection planTier={settings.plan_tier} quotas={settings.quotas} />
+
       <BrandingAndVoiceSection branding={settings.branding} />
 
       <IdentitySection profile={settings.profile} />
@@ -96,7 +105,14 @@ export default async function SettingsPage() {
         initialTimezone={settings.config.timezone}
       />
 
-      <LanguagesSection initial={settings.profile.supported_languages} />
+      <LanguagesSection
+        initial={settings.profile.supported_languages}
+        translationTarget={settings.translation_target_language}
+        dashboardDisplay={settings.dashboard_display_language}
+        canEditDefault={isOwner}
+      />
+
+      <PropertiesSection />
 
       <ChannelsSection
         channels={settings.channels}

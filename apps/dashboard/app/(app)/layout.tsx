@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getLocale } from "next-intl/server";
 
 import { apiFetch } from "@/lib/api/client";
-import { LOCALE_COOKIE, isLocale } from "@/lib/i18n/config";
+import { LOCALE_COOKIE, catalogLocaleFor } from "@/lib/i18n/config";
 import { intlLocaleFor } from "@/lib/i18n/date-locale";
 import type { SettingsResponse, TasksResponse } from "@/lib/api/types";
 import { getCurrentUserContext } from "@/lib/auth/context";
@@ -37,15 +37,13 @@ async function getInboxCount(): Promise<number | null> {
   }
 }
 
-async function getAgencyBrandName(): Promise<string | null> {
-  // The account chip's popover prefers `branding.brand_name` so what shows
-  // there matches what the operator set in /settings. Fetched in parallel
-  // with the inbox count; silent fallback to null if anything fails — the
-  // chip falls back to the auth-context displayName, and finally to the
-  // email domain, so the popover line is never blank.
+async function getSettings(): Promise<SettingsResponse | null> {
+  // One settings read serves two needs: the account-chip brand name AND the
+  // agency-default dashboard language used in the locale precedence below.
+  // Silent fallback to null — the chip falls back to displayName/email domain
+  // and the locale falls back to the per-user value or English.
   try {
-    const res = await apiFetch<SettingsResponse>("/api/v1/settings");
-    return res.branding?.brand_name ?? null;
+    return await apiFetch<SettingsResponse>("/api/v1/settings");
   } catch {
     return null;
   }
@@ -63,45 +61,43 @@ export default async function AppLayout({
     return <NoAgencyState email={ctx.email} />;
   }
 
-  // ─── Cookie-vs-DB locale reconciliation ──────────────────────────────────
-  // DB (`user_preferences.ui_language`) is authoritative for authenticated
-  // users. The `aivena_ui_language` cookie is normally written by Settings,
-  // but can drift (e.g. cookie set to "es" during earlier testing, DB later
-  // set to "en"). When they disagree, `i18n/request.ts` honours the cookie
-  // and we get the mixed-locale signature — English UI strings (from the
-  // English-copy `messages/*.json`) plus Spanish Intl date output. This
-  // block heals that drift on NEXT render (cookies read at request start
-  // are already committed for THIS render). Two-tick self-heal is fine.
+  const [inboxCount, settings] = await Promise.all([
+    getInboxCount(),
+    getSettings(),
+  ]);
+  const brandName = settings?.branding?.brand_name ?? null;
+
+  // ─── Locale resolution + cookie reconciliation ───────────────────────────
+  // Precedence (v1.14.5): the user's personal `ui_language` wins; falling back
+  // to the agency's `dashboard_display_language` default; falling back to 'en'.
+  // catalogLocaleFor() maps both code systems (per-user 'nb', agency 'no', and
+  // the not-yet-shipped da/fi/pt) onto a catalog file that exists, so a fresh
+  // agent with no personal preference still lands on the agency default without
+  // a missing-catalog crash.
   //
-  // Failure is silent: if the cookie write throws or the prefs row was
-  // unreadable, we just skip reconciliation this render — locale resolution
-  // continues to use whatever cookie value already exists.
+  // The `aivena_ui_language` cookie is what `i18n/request.ts` reads at request
+  // start. When the resolved locale and the cookie disagree, we heal on the
+  // NEXT render (cookies for THIS render are already committed). Two-tick
+  // self-heal is fine. Failure is silent.
   //
-  // TODO(when-login-action-lands, pre-pilot): the login action should set
-  // the cookie from `user_preferences.ui_language` at login time. That
-  // eliminates the two-tick self-heal in favor of zero-tick.
-  //
-  // See FIX 1 diagnosis from 2026-05-27.
+  // TODO(when-login-action-lands, pre-pilot): set the cookie at login time to
+  // eliminate the two-tick self-heal in favor of zero-tick.
   try {
-    if (ctx.uiLanguage && isLocale(ctx.uiLanguage)) {
-      const cookieStore = await cookies();
-      const cookieLocale = cookieStore.get(LOCALE_COOKIE)?.value;
-      if (cookieLocale !== ctx.uiLanguage) {
-        cookieStore.set(LOCALE_COOKIE, ctx.uiLanguage, {
-          path: "/",
-          maxAge: ONE_YEAR_SECONDS,
-          sameSite: "lax",
-        });
-      }
+    const resolved = catalogLocaleFor(
+      ctx.uiLanguage ?? settings?.dashboard_display_language ?? null,
+    );
+    const cookieStore = await cookies();
+    const cookieLocale = cookieStore.get(LOCALE_COOKIE)?.value;
+    if (cookieLocale !== resolved) {
+      cookieStore.set(LOCALE_COOKIE, resolved, {
+        path: "/",
+        maxAge: ONE_YEAR_SECONDS,
+        sameSite: "lax",
+      });
     }
   } catch {
     // Cookie write failed (e.g. headers already sent) — fall through.
   }
-
-  const [inboxCount, brandName] = await Promise.all([
-    getInboxCount(),
-    getAgencyBrandName(),
-  ]);
 
   // Server-time greeting + date label. Locale-aware date format (uses the
   // user's UI language). Server timezone may differ from the user's; for

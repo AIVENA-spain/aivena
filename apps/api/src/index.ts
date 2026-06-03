@@ -13,6 +13,7 @@ import overviewRoute from './routes/overview';
 import tasksRoute from './routes/tasks';
 import settingsRoute from './routes/settings';
 import invitationsRoute from './routes/invitations';
+import propertiesRoute from './routes/properties';
 
 Sentry.init({
   dsn: env.SENTRY_DSN,
@@ -52,6 +53,8 @@ app.route('/api/v1/overview', overviewRoute);
 app.route('/api/v1/tasks', tasksRoute);
 app.route('/api/v1/settings', settingsRoute);
 app.route('/api/v1/invitations', invitationsRoute);
+// Property catalog ingestion (§5.17) — paths are /api/v1/agencies/:id/property-imports[...]
+app.route('/api/v1/agencies', propertiesRoute);
 
 // Webhook signature validation — provider-specific.
 // WhatsApp uses x-hub-signature-256 (Meta HMAC SHA-256 of raw body).

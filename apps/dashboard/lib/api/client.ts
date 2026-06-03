@@ -42,7 +42,11 @@ export async function apiFetch<T = unknown>(
 
   const headers = new Headers(init.headers);
   headers.set("Authorization", `Bearer ${token}`);
-  if (init.body && !headers.has("Content-Type")) {
+  // Default to JSON, but never stamp a content-type on FormData — fetch must
+  // set its own multipart boundary for file uploads (property CSV import).
+  const isFormData =
+    typeof FormData !== "undefined" && init.body instanceof FormData;
+  if (init.body && !isFormData && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
 

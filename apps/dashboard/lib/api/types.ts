@@ -156,7 +156,48 @@ export type SettingsResponse = {
     whatsapp_connected: ChecklistItem;
   };
   network: { value: unknown; no_source: boolean; label: string };
+  // ── v1.15 commerce + v1.14 agency-language fields (merged in by the API
+  //    directly off agency_settings; not part of dashboard_settings(0)) ──
+  plan_tier: PlanTier;
+  quotas: QuotaBlock;
+  translation_target_language: string;
+  /** Per-agency DEFAULT dashboard language a new team member inherits. */
+  dashboard_display_language: string;
 };
+
+export type PlanTier = "starter" | "pro" | "unlimited";
+
+/** `quota === null` ⇒ unlimited (the tier convention). */
+export type QuotaUsage = { quota: number | null; used: number };
+
+export type QuotaBlock = {
+  voiceMinutes: QuotaUsage;
+  adCreative: QuotaUsage;
+  socialPost: QuotaUsage;
+  renovation: QuotaUsage;
+};
+
+// ── Properties (catalog) ──────────────────────────────────────────────────
+
+export type PropertyRow = {
+  id: string;
+  external_id: string;
+  title: string;
+  property_type: string | null;
+  status: string;
+  price: number | null;
+  price_currency: string;
+  bedrooms: number | null;
+  bathrooms: number | null;
+  area_sqm: number | null;
+  location_city: string | null;
+  location_region: string | null;
+  /** Whether Vega's embedding step has filled the vector yet. */
+  has_embedding: boolean;
+  updated_at: string;
+};
+
+export type PropertiesResponse = { properties: PropertyRow[] };
 
 export type ThreadMessage = {
   id: string;

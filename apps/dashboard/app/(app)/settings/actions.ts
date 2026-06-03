@@ -4,11 +4,7 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 
 import { apiFetch, ApiError } from "@/lib/api/client";
-import {
-  LOCALE_COOKIE,
-  THEME_COOKIE,
-  isLocale,
-} from "@/lib/i18n/config";
+import { LOCALE_COOKIE, catalogLocaleFor } from "@/lib/i18n/config";
 
 type Patch = {
   uiLanguage?: string;
@@ -51,8 +47,9 @@ export async function updatePreferencesAction(
 
     const cookieStore = await cookies();
     const year = 60 * 60 * 24 * 365;
-    if (isLocale(res.uiLanguage)) {
-      cookieStore.set(LOCALE_COOKIE, res.uiLanguage, {
+    if (patch.uiLanguage) {
+      // Map the per-user code ('nb' system) onto the catalog file that exists.
+      cookieStore.set(LOCALE_COOKIE, catalogLocaleFor(res.uiLanguage), {
         path: "/",
         maxAge: year,
         sameSite: "lax",

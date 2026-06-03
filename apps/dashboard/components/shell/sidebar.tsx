@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
+  Building2,
   ImageIcon,
   Inbox,
   LayoutGrid,
@@ -23,6 +24,7 @@ import { AccountChip } from "./account-chip";
 const ICONS: Record<NavItem["iconName"], LucideIcon> = {
   overview: LayoutGrid,
   inbox: Inbox,
+  properties: Building2,
   performance: LineChart,
   content: ImageIcon,
   studio: Sparkles,

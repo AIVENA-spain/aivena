@@ -58,7 +58,7 @@ route.get('/:id/properties', async (c) => {
     const result = await tx.execute(sql`
       SELECT id, external_id, title, property_type, status, price, price_currency,
              bedrooms, bathrooms, area_sqm, location_city, location_region,
-             (embedding IS NOT NULL) AS has_embedding, updated_at
+             images, (embedding IS NOT NULL) AS has_embedding, updated_at
         FROM properties
        WHERE agency_id = current_setting('app.current_agency_id', true)
        ORDER BY updated_at DESC

@@ -11,7 +11,8 @@
     "brandSubtitle": "AI real estate",
     "soonBadge": "Soon",
     "studio": "Studio",
-    "matches": "Matches"
+    "matches": "Matches",
+    "properties": "Properties"
   },
   "topbar": {
     "switchAgency": "Switch agency",
@@ -599,7 +600,11 @@
     "colStatus": "Status",
     "status_active": "Active",
     "status_reserved": "Reserved",
-    "status_sold": "Sold"
+    "status_sold": "Sold",
+    "closeImport": "Close import",
+    "bedsShort": "bd",
+    "bathsShort": "ba",
+    "areaUnit": "m²"
   },
   "gate": {
     "launchPill": "Soon",

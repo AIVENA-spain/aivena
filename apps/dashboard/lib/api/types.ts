@@ -192,6 +192,8 @@ export type PropertyRow = {
   area_sqm: number | null;
   location_city: string | null;
   location_region: string | null;
+  /** jsonb array of image URLs; images[0] is the thumbnail. May be empty. */
+  images: string[];
   /** Whether Vega's embedding step has filled the vector yet. */
   has_embedding: boolean;
   updated_at: string;

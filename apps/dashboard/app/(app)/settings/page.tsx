@@ -19,7 +19,6 @@ import { BrandingAndVoiceSection } from "./sections/branding-section";
 import { IdentitySection } from "./sections/identity-section";
 import { AiRulesSection } from "./sections/ai-rules-section";
 import { LanguagesSection } from "./sections/languages-section";
-import { PropertiesSection } from "./sections/properties-section";
 import { ChannelsSection } from "./sections/channels-section";
 import { TeamSection } from "./sections/team-section";
 
@@ -111,8 +110,6 @@ export default async function SettingsPage() {
         dashboardDisplay={settings.dashboard_display_language}
         canEditDefault={isOwner}
       />
-
-      <PropertiesSection />
 
       <ChannelsSection
         channels={settings.channels}

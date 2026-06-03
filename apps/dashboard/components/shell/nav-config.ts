@@ -5,6 +5,7 @@ export type NavItem = {
   tKey:
     | "overview"
     | "inbox"
+    | "properties"
     | "performance"
     | "content"
     | "studio"
@@ -15,6 +16,7 @@ export type NavItem = {
   iconName:
     | "overview"
     | "inbox"
+    | "properties"
     | "performance"
     | "content"
     | "studio"
@@ -39,6 +41,7 @@ export type NavItem = {
 export const PRIMARY_NAV: NavItem[] = [
   { tKey: "overview", href: "/", iconName: "overview", roles: ["owner", "agent", "viewer"] },
   { tKey: "inbox", href: "/approvals", iconName: "inbox", roles: ["owner", "agent", "viewer"] },
+  { tKey: "properties", href: "/properties", iconName: "properties", roles: ["owner", "agent", "viewer"] },
   { tKey: "performance", href: "/performance", iconName: "performance", roles: ["owner", "agent", "viewer"] },
   { tKey: "content", href: "/content", iconName: "content", roles: ["owner", "agent", "viewer"], soon: true },
   { tKey: "studio", href: "/studio", iconName: "studio", roles: ["owner", "agent", "viewer"], soon: true },

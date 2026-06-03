@@ -17,7 +17,7 @@ import {
   importPropertiesAction,
   confirmImportAction,
   type ImportPreview,
-} from "../property-actions";
+} from "./property-actions";
 
 type Phase =
   | { kind: "idle" }
@@ -33,7 +33,7 @@ type Phase =
  * `properties`. Embeddings are filled later by Vega's step; this UI never
  * promises search is live the instant a row lands.
  */
-export function PropertiesSection() {
+export function PropertyImportPanel() {
   const t = useTranslations("settings.properties");
   const inputRef = useRef<HTMLInputElement>(null);
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });

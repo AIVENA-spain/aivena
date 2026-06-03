@@ -9,9 +9,9 @@ import { Monitor, Moon, Sun } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
 import {
-  SUPPORTED_LOCALES,
-  LOCALE_NAMES,
-  type Locale,
+  USER_PREF_LOCALES,
+  USER_PREF_LOCALE_NAMES,
+  type UserPrefLocale,
 } from "@/lib/i18n/config";
 import { updatePreferencesAction } from "./actions";
 
@@ -99,9 +99,9 @@ export function PreferencesForm({
           onChange={(e) => handleUiLanguageChange(e.target.value)}
           className="w-full max-w-xs rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          {SUPPORTED_LOCALES.map((code) => (
+          {USER_PREF_LOCALES.map((code) => (
             <option key={code} value={code}>
-              {LOCALE_NAMES[code as Locale]}
+              {USER_PREF_LOCALE_NAMES[code as UserPrefLocale]}
             </option>
           ))}
         </select>
@@ -115,9 +115,9 @@ export function PreferencesForm({
           onChange={(e) => handleMessageLanguageChange(e.target.value)}
           className="w-full max-w-xs rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          {SUPPORTED_LOCALES.map((code) => (
+          {USER_PREF_LOCALES.map((code) => (
             <option key={code} value={code}>
-              {LOCALE_NAMES[code as Locale]}
+              {USER_PREF_LOCALE_NAMES[code as UserPrefLocale]}
             </option>
           ))}
         </select>

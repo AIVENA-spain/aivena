@@ -1,19 +1,25 @@
 /**
- * The locales we support in the dashboard UI catalogue. Mirrors the CHECK
- * constraint on user_preferences.ui_language in the database — keep these in
- * lockstep when adding a language.
+ * The locales the dashboard UI catalogue ships (one messages/<code>.json per
+ * entry). These are the canonical 13 supported languages and use **'no'** for
+ * Norwegian (matching agency_settings.dashboard_display_language and the DB
+ * CHECK constraints). The per-user `user_preferences.ui_language` column uses a
+ * DIFFERENT, narrower system ('nb', 10 codes) — see USER_PREF_LOCALES — so the
+ * two are bridged by catalogLocaleFor().
  */
 export const SUPPORTED_LOCALES = [
   "en",
   "es",
-  "pl",
-  "nb",
-  "fr",
-  "nl",
   "de",
-  "ru",
+  "nl",
+  "fr",
+  "pl",
   "sv",
+  "no",
+  "da",
+  "fi",
+  "ru",
   "it",
+  "pt",
 ] as const;
 
 export type Locale = (typeof SUPPORTED_LOCALES)[number];
@@ -29,29 +35,63 @@ export function isLocale(value: string | undefined): value is Locale {
 }
 
 /**
- * Map ANY language code (per-user `ui_language` OR agency-level
- * `dashboard_display_language`, which uses the 13-code 'no' system) onto a
- * catalog file that actually exists right now.
- *
- * The two code systems differ: user_preferences uses 'nb' for Norwegian; the
- * agency columns use 'no'. The catalog is currently the 10-file 'nb' set, so
- * agency 'no' aliases to 'nb', and the three 13-system languages without a
- * catalog yet (da/fi/pt) fall back to English. Phase 4 renames nb→no and adds
- * da/fi/pt — at which point this alias table flips and shrinks.
+ * Bridge ANY language code (per-user `ui_language` in the 'nb' system, OR
+ * agency-level `dashboard_display_language` in the 'no' system) onto a catalog
+ * file that exists. Norwegian is stored as 'nb' at the per-user layer (DB
+ * CHECK) but the catalog file is 'no', so alias nb→no. Unknown codes fall back
+ * to English.
  */
 const CATALOG_ALIAS: Record<string, Locale> = {
-  no: "nb",
+  nb: "no",
 };
 
-export function catalogLocaleFor(
-  code: string | null | undefined,
-): Locale {
+export function catalogLocaleFor(code: string | null | undefined): Locale {
   if (!code) return DEFAULT_LOCALE;
   const aliased = CATALOG_ALIAS[code] ?? code;
   return isLocale(aliased) ? aliased : DEFAULT_LOCALE;
 }
 
 export const LOCALE_NAMES: Record<Locale, string> = {
+  en: "English",
+  es: "Español",
+  de: "Deutsch",
+  nl: "Nederlands",
+  fr: "Français",
+  pl: "Polski",
+  sv: "Svenska",
+  no: "Norsk",
+  da: "Dansk",
+  fi: "Suomi",
+  ru: "Русский",
+  it: "Italiano",
+  pt: "Português",
+};
+
+/**
+ * The languages a user can pick for their PERSONAL dashboard UI language. This
+ * is DB-limited: `user_preferences.ui_language`'s CHECK constraint allows only
+ * these 10 codes and uses 'nb' for Norwegian. Until Vega widens that CHECK to
+ * the canonical 13 ('no' + da/fi/pt), the per-user picker offers this subset;
+ * the agency-level default + the catalog support all 13. The per-user picker
+ * (preferences-form) renders from this list so it never writes a code the DB
+ * would reject.
+ */
+export const USER_PREF_LOCALES = [
+  "en",
+  "es",
+  "pl",
+  "nb",
+  "fr",
+  "nl",
+  "de",
+  "ru",
+  "sv",
+  "it",
+] as const;
+
+export type UserPrefLocale = (typeof USER_PREF_LOCALES)[number];
+
+export const USER_PREF_LOCALE_NAMES: Record<UserPrefLocale, string> = {
   en: "English",
   es: "Español",
   pl: "Polski",

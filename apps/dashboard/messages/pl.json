@@ -725,5 +725,10 @@
     "slotPlaceholder2": "Suggested time 2",
     "customLabel": "Custom time",
     "confirm": "Confirm time"
+  },
+  "network": {
+    "title": "Network",
+    "comingSoon": "Coming soon",
+    "body": "Opt-in cooperation with other AIVENA agencies — share buyers or listings on agreed terms."
   }
 }

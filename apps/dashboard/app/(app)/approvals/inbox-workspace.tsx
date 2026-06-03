@@ -1165,6 +1165,7 @@ function BuyersCardsView({
 }) {
   const t = useTranslations("inbox.buyers");
   const tInbox = useTranslations("inbox");
+  const tSum = useTranslations("inbox.summary");
 
   if (rows.length === 0) {
     return (
@@ -1242,10 +1243,10 @@ function BuyersCardsView({
               />
             </div>
           </div>
-          <CardKV label="Area" value={r.area ?? "—"} />
-          <CardKV label="Source" value={r.source ?? "—"} />
-          <CardKV label="Language" value={languageLabel(r.language)} />
-          <CardKV label="Channel" value={r.channel ?? "—"} />
+          <CardKV label={tSum("area")} value={r.area ?? "—"} />
+          <CardKV label={tSum("source")} value={r.source ?? "—"} />
+          <CardKV label={tSum("language")} value={languageLabel(r.language)} />
+          <CardKV label={tSum("channel")} value={r.channel ?? "—"} />
         </button>
         </Fragment>
         );
@@ -1537,13 +1538,14 @@ function NetworkConvosView() {
 
 function ValuationWizardModal({ onClose }: { onClose: () => void }) {
   const t = useTranslations("inbox.wizard");
+  const tLang = useTranslations("settings.languages");
   const langs = [
-    { code: "es", label: "Español", on: true },
-    { code: "en", label: "English", on: true },
-    { code: "nb", label: "Norsk", on: true },
-    { code: "pl", label: "Polski", on: true },
-    { code: "de", label: "Deutsch", on: true },
-    { code: "fr", label: "Français", on: false },
+    { code: "es", label: tLang("name_es"), on: true },
+    { code: "en", label: tLang("name_en"), on: true },
+    { code: "no", label: tLang("name_no"), on: true },
+    { code: "pl", label: tLang("name_pl"), on: true },
+    { code: "de", label: tLang("name_de"), on: true },
+    { code: "fr", label: tLang("name_fr"), on: false },
   ];
 
   // Close on Escape

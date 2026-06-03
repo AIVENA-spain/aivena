@@ -27,14 +27,17 @@ import { SUPPORTED_LOCALES, type Locale } from "./config";
 const BCP47: Record<Locale, string> = {
   en: "en-US",
   es: "es",
-  pl: "pl",
-  nb: "nb-NO",
-  fr: "fr",
-  nl: "nl",
   de: "de",
-  ru: "ru",
+  nl: "nl",
+  fr: "fr",
+  pl: "pl",
   sv: "sv",
+  no: "nb-NO",
+  da: "da",
+  fi: "fi",
+  ru: "ru",
   it: "it",
+  pt: "pt",
 };
 
 function isLocale(value: string): value is Locale {

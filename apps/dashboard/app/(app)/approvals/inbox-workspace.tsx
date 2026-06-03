@@ -10,6 +10,7 @@ import {
   useState,
   useTransition,
 } from "react";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
   AlertTriangle,
@@ -213,6 +214,19 @@ export function InboxWorkspace({
   initialTaskId?: string;
 }) {
   const t = useTranslations("inbox");
+  const router = useRouter();
+
+  // Mirror the selected lead into the URL (?lead=<taskId>) so a reload restores
+  // the same lead instead of falling back to buyers[0]. The page already reads
+  // ?lead as initialTaskId. replace (not push) keeps Back behaviour sane.
+  const syncLeadUrl = useCallback(
+    (taskId: string) => {
+      router.replace(`/approvals?lead=${encodeURIComponent(taskId)}`, {
+        scroll: false,
+      });
+    },
+    [router],
+  );
 
   // dashboard_inbox spans every bucket, so a conversation stays in the list
   // after Approve & Send (its badge flips needs_you → Replied/Auto-handled)
@@ -352,6 +366,7 @@ export function InboxWorkspace({
             onSelect={(id) => {
               setSelectedBuyerId(id);
               loadThread(id);
+              syncLeadUrl(id);
             }}
             selected={
               selected && !isSeller(selected) ? selected : null
@@ -370,6 +385,7 @@ export function InboxWorkspace({
               setSelectedBuyerId(id);
               setView("convo");
               loadThread(id);
+              syncLeadUrl(id);
             }}
             locale={locale}
           />
@@ -386,6 +402,7 @@ export function InboxWorkspace({
               onSelect={(id) => {
                 setSelectedSellerId(id);
                 loadThread(id);
+                syncLeadUrl(id);
               }}
               selected={
                 selected && isSeller(selected) ? selected : null
@@ -404,6 +421,7 @@ export function InboxWorkspace({
                 setSelectedSellerId(id);
                 setView("convo");
                 loadThread(id);
+                syncLeadUrl(id);
               }}
               locale={locale}
             />

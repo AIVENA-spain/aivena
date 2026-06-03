@@ -211,7 +211,9 @@
       "cancel": "Cancel",
       "delete": "Delete",
       "deleteConfirm": "Delete this note?",
-      "deleteConfirmYes": "Delete"
+      "deleteConfirmYes": "Delete",
+      "usedByAiOn": "Used by AI",
+      "usedByAiOff": "Not used by AI"
     }
   },
   "approvals": {

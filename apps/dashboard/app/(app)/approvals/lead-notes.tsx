@@ -172,7 +172,8 @@ export function LeadNotes({ leadId }: { leadId: string }) {
                       <button
                         type="button"
                         title={t("usedByAiHint")}
-                        aria-pressed={n.context_for_ai}
+                        role="switch"
+                        aria-checked={n.context_for_ai}
                         disabled={busy}
                         onClick={() =>
                           run(() =>
@@ -187,7 +188,7 @@ export function LeadNotes({ leadId }: { leadId: string }) {
                         )}
                       >
                         <Sparkles className="h-2.5 w-2.5" aria-hidden />
-                        {t("usedByAi")}
+                        {n.context_for_ai ? t("usedByAiOn") : t("usedByAiOff")}
                       </button>
                       <button
                         type="button"

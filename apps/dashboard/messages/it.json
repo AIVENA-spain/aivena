@@ -124,7 +124,8 @@
       "inboundMeta": "Inbound · {time}",
       "outboundMeta": "Outbound · {time}",
       "inbound": "Inbound",
-      "outbound": "Outbound"
+      "outbound": "Outbound",
+      "translationLabel": "Translation (your language)"
     },
     "summary": {
       "h": "Lead summary",
@@ -148,7 +149,8 @@
       "confirmDismiss": "Confirm dismiss",
       "cancel": "Cancel",
       "dismissReasonLabel": "Dismiss reason",
-      "dismissReasonPlaceholder": "Why are you dismissing this draft?"
+      "dismissReasonPlaceholder": "Why are you dismissing this draft?",
+      "translationLabel": "Translation (your language)"
     },
     "sellers": {
       "emptyTitleConvo": "No seller conversations yet",

@@ -206,6 +206,12 @@ export type ThreadMessage = {
   content: string | null;
   /** Server-cleaned inbound body (quote chain / footer stripped at ingestion). */
   bodyClean: string | null;
+  /**
+   * v1.14.4 — owner-language translation of this message. NULL when the
+   * pipeline hasn't filled it yet, or when source language == target (in both
+   * cases the UI shows only the original — no empty translation pane).
+   */
+  bodyTranslatedOwner: string | null;
   createdAt: string;
 };
 
@@ -216,6 +222,8 @@ export type TaskDetailResponse = {
     status: string;
     subject: string | null;
     body: string;
+    /** v1.14.4 — owner-language translation of the AI draft; NULL until filled. */
+    suggestedReplyTranslatedOwner: string | null;
     conversationId: string | null;
     createdAt: string;
   };

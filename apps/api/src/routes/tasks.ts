@@ -41,6 +41,8 @@ type TaskListRow = {
 
 type TaskDetailRow = TaskListRow & {
   original_message: string | null;
+  /** v1.14.4 — owner-language translation of the AI draft; NULL until filled. */
+  suggested_reply_translated_owner: string | null;
 };
 
 type ThreadRow = {
@@ -49,6 +51,9 @@ type ThreadRow = {
   message_type: string;
   content: string | null;
   body_clean: string | null;
+  /** v1.14.4 — owner-language translation of this message; NULL until Vega's
+   *  auto-fill backend populates it (or when source language == target). */
+  body_translated_owner: string | null;
   created_at: Date | string;
 };
 
@@ -204,7 +209,8 @@ route.get('/:id', async (c) => {
       l.intent,
       l.listing_id,
       l.summary,
-      l.message AS original_message
+      l.message AS original_message,
+      dt.suggested_reply_translated_owner
     FROM public.dashboard_tasks dt
     JOIN public.leads l ON l.id = dt.lead_id
     WHERE dt.id = ${taskId}::uuid
@@ -220,7 +226,8 @@ route.get('/:id', async (c) => {
   let thread: ThreadRow[] = [];
   if (r.conversation_id) {
     const threadResult = await tx.execute(sql`
-      SELECT id, direction, message_type, content, body_clean, created_at
+      SELECT id, direction, message_type, content, body_clean,
+             body_translated_owner, created_at
       FROM public.conversation_messages
       WHERE conversation_id::text = ${r.conversation_id}
       ORDER BY created_at ASC
@@ -237,6 +244,7 @@ route.get('/:id', async (c) => {
       status: task.status,
       subject: task.subject,
       body: task.body,
+      suggestedReplyTranslatedOwner: r.suggested_reply_translated_owner,
       conversationId: task.conversationId,
       createdAt: task.createdAt,
     },
@@ -248,6 +256,7 @@ route.get('/:id', async (c) => {
       messageType: t.message_type,
       content: t.content,
       bodyClean: t.body_clean,
+      bodyTranslatedOwner: t.body_translated_owner,
       createdAt: toIso(t.created_at),
     })),
   });

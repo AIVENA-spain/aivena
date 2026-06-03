@@ -759,6 +759,7 @@ function ThreadAndReply({
                   messageType: "first_contact",
                   content: threadEntry.data.originalMessage,
                   bodyClean: null,
+                  bodyTranslatedOwner: null,
                   createdAt: lead.taskCreatedAt,
                 }}
                 locale={locale}
@@ -781,6 +782,11 @@ function ThreadAndReply({
         taskId={lead.taskId}
         initialSubject={lead.aiReplySubject ?? ""}
         initialBody={lead.aiReplyBody ?? ""}
+        translatedDraft={
+          threadEntry?.status === "ok"
+            ? (threadEntry.data?.task.suggestedReplyTranslatedOwner ?? null)
+            : null
+        }
       />
     </div>
   );
@@ -875,6 +881,11 @@ function ThreadBubble({
   // `bodyClean` is the server-stripped version. Outbound is composed in the
   // dashboard and never quoted, so it renders raw `content`.
   const body = inbound ? (msg.bodyClean ?? msg.content) : msg.content;
+  // v1.14.4 side-by-side translation: show the owner-language translation only
+  // when it exists AND actually differs from the original (NULL = not filled
+  // yet OR source==target → original only, no empty pane).
+  const translated = msg.bodyTranslatedOwner?.trim() || null;
+  const showTranslation = translated !== null && translated !== body?.trim();
   return (
     <div
       className={cn(
@@ -887,6 +898,16 @@ function ThreadBubble({
       <div className="whitespace-pre-wrap">
         {body ?? <span className="italic opacity-70">(empty)</span>}
       </div>
+      {showTranslation ? (
+        <div className="mt-2 border-t border-foreground/10 pt-2">
+          <div className="mb-1 font-mono text-[8.5px] uppercase tracking-[0.05em] text-muted-foreground">
+            {t("translationLabel")}
+          </div>
+          <div className="whitespace-pre-wrap text-muted-foreground">
+            {translated}
+          </div>
+        </div>
+      ) : null}
       <div className="mt-1.5 font-mono text-[9.5px] text-muted-foreground">
         {inbound ? t("inbound") : t("outbound")} ·{" "}
         <RelativeTime iso={msg.createdAt} />
@@ -901,10 +922,13 @@ function ReplyZone({
   taskId,
   initialSubject,
   initialBody,
+  translatedDraft,
 }: {
   taskId: string;
   initialSubject: string;
   initialBody: string;
+  /** v1.14.4 — owner-language translation of the AI draft; NULL = show original only. */
+  translatedDraft?: string | null;
 }) {
   const t = useTranslations("inbox.reply");
 
@@ -977,6 +1001,20 @@ function ReplyZone({
             <p className="mt-1 whitespace-pre-wrap text-[12.5px] leading-[1.5] text-foreground">
               {body}
             </p>
+            {/* v1.14.4 — owner-language translation of the draft (what the
+                owner reads to approve), shown only when it differs. The
+                original above is what AIVENA will actually send to the buyer. */}
+            {translatedDraft && translatedDraft.trim() &&
+            translatedDraft.trim() !== body.trim() ? (
+              <div className="mt-2 border-t border-brand/20 pt-2">
+                <div className="mb-1 font-mono text-[8.5px] uppercase tracking-[0.05em] text-muted-foreground">
+                  {t("translationLabel")}
+                </div>
+                <p className="whitespace-pre-wrap text-[12px] leading-[1.5] text-muted-foreground">
+                  {translatedDraft}
+                </p>
+              </div>
+            ) : null}
           </>
         )}
       </div>

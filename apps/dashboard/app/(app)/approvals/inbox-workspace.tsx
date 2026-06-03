@@ -770,7 +770,7 @@ function ThreadAndReply({
             {tErr("pageLoad")}
           </div>
         ) : threadEntry.data && threadEntry.data.thread.length > 0 ? (
-          threadEntry.data.thread.map((m) => (
+          dedupeThread(threadEntry.data.thread).map((m) => (
             <ThreadBubble key={m.id} msg={m} locale={locale} t={tThread} />
           ))
         ) : (
@@ -803,6 +803,7 @@ function ThreadAndReply({
 
       {/* Reply zone */}
       <ReplyZone
+        key={lead.taskId}
         taskId={lead.taskId}
         initialSubject={lead.aiReplySubject ?? ""}
         initialBody={lead.aiReplyBody ?? ""}
@@ -891,6 +892,51 @@ function ThreadSkeleton() {
   );
 }
 
+/**
+ * Collapse the parked-v0.6 outbound artifact: each approved outbound currently
+ * has two conversation_messages rows — a queued "shadow" (raw body, no
+ * provider id) and the actually-sent wrapper-baked row (agency branding + the
+ * same body). They render as duplicate bubbles. The data fix (the v0.6
+ * migration) is parked, so we dedupe at the RENDERER:
+ *   - drop a message whose normalized text is a substring of another
+ *     same-direction message's strictly-longer text (keeps the delivered,
+ *     wrapped row), and
+ *   - collapse exact duplicates (e.g. a genuinely double-written inbound),
+ *     keeping the first.
+ * Short messages (<12 normalized chars) are left untouched so distinct short
+ * replies like "Yes" are never collapsed.
+ */
+function dedupeThread(thread: ThreadMessage[]): ThreadMessage[] {
+  const norm = (m: ThreadMessage) =>
+    ((m.direction === "inbound" ? (m.bodyClean ?? m.content) : m.content) ?? "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .toLowerCase();
+  const keyed = thread.map((m) => ({ m, key: norm(m) }));
+  const seen = new Set<string>();
+  const out: ThreadMessage[] = [];
+  for (const it of keyed) {
+    if (it.key.length === 0) {
+      out.push(it.m);
+      continue;
+    }
+    const exact = `${it.m.direction}|${it.key}`;
+    if (seen.has(exact)) continue;
+    const containedByLonger = keyed.some(
+      (o) =>
+        o.m.id !== it.m.id &&
+        o.m.direction === it.m.direction &&
+        it.key.length >= 12 &&
+        o.key.length > it.key.length &&
+        o.key.includes(it.key),
+    );
+    if (containedByLonger) continue;
+    seen.add(exact);
+    out.push(it.m);
+  }
+  return out;
+}
+
 function ThreadBubble({
   msg,
   locale,
@@ -963,18 +1009,14 @@ function ReplyZone({
     {},
   );
 
+  // The parent keys this component by taskId, so selecting a different task
+  // remounts it with fresh initial state — no reset effect needed (and no
+  // synchronous setState in an effect). A data refresh of the same task no
+  // longer clobbers in-progress edits, which the old reset effect did.
   const [editing, setEditing] = useState(false);
   const [subject, setSubject] = useState(initialSubject);
   const [body, setBody] = useState(initialBody);
   const [dismissOpen, setDismissOpen] = useState(false);
-
-  // Reset local state when the selected task changes.
-  useEffect(() => {
-    setSubject(initialSubject);
-    setBody(initialBody);
-    setEditing(false);
-    setDismissOpen(false);
-  }, [taskId, initialSubject, initialBody]);
 
   return (
     <div className="border-t border-border bg-card px-5 py-4">

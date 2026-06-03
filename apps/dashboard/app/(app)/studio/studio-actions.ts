@@ -3,28 +3,26 @@
 import { apiFetch, ApiError } from "@/lib/api/client";
 
 /**
- * Studio image upload — forwards the agent's chosen reference image (multipart)
- * to the Hono studio route, which stores it in the agency-assets bucket and
- * returns its public URL. Errors collapse to a friendly string.
+ * Mints a signed upload URL for a Studio reference image. Only metadata
+ * (contentType) crosses the Server Action — the file bytes go client-direct to
+ * storage with the returned token, so the 1MB Server Action body cap never
+ * applies. Errors collapse to a friendly string.
  */
 const GENERIC =
-  "Upload failed — please try again, and contact support if it keeps happening.";
+  "Couldn't upload that image — please try again, and contact support if it keeps happening.";
 
-export async function uploadStudioImageAction(
-  formData: FormData,
-): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
-  const file = formData.get("file");
-  if (!file || typeof file === "string") {
-    return { ok: false, error: "Choose an image to upload." };
-  }
-  const forward = new FormData();
-  forward.set("file", file);
+export async function createStudioUploadUrlAction(
+  contentType: string,
+): Promise<
+  | { ok: true; path: string; token: string; publicUrl: string }
+  | { ok: false; error: string }
+> {
   try {
-    const res = await apiFetch<{ url: string }>("/api/v1/studio/uploads", {
-      method: "POST",
-      body: forward,
-    });
-    return { ok: true, url: res.url };
+    const res = await apiFetch<{ path: string; token: string; publicUrl: string }>(
+      "/api/v1/studio/upload-url",
+      { method: "POST", body: JSON.stringify({ contentType }) },
+    );
+    return { ok: true, ...res };
   } catch (err) {
     const detail =
       err instanceof ApiError
@@ -32,7 +30,7 @@ export async function uploadStudioImageAction(
         : err instanceof Error
           ? err.message
           : String(err);
-    console.error("[studio] uploadStudioImageAction failed:", detail);
+    console.error("[studio] createStudioUploadUrlAction failed:", detail);
     if (err instanceof ApiError && err.status < 500 && err.message) {
       return { ok: false, error: err.message };
     }

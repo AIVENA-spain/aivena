@@ -26,8 +26,9 @@ import {
   GatePill,
 } from "@/components/shell/launch-gate";
 import { intlLocaleFor } from "@/lib/i18n/date-locale";
+import { createClient } from "@/lib/supabase/client";
 import type { ContentItemRow, PlanTier, PropertyRow } from "@/lib/api/types";
-import { uploadStudioImageAction } from "./studio-actions";
+import { createStudioUploadUrlAction } from "./studio-actions";
 
 const UPLOAD_ACCEPT = ["image/png", "image/jpeg", "image/webp"];
 const UPLOAD_MAX_BYTES = 10 * 1024 * 1024; // 10MB
@@ -578,12 +579,33 @@ function ImageUpload() {
       return;
     }
     setBusy(true);
-    const fd = new FormData();
-    fd.set("file", file);
-    const res = await uploadStudioImageAction(fd);
-    if (res.ok) setUrl(res.url);
-    else setError(res.error);
-    setBusy(false);
+    try {
+      // 1) mint a signed upload URL (metadata only — no file bytes through the
+      //    Server Action, so the 1MB cap never applies).
+      const meta = await createStudioUploadUrlAction(file.type);
+      if (!meta.ok) {
+        setError(meta.error);
+        return;
+      }
+      // 2) upload the file bytes client-direct to storage with the token.
+      const supabase = createClient();
+      const { error: uploadError } = await supabase.storage
+        .from("agency-assets")
+        .uploadToSignedUrl(meta.path, meta.token, file, {
+          contentType: file.type,
+        });
+      if (uploadError) {
+        console.error("[studio upload] uploadToSignedUrl failed:", uploadError);
+        setError(t("uploadFailed"));
+        return;
+      }
+      setUrl(meta.publicUrl);
+    } catch (err) {
+      console.error("[studio upload] unexpected:", err);
+      setError(t("uploadFailed"));
+    } finally {
+      setBusy(false);
+    }
   }
 
   function clear() {

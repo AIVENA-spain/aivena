@@ -723,7 +723,8 @@
       "uploading": "Uploading…",
       "remove": "Remove image",
       "badType": "Please upload a PNG, JPG, or WebP image.",
-      "tooLarge": "That image is over 10 MB — please choose a smaller one."
+      "tooLarge": "That image is over 10 MB — please choose a smaller one.",
+      "uploadFailed": "Couldn’t upload that image — please try again, and contact support if it keeps happening."
     }
   },
   "assistant": {

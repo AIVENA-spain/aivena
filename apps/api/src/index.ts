@@ -17,6 +17,7 @@ import propertiesRoute from './routes/properties';
 import bookingsRoute from './routes/bookings';
 import contentRoute from './routes/content';
 import leadNotesRoute from './routes/lead-notes';
+import studioRoute from './routes/studio';
 
 Sentry.init({
   dsn: env.SENTRY_DSN,
@@ -64,6 +65,8 @@ app.route('/api/v1/bookings', bookingsRoute);
 app.route('/api/v1/content', contentRoute);
 // Lead notes — direct SELECT read + SECURITY DEFINER write RPCs.
 app.route('/api/v1/lead-notes', leadNotesRoute);
+// Studio uploads — agent's own reference image → agency-assets bucket.
+app.route('/api/v1/studio', studioRoute);
 
 // Webhook signature validation — provider-specific.
 // WhatsApp uses x-hub-signature-256 (Meta HMAC SHA-256 of raw body).

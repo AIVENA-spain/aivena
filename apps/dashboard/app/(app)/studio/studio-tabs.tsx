@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import {
   ImageIcon,
@@ -27,6 +27,10 @@ import {
 } from "@/components/shell/launch-gate";
 import { intlLocaleFor } from "@/lib/i18n/date-locale";
 import type { ContentItemRow, PlanTier, PropertyRow } from "@/lib/api/types";
+import { uploadStudioImageAction } from "./studio-actions";
+
+const UPLOAD_ACCEPT = ["image/png", "image/jpeg", "image/webp"];
+const UPLOAD_MAX_BYTES = 10 * 1024 * 1024; // 10MB
 
 const LANG_CODES = [
   "es", "en", "no", "sv", "da", "de", "nl", "fr", "it", "pt", "ru", "pl", "fi",
@@ -315,6 +319,8 @@ function AdCreativeTab({ properties }: { properties: PropertyRow[] }) {
 
         {mode === "property" && <PropertyPicker properties={properties} />}
 
+        <ImageUpload />
+
         <FormatSelect
           label={t("formatLabel")}
           options={[
@@ -391,6 +397,8 @@ function SocialPostTab({ properties }: { properties: PropertyRow[] }) {
             />
           </div>
         )}
+
+        <ImageUpload />
 
         <FormatSelect
           label={t("formatLabel")}
@@ -542,6 +550,94 @@ function ModeToggle({
           {o.label}
         </button>
       ))}
+    </div>
+  );
+}
+
+/**
+ * Upload-your-own reference image (Phase 6). Upload-only: stores the image in
+ * agency-assets and holds the public URL in local state for the eventual
+ * generation payload. No generation call exists yet (the generators are gated).
+ */
+function ImageUpload() {
+  const t = useTranslations("studio.upload");
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [url, setUrl] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function onFile(file: File | null) {
+    if (!file) return;
+    setError(null);
+    if (!UPLOAD_ACCEPT.includes(file.type)) {
+      setError(t("badType"));
+      return;
+    }
+    if (file.size > UPLOAD_MAX_BYTES) {
+      setError(t("tooLarge"));
+      return;
+    }
+    setBusy(true);
+    const fd = new FormData();
+    fd.set("file", file);
+    const res = await uploadStudioImageAction(fd);
+    if (res.ok) setUrl(res.url);
+    else setError(res.error);
+    setBusy(false);
+  }
+
+  function clear() {
+    setUrl(null);
+    setError(null);
+    if (inputRef.current) inputRef.current.value = "";
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <Label>{t("label")}</Label>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/webp"
+        className="hidden"
+        onChange={(e) => onFile(e.target.files?.[0] ?? null)}
+      />
+      {url ? (
+        <div className="relative w-40">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={url}
+            alt={t("label")}
+            className="aspect-square w-40 rounded-lg border border-border object-cover"
+          />
+          <button
+            type="button"
+            onClick={clear}
+            aria-label={t("remove")}
+            className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-soft hover:text-foreground"
+          >
+            <X className="h-3.5 w-3.5" aria-hidden />
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          disabled={busy}
+          className="flex w-full max-w-xs flex-col items-center gap-1.5 rounded-xl border border-dashed border-border bg-card px-4 py-6 text-center transition-colors hover:bg-muted disabled:opacity-60"
+        >
+          <UploadCloud className="h-5 w-5 text-muted-foreground" aria-hidden />
+          <span className="text-[12.5px] font-medium text-foreground">
+            {busy ? t("uploading") : t("prompt")}
+          </span>
+          <span className="text-[11px] text-muted-foreground">{t("hint")}</span>
+        </button>
+      )}
+      {error ? (
+        <p className="text-xs text-red-600 dark:text-red-300" role="alert">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }

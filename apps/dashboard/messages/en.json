@@ -429,7 +429,7 @@
       "quota_voiceMinutes": "Voice minutes",
       "quota_adCreative": "Ad creatives",
       "quota_socialPost": "Social posts",
-      "quota_renovation": "Renovations",
+      "quota_renovation": "Virtual staging",
       "provisioningNote": "Your plan is set when your account is provisioned. To change tiers, contact your AIVENA representative."
     },
     "properties": {
@@ -462,7 +462,7 @@
     "kpiLeadsAnswered": "Leads answered",
     "kpiAvgReply": "Avg reply time",
     "kpiCallsRecovered": "Calls recovered",
-    "kpiLanguagesUsed": "Languages used",
+    "kpiLanguagesUsed": "Languages seen in leads",
     "ofTotal": "{count} of {total}",
     "noLeadsYet": "No leads yet.",
     "noPriorWeek": "no prior week",
@@ -610,7 +610,7 @@
   "studio": {
     "tabAd": "Ad creative",
     "tabSocial": "Social post",
-    "tabRenovation": "Renovation",
+    "tabRenovation": "Virtual staging",
     "propertyLabel": "Property",
     "propertyEmpty": "No properties yet — import your catalog in Settings → Properties first.",
     "ad": {
@@ -645,7 +645,7 @@
       "generate": "Generate post"
     },
     "renovation": {
-      "title": "Renovation",
+      "title": "Virtual staging",
       "subtitle": "Re-render a real room photo in a new style. A visualization to help buyers picture the space.",
       "uploadPrompt": "Upload a room photo",
       "uploadHint": "JPG or PNG of a room from one of your listings.",
@@ -674,8 +674,8 @@
       "feature_vibrant_accents": "Vibrant accents",
       "beforeLabel": "Before",
       "afterLabel": "After",
-      "disclaimer": "Visualization only — not a guaranteed renovation outcome.",
-      "generate": "Generate renovation"
+      "disclaimer": "Visualization only — not a guaranteed real-world result.",
+      "generate": "Generate virtual staging"
     }
   },
   "assistant": {

@@ -34,7 +34,14 @@ export function PreferencesForm({
   const [, startTransition] = useTransition();
 
   const [uiLanguage, setUiLanguage] = useState(initial.uiLanguage);
-  const [messageLanguage, setMessageLanguage] = useState(initial.messageLanguage);
+  // The per-user "message language" control is intentionally hidden. It wrote
+  // user_preferences.message_language, but investigation (2026-06-03) confirmed
+  // NOTHING reads that column functionally — client-message translation is
+  // agency-level (agency_settings.translation_target_language), and
+  // body_translated_owner is keyed to that. So a per-user target had zero
+  // effect and only duplicated the agency control's "Translate … into" label.
+  // The column is NOT removed; only the UI control is dropped. The agency
+  // control in Languages settings is the single source of truth.
   const [theme, setLocalTheme] = useState<ThemeChoice>(
     (["light", "dark", "system"] as const).includes(
       initial.theme as ThemeChoice,
@@ -71,14 +78,6 @@ export function PreferencesForm({
     void save_patch({ uiLanguage: value }, () => setUiLanguage(prev));
   }
 
-  function handleMessageLanguageChange(value: string) {
-    const prev = messageLanguage;
-    setMessageLanguage(value);
-    void save_patch({ messageLanguage: value }, () =>
-      setMessageLanguage(prev),
-    );
-  }
-
   function handleThemeChange(value: ThemeChoice) {
     const prev = theme;
     setLocalTheme(value);
@@ -105,25 +104,6 @@ export function PreferencesForm({
             </option>
           ))}
         </select>
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="message-language">{t("messageLanguageLabel")}</Label>
-        <select
-          id="message-language"
-          value={messageLanguage}
-          onChange={(e) => handleMessageLanguageChange(e.target.value)}
-          className="w-full max-w-xs rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          {USER_PREF_LOCALES.map((code) => (
-            <option key={code} value={code}>
-              {USER_PREF_LOCALE_NAMES[code as UserPrefLocale]}
-            </option>
-          ))}
-        </select>
-        <p className="max-w-md text-xs text-muted-foreground">
-          {t("messageLanguageHelp")}
-        </p>
       </div>
 
       <div className="flex flex-col gap-2">

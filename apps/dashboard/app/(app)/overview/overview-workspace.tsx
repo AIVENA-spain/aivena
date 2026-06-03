@@ -195,7 +195,7 @@ function KpiCard({
           >
             <Icon className="h-4 w-4" aria-hidden strokeWidth={1.9} />
           </div>
-          <span className="truncate text-[11.5px] font-medium text-muted-foreground">
+          <span className="text-[11.5px] font-medium leading-tight text-muted-foreground">
             {label}
           </span>
           {isSoon ? (

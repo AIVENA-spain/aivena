@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
   Building2,
+  CalendarCheck,
   ImageIcon,
   Inbox,
   LayoutGrid,
@@ -25,6 +26,7 @@ const ICONS: Record<NavItem["iconName"], LucideIcon> = {
   overview: LayoutGrid,
   inbox: Inbox,
   properties: Building2,
+  viewings: CalendarCheck,
   performance: LineChart,
   content: ImageIcon,
   studio: Sparkles,

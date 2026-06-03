@@ -201,6 +201,27 @@ export type PropertyRow = {
 
 export type PropertiesResponse = { properties: PropertyRow[] };
 
+// ── Bookings / viewings (W11-lite) ────────────────────────────────────────
+
+export type BookingRow = {
+  id: string;
+  lead_id: string;
+  lead_name: string | null;
+  property_id: string | null;
+  property_title: string | null;
+  scheduled_at: string | null;
+  duration_minutes: number | null;
+  location: string | null;
+  agent_name: string | null;
+  status: string;
+  notes: string | null;
+  booking_type: string;
+  /** Computed server-side (DB clock): future & not cancelled/no-show/completed. */
+  is_upcoming: boolean;
+};
+
+export type BookingsResponse = { bookings: BookingRow[] };
+
 export type ThreadMessage = {
   id: string;
   direction: string;

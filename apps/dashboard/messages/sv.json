@@ -12,7 +12,8 @@
     "soonBadge": "Soon",
     "studio": "Studio",
     "matches": "Matches",
-    "properties": "Properties"
+    "properties": "Properties",
+    "viewings": "Viewings"
   },
   "topbar": {
     "switchAgency": "Switch agency",
@@ -735,5 +736,20 @@
     "title": "Network",
     "comingSoon": "Coming soon",
     "body": "Opt-in cooperation with other AIVENA agencies — share buyers or listings on agreed terms."
+  },
+  "viewings": {
+    "subtitle": "Confirmed viewing appointments. New bookings sync to your calendar and appear here.",
+    "emptyTitle": "No viewings scheduled yet",
+    "emptyBody": "Confirmed bookings will appear here.",
+    "upcoming": "Upcoming",
+    "past": "Past",
+    "noUpcoming": "No upcoming viewings.",
+    "minutes": "{n} min",
+    "status_requested": "Requested",
+    "status_confirmed": "Confirmed",
+    "status_cancelled": "Cancelled",
+    "status_rescheduled": "Rescheduled",
+    "status_completed": "Completed",
+    "status_no_show": "No-show"
   }
 }

@@ -7,6 +7,8 @@ const PUBLIC_PATHS = [
   "/reset-password",
   "/auth/callback",
   "/invite/accept",
+  // Public, fixture-only marketing demo (no auth, no Supabase data).
+  "/demo",
 ];
 
 export async function updateSession(request: NextRequest) {

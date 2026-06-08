@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AIVENA — Control Room (demo)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = { theme: { extend: {
+    fontFamily: { sans:['Inter','system-ui','sans-serif'], mono:['"JetBrains Mono"','monospace'] },
+    colors: {
+      page:'#FBF9F4', card:'#FFFFFF', line:'#ECEAE2',
+      ink:{DEFAULT:'#1A1F1D', soft:'#454D49', muted:'#7E867F', faint:'#A8AEA8'},
+      grn:{DEFAULT:'#1FB85C', deep:'#0B7C3A', soft:'#E7F7EE', ring:'#CDEBD8'},
+    }
+  }}}
+</script>
+<style>
+  body{ font-family:Inter,system-ui,sans-serif; background:#FBF9F4; color:#1A1F1D; }
+  .mono{ font-family:'JetBrains Mono',monospace; }
+  .card{ background:#fff; border:1px solid #ECEAE2; border-radius:18px; box-shadow:0 1px 2px rgba(20,25,22,.03), 0 8px 24px -18px rgba(20,25,22,.18); }
+  .nav{ display:flex; align-items:center; gap:11px; padding:9px 12px; border-radius:11px; font-size:14px; font-weight:500; color:#454D49; cursor:pointer; }
+  .nav:hover{ background:#F3F1EA; }
+  .nav.on{ background:#E7F7EE; color:#0B7C3A; }
+  .badge-soon{ font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.12em; color:#A8AEA8; background:#F1EFE8; padding:2px 6px; border-radius:5px; }
+  .badge-active{ font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.06em; color:#0B7C3A; background:#E7F7EE; border:1px solid #CDEBD8; padding:3px 9px; border-radius:999px; }
+  .seg{ font-size:12.5px; color:#7E867F; padding:5px 10px; border-radius:8px; display:inline-flex; align-items:center; gap:6px; cursor:pointer; }
+  .seg.on{ background:#fff; border:1px solid #ECEAE2; color:#1A1F1D; box-shadow:0 1px 2px rgba(0,0,0,.04); }
+  ::-webkit-scrollbar{ width:8px; height:8px } ::-webkit-scrollbar-thumb{ background:#E2E0D7; border-radius:4px }
+</style>
+</head>
+<body class="text-ink">
+<div class="flex min-h-screen">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="w-[232px] shrink-0 border-r border-line bg-[#FCFBF7] flex flex-col px-4 py-5">
+    <div class="flex items-center gap-2.5 px-1 mb-7">
+      <span class="grid place-items-center w-9 h-9 rounded-xl bg-ink text-white font-700">A</span>
+      <div><p class="font-700 leading-none tracking-tight">AIVENA</p><p class="mono text-[10px] text-ink-muted mt-1">AI real estate</p></div>
+    </div>
+    <nav class="space-y-1">
+      <div class="nav on"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Overview</div>
+      <div class="nav"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v12H5.2L4 17.2z"/></svg>Inbox<span class="ml-auto grid place-items-center min-w-5 h-5 px-1.5 rounded-full bg-ink text-white text-[11px] font-600">8</span></div>
+      <div class="nav"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-6h6v6"/></svg>Properties</div>
+      <div class="nav"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Viewings</div>
+      <div class="nav"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>Performance</div>
+      <div class="nav"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4"/><circle cx="12" cy="12" r="3"/></svg>Studio<span class="ml-auto badge-soon">SOON</span></div>
+      <div class="nav"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 5.2a3.2 3.2 0 0 1 0 6.3M21 20a6 6 0 0 0-4-5.7"/></svg>Matches<span class="ml-auto badge-soon">SOON</span></div>
+      <div class="nav"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 6.6 19l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 4 13.6H4a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 5 6.6l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 10.4 4V4a2 2 0 1 1 4 0v.1A1.6 1.6 0 0 0 17 5l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0 1.1 2.7H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg>Settings</div>
+    </nav>
+    <div class="mt-auto flex items-center gap-2.5 px-1 pt-4 border-t border-line">
+      <span class="grid place-items-center w-7 h-7 rounded-full bg-grn-soft text-grn-deep text-xs font-600">C</span>
+      <span class="text-[13px] text-ink-soft truncate">christian@aivena.es</span>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <main class="flex-1 min-w-0 px-7 py-6 overflow-x-hidden">
+    <!-- top bar -->
+    <div class="flex items-start justify-between gap-4 mb-7">
+      <div>
+        <h1 class="text-[26px] font-700 tracking-tight leading-none">Overview</h1>
+        <p class="text-ink-muted text-sm mt-2">Good afternoon, Christian — Mediterráneo Costa Homes</p>
+      </div>
+      <div class="flex items-center gap-2.5">
+        <div class="hidden lg:flex items-center gap-2 bg-white border border-line rounded-xl px-3 py-2 text-sm text-ink-muted w-64">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>Search leads, conversations…
+        </div>
+        <div class="flex items-center gap-1.5 bg-white border border-line rounded-xl px-3 py-2 text-sm"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Jun 8</div>
+        <div class="flex items-center bg-[#F1EFE8] rounded-xl p-1">
+          <span class="seg">Light</span><span class="seg">Dark</span><span class="seg on">System</span>
+        </div>
+        <button class="grid place-items-center w-9 h-9 rounded-xl bg-white border border-line"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></button>
+      </div>
+    </div>
+
+    <!-- KPI row -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5 mb-6">
+      <!-- card -->
+      <div class="card p-4">
+        <div class="flex items-center gap-2 mb-3"><span class="grid place-items-center w-7 h-7 rounded-lg bg-grn-soft text-grn-deep"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 5.2a3.2 3.2 0 0 1 0 6.3"/></svg></span><span class="text-[12.5px] text-ink-muted">New Leads</span></div>
+        <p class="mono text-3xl font-600">14</p>
+        <p class="mono text-[11px] text-grn-deep mt-2">▲ 5 vs last 7 days</p>
+      </div>
+      <div class="card p-4">
+        <div class="flex items-center gap-2 mb-3"><span class="grid place-items-center w-7 h-7 rounded-lg bg-[#FCEEDD] text-[#B86B12]"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></span><span class="text-[12.5px] text-ink-muted">Needs Action</span></div>
+        <p class="mono text-3xl font-600">3</p>
+        <p class="mono text-[11px] text-ink-faint mt-2">awaiting your approval</p>
+      </div>
+      <div class="card p-4">
+        <div class="flex items-center gap-2 mb-3"><span class="grid place-items-center w-7 h-7 rounded-lg bg-[#FDE7E7] text-[#C0392B]"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2s5 4 5 9a5 5 0 0 1-10 0c0-1.5.6-2.8 1.3-3.8C9 9 12 6 12 2z"/></svg></span><span class="text-[12.5px] text-ink-muted">Hot Leads</span></div>
+        <p class="mono text-3xl font-600">5</p>
+        <p class="mono text-[11px] text-ink-faint mt-2">high intent</p>
+      </div>
+      <div class="card p-4">
+        <div class="flex items-center justify-between mb-3"><span class="grid place-items-center w-7 h-7 rounded-lg bg-[#F1EFE8] text-ink-muted"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V8l9-5 9 5v13"/></svg></span><span class="badge-soon">SOON</span></div>
+        <p class="mono text-3xl font-600 text-ink-faint">—</p>
+        <p class="mono text-[11px] text-ink-faint mt-2">starts with valuation form</p>
+      </div>
+      <div class="card p-4">
+        <div class="flex items-center gap-2 mb-3"><span class="grid place-items-center w-7 h-7 rounded-lg bg-grn-soft text-grn-deep"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg></span><span class="text-[12.5px] text-ink-muted">Follow-ups</span></div>
+        <p class="mono text-3xl font-600">9</p>
+        <p class="mono text-[11px] text-grn-deep mt-2">▲ 3 vs last 7 days</p>
+      </div>
+      <div class="card p-4">
+        <div class="flex items-center justify-between mb-3"><span class="grid place-items-center w-7 h-7 rounded-lg bg-[#F1EFE8] text-ink-muted"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2 4.2 2 2 0 0 1 4 2h3a2 2 0 0 1 2 1.7l.5 2.5a2 2 0 0 1-.5 1.9L7.6 9.8a16 16 0 0 0 6 6l1.7-1.4a2 2 0 0 1 1.9-.5l2.5.5A2 2 0 0 1 22 16.9z"/></svg></span><span class="badge-soon">SOON</span></div>
+        <p class="mono text-3xl font-600 text-ink-faint">—</p>
+        <p class="mono text-[11px] text-ink-faint mt-2">starts when voice is live</p>
+      </div>
+    </div>
+
+    <!-- two columns -->
+    <div class="grid lg:grid-cols-[1.55fr,1fr] gap-5">
+      <!-- left -->
+      <div class="space-y-5">
+        <!-- needs action -->
+        <div class="card p-5">
+          <div class="flex items-center gap-2 mb-4">
+            <h2 class="font-600">Needs Action · Ready Replies</h2>
+            <span class="grid place-items-center w-5 h-5 rounded-full bg-grn-soft text-grn-deep text-[11px] font-600 mono">3</span>
+          </div>
+          <table class="w-full text-sm">
+            <thead><tr class="mono text-[10px] tracking-wider text-ink-faint text-left">
+              <th class="font-500 pb-2">LEAD</th><th class="font-500 pb-2">TYPE</th><th class="font-500 pb-2 hidden sm:table-cell">AREA</th><th class="font-500 pb-2">STATUS</th><th class="font-500 pb-2">AI SUGGESTED REPLY</th>
+            </tr></thead>
+            <tbody>
+              <tr class="border-t border-line bg-grn-soft/60">
+                <td class="py-3 pr-2"><div class="flex items-center gap-2.5"><span class="grid place-items-center w-8 h-8 rounded-lg bg-[#E8DFF7] text-[#6B4FC0] text-[11px] font-600 mono">KN</span><div><p class="font-500 leading-tight">Katarzyna Nowak</p><p class="mono text-[10px] text-ink-faint">3h ago</p></div></div></td>
+                <td class="text-ink-soft">buyer</td>
+                <td class="text-ink-soft hidden sm:table-cell">Villajoyosa</td>
+                <td><span class="badge-active">ACTIVE</span></td>
+                <td class="text-ink-soft"><span class="text-grn-deep mono text-[10px] mr-1">AI</span>Tak, mieszkanie ma taras…</td>
+              </tr>
+              <tr class="border-t border-line">
+                <td class="py-3 pr-2"><div class="flex items-center gap-2.5"><span class="grid place-items-center w-8 h-8 rounded-lg bg-[#DDEBF7] text-[#2C6BB0] text-[11px] font-600 mono">HM</span><div><p class="font-500 leading-tight">Henrik Møller</p><p class="mono text-[10px] text-ink-faint">6h ago</p></div></div></td>
+                <td class="text-ink-soft">buyer</td>
+                <td class="text-ink-soft hidden sm:table-cell">Torrevieja</td>
+                <td><span class="badge-active">ACTIVE</span></td>
+                <td class="text-ink-soft"><span class="text-grn-deep mono text-[10px] mr-1">AI</span>Hei! Ja, rekkehuset er fortsatt ledig…</td>
+              </tr>
+              <tr class="border-t border-line">
+                <td class="py-3 pr-2"><div class="flex items-center gap-2.5"><span class="grid place-items-center w-8 h-8 rounded-lg bg-[#F7E6DD] text-[#B06A2C] text-[11px] font-600 mono">SL</span><div><p class="font-500 leading-tight">Sophie Laurent</p><p class="mono text-[10px] text-ink-faint">5h ago</p></div></div></td>
+                <td class="text-ink-soft">buyer</td>
+                <td class="text-ink-soft hidden sm:table-cell">Jávea</td>
+                <td><span class="badge-active">ACTIVE</span></td>
+                <td class="text-ink-soft"><span class="text-grn-deep mono text-[10px] mr-1">AI</span>Oui, la villa est toujours dispo…</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- recent activity -->
+        <div class="card p-5">
+          <h2 class="font-600 mb-4">Recent Activity</h2>
+          <div class="space-y-3.5">
+            <div class="flex items-center gap-3"><span class="grid place-items-center w-8 h-8 rounded-lg bg-grn-soft text-grn-deep shrink-0"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg></span><div class="flex-1"><p class="text-sm font-500">Auto-reply sent</p><p class="text-xs text-ink-muted">Hans Weber · German</p></div><span class="mono text-[11px] text-ink-faint">2h ago</span></div>
+            <div class="flex items-center gap-3"><span class="grid place-items-center w-8 h-8 rounded-lg bg-grn-soft text-grn-deep shrink-0"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span><div class="flex-1"><p class="text-sm font-500">Reply approved &amp; sent</p><p class="text-xs text-ink-muted">Katarzyna Nowak · Polish</p></div><span class="mono text-[11px] text-ink-faint">3h ago</span></div>
+            <div class="flex items-center gap-3"><span class="grid place-items-center w-8 h-8 rounded-lg bg-grn-soft text-grn-deep shrink-0"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span><div class="flex-1"><p class="text-sm font-500">Viewing confirmed</p><p class="text-xs text-ink-muted">Sophie Laurent · Sat 15:00</p></div><span class="mono text-[11px] text-ink-faint">5h ago</span></div>
+            <div class="flex items-center gap-3"><span class="grid place-items-center w-8 h-8 rounded-lg bg-[#F1EFE8] text-ink-muted shrink-0"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span><div class="flex-1"><p class="text-sm font-500">Buyer replied</p><p class="text-xs text-ink-muted">Henrik Møller · Norwegian</p></div><span class="mono text-[11px] text-ink-faint">6h ago</span></div>
+            <div class="flex items-center gap-3"><span class="grid place-items-center w-8 h-8 rounded-lg bg-grn-soft text-grn-deep shrink-0"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.2A8.4 8.4 0 1 1 21 11.5z"/></svg></span><div class="flex-1"><p class="text-sm font-500">Missed call recovered</p><p class="text-xs text-ink-muted">Erik Lindqvist · WhatsApp sent</p></div><span class="mono text-[11px] text-ink-faint">8h ago</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- right -->
+      <div class="space-y-5">
+        <!-- lead detail + AI reply -->
+        <div class="card p-5">
+          <div class="flex items-center gap-2.5 mb-5">
+            <span class="grid place-items-center w-9 h-9 rounded-lg bg-[#E8DFF7] text-[#6B4FC0] text-xs font-600 mono">KN</span>
+            <p class="font-600 flex-1">Katarzyna Nowak</p>
+            <span class="badge-active">ACTIVE</span>
+          </div>
+          <div class="grid grid-cols-2 gap-y-4 gap-x-3 mb-5">
+            <div><p class="mono text-[10px] tracking-wider text-ink-faint mb-1">TYPE</p><p class="text-sm">buyer</p></div>
+            <div><p class="mono text-[10px] tracking-wider text-ink-faint mb-1">AREA</p><p class="text-sm">Villajoyosa</p></div>
+            <div><p class="mono text-[10px] tracking-wider text-ink-faint mb-1">SOURCE</p><p class="text-sm">aivena_website</p></div>
+            <div><p class="mono text-[10px] tracking-wider text-ink-faint mb-1">LANGUAGE</p><p class="text-sm">Polish</p></div>
+            <div><p class="mono text-[10px] tracking-wider text-ink-faint mb-1">CHANNEL</p><p class="text-sm">WhatsApp</p></div>
+            <div><p class="mono text-[10px] tracking-wider text-ink-faint mb-1">BUDGET</p><p class="text-sm">€300,000</p></div>
+          </div>
+          <div class="rounded-xl border border-grn-ring bg-grn-soft/70 p-4">
+            <p class="mono text-[10px] tracking-wider text-grn-deep mb-2">● AI SUGGESTED REPLY</p>
+            <p class="text-[13px] font-500 mb-1">re: Mieszkanie z tarasem</p>
+            <p class="text-[13px] text-ink-soft leading-relaxed">Dzień dobry! Tak, mieszkanie ma taras z widokiem na morze. Czy chciałaby Pani umówić się na oglądanie w sobotę o 15:00?</p>
+            <div class="flex items-center gap-2 mt-4">
+              <button class="inline-flex items-center gap-1.5 bg-ink text-white text-xs font-600 rounded-lg px-3.5 py-2"><span class="w-1.5 h-1.5 rounded-full bg-grn"></span>Send</button>
+              <button class="inline-flex items-center gap-1.5 bg-white border border-line text-xs font-500 rounded-lg px-3.5 py-2"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>Copy</button>
+              <button class="ml-auto inline-flex items-center gap-1.5 text-xs text-ink-muted px-2 py-2">Open in Inbox<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17 17 7M7 7h10v10"/></svg></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- network -->
+        <div class="card p-5">
+          <div class="flex items-center justify-between mb-3"><h2 class="font-600">Your Network</h2><span class="badge-soon">COMING SOON</span></div>
+          <p class="font-500 text-sm mb-1.5">Work with nearby agencies</p>
+          <p class="text-[13px] text-ink-muted leading-relaxed">Opt-in cooperation with other AIVENA agencies — share buyers or listings on agreed terms, and split commission.</p>
+        </div>
+      </div>
+    </div>
+    <p class="mono text-[10px] text-ink-faint text-center mt-7">Demo workspace · illustrative data</p>
+  </main>
+</div>
+</body>
+</html>

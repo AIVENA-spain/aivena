@@ -859,16 +859,28 @@
 <!-- ============ FOOTER ============ -->
 <footer class="relative z-10 px-4 pb-12">
   <div class="max-w-6xl mx-auto">
-    <div class="h-px bg-gradient-to-r from-transparent via-green/40 to-transparent mb-8"></div>
-    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-fg-muted">
-      <div class="flex items-center gap-2.5">
-        <img src="assets/logo-mark-cream.png" alt="" class="h-6 w-auto" />
-        <span class="font-700 tracking-[0.16em]" style="color:#FAF8F3">AIVENA</span>
+    <div class="h-px bg-gradient-to-r from-transparent via-green/40 to-transparent mb-10"></div>
+    <div class="grid sm:grid-cols-[1.6fr,1fr] gap-10 mb-10">
+      <div>
+        <div class="flex items-center gap-2.5 mb-4">
+          <img src="assets/logo-mark-cream.png" alt="" class="h-6 w-auto" />
+          <span class="font-700 tracking-[0.16em]" style="color:#FAF8F3">AIVENA</span>
+        </div>
+        <p class="data text-xs text-fg-muted mb-3">EU-HOSTED · GDPR · EU AI ACT · HUMAN-IN-THE-LOOP</p>
+        <a href="mailto:christian@aivena.es" class="nav-link text-sm text-fg-soft cursor-pointer">christian@aivena.es</a>
       </div>
-      <p class="data text-xs text-center">EU-HOSTED · GDPR · EU AI ACT · HUMAN-IN-THE-LOOP</p>
-      <a href="mailto:christian@aivena.es" class="nav-link text-fg-soft cursor-pointer">christian@aivena.es</a>
+      <div>
+        <p class="kicker-muted mb-4">Legal</p>
+        <a href="/privacy.html" class="block text-sm text-fg-soft mb-2.5 nav-link">Privacy Policy</a>
+        <a href="/terms.html" class="block text-sm text-fg-soft mb-2.5 nav-link">Terms of Service</a>
+        <a href="/cookies.html" class="block text-sm text-fg-soft mb-2.5 nav-link">Cookie Policy</a>
+        <a href="/contact.html" class="block text-sm text-fg-soft nav-link">Contact</a>
+      </div>
     </div>
-    <p class="text-center text-xs text-fg-faint mt-6">Built on the Costa Blanca, for the Costa Blanca. © AIVENA.</p>
+    <div class="pt-6 border-t border-white/10 text-center">
+      <p class="text-xs text-fg-faint">© 2026 AIVENA. Christian Scholte, autónomo registered in Spain. NIE: [INSERT]. CNAE: 6201.</p>
+      <p class="text-xs text-fg-faint mt-2">Built on the Costa Blanca, for the Costa Blanca.</p>
+    </div>
   </div>
 </footer>
 
@@ -1145,6 +1157,9 @@ document.addEventListener('DOMContentLoaded', function(){
     <button type="submit" aria-label="Send"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg></button>
   </form>
 </section>
+
+<!-- cookie consent (LOPDGDD) — must run on every page -->
+<script src="/assets/cookie-banner.js"></script>
 
 </body>
 </html>

@@ -5,4 +5,11 @@ node_modules
 dist
 build
 .DS_Store
-*.logpackages/db/client.ts.backup
+*.log
+packages/db/client.ts.backup
+
+# Tooling — kept local intentionally (not an oversight):
+# .claude/ holds local Claude Code session/agent config; .mcp.json holds local MCP
+# server config. Both are machine-specific and deliberately not committed.
+.claude/
+.mcp.json

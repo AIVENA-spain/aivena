@@ -14,12 +14,12 @@
 
   var T = isES
     ? { title:"Tus cookies, tu elección",
-        desc:'Usamos solo cookies esenciales por defecto. Tú decides si permites las opcionales. Más información en nuestra <a href="/cookies.html">Política de Cookies</a>.',
+        desc:'Usamos solo cookies esenciales por defecto. Tú decides si permites las opcionales.',
         accept:"Aceptar todas", reject:"Rechazar no esenciales", customize:"Personalizar", save:"Guardar elección",
         essential:"Esenciales", essNote:"Siempre activas", functional:"Funcionales", analytics:"Analíticas",
         functionalNote:"Recuerdan tus preferencias.", analyticsNote:"Nos ayudan a entender el uso del sitio." }
     : { title:"Your cookies, your choice",
-        desc:'We use only essential cookies by default. You decide whether to allow optional ones. See our <a href="/cookies.html">Cookie Policy</a> for details.',
+        desc:'We use only essential cookies by default. You decide whether to allow optional ones.',
         accept:"Accept all", reject:"Reject non-essential", customize:"Customize", save:"Save choice",
         essential:"Essential", essNote:"Always on", functional:"Functional", analytics:"Analytics",
         functionalNote:"Remember your preferences.", analyticsNote:"Help us understand site usage." };

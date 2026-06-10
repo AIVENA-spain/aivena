@@ -1,22 +1,52 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Bot, X, Send, ShieldCheck } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { GatePill } from "./launch-gate";
+
+type ChatMessage = { id: number; role: "user" | "assistant"; text: string };
 
 /**
- * AIVENA Assistant (WAA) — v1.14.3. Floating bottom-right button → right side
- * panel with a session-only chat UI. SHELL stage: the panel, the EU AI Act
- * disclosure badge (shown BEFORE the user types, per Article 50), and the
- * composer all render; sending is gated until Vega ships the assistant backend
- * endpoint. No persistence, no audit table at Pilot 1.
+ * AIVENA Assistant (WAA). Floating bottom-right launcher → right side panel,
+ * session-only chat. The EU AI Act Article 50 disclosure renders BEFORE the
+ * user types. The composer is interactive; until the Anthropic DPA gate opens,
+ * sending stubs out with the "being activated" reply.
+ *
+ * The 6 read RPCs are wired and typed in `useWAA` (lib/api/waa.ts), ready for
+ * the LLM layer. They are NOT called from here yet: they currently require the
+ * `app.current_agency_id` / `app.current_user_id` session GUCs that the Hono
+ * backend sets per-request, so a browser-direct call raises insufficient_privilege.
+ * Wiring the live read path is blocked on that (see CC handoff note) — the LLM
+ * call + RPC orchestration will run behind Hono where the GUCs are set.
  */
 export function AssistantWidget() {
   const t = useTranslations("assistant");
+
   const [open, setOpen] = useState(false);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [input, setInput] = useState("");
+  const idRef = useRef(0);
+  const bodyRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (bodyRef.current) bodyRef.current.scrollTop = bodyRef.current.scrollHeight;
+  }, [messages]);
+
+  function handleSend() {
+    const text = input.trim();
+    if (!text) return;
+    const userId = (idRef.current += 1);
+    const botId = (idRef.current += 1);
+    setMessages((prev) => [
+      ...prev,
+      { id: userId, role: "user", text },
+      // LLM-call path stubs out until the Anthropic DPA gate opens.
+      { id: botId, role: "assistant", text: t("activating") },
+    ]);
+    setInput("");
+  }
 
   return (
     <>
@@ -58,12 +88,8 @@ export function AssistantWidget() {
             <Bot className="h-4 w-4" aria-hidden />
           </div>
           <div className="flex min-w-0 flex-col leading-tight">
-            <span className="text-[13px] font-semibold text-foreground">
-              {t("title")}
-            </span>
-            <span className="text-[11px] text-muted-foreground">
-              {t("subtitle")}
-            </span>
+            <span className="text-[13px] font-semibold text-foreground">{t("title")}</span>
+            <span className="text-[11px] text-muted-foreground">{t("subtitle")}</span>
           </div>
           <button
             type="button"
@@ -76,42 +102,60 @@ export function AssistantWidget() {
         </div>
 
         {/* Body */}
-        <div className="flex flex-1 flex-col gap-3 overflow-y-auto p-4">
+        <div ref={bodyRef} className="flex flex-1 flex-col gap-3 overflow-y-auto p-4">
           {/* EU AI Act Article 50 disclosure — shown BEFORE the user types. */}
           <div className="flex items-start gap-2 rounded-lg border border-brand/30 bg-brand-soft px-3 py-2.5">
             <ShieldCheck className="mt-0.5 h-4 w-4 flex-none text-brand" aria-hidden />
-            <p className="text-[12px] leading-snug text-foreground">
-              {t("aiDisclosure")}
-            </p>
+            <p className="text-[12px] leading-snug text-foreground">{t("aiDisclosure")}</p>
           </div>
 
           <div className="flex flex-col gap-2 rounded-lg bg-muted/40 px-3 py-3">
             <p className="text-[13px] text-foreground">{t("greeting")}</p>
             <p className="text-[12px] text-muted-foreground">{t("capabilities")}</p>
           </div>
+
+          {messages.map((m) => (
+            <div
+              key={m.id}
+              className={cn(
+                "max-w-[85%] rounded-2xl px-3 py-2 text-[13px] leading-snug",
+                m.role === "user"
+                  ? "ml-auto rounded-tr-sm bg-primary text-primary-foreground"
+                  : "mr-auto rounded-tl-sm bg-muted text-foreground",
+              )}
+            >
+              {m.text}
+            </div>
+          ))}
         </div>
 
-        {/* Composer — gated */}
+        {/* Composer */}
         <div className="border-t border-border p-3">
           <div className="flex items-end gap-2">
             <textarea
               rows={1}
-              disabled
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
               placeholder={t("inputPlaceholder")}
-              className="flex-1 resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground disabled:opacity-70"
+              className="flex-1 resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand/40"
             />
             <button
               type="button"
-              disabled
-              aria-disabled
+              onClick={handleSend}
+              disabled={input.trim().length === 0}
               aria-label={t("send")}
-              className="flex h-9 w-9 flex-none cursor-not-allowed items-center justify-center rounded-lg bg-primary text-primary-foreground opacity-90"
+              className="flex h-9 w-9 flex-none items-center justify-center rounded-lg bg-primary text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Send className="h-4 w-4" aria-hidden />
             </button>
           </div>
-          <div className="mt-2 flex items-center justify-between">
-            <GatePill />
+          <div className="mt-2 flex items-center justify-end">
             <span className="text-[10px] text-muted-foreground">{t("sessionOnly")}</span>
           </div>
         </div>

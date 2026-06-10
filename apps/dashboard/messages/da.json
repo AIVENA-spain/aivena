@@ -737,7 +737,9 @@
     "capabilities": "Ask me how a feature works, what a setting does, or for general real-estate advice. I don’t read your individual leads.",
     "inputPlaceholder": "Ask me anything…",
     "send": "Send",
-    "sessionOnly": "This chat isn’t saved"
+    "sessionOnly": "This chat isn’t saved",
+    "activating": "WAA is being activated — please check back soon.",
+    "contextError": "Couldn't load your workspace. Please refresh and try again."
   },
   "matches": {
     "subtitle": "When you add a property, AIVENA matches it against the buyers already in your contacts and surfaces them here — you decide who to reach out to.",

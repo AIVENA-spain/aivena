@@ -6,26 +6,9 @@ import { createClient } from "@/lib/supabase/server";
 
 type FormState = { error?: string; message?: string };
 
-export async function loginAction(
-  _prev: FormState,
-  formData: FormData,
-): Promise<FormState> {
-  const email = String(formData.get("email") ?? "").trim();
-  const password = String(formData.get("password") ?? "");
-
-  if (!email || !password) {
-    return { error: "Email and password are required." };
-  }
-
-  const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-
-  if (error) {
-    return { error: error.message };
-  }
-
-  redirect("/");
-}
+// Password sign-in is now handled client-side in app/(auth)/login/page.tsx
+// (signInWithPassword via the browser client, so ?next= is honoured). The
+// previous server-side loginAction was unused dead code and has been removed.
 
 export async function forgotPasswordAction(
   _prev: FormState,

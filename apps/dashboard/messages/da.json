@@ -572,7 +572,15 @@
       "sentTitle": "Check your email",
       "sentBody": "We sent a sign-in link to {email}. Click it from the same device to sign in. The link is valid for one hour.",
       "sentResend": "Send another link",
-      "errorGeneric": "Couldn't send a sign-in link. Please try again — if it keeps happening, contact support."
+      "errorGeneric": "Couldn't send a sign-in link. Please try again — if it keeps happening, contact support.",
+      "passwordLabel": "Password",
+      "subtitlePassword": "Enter your email and password to sign in.",
+      "signInBtn": "Sign in",
+      "signingIn": "Signing in…",
+      "useMagicLink": "Email me a sign-in link instead",
+      "usePassword": "Use a password instead",
+      "forgotLink": "Forgot your password?",
+      "errorInvalidCredentials": "That email and password don't match. Please check and try again."
     },
     "callback": {
       "signingIn": "Signing you in…",

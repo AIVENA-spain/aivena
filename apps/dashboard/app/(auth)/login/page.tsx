@@ -2,6 +2,7 @@
 
 import { useCallback, useId, useState, useTransition } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 
 import { createClient } from "@/lib/supabase/client";
@@ -19,22 +20,27 @@ import {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+function safeNext(raw: string | null): string | null {
+  return raw && raw.startsWith("/") && !raw.startsWith("//") ? raw : null;
+}
+
 /**
- * Magic-link sign-in. The client SDK calls signInWithOtp; on success Supabase
- * emails the user a link back to /auth/callback, where we trade the code for
- * a session and redirect into the app. No password is captured anywhere.
- *
- * `?next=<local-path>` (e.g. when redirected from /invite/accept) is threaded
- * through the emailRedirectTo so the callback knows where to land the user.
- * Only local paths are honoured — open-redirect is enforced again in
- * /auth/callback before we follow the value.
+ * Sign-in. Two options:
+ *  - Password (default): client SDK signInWithPassword sets the SSR session
+ *    cookies; we then hard-navigate to ?next (validated local path) or "/".
+ *  - Magic link: signInWithOtp emails a link back to /auth/callback.
+ * `?next=<local-path>` is threaded through both; open-redirect is enforced
+ * here (safeNext) and again in /auth/callback.
  */
 export default function LoginPage() {
   const t = useTranslations("auth.login");
   const emailId = useId();
+  const passwordId = useId();
   const searchParams = useSearchParams();
 
+  const [mode, setMode] = useState<"password" | "magic">("password");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [sent, setSent] = useState(false);
   const [pending, startPending] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -45,16 +51,35 @@ export default function LoginPage() {
       setError(null);
       const trimmed = email.trim();
       if (!EMAIL_RE.test(trimmed)) {
-        setError(t("errorGeneric"));
+        setError(mode === "password" ? t("errorInvalidCredentials") : t("errorGeneric"));
         return;
       }
+
+      if (mode === "password") {
+        if (!password) {
+          setError(t("errorInvalidCredentials"));
+          return;
+        }
+        startPending(async () => {
+          const supabase = createClient();
+          const { error: supaError } = await supabase.auth.signInWithPassword({
+            email: trimmed,
+            password,
+          });
+          if (supaError) {
+            console.error("[login] signInWithPassword failed:", supaError.message);
+            setError(t("errorInvalidCredentials"));
+            return;
+          }
+          window.location.assign(safeNext(searchParams.get("next")) ?? "/");
+        });
+        return;
+      }
+
+      // Magic link
       startPending(async () => {
         const supabase = createClient();
-        const nextRaw = searchParams.get("next");
-        const next =
-          nextRaw && nextRaw.startsWith("/") && !nextRaw.startsWith("//")
-            ? nextRaw
-            : null;
+        const next = safeNext(searchParams.get("next"));
         const callback = next
           ? `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`
           : `${window.location.origin}/auth/callback`;
@@ -70,7 +95,7 @@ export default function LoginPage() {
         setSent(true);
       });
     },
-    [email, t, searchParams],
+    [mode, email, password, t, searchParams],
   );
 
   if (sent) {
@@ -94,11 +119,13 @@ export default function LoginPage() {
     );
   }
 
+  const isPassword = mode === "password";
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>{t("title")}</CardTitle>
-        <CardDescription>{t("subtitle")}</CardDescription>
+        <CardDescription>{isPassword ? t("subtitlePassword") : t("subtitle")}</CardDescription>
       </CardHeader>
       <form onSubmit={onSubmit}>
         <CardContent className="space-y-4">
@@ -115,6 +142,28 @@ export default function LoginPage() {
               required
             />
           </div>
+          {isPassword ? (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor={passwordId}>{t("passwordLabel")}</Label>
+                <Link
+                  href="/forgot-password"
+                  className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+                >
+                  {t("forgotLink")}
+                </Link>
+              </div>
+              <Input
+                id={passwordId}
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+          ) : null}
           {error ? (
             <p className="text-sm text-red-600" role="alert">
               {error}
@@ -123,8 +172,24 @@ export default function LoginPage() {
         </CardContent>
         <CardFooter className="flex flex-col gap-3">
           <Button type="submit" className="w-full" disabled={pending}>
-            {pending ? t("sending") : t("sendBtn")}
+            {pending
+              ? isPassword
+                ? t("signingIn")
+                : t("sending")
+              : isPassword
+                ? t("signInBtn")
+                : t("sendBtn")}
           </Button>
+          <button
+            type="button"
+            onClick={() => {
+              setMode(isPassword ? "magic" : "password");
+              setError(null);
+            }}
+            className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+          >
+            {isPassword ? t("useMagicLink") : t("usePassword")}
+          </button>
         </CardFooter>
       </form>
     </Card>

@@ -1,5 +1,8 @@
+import { getTranslations } from "next-intl/server";
+
 import { PageStub } from "@/components/shell/page-stub";
 
-export default function LeadsPage() {
-  return <PageStub title="Leads" />;
+export default async function LeadsPage() {
+  const t = await getTranslations("nav");
+  return <PageStub title={t("leads")} />;
 }

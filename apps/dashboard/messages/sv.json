@@ -13,7 +13,12 @@
     "studio": "Studio",
     "matches": "Matches",
     "properties": "Properties",
-    "viewings": "Viewings"
+    "viewings": "Viewings",
+    "voice": "Voice",
+    "ads": "Ads",
+    "tasks": "Tasks",
+    "leads": "Leads",
+    "team": "Team"
   },
   "topbar": {
     "switchAgency": "Switch agency",

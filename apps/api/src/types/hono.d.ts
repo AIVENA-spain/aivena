@@ -7,6 +7,8 @@ declare module 'hono' {
     user: AuthenticatedUser;
     agencyId: string;
     role: string;
+    /** Caller's raw JWT, stashed by requireAivenaStaff for admin routes. */
+    jwt: string;
     tx: Tx;
   }
 }

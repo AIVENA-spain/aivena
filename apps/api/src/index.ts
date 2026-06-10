@@ -7,6 +7,7 @@ import { env } from '../../../packages/config/env';
 import { logger } from '../../../packages/config/logger';
 import { authMiddleware } from './middleware/auth';
 import { agencyContextMiddleware } from './middleware/agency-context';
+import { requireAivenaStaff } from './middleware/require-aivena-staff';
 import { whatsappSignatureMiddleware, twilioSignatureMiddleware } from './middleware/webhook-signature';
 import meRoute from './routes/me';
 import overviewRoute from './routes/overview';
@@ -18,6 +19,7 @@ import bookingsRoute from './routes/bookings';
 import contentRoute from './routes/content';
 import leadNotesRoute from './routes/lead-notes';
 import studioRoute from './routes/studio';
+import adminRoute from './routes/admin';
 
 Sentry.init({
   dsn: env.SENTRY_DSN,
@@ -50,7 +52,14 @@ app.get('/health', (c) => {
 // Protected API routes — require a verified Supabase access token AND a
 // transaction-scoped agency context for RLS.
 app.use('/api/*', authMiddleware);
+// Staff-only admin gate — registered BEFORE agencyContextMiddleware so it owns
+// the transaction for /api/v1/admin/*; agencyContextMiddleware passes those
+// paths straight through (it never sets an agency context for admin routes).
+app.use('/api/v1/admin/*', requireAivenaStaff);
 app.use('/api/*', agencyContextMiddleware);
+
+// Admin (super-admin / aivena_staff) surface — onboarding console.
+app.route('/api/v1/admin', adminRoute);
 
 app.route('/api/v1/me', meRoute);
 app.route('/api/v1/overview', overviewRoute);

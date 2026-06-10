@@ -103,6 +103,15 @@ export async function getCurrentUserContext(): Promise<UserContext | null> {
   } = await supabase.auth.getUser();
   if (!user) return null;
 
+  // Super-admin status is authoritative from `raw_app_meta_data.aivena_staff`
+  // (server-only writeable), surfaced on the verified user as `app_metadata`.
+  // This is the SAME source the DB gate `is_aivena_staff()` and the Hono
+  // `requireAivenaStaff` middleware read — NOT the user_agencies role, which is
+  // per-agency and would miss a staff member who owns no agency.
+  const staffFlag = (user.app_metadata as { aivena_staff?: unknown } | undefined)
+    ?.aivena_staff;
+  const isAivenaStaff = staffFlag === true || staffFlag === "true";
+
   // Two-step explicit query: we don't rely on PostgREST's embedded FK join
   // between user_agencies and agencies — its schema cache for that relationship
   // is fragile and goes cold often enough that the embed isn't worth the risk.
@@ -131,7 +140,7 @@ export async function getCurrentUserContext(): Promise<UserContext | null> {
       email: user.email ?? "",
       memberships: [],
       activeAgency: null,
-      isAivenaStaff: false,
+      isAivenaStaff,
       uiLanguage,
     };
   }
@@ -157,7 +166,6 @@ export async function getCurrentUserContext(): Promise<UserContext | null> {
 
   const activeAgency =
     memberships.find((m) => m.isDefault) ?? memberships[0] ?? null;
-  const isAivenaStaff = memberships.some((m) => m.role === "aivena_staff");
 
   return {
     userId: user.id,

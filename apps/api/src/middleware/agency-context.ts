@@ -23,6 +23,14 @@ import { listMembershipsForUser } from '../lib/supabase-admin';
  * returned ≥400 or threw, the transaction rolls back.
  */
 export async function agencyContextMiddleware(c: Context, next: Next) {
+  // Admin routes (/api/v1/admin/*) are global, not agency-scoped. They run their
+  // own gate + transaction in requireAivenaStaff, which is registered before this
+  // middleware. The broad '/api/*' matcher still hits this function for those
+  // paths, so pass straight through — never set an agency context for admin.
+  if (c.req.path.startsWith('/api/v1/admin/')) {
+    return next();
+  }
+
   const user = c.get('user');
   if (!user?.sub) {
     return c.json({ error: 'No authenticated user on context' }, 401);

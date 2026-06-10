@@ -70,6 +70,12 @@ export type CreateAgencyResult = {
   /** Raw invite token — the wizard builds /invite/accept?token=… from it. */
   invitation_token?: string | null;
   invitation_expires_at?: string | null;
+  /**
+   * Whether the invitation email actually went out. undefined when no
+   * invitation was requested; false when the agency was created but the send
+   * failed (the wizard then offers a retry).
+   */
+  email_sent?: boolean;
 };
 
 export type SlugCheckResult = {

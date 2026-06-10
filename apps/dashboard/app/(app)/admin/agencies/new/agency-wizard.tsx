@@ -8,6 +8,7 @@ import {
   Copy,
   CircleCheck,
   CircleAlert,
+  Mail,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -18,7 +19,19 @@ import { Select } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Card } from "@/components/ui/card";
 import type { PlanTier } from "@/lib/api/admin-types";
-import { checkSlugAction, createAgencyAction } from "../../admin-actions";
+import {
+  checkSlugAction,
+  createAgencyAction,
+  resendInvitationAction,
+} from "../../admin-actions";
+
+type Created = {
+  agencyId: string;
+  token: string | null;
+  invitationId: string | null;
+  emailSent: boolean | undefined;
+  invited: boolean;
+};
 
 // 13 supported AIVENA locales.
 const LANGUAGES: { code: string; label: string }[] = [
@@ -110,10 +123,7 @@ export function AgencyWizard() {
   const [slugState, setSlugState] = useState<SlugState>({ kind: "idle" });
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [created, setCreated] = useState<{
-    agencyId: string;
-    token: string | null;
-  } | null>(null);
+  const [created, setCreated] = useState<Created | null>(null);
 
   const slugId = useId();
 
@@ -152,19 +162,23 @@ export function AgencyWizard() {
     };
   }, [slug]);
 
-  // Keep default language inside the supported set.
-  const toggleLanguage = useCallback(
-    (code: string) => {
-      setSupportedLanguages((prev) => {
-        const has = prev.includes(code);
-        if (has && prev.length === 1) return prev; // keep at least one
-        const next = has ? prev.filter((c) => c !== code) : [...prev, code];
-        if (!next.includes(defaultLanguage)) setDefaultLanguage(next[0]);
-        return next;
-      });
-    },
-    [defaultLanguage],
-  );
+  const toggleLanguage = useCallback((code: string) => {
+    setSupportedLanguages((prev) => {
+      const has = prev.includes(code);
+      if (has && prev.length === 1) return prev; // keep at least one
+      return has ? prev.filter((c) => c !== code) : [...prev, code];
+    });
+  }, []);
+
+  // Keep the default language valid as the supported set changes.
+  useEffect(() => {
+    if (
+      supportedLanguages.length > 0 &&
+      !supportedLanguages.includes(defaultLanguage)
+    ) {
+      setDefaultLanguage(supportedLanguages[0]);
+    }
+  }, [supportedLanguages, defaultLanguage]);
 
   const step1Valid =
     tradingName.trim().length >= 2 &&
@@ -204,6 +218,9 @@ export function AgencyWizard() {
     setCreated({
       agencyId: res.data.agency_id,
       token: res.data.invitation_token ?? null,
+      invitationId: res.data.invitation_id ?? null,
+      emailSent: res.data.email_sent,
+      invited: sendInvitation,
     });
     setStep(4);
   }
@@ -330,7 +347,37 @@ export function AgencyWizard() {
             ))}
           </div>
 
-          <Field label="Default language" hint="The agency's primary working language.">
+          <Field
+            label="Supported languages"
+            hint="Languages this agency can serve buyers in. Pick these first — the default is chosen from them. AIVENA supports these 13."
+          >
+            <div className="flex flex-wrap gap-1.5">
+              {LANGUAGES.map((l) => {
+                const on = supportedLanguages.includes(l.code);
+                return (
+                  <button
+                    key={l.code}
+                    type="button"
+                    onClick={() => toggleLanguage(l.code)}
+                    aria-pressed={on}
+                    className={cn(
+                      "rounded-full border px-3 py-1 text-[12.5px] transition-colors",
+                      on
+                        ? "border-brand bg-brand text-brand-fg"
+                        : "border-border text-muted-foreground hover:border-foreground/30",
+                    )}
+                  >
+                    {l.label}
+                  </button>
+                );
+              })}
+            </div>
+          </Field>
+
+          <Field
+            label="Default language"
+            hint="The agency's primary working language — chosen from the supported languages above."
+          >
             <Select
               value={defaultLanguage}
               onChange={(e) => setDefaultLanguage(e.target.value)}
@@ -345,32 +392,6 @@ export function AgencyWizard() {
                 );
               })}
             </Select>
-          </Field>
-
-          <Field
-            label="Supported languages"
-            hint="Languages this agency can serve buyers in. At least one."
-          >
-            <div className="flex flex-wrap gap-1.5">
-              {LANGUAGES.map((l) => {
-                const on = supportedLanguages.includes(l.code);
-                return (
-                  <button
-                    key={l.code}
-                    type="button"
-                    onClick={() => toggleLanguage(l.code)}
-                    className={cn(
-                      "rounded-full border px-3 py-1 text-[12.5px] transition-colors",
-                      on
-                        ? "border-brand bg-brand text-brand-fg"
-                        : "border-border text-muted-foreground hover:border-foreground/30",
-                    )}
-                  >
-                    {l.label}
-                  </button>
-                );
-              })}
-            </div>
           </Field>
         </StepCard>
       )}
@@ -457,42 +478,7 @@ export function AgencyWizard() {
       )}
 
       {step === 4 && created && (
-        <StepCard title="" subtitle="">
-          <div className="flex flex-col items-center gap-3 py-6 text-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-soft text-brand">
-              <CircleCheck className="h-6 w-6" aria-hidden />
-            </div>
-            <h2 className="text-xl font-semibold text-foreground">
-              Agency created
-            </h2>
-            <p className="max-w-sm text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">{tradingName}</span> is
-              live.{" "}
-              {sendInvitation
-                ? "The primary owner has been emailed an invitation to set up their account."
-                : "No invitation was sent — you can invite the owner from the team page."}
-            </p>
-            <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
-              <Link
-                href={`/admin/agencies/${created.agencyId}`}
-                className={buttonVariants({ size: "sm" })}
-              >
-                Open agency
-              </Link>
-              {created.token ? <CopyInviteLink token={created.token} /> : null}
-              <Link
-                href="/admin/agencies/new"
-                className={buttonVariants({ variant: "outline", size: "sm" })}
-                onClick={() => {
-                  // Hard reset by navigating to a fresh wizard mount.
-                  window.location.assign("/admin/agencies/new");
-                }}
-              >
-                Create another
-              </Link>
-            </div>
-          </div>
-        </StepCard>
+        <CreatedStep created={created} tradingName={tradingName} />
       )}
 
       {/* Footer nav */}
@@ -681,6 +667,108 @@ function Review({
         {value}
       </span>
     </div>
+  );
+}
+
+function CreatedStep({
+  created,
+  tradingName,
+}: {
+  created: Created;
+  tradingName: string;
+}) {
+  const [emailSent, setEmailSent] = useState<boolean | undefined>(
+    created.emailSent,
+  );
+  const [resending, setResending] = useState(false);
+  const [resendError, setResendError] = useState<string | null>(null);
+
+  const failed = created.invited && emailSent === false;
+
+  async function resend() {
+    if (!created.invitationId) return;
+    setResending(true);
+    setResendError(null);
+    const res = await resendInvitationAction(created.agencyId, created.invitationId);
+    setResending(false);
+    if (res.ok) setEmailSent(true);
+    else setResendError(res.error);
+  }
+
+  let message: string;
+  if (!created.invited) {
+    message = "No invitation was sent — you can invite the owner from the team page.";
+  } else if (emailSent === true) {
+    message = "The primary owner has been emailed an invitation to set up their account.";
+  } else if (emailSent === false) {
+    message =
+      "The agency was created, but the invitation email didn't send. Retry below, or copy the link and send it yourself.";
+  } else {
+    message = "The primary owner will receive an invitation to set up their account.";
+  }
+
+  return (
+    <StepCard title="" subtitle="">
+      <div className="flex flex-col items-center gap-3 py-6 text-center">
+        <div
+          className={cn(
+            "flex h-12 w-12 items-center justify-center rounded-full",
+            failed ? "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300" : "bg-brand-soft text-brand",
+          )}
+        >
+          {failed ? (
+            <CircleAlert className="h-6 w-6" aria-hidden />
+          ) : (
+            <CircleCheck className="h-6 w-6" aria-hidden />
+          )}
+        </div>
+        <h2 className="text-xl font-semibold text-foreground">Agency created</h2>
+        <p className="max-w-sm text-sm text-muted-foreground">
+          <span className="font-medium text-foreground">{tradingName}</span> is live.{" "}
+          {message}
+        </p>
+        {resendError ? (
+          <p className="text-sm text-destructive" role="alert">
+            {resendError}
+          </p>
+        ) : null}
+        <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
+          <Link
+            href={`/admin/agencies/${created.agencyId}`}
+            className={buttonVariants({ size: "sm" })}
+          >
+            Open agency
+          </Link>
+          {failed && created.invitationId ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={resending}
+              onClick={resend}
+            >
+              {resending ? (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+              ) : (
+                <Mail className="h-4 w-4" aria-hidden />
+              )}
+              Resend email
+            </Button>
+          ) : null}
+          {created.token ? <CopyInviteLink token={created.token} /> : null}
+          <Link
+            href="/admin/agencies/new"
+            className={buttonVariants({ variant: "outline", size: "sm" })}
+            onClick={() => {
+              // Hard reset by navigating to a fresh wizard mount.
+              window.location.assign("/admin/agencies/new");
+            }}
+          >
+            Create another
+          </Link>
+        </div>
+      </div>
+    </StepCard>
   );
 }
 

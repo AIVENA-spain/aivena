@@ -75,6 +75,45 @@ export function handleRpc(
   return c.json(data);
 }
 
+/**
+ * Invoke the send-invitation-email Edge Function for one invitation. Uses the
+ * service-role key (system-initiated send). Returns a stable result — never
+ * throws — so callers can surface a friendly status without leaking detail.
+ * The invitation row exists regardless of whether the email goes out.
+ */
+export async function invokeSendInvitationEmail(
+  invitationId: string,
+): Promise<{ sent: boolean; error?: string }> {
+  try {
+    const res = await fetch(
+      `${env.SUPABASE_URL}/functions/v1/send-invitation-email`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ invitation_id: invitationId }),
+      },
+    );
+    const body = (await res.json().catch(() => ({}))) as {
+      sent?: boolean;
+      error?: string;
+      skipped_reason?: string;
+    };
+    if (!res.ok || body.sent === false) {
+      const detail = body.error ?? body.skipped_reason ?? `EF ${res.status}`;
+      return { sent: false, error: detail };
+    }
+    return { sent: body.sent === true };
+  } catch (err) {
+    return {
+      sent: false,
+      error: err instanceof Error ? err.message : 'send failed',
+    };
+  }
+}
+
 /** Parse a JSON body defensively; returns {} on empty/invalid. */
 export async function readJson(c: Context): Promise<Record<string, unknown>> {
   try {

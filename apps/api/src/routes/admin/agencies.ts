@@ -4,6 +4,8 @@ import {
   userClient,
   handleRpc,
   readJson,
+  invokeSendInvitationEmail,
+  statusForRpcError,
   ADMIN_GENERIC_ERROR,
 } from './_shared';
 
@@ -108,6 +110,10 @@ route.get('/', async (c) => {
 });
 
 // ─── POST /api/v1/admin/agencies — create ───────────────────────────────────
+// Two steps: admin_create_agency (creates the agency + invitation row), then —
+// if send_invitation — invoke the send-invitation-email Edge Function. The
+// response reports `email_sent` so the UI can show the true status (and a
+// retry) rather than claiming an email went out when it didn't.
 route.post('/', async (c) => {
   const parsed = createSchema.safeParse(await readJson(c));
   if (!parsed.success) {
@@ -129,7 +135,53 @@ route.post('/', async (c) => {
     p_plan_tier: b.plan_tier,
     p_send_invitation: b.send_invitation,
   });
-  return handleRpc(c, 'create', rpc);
+
+  if (rpc.error) {
+    console.error('[admin/create] rpc error:', rpc.error);
+    return c.json({ ok: false, error: ADMIN_GENERIC_ERROR }, 500);
+  }
+  const data = rpc.data as
+    | { ok?: boolean; error?: string; invitation_id?: string }
+    | null;
+  if (!data || typeof data !== 'object') {
+    return c.json({ ok: false, error: ADMIN_GENERIC_ERROR }, 500);
+  }
+  if (data.ok === false) {
+    const msg = data.error ?? ADMIN_GENERIC_ERROR;
+    return c.json({ ok: false, error: msg }, statusForRpcError(msg));
+  }
+
+  // Step 2 — send the invitation email if requested and one was created.
+  let emailSent: boolean | undefined;
+  if (b.send_invitation && data.invitation_id) {
+    const sendResult = await invokeSendInvitationEmail(String(data.invitation_id));
+    emailSent = sendResult.sent;
+    if (!sendResult.sent) {
+      console.error('[admin/create] invite email failed:', sendResult.error);
+    }
+  }
+
+  return c.json({ ...data, email_sent: emailSent });
+});
+
+// ─── POST /api/v1/admin/agencies/:id/invitations/:invitationId/send ─────────
+// Retry sending an invitation email (e.g. from the wizard's success screen when
+// the first send failed). Plain re-send — no token rotation (Phase 3's resend
+// rotates the token via admin_resend_invitation).
+route.post('/:id/invitations/:invitationId/send', async (c) => {
+  const invitationId = c.req.param('invitationId');
+  if (!invitationId) {
+    return c.json({ ok: false, error: 'That invitation could not be found.' }, 404);
+  }
+  const result = await invokeSendInvitationEmail(invitationId);
+  if (!result.sent) {
+    console.error('[admin/invite-send] failed:', result.error);
+    return c.json(
+      { ok: false, error: 'The invitation email could not be sent. Please try again.' },
+      502,
+    );
+  }
+  return c.json({ ok: true, email_sent: true });
 });
 
 // ─── GET /api/v1/admin/agencies/:id — detail ────────────────────────────────

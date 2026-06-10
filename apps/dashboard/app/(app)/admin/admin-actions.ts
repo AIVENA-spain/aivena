@@ -80,6 +80,27 @@ export async function createAgencyAction(
 }
 
 /**
+ * Retry sending an invitation email (wizard success screen, when the first
+ * send failed). No token rotation — a plain re-send.
+ */
+export async function resendInvitationAction(
+  agencyId: string,
+  invitationId: string,
+): Promise<ActionResult<{ email_sent: true }>> {
+  try {
+    const res = await apiFetch<{ ok: true; email_sent: true }>(
+      `/api/v1/admin/agencies/${encodeURIComponent(agencyId)}/invitations/${encodeURIComponent(
+        invitationId,
+      )}/send`,
+      { method: "POST", body: "{}" },
+    );
+    return { ok: true, data: { email_sent: res.email_sent } };
+  } catch (err) {
+    return actionError("resendInvitation", err);
+  }
+}
+
+/**
  * Live slug-availability check for the wizard (debounced client-side). Calls
  * the dedicated /check-slug endpoint, which mirrors the RPC's validation +
  * reserved-word list. On any error we report `available: true` so we never

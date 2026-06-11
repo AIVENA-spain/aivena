@@ -12,7 +12,7 @@
     "soonBadge": "Pian",
     "studio": "Studio",
     "matches": "Ottelut",
-    "properties": "Ominaisuudet",
+    "properties": "Kiinteistöt",
     "viewings": "Näytöt",
     "voice": "Ääni",
     "ads": "Mainokset",
@@ -47,13 +47,13 @@
       "callsRecovered": "Palautetut puhelut",
       "vsLast7Days": "vs viimeiset 7 päivää",
       "soon": "Pian",
-      "sellersTeaser": "alkaa, kun arvostuslomake on aktiivinen",
-      "callsTeaser": "alkaa, kun ääni on aktiivinen"
+      "sellersTeaser": "alkaa, kun arvostuslomake on käytössä",
+      "callsTeaser": "alkaa, kun ääni on käytössä"
     },
     "needsAction": {
       "title": "Vaatii toimintaa · Valmiit vastaukset",
       "emptyTitle": "Ei odottavaa",
-      "emptyText": "AI:n laatimat vastaukset näkyvät täällä, kun ostajat vastaavat.",
+      "emptyText": "AI:n laatimat luonnokset näkyvät täällä, kun ostajat vastaavat.",
       "columnLead": "Liidi",
       "columnType": "Tyyppi",
       "columnArea": "Alue",
@@ -65,8 +65,8 @@
       "aiTag": "AI"
     },
     "panel": {
-      "selectALead": "Valitse liidi nähdäksesi yksityiskohdat.",
-      "noSelection": "Ei valittuna",
+      "selectALead": "Valitse liidi nähdäksesi tiedot.",
+      "noSelection": "Ei valittuja",
       "fields": {
         "type": "Tyyppi",
         "area": "Alue",
@@ -83,11 +83,11 @@
       "send": "Lähetä",
       "copy": "Kopioi",
       "copied": "Kopioitu",
-      "openInInbox": "Avaa saapuneet"
+      "openInInbox": "Avaa Saapuneet"
     },
     "activity": {
       "title": "Viimeaikainen toiminta",
-      "empty": "Ei vielä viimeaikaista toimintaa.",
+      "empty": "Ei viimeaikaista toimintaa.",
       "viewAll": "Näytä kaikki toiminnot →",
       "showLess": "Näytä vähemmän"
     },
@@ -95,7 +95,7 @@
       "title": "Verkostosi",
       "comingSoon": "Tulossa pian",
       "teaserTitle": "Työskentele lähialueen toimistojen kanssa",
-      "teaser": "Osallistuminen yhteistyöhön muiden AIVENA-toimistojen kanssa — jaa ostajia tai listauksia sovituin ehdoin ja jaa komissio. Tulossa pian."
+      "teaser": "Osallistu yhteistyöhön muiden AIVENA-toimistojen kanssa — jaa ostajia tai listauksia sovituin ehdoin ja jaa komissio. Tulossa pian."
     }
   },
   "inbox": {
@@ -119,7 +119,7 @@
     "buyers": {
       "emptyConvo": "Olet ajan tasalla — ei odottavia vastauksia.",
       "emptyTitleConvo": "Olet ajan tasalla",
-      "emptyText": "AI:n laatimat vastaukset näkyvät täällä, kun ostajat vastaavat viesteihisi.",
+      "emptyText": "AI:n laatimat luonnokset näkyvät täällä, kun ostajat vastaavat viesteihisi.",
       "emptyTitleCards": "Olet ajan tasalla",
       "emptyTextCards": "Jokainen luonnos näkyy täällä nopeana korttina, kun ostaja vastaa.",
       "pendingBadge": "{n} odottavaa",
@@ -166,8 +166,8 @@
     "sellers": {
       "emptyTitleConvo": "Ei myyjäkeskusteluja vielä",
       "emptyTitleCards": "Ei myyjäliidejä näytettäväksi korteina vielä",
-      "emptyText": "Myyjäliidit saapuvat automaattisesti, kun arvostuslomakkeesi on aktiivinen — kun omistaja kysyy, mitä heidän omaisuutensa on arvokas, ne näkyvät täällä.",
-      "emptyTextCards": "Kun arvostuslomakkeesi on aktiivinen, jokainen myyjäliidi näkyy täällä nopeana korttina.",
+      "emptyText": "Myyjäliidit saapuvat automaattisesti, kun arvostuslomakkeesi on käytössä — kun omistaja kysyy, mitä heidän omaisuutensa on arvoltaan, ne näkyvät täällä.",
+      "emptyTextCards": "Kun arvostuslomakkeesi on käytössä, jokainen myyjäliidi näkyy täällä nopeana korttina.",
       "setupButton": "Aseta arvostuslomake"
     },
     "network": {
@@ -193,14 +193,14 @@
     },
     "wizard": {
       "title": "Aseta arvostuslomake",
-      "subtitle": "Monikielinen \"kuinka paljon kotini on arvokas?\" lomake verkkosivustollesi — se kerää myyjät automaattisesti.",
+      "subtitle": "Monikielinen \"mikä on kotini arvo?\" -lomake verkkosivustollesi — se kerää myyjät automaattisesti.",
       "langLabel": "Mitä kieliä lomakkeen tulisi tarjota?",
       "areasLabel": "Mitä alueita katat?",
       "areasPlaceholder": "esim. Torrevieja, Orihuela Costa, La Zenia, Punta Prima",
       "brandingLabel": "Sovita brändisi",
-      "brandingNote": "Käytä toimiston logoa ja brändiväriä",
+      "brandingNote": "Käyttämällä toimistosi logoa ja brändiväriä",
       "embedLabel": "Upota verkkosivustollesi",
-      "embedNote": "Liitä tämä sivustollesi tai lähetä se verkkohenkilölle.",
+      "embedNote": "Liitä tämä sivustollesi tai lähetä se verkkovastaavallesi.",
       "cancel": "Peruuta",
       "activate": "Aktivoi arvostuslomake",
       "close": "Sulje"

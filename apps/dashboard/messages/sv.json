@@ -8,7 +8,7 @@
     "adminSectionLabel": "AIVENA Admin",
     "allAgencies": "Alla Byråer",
     "brandName": "AIVENA",
-    "brandSubtitle": "AI fastigheter",
+    "brandSubtitle": "AI fastighetsförmedling",
     "soonBadge": "Kommer snart",
     "studio": "Studio",
     "matches": "Matchningar",
@@ -44,14 +44,14 @@
       "hotLeads": "Heta Leads",
       "newSellers": "Nya Säljare",
       "followupsSent": "Uppföljningar Skickade",
-      "callsRecovered": "Återställda Samtal",
+      "callsRecovered": "Återvunna samtal",
       "vsLast7Days": "jämfört med de senaste 7 dagarna",
       "soon": "Snart",
       "sellersTeaser": "börjar när värderingsformuläret är aktivt",
       "callsTeaser": "börjar när rösten är aktiv"
     },
     "needsAction": {
-      "title": "Behöver Åtgärd · Klara Svar",
+      "title": "Behöver åtgärd · Färdiga svar",
       "emptyTitle": "Inget som väntar",
       "emptyText": "AI-utkast visas här när köpare svarar.",
       "columnLead": "Lead",
@@ -86,7 +86,7 @@
       "openInInbox": "Öppna i Inkorg"
     },
     "activity": {
-      "title": "Senaste Aktivitet",
+      "title": "Senaste aktivitet",
       "empty": "Ingen senaste aktivitet än.",
       "viewAll": "Visa all aktivitet →",
       "showLess": "Visa mindre"
@@ -166,7 +166,7 @@
     "sellers": {
       "emptyTitleConvo": "Inga säljar-konversationer ännu",
       "emptyTitleCards": "Inga säljar-leads att visa som kort ännu",
-      "emptyText": "Sälj-leads kommer automatiskt när ditt värderingsformulär är aktivt — när en husägare frågar vad deras egendom är värd, visas de här.",
+      "emptyText": "Säljar-leads kommer automatiskt när ditt värderingsformulär är aktivt — när en husägare frågar vad deras fastighet är värd, visas de här.",
       "emptyTextCards": "När ditt värderingsformulär är aktivt, visas varje säljar-lead här som ett snabböversiktskort.",
       "setupButton": "Ställ in värderingsformulär"
     },
@@ -307,7 +307,7 @@
       "title": "Skickande identitet",
       "subtitle": "Den verifierade domän AIVENA skickar från, under ditt namn.",
       "domainLabel": "Verifierad skickande domän",
-      "domainHint": "För att ändra detta, kontakta support — att ändra den skickande domänen kräver omverifiering.",
+      "domainHint": "För att ändra detta, kontakta support — att ändra den skickande domänen kräver ny verifiering.",
       "verifiedPill": "Verifierad",
       "notVerifiedPill": "Inte verifierad",
       "replyToLabel": "Svar-till adress",
@@ -340,7 +340,7 @@
       "endLabel": "Slut",
       "enabledLabel": "Öppen",
       "closedLabel": "Stängd",
-      "quietFramingNote": "Kontrollerar när AIVENA skickar uppföljnings-e-post. Heta/super-heta leads och svar du godkänner manuellt skickas alltid omedelbart.",
+      "quietFramingNote": "Kontrollerar när AIVENA skickar uppföljnings-e-post. Heta/superheta leads och svar du godkänner manuellt skickas alltid omedelbart.",
       "saveQuietBtn": "Spara tysta timmar",
       "savedToggleToast": "AI-regel sparad.",
       "savedQuietToast": "Tysta timmar sparade."
@@ -348,7 +348,7 @@
     "voice": {
       "title": "Röst & ton",
       "subtitle": "Hur din byrå \"låter\" — detta formar varje AI-skrivet svar.",
-      "honestSubLine": "Formar dina uppföljnings-e-post idag, och sträcker sig till inkommande svar när automatiseringsmotorn landar.",
+      "honestSubLine": "Formar dina uppföljnings-e-post idag, och sträcker sig till inkommande svar när automatiseringsmotorn lanseras.",
       "currentToneHint": "För närvarande: {tone} — välj ett av de nya alternativen för att uppdatera.",
       "describeLabel": "Beskriv din byrås röst",
       "describePlaceholder": "Vänlig och professionell. Vi är lokala experter som får utländska köpare att känna sig hemma. Aldrig påträngande.",
@@ -820,7 +820,7 @@
     "consentComms": "Jag vill gärna ta emot relaterade uppdateringar och erbjudanden.",
     "consentOptional": "(valfritt)",
     "consentNeeded": "Vänligen godkänn databehandling för att fortsätta.",
-    "ecoDisclaimer": "Detta är en automatiserad uppskattning, inte en ECO/805/2003 homologerad tasación. Siffran ges endast som en vägledning.",
+    "ecoDisclaimer": "Detta är en automatiserad uppskattning, inte en ECO/805/2003 homologerad värdering. Siffran ges endast som en vägledning.",
     "submit": "Få min uppskattning",
     "poweredBy": "Drivs av AIVENA"
   },

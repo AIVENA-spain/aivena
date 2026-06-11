@@ -5,7 +5,7 @@
     "performance": "Performance",
     "content": "Contenu",
     "settings": "Paramètres",
-    "adminSectionLabel": "Admin AIVENA",
+    "adminSectionLabel": "Administration AIVENA",
     "allAgencies": "Toutes les agences",
     "brandName": "AIVENA",
     "brandSubtitle": "Immobilier IA",
@@ -40,19 +40,19 @@
   "overview": {
     "kpi": {
       "newLeads": "Nouveaux Leads",
-      "needsAction": "Actions Nécessaires",
-      "hotLeads": "Leads Chauds",
+      "needsAction": "À traiter",
+      "hotLeads": "Leads prioritaires",
       "newSellers": "Nouveaux Vendeurs",
-      "followupsSent": "Relances Envoyées",
-      "callsRecovered": "Appels Récupérés",
-      "vsLast7Days": "vs les 7 derniers jours",
+      "followupsSent": "Relances envoyées",
+      "callsRecovered": "Appels récupérés",
+      "vsLast7Days": "par rapport aux 7 derniers jours",
       "soon": "Bientôt",
       "sellersTeaser": "commence lorsque le formulaire d'évaluation est en ligne",
       "callsTeaser": "commence lorsque la voix est en ligne"
     },
     "needsAction": {
-      "title": "Actions Nécessaires · Réponses Prêtes",
-      "emptyTitle": "Rien en attente",
+      "title": "À traiter · Réponses prêtes",
+      "emptyTitle": "Aucune attente",
       "emptyText": "Les brouillons d'IA apparaissent ici lorsque les acheteurs répondent.",
       "columnLead": "Lead",
       "columnType": "Type",
@@ -60,7 +60,7 @@
       "columnSource": "Source",
       "columnChannel": "Canal",
       "columnStatus": "Statut",
-      "columnReply": "Réponse suggérée par l'IA",
+      "columnReply": "Réponse suggérée par IA",
       "leadTypeDefault": "Acheteur",
       "aiTag": "IA"
     },
@@ -83,7 +83,7 @@
       "send": "Envoyer",
       "copy": "Copier",
       "copied": "Copié",
-      "openInInbox": "Ouvrir dans la Boîte de Réception"
+      "openInInbox": "Ouvrir dans la boîte de réception"
     },
     "activity": {
       "title": "Activité Récente",
@@ -110,7 +110,7 @@
       "cards": "Cartes"
     },
     "state": {
-      "needsYou": "A besoin de vous",
+      "needsYou": "Nécessite votre intervention",
       "replied": "Répondu",
       "autoHandled": "Géré automatiquement",
       "waiting": "En attente"

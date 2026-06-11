@@ -11,7 +11,7 @@
     "brandSubtitle": "AI eiendom",
     "soonBadge": "Kommer snart",
     "studio": "Studio",
-    "matches": "Kampene",
+    "matches": "Matcher",
     "properties": "Eiendommer",
     "viewings": "Visninger",
     "voice": "Stemme",
@@ -39,20 +39,20 @@
   },
   "overview": {
     "kpi": {
-      "newLeads": "Nye Leads",
-      "needsAction": "Trenger Handling",
-      "hotLeads": "Varme Leads",
-      "newSellers": "Nye Selgere",
-      "followupsSent": "Oppfølginger Sendt",
-      "callsRecovered": "Gjenopprettede Samtaler",
+      "newLeads": "Nye leads",
+      "needsAction": "Trenger handling",
+      "hotLeads": "Varme leads",
+      "newSellers": "Nye selgere",
+      "followupsSent": "Sendte oppfølginger",
+      "callsRecovered": "Gjenopprettede samtaler",
       "vsLast7Days": "vs de siste 7 dagene",
       "soon": "Snart",
       "sellersTeaser": "starter når verdivurderingsskjemaet er aktivt",
       "callsTeaser": "starter når stemmen er aktiv"
     },
     "needsAction": {
-      "title": "Trenger Handling · Klare Svar",
-      "emptyTitle": "Ingen ventende",
+      "title": "Trenger handling · Klare svar",
+      "emptyTitle": "Ingenting venter",
       "emptyText": "AI-utkast vises her når kjøpere svarer.",
       "columnLead": "Lead",
       "columnType": "Type",
@@ -66,7 +66,7 @@
     },
     "panel": {
       "selectALead": "Velg en lead for å se detaljer.",
-      "noSelection": "Ingen valgt",
+      "noSelection": "Ingenting valgt",
       "fields": {
         "type": "Type",
         "area": "Område",
@@ -86,13 +86,13 @@
       "openInInbox": "Åpne i Innboks"
     },
     "activity": {
-      "title": "Nylig Aktivitet",
+      "title": "Nylig aktivitet",
       "empty": "Ingen nylig aktivitet ennå.",
       "viewAll": "Se all aktivitet →",
       "showLess": "Vis mindre"
     },
     "network": {
-      "title": "Ditt Nettverk",
+      "title": "Ditt nettverk",
       "comingSoon": "Kommer snart",
       "teaserTitle": "Samarbeid med nærliggende byråer",
       "teaser": "Opt-in samarbeid med andre AIVENA-byråer — del kjøpere eller oppføringer på avtalte vilkår, og del provisjon. Kommer snart."
@@ -269,7 +269,7 @@
     "themeDark": "Mørk",
     "themeSystem": "System",
     "saving": "Lagrer…",
-    "saved": "Lagrert",
+    "saved": "Lagret",
     "saveFailed": "Kunne ikke lagre den endringen. Vennligst prøv igjen — hvis det fortsetter å skje, kontakt support.",
     "checklist": {
       "title": "Fullfør oppsettet",

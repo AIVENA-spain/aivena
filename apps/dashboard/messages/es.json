@@ -4,8 +4,8 @@
     "inbox": "Bandeja de entrada",
     "performance": "Rendimiento",
     "content": "Contenido",
-    "settings": "Configuraciones",
-    "adminSectionLabel": "Administración de AIVENA",
+    "settings": "Configuración",
+    "adminSectionLabel": "AIVENA Admin",
     "allAgencies": "Todas las agencias",
     "brandName": "AIVENA",
     "brandSubtitle": "Inmobiliaria AI",
@@ -40,19 +40,19 @@
   "overview": {
     "kpi": {
       "newLeads": "Nuevos Leads",
-      "needsAction": "Necesita Acción",
-      "hotLeads": "Leads Calientes",
+      "needsAction": "Requiere acción",
+      "hotLeads": "Leads calientes",
       "newSellers": "Nuevos Vendedores",
-      "followupsSent": "Seguimientos Enviados",
-      "callsRecovered": "Llamadas Recuperadas",
+      "followupsSent": "Seguimientos enviados",
+      "callsRecovered": "Llamadas recuperadas",
       "vsLast7Days": "vs los últimos 7 días",
       "soon": "Pronto",
       "sellersTeaser": "comienza cuando el formulario de valoración esté activo",
       "callsTeaser": "comienza cuando la voz esté activa"
     },
     "needsAction": {
-      "title": "Necesita Acción · Respuestas Listas",
-      "emptyTitle": "Nada en espera",
+      "title": "Requiere acción · Respuestas listas",
+      "emptyTitle": "Nada pendiente",
       "emptyText": "Los borradores de IA aparecen aquí a medida que los compradores responden.",
       "columnLead": "Lead",
       "columnType": "Tipo",
@@ -65,7 +65,7 @@
       "aiTag": "IA"
     },
     "panel": {
-      "selectALead": "Selecciona un lead para ver detalles.",
+      "selectALead": "Selecciona un lead para ver los detalles.",
       "noSelection": "Nada seleccionado",
       "fields": {
         "type": "Tipo",
@@ -87,7 +87,7 @@
     },
     "activity": {
       "title": "Actividad Reciente",
-      "empty": "No hay actividad reciente aún.",
+      "empty": "Aún no hay actividad reciente.",
       "viewAll": "Ver toda la actividad →",
       "showLess": "Mostrar menos"
     },
@@ -95,7 +95,7 @@
       "title": "Tu Red",
       "comingSoon": "Próximamente",
       "teaserTitle": "Trabaja con agencias cercanas",
-      "teaser": "Cooperación optativa con otras agencias AIVENA — comparte compradores o listados en términos acordados y divide la comisión. Próximamente."
+      "teaser": "Cooperación opcional con otras agencias AIVENA — comparte compradores o listados en términos acordados y divide la comisión. Próximamente."
     }
   },
   "inbox": {
@@ -166,8 +166,8 @@
     "sellers": {
       "emptyTitleConvo": "No hay conversaciones con vendedores aún",
       "emptyTitleCards": "No hay leads de vendedores para mostrar como tarjetas aún",
-      "emptyText": "Los leads de vendedores llegan automáticamente una vez que tu formulario de valoración está activo — cuando un propietario pregunta cuánto vale su propiedad, aparecen aquí.",
-      "emptyTextCards": "Una vez que tu formulario de valoración está activo, cada lead de vendedor aparece aquí como una tarjeta de escaneo rápido.",
+      "emptyText": "Los leads de vendedores llegan automáticamente una vez que tu formulario de valoración esté activo — cuando un propietario pregunta cuánto vale su propiedad, aparecen aquí.",
+      "emptyTextCards": "Una vez que tu formulario de valoración esté activo, cada lead de vendedor aparece aquí como una tarjeta de escaneo rápido.",
       "setupButton": "Configurar formulario de valoración"
     },
     "network": {
@@ -257,7 +257,7 @@
     "dismissReasonRequired": "Se requiere una razón."
   },
   "settings": {
-    "title": "Configuraciones",
+    "title": "Configuración",
     "subtitle": "Cómo funciona tu agencia, <em>envía y se presenta a tus clientes</em>",
     "personal": "Personal",
     "personalDescription": "Preferencias para tu cuenta — estas solo te afectan a ti.",
@@ -451,7 +451,7 @@
       "title": "Plan y uso",
       "subtitle": "Tu nivel de suscripción y el uso de este mes.",
       "currentPlan": "Plan actual",
-      "tier_starter": "Inicio",
+      "tier_starter": "Inicial",
       "tier_pro": "Pro",
       "tier_unlimited": "Ilimitado",
       "unlimited": "Ilimitado",
@@ -460,7 +460,7 @@
       "quota_adCreative": "Creativos de anuncios",
       "quota_socialPost": "Publicaciones sociales",
       "quota_renovation": "Escenificación virtual",
-      "provisioningNote": "Tu plan se establece cuando se provisiona tu cuenta. Para cambiar niveles, contacta a tu representante de AIVENA."
+      "provisioningNote": "Tu plan se establece cuando se provisiona tu cuenta. Para cambiar de nivel, contacta a tu representante de AIVENA."
     },
     "properties": {
       "title": "Propiedades",

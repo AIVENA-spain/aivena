@@ -40,7 +40,7 @@
   "overview": {
     "kpi": {
       "newLeads": "Neue Leads",
-      "needsAction": "Benötigt Aktion",
+      "needsAction": "Erfordert Handeln",
       "hotLeads": "Heiße Leads",
       "newSellers": "Neue Verkäufer",
       "followupsSent": "Folgeaktionen gesendet",
@@ -51,21 +51,21 @@
       "callsTeaser": "beginnt, wenn die Sprachfunktion live ist"
     },
     "needsAction": {
-      "title": "Benötigt Aktion · Bereit Antworten",
+      "title": "Erfordert Handeln · Bereit Antworten",
       "emptyTitle": "Nichts wartet",
-      "emptyText": "AI-Entwürfe erscheinen hier, wenn Käufer antworten.",
+      "emptyText": "KI-Entwürfe erscheinen hier, wenn Käufer antworten.",
       "columnLead": "Lead",
       "columnType": "Typ",
       "columnArea": "Bereich",
       "columnSource": "Quelle",
       "columnChannel": "Kanal",
       "columnStatus": "Status",
-      "columnReply": "AI vorgeschlagene Antwort",
+      "columnReply": "KI-vorgeschlagene Antwort",
       "leadTypeDefault": "Käufer",
       "aiTag": "KI"
     },
     "panel": {
-      "selectALead": "Wählen Sie einen Lead aus, um Details zu sehen.",
+      "selectALead": "Wählen Sie einen Lead aus, um Details anzuzeigen.",
       "noSelection": "Nichts ausgewählt",
       "fields": {
         "type": "Typ",
@@ -110,17 +110,17 @@
       "cards": "Karten"
     },
     "state": {
-      "needsYou": "Braucht dich",
+      "needsYou": "Braucht Sie",
       "replied": "Antwortet",
       "autoHandled": "Automatisch bearbeitet",
-      "waiting": "Warten"
+      "waiting": "Wartet"
     },
     "handledDivider": "Bearbeitet",
     "buyers": {
-      "emptyConvo": "Du bist auf dem neuesten Stand — keine ausstehenden Antworten.",
-      "emptyTitleConvo": "Du bist auf dem neuesten Stand",
-      "emptyText": "Hier erscheinen KI-erstellte Antworten, sobald Käufer auf deine Nachrichten antworten.",
-      "emptyTitleCards": "Du bist auf dem neuesten Stand",
+      "emptyConvo": "Sie sind auf dem neuesten Stand — keine ausstehenden Antworten.",
+      "emptyTitleConvo": "Sie sind auf dem neuesten Stand",
+      "emptyText": "Hier erscheinen KI-erstellte Antworten, sobald Käufer auf Ihre Nachrichten antworten.",
+      "emptyTitleCards": "Sie sind auf dem neuesten Stand",
       "emptyTextCards": "Jeder Entwurf erscheint hier als Schnellansichtskarte, sobald ein Käufer antwortet.",
       "pendingBadge": "{n} ausstehend",
       "listLanguageUnknown": "—"
@@ -132,7 +132,7 @@
       "outboundMeta": "Ausgehend · {time}",
       "inbound": "Eingehend",
       "outbound": "Ausgehend",
-      "translationLabel": "Übersetzung (deine Sprache)",
+      "translationLabel": "Übersetzung (Ihre Sprache)",
       "translatedFrom": "Übersetzt aus {lang}",
       "showOriginal": "Original anzeigen",
       "showTranslation": "Übersetzung anzeigen"
@@ -160,14 +160,14 @@
       "cancel": "Abbrechen",
       "dismissReasonLabel": "Ablehnungsgrund",
       "dismissReasonPlaceholder": "Warum lehnen Sie diesen Entwurf ab?",
-      "translationLabel": "Übersetzung (deine Sprache)",
+      "translationLabel": "Übersetzung (Ihre Sprache)",
       "sentOriginal": "An den Käufer gesendet (original)"
     },
     "sellers": {
       "emptyTitleConvo": "Noch keine Verkäuferunterhaltungen",
       "emptyTitleCards": "Noch keine Verkäufer-Leads als Karten zu zeigen",
-      "emptyText": "Verkäufer-Leads kommen automatisch, sobald dein Bewertungsformular aktiv ist — wenn ein Hausbesitzer fragt, was seine Immobilie wert ist, erscheinen sie hier.",
-      "emptyTextCards": "Sobald dein Bewertungsformular aktiv ist, erscheint jeder Verkäufer-Lead hier als Schnellansichtskarte.",
+      "emptyText": "Verkäufer-Leads kommen automatisch, sobald Ihr Bewertungsformular aktiv ist — wenn ein Hausbesitzer fragt, was seine Immobilie wert ist, erscheinen sie hier.",
+      "emptyTextCards": "Sobald Ihr Bewertungsformular aktiv ist, erscheint jeder Verkäufer-Lead hier als Schnellansichtskarte.",
       "setupButton": "Bewertungsformular einrichten"
     },
     "network": {
@@ -182,7 +182,7 @@
       "price": "Preis",
       "beds": "Zimmer",
       "requestContact": "Kontakt anfordern",
-      "privacy": "Die Daten deines Käufers bleiben privat. Die andere Agentur sieht nur, dass eine Agentur über ihr Angebot sprechen möchte — niemals den Käufer.",
+      "privacy": "Die Daten Ihres Käufers bleiben privat. Die andere Agentur sieht nur, dass eine Agentur über ihr Angebot sprechen möchte — niemals den Käufer.",
       "convoMeta": "Beispiel · Netzwerk",
       "agencySplit": "Die Aufteilungen werden zwischen den Agenturen vereinbart — AIVENA nimmt keinen Anteil an der Provision.",
       "listingHead": "Angebot",
@@ -192,15 +192,15 @@
       "splitValue": "agentur-zu-agentur"
     },
     "wizard": {
-      "title": "Richte dein Bewertungsformular ein",
-      "subtitle": "Ein mehrsprachiges \"Was ist mein Zuhause wert?\"-Formular für deine Website — es erfasst Verkäufer automatisch.",
+      "title": "Richten Sie Ihr Bewertungsformular ein",
+      "subtitle": "Ein mehrsprachiges „Was ist mein Zuhause wert?“-Formular für Ihre Website — es erfasst Verkäufer automatisch.",
       "langLabel": "Welche Sprachen sollte das Formular anbieten?",
-      "areasLabel": "Welche Bereiche deckst du ab?",
+      "areasLabel": "Welche Gebiete decken Sie ab?",
       "areasPlaceholder": "z.B. Torrevieja, Orihuela Costa, La Zenia, Punta Prima",
-      "brandingLabel": "Passe dein Branding an",
-      "brandingNote": "Mit deinem Agenturlogo & Markenfarbe",
-      "embedLabel": "Auf deiner Website einbetten",
-      "embedNote": "Füge dies in deine Seite ein oder sende es an deinen Webentwickler.",
+      "brandingLabel": "Passen Sie Ihr Branding an",
+      "brandingNote": "Mit Ihrem Agenturlogo & Ihrer Markenfarbe",
+      "embedLabel": "Auf Ihrer Website einbetten",
+      "embedNote": "Fügen Sie dies in Ihre Seite ein oder senden Sie es an Ihren Webentwickler.",
       "cancel": "Abbrechen",
       "activate": "Bewertungsformular aktivieren",
       "close": "Schließen"
@@ -227,9 +227,9 @@
   },
   "approvals": {
     "title": "Genehmigungen",
-    "subtitle": "{n} ausstehend · alles andere wird automatisch bearbeitet",
-    "subtitleZero": "Du bist auf dem neuesten Stand · alles andere wird automatisch bearbeitet",
-    "description": "Von KI verfasste Antworten warten auf menschliche Genehmigung. Klicke auf eine Karte, um sie zu überprüfen, zu bearbeiten und zu genehmigen oder abzulehnen.",
+    "subtitle": "{n} ausstehend · alles andere automatisch bearbeitet",
+    "subtitleZero": "Sie sind auf dem neuesten Stand · alles andere automatisch bearbeitet",
+    "description": "Von KI verfasste Antworten warten auf menschliche Genehmigung. Klicken Sie auf eine Karte, um sie zu überprüfen, zu bearbeiten und zu genehmigen oder abzulehnen.",
     "empty": "Nichts wartet. Neue KI-Entwürfe erscheinen hier, wenn Käufer antworten.",
     "approvedBanner": "Antwort genehmigt und zum Versand eingeplant.",
     "dismissedBanner": "Aufgabe abgelehnt.",
@@ -521,15 +521,15 @@
     "missedCallEmpty": "<b>Aktiviert, wenn die Stimme live geht.</b> Sobald verbunden, sehen Sie hier verpasste Anrufe, wiederhergestellte Anrufe und Ihre Wiederherstellungsrate — live."
   },
   "content": {
-    "subtitle": "KI-generierte Beiträge & Werbemittel — <em>in deiner Stimme verfasst</em>, bereit, wenn du es bist",
+    "subtitle": "KI-generierte Beiträge & Werbemittel — <em>in Ihrer Stimme verfasst</em>, bereit, wenn Sie es sind",
     "bannerLabel": "VORSCHAU · MUSTERDATEN · DEMNÄCHST",
     "bannerNote": "Teil des Generate-Pillars",
     "draftsHeading": "Neueste Entwürfe",
     "draftsNote": "3 Muster · nicht veröffentlicht",
     "sampleTag": "MUSTER",
-    "draftedInVoice": "In deiner Stimme verfasst",
+    "draftedInVoice": "In Ihrer Stimme verfasst",
     "generateHeading": "Einen Beitrag oder eine Anzeige generieren",
-    "generateBody": "Beschreibe ein Angebot oder wähle eines aus deinem CRM, und AIVENA verfasst die Überschrift, den Anzeigentext und das kreative Material — <em>in der Stimme deiner Agentur, deinen Farben, deinen Käufer-Sprachen.</em> Du überprüfst und veröffentlichst es selbst; AIVENA berührt dein Werbebudget niemals.",
+    "generateBody": "Beschreiben Sie ein Angebot oder wählen Sie eines aus Ihrem CRM, und AIVENA verfasst die Überschrift, den Anzeigentext und das Werbemittel — <em>in der Stimme Ihrer Agentur, Ihren Farben, den Sprachen Ihrer Käufer.</em> Sie prüfen und veröffentlichen selbst; AIVENA rührt Ihr Werbebudget nie an.",
     "generateButton": "Generieren",
     "generateSoon": "DEMNÄCHST",
     "explainer": "<strong>Inhalt</strong> ist das Ergebnis des <strong>Generate</strong>-Pillars von AIVENA — KI-geschriebene Social-Media-Beiträge und Werbemittel, die die Agentur selbst veröffentlicht. Diese Seite ist eine deutlich wasserzeichenversehene Vorschau auf das, was kommt; hier ist nichts live oder veröffentlicht.",
@@ -547,7 +547,7 @@
       "metaAd": {
         "platform": "META AD",
         "title": "Bewertungsanzeige · Lead-Magnet",
-        "body": "Was ist dein Costa Blanca Zuhause wert? Kostenlose sofortige Bewertung, unverbindlich. Vertrauenswürdig bei ausländischen Eigentümern entlang der Küste…"
+        "body": "Was ist Ihr Zuhause an der Costa Blanca wert? Kostenlose Sofortbewertung, unverbindlich. Ausländische Eigentümer entlang der Küste vertrauen darauf…"
       }
     }
   },
@@ -654,10 +654,10 @@
     "tabSocial": "Sozialer Beitrag",
     "tabRenovation": "Virtuelle Inszenierung",
     "propertyLabel": "Immobilie",
-    "propertyEmpty": "Noch keine Immobilien — importiere zuerst deinen Katalog in Einstellungen → Immobilien.",
+    "propertyEmpty": "Noch keine Immobilien — importieren Sie zuerst Ihren Katalog unter Einstellungen → Immobilien.",
     "ad": {
       "title": "Anzeige-Design",
-      "subtitle": "Markenbezogene bezahlte Anzeigenbilder für Meta, mit Text in der Sprache deines Käufers. Du führst die Anzeigen selbst — AIVENA berührt dein Budget nie.",
+      "subtitle": "Markenbezogene Anzeigenbilder für Meta, mit Text in der Sprache Ihres Käufers. Sie schalten die Anzeigen selbst — AIVENA rührt Ihr Budget nie an.",
       "modeProperty": "Von einer Immobilie",
       "modeBrand": "Agenturmarke",
       "formatLabel": "Format",
@@ -683,14 +683,14 @@
       "formatCarousel": "Karussell (bis zu 10)",
       "languageLabel": "Bildunterschrift Sprache",
       "previewLabel": "Vorschau",
-      "captionPreview": "Deine Bildunterschrift und Hashtags erscheinen hier, sobald sie generiert werden.",
+      "captionPreview": "Ihre Bildunterschrift und Hashtags erscheinen hier, sobald sie generiert wurden.",
       "generate": "Beitrag generieren"
     },
     "renovation": {
       "title": "Virtuelle Inszenierung",
       "subtitle": "Ein echtes Raumfoto in einem neuen Stil neu rendern. Eine Visualisierung, um Käufern zu helfen, den Raum vorzustellen.",
       "uploadPrompt": "Lade ein Raumfoto hoch",
-      "uploadHint": "JPG oder PNG eines Raumes aus einem deiner Angebote.",
+      "uploadHint": "JPG oder PNG eines Raumes aus einem Ihrer Angebote.",
       "attestation": "Ich bestätige, dass diese Immobilie in unserem Angebotskatalog ist und wir das Recht haben, das Bild zu ändern.",
       "attestationRequired": "Aktiviere die Rechtebestätigung oben, um die Generierung zu ermöglichen.",
       "styleLabel": "Stil",
@@ -722,7 +722,7 @@
     "tabLibrary": "Bibliothek",
     "library": {
       "emptyTitle": "Noch nichts hier",
-      "emptyBody": "Dein generierter Inhalt wird hier erscheinen, sobald du Anzeige-Designs, soziale Beiträge oder inszenierte Bilder erstellst.",
+      "emptyBody": "Ihre generierten Inhalte erscheinen hier, sobald Sie Anzeigendesigns, Social-Media-Beiträge oder inszenierte Bilder erstellen.",
       "close": "Schließen",
       "status_draft": "Entwurf",
       "status_pending_approval": "Warten auf Genehmigung",
@@ -734,7 +734,7 @@
       "status_failed": "Fehlgeschlagen"
     },
     "upload": {
-      "label": "Dein eigenes Bild (optional)",
+      "label": "Ihr eigenes Bild (optional)",
       "prompt": "Lade ein Bild hoch",
       "hint": "PNG, JPG oder WebP · bis zu 10 MB",
       "uploading": "Hochladen…",
@@ -746,13 +746,13 @@
     "create": "Erstellen",
     "gen": {
       "title": "Ein Bild generieren",
-      "subtitle": "Beschreibe, was du möchtest, und AIVENA generiert es im Look deiner Agentur.",
+      "subtitle": "Beschreiben Sie, was Sie möchten, und AIVENA generiert es im Look Ihrer Agentur.",
       "typeAd": "Anzeigengestaltung",
       "typeSocial": "Sozialer Beitrag",
       "typeRenovation": "Renovierung",
-      "descAd": "Ein markenbezogenes Anzeigenbild für Meta und Facebook, im Look deiner Agentur.",
+      "descAd": "Ein markenbezogenes Anzeigenbild für Meta und Facebook, im Look Ihrer Agentur.",
       "descSocial": "Ein bereit zum Posten Bild für Instagram oder Facebook.",
-      "descRenovation": "Gestalte einen leeren oder veralteten Raum aus einem Foto, das du hochlädst, neu.",
+      "descRenovation": "Gestalten Sie einen leeren oder veralteten Raum anhand eines hochgeladenen Fotos neu.",
       "hintAd": "z.B. Meerblickwohnung in Villajoyosa zur goldenen Stunde, warm und einladend, Platz für ein Preisschild",
       "hintSocial": "z.B. Ankündigung einer neuen Immobilie für eine moderne Villa mit Pool in Moraira, hell und sauber",
       "hintRenovation": "z.B. Richte dieses Wohnzimmer in einem warmen mediterranen Stil mit Pflanzen und natürlichem Licht ein",
@@ -794,7 +794,7 @@
     "send": "Senden",
     "sessionOnly": "Dieser Chat wird nicht gespeichert",
     "activating": "WAA wird gerade aktiviert — bitte schau bald wieder vorbei.",
-    "contextError": "Dein Arbeitsbereich konnte nicht geladen werden. Bitte aktualisiere die Seite und versuche es erneut."
+    "contextError": "Ihr Arbeitsbereich konnte nicht geladen werden. Bitte aktualisieren Sie die Seite und versuchen Sie es erneut."
   },
   "matches": {
     "subtitle": "Wenn Sie eine Immobilie hinzufügen, vergleicht AIVENA sie mit den Käufern in Ihren Kontakten und zeigt sie hier an – Sie entscheiden, wen Sie kontaktieren möchten.",

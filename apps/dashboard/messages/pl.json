@@ -28,7 +28,7 @@
     "signedInAs": "Zalogowano jako",
     "logOut": "Wyloguj się",
     "greetingMorning": "Dzień dobry",
-    "greetingAfternoon": "Dobry wieczór",
+    "greetingAfternoon": "Dzień dobry",
     "greetingEvening": "Dobry wieczór",
     "notificationsLabel": "Powiadomienia",
     "themeLight": "Jasny",
@@ -45,7 +45,7 @@
       "newSellers": "Nowi sprzedawcy",
       "followupsSent": "Wysłane follow-upy",
       "callsRecovered": "Odzyskane połączenia",
-      "vsLast7Days": "w porównaniu do ostatnich 7 dni",
+      "vsLast7Days": "w porównaniu z ostatnimi 7 dniami",
       "soon": "Wkrótce",
       "sellersTeaser": "rozpoczyna się, gdy formularz wyceny jest aktywny",
       "callsTeaser": "rozpoczyna się, gdy głos jest aktywny"
@@ -53,7 +53,7 @@
     "needsAction": {
       "title": "Wymaga działania · Gotowe odpowiedzi",
       "emptyTitle": "Nic nie czeka",
-      "emptyText": "Szkice AI pojawiają się tutaj, gdy kupujący odpowiadają.",
+      "emptyText": "Szkice AI pojawią się tutaj, gdy kupujący odpowiedzą.",
       "columnLead": "Lead",
       "columnType": "Typ",
       "columnArea": "Obszar",
@@ -83,7 +83,7 @@
       "send": "Wyślij",
       "copy": "Kopiuj",
       "copied": "Skopiowano",
-      "openInInbox": "Otwórz w skrzynce odbiorczej"
+      "openInInbox": "Otwórz w Skrzynce odbiorczej"
     },
     "activity": {
       "title": "Ostatnia aktywność",
@@ -95,7 +95,7 @@
       "title": "Twoja sieć",
       "comingSoon": "Wkrótce",
       "teaserTitle": "Współpracuj z pobliskimi agencjami",
-      "teaser": "Zgoda na współpracę z innymi agencjami AIVENA — dziel się kupującymi lub ofertami na uzgodnionych warunkach i dziel się prowizją. Wkrótce."
+      "teaser": "Zgoda na współpracę z innymi agencjami AIVENA — dziel się kupującymi lub ofertami na uzgodnionych warunkach i dziel prowizję. Wkrótce."
     }
   },
   "inbox": {
@@ -110,7 +110,7 @@
       "cards": "Karty"
     },
     "state": {
-      "needsYou": "Potrzebuje Cię",
+      "needsYou": "Potrzebuje cię",
       "replied": "Odpowiedziano",
       "autoHandled": "Automatycznie obsłużone",
       "waiting": "Oczekiwanie"
@@ -119,7 +119,7 @@
     "buyers": {
       "emptyConvo": "Jesteś na bieżąco — nie ma oczekujących odpowiedzi.",
       "emptyTitleConvo": "Jesteś na bieżąco",
-      "emptyText": "Odpowiedzi przygotowane przez AI pojawią się tutaj, gdy kupujący odpowie na Twoje wiadomości.",
+      "emptyText": "Odpowiedzi przygotowane przez AI pojawią się tutaj, gdy kupujący odpowie na twoje wiadomości.",
       "emptyTitleCards": "Jesteś na bieżąco",
       "emptyTextCards": "Każdy szkic pojawia się tutaj jako karta do szybkiego przeglądu, gdy kupujący odpowie.",
       "pendingBadge": "{n} oczekujących",
@@ -166,7 +166,7 @@
     "sellers": {
       "emptyTitleConvo": "Brak rozmów ze sprzedającymi",
       "emptyTitleCards": "Brak leadów sprzedających do wyświetlenia jako karty",
-      "emptyText": "Lead sprzedających pojawia się automatycznie, gdy formularz wyceny jest aktywny — gdy właściciel domu pyta, ile wart jest jego nieruchomość, pojawia się tutaj.",
+      "emptyText": "Leady sprzedających pojawiają się automatycznie, gdy formularz wyceny jest aktywny — kiedy właściciel pyta, ile warta jest jego nieruchomość, zobaczysz go tutaj.",
       "emptyTextCards": "Gdy formularz wyceny jest aktywny, każdy lead sprzedający pojawia się tutaj jako karta do szybkiego przeglądu.",
       "setupButton": "Ustaw formularz wyceny"
     },
@@ -182,7 +182,7 @@
       "price": "Cena",
       "beds": "Pokoje",
       "requestContact": "Poproś o kontakt",
-      "privacy": "Szczegóły Twojego kupującego pozostają prywatne. Inna agencja widzi tylko, że agencja chce omówić ich ofertę — nigdy kupującego.",
+      "privacy": "Szczegóły twojego kupującego pozostają prywatne. Inna agencja widzi tylko, że agencja chce omówić ich ofertę — nigdy kupującego.",
       "convoMeta": "Przykład · sieć",
       "agencySplit": "Podziały są ustalane między agencjami — AIVENA nie bierze udziału w prowizji.",
       "listingHead": "Oferta",
@@ -258,9 +258,9 @@
   },
   "settings": {
     "title": "Ustawienia",
-    "subtitle": "Jak działa Twoja agencja, <em>wysyła i pokazuje się Twoim klientom</em>",
+    "subtitle": "Jak działa twoja agencja, <em>wysyła i pokazuje się twoim klientom</em>",
     "personal": "Osobiste",
-    "personalDescription": "Preferencje dla Twojego konta — dotyczą tylko Ciebie.",
+    "personalDescription": "Preferencje dla twojego konta — dotyczą tylko ciebie.",
     "dashboardLanguageLabel": "Język pulpitu",
     "messageLanguageLabel": "Tłumacz wiadomości klientów na",
     "messageLanguageHelp": "Większość operatorów zostawia to samo, co ich język pulpitu.",
@@ -273,7 +273,7 @@
     "saveFailed": "Nie udało się zapisać tej zmiany. Spróbuj ponownie — jeśli problem będzie się powtarzał, skontaktuj się z pomocą techniczną.",
     "checklist": {
       "title": "Dokończ konfigurację",
-      "subtitle": "Uzupełnij te elementy, aby być w pełni aktywnym. Kupujący i sprzedający widzą tylko Twoją markę.",
+      "subtitle": "Uzupełnij te elementy, aby być w pełni aktywnym. Kupujący i sprzedający widzą tylko twoją markę.",
       "domainVerified": "Weryfikacja domeny wysyłającej",
       "brandingAdded": "Dodano branding agencji",
       "aiRulesSet": "Ustawiono zasady odpowiedzi AI",
@@ -305,7 +305,7 @@
     },
     "identity": {
       "title": "Tożsamość wysyłająca",
-      "subtitle": "Weryfikowana domena, z której AIVENA wysyła, pod Twoim nazwiskiem.",
+      "subtitle": "Weryfikowana domena, z której AIVENA wysyła, pod twoim nazwiskiem.",
       "domainLabel": "Weryfikowana domena wysyłająca",
       "domainHint": "Aby to zmienić, skontaktuj się z pomocą techniczną — zmiana domeny wysyłającej wymaga ponownej weryfikacji.",
       "verifiedPill": "Zweryfikowane",
@@ -316,8 +316,8 @@
     },
     "aiRules": {
       "title": "Zasady odpowiedzi AI",
-      "subtitle": "Kiedy AIVENA może wysyłać samodzielnie, a kiedy musi czekać na Ciebie.",
-      "honestSubLine": "Zasady aktywują się, gdy Twój silnik automatyzacji jest aktywny — obecnie AIVENA zawsze przygotowuje do Twojej akceptacji.",
+      "subtitle": "Kiedy AIVENA może wysyłać samodzielnie, a kiedy musi czekać na ciebie.",
+      "honestSubLine": "Zasady aktywują się, gdy twój silnik automatyzacji jest aktywny — obecnie AIVENA zawsze przygotowuje do twojej akceptacji.",
       "toggleDraftLabel": "Automatyczne szkicowanie odpowiedzi",
       "toggleDraftHelp": "AIVENA pisze odpowiedź, Ty ją akceptujesz.",
       "toggleColdLabel": "Automatyczne wysyłanie do zimnych leadów",
@@ -347,8 +347,8 @@
     },
     "voice": {
       "title": "Głos i ton",
-      "subtitle": "Jak \"brzmi\" Twoja agencja — to kształtuje każdą odpowiedź napisaną przez AI.",
-      "honestSubLine": "Kształtuje Twoje e-maile follow-upowe dzisiaj i rozszerza się na przychodzące odpowiedzi, gdy silnik automatyzacji działa.",
+      "subtitle": "Jak \"brzmi\" twoja agencja — to kształtuje każdą odpowiedź napisaną przez AI.",
+      "honestSubLine": "Kształtuje twoje e-maile follow-upowe dzisiaj i rozszerza się na przychodzące odpowiedzi, gdy silnik automatyzacji działa.",
       "currentToneHint": "Obecnie: {tone} — wybierz jedną z nowych opcji, aby zaktualizować.",
       "describeLabel": "Opisz głos swojej agencji",
       "describePlaceholder": "Przyjazny i profesjonalny. Jesteśmy lokalnymi ekspertami, którzy sprawiają, że zagraniczni nabywcy czują się jak w domu. Nigdy nachalni.",
@@ -405,10 +405,10 @@
       "whatsappPhonePlaceholder": "+34 600 000 000",
       "whatsappSubmit": "Powiadom mnie, gdy będzie gotowe",
       "calendarModalTitle": "Połącz Google Calendar",
-      "calendarModalBody": "Synchronizacja Google Calendar wymaga zgody OAuth na odczyt i tworzenie wydarzeń. Przeprowadzimy Cię przez ekran zgody, gdy ta integracja będzie aktywna.",
+      "calendarModalBody": "Synchronizacja Google Calendar wymaga zgody OAuth na odczyt i tworzenie wydarzeń. Przeprowadzimy cię przez ekran zgody, gdy ta integracja będzie aktywna.",
       "calendarSubmit": "Powiadom mnie, gdy będzie gotowe",
       "socialModalTitle": "Połącz Blotato (publikowanie w mediach społecznościowych)",
-      "socialModalBody": "Blotato pozwala AIVENA publikować generowane posty bezpośrednio na Twoim Instagramie i Facebooku. Połączymy Twoje konta, gdy ta integracja będzie aktywna.",
+      "socialModalBody": "Blotato pozwala AIVENA publikować generowane posty bezpośrednio na twoim Instagramie i Facebooku. Połączymy twoje konta, gdy ta integracja będzie aktywna.",
       "socialSubmit": "Powiadom mnie, gdy będzie gotowe",
       "submittedToast": "Dziękujemy — wyślemy Ci e-mail, gdy to będzie aktywne."
     },
@@ -442,7 +442,7 @@
         "insufficientRole": "Tylko właściciel agencji może wysyłać zaproszenia.",
         "invalidEmail": "Proszę wprowadzić prawidłowy adres e-mail.",
         "invalidInvitationRole": "Proszę wybrać Agenta lub Widok dla roli.",
-        "alreadyMember": "{email} jest już w Twoim zespole.",
+        "alreadyMember": "{email} jest już w twoim zespole.",
         "pendingInviteExists": "{email} ma już oczekujące zaproszenie.",
         "generic": "Nie udało się utworzyć tego zaproszenia — spróbuj ponownie."
       }
@@ -460,7 +460,7 @@
       "quota_adCreative": "Kreacje reklamowe",
       "quota_socialPost": "Posty w mediach społecznościowych",
       "quota_renovation": "Wirtualne stagingi",
-      "provisioningNote": "Twój plan jest ustawiony, gdy Twoje konto jest skonfigurowane. Aby zmienić poziomy, skontaktuj się ze swoim przedstawicielem AIVENA."
+      "provisioningNote": "Twój plan jest ustawiony, gdy twoje konto jest skonfigurowane. Aby zmienić poziomy, skontaktuj się ze swoim przedstawicielem AIVENA."
     },
     "properties": {
       "title": "Nieruchomości",
@@ -488,7 +488,7 @@
     }
   },
   "performance": {
-    "subtitle": "Jak AIVENA działa dla Ciebie — <em>czas odpowiedzi, zasięg i przewaga wielojęzyczna</em>",
+    "subtitle": "Jak AIVENA działa dla ciebie — <em>czas odpowiedzi, zasięg i przewaga wielojęzyczna</em>",
     "kpiLeadsAnswered": "Odpowiedziane leady",
     "kpiAvgReply": "Średni czas odpowiedzi",
     "kpiCallsRecovered": "Odzyskane połączenia",
@@ -521,7 +521,7 @@
     "missedCallEmpty": "<b>Aktywuje się, gdy Głos będzie dostępny.</b> Po połączeniu zobaczysz nieodebrane połączenia, odzyskane połączenia i swój wskaźnik odzyskiwania tutaj — na żywo."
   },
   "content": {
-    "subtitle": "Posty i kreatywność reklamowa generowane przez AI — <em>napisane w Twoim stylu</em>, gotowe, gdy Ty jesteś",
+    "subtitle": "Posty i kreatywność reklamowa generowane przez AI — <em>napisane w twoim stylu</em>, gotowe, gdy ty jesteś",
     "bannerLabel": "PODGLĄD · PRÓBKI DANYCH · WKRÓTCE",
     "bannerNote": "część filaru Generowania",
     "draftsHeading": "Ostatnie szkice",
@@ -529,7 +529,7 @@
     "sampleTag": "PRÓBKA",
     "draftedInVoice": "Napisane w Twoim stylu",
     "generateHeading": "Generuj post lub reklamę",
-    "generateBody": "Opisz ofertę lub wybierz jedną z Twojego CRM, a AIVENA stworzy opis, tekst reklamy i kreatywność — <em>w głosie Twojej agencji, w Twoich kolorach, w językach Twoich klientów.</em> Samodzielnie przeglądasz i publikujesz; AIVENA nigdy nie dotyka Twojego budżetu reklamowego.",
+    "generateBody": "Opisz ofertę lub wybierz jedną z twojego CRM, a AIVENA stworzy opis, tekst reklamy i kreatywność — <em>w głosie twojej agencji, w twoich kolorach, w językach twoich klientów.</em> Samodzielnie przeglądasz i publikujesz; AIVENA nigdy nie dotyka twojego budżetu reklamowego.",
     "generateButton": "Generuj",
     "generateSoon": "WKRÓTCE",
     "explainer": "<strong>Treść</strong> to wynik filaru <strong>Generowania</strong> AIVENA — posty w mediach społecznościowych i kreatywność reklamowa pisana przez AI, które agencja publikuje samodzielnie. Ta strona to wyraźnie oznaczony podgląd tego, co nadchodzi; nic tutaj nie jest jeszcze aktywne ani opublikowane.",
@@ -797,12 +797,12 @@
     "contextError": "Nie można załadować Twojego obszaru roboczego. Odśwież stronę i spróbuj ponownie."
   },
   "matches": {
-    "subtitle": "Gdy dodasz nieruchomość, AIVENA porównuje ją z kupującymi już w Twoich kontaktach i wyświetla je tutaj — to Ty decydujesz, do kogo się zwrócić.",
+    "subtitle": "Gdy dodasz nieruchomość, AIVENA porównuje ją z kupującymi już w twoich kontaktach i wyświetla je tutaj — to ty decydujesz, do kogo się zwrócić.",
     "emptyTitle": "Brak dopasowań",
-    "emptyBody": "Dopasowania pojawią się tutaj, gdy nowa nieruchomość będzie pasować do kupującego w Twoich kontaktach. Nic nie jest wysyłane automatycznie.",
+    "emptyBody": "Dopasowania pojawią się tutaj, gdy nowa nieruchomość będzie pasować do kupującego w twoich kontaktach. Nic nie jest wysyłane automatycznie.",
     "howTitle": "Jak to działa",
     "how1": "Importujesz lub dodajesz nieruchomość do swojego katalogu.",
-    "how2": "AIVENA sprawdza ją w stosunku do Twoich istniejących kontaktów kupujących w ramach tolerancji dopasowania.",
+    "how2": "AIVENA sprawdza ją w stosunku do twoich istniejących kontaktów kupujących w ramach tolerancji dopasowania.",
     "how3": "Wszystkie dopasowania pojawiają się tutaj, abyś mógł je ręcznie obsłużyć."
   },
   "valuation": {
@@ -838,7 +838,7 @@
     "body": "Współpraca na zasadzie opt-in z innymi agencjami AIVENA — dziel się nabywcami lub ofertami na uzgodnionych warunkach."
   },
   "viewings": {
-    "subtitle": "Potwierdzone terminy oglądania. Nowe rezerwacje synchronizują się z Twoim kalendarzem i pojawiają się tutaj.",
+    "subtitle": "Potwierdzone terminy oglądania. Nowe rezerwacje synchronizują się z twoim kalendarzem i pojawiają się tutaj.",
     "emptyTitle": "Brak zaplanowanych oglądania",
     "emptyBody": "Potwierdzone rezerwacje pojawią się tutaj.",
     "upcoming": "Nadchodzące",

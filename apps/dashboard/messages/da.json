@@ -2,7 +2,7 @@
   "nav": {
     "overview": "Oversigt",
     "inbox": "Indbakke",
-    "performance": "Ydelse",
+    "performance": "Præstation",
     "content": "Indhold",
     "settings": "Indstillinger",
     "adminSectionLabel": "AIVENA Admin",
@@ -11,7 +11,7 @@
     "brandSubtitle": "AI ejendom",
     "soonBadge": "Snart",
     "studio": "Studie",
-    "matches": "Kampagner",
+    "matches": "Matches",
     "properties": "Ejendomme",
     "viewings": "Fremvisninger",
     "voice": "Stemme",
@@ -23,8 +23,8 @@
   "topbar": {
     "switchAgency": "Skift bureau",
     "allAgenciesAdmin": "Alle bureauer (AIVENA admin)",
-    "noActiveAgency": "Ingen aktivt bureau",
-    "userMenu": "Bruger menu",
+    "noActiveAgency": "Intet aktivt bureau",
+    "userMenu": "Brugermenu",
     "signedInAs": "Logget ind som",
     "logOut": "Log ud",
     "greetingMorning": "Godmorgen",
@@ -39,19 +39,19 @@
   },
   "overview": {
     "kpi": {
-      "newLeads": "Nye Leads",
+      "newLeads": "Nye leads",
       "needsAction": "Kræver Handling",
-      "hotLeads": "Hot Leads",
+      "hotLeads": "Varme leads",
       "newSellers": "Nye Sælgere",
-      "followupsSent": "Opfølgninger Sendt",
-      "callsRecovered": "Genvundne Opkald",
-      "vsLast7Days": "vs de sidste 7 dage",
+      "followupsSent": "Sendte opfølgninger",
+      "callsRecovered": "Genvundne opkald",
+      "vsLast7Days": "vs sidste 7 dage",
       "soon": "Snart",
       "sellersTeaser": "starter når vurderingsformularen er aktiv",
       "callsTeaser": "starter når stemmen er aktiv"
     },
     "needsAction": {
-      "title": "Kræver Handling · Klare Svar",
+      "title": "Kræver handling · Klar til svar",
       "emptyTitle": "Intet venter",
       "emptyText": "AI-udkast vises her, når købere svarer.",
       "columnLead": "Lead",
@@ -86,13 +86,13 @@
       "openInInbox": "Åbn i Indbakke"
     },
     "activity": {
-      "title": "Seneste Aktivitet",
+      "title": "Seneste aktivitet",
       "empty": "Ingen seneste aktivitet endnu.",
       "viewAll": "Se al aktivitet →",
       "showLess": "Vis mindre"
     },
     "network": {
-      "title": "Dit Netværk",
+      "title": "Dit netværk",
       "comingSoon": "Kommer snart",
       "teaserTitle": "Samarbejd med nærliggende bureauer",
       "teaser": "Tilmeld dig samarbejde med andre AIVENA-bureauer — del købere eller lister på aftalte vilkår, og del provision. Kommer snart."
@@ -111,7 +111,7 @@
     },
     "state": {
       "needsYou": "Har brug for dig",
-      "replied": "Svarende",
+      "replied": "Besvaret",
       "autoHandled": "Automatisk håndteret",
       "waiting": "Venter"
     },
@@ -147,7 +147,7 @@
       "channel": "Kanal"
     },
     "reply": {
-      "aiSuggested": "AI Foreslået Svar",
+      "aiSuggested": "AI foreslået svar",
       "subjectLabel": "Emne",
       "bodyLabel": "Indhold",
       "send": "Send",

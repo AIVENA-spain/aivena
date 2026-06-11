@@ -8,7 +8,7 @@
     "adminSectionLabel": "Administração AIVENA",
     "allAgencies": "Todas as Agências",
     "brandName": "AIVENA",
-    "brandSubtitle": "Imobiliário AI",
+    "brandSubtitle": "Imobiliário com IA",
     "soonBadge": "Em Breve",
     "studio": "Estúdio",
     "matches": "Correspondências",
@@ -40,20 +40,20 @@
   "overview": {
     "kpi": {
       "newLeads": "Novos Leads",
-      "needsAction": "Precisa de Ação",
+      "needsAction": "Necessita de Ação",
       "hotLeads": "Leads Quentes",
       "newSellers": "Novos Vendedores",
-      "followupsSent": "Follow-ups Enviados",
-      "callsRecovered": "Chamadas Recuperadas",
+      "followupsSent": "Follow-ups enviados",
+      "callsRecovered": "Chamadas recuperadas",
       "vsLast7Days": "vs últimos 7 dias",
       "soon": "Em Breve",
       "sellersTeaser": "começa quando o formulário de avaliação estiver ativo",
       "callsTeaser": "começa quando a voz estiver ativa"
     },
     "needsAction": {
-      "title": "Precisa de Ação · Respostas Prontas",
+      "title": "Necessita de Ação · Respostas Prontas",
       "emptyTitle": "Nada à espera",
-      "emptyText": "Os rascunhos da IA aparecem aqui à medida que os compradores respondem.",
+      "emptyText": "Os rascunhos de IA aparecem aqui à medida que os compradores respondem.",
       "columnLead": "Lead",
       "columnType": "Tipo",
       "columnArea": "Área",
@@ -65,19 +65,19 @@
       "aiTag": "IA"
     },
     "panel": {
-      "selectALead": "Selecione um lead para ver os detalhes.",
+      "selectALead": "Selecione um lead para ver detalhes.",
       "noSelection": "Nada selecionado",
       "fields": {
         "type": "Tipo",
         "area": "Área",
         "source": "Fonte",
-        "language": "Idioma",
+        "language": "Língua",
         "channel": "Canal",
         "temperature": "Temperatura",
         "score": "Pontuação",
         "status": "Estado"
       },
-      "aiSuggested": "Resposta sugerida pela IA",
+      "aiSuggested": "Resposta sugerida por IA",
       "subject": "Assunto",
       "noSubject": "(sem assunto)",
       "send": "Enviar",
@@ -110,7 +110,7 @@
       "cards": "Cartões"
     },
     "state": {
-      "needsYou": "Precisa de si",
+      "needsYou": "Precisa de você",
       "replied": "Respondido",
       "autoHandled": "Tratado automaticamente",
       "waiting": "À espera"
@@ -119,7 +119,7 @@
     "buyers": {
       "emptyConvo": "Está tudo em dia — sem respostas à espera.",
       "emptyTitleConvo": "Está tudo em dia",
-      "emptyText": "As respostas redigidas pela IA aparecem aqui à medida que os compradores respondem às suas mensagens.",
+      "emptyText": "As respostas redigidas por IA aparecem aqui à medida que os compradores respondem às suas mensagens.",
       "emptyTitleCards": "Está tudo em dia",
       "emptyTextCards": "Cada rascunho aparece aqui como um cartão de leitura rápida assim que um comprador responde.",
       "pendingBadge": "{n} pendente",

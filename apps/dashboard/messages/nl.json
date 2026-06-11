@@ -11,8 +11,8 @@
     "brandSubtitle": "AI vastgoed",
     "soonBadge": "Binnenkort",
     "studio": "Studio",
-    "matches": "Overeenkomsten",
-    "properties": "Eigenschappen",
+    "matches": "Matches",
+    "properties": "Objecten",
     "viewings": "Bezichtigingen",
     "voice": "Stem",
     "ads": "Advertenties",
@@ -41,7 +41,7 @@
     "kpi": {
       "newLeads": "Nieuwe Leads",
       "needsAction": "Actie Vereist",
-      "hotLeads": "Hele Hete Leads",
+      "hotLeads": "Hete Leads",
       "newSellers": "Nieuwe Verkopers",
       "followupsSent": "Opvolgingen Verzonden",
       "callsRecovered": "Herstelde Oproepen",
@@ -51,21 +51,21 @@
       "callsTeaser": "begint wanneer de stem live is"
     },
     "needsAction": {
-      "title": "Actie Vereist · Klaar Antwoorden",
-      "emptyTitle": "Niets in afwachting",
-      "emptyText": "AI-ontwerpen verschijnen hier wanneer kopers antwoorden.",
+      "title": "Actie Vereist · Klaar om te Antwoorden",
+      "emptyTitle": "Niets in Afwachting",
+      "emptyText": "AI-ontwerpen verschijnen hier zodra kopers reageren.",
       "columnLead": "Lead",
       "columnType": "Type",
       "columnArea": "Gebied",
       "columnSource": "Bron",
       "columnChannel": "Kanaal",
       "columnStatus": "Status",
-      "columnReply": "AI voorgesteld antwoord",
+      "columnReply": "AI-voorgesteld Antwoord",
       "leadTypeDefault": "Koper",
       "aiTag": "AI"
     },
     "panel": {
-      "selectALead": "Selecteer een lead om details te zien.",
+      "selectALead": "Selecteer een lead om de details te bekijken.",
       "noSelection": "Niets geselecteerd",
       "fields": {
         "type": "Type",
@@ -80,22 +80,22 @@
       "aiSuggested": "AI voorgesteld antwoord",
       "subject": "Onderwerp",
       "noSubject": "(geen onderwerp)",
-      "send": "Verzenden",
+      "send": "Verstuur",
       "copy": "Kopiëren",
       "copied": "Gekopieerd",
-      "openInInbox": "Open in Inbox"
+      "openInInbox": "Open in de Inbox"
     },
     "activity": {
       "title": "Recente Activiteit",
       "empty": "Nog geen recente activiteit.",
-      "viewAll": "Bekijk alle activiteit →",
+      "viewAll": "Bekijk alle activiteiten →",
       "showLess": "Minder tonen"
     },
     "network": {
       "title": "Jouw Netwerk",
       "comingSoon": "Binnenkort beschikbaar",
       "teaserTitle": "Werk samen met nabijgelegen agentschappen",
-      "teaser": "Opt-in samenwerking met andere AIVENA-agentschappen — deel kopers of aanbiedingen op afgesproken voorwaarden en deel de commissie. Binnenkort beschikbaar."
+      "teaser": "Opt-in samenwerking met andere AIVENA-bureaus — deel kopers of aanbiedingen onder afgesproken voorwaarden en deel de commissie. Binnenkort beschikbaar."
     }
   },
   "inbox": {
@@ -121,7 +121,7 @@
       "emptyTitleConvo": "Je bent helemaal bij",
       "emptyText": "AI-opgestelde antwoorden verschijnen hier zodra kopers op je berichten reageren.",
       "emptyTitleCards": "Je bent helemaal bij",
-      "emptyTextCards": "Elke concept verschijnt hier als een snelle kaart zodra een koper reageert.",
+      "emptyTextCards": "Elk concept verschijnt hier als een snelle scan-kaart zodra een koper reageert.",
       "pendingBadge": "{n} wachtend",
       "listLanguageUnknown": "—"
     },
@@ -166,8 +166,8 @@
     "sellers": {
       "emptyTitleConvo": "Nog geen verkoper gesprekken",
       "emptyTitleCards": "Nog geen verkopers leads om als kaarten te tonen",
-      "emptyText": "Verkopers leads komen automatisch binnen zodra je waarderingsformulier live is — wanneer een huiseigenaar vraagt wat hun woning waard is, verschijnen ze hier.",
-      "emptyTextCards": "Zodra je waarderingsformulier live is, verschijnt elke verkopers lead hier als een snelle kaart.",
+      "emptyText": "Verkopersleads komen automatisch binnen zodra je waarderingsformulier live is — wanneer een huiseigenaar vraagt wat hun woning waard is, verschijnen ze hier.",
+      "emptyTextCards": "Zodra je waarderingsformulier live is, verschijnt elke verkoperslead hier als een snelle scan-kaart.",
       "setupButton": "Stel waarderingsformulier in"
     },
     "network": {
@@ -258,7 +258,7 @@
   },
   "settings": {
     "title": "Instellingen",
-    "subtitle": "Hoe jouw bureau werkt, <em>verzendt en zich aan jouw klanten toont</em>",
+    "subtitle": "Hoe jouw bureau werkt, <em>verzendt en zich aan klanten presenteert</em>",
     "personal": "Persoonlijk",
     "personalDescription": "Voorkeuren voor jouw account — deze hebben alleen invloed op jou.",
     "dashboardLanguageLabel": "Dashboardtaal",
@@ -272,7 +272,7 @@
     "saved": "Opgeslagen",
     "saveFailed": "Kon die wijziging niet opslaan. Probeer het opnieuw — als het blijft gebeuren, neem contact op met de ondersteuning.",
     "checklist": {
-      "title": "Voltooi de setup",
+      "title": "Voltooi de Setup",
       "subtitle": "Voltooi deze om volledig live te gaan. Kopers en verkopers zien alleen jouw merk.",
       "domainVerified": "Verzenddomein geverifieerd",
       "brandingAdded": "Bureau branding toegevoegd",
@@ -285,7 +285,7 @@
     },
     "branding": {
       "title": "Bureau branding",
-      "subtitle": "Wat kopers en verkopers zien — AIVENA blijft erachter onzichtbaar.",
+      "subtitle": "Wat kopers en verkopers zien — AIVENA blijft onzichtbaar op de achtergrond.",
       "agencyNameLabel": "Bureau naam",
       "agencyNamePlaceholder": "Jouw bureau naam",
       "logoLabel": "Logo",
@@ -327,7 +327,7 @@
       "toggleWhatsappLabel": "Automatisch verzenden van WhatsApp herstel bij gemiste oproep",
       "toggleWhatsappHelp": "Directe herbetrokkenheid wanneer een oproep gemist wordt.",
       "quietTitle": "Stille uren",
-      "quietSubtitle": "Wanneer AIVENA kan — en niet kan — follow-ups verzenden.",
+      "quietSubtitle": "Wanneer AIVENA wel — en niet — follow-ups kan verzenden.",
       "timezoneLabel": "Tijdzone",
       "dayMonday": "Maandag",
       "dayTuesday": "Dinsdag",
@@ -348,7 +348,7 @@
     "voice": {
       "title": "Stem & toon",
       "subtitle": "Hoe jouw bureau \"klinkt\" — dit vormt elk AI-geschreven antwoord.",
-      "honestSubLine": "Vormt jouw follow-up e-mails vandaag, en strekt zich uit tot inkomende antwoorden wanneer de automatiseringsengine landt.",
+      "honestSubLine": "Vormt jouw follow-up e-mails vandaag, en strekt zich uit tot inkomende antwoorden wanneer de automatiseringsengine live gaat.",
       "currentToneHint": "Momenteel: {tone} — kies een van de nieuwe opties om bij te werken.",
       "describeLabel": "Beschrijf de stem van jouw bureau",
       "describePlaceholder": "Vriendelijk en professioneel. We zijn lokale experts die buitenlandse kopers zich thuis laten voelen. Nooit opdringerig.",
@@ -628,7 +628,7 @@
     "subtitle": "Uw actieve lijstcatalogus.",
     "importCta": "CSV importeren",
     "emptyTitle": "Nog geen eigenschappen",
-    "emptyBody": "Importeer uw lijsten vanuit een CSV om te beginnen.",
+    "emptyBody": "Importeer je objecten vanuit een CSV om te beginnen.",
     "colRef": "Referentie",
     "colTitle": "Titel",
     "colType": "Type",
@@ -654,10 +654,10 @@
     "tabSocial": "Sociale post",
     "tabRenovation": "Virtuele staging",
     "propertyLabel": "Onroerend goed",
-    "propertyEmpty": "Nog geen onroerend goed — importeer eerst uw catalogus in Instellingen → Onroerend goed.",
+    "propertyEmpty": "Nog geen objecten — importeer eerst je aanbod via Instellingen → Objecten.",
     "ad": {
       "title": "Advertentie creatie",
-      "subtitle": "Gemerkt betaalde advertentie-afbeeldingen voor Meta, met tekst in de taal van uw koper. U beheert de advertenties zelf — AIVENA raakt uw budget nooit aan.",
+      "subtitle": "Advertentiebeelden in je huisstijl voor Meta, met tekst in de taal van je koper. Je beheert de advertenties zelf — AIVENA raakt je budget nooit aan.",
       "modeProperty": "Van een onroerend goed",
       "modeBrand": "Bureau merk",
       "formatLabel": "Formaat",
@@ -690,7 +690,7 @@
       "title": "Virtuele staging",
       "subtitle": "Her-render een echte kamerfoto in een nieuwe stijl. Een visualisatie om kopers te helpen de ruimte voor te stellen.",
       "uploadPrompt": "Upload een kamerfoto",
-      "uploadHint": "JPG of PNG van een kamer uit een van uw aanbiedingen.",
+      "uploadHint": "JPG of PNG van een kamer uit een van je woningen.",
       "attestation": "Ik bevestig dat dit onroerend goed in onze catalogus staat en dat we het recht hebben om de afbeelding te wijzigen.",
       "attestationRequired": "Vink de rechtenbevestiging hierboven aan om generatie mogelijk te maken.",
       "styleLabel": "Stijl",
@@ -722,7 +722,7 @@
     "tabLibrary": "Bibliotheek",
     "library": {
       "emptyTitle": "Nog niets hier",
-      "emptyBody": "Uw gegenereerde inhoud verschijnt hier zodra u advertentie creaties, sociale berichten of gestylde afbeeldingen maakt.",
+      "emptyBody": "Je gegenereerde content verschijnt hier zodra je advertenties, social posts of gestylede beelden maakt.",
       "close": "Sluiten",
       "status_draft": "Concept",
       "status_pending_approval": "In afwachting van goedkeuring",
@@ -746,13 +746,13 @@
     "create": "Creëren",
     "gen": {
       "title": "Genereer een afbeelding",
-      "subtitle": "Beschrijf wat u wilt en AIVENA genereert het in de stijl van uw bureau.",
+      "subtitle": "Beschrijf wat je wilt en AIVENA genereert het in de stijl van je kantoor.",
       "typeAd": "Advertentie creatie",
       "typeSocial": "Sociale post",
       "typeRenovation": "Renovatie",
-      "descAd": "Een merkadvertentie afbeelding voor Meta en Facebook, in de stijl van uw bureau.",
+      "descAd": "Een advertentiebeeld in je huisstijl voor Meta en Facebook.",
       "descSocial": "Een kant-en-klaar beeld voor Instagram of Facebook.",
-      "descRenovation": "Herstyle een lege of verouderde kamer van een foto die u uploadt.",
+      "descRenovation": "Restyle een lege of gedateerde kamer op basis van een foto die je uploadt.",
       "hintAd": "bijv. Appartement met zeezicht in Villajoyosa tijdens het gouden uur, warm en uitnodigend, ruimte voor een prijslabel",
       "hintSocial": "bijv. Aankondiging van nieuwe aanbieding voor een moderne villa met een zwembad in Moraira, helder en schoon",
       "hintRenovation": "bijv. Meubileer deze woonkamer in een warme mediterrane stijl met planten en natuurlijk licht",
@@ -769,7 +769,7 @@
       "sizeDefault": "Standaard",
       "generate": "Genereren",
       "starting": "Starten…",
-      "errPrompt": "Voeg alstublieft een korte beschrijving toe van de afbeelding die u wilt.",
+      "errPrompt": "Voeg een korte beschrijving toe van de afbeelding die je wilt.",
       "errPromptLong": "Die beschrijving is te lang — verkort het alstublieft.",
       "errSource": "Renovatie heeft een kamerfoto nodig om mee te werken — upload er een.",
       "errUploadType": "Upload alstublieft een PNG, JPG of WebP afbeelding.",
@@ -806,7 +806,7 @@
     "how3": "Eventuele overeenkomsten verschijnen hier zodat je ze handmatig kunt behandelen."
   },
   "valuation": {
-    "title": "Wat is uw eigendom waard?",
+    "title": "Wat is je woning waard?",
     "subtitle": "Een directe schatting van {agency}",
     "addressLabel": "Adres van het onroerend goed",
     "addressPlaceholder": "Straat, stad",
@@ -815,12 +815,12 @@
     "nameLabel": "Uw naam",
     "emailLabel": "E-mail",
     "languageLabel": "Uw taal",
-    "consentData": "Ik stem in met de verwerking van mijn gegevens om deze waardering te produceren.",
+    "consentData": "Ik stem in met de verwerking van mijn gegevens om deze waardering te maken.",
     "consentRequired": "(vereist)",
     "consentComms": "Ik wil graag gerelateerde updates en aanbiedingen ontvangen.",
     "consentOptional": "(optioneel)",
     "consentNeeded": "Gelieve in te stemmen met gegevensverwerking om door te gaan.",
-    "ecoDisclaimer": "Dit is een geautomatiseerde schatting, geen ECO/805/2003 goedgekeurde tasación. Het bedrag wordt alleen als richtlijn gegeven.",
+    "ecoDisclaimer": "Dit is een geautomatiseerde schatting, geen ECO/805/2003 goedgekeurde taxatie. Het bedrag wordt alleen als richtlijn gegeven.",
     "submit": "Krijg mijn schatting",
     "poweredBy": "Aangedreven door AIVENA"
   },

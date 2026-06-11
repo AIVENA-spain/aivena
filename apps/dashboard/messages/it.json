@@ -40,7 +40,7 @@
   "overview": {
     "kpi": {
       "newLeads": "Nuovi Contatti",
-      "needsAction": "Richiesta di Azione",
+      "needsAction": "Richiede azione",
       "hotLeads": "Contatti Caldi",
       "newSellers": "Nuovi Venditori",
       "followupsSent": "Follow-up Inviati",
@@ -51,7 +51,7 @@
       "callsTeaser": "inizia quando la voce è attiva"
     },
     "needsAction": {
-      "title": "Richiesta di Azione · Risposte Pronte",
+      "title": "Richiede azione · Risposte pronte",
       "emptyTitle": "Nessuna attesa",
       "emptyText": "I draft dell'AI appaiono qui man mano che i compratori rispondono.",
       "columnLead": "Contatto",
@@ -156,7 +156,7 @@
       "editing": "Modifica in corso",
       "dismiss": "Ignora",
       "dismissing": "Ignorando…",
-      "confirmDismiss": "Conferma ignorare",
+      "confirmDismiss": "Conferma ignora",
       "cancel": "Annulla",
       "dismissReasonLabel": "Motivo per ignorare",
       "dismissReasonPlaceholder": "Perché stai ignorando questa bozza?",
@@ -229,8 +229,8 @@
     "title": "Approvazioni",
     "subtitle": "{n} in attesa · tutto il resto gestito automaticamente",
     "subtitleZero": "Sei a posto · tutto il resto gestito automaticamente",
-    "description": "Risposte redatte dall'IA in attesa di approvazione umana. Clicca su una scheda per rivedere, modificare e approvare o rifiutare.",
-    "empty": "Niente in attesa. Nuove bozze dell'IA appariranno qui man mano che i compratori rispondono.",
+    "description": "Risposte redatte dall'AI in attesa di approvazione umana. Clicca su una scheda per rivedere, modificare e approvare o rifiutare.",
+    "empty": "Niente in attesa. Nuove bozze dell'AI appariranno qui man mano che i compratori rispondono.",
     "approvedBanner": "Risposta approvata e in coda per l'invio.",
     "dismissedBanner": "Compito rifiutato.",
     "subject": "Oggetto",

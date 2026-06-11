@@ -329,7 +329,7 @@
       "toggleHotHelp": "High-value; you review first.",
       "toggleWhatsappLabel": "Auto-send missed-call WhatsApp recovery",
       "toggleWhatsappHelp": "Instant re-engagement when a call is missed.",
-      "quietTitle": "Quiet hours",
+      "quietTitle": "Sending hours",
       "quietSubtitle": "When AIVENA can — and can't — send follow-ups.",
       "timezoneLabel": "Timezone",
       "dayMonday": "Monday",

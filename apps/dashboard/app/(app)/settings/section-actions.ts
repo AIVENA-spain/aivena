@@ -133,6 +133,33 @@ export async function saveAiRulesAction(
   }
 }
 
+// ---------- AI rules v2 (level + overrides → reply_rules lanes) ----------
+
+export type ReplyLanesPayload = {
+  level: "none" | "cold" | "cold_warm" | "all";
+  overrides: {
+    scheduling: boolean;
+    followup: boolean;
+    email: boolean;
+    whatsapp: boolean;
+  };
+};
+
+export async function saveReplyLanesAction(
+  payload: ReplyLanesPayload,
+): Promise<ActionResult<unknown>> {
+  try {
+    const res = await apiFetch<{ ok: true; reply_lanes: unknown }>(
+      "/api/v1/settings/reply-lanes",
+      { method: "POST", body: JSON.stringify(payload) },
+    );
+    revalidatePath("/settings");
+    return { ok: true, data: res.reply_lanes };
+  } catch (err) {
+    return actionError("saveReplyLanesAction", err);
+  }
+}
+
 // ---------- supported languages ----------
 
 export async function saveLanguagesAction(

@@ -7,8 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-import { saveAiRulesAction, saveWorkingHoursAction, type AiRulesPayload, type DaySlotPayload } from "../section-actions";
-import type { DashboardToggles, SettingsResponse, WorkingHours } from "@/lib/api/types";
+import { saveReplyLanesAction, saveWorkingHoursAction, type DaySlotPayload, type ReplyLanesPayload } from "../section-actions";
+import type { ReplyLanes, WorkingHours } from "@/lib/api/types";
 
 const DAYS = [
   "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday",
@@ -39,54 +39,110 @@ const COMMON_TIMEZONES = [
 ];
 
 /**
- * AI reply rules — Law-1 sensitive surface. Real toggles that persist to
- * agency_settings.reply_rules.dashboard_toggles, AND the honest sub-line
- * below the heading. The toggles do not currently drive automation; that's
- * the "automation engine" that lands later. The sub-line says so.
+ * AI reply rules — Law-1 sensitive surface. Two groups that read/write the
+ * REAL routing lanes in agency_settings.reply_rules (default_lane +
+ * by_temperature + the by_channel/by_action override keys):
+ *
+ *   Group 1 (radio)  — automation level: which lead temperatures auto-send.
+ *   Group 2 (toggles) — always-require-approval overrides. An override ON
+ *   always beats the automation level (review_first wins) — stated in the
+ *   microcopy and enforced in the send pipeline's resolver.
  *
  * Quiet hours below is fully live — W3 (the follow-up worker) already reads
  * agency_settings.working_hours.
  */
+type Level = ReplyLanesPayload["level"];
+type Overrides = ReplyLanesPayload["overrides"];
+
+function inferLevel(lanes: ReplyLanes | undefined): Level {
+  const t = lanes?.by_temperature ?? {};
+  const auto = (k: "cold" | "warm" | "hot" | "super_hot") => t[k] === "auto_send";
+  if (lanes?.default_lane === "auto_send" || (auto("cold") && auto("warm") && auto("hot") && auto("super_hot"))) return "all";
+  if (auto("cold") && auto("warm")) return "cold_warm";
+  if (auto("cold")) return "cold";
+  return "none";
+}
+
+function inferOverrides(lanes: ReplyLanes | undefined): Overrides {
+  return {
+    scheduling: lanes?.by_action?.scheduling === "review_first",
+    followup: lanes?.by_action?.followup === "review_first",
+    email: lanes?.by_channel?.email === "review_first",
+    whatsapp: lanes?.by_channel?.whatsapp === "review_first",
+  };
+}
+
 export function AiRulesSection({
-  initialToggles,
+  initialLanes,
   initialWorkingHours,
   initialTimezone,
 }: {
-  initialToggles: DashboardToggles;
+  initialLanes: ReplyLanes | undefined;
   initialWorkingHours: WorkingHours;
   initialTimezone: string;
 }) {
   const t = useTranslations("settings.aiRules");
 
-  const [toggles, setToggles] = useState<DashboardToggles>(initialToggles);
-  const [toggleSaving, startToggleSaving] = useTransition();
-  const [toggleError, setToggleError] = useState<string | null>(null);
-  const [toggleSavedAt, setToggleSavedAt] = useState<number | null>(null);
+  const [level, setLevel] = useState<Level>(() => inferLevel(initialLanes));
+  const [overrides, setOverrides] = useState<Overrides>(() => inferOverrides(initialLanes));
+  const [saving, startSaving] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const [savedAt, setSavedAt] = useState<number | null>(null);
 
-  const flip = useCallback(
-    (key: keyof DashboardToggles) => {
-      const next = { ...toggles, [key]: !toggles[key] };
-      const prev = toggles;
-      setToggles(next);
-      setToggleError(null);
-      const payload: AiRulesPayload = {
-        draft_replies_auto: next.draft_replies_auto,
-        auto_send_cold: next.auto_send_cold,
-        require_approval_hot: next.require_approval_hot,
-        auto_whatsapp_recovery: next.auto_whatsapp_recovery,
-      };
-      startToggleSaving(async () => {
-        const res = await saveAiRulesAction(payload);
+  const persist = useCallback(
+    (nextLevel: Level, nextOverrides: Overrides, revert: () => void) => {
+      setError(null);
+      startSaving(async () => {
+        const res = await saveReplyLanesAction({ level: nextLevel, overrides: nextOverrides });
         if (res.ok) {
-          setToggleSavedAt(Date.now());
+          setSavedAt(Date.now());
         } else {
-          setToggles(prev);
-          setToggleError(res.error);
+          revert();
+          setError(res.error);
         }
       });
     },
-    [toggles],
+    [],
   );
+
+  const pickLevel = useCallback(
+    (next: Level) => {
+      const prev = level;
+      setLevel(next);
+      persist(next, overrides, () => setLevel(prev));
+    },
+    [level, overrides, persist],
+  );
+
+  const flipOverride = useCallback(
+    (key: keyof Overrides) => {
+      const prev = overrides;
+      const next = { ...overrides, [key]: !overrides[key] };
+      setOverrides(next);
+      persist(level, next, () => setOverrides(prev));
+    },
+    [level, overrides, persist],
+  );
+
+  const LEVELS: Array<{ value: Level; label: string }> = [
+    { value: "none", label: t("levelNone") },
+    { value: "cold", label: t("levelCold") },
+    { value: "cold_warm", label: t("levelColdWarm") },
+    { value: "all", label: t("levelAll") },
+  ];
+  const OVERRIDE_ROWS: Array<{ key: keyof Overrides; label: string }> = [
+    { key: "scheduling", label: t("ovScheduling") },
+    { key: "followup", label: t("ovFollowups") },
+    { key: "email", label: t("ovEmail") },
+    { key: "whatsapp", label: t("ovWhatsapp") },
+  ];
+
+  const levelSummary =
+    level === "none" ? t("summaryNone")
+    : level === "cold" ? t("summaryCold")
+    : level === "cold_warm" ? t("summaryColdWarm")
+    : t("summaryAll");
+  const activeOverrideLabels = OVERRIDE_ROWS.filter((r) => overrides[r.key]).map((r) => r.label);
 
   return (
     <Card id="ai-rules" className="scroll-mt-24">
@@ -95,43 +151,64 @@ export function AiRulesSection({
         <CardDescription>{t("subtitle")}</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-6">
-        <div className="rounded-md border border-amber-300/50 bg-amber-50/60 px-4 py-3 text-[12px] leading-snug text-amber-900 dark:border-amber-300/30 dark:bg-amber-500/10 dark:text-amber-100">
-          {t("honestSubLine")}
-        </div>
+        {/* Group 1 — automation level */}
+        <fieldset className="flex flex-col gap-2.5">
+          <legend className="text-[13px] font-semibold text-foreground">{t("levelGroupLabel")}</legend>
+          <p className="text-[11.5px] text-muted-foreground">{t("levelGroupHelp")}</p>
+          <div className="mt-1 flex flex-col gap-1.5">
+            {LEVELS.map((opt) => (
+              <label
+                key={opt.value}
+                className={`flex cursor-pointer items-center gap-3 rounded-lg border px-3.5 py-2.5 text-[13px] transition-colors ${
+                  level === opt.value
+                    ? "border-brand bg-brand-soft text-foreground"
+                    : "border-border bg-card text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="automation-level"
+                  value={opt.value}
+                  checked={level === opt.value}
+                  onChange={() => pickLevel(opt.value)}
+                  className="h-4 w-4 accent-[var(--brand)]"
+                />
+                {opt.label}
+              </label>
+            ))}
+          </div>
+        </fieldset>
 
-        <div className="flex flex-col divide-y divide-border/60">
-          <ToggleRow
-            label={t("toggleDraftLabel")}
-            help={t("toggleDraftHelp")}
-            on={toggles.draft_replies_auto}
-            onChange={() => flip("draft_replies_auto")}
-          />
-          <ToggleRow
-            label={t("toggleColdLabel")}
-            help={t("toggleColdHelp")}
-            on={toggles.auto_send_cold}
-            onChange={() => flip("auto_send_cold")}
-          />
-          <ToggleRow
-            label={t("toggleHotLabel")}
-            help={t("toggleHotHelp")}
-            on={toggles.require_approval_hot}
-            onChange={() => flip("require_approval_hot")}
-          />
-          <ToggleRow
-            label={t("toggleWhatsappLabel")}
-            help={t("toggleWhatsappHelp")}
-            on={toggles.auto_whatsapp_recovery}
-            onChange={() => flip("auto_whatsapp_recovery")}
-          />
+        {/* Group 2 — always-require-approval overrides */}
+        <fieldset className="flex flex-col gap-1 border-t border-border pt-5">
+          <legend className="text-[13px] font-semibold text-foreground">{t("overridesGroupLabel")}</legend>
+          <p className="text-[11.5px] text-muted-foreground">{t("overridesGroupHelp")}</p>
+          <div className="mt-1 flex flex-col divide-y divide-border/60">
+            {OVERRIDE_ROWS.map((row) => (
+              <ToggleRow
+                key={row.key}
+                label={row.label}
+                on={overrides[row.key]}
+                onChange={() => flipOverride(row.key)}
+              />
+            ))}
+          </div>
+        </fieldset>
+
+        {/* Live summary */}
+        <div className="rounded-lg border border-border bg-muted/40 px-4 py-3 text-[12.5px] leading-relaxed text-foreground">
+          <span className="font-semibold">{t("summaryLead")}</span> {levelSummary}
+          {activeOverrideLabels.length > 0 ? (
+            <> {t("summaryOverrides", { items: activeOverrideLabels.join(", ") })}</>
+          ) : null}
         </div>
 
         <div aria-live="polite" className="text-[11.5px]">
-          {toggleSaving ? (
+          {saving ? (
             <span className="text-muted-foreground">{t("savedToggleToast")}</span>
-          ) : toggleError ? (
-            <span className="text-red-600 dark:text-red-300" role="alert">{toggleError}</span>
-          ) : toggleSavedAt ? (
+          ) : error ? (
+            <span className="text-red-600 dark:text-red-300" role="alert">{error}</span>
+          ) : savedAt ? (
             <span className="text-brand">{t("savedToggleToast")}</span>
           ) : null}
         </div>
@@ -147,12 +224,10 @@ export function AiRulesSection({
 
 function ToggleRow({
   label,
-  help,
   on,
   onChange,
 }: {
   label: string;
-  help: string;
   on: boolean;
   onChange: () => void;
 }) {
@@ -160,7 +235,6 @@ function ToggleRow({
     <div className="flex items-center gap-4 py-3">
       <div className="flex-1">
         <div className="text-[13px] font-medium text-foreground">{label}</div>
-        <div className="text-[11.5px] text-muted-foreground">{help}</div>
       </div>
       <button
         type="button"

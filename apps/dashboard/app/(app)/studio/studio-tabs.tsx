@@ -44,7 +44,45 @@ import {
 } from "./studio-actions";
 
 const UPLOAD_ACCEPT = ["image/png", "image/jpeg", "image/webp"];
-const UPLOAD_MAX_BYTES = 10 * 1024 * 1024; // 10MB
+// Hard reject only at 40MB; anything large gets downscaled client-side first
+// (modern phone photos are 12-48MP — staging never needs that), so the user
+// basically never sees a size error.
+const UPLOAD_HARD_MAX_BYTES = 40 * 1024 * 1024;
+const UPLOAD_PASSTHROUGH_BYTES = 2 * 1024 * 1024;
+const UPLOAD_MAX_EDGE = 4096;
+
+/**
+ * Downscale + re-encode a photo before upload: max 4096px long edge, JPEG
+ * q0.85. createImageBitmap with imageOrientation:"from-image" bakes the EXIF
+ * rotation into the pixels, so portrait phone photos stay upright after
+ * re-encode. Small files (≤2MB) pass through untouched.
+ */
+async function prepareImageForUpload(
+  file: File,
+): Promise<{ blob: Blob; contentType: string }> {
+  if (file.size <= UPLOAD_PASSTHROUGH_BYTES) {
+    return { blob: file, contentType: file.type };
+  }
+  const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
+  try {
+    const scale = Math.min(1, UPLOAD_MAX_EDGE / Math.max(bitmap.width, bitmap.height));
+    const w = Math.max(1, Math.round(bitmap.width * scale));
+    const h = Math.max(1, Math.round(bitmap.height * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return { blob: file, contentType: file.type };
+    ctx.drawImage(bitmap, 0, 0, w, h);
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, "image/jpeg", 0.85),
+    );
+    if (!blob) return { blob: file, contentType: file.type };
+    return { blob, contentType: "image/jpeg" };
+  } finally {
+    bitmap.close();
+  }
+}
 const PROMPT_MAX = 4000;
 const POLL_MS = 4000;
 
@@ -810,13 +848,20 @@ function ImageUpload({
       setError(t("badType"));
       return;
     }
-    if (file.size > UPLOAD_MAX_BYTES) {
+    if (file.size > UPLOAD_HARD_MAX_BYTES) {
       setError(t("tooLarge"));
       return;
     }
     setBusy(true);
     try {
-      const meta = await createStudioUploadUrlAction(file.type);
+      let prepared: { blob: Blob; contentType: string };
+      try {
+        prepared = await prepareImageForUpload(file);
+      } catch (err) {
+        console.error("[studio upload] downscale failed, sending original:", err);
+        prepared = { blob: file, contentType: file.type };
+      }
+      const meta = await createStudioUploadUrlAction(prepared.contentType);
       if (!meta.ok) {
         setError(meta.error);
         return;
@@ -824,8 +869,8 @@ function ImageUpload({
       const supabase = createClient();
       const { error: uploadError } = await supabase.storage
         .from("agency-assets")
-        .uploadToSignedUrl(meta.path, meta.token, file, {
-          contentType: file.type,
+        .uploadToSignedUrl(meta.path, meta.token, prepared.blob, {
+          contentType: prepared.contentType,
         });
       if (uploadError) {
         console.error("[studio upload] uploadToSignedUrl failed:", uploadError);
@@ -883,7 +928,7 @@ function ImageUpload({
         >
           <UploadCloud className="h-5 w-5 text-muted-foreground" aria-hidden />
           <span className="text-[12.5px] font-medium text-foreground">
-            {busy ? t("uploading") : (labelOverride ?? t("prompt"))}
+            {busy ? t("compressing") : (labelOverride ?? t("prompt"))}
           </span>
           <span className="text-[11px] text-muted-foreground">
             {hintOverride ?? t("hint")}

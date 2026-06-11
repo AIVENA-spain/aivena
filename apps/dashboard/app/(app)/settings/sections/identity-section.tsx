@@ -2,6 +2,7 @@
 
 import { useCallback, useId, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
+import { CircleHelp } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,8 @@ export function IdentitySection({
   const replyToId = useId();
 
   const [replyTo, setReplyTo] = useState(profile.reply_to ?? "");
+  const [explainOpen, setExplainOpen] = useState(false);
+  const hasDomain = Boolean(profile.sending_domain && profile.sending_domain.trim());
   const [saving, startSaving] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<number | null>(null);
@@ -57,26 +60,51 @@ export function IdentitySection({
       </CardHeader>
       <CardContent className="flex flex-col gap-6">
         <div className="flex flex-col gap-2">
-          <Label htmlFor={domainId}>{t("domainLabel")}</Label>
-          <div className="flex items-center gap-2">
-            <Input
-              id={domainId}
-              value={profile.sending_domain ?? ""}
-              readOnly
-              aria-readonly
-              className="max-w-xs bg-muted/40 font-mono"
-            />
-            <span
-              className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10.5px] font-semibold ${
-                profile.domain_verified
-                  ? "bg-brand-soft text-brand"
-                  : "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300"
-              }`}
+          <div className="flex items-center gap-1.5">
+            <Label htmlFor={domainId}>{t("domainLabel")}</Label>
+            <button
+              type="button"
+              aria-label={t("domainExplainAria")}
+              onClick={() => setExplainOpen((v) => !v)}
+              className="text-muted-foreground transition-colors hover:text-foreground"
             >
-              {profile.domain_verified ? t("verifiedPill") : t("notVerifiedPill")}
-            </span>
+              <CircleHelp className="h-3.5 w-3.5" aria-hidden />
+            </button>
           </div>
-          <p className="text-[11px] text-muted-foreground">{t("domainHint")}</p>
+          {explainOpen ? (
+            <p className="max-w-md rounded-lg border border-border bg-muted/40 px-3.5 py-2.5 text-[12px] leading-relaxed text-foreground">
+              {t("domainExplainer")}
+            </p>
+          ) : null}
+          {hasDomain ? (
+            <>
+              <div className="flex items-center gap-2">
+                <Input
+                  id={domainId}
+                  value={profile.sending_domain ?? ""}
+                  readOnly
+                  aria-readonly
+                  className="max-w-xs bg-muted/40 font-mono"
+                />
+                <span
+                  className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10.5px] font-semibold ${
+                    profile.domain_verified
+                      ? "bg-brand-soft text-brand"
+                      : "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300"
+                  }`}
+                >
+                  {profile.domain_verified ? t("verifiedPill") : t("notVerifiedPill")}
+                </span>
+              </div>
+              <p className="text-[11px] text-muted-foreground">{t("domainHint")}</p>
+            </>
+          ) : (
+            // No domain yet: a bare empty input + "not verified" reads as
+            // broken. Show the onboarding explainer instead.
+            <p className="max-w-md rounded-lg border border-dashed border-border bg-card px-3.5 py-3 text-[12.5px] leading-relaxed text-muted-foreground">
+              {t("domainPending")}
+            </p>
+          )}
         </div>
 
         <div className="flex flex-col gap-2">

@@ -312,7 +312,10 @@
       "notVerifiedPill": "Not verified",
       "replyToLabel": "Reply-to address",
       "saveBtn": "Save reply-to",
-      "savedToast": "Reply-to saved."
+      "savedToast": "Reply-to saved.",
+      "domainExplainAria": "What is this?",
+      "domainExplainer": "This is the domain your emails are sent from (e.g. youragency.com). Verification happens during onboarding — AIVENA sets it up together with you; there's nothing technical for you to do. Contact support to change it.",
+      "domainPending": "Your sending domain is set up together with AIVENA during onboarding — nothing technical for you to do. Contact support to get started."
     },
     "aiRules": {
       "title": "AI reply rules",
@@ -340,10 +343,28 @@
       "endLabel": "End",
       "enabledLabel": "Open",
       "closedLabel": "Closed",
-      "quietFramingNote": "Controls when AIVENA sends follow-up emails. Hot/super-hot leads and replies you approve manually always send immediately.",
+      "quietFramingNote": "Controls when AIVENA sends follow-up emails. When you approve a draft, it's sent immediately.",
       "saveQuietBtn": "Save quiet hours",
       "savedToggleToast": "AI rule saved.",
-      "savedQuietToast": "Quiet hours saved."
+      "savedQuietToast": "Quiet hours saved.",
+      "levelGroupLabel": "Automation level",
+      "levelGroupHelp": "How much AIVENA sends without asking you first.",
+      "levelNone": "Nothing sends without your approval",
+      "levelCold": "Cold leads send automatically",
+      "levelColdWarm": "Cold + warm leads send automatically",
+      "levelAll": "Everything sends automatically",
+      "overridesGroupLabel": "Always ask me first for…",
+      "overridesGroupHelp": "When one of these is on, those messages always wait for your approval — no matter the automation level above.",
+      "ovScheduling": "Bookings & viewings",
+      "ovFollowups": "Follow-ups",
+      "ovEmail": "Email",
+      "ovWhatsapp": "WhatsApp",
+      "summaryLead": "With these choices:",
+      "summaryNone": "everything waits for your approval.",
+      "summaryCold": "cold leads send automatically; everything else waits for you.",
+      "summaryColdWarm": "cold and warm leads send automatically; hot leads wait for you.",
+      "summaryAll": "everything sends automatically.",
+      "summaryOverrides": "{items} always wait for your approval."
     },
     "voice": {
       "title": "Voice & tone",
@@ -381,7 +402,8 @@
       "translateInto": "Translate client messages into",
       "translateIntoHelp": "Incoming messages and AI-drafted replies are translated into this language across your whole agency, so anyone on your team can read and approve them.",
       "displayDefault": "Default dashboard language for new team members",
-      "displayDefaultHelp": "New team members see the dashboard in this language until they pick their own in Personal settings."
+      "displayDefaultHelp": "New team members see the dashboard in this language until they pick their own in Personal settings.",
+      "supportedHint": "AIVENA supports 13 languages today — more on the way."
     },
     "channels": {
       "title": "Connected channels & integrations",
@@ -736,12 +758,13 @@
     "upload": {
       "label": "Your own image (optional)",
       "prompt": "Upload an image",
-      "hint": "PNG, JPG or WebP · up to 10 MB",
+      "hint": "PNG, JPG or WebP — large photos are compressed automatically",
       "uploading": "Uploading…",
       "remove": "Remove image",
       "badType": "Please upload a PNG, JPG, or WebP image.",
-      "tooLarge": "That image is over 10 MB — please choose a smaller one.",
-      "uploadFailed": "Couldn’t upload that image — please try again, and contact support if it keeps happening."
+      "tooLarge": "That image is over 40 MB — please use a smaller one.",
+      "uploadFailed": "Couldn’t upload that image — please try again, and contact support if it keeps happening.",
+      "compressing": "Compressing image…"
     },
     "create": "Create",
     "gen": {

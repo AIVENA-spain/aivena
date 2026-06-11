@@ -107,6 +107,17 @@ route.get('/', async (c) => {
     settings.translation_target_language = agencyRow?.translation_target_language ?? 'en';
     settings.dashboard_display_language = agencyRow?.dashboard_display_language ?? 'en';
 
+    // Reply-routing lanes for the AI-rules controls (default_lane +
+    // by_temperature + the by_channel/by_action override keys). Read straight
+    // off reply_rules so the UI reflects what the send pipeline actually uses.
+    const rr = (agencyRow?.reply_rules ?? {}) as Record<string, unknown>;
+    settings.reply_lanes = {
+      default_lane: typeof rr.default_lane === 'string' ? rr.default_lane : 'review_first',
+      by_temperature: rr.by_temperature && typeof rr.by_temperature === 'object' ? rr.by_temperature : {},
+      by_channel: rr.by_channel && typeof rr.by_channel === 'object' ? rr.by_channel : {},
+      by_action: rr.by_action && typeof rr.by_action === 'object' ? rr.by_action : {},
+    };
+
     return c.json(settings);
   } catch (err) {
     console.error('[/api/v1/settings] RPC failed:', err);
@@ -359,6 +370,85 @@ route.post('/ai-rules', async (c) => {
     return c.json({ ok: true, dashboard_toggles: toggles });
   } catch (err) {
     console.error('[/api/v1/settings/ai-rules] write failed:', err);
+    return c.json({ error: 'Couldn\'t save AI rules. Please try again — if it keeps happening, contact support.' }, 500);
+  }
+});
+
+/**
+ * POST /api/v1/settings/reply-lanes — the redesigned AI-rules controls.
+ *
+ * Body: { level: 'none'|'cold'|'cold_warm'|'all',
+ *         overrides: { scheduling, followup, email, whatsapp } (booleans) }
+ *
+ * Writes the REAL routing keys in agency_settings.reply_rules:
+ *   level     → default_lane + by_temperature.{cold,warm,hot,super_hot}
+ *   overrides → ON = review_first under by_action.{scheduling,followup} /
+ *               by_channel.{email,whatsapp}; OFF removes the key entirely so
+ *               it forces nothing. An override always beats the level
+ *               (review_first wins) — Vega's resolver must honour by_action.
+ * Other reply_rules keys (by_source, voice_recovery, dashboard_toggles,
+ * language_overrides) are preserved untouched.
+ */
+route.post('/reply-lanes', async (c) => {
+  const tx = c.get('tx');
+  const body = await readJson(c);
+
+  const level = typeof body.level === 'string' ? body.level : '';
+  const LEVELS: Record<string, { lane: string; temps: Record<string, string> }> = {
+    none: { lane: 'review_first', temps: { cold: 'review_first', warm: 'review_first', hot: 'review_first', super_hot: 'review_first' } },
+    cold: { lane: 'review_first', temps: { cold: 'auto_send', warm: 'review_first', hot: 'review_first', super_hot: 'review_first' } },
+    cold_warm: { lane: 'review_first', temps: { cold: 'auto_send', warm: 'auto_send', hot: 'review_first', super_hot: 'review_first' } },
+    all: { lane: 'auto_send', temps: { cold: 'auto_send', warm: 'auto_send', hot: 'auto_send', super_hot: 'auto_send' } },
+  };
+  const picked = LEVELS[level];
+  if (!picked) {
+    return c.json({ error: 'Choose an automation level from the available options.' }, 400);
+  }
+
+  const o = (body.overrides && typeof body.overrides === 'object' ? body.overrides : {}) as Record<string, unknown>;
+  const byAction: Record<string, string> = {};
+  if (o.scheduling === true) byAction.scheduling = 'review_first';
+  if (o.followup === true) byAction.followup = 'review_first';
+  const channelAdd: Record<string, string> = {};
+  if (o.email === true) channelAdd.email = 'review_first';
+  if (o.whatsapp === true) channelAdd.whatsapp = 'review_first';
+
+  try {
+    const result = await tx.execute(sql`
+      UPDATE agency_settings
+         SET reply_rules = jsonb_set(
+                             jsonb_set(
+                               jsonb_set(
+                                 jsonb_set(
+                                   COALESCE(reply_rules, '{}'::jsonb),
+                                   '{default_lane}', to_jsonb(${picked.lane}::text), true),
+                                 '{by_temperature}', ${JSON.stringify(picked.temps)}::jsonb, true),
+                               '{by_action}', ${JSON.stringify(byAction)}::jsonb, true),
+                             '{by_channel}',
+                             (COALESCE(reply_rules->'by_channel', '{}'::jsonb) - 'email' - 'whatsapp')
+                               || ${JSON.stringify(channelAdd)}::jsonb,
+                             true),
+             reply_rules_reviewed_at = now(),
+             updated_at              = now()
+       WHERE agency_id = current_setting('app.current_agency_id', true)
+       RETURNING reply_rules
+    `);
+    const rows = result as unknown as Array<{ reply_rules: Record<string, unknown> }>;
+    if (rows.length === 0) {
+      return c.json({ error: 'Settings row not found for this agency.' }, 404);
+    }
+    const rr = rows[0].reply_rules ?? {};
+    return c.json({
+      ok: true,
+      reply_lanes: {
+        default_lane: rr.default_lane,
+        by_temperature: rr.by_temperature ?? {},
+        by_channel: rr.by_channel ?? {},
+        by_action: rr.by_action ?? {},
+      },
+    });
+  } catch (err) {
+    console.error('[/api/v1/settings/reply-lanes] write failed:', err);
     return c.json({ error: 'Couldn\'t save AI rules. Please try again — if it keeps happening, contact support.' }, 500);
   }
 });

@@ -92,7 +92,17 @@ export type InvitationRow = {
   invited_by: string;
 };
 
+export type Lane = "auto_send" | "review_first";
+
+export type ReplyLanes = {
+  default_lane: Lane | string;
+  by_temperature: Partial<Record<"cold" | "warm" | "hot" | "super_hot", string>>;
+  by_channel: Record<string, string>;
+  by_action: Record<string, string>;
+};
+
 export type SettingsResponse = {
+  reply_lanes?: ReplyLanes;
   profile: {
     agency_id: string;
     name: string;

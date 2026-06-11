@@ -199,6 +199,7 @@ export function LanguagesSection({
               {t("translateIntoHelp")}
             </p>
           </div>
+          <p className="text-[11.5px] text-muted-foreground">{t("supportedHint")}</p>
 
           {canEditDefault ? (
             <div className="flex flex-col gap-2">

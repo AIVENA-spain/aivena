@@ -99,7 +99,7 @@ export default async function SettingsPage() {
       <IdentitySection profile={settings.profile} />
 
       <AiRulesSection
-        initialToggles={settings.config.dashboard_toggles}
+        initialLanes={settings.reply_lanes}
         initialWorkingHours={settings.config.working_hours}
         initialTimezone={settings.config.timezone}
       />

@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { createClient } from "@/lib/supabase/server";
+import { BASE_PATH } from "@/lib/base-path";
 
 /**
  * GET /auth/callback — magic-link return target.
@@ -25,7 +26,7 @@ export async function GET(request: NextRequest) {
       : "/";
 
   if (!code) {
-    return NextResponse.redirect(`${origin}/login?error=missing_code`);
+    return NextResponse.redirect(`${origin}${BASE_PATH}/login?error=missing_code`);
   }
 
   try {
@@ -33,13 +34,13 @@ export async function GET(request: NextRequest) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (error) {
       console.error("[/auth/callback] exchangeCodeForSession failed:", error.message);
-      return NextResponse.redirect(`${origin}/login?error=callback`);
+      return NextResponse.redirect(`${origin}${BASE_PATH}/login?error=callback`);
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error("[/auth/callback] unexpected failure:", message);
-    return NextResponse.redirect(`${origin}/login?error=callback`);
+    return NextResponse.redirect(`${origin}${BASE_PATH}/login?error=callback`);
   }
 
-  return NextResponse.redirect(`${origin}${safeNext}`);
+  return NextResponse.redirect(`${origin}${BASE_PATH}${safeNext}`);
 }

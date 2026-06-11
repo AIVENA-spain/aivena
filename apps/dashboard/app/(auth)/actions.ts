@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import { BASE_PATH } from "@/lib/base-path";
 
 type FormState = { error?: string; message?: string };
 
@@ -21,7 +22,8 @@ export async function forgotPasswordAction(
   const origin = (await headers()).get("origin") ?? "";
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${origin}/reset-password`,
+    // Raw URL (not router-built), so the base path must be applied by hand.
+    redirectTo: `${origin}${BASE_PATH}/reset-password`,
   });
 
   if (error) return { error: error.message };

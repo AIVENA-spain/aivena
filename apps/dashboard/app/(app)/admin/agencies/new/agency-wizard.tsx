@@ -24,6 +24,7 @@ import {
   createAgencyAction,
   resendInvitationAction,
 } from "../../admin-actions";
+import { BASE_PATH, withBasePath } from "@/lib/base-path";
 
 type Created = {
   agencyId: string;
@@ -761,7 +762,7 @@ function CreatedStep({
             className={buttonVariants({ variant: "outline", size: "sm" })}
             onClick={() => {
               // Hard reset by navigating to a fresh wizard mount.
-              window.location.assign("/admin/agencies/new");
+              window.location.assign(withBasePath("/admin/agencies/new"));
             }}
           >
             Create another
@@ -780,7 +781,7 @@ function CopyInviteLink({ token }: { token: string }) {
       variant="outline"
       size="sm"
       onClick={async () => {
-        const link = `${window.location.origin}/invite/accept?token=${token}`;
+        const link = `${window.location.origin}${BASE_PATH}/invite/accept?token=${token}`;
         try {
           await navigator.clipboard.writeText(link);
           setCopied(true);

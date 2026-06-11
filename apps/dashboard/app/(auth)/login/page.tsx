@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 
 import { createClient } from "@/lib/supabase/client";
+import { BASE_PATH, withBasePath } from "@/lib/base-path";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -71,7 +72,11 @@ export default function LoginPage() {
             setError(t("errorInvalidCredentials"));
             return;
           }
-          window.location.assign(safeNext(searchParams.get("next")) ?? "/");
+          // ?next= values are app-internal paths; location.assign bypasses
+          // Next's router, so the base path must be applied by hand.
+          window.location.assign(
+            withBasePath(safeNext(searchParams.get("next")) ?? "/"),
+          );
         });
         return;
       }
@@ -81,8 +86,8 @@ export default function LoginPage() {
         const supabase = createClient();
         const next = safeNext(searchParams.get("next"));
         const callback = next
-          ? `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`
-          : `${window.location.origin}/auth/callback`;
+          ? `${window.location.origin}${BASE_PATH}/auth/callback?next=${encodeURIComponent(next)}`
+          : `${window.location.origin}${BASE_PATH}/auth/callback`;
         const { error: supaError } = await supabase.auth.signInWithOtp({
           email: trimmed,
           options: { emailRedirectTo: callback },

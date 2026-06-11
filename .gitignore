@@ -6,3 +6,7 @@ dist
 build
 .DS_Store
 *.logpackages/db/client.ts.backup
+
+# Vercel project links (per-machine)
+.vercel/
+apps/**/.vercel/

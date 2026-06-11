@@ -106,6 +106,41 @@ function ChannelIcon({ channel }: { channel: string | null }) {
   return <Icon className="h-3.5 w-3.5" aria-hidden strokeWidth={1.8} />;
 }
 
+function isWhatsappChannel(channel: string | null | undefined): boolean {
+  return (channel ?? "").toLowerCase() === "whatsapp";
+}
+
+/**
+ * Channel pill shown in the open conversation head. WhatsApp gets a distinct
+ * green treatment so the operator can see at a glance they're replying on
+ * WhatsApp (no subject, chat-style) rather than email.
+ */
+function ChannelBadge({ channel }: { channel: string | null }) {
+  const c = (channel ?? "").toLowerCase();
+  const isWa = c === "whatsapp";
+  const Icon = CHANNEL_ICON[c] ?? Mail;
+  const label = isWa
+    ? "WhatsApp"
+    : c === "email"
+      ? "Email"
+      : c
+        ? c[0].toUpperCase() + c.slice(1)
+        : "—";
+  return (
+    <span
+      className={cn(
+        "inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.04em]",
+        isWa
+          ? "bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300"
+          : "bg-muted text-muted-foreground",
+      )}
+    >
+      <Icon className="h-3 w-3" aria-hidden strokeWidth={2} />
+      {label}
+    </span>
+  );
+}
+
 function languageLabel(code: string | null): string {
   if (!code) return "—";
   return code.toUpperCase();
@@ -670,6 +705,16 @@ function BuyersConvoView({
                   {r.latestInboundPreview ?? r.aiReplyBody ?? "—"}
                 </div>
                 <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                  <span
+                    className={cn(
+                      "flex shrink-0 items-center",
+                      isWhatsappChannel(r.channel) &&
+                        "text-emerald-600 dark:text-emerald-400",
+                    )}
+                    title={r.channel ?? undefined}
+                  >
+                    <ChannelIcon channel={r.channel} />
+                  </span>
                   <span>
                     {languageLabel(r.language)} ·{" "}
                     <RelativeTime iso={r.taskCreatedAt} />
@@ -759,6 +804,9 @@ function ThreadAndReply({
             {headSubline}
           </div>
         </div>
+        <div className="ml-auto">
+          <ChannelBadge channel={lead.channel} />
+        </div>
       </div>
 
       {/* Body */}
@@ -805,6 +853,7 @@ function ThreadAndReply({
       <ReplyZone
         key={lead.taskId}
         taskId={lead.taskId}
+        channel={lead.channel}
         initialSubject={lead.aiReplySubject ?? ""}
         initialBody={lead.aiReplyBody ?? ""}
         translatedDraft={
@@ -990,17 +1039,24 @@ function ThreadBubble({
 
 function ReplyZone({
   taskId,
+  channel,
   initialSubject,
   initialBody,
   translatedDraft,
 }: {
   taskId: string;
+  channel: string | null;
   initialSubject: string;
   initialBody: string;
   /** v1.14.4 — owner-language translation of the AI draft; NULL = show original only. */
   translatedDraft?: string | null;
 }) {
   const t = useTranslations("inbox.reply");
+
+  // WhatsApp has no subject line — hide the subject field/preview entirely.
+  // The approve RPC is channel-aware and ignores subject for WhatsApp, so the
+  // (empty) hidden subject input below is harmless.
+  const isWhatsapp = isWhatsappChannel(channel);
 
   // Send / approve action — reuses the existing wired path.
   const [sendState, sendAction, sending] = useActionState(approveTaskAction, {});
@@ -1028,19 +1084,21 @@ function ReplyZone({
 
         {editing ? (
           <div className="flex flex-col gap-2.5">
-            <div className="flex flex-col gap-1">
-              <label
-                htmlFor={`subj-${taskId}`}
-                className="font-mono text-[9.5px] uppercase tracking-wide text-muted-foreground"
-              >
-                {t("subjectLabel")}
-              </label>
-              <Input
-                id={`subj-${taskId}`}
-                value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-              />
-            </div>
+            {!isWhatsapp ? (
+              <div className="flex flex-col gap-1">
+                <label
+                  htmlFor={`subj-${taskId}`}
+                  className="font-mono text-[9.5px] uppercase tracking-wide text-muted-foreground"
+                >
+                  {t("subjectLabel")}
+                </label>
+                <Input
+                  id={`subj-${taskId}`}
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                />
+              </div>
+            ) : null}
             <div className="flex flex-col gap-1">
               <label
                 htmlFor={`body-${taskId}`}
@@ -1059,7 +1117,7 @@ function ReplyZone({
           </div>
         ) : (
           <>
-            {subject ? (
+            {!isWhatsapp && subject ? (
               <div className="text-[11.5px] font-semibold text-foreground">
                 {subject}
               </div>

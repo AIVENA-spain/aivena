@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex" />
+<title>Property valuation</title>
+<style>
+  :root{
+    --brand:#0B7C3A;
+    --ink:#10131A; --soft:#5C636C; --line:rgba(16,19,26,.14); --line-soft:rgba(16,19,26,.08);
+    --paper:#FFFFFF; --bg:transparent; --err:#B3261E;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ background:var(--bg); }
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Arial,sans-serif;
+    color:var(--ink); font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased;
+  }
+  .card{
+    background:var(--paper); border:1px solid var(--line); border-radius:16px;
+    padding:22px; max-width:520px; box-shadow:0 18px 50px -30px rgba(16,19,26,.35);
+  }
+  .head{ display:flex; align-items:center; gap:12px; margin-bottom:6px; }
+  .head img{ height:34px; width:auto; max-width:140px; object-fit:contain; }
+  h1{ font-size:19px; line-height:1.25; font-weight:700; }
+  .sub{ color:var(--soft); font-size:13.5px; margin-top:2px; margin-bottom:16px; }
+  form{ display:flex; flex-direction:column; gap:13px; }
+  .row{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  @media (max-width:420px){ .row{ grid-template-columns:1fr; } }
+  label{ display:block; font-size:12.5px; font-weight:600; margin-bottom:4px; }
+  label .opt{ font-weight:400; color:var(--soft); }
+  input,select{
+    width:100%; min-height:42px; border:1px solid var(--line); border-radius:9px;
+    padding:9px 11px; font-size:15px; font-family:inherit; color:var(--ink); background:#fff;
+  }
+  input:focus,select:focus{ outline:2px solid var(--brand); outline-offset:1px; border-color:var(--brand); }
+  .consents{ display:flex; flex-direction:column; gap:9px; border-top:1px solid var(--line-soft); padding-top:13px; }
+  .consent{ display:flex; gap:9px; align-items:flex-start; font-size:12.5px; line-height:1.45; color:var(--soft); }
+  .consent input{ width:16px; min-height:16px; height:16px; margin-top:2px; flex:none; accent-color:var(--brand); }
+  .note{ font-size:12px; color:var(--soft); }
+  button.go{
+    min-height:48px; border:0; border-radius:999px; cursor:pointer;
+    background:var(--brand); color:#fff; font-size:15.5px; font-weight:700; font-family:inherit;
+    transition:filter .15s;
+  }
+  button.go:hover{ filter:brightness(1.08); }
+  button.go:disabled{ opacity:.6; cursor:default; }
+  .error{
+    display:none; border:1px solid rgba(179,38,30,.35); background:rgba(179,38,30,.06);
+    color:var(--err); border-radius:9px; padding:9px 12px; font-size:13px;
+  }
+  .error.show{ display:block; }
+  /* result */
+  .result{ display:none; text-align:center; padding:8px 0 2px; }
+  .result.show{ display:block; }
+  .result .rt{ font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--brand); }
+  .result .avg{ font-size:34px; font-weight:800; margin-top:8px; letter-spacing:-0.01em; }
+  .result .range{ display:flex; justify-content:center; gap:26px; margin-top:10px; }
+  .result .range div{ font-size:12.5px; color:var(--soft); }
+  .result .range b{ display:block; font-size:16px; color:var(--ink); margin-top:1px; }
+  .result .disc{ margin-top:14px; font-size:12px; color:var(--soft); border-top:1px solid var(--line-soft); padding-top:12px; }
+  .result .nodata{ font-size:14.5px; line-height:1.55; color:var(--ink); max-width:380px; margin:10px auto 0; }
+  .result .again{ margin-top:14px; background:transparent; border:1px solid var(--line); border-radius:999px;
+    min-height:40px; padding:0 18px; font-size:13px; font-family:inherit; cursor:pointer; color:var(--ink); }
+  .foot{ margin-top:14px; text-align:center; font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--soft); }
+  .foot a{ color:inherit; text-decoration:none; }
+  .check{ width:44px; height:44px; border-radius:50%; background:var(--brand); color:#fff;
+    display:flex; align-items:center; justify-content:center; margin:0 auto 4px; font-size:22px; }
+</style>
+</head>
+<body>
+<div class="card" id="card">
+  <div class="head">
+    <img id="logo" alt="" style="display:none" referrerpolicy="no-referrer" />
+    <div>
+      <h1 id="t-title"></h1>
+      <div class="sub" id="t-sub"></div>
+    </div>
+  </div>
+
+  <form id="f" novalidate>
+    <div>
+      <label for="municipality" id="l-mun"></label>
+      <input id="municipality" name="municipality" required autocomplete="address-level2" />
+    </div>
+    <div>
+      <label for="neighbourhood" id="l-nb"></label>
+      <input id="neighbourhood" name="neighbourhood" />
+    </div>
+    <div class="row">
+      <div>
+        <label for="ptype" id="l-type"></label>
+        <select id="ptype" name="ptype">
+          <option value="apartment" id="o-ap"></option>
+          <option value="villa_house" id="o-vh"></option>
+          <option value="townhouse" id="o-th"></option>
+          <option value="other" id="o-ot"></option>
+        </select>
+      </div>
+      <div>
+        <label for="size" id="l-size"></label>
+        <input id="size" name="size" type="number" min="1" max="99999" inputmode="numeric" required />
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label for="bedrooms" id="l-bed"></label>
+        <input id="bedrooms" name="bedrooms" type="number" min="0" max="50" inputmode="numeric" />
+      </div>
+      <div>
+        <label for="condition" id="l-cond"></label>
+        <select id="condition" name="condition">
+          <option value="needs_renovation" id="o-c1"></option>
+          <option value="fair" id="o-c2"></option>
+          <option value="good" id="o-c3" selected></option>
+          <option value="excellent" id="o-c4"></option>
+        </select>
+      </div>
+    </div>
+    <div>
+      <label for="cname" id="l-name"></label>
+      <input id="cname" name="cname" autocomplete="name" />
+    </div>
+    <div class="row">
+      <div>
+        <label for="email" id="l-email"></label>
+        <input id="email" name="email" type="email" autocomplete="email" />
+      </div>
+      <div>
+        <label for="phone" id="l-phone"></label>
+        <input id="phone" name="phone" type="tel" autocomplete="tel" />
+      </div>
+    </div>
+    <div class="note" id="t-contactNote"></div>
+
+    <div class="consents">
+      <label class="consent"><input type="checkbox" id="c-priv" /> <span id="t-consentPrivacy"></span></label>
+      <label class="consent"><input type="checkbox" id="c-cont" /> <span id="t-consentContact"></span></label>
+    </div>
+
+    <div class="error" id="err" role="alert"></div>
+    <button class="go" type="submit" id="go"></button>
+  </form>
+
+  <div class="result" id="res">
+    <div class="check" aria-hidden="true">✓</div>
+    <div class="rt" id="t-resultTitle"></div>
+    <div id="res-est">
+      <div class="avg" id="r-avg"></div>
+      <div class="range">
+        <div><span id="t-low"></span><b id="r-low"></b></div>
+        <div><span id="t-high"></span><b id="r-high"></b></div>
+      </div>
+      <div class="disc" id="t-disclaimer"></div>
+    </div>
+    <div id="res-none" style="display:none">
+      <p class="nodata" id="t-noData"></p>
+    </div>
+    <button class="again" type="button" id="again"></button>
+  </div>
+
+  <div class="foot"><a href="https://aivena.es" target="_blank" rel="noopener">Powered by AIVENA</a></div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ───────────────────────── i18n (13 languages, handwritten) ───────────────── */
+var L = {
+en:{title:"Free property valuation",sub:"Get an instant estimate of your property's value",mun:"Town / municipality",munPh:"e.g. Torrevieja",nb:"Area / urbanisation",type:"Property type",ap:"Apartment",vh:"Villa / house",th:"Townhouse",ot:"Other",size:"Size (m²)",bed:"Bedrooms",cond:"Condition",c1:"Needs renovation",c2:"Fair",c3:"Good",c4:"Excellent",name:"Name",email:"Email",phone:"Phone",contactNote:"Please provide at least an email or a phone number.",consentPrivacy:"I have read and accept the privacy policy and consent to my data being processed to prepare this valuation.",consentContact:"I agree that {agency} may contact me about my property valuation.",agency:"the agency",submit:"Get my valuation",submitting:"Calculating…",resultTitle:"Estimated value",low:"Low",high:"High",disclaimer:"This is an indicative online estimate, not a formal valuation.",noData:"Thank you — we don't have enough local data for an instant estimate, so a local expert will prepare your valuation and contact you shortly.",errGeneric:"Something went wrong — please try again, and contact the agency if it keeps happening.",errConsent:"Please tick both boxes so we can prepare your valuation.",errContact:"Please add an email or a phone number so we can send your valuation.",errRequired:"Please fill in the required fields.",optional:"(optional)",again:"Request another valuation"},
+es:{title:"Valoración gratuita de tu propiedad",sub:"Recibe una estimación del valor al instante",mun:"Municipio",munPh:"p. ej. Torrevieja",nb:"Zona / urbanización",type:"Tipo de propiedad",ap:"Piso / apartamento",vh:"Villa / chalet",th:"Adosado",ot:"Otro",size:"Superficie (m²)",bed:"Dormitorios",cond:"Estado",c1:"Para reformar",c2:"Aceptable",c3:"Bueno",c4:"Excelente",name:"Nombre",email:"Correo electrónico",phone:"Teléfono",contactNote:"Indica al menos un correo o un teléfono.",consentPrivacy:"He leído y acepto la política de privacidad y consiento el tratamiento de mis datos para preparar esta valoración.",consentContact:"Acepto que {agency} se ponga en contacto conmigo sobre la valoración de mi propiedad.",agency:"la agencia",submit:"Obtener mi valoración",submitting:"Calculando…",resultTitle:"Valor estimado",low:"Mínimo",high:"Máximo",disclaimer:"Estimación online orientativa; no constituye una tasación oficial.",noData:"Gracias. No tenemos suficientes datos de la zona para una estimación instantánea: un experto local preparará tu valoración y se pondrá en contacto contigo en breve.",errGeneric:"Algo ha salido mal. Vuelve a intentarlo y, si persiste, contacta con la agencia.",errConsent:"Marca las dos casillas para que podamos preparar tu valoración.",errContact:"Añade un correo o un teléfono para poder enviarte la valoración.",errRequired:"Completa los campos obligatorios.",optional:"(opcional)",again:"Solicitar otra valoración"},
+de:{title:"Kostenlose Immobilienbewertung",sub:"Erhalten Sie sofort eine Werteinschätzung",mun:"Ort / Gemeinde",munPh:"z. B. Torrevieja",nb:"Lage / Urbanisation",type:"Immobilientyp",ap:"Wohnung",vh:"Villa / Haus",th:"Reihenhaus",ot:"Sonstiges",size:"Wohnfläche (m²)",bed:"Schlafzimmer",cond:"Zustand",c1:"Renovierungsbedürftig",c2:"Mittel",c3:"Gut",c4:"Sehr gut",name:"Name",email:"E-Mail",phone:"Telefon",contactNote:"Bitte geben Sie mindestens eine E-Mail-Adresse oder Telefonnummer an.",consentPrivacy:"Ich habe die Datenschutzerklärung gelesen, akzeptiere sie und willige in die Verarbeitung meiner Daten zur Erstellung dieser Bewertung ein.",consentContact:"Ich bin damit einverstanden, dass {agency} mich bezüglich der Bewertung meiner Immobilie kontaktiert.",agency:"die Agentur",submit:"Bewertung erhalten",submitting:"Wird berechnet…",resultTitle:"Geschätzter Wert",low:"Untergrenze",high:"Obergrenze",disclaimer:"Unverbindliche Online-Schätzung – kein offizielles Wertgutachten.",noData:"Vielen Dank. Für eine Sofortschätzung fehlen uns ausreichende Daten zu dieser Lage – ein lokaler Experte erstellt Ihre Bewertung und meldet sich in Kürze bei Ihnen.",errGeneric:"Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut und kontaktieren Sie die Agentur, falls das Problem bestehen bleibt.",errConsent:"Bitte kreuzen Sie beide Kästchen an, damit wir Ihre Bewertung erstellen können.",errContact:"Bitte geben Sie eine E-Mail-Adresse oder Telefonnummer an.",errRequired:"Bitte füllen Sie die Pflichtfelder aus.",optional:"(optional)",again:"Weitere Bewertung anfordern"},
+nl:{title:"Gratis woningwaardering",sub:"Ontvang direct een schatting van de waarde",mun:"Gemeente / plaats",munPh:"bijv. Torrevieja",nb:"Wijk / urbanisatie",type:"Type woning",ap:"Appartement",vh:"Villa / huis",th:"Rijtjeshuis / geschakeld",ot:"Anders",size:"Woonoppervlak (m²)",bed:"Slaapkamers",cond:"Staat",c1:"Renovatie nodig",c2:"Redelijk",c3:"Goed",c4:"Uitstekend",name:"Naam",email:"E-mail",phone:"Telefoon",contactNote:"Vul minimaal een e-mailadres of telefoonnummer in.",consentPrivacy:"Ik heb het privacybeleid gelezen en accepteer het, en geef toestemming om mijn gegevens te verwerken voor deze waardering.",consentContact:"Ik ga ermee akkoord dat {agency} contact met mij opneemt over de waardering van mijn woning.",agency:"het makelaarskantoor",submit:"Waardering ontvangen",submitting:"Berekenen…",resultTitle:"Geschatte waarde",low:"Minimaal",high:"Maximaal",disclaimer:"Indicatieve online schatting – geen officiële taxatie.",noData:"Bedankt. We hebben onvoldoende lokale gegevens voor een directe schatting; een lokale expert stelt uw waardering op en neemt binnenkort contact met u op.",errGeneric:"Er is iets misgegaan. Probeer het opnieuw en neem contact op met het kantoor als het probleem aanhoudt.",errConsent:"Vink beide vakjes aan zodat we uw waardering kunnen voorbereiden.",errContact:"Voeg een e-mailadres of telefoonnummer toe.",errRequired:"Vul de verplichte velden in.",optional:"(optioneel)",again:"Nog een waardering aanvragen"},
+fr:{title:"Estimation gratuite de votre bien",sub:"Recevez immédiatement une estimation de la valeur",mun:"Commune",munPh:"p. ex. Torrevieja",nb:"Quartier / urbanisation",type:"Type de bien",ap:"Appartement",vh:"Villa / maison",th:"Maison mitoyenne",ot:"Autre",size:"Surface (m²)",bed:"Chambres",cond:"État",c1:"À rénover",c2:"Correct",c3:"Bon",c4:"Excellent",name:"Nom",email:"E-mail",phone:"Téléphone",contactNote:"Indiquez au moins un e-mail ou un numéro de téléphone.",consentPrivacy:"J'ai lu et j'accepte la politique de confidentialité et je consens au traitement de mes données pour préparer cette estimation.",consentContact:"J'accepte que {agency} me contacte au sujet de l'estimation de mon bien.",agency:"l'agence",submit:"Obtenir mon estimation",submitting:"Calcul en cours…",resultTitle:"Valeur estimée",low:"Minimum",high:"Maximum",disclaimer:"Estimation en ligne indicative ; ne constitue pas une expertise officielle.",noData:"Merci. Nous manquons de données locales pour une estimation immédiate : un expert local préparera votre estimation et vous contactera prochainement.",errGeneric:"Une erreur s'est produite. Réessayez et contactez l'agence si le problème persiste.",errConsent:"Cochez les deux cases pour que nous puissions préparer votre estimation.",errContact:"Ajoutez un e-mail ou un numéro de téléphone.",errRequired:"Veuillez remplir les champs obligatoires.",optional:"(facultatif)",again:"Demander une autre estimation"},
+pl:{title:"Bezpłatna wycena nieruchomości",sub:"Otrzymaj natychmiastową wycenę wartości",mun:"Miejscowość",munPh:"np. Torrevieja",nb:"Dzielnica / osiedle",type:"Rodzaj nieruchomości",ap:"Mieszkanie",vh:"Willa / dom",th:"Szeregowiec",ot:"Inne",size:"Powierzchnia (m²)",bed:"Sypialnie",cond:"Stan",c1:"Do remontu",c2:"Średni",c3:"Dobry",c4:"Bardzo dobry",name:"Imię i nazwisko",email:"E-mail",phone:"Telefon",contactNote:"Podaj przynajmniej adres e-mail lub numer telefonu.",consentPrivacy:"Zapoznałem/-am się z polityką prywatności i akceptuję ją oraz wyrażam zgodę na przetwarzanie moich danych w celu przygotowania tej wyceny.",consentContact:"Wyrażam zgodę na kontakt ze strony {agency} w sprawie wyceny mojej nieruchomości.",agency:"agencji",submit:"Otrzymaj wycenę",submitting:"Obliczanie…",resultTitle:"Szacunkowa wartość",low:"Minimum",high:"Maksimum",disclaimer:"Orientacyjna wycena online – nie stanowi oficjalnej wyceny rzeczoznawcy.",noData:"Dziękujemy. Nie mamy wystarczających danych z tej okolicy, aby podać natychmiastową wycenę — lokalny ekspert przygotuje wycenę i wkrótce się z Tobą skontaktuje.",errGeneric:"Coś poszło nie tak. Spróbuj ponownie, a jeśli problem się powtarza, skontaktuj się z agencją.",errConsent:"Zaznacz oba pola, abyśmy mogli przygotować wycenę.",errContact:"Dodaj adres e-mail lub numer telefonu.",errRequired:"Uzupełnij wymagane pola.",optional:"(opcjonalnie)",again:"Poproś o kolejną wycenę"},
+sv:{title:"Gratis värdering av din bostad",sub:"Få en uppskattning av värdet direkt",mun:"Kommun / ort",munPh:"t.ex. Torrevieja",nb:"Område / urbanisation",type:"Typ av bostad",ap:"Lägenhet",vh:"Villa / hus",th:"Radhus",ot:"Annat",size:"Boyta (m²)",bed:"Sovrum",cond:"Skick",c1:"Renoveringsbehov",c2:"Acceptabelt",c3:"Bra",c4:"Utmärkt",name:"Namn",email:"E-post",phone:"Telefon",contactNote:"Ange minst e-post eller telefonnummer.",consentPrivacy:"Jag har läst och godkänner integritetspolicyn och samtycker till att mina uppgifter behandlas för att ta fram denna värdering.",consentContact:"Jag godkänner att {agency} kontaktar mig angående värderingen av min bostad.",agency:"mäklaren",submit:"Få min värdering",submitting:"Beräknar…",resultTitle:"Uppskattat värde",low:"Lägst",high:"Högst",disclaimer:"Vägledande onlineuppskattning – ingen officiell värdering.",noData:"Tack! Vi har inte tillräckligt med lokala data för en direkt uppskattning – en lokal expert tar fram din värdering och hör av sig inom kort.",errGeneric:"Något gick fel. Försök igen och kontakta mäklaren om problemet kvarstår.",errConsent:"Kryssa i båda rutorna så att vi kan ta fram din värdering.",errContact:"Lägg till e-post eller telefonnummer.",errRequired:"Fyll i de obligatoriska fälten.",optional:"(valfritt)",again:"Begär en ny värdering"},
+no:{title:"Gratis verdivurdering av boligen din",sub:"Få et verdiestimat med en gang",mun:"Kommune / sted",munPh:"f.eks. Torrevieja",nb:"Område / urbanisasjon",type:"Boligtype",ap:"Leilighet",vh:"Villa / enebolig",th:"Rekkehus",ot:"Annet",size:"Boligareal (m²)",bed:"Soverom",cond:"Stand",c1:"Oppussingsbehov",c2:"Grei",c3:"God",c4:"Svært god",name:"Navn",email:"E-post",phone:"Telefon",contactNote:"Oppgi minst e-post eller telefonnummer.",consentPrivacy:"Jeg har lest og godtar personvernerklæringen og samtykker til at opplysningene mine behandles for å utarbeide denne verdivurderingen.",consentContact:"Jeg godtar at {agency} kontakter meg om verdivurderingen av boligen min.",agency:"megleren",submit:"Få min verdivurdering",submitting:"Beregner…",resultTitle:"Estimert verdi",low:"Laveste",high:"Høyeste",disclaimer:"Veiledende nettestimat – ikke en offisiell verdivurdering.",noData:"Takk! Vi har ikke nok lokale data til et øyeblikkelig estimat – en lokal ekspert utarbeider verdivurderingen din og tar kontakt snart.",errGeneric:"Noe gikk galt. Prøv igjen, og kontakt megleren hvis problemet vedvarer.",errConsent:"Huk av begge boksene slik at vi kan utarbeide verdivurderingen din.",errContact:"Legg til e-post eller telefonnummer.",errRequired:"Fyll ut de obligatoriske feltene.",optional:"(valgfritt)",again:"Be om en ny verdivurdering"},
+da:{title:"Gratis vurdering af din bolig",sub:"Få et estimat af værdien med det samme",mun:"Kommune / by",munPh:"f.eks. Torrevieja",nb:"Område / urbanisation",type:"Boligtype",ap:"Lejlighed",vh:"Villa / hus",th:"Rækkehus",ot:"Andet",size:"Boligareal (m²)",bed:"Soveværelser",cond:"Stand",c1:"Renoveringsbehov",c2:"Rimelig",c3:"God",c4:"Rigtig god",name:"Navn",email:"E-mail",phone:"Telefon",contactNote:"Angiv mindst en e-mail eller et telefonnummer.",consentPrivacy:"Jeg har læst og accepterer privatlivspolitikken og giver samtykke til, at mine oplysninger behandles for at udarbejde denne vurdering.",consentContact:"Jeg accepterer, at {agency} kontakter mig om vurderingen af min bolig.",agency:"mægleren",submit:"Få min vurdering",submitting:"Beregner…",resultTitle:"Anslået værdi",low:"Laveste",high:"Højeste",disclaimer:"Vejledende online-estimat – ikke en officiel vurdering.",noData:"Tak! Vi har ikke nok lokale data til et øjeblikkeligt estimat – en lokal ekspert udarbejder din vurdering og kontakter dig snarest.",errGeneric:"Noget gik galt. Prøv igen, og kontakt mægleren, hvis problemet fortsætter.",errConsent:"Sæt kryds i begge felter, så vi kan udarbejde din vurdering.",errContact:"Tilføj en e-mail eller et telefonnummer.",errRequired:"Udfyld de obligatoriske felter.",optional:"(valgfrit)",again:"Anmod om en ny vurdering"},
+fi:{title:"Ilmainen asunnon arviointi",sub:"Saat arvion asuntosi arvosta heti",mun:"Kunta / paikkakunta",munPh:"esim. Torrevieja",nb:"Alue / urbanisaatio",type:"Asunnon tyyppi",ap:"Kerrostaloasunto",vh:"Huvila / omakotitalo",th:"Rivitalo",ot:"Muu",size:"Pinta-ala (m²)",bed:"Makuuhuoneet",cond:"Kunto",c1:"Remontoitava",c2:"Tyydyttävä",c3:"Hyvä",c4:"Erinomainen",name:"Nimi",email:"Sähköposti",phone:"Puhelin",contactNote:"Anna vähintään sähköpostiosoite tai puhelinnumero.",consentPrivacy:"Olen lukenut ja hyväksyn tietosuojakäytännön ja annan suostumukseni tietojeni käsittelyyn tämän arvion laatimista varten.",consentContact:"Hyväksyn, että {agency} ottaa minuun yhteyttä asuntoni arviointiin liittyen.",agency:"välittäjä",submit:"Pyydä arvio",submitting:"Lasketaan…",resultTitle:"Arvioitu arvo",low:"Alin",high:"Ylin",disclaimer:"Suuntaa-antava verkkoarvio – ei virallinen arviokirja.",noData:"Kiitos! Meillä ei ole riittävästi paikallista dataa välittömään arvioon – paikallinen asiantuntija laatii arvion ja ottaa sinuun pian yhteyttä.",errGeneric:"Jotain meni vikaan. Yritä uudelleen ja ota yhteyttä välittäjään, jos ongelma jatkuu.",errConsent:"Rastita molemmat ruudut, jotta voimme laatia arviosi.",errContact:"Lisää sähköpostiosoite tai puhelinnumero.",errRequired:"Täytä pakolliset kentät.",optional:"(valinnainen)",again:"Pyydä uusi arvio"},
+ru:{title:"Бесплатная оценка вашей недвижимости",sub:"Получите оценку стоимости мгновенно",mun:"Город / муниципалитет",munPh:"напр., Торревьеха",nb:"Район / урбанизация",type:"Тип недвижимости",ap:"Квартира",vh:"Вилла / дом",th:"Таунхаус",ot:"Другое",size:"Площадь (м²)",bed:"Спальни",cond:"Состояние",c1:"Требует ремонта",c2:"Удовлетворительное",c3:"Хорошее",c4:"Отличное",name:"Имя",email:"Эл. почта",phone:"Телефон",contactNote:"Укажите хотя бы эл. почту или телефон.",consentPrivacy:"Я ознакомился(-ась) с политикой конфиденциальности, принимаю её и даю согласие на обработку моих данных для подготовки этой оценки.",consentContact:"Я даю согласие на контакт со стороны {agency} по поводу оценки моей недвижимости.",agency:"агентства",submit:"Получить оценку",submitting:"Расчёт…",resultTitle:"Оценочная стоимость",low:"Минимум",high:"Максимум",disclaimer:"Ориентировочная онлайн-оценка; не является официальной оценкой.",noData:"Спасибо! Нам не хватает локальных данных для мгновенной оценки — местный эксперт подготовит вашу оценку и вскоре свяжется с вами.",errGeneric:"Что-то пошло не так. Попробуйте ещё раз; если проблема сохраняется, свяжитесь с агентством.",errConsent:"Отметьте оба поля, чтобы мы могли подготовить вашу оценку.",errContact:"Добавьте эл. почту или номер телефона.",errRequired:"Заполните обязательные поля.",optional:"(необязательно)",again:"Запросить ещё одну оценку"},
+it:{title:"Valutazione gratuita del tuo immobile",sub:"Ricevi subito una stima del valore",mun:"Comune",munPh:"es. Torrevieja",nb:"Zona / urbanizzazione",type:"Tipo di immobile",ap:"Appartamento",vh:"Villa / casa",th:"Casa a schiera",ot:"Altro",size:"Superficie (m²)",bed:"Camere da letto",cond:"Stato",c1:"Da ristrutturare",c2:"Discreto",c3:"Buono",c4:"Eccellente",name:"Nome",email:"E-mail",phone:"Telefono",contactNote:"Indica almeno un'e-mail o un numero di telefono.",consentPrivacy:"Ho letto e accetto l'informativa sulla privacy e acconsento al trattamento dei miei dati per preparare questa valutazione.",consentContact:"Accetto che {agency} mi contatti riguardo alla valutazione del mio immobile.",agency:"l'agenzia",submit:"Richiedi la valutazione",submitting:"Calcolo in corso…",resultTitle:"Valore stimato",low:"Minimo",high:"Massimo",disclaimer:"Stima online indicativa; non costituisce una perizia ufficiale.",noData:"Grazie! Non disponiamo di dati locali sufficienti per una stima immediata: un esperto locale preparerà la tua valutazione e ti contatterà a breve.",errGeneric:"Qualcosa è andato storto. Riprova e contatta l'agenzia se il problema persiste.",errConsent:"Spunta entrambe le caselle così possiamo preparare la tua valutazione.",errContact:"Aggiungi un'e-mail o un numero di telefono.",errRequired:"Compila i campi obbligatori.",optional:"(facoltativo)",again:"Richiedi un'altra valutazione"},
+pt:{title:"Avaliação gratuita do seu imóvel",sub:"Receba de imediato uma estimativa do valor",mun:"Município",munPh:"p. ex. Torrevieja",nb:"Zona / urbanização",type:"Tipo de imóvel",ap:"Apartamento",vh:"Moradia / vivenda",th:"Casa geminada",ot:"Outro",size:"Área (m²)",bed:"Quartos",cond:"Estado",c1:"Para renovar",c2:"Razoável",c3:"Bom",c4:"Excelente",name:"Nome",email:"E-mail",phone:"Telefone",contactNote:"Indique pelo menos um e-mail ou telefone.",consentPrivacy:"Li e aceito a política de privacidade e consinto no tratamento dos meus dados para preparar esta avaliação.",consentContact:"Aceito que {agency} me contacte sobre a avaliação do meu imóvel.",agency:"a agência",submit:"Obter a minha avaliação",submitting:"A calcular…",resultTitle:"Valor estimado",low:"Mínimo",high:"Máximo",disclaimer:"Estimativa online indicativa; não constitui uma avaliação oficial.",noData:"Obrigado! Não temos dados locais suficientes para uma estimativa imediata — um especialista local irá preparar a sua avaliação e entrará em contacto em breve.",errGeneric:"Algo correu mal. Tente novamente e contacte a agência se o problema persistir.",errConsent:"Assinale as duas caixas para podermos preparar a sua avaliação.",errContact:"Adicione um e-mail ou um número de telefone.",errRequired:"Preencha os campos obrigatórios.",optional:"(opcional)",again:"Pedir outra avaliação"}
+};
+var SUPPORTED = Object.keys(L);
+
+/* ───────────────────────── setup ───────────────────────── */
+var EF_URL = "https://atminvhrybxegpdtnnpl.supabase.co/functions/v1/property-valuation";
+var q = new URLSearchParams(location.search);
+var agencyId = q.get("agency") || "";
+var agencyName = (q.get("name") || "").slice(0, 80);
+var color = q.get("color") || "";
+var logo = q.get("logo") || "";
+
+var lang = (q.get("lang") || "").toLowerCase().split("-")[0];
+if (SUPPORTED.indexOf(lang) === -1) {
+  var nav = (navigator.languages || [navigator.language || "en"]);
+  lang = "en";
+  for (var i = 0; i < nav.length; i++) {
+    var c = String(nav[i]).toLowerCase().split("-")[0];
+    if (c === "nb" || c === "nn") c = "no";
+    if (SUPPORTED.indexOf(c) !== -1) { lang = c; break; }
+  }
+}
+var T = L[lang];
+document.documentElement.lang = lang;
+
+if (/^#[0-9a-fA-F]{3,8}$/.test(color)) {
+  document.documentElement.style.setProperty("--brand", color);
+}
+if (/^https:\/\//.test(logo)) {
+  var img = document.getElementById("logo");
+  img.src = logo;
+  img.style.display = "";
+  img.onerror = function(){ img.style.display = "none"; };
+}
+
+function el(id){ return document.getElementById(id); }
+function setText(id, s){ el(id).textContent = s; }
+var agencyLabel = agencyName || T.agency;
+
+setText("t-title", T.title);
+setText("t-sub", T.sub);
+setText("l-mun", T.mun);
+el("municipality").placeholder = T.munPh;
+el("l-nb").innerHTML = "";
+el("l-nb").appendChild(document.createTextNode(T.nb + " "));
+(function(){ var o=document.createElement("span"); o.className="opt"; o.textContent=T.optional; el("l-nb").appendChild(o); })();
+setText("l-type", T.type);
+setText("o-ap", T.ap); setText("o-vh", T.vh); setText("o-th", T.th); setText("o-ot", T.ot);
+setText("l-size", T.size);
+(function(){ var l=el("l-bed"); l.textContent=T.bed+" "; var o=document.createElement("span"); o.className="opt"; o.textContent=T.optional; l.appendChild(o); })();
+setText("l-cond", T.cond);
+setText("o-c1", T.c1); setText("o-c2", T.c2); setText("o-c3", T.c3); setText("o-c4", T.c4);
+(function(){ var l=el("l-name"); l.textContent=T.name+" "; var o=document.createElement("span"); o.className="opt"; o.textContent=T.optional; l.appendChild(o); })();
+setText("l-email", T.email);
+setText("l-phone", T.phone);
+setText("t-contactNote", T.contactNote);
+var privacyText = T.consentPrivacy;
+var contactText = T.consentContact.replace("{agency}", agencyLabel);
+setText("t-consentPrivacy", privacyText);
+setText("t-consentContact", contactText);
+setText("go", T.submit);
+setText("t-resultTitle", T.resultTitle);
+setText("t-low", T.low);
+setText("t-high", T.high);
+setText("t-disclaimer", T.disclaimer);
+setText("t-noData", T.noData);
+setText("again", T.again);
+document.title = T.title;
+
+/* ───────────────────────── height reporting ───────────────────────── */
+function reportHeight(){
+  try {
+    parent.postMessage(
+      { type: "aivena-valuation-height", height: document.documentElement.scrollHeight + 8 },
+      "*"
+    );
+  } catch (e) {}
+}
+window.addEventListener("load", reportHeight);
+window.addEventListener("resize", reportHeight);
+setTimeout(reportHeight, 300);
+
+/* ───────────────────────── submit ───────────────────────── */
+var f = el("f"), err = el("err"), go = el("go");
+function showErr(msg){ err.textContent = msg; err.classList.add("show"); reportHeight(); }
+function clearErr(){ err.classList.remove("show"); }
+
+var EUR = new Intl.NumberFormat(lang === "en" ? "en-IE" : lang, {
+  style: "currency", currency: "EUR", maximumFractionDigits: 0
+});
+
+f.addEventListener("submit", function (ev) {
+  ev.preventDefault();
+  clearErr();
+
+  var municipality = el("municipality").value.trim();
+  var size = parseFloat(el("size").value);
+  var email = el("email").value.trim();
+  var phone = el("phone").value.trim();
+
+  if (!municipality || !size || size <= 0) { showErr(T.errRequired); return; }
+  if (!email && !phone) { showErr(T.errContact); return; }
+  if (!el("c-priv").checked || !el("c-cont").checked) { showErr(T.errConsent); return; }
+
+  var bedrooms = parseInt(el("bedrooms").value, 10);
+  var body = {
+    agency_id: agencyId,
+    municipality: municipality,
+    size_m2: size,
+    contact_name: el("cname").value.trim() || null,
+    contact_email: email || null,
+    contact_phone: phone || null,
+    neighbourhood: el("neighbourhood").value.trim() || null,
+    property_type: el("ptype").value,
+    bedrooms: Number.isInteger(bedrooms) ? bedrooms : null,
+    condition: el("condition").value,
+    preferred_language: lang,
+    consent_privacy: true,
+    consent_contact: true,
+    consent_text: "[privacy] " + privacyText + " | [contact] " + contactText,
+    source_meta: { widget: "valuation-v1", host: (function(){ try { return document.referrer ? new URL(document.referrer).hostname : null; } catch(e){ return null; } })(), lang: lang }
+  };
+
+  go.disabled = true;
+  go.textContent = T.submitting;
+
+  fetch(EF_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  })
+    .then(function (r) { return r.json().then(function (d) { return { status: r.status, data: d }; }); })
+    .then(function (res) {
+      var d = res.data || {};
+      if (!d.ok) {
+        var code = d.error || "";
+        var msg = code === "consent_required" ? T.errConsent
+          : code === "missing_contact" ? T.errContact
+          : (code === "missing_municipality" || code === "invalid_size") ? T.errRequired
+          : T.errGeneric;
+        showErr(msg);
+        go.disabled = false;
+        go.textContent = T.submit;
+        return;
+      }
+      // success → show result
+      f.style.display = "none";
+      var res$ = el("res");
+      res$.classList.add("show");
+      if (d.found && d.estimate && d.estimate.avg != null) {
+        el("r-avg").textContent = EUR.format(d.estimate.avg);
+        el("r-low").textContent = d.estimate.low != null ? EUR.format(d.estimate.low) : "—";
+        el("r-high").textContent = d.estimate.high != null ? EUR.format(d.estimate.high) : "—";
+        el("res-est").style.display = "";
+        el("res-none").style.display = "none";
+      } else {
+        el("res-est").style.display = "none";
+        el("res-none").style.display = "";
+      }
+      reportHeight();
+    })
+    .catch(function () {
+      showErr(T.errGeneric);
+      go.disabled = false;
+      go.textContent = T.submit;
+    });
+});
+
+el("again").addEventListener("click", function () {
+  el("res").classList.remove("show");
+  f.style.display = "";
+  go.disabled = false;
+  go.textContent = T.submit;
+  reportHeight();
+});
+})();
+</script>
+</body>
+</html>

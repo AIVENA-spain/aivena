@@ -742,6 +742,44 @@
       "badType": "Upload alstublieft een PNG, JPG of WebP afbeelding.",
       "tooLarge": "Die afbeelding is groter dan 10 MB — kies alstublieft een kleinere.",
       "uploadFailed": "Kon die afbeelding niet uploaden — probeer het opnieuw, en neem contact op met de ondersteuning als het blijft gebeuren."
+    },
+    "create": "Creëren",
+    "gen": {
+      "title": "Genereer een afbeelding",
+      "subtitle": "Beschrijf wat u wilt en AIVENA genereert het in de stijl van uw bureau.",
+      "typeAd": "Advertentie creatie",
+      "typeSocial": "Sociale post",
+      "typeRenovation": "Renovatie",
+      "descAd": "Een merkadvertentie afbeelding voor Meta en Facebook, in de stijl van uw bureau.",
+      "descSocial": "Een kant-en-klaar beeld voor Instagram of Facebook.",
+      "descRenovation": "Herstyle een lege of verouderde kamer van een foto die u uploadt.",
+      "hintAd": "bijv. Appartement met zeezicht in Villajoyosa tijdens het gouden uur, warm en uitnodigend, ruimte voor een prijslabel",
+      "hintSocial": "bijv. Aankondiging van nieuwe aanbieding voor een moderne villa met een zwembad in Moraira, helder en schoon",
+      "hintRenovation": "bijv. Meubileer deze woonkamer in een warme mediterrane stijl met planten en natuurlijk licht",
+      "unlimited": "Onbeperkt deze maand",
+      "remaining": "{remaining} van {quota} over deze maand",
+      "renovationLocked": "Renovatie is beschikbaar op het Onbeperkt plan. Upgrade om kamers van een foto te restylen.",
+      "roomPhoto": "Kamerfoto",
+      "uploadRoom": "Upload een kamerfoto",
+      "uploadHint": "PNG, JPG of WebP · tot 10 MB",
+      "uploading": "Uploaden…",
+      "removeImage": "Verwijder afbeelding",
+      "description": "Beschrijving",
+      "size": "Grootte",
+      "sizeDefault": "Standaard",
+      "generate": "Genereren",
+      "starting": "Starten…",
+      "errPrompt": "Voeg alstublieft een korte beschrijving toe van de afbeelding die u wilt.",
+      "errPromptLong": "Die beschrijving is te lang — verkort het alstublieft.",
+      "errSource": "Renovatie heeft een kamerfoto nodig om mee te werken — upload er een.",
+      "errUploadType": "Upload alstublieft een PNG, JPG of WebP afbeelding.",
+      "errUploadSize": "Die afbeelding is groter dan 10 MB — gebruik alstublieft een kleinere.",
+      "errUploadFailed": "Kon die afbeelding niet uploaden — probeer het opnieuw.",
+      "emptyTitle": "Nog niets gegenereerd",
+      "emptyBody": "Gegenereerde afbeeldingen verschijnen hier. Ze duren ongeveer 10–30 seconden.",
+      "generating": "Genereren…",
+      "genFailed": "Kon deze niet genereren. Probeer het opnieuw.",
+      "openFull": "Open volledige afbeelding"
     }
   },
   "assistant": {
@@ -812,6 +850,6 @@
     "status_cancelled": "Geannuleerd",
     "status_rescheduled": "Verschoven",
     "status_completed": "Voltooid",
-    "status_no_show": "No-show"
+    "status_no_show": "Geen-show"
   }
 }

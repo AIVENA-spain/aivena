@@ -62,7 +62,7 @@
       "columnStatus": "Status",
       "columnReply": "AI vorgeschlagene Antwort",
       "leadTypeDefault": "Käufer",
-      "aiTag": "AI"
+      "aiTag": "KI"
     },
     "panel": {
       "selectALead": "Wählen Sie einen Lead aus, um Details zu sehen.",
@@ -742,6 +742,44 @@
       "badType": "Bitte lade ein PNG-, JPG- oder WebP-Bild hoch.",
       "tooLarge": "Dieses Bild ist über 10 MB — bitte wähle ein kleineres.",
       "uploadFailed": "Das Bild konnte nicht hochgeladen werden — bitte versuche es erneut und kontaktiere den Support, wenn es weiterhin auftritt."
+    },
+    "create": "Erstellen",
+    "gen": {
+      "title": "Ein Bild generieren",
+      "subtitle": "Beschreibe, was du möchtest, und AIVENA generiert es im Look deiner Agentur.",
+      "typeAd": "Anzeigengestaltung",
+      "typeSocial": "Sozialer Beitrag",
+      "typeRenovation": "Renovierung",
+      "descAd": "Ein markenbezogenes Anzeigenbild für Meta und Facebook, im Look deiner Agentur.",
+      "descSocial": "Ein bereit zum Posten Bild für Instagram oder Facebook.",
+      "descRenovation": "Gestalte einen leeren oder veralteten Raum aus einem Foto, das du hochlädst, neu.",
+      "hintAd": "z.B. Meerblickwohnung in Villajoyosa zur goldenen Stunde, warm und einladend, Platz für ein Preisschild",
+      "hintSocial": "z.B. Ankündigung einer neuen Immobilie für eine moderne Villa mit Pool in Moraira, hell und sauber",
+      "hintRenovation": "z.B. Richte dieses Wohnzimmer in einem warmen mediterranen Stil mit Pflanzen und natürlichem Licht ein",
+      "unlimited": "Unbegrenzt diesen Monat",
+      "remaining": "{remaining} von {quota} übrig in diesem Monat",
+      "renovationLocked": "Renovierung ist im Unbegrenzten Plan verfügbar. Upgrade, um Räume aus einem Foto neu zu gestalten.",
+      "roomPhoto": "Raumfoto",
+      "uploadRoom": "Lade ein Raumfoto hoch",
+      "uploadHint": "PNG, JPG oder WebP · bis zu 10 MB",
+      "uploading": "Hochladen…",
+      "removeImage": "Bild entfernen",
+      "description": "Beschreibung",
+      "size": "Größe",
+      "sizeDefault": "Standard",
+      "generate": "Generieren",
+      "starting": "Starte…",
+      "errPrompt": "Bitte füge eine kurze Beschreibung des gewünschten Bildes hinzu.",
+      "errPromptLong": "Diese Beschreibung ist zu lang — bitte kürze sie.",
+      "errSource": "Die Renovierung benötigt ein Raumfoto als Grundlage — bitte lade eines hoch.",
+      "errUploadType": "Bitte lade ein PNG-, JPG- oder WebP-Bild hoch.",
+      "errUploadSize": "Dieses Bild ist über 10 MB — bitte verwende ein kleineres.",
+      "errUploadFailed": "Das Bild konnte nicht hochgeladen werden — bitte versuche es erneut.",
+      "emptyTitle": "Noch nichts generiert",
+      "emptyBody": "Generierte Bilder erscheinen hier. Sie benötigen etwa 10–30 Sekunden.",
+      "generating": "Generiere…",
+      "genFailed": "Dieses Bild konnte nicht generiert werden. Bitte versuche es erneut.",
+      "openFull": "Vollbild öffnen"
     }
   },
   "assistant": {

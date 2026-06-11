@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import {
   ImageIcon,
   Megaphone,
@@ -12,6 +12,7 @@ import {
   TriangleAlert,
   Download,
   Sparkles,
+  type LucideIcon,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -36,10 +37,6 @@ import {
   type GenerateImageInput,
 } from "./studio-actions";
 
-// NOTE: strings are English here — the dashboard's i18n is currently
-// English-placeholder across all 13 locales; these get keyed in the
-// translation pass alongside the rest of Studio.
-
 const UPLOAD_ACCEPT = ["image/png", "image/jpeg", "image/webp"];
 const UPLOAD_MAX_BYTES = 10 * 1024 * 1024;
 const PROMPT_MAX = 4000;
@@ -47,37 +44,10 @@ const POLL_MS = 4000;
 
 type Size = { label: string; w: number | null; h: number | null };
 
-const TYPES: Array<{
-  key: ImageGenType;
-  label: string;
-  icon: typeof ImageIcon;
-  desc: string;
-  promptHint: string;
-}> = [
-  {
-    key: "ad_creative",
-    label: "Ad creative",
-    icon: Megaphone,
-    desc: "A branded ad image for Meta and Facebook, in your agency's look.",
-    promptHint:
-      "e.g. Sea-view apartment in Villajoyosa at golden hour, warm and inviting, space for a price tag",
-  },
-  {
-    key: "social_post",
-    label: "Social post",
-    icon: ImageIcon,
-    desc: "A ready-to-post image for Instagram or Facebook.",
-    promptHint:
-      "e.g. New listing announcement for a modern villa with a pool in Moraira, bright and clean",
-  },
-  {
-    key: "renovation",
-    label: "Renovation",
-    icon: Wand2,
-    desc: "Restyle an empty or dated room from a photo you upload.",
-    promptHint:
-      "e.g. Furnish this living room in a warm Mediterranean style with plants and natural light",
-  },
+const TYPE_KEYS: Array<{ key: ImageGenType; icon: LucideIcon }> = [
+  { key: "ad_creative", icon: Megaphone },
+  { key: "social_post", icon: ImageIcon },
+  { key: "renovation", icon: Wand2 },
 ];
 
 const SIZES: Record<ImageGenType, Size[]> = {
@@ -104,11 +74,28 @@ function isActive(status: string): boolean {
 }
 
 export function ImageGenerator({ planTier }: { planTier: PlanTier }) {
+  const t = useTranslations("studio.gen");
   const locale = useLocale();
   const df = new Intl.DateTimeFormat(intlLocaleFor(locale), {
     dateStyle: "medium",
     timeStyle: "short",
   });
+
+  const TYPE_LABEL: Record<ImageGenType, string> = {
+    ad_creative: t("typeAd"),
+    social_post: t("typeSocial"),
+    renovation: t("typeRenovation"),
+  };
+  const TYPE_DESC: Record<ImageGenType, string> = {
+    ad_creative: t("descAd"),
+    social_post: t("descSocial"),
+    renovation: t("descRenovation"),
+  };
+  const TYPE_HINT: Record<ImageGenType, string> = {
+    ad_creative: t("hintAd"),
+    social_post: t("hintSocial"),
+    renovation: t("hintRenovation"),
+  };
 
   const [type, setType] = useState<ImageGenType>("ad_creative");
   const [prompt, setPrompt] = useState("");
@@ -132,7 +119,6 @@ export function ImageGenerator({ planTier }: { planTier: PlanTier }) {
 
   const renovationLocked = type === "renovation" && planTier !== "unlimited";
 
-  // Initial gallery load.
   useEffect(() => {
     let live = true;
     listGenerationsAction().then((res) => {
@@ -143,16 +129,14 @@ export function ImageGenerator({ planTier }: { planTier: PlanTier }) {
     };
   }, []);
 
-  // Quota per active type.
-  const refreshQuota = useCallback((t: ImageGenType) => {
-    getImageQuotaAction(t).then(setQuota);
+  const refreshQuota = useCallback((tp: ImageGenType) => {
+    getImageQuotaAction(tp).then(setQuota);
   }, []);
   useEffect(() => {
     setQuota(null);
     refreshQuota(type);
   }, [type, refreshQuota]);
 
-  // Poll any in-flight generations until they settle.
   const hasActive = generations.some((g) => isActive(g.status));
   useEffect(() => {
     if (!hasActive) return;
@@ -175,11 +159,11 @@ export function ImageGenerator({ planTier }: { planTier: PlanTier }) {
     if (!file) return;
     setUploadError(null);
     if (!UPLOAD_ACCEPT.includes(file.type)) {
-      setUploadError("Please upload a PNG, JPG, or WebP image.");
+      setUploadError(t("errUploadType"));
       return;
     }
     if (file.size > UPLOAD_MAX_BYTES) {
-      setUploadError("That image is over 10 MB — please use a smaller one.");
+      setUploadError(t("errUploadSize"));
       return;
     }
     setUploading(true);
@@ -197,13 +181,13 @@ export function ImageGenerator({ planTier }: { planTier: PlanTier }) {
         });
       if (upErr) {
         console.error("[image-gen upload]", upErr);
-        setUploadError("Couldn't upload that image — please try again.");
+        setUploadError(t("errUploadFailed"));
         return;
       }
       setSourceUrl(meta.publicUrl);
     } catch (err) {
       console.error("[image-gen upload] unexpected", err);
-      setUploadError("Couldn't upload that image — please try again.");
+      setUploadError(t("errUploadFailed"));
     } finally {
       setUploading(false);
     }
@@ -213,15 +197,15 @@ export function ImageGenerator({ planTier }: { planTier: PlanTier }) {
     setError(null);
     const trimmed = prompt.trim();
     if (!trimmed) {
-      setError("Please add a short description of the image you want.");
+      setError(t("errPrompt"));
       return;
     }
     if (trimmed.length > PROMPT_MAX) {
-      setError("That description is too long — please shorten it.");
+      setError(t("errPromptLong"));
       return;
     }
     if (type === "renovation" && !sourceUrl) {
-      setError("Renovation needs a room photo to work from — please upload one.");
+      setError(t("errSource"));
       return;
     }
     const size = SIZES[type][sizeIdx] ?? SIZES[type][0];
@@ -240,7 +224,6 @@ export function ImageGenerator({ planTier }: { planTier: PlanTier }) {
       refreshQuota(type);
       return;
     }
-    // Optimistically show the new generation; polling fills the result.
     const placeholder: ImageGeneration = {
       id: res.data.generationId,
       generationType: type,
@@ -253,28 +236,28 @@ export function ImageGenerator({ planTier }: { planTier: PlanTier }) {
       height: size.h,
       createdAt: new Date().toISOString(),
     };
-    setGenerations((prev) => [placeholder, ...prev.filter((g) => g.id !== placeholder.id)]);
+    setGenerations((prev) => [
+      placeholder,
+      ...prev.filter((g) => g.id !== placeholder.id),
+    ]);
     setPrompt("");
     setSourceUrl(null);
     refreshQuota(type);
   }
 
-  const active = TYPES.find((tp) => tp.key === type)!;
   const galleryItems = generations.filter((g) => g.generationType === type);
 
   return (
     <div className="flex flex-col gap-5">
       <Card>
         <CardHeader>
-          <CardTitle>Generate an image</CardTitle>
-          <CardDescription>
-            Describe what you want and AIVENA generates it in your agency's look.
-          </CardDescription>
+          <CardTitle>{t("title")}</CardTitle>
+          <CardDescription>{t("subtitle")}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-5">
           {/* Type toggle */}
           <div className="flex flex-wrap gap-2">
-            {TYPES.map((tp) => {
+            {TYPE_KEYS.map((tp) => {
               const on = tp.key === type;
               return (
                 <button
@@ -290,28 +273,31 @@ export function ImageGenerator({ planTier }: { planTier: PlanTier }) {
                   )}
                 >
                   <tp.icon className="h-3.5 w-3.5" aria-hidden />
-                  {tp.label}
+                  {TYPE_LABEL[tp.key]}
                 </button>
               );
             })}
             <div className="ml-auto flex items-center text-[12px] text-muted-foreground">
               {quota
                 ? quota.unlimited
-                  ? "Unlimited this month"
-                  : `${quota.remaining ?? 0} of ${quota.quota ?? 0} left this month`
+                  ? t("unlimited")
+                  : t("remaining", {
+                      remaining: quota.remaining ?? 0,
+                      quota: quota.quota ?? 0,
+                    })
                 : ""}
             </div>
           </div>
-          <p className="-mt-2 text-[12.5px] text-muted-foreground">{active.desc}</p>
+          <p className="-mt-2 text-[12.5px] text-muted-foreground">
+            {TYPE_DESC[type]}
+          </p>
 
           {renovationLocked ? (
             <div className="rounded-lg border border-amber-300/40 bg-amber-50/50 px-3.5 py-3 text-[13px] text-amber-900 dark:border-amber-200/20 dark:bg-amber-200/10 dark:text-amber-200">
-              Renovation is available on the Unlimited plan. Upgrade to restyle
-              rooms from a photo.
+              {t("renovationLocked")}
             </div>
           ) : null}
 
-          {/* Renovation source image */}
           {type === "renovation" && !renovationLocked ? (
             <SourceUploader
               sourceUrl={sourceUrl}
@@ -325,16 +311,15 @@ export function ImageGenerator({ planTier }: { planTier: PlanTier }) {
             />
           ) : null}
 
-          {/* Prompt */}
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="gen-prompt">Description</Label>
+            <Label htmlFor="gen-prompt">{t("description")}</Label>
             <textarea
               id="gen-prompt"
               rows={4}
               value={prompt}
               maxLength={PROMPT_MAX}
               onChange={(e) => setPrompt(e.target.value)}
-              placeholder={active.promptHint}
+              placeholder={TYPE_HINT[type]}
               disabled={renovationLocked}
               className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm leading-relaxed text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60"
             />
@@ -343,9 +328,8 @@ export function ImageGenerator({ planTier }: { planTier: PlanTier }) {
             </span>
           </div>
 
-          {/* Size */}
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="gen-size">Size</Label>
+            <Label htmlFor="gen-size">{t("size")}</Label>
             <select
               id="gen-size"
               value={sizeIdx}
@@ -355,7 +339,7 @@ export function ImageGenerator({ planTier }: { planTier: PlanTier }) {
             >
               {SIZES[type].map((s, i) => (
                 <option key={s.label} value={i}>
-                  {s.label}
+                  {s.label === "Default" ? t("sizeDefault") : s.label}
                 </option>
               ))}
             </select>
@@ -383,14 +367,13 @@ export function ImageGenerator({ planTier }: { planTier: PlanTier }) {
               ) : (
                 <Sparkles className="h-4 w-4" aria-hidden />
               )}
-              {generating ? "Starting…" : "Generate"}
+              {generating ? t("starting") : t("generate")}
             </Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* Gallery */}
-      <Gallery items={galleryItems} typeLabel={active.label} df={df} />
+      <Gallery items={galleryItems} df={df} />
     </div>
   );
 }
@@ -408,10 +391,11 @@ function SourceUploader({
   onPick: (f: File | null) => void;
   onClear: () => void;
 }) {
+  const t = useTranslations("studio.gen");
   const inputRef = useRef<HTMLInputElement>(null);
   return (
     <div className="flex flex-col gap-1.5">
-      <Label>Room photo</Label>
+      <Label>{t("roomPhoto")}</Label>
       <input
         ref={inputRef}
         type="file"
@@ -424,13 +408,13 @@ function SourceUploader({
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={sourceUrl}
-            alt="Room to renovate"
+            alt={t("roomPhoto")}
             className="aspect-square w-40 rounded-lg border border-border object-cover"
           />
           <button
             type="button"
             onClick={onClear}
-            aria-label="Remove image"
+            aria-label={t("removeImage")}
             className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-soft hover:text-foreground"
           >
             <X className="h-3.5 w-3.5" aria-hidden />
@@ -445,10 +429,10 @@ function SourceUploader({
         >
           <UploadCloud className="h-5 w-5 text-muted-foreground" aria-hidden />
           <span className="text-[12.5px] font-medium text-foreground">
-            {uploading ? "Uploading…" : "Upload a room photo"}
+            {uploading ? t("uploading") : t("uploadRoom")}
           </span>
           <span className="text-[11px] text-muted-foreground">
-            PNG, JPG or WebP · up to 10 MB
+            {t("uploadHint")}
           </span>
         </button>
       )}
@@ -463,25 +447,20 @@ function SourceUploader({
 
 function Gallery({
   items,
-  typeLabel,
   df,
 }: {
   items: ImageGeneration[];
-  typeLabel: string;
   df: Intl.DateTimeFormat;
 }) {
+  const t = useTranslations("studio.gen");
   if (items.length === 0) {
     return (
       <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border bg-card px-6 py-16 text-center">
         <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-muted text-muted-foreground">
           <ImageIcon className="h-6 w-6" aria-hidden strokeWidth={1.7} />
         </div>
-        <p className="text-sm font-medium text-foreground">
-          No {typeLabel.toLowerCase()}s yet
-        </p>
-        <p className="max-w-md text-sm text-muted-foreground">
-          Generated images appear here. They take around 10–30 seconds.
-        </p>
+        <p className="text-sm font-medium text-foreground">{t("emptyTitle")}</p>
+        <p className="max-w-md text-sm text-muted-foreground">{t("emptyBody")}</p>
       </div>
     );
   }
@@ -501,6 +480,7 @@ function GalleryCard({
   gen: ImageGeneration;
   df: Intl.DateTimeFormat;
 }) {
+  const t = useTranslations("studio.gen");
   const active = isActive(gen.status);
   const failed = gen.status === "failed";
   return (
@@ -520,8 +500,8 @@ function GalleryCard({
               target="_blank"
               rel="noopener noreferrer"
               className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-foreground/80 text-background backdrop-blur-sm transition-opacity hover:opacity-90"
-              aria-label="Open full image"
-              title="Open full image"
+              aria-label={t("openFull")}
+              title={t("openFull")}
             >
               <Download className="h-4 w-4" aria-hidden />
             </a>
@@ -529,14 +509,12 @@ function GalleryCard({
         ) : active ? (
           <div className="flex flex-col items-center gap-2 text-muted-foreground">
             <Loader2 className="h-6 w-6 animate-spin" aria-hidden />
-            <span className="text-[12px]">Generating…</span>
+            <span className="text-[12px]">{t("generating")}</span>
           </div>
         ) : failed ? (
           <div className="flex flex-col items-center gap-2 px-4 text-center text-muted-foreground">
             <TriangleAlert className="h-6 w-6 text-amber-600" aria-hidden />
-            <span className="text-[12px]">
-              Couldn't generate this one. Please try again.
-            </span>
+            <span className="text-[12px]">{t("genFailed")}</span>
           </div>
         ) : (
           <ImageIcon className="h-8 w-8 text-muted-foreground/40" aria-hidden />

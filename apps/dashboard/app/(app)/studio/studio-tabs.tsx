@@ -22,7 +22,7 @@ export function StudioTabs({
   const [tab, setTab] = useState<TabKey>("create");
 
   const TABS: Array<{ key: TabKey; label: string; icon: typeof ImageIcon }> = [
-    { key: "create", label: "Create", icon: Sparkles },
+    { key: "create", label: t("create"), icon: Sparkles },
     { key: "library", label: t("tabLibrary"), icon: LibraryBig },
   ];
 

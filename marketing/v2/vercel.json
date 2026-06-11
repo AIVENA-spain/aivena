@@ -1,4 +1,5 @@
 {
+  "trailingSlash": false,
   "rewrites": [
     { "source": "/dashboard", "destination": "https://aivena-app.vercel.app/dashboard" },
     { "source": "/dashboard/:path*", "destination": "https://aivena-app.vercel.app/dashboard/:path*" }

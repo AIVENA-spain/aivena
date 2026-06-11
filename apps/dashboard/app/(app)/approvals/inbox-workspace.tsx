@@ -19,6 +19,7 @@ import {
   Globe,
   Home,
   Inbox as InboxIcon,
+  Languages,
   LayoutGrid,
   Lock,
   Mail,
@@ -144,6 +145,18 @@ function ChannelBadge({ channel }: { channel: string | null }) {
 function languageLabel(code: string | null): string {
   if (!code) return "—";
   return code.toUpperCase();
+}
+
+// Readable language names for the "Translated from {lang}" label. (The label
+// key itself is localized in messages/*; these names get keyed in the i18n pass.)
+const LANG_NAME: Record<string, string> = {
+  es: "Spanish", en: "English", no: "Norwegian", sv: "Swedish", da: "Danish",
+  de: "German", nl: "Dutch", fr: "French", it: "Italian", pt: "Portuguese",
+  ru: "Russian", pl: "Polish", fi: "Finnish",
+};
+function languageName(code: string | null): string {
+  if (!code) return "the buyer's language";
+  return LANG_NAME[code.toLowerCase()] ?? code.toUpperCase();
 }
 
 function scoreTemperatureLine(
@@ -819,7 +832,12 @@ function ThreadAndReply({
           </div>
         ) : threadEntry.data && threadEntry.data.thread.length > 0 ? (
           dedupeThread(threadEntry.data.thread).map((m) => (
-            <ThreadBubble key={m.id} msg={m} locale={locale} t={tThread} />
+            <ThreadBubble
+              key={m.id}
+              msg={m}
+              leadLanguage={lead.language}
+              t={tThread}
+            />
           ))
         ) : (
           <>
@@ -834,7 +852,7 @@ function ThreadAndReply({
                   bodyTranslatedOwner: null,
                   createdAt: lead.taskCreatedAt,
                 }}
-                locale={locale}
+                leadLanguage={lead.language}
                 t={tThread}
               />
             ) : (
@@ -988,23 +1006,27 @@ function dedupeThread(thread: ThreadMessage[]): ThreadMessage[] {
 
 function ThreadBubble({
   msg,
-  locale,
+  leadLanguage,
   t,
 }: {
   msg: ThreadMessage;
-  locale: string;
+  leadLanguage: string | null;
   t: ReturnType<typeof useTranslations<"inbox.thread">>;
 }) {
   const inbound = msg.direction === "inbound";
   // Inbound bodies carry the buyer's quote chain / footer in `content`;
   // `bodyClean` is the server-stripped version. Outbound is composed in the
   // dashboard and never quoted, so it renders raw `content`.
-  const body = inbound ? (msg.bodyClean ?? msg.content) : msg.content;
-  // v1.14.4 side-by-side translation: show the owner-language translation only
-  // when it exists AND actually differs from the original (NULL = not filled
-  // yet OR source==target → original only, no empty pane).
+  const original = inbound ? (msg.bodyClean ?? msg.content) : msg.content;
   const translated = msg.bodyTranslatedOwner?.trim() || null;
-  const showTranslation = translated !== null && translated !== body?.trim();
+  const hasTranslation =
+    inbound && translated !== null && translated !== original?.trim();
+
+  // Inbound with a translation: read the owner-language version by default,
+  // with a toggle to reveal the original. Everything else renders the original.
+  const [showOriginal, setShowOriginal] = useState(false);
+  const primary = hasTranslation && !showOriginal ? translated : original;
+
   return (
     <div
       className={cn(
@@ -1014,18 +1036,23 @@ function ThreadBubble({
           : "self-end rounded-br-[4px] bg-brand-soft text-foreground",
       )}
     >
-      <div className="whitespace-pre-wrap">
-        {body ?? <span className="italic opacity-70">(empty)</span>}
-      </div>
-      {showTranslation ? (
-        <div className="mt-2 border-t border-foreground/10 pt-2">
-          <div className="mb-1 font-mono text-[8.5px] uppercase tracking-[0.05em] text-muted-foreground">
-            {t("translationLabel")}
-          </div>
-          <div className="whitespace-pre-wrap text-muted-foreground">
-            {translated}
-          </div>
+      {hasTranslation && !showOriginal ? (
+        <div className="mb-1.5 flex items-center gap-1 font-mono text-[8.5px] uppercase tracking-[0.05em] text-muted-foreground">
+          <Languages className="h-3 w-3" aria-hidden strokeWidth={1.9} />
+          {t("translatedFrom", { lang: languageName(leadLanguage) })}
         </div>
+      ) : null}
+      <div className="whitespace-pre-wrap">
+        {primary ?? <span className="italic opacity-70">(empty)</span>}
+      </div>
+      {hasTranslation ? (
+        <button
+          type="button"
+          onClick={() => setShowOriginal((v) => !v)}
+          className="mt-1.5 font-mono text-[9px] uppercase tracking-[0.05em] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+        >
+          {showOriginal ? t("showTranslation") : t("showOriginal")}
+        </button>
       ) : null}
       <div className="mt-1.5 font-mono text-[9.5px] text-muted-foreground">
         {inbound ? t("inbound") : t("outbound")} ·{" "}
@@ -1073,6 +1100,13 @@ function ReplyZone({
   const [subject, setSubject] = useState(initialSubject);
   const [body, setBody] = useState(initialBody);
   const [dismissOpen, setDismissOpen] = useState(false);
+
+  // Prefer the owner-language translation for reading the AI draft, when one
+  // exists and differs from the original (what actually gets sent).
+  const hasTranslatedDraft =
+    !!translatedDraft &&
+    translatedDraft.trim().length > 0 &&
+    translatedDraft.trim() !== body.trim();
 
   return (
     <div className="border-t border-border bg-card px-5 py-4">
@@ -1122,23 +1156,28 @@ function ReplyZone({
                 {subject}
               </div>
             ) : null}
-            <p className="mt-1 whitespace-pre-wrap text-[12.5px] leading-[1.5] text-foreground">
-              {body}
-            </p>
-            {/* v1.14.4 — owner-language translation of the draft (what the
-                owner reads to approve), shown only when it differs. The
-                original above is what AIVENA will actually send to the buyer. */}
-            {translatedDraft && translatedDraft.trim() &&
-            translatedDraft.trim() !== body.trim() ? (
-              <div className="mt-2 border-t border-brand/20 pt-2">
-                <div className="mb-1 font-mono text-[8.5px] uppercase tracking-[0.05em] text-muted-foreground">
-                  {t("translationLabel")}
-                </div>
-                <p className="whitespace-pre-wrap text-[12px] leading-[1.5] text-muted-foreground">
+            {hasTranslatedDraft ? (
+              <>
+                {/* Owner-language translation is the primary read (so the
+                    owner understands what they're approving); the original
+                    below is what AIVENA actually sends to the buyer. */}
+                <p className="mt-1 whitespace-pre-wrap text-[12.5px] leading-[1.5] text-foreground">
                   {translatedDraft}
                 </p>
-              </div>
-            ) : null}
+                <div className="mt-2 border-t border-brand/20 pt-2">
+                  <div className="mb-1 font-mono text-[8.5px] uppercase tracking-[0.05em] text-muted-foreground">
+                    {t("sentOriginal")}
+                  </div>
+                  <p className="whitespace-pre-wrap text-[12px] leading-[1.5] text-muted-foreground">
+                    {body}
+                  </p>
+                </div>
+              </>
+            ) : (
+              <p className="mt-1 whitespace-pre-wrap text-[12.5px] leading-[1.5] text-foreground">
+                {body}
+              </p>
+            )}
           </>
         )}
       </div>

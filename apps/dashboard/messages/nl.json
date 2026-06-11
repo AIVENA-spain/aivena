@@ -132,7 +132,10 @@
       "outboundMeta": "Outbound · {time}",
       "inbound": "Inbound",
       "outbound": "Outbound",
-      "translationLabel": "Translation (your language)"
+      "translationLabel": "Translation (your language)",
+      "translatedFrom": "Translated from {lang}",
+      "showOriginal": "Show original",
+      "showTranslation": "Show translation"
     },
     "summary": {
       "h": "Lead summary",
@@ -157,7 +160,8 @@
       "cancel": "Cancel",
       "dismissReasonLabel": "Dismiss reason",
       "dismissReasonPlaceholder": "Why are you dismissing this draft?",
-      "translationLabel": "Translation (your language)"
+      "translationLabel": "Translation (your language)",
+      "sentOriginal": "Sent to the buyer (original)"
     },
     "sellers": {
       "emptyTitleConvo": "No seller conversations yet",

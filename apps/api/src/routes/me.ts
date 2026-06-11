@@ -100,8 +100,9 @@ route.get('/preferences', async (c) => {
     .maybeSingle();
 
   if (error) {
+    console.error('[me/preferences] load failed:', error.message);
     return c.json(
-      { error: `Failed to load preferences: ${error.message}` },
+      { error: 'Something went wrong — please refresh, and contact support if it persists.' },
       500,
     );
   }
@@ -180,8 +181,9 @@ route.patch('/preferences', async (c) => {
     .single();
 
   if (error) {
+    console.error('[me/preferences] save failed:', error.message);
     return c.json(
-      { error: `Failed to save preferences: ${error.message}` },
+      { error: 'Something went wrong — please try again, and contact support if it persists.' },
       500,
     );
   }

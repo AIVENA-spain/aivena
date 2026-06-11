@@ -40,8 +40,11 @@ export async function agencyContextMiddleware(c: Context, next: Next) {
   try {
     memberships = await listMembershipsForUser(user.sub);
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    return c.json({ error: `Failed to resolve agency: ${message}` }, 500);
+    console.error('[agency-context] listMembershipsForUser failed:', err);
+    return c.json(
+      { error: 'Something went wrong — please refresh, and contact support if it persists.' },
+      500,
+    );
   }
 
   if (memberships.length === 0) {

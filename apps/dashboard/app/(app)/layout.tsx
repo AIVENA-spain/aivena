@@ -1,9 +1,9 @@
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getLocale } from "next-intl/server";
 
 import { apiFetch } from "@/lib/api/client";
-import { LOCALE_COOKIE, catalogLocaleFor } from "@/lib/i18n/config";
+import { LOCALE_COOKIE, catalogLocaleFor, isLocale } from "@/lib/i18n/config";
 import { intlLocaleFor } from "@/lib/i18n/date-locale";
 import type { SettingsResponse, TasksResponse } from "@/lib/api/types";
 import { getCurrentUserContext } from "@/lib/auth/context";
@@ -36,6 +36,26 @@ async function getInboxCount(): Promise<number | null> {
     // is already logged downstream by apiFetch's caller pattern.
     return null;
   }
+}
+
+/**
+ * Best-matching catalog locale from the browser's Accept-Language header, or
+ * null when none match. Used only as a fallback when the user has no personal
+ * `ui_language` and the agency has no `dashboard_display_language` default.
+ */
+function pickBrowserLocale(accept: string | null): string | null {
+  if (!accept) return null;
+  const ordered = accept
+    .split(",")
+    .map((part) => {
+      const [tag, q] = part.trim().split(";q=");
+      return { code: tag.split("-")[0].toLowerCase(), q: q ? parseFloat(q) : 1 };
+    })
+    .sort((a, b) => b.q - a.q);
+  for (const { code } of ordered) {
+    if (isLocale(code)) return code;
+  }
+  return null;
 }
 
 async function getSettings(): Promise<SettingsResponse | null> {
@@ -84,8 +104,15 @@ export default async function AppLayout({
   // TODO(when-login-action-lands, pre-pilot): set the cookie at login time to
   // eliminate the two-tick self-heal in favor of zero-tick.
   try {
+    // Precedence: user pref → agency default → browser locale → 'en'.
+    const browserLocale = pickBrowserLocale(
+      (await headers()).get("accept-language"),
+    );
     const resolved = catalogLocaleFor(
-      ctx.uiLanguage ?? settings?.dashboard_display_language ?? null,
+      ctx.uiLanguage ??
+        settings?.dashboard_display_language ??
+        browserLocale ??
+        null,
     );
     const cookieStore = await cookies();
     const cookieLocale = cookieStore.get(LOCALE_COOKIE)?.value;

@@ -46,6 +46,20 @@ type RawUserAgencyRow = {
 };
 
 /**
+ * Short-TTL in-memory cache for memberships. This lookup runs on EVERY
+ * agency-scoped API request and costs a full PostgREST round-trip (the DB is
+ * cross-region from this box, so that's ~150-300ms per request). Memberships
+ * change rarely (invites accepted, roles changed, default-agency flips), so a
+ * 60s TTL trades at most a one-minute propagation delay for a round-trip
+ * saved on nearly every request.
+ */
+const MEMBERSHIP_TTL_MS = 60_000;
+const membershipCache = new Map<
+  string,
+  { at: number; rows: MembershipRow[] }
+>();
+
+/**
  * Two-step explicit query — we never rely on PostgREST's embedded join between
  * user_agencies and agencies. PostgREST's schema cache for FK relationships is
  * fragile (it goes cold after DDL, project pause/resume, or simply when the FK
@@ -54,6 +68,18 @@ type RawUserAgencyRow = {
  * Stitching in code is one extra round-trip and zero magic.
  */
 export async function listMembershipsForUser(
+  userId: string,
+): Promise<MembershipRow[]> {
+  const hit = membershipCache.get(userId);
+  if (hit && Date.now() - hit.at < MEMBERSHIP_TTL_MS) {
+    return hit.rows;
+  }
+  const rows = await fetchMembershipsForUser(userId);
+  membershipCache.set(userId, { at: Date.now(), rows });
+  return rows;
+}
+
+async function fetchMembershipsForUser(
   userId: string,
 ): Promise<MembershipRow[]> {
   // Step 1 — the user's membership rows.

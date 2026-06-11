@@ -64,24 +64,16 @@ export async function agencyContextMiddleware(c: Context, next: Next) {
 
   try {
     await db.transaction(async (tx) => {
+      // One statement sets all three GUCs: agency for RLS, role for RPCs that
+      // gate/audit by role (current_setting('app.current_user_role')), and the
+      // caller's auth UUID for invite RPCs (the pooled aivena_app connection
+      // has no auth.uid(), so it must be set explicitly). Single round-trip —
+      // the DB is cross-region from this box, so each saved round-trip is
+      // ~150ms off EVERY API request.
       await tx.execute(
-        sql`SELECT set_config('app.current_agency_id', ${agencyId}, true)`,
-      );
-      // Also expose the caller's role to the transaction so RPCs that need to
-      // gate behaviour (or audit) by role can read it via
-      // current_setting('app.current_user_role', true). Unblocks Vega's
-      // role-check audit on the 12 existing RPCs.
-      await tx.execute(
-        sql`SELECT set_config('app.current_user_role', ${role}, true)`,
-      );
-      // And the caller's auth UUID. Vega's Phase-2 invite RPCs
-      // (create_invitation / accept_invitation / require_role) read this via
-      // current_setting('app.current_user_id', true) with auth.uid() as a
-      // fallback — but the pooled aivena_app connection has no auth.uid(),
-      // so we must set the GUC explicitly or those RPCs raise
-      // no_auth_context.
-      await tx.execute(
-        sql`SELECT set_config('app.current_user_id', ${user.sub}, true)`,
+        sql`SELECT set_config('app.current_agency_id', ${agencyId}, true),
+                   set_config('app.current_user_role', ${role}, true),
+                   set_config('app.current_user_id', ${user.sub}, true)`,
       );
 
       c.set('tx', tx);

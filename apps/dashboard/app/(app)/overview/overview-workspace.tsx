@@ -67,20 +67,6 @@ function avatarTone(seed: string | null | undefined): string {
   return tones[Math.abs(hash) % tones.length];
 }
 
-function priorityWeight(p: string): number {
-  switch ((p ?? "").toLowerCase()) {
-    case "urgent":
-      return 4;
-    case "high":
-      return 3;
-    case "normal":
-      return 2;
-    case "low":
-      return 1;
-    default:
-      return 0;
-  }
-}
 
 // ---------- channel + event icons ----------
 
@@ -271,15 +257,14 @@ export function OverviewWorkspace({
   const t = useTranslations("overview");
 
   const sortedNeeds = useMemo(() => {
+    // Newest first — the freshest lead reply belongs at the top (priority is
+    // still visible via the row badges).
     const copy = [...needsYou];
-    copy.sort((a, b) => {
-      const pw = priorityWeight(b.priority) - priorityWeight(a.priority);
-      if (pw !== 0) return pw;
-      return (
-        new Date(a.taskCreatedAt).getTime() -
-        new Date(b.taskCreatedAt).getTime()
-      );
-    });
+    copy.sort(
+      (a, b) =>
+        new Date(b.taskCreatedAt).getTime() -
+        new Date(a.taskCreatedAt).getTime(),
+    );
     return copy;
   }, [needsYou]);
 

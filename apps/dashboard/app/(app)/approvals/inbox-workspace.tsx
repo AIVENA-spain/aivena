@@ -789,6 +789,15 @@ function ThreadAndReply({
 
   const headSubline = `${lead.area ?? "—"} · ${languageLabel(lead.language)}`;
 
+  // WhatsApp-style: the newest message lives at the bottom — jump there when
+  // the thread arrives or the selected lead changes.
+  const threadBodyRef = useRef<HTMLDivElement>(null);
+  const threadReady = threadEntry?.status === "ok";
+  useEffect(() => {
+    const el = threadBodyRef.current;
+    if (el && threadReady) el.scrollTop = el.scrollHeight;
+  }, [threadReady, lead.leadId]);
+
   // W11-lite viewing pipeline (v1.14.1): when the task is a detected viewing
   // intent, the operator confirms a time rather than (only) sending a reply.
   // The confirm-time RPC + the extracted-times payload are Vega's; until they
@@ -823,7 +832,10 @@ function ThreadAndReply({
       </div>
 
       {/* Body */}
-      <div className="flex max-h-[420px] flex-1 flex-col gap-2.5 overflow-y-auto p-5">
+      <div
+        ref={threadBodyRef}
+        className="flex max-h-[420px] flex-1 flex-col gap-2.5 overflow-y-auto p-5"
+      >
         {threadEntry?.status === "loading" || threadEntry === undefined ? (
           <ThreadSkeleton />
         ) : threadEntry.status === "failed" ? (
@@ -979,8 +991,14 @@ function dedupeThread(thread: ThreadMessage[]): ThreadMessage[] {
       .replace(/\s+/g, " ")
       .trim()
       .toLowerCase();
+  // Dedupe exists for v0.6 "shadow" artifacts: the same inbound stored twice
+  // (raw + cleaned) AT THE SAME MOMENT. A buyer legitimately re-sending the
+  // same text later must stay visible, so duplicates only collapse when the
+  // two messages are within a short window of each other.
+  const DUP_WINDOW_MS = 10 * 60 * 1000;
+  const ts = (m: ThreadMessage) => new Date(m.createdAt).getTime();
   const keyed = thread.map((m) => ({ m, key: norm(m) }));
-  const seen = new Set<string>();
+  const seenAt = new Map<string, number>();
   const out: ThreadMessage[] = [];
   for (const it of keyed) {
     if (it.key.length === 0) {
@@ -988,17 +1006,21 @@ function dedupeThread(thread: ThreadMessage[]): ThreadMessage[] {
       continue;
     }
     const exact = `${it.m.direction}|${it.key}`;
-    if (seen.has(exact)) continue;
+    const prevAt = seenAt.get(exact);
+    if (prevAt !== undefined && Math.abs(ts(it.m) - prevAt) < DUP_WINDOW_MS) {
+      continue;
+    }
     const containedByLonger = keyed.some(
       (o) =>
         o.m.id !== it.m.id &&
         o.m.direction === it.m.direction &&
         it.key.length >= 12 &&
         o.key.length > it.key.length &&
-        o.key.includes(it.key),
+        o.key.includes(it.key) &&
+        Math.abs(ts(o.m) - ts(it.m)) < DUP_WINDOW_MS,
     );
     if (containedByLonger) continue;
-    seen.add(exact);
+    seenAt.set(exact, ts(it.m));
     out.push(it.m);
   }
   return out;

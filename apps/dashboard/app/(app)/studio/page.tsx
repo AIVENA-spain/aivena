@@ -4,6 +4,8 @@ import type {
   ContentItemRow,
   ContentItemsResponse,
   PlanTier,
+  PropertiesResponse,
+  PropertyRow,
   SettingsResponse,
 } from "@/lib/api/types";
 
@@ -21,17 +23,24 @@ export default async function StudioPage() {
   const ctx = await getCurrentUserContext();
   const agencyId = ctx?.activeAgency?.agencyId ?? null;
 
+  let properties: PropertyRow[] = [];
   let planTier: PlanTier = "starter";
   let library: ContentItemRow[] = [];
 
   if (agencyId) {
-    const [settingsRes, contentRes] = await Promise.allSettled([
+    const [propsRes, settingsRes, contentRes] = await Promise.allSettled([
+      apiFetch<PropertiesResponse>(
+        `/api/v1/agencies/${encodeURIComponent(agencyId)}/properties`,
+      ),
       apiFetch<SettingsResponse>("/api/v1/settings"),
       apiFetch<ContentItemsResponse>("/api/v1/content"),
     ]);
+    if (propsRes.status === "fulfilled") properties = propsRes.value.properties;
     if (settingsRes.status === "fulfilled") planTier = settingsRes.value.plan_tier;
     if (contentRes.status === "fulfilled") library = contentRes.value.items;
   }
 
-  return <StudioTabs planTier={planTier} library={library} />;
+  return (
+    <StudioTabs properties={properties} planTier={planTier} library={library} />
+  );
 }

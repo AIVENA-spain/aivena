@@ -244,6 +244,49 @@ export type ContentItemRow = {
 
 export type ContentItemsResponse = { items: ContentItemRow[] };
 
+// ── Image generation (W13) ────────────────────────────────────────────────
+
+export type ImageGenType = "ad_creative" | "social_post" | "renovation";
+export type ImageGenStatus = "pending" | "processing" | "completed" | "failed";
+
+export type ImageGeneration = {
+  id: string;
+  generationType: string;
+  status: string;
+  prompt: string;
+  sourceImageUrl: string | null;
+  resultImageUrl: string | null;
+  failureReason: string | null;
+  width: number | null;
+  height: number | null;
+  createdAt: string;
+};
+
+export type ImageGenerationsResponse = {
+  ok: true;
+  generations: ImageGeneration[];
+};
+
+export type ImageGenerationResponse = {
+  ok: true;
+  generation: ImageGeneration;
+};
+
+export type CreateImageResponse = {
+  ok: true;
+  generationId: string;
+  kieTaskId: string | null;
+  status: string;
+};
+
+/** image_gen_check_quota jsonb. quota === null ⇒ unlimited. */
+export type ImageQuota = {
+  used: number;
+  quota: number | null;
+  remaining: number | null;
+  unlimited: boolean;
+};
+
 // ── Lead notes ────────────────────────────────────────────────────────────
 
 export type LeadNoteRow = {

@@ -19,6 +19,7 @@ import bookingsRoute from './routes/bookings';
 import contentRoute from './routes/content';
 import leadNotesRoute from './routes/lead-notes';
 import studioRoute from './routes/studio';
+import imagesRoute from './routes/images';
 import adminRoute from './routes/admin';
 
 Sentry.init({
@@ -76,6 +77,8 @@ app.route('/api/v1/content', contentRoute);
 app.route('/api/v1/lead-notes', leadNotesRoute);
 // Studio uploads — agent's own reference image → agency-assets bucket.
 app.route('/api/v1/studio', studioRoute);
+// Image generation (W13) — create via Edge Function, poll/list via fenced reads.
+app.route('/api/v1/images', imagesRoute);
 
 // Webhook signature validation — provider-specific.
 // WhatsApp uses x-hub-signature-256 (Meta HMAC SHA-256 of raw body).

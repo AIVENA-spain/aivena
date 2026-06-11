@@ -25,6 +25,11 @@ const envSchema = z.object({
   // Provider webhooks
   META_WHATSAPP_APP_SECRET: z.string().min(1).optional(),
 
+  // Image generation — shared secret the API sends to the image-generate-create
+  // Edge Function (server-only). Optional so local dev boots without it; the
+  // images route surfaces a friendly error if a generate is attempted without it.
+  IMAGE_GEN_INTERNAL_SECRET: z.string().min(1).optional(),
+
   // App
   API_BASE_URL:       z.string().url(),
   DASHBOARD_URL:      z.string().url(),

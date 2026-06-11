@@ -48,7 +48,7 @@ export const PRIMARY_NAV: NavItem[] = [
   { tKey: "performance", href: "/performance", iconName: "performance", roles: ["owner", "agent", "viewer"] },
   // Content merged into Studio's Library tab (no standalone nav item). /content
   // redirects to /studio.
-  { tKey: "studio", href: "/studio", iconName: "studio", roles: ["owner", "agent", "viewer"], soon: true },
+  { tKey: "studio", href: "/studio", iconName: "studio", roles: ["owner", "agent", "viewer"] },
   { tKey: "matches", href: "/matches", iconName: "matches", roles: ["owner", "agent", "viewer"], soon: true },
   { tKey: "settings", href: "/settings", iconName: "settings", roles: ["owner", "agent", "viewer"] },
 ];

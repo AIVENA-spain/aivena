@@ -93,31 +93,18 @@ function PropertyCard({
 }) {
   const thumb = Array.isArray(p.images) && p.images.length > 0 ? p.images[0] : null;
   const location = [p.location_city, p.location_region].filter(Boolean).join(", ");
+  // Hide zero/null specs entirely — "0 beds" or "null m²" reads as broken.
   const specs: string[] = [];
-  if (p.bedrooms != null) specs.push(`${p.bedrooms} ${t("bedsShort")}`);
-  if (p.bathrooms != null) specs.push(`${p.bathrooms} ${t("bathsShort")}`);
-  if (p.area_sqm != null) specs.push(`${nf.format(p.area_sqm)} ${t("areaUnit")}`);
+  if (p.bedrooms != null && p.bedrooms > 0) specs.push(`${p.bedrooms} ${t("bedsShort")}`);
+  if (p.bathrooms != null && p.bathrooms > 0) specs.push(`${p.bathrooms} ${t("bathsShort")}`);
+  if (p.area_sqm != null && p.area_sqm > 0) specs.push(`${nf.format(p.area_sqm)} ${t("areaUnit")}`);
+  const priceNum = p.price == null ? null : Number(p.price);
 
   return (
     <article className="flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-elevated">
       {/* Thumbnail */}
       <div className="relative aspect-[4/3] w-full bg-muted">
-        {thumb ? (
-          // Plain <img>: CRM thumbnail URLs are arbitrary external domains;
-          // next/image would need per-domain remotePatterns we don't control
-          // at pilot.
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={thumb}
-            alt={p.title}
-            className="h-full w-full object-cover"
-            loading="lazy"
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center">
-            <Building2 className="h-8 w-8 text-muted-foreground/40" aria-hidden />
-          </div>
-        )}
+        <Thumb src={thumb} alt={p.title} />
         <div className="absolute right-2 top-2">
           <StatusPill status={p.status} t={t} />
         </div>
@@ -131,7 +118,9 @@ function PropertyCard({
           </h3>
         </div>
         <div className="font-mono text-[15px] font-semibold text-foreground">
-          {p.price === null ? "—" : `${nf.format(p.price)} ${p.price_currency}`}
+          {priceNum == null || Number.isNaN(priceNum)
+            ? "—"
+            : `${nf.format(priceNum)} ${p.price_currency}`}
         </div>
         {location ? (
           <div className="text-[12.5px] text-muted-foreground">{location}</div>
@@ -146,6 +135,35 @@ function PropertyCard({
         </div>
       </div>
     </article>
+  );
+}
+
+/**
+ * External CRM thumbnail with graceful degradation: arbitrary external hosts
+ * (montinmo.es etc.) can be slow, hotlink-protected, or down — a failed load
+ * swaps to the clean building placeholder instead of a broken-image icon.
+ * no-referrer covers hosts that reject foreign Referer headers.
+ */
+function Thumb({ src, alt }: { src: string | null; alt: string }) {
+  const [failed, setFailed] = useState(false);
+  if (!src || failed) {
+    return (
+      <div className="flex h-full w-full items-center justify-center">
+        <Building2 className="h-8 w-8 text-muted-foreground/40" aria-hidden />
+      </div>
+    );
+  }
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt={alt}
+      className="h-full w-full object-cover"
+      loading="lazy"
+      decoding="async"
+      referrerPolicy="no-referrer"
+      onError={() => setFailed(true)}
+    />
   );
 }
 

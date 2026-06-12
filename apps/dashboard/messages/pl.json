@@ -753,7 +753,9 @@
       "status_scheduled": "Zaplanowane",
       "status_published": "Opublikowane",
       "status_archived": "Zarchiwizowane",
-      "status_failed": "Nieudane"
+      "status_failed": "Nieudane",
+      "generatedHeading": "Wygenerowane zdjęcia",
+      "contentHeading": "Treść kampanii"
     },
     "upload": {
       "label": "Twój własny obraz (opcjonalnie)",

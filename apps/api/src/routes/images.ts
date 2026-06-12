@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { sql } from 'drizzle-orm';
 import { env } from '../../../../packages/config/env';
+import { supabaseAdmin } from '../lib/supabase-admin';
 
 /**
  * Image generation (W13) — agency-scoped, runs under authMiddleware +
@@ -79,14 +80,65 @@ type GenerationRow = {
   created_at: string;
 };
 
-function toClient(r: GenerationRow) {
+/**
+ * generated-images is a PRIVATE bucket (tenant isolation). The DB may hold any
+ * historical URL form — long-lived signed URLs, bare storage paths, or
+ * short-lived tokens from the redesigned pipeline — so the API re-signs
+ * everything fresh on read (1h TTL; reads are fenced by RLS before we sign).
+ * Anything not in generated-images (e.g. public agency-assets) passes through.
+ */
+const SIGNED_TTL_S = 3600;
+
+function generatedImagePath(raw: string | null): string | null {
+  if (!raw) return null;
+  const m = raw.match(/generated-images\/([^?]+)/);
+  if (m) return decodeURIComponent(m[1]);
+  // bare path form: "<agency>/<file>" with no scheme
+  if (!raw.startsWith('http') && raw.includes('/')) return raw;
+  return null;
+}
+
+async function signGeneratedUrls(rows: GenerationRow[]): Promise<Map<string, string>> {
+  const wanted = new Map<string, string>(); // path -> first raw value seen
+  for (const r of rows) {
+    for (const raw of [r.result_image_url, r.source_image_url]) {
+      const path = generatedImagePath(raw);
+      if (path && !wanted.has(path)) wanted.set(path, raw as string);
+    }
+  }
+  const out = new Map<string, string>();
+  if (wanted.size === 0) return out;
+  try {
+    const { data, error } = await supabaseAdmin.storage
+      .from('generated-images')
+      .createSignedUrls([...wanted.keys()], SIGNED_TTL_S);
+    if (error || !data) {
+      console.error('[images] createSignedUrls failed:', error);
+      return out;
+    }
+    for (const item of data) {
+      if (item.signedUrl && item.path) out.set(item.path, item.signedUrl);
+    }
+  } catch (err) {
+    console.error('[images] signing failed:', err);
+  }
+  return out;
+}
+
+function resign(raw: string | null, signed: Map<string, string>): string | null {
+  const path = generatedImagePath(raw);
+  if (!path) return raw; // not in the private bucket — pass through
+  return signed.get(path) ?? raw; // fall back to the stored value on sign failure
+}
+
+function toClient(r: GenerationRow, signed: Map<string, string>) {
   return {
     id: r.id,
     generationType: r.generation_type,
     status: r.status,
     prompt: r.prompt,
-    sourceImageUrl: r.source_image_url,
-    resultImageUrl: r.result_image_url,
+    sourceImageUrl: resign(r.source_image_url, signed),
+    resultImageUrl: resign(r.result_image_url, signed),
     failureReason: r.failure_reason,
     width: r.width,
     height: r.height,
@@ -127,7 +179,8 @@ route.get('/', async (c) => {
       LIMIT 60
     `);
     const rows = result as unknown as GenerationRow[];
-    return c.json({ ok: true, generations: rows.map(toClient) });
+    const signed = await signGeneratedUrls(rows);
+    return c.json({ ok: true, generations: rows.map((r) => toClient(r, signed)) });
   } catch (err) {
     console.error('[images/list] failed:', err);
     return c.json({ error: GENERIC }, 500);
@@ -150,7 +203,8 @@ route.get('/:id', async (c) => {
     if (rows.length === 0) {
       return c.json({ error: 'That image could not be found.' }, 404);
     }
-    return c.json({ ok: true, generation: toClient(rows[0]) });
+    const signed = await signGeneratedUrls(rows);
+    return c.json({ ok: true, generation: toClient(rows[0], signed) });
   } catch (err) {
     console.error('[images/get] failed:', err);
     return c.json({ error: GENERIC }, 500);

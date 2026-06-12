@@ -753,7 +753,9 @@
       "status_scheduled": "Programmato",
       "status_published": "Pubblicato",
       "status_archived": "Archiviato",
-      "status_failed": "Non riuscito"
+      "status_failed": "Non riuscito",
+      "generatedHeading": "Immagini generate",
+      "contentHeading": "Contenuti della campagna"
     },
     "upload": {
       "label": "La tua immagine (opzionale)",

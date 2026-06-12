@@ -197,7 +197,7 @@ export function StudioTabs({
       {tab === "ad" && <AdCreativeTab properties={properties} gens={gens} />}
       {tab === "social" && <SocialPostTab properties={properties} gens={gens} />}
       {tab === "renovation" && <RenovationTab planTier={planTier} gens={gens} />}
-      {tab === "library" && <LibraryTab items={library} />}
+      {tab === "library" && <LibraryTab items={library} gens={gens} />}
     </div>
   );
 }
@@ -1306,13 +1306,21 @@ function GalleryCard({
 
 /* ───────────────────────── Library (content_items) ───────────────────────── */
 
-function LibraryTab({ items }: { items: ContentItemRow[] }) {
+function LibraryTab({ items, gens }: { items: ContentItemRow[]; gens: Gens }) {
   const t = useTranslations("studio.library");
   const locale = useLocale();
   const df = new Intl.DateTimeFormat(intlLocaleFor(locale), { dateStyle: "medium" });
+  const dtf = dateFmt(locale);
   const [openId, setOpenId] = useState<string | null>(null);
 
-  if (items.length === 0) {
+  // The library shows every finished generation across all three types,
+  // newest-first. Failed/in-flight ones stay in their generator tab's gallery
+  // (with friendly states) — the library is the clean results shelf.
+  const generated = gens.generations.filter(
+    (g) => g.status === "completed" && g.resultImageUrl,
+  );
+
+  if (items.length === 0 && generated.length === 0) {
     return (
       <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border bg-card px-6 py-16 text-center">
         <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-muted text-muted-foreground">
@@ -1327,22 +1335,41 @@ function LibraryTab({ items }: { items: ContentItemRow[] }) {
   const open = items.find((i) => i.id === openId) ?? null;
 
   return (
-    <>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {items.map((item) => (
-          <LibraryCard
-            key={item.id}
-            item={item}
-            df={df}
-            t={t}
-            onOpen={() => setOpenId(item.id)}
-          />
-        ))}
-      </div>
+    <div className="flex flex-col gap-6">
+      {generated.length > 0 ? (
+        <section className="flex flex-col gap-2.5">
+          <h2 className="font-mono text-[10.5px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+            {t("generatedHeading")}
+          </h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {generated.map((g) => (
+              <GalleryCard key={g.id} gen={g} df={dtf} />
+            ))}
+          </div>
+        </section>
+      ) : null}
+      {items.length > 0 ? (
+        <section className="flex flex-col gap-2.5">
+          <h2 className="font-mono text-[10.5px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+            {t("contentHeading")}
+          </h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {items.map((item) => (
+              <LibraryCard
+                key={item.id}
+                item={item}
+                df={df}
+                t={t}
+                onOpen={() => setOpenId(item.id)}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
       {open ? (
         <LibraryReadModal item={open} df={df} t={t} onClose={() => setOpenId(null)} />
       ) : null}
-    </>
+    </div>
   );
 }
 

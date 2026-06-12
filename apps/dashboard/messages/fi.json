@@ -753,7 +753,9 @@
       "status_scheduled": "Ajastettu",
       "status_published": "Julkaistu",
       "status_archived": "Arkistoitu",
-      "status_failed": "Epäonnistui"
+      "status_failed": "Epäonnistui",
+      "generatedHeading": "Luodut kuvat",
+      "contentHeading": "Kampanjan sisältö"
     },
     "upload": {
       "label": "Oma kuvasi (valinnainen)",

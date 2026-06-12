@@ -753,7 +753,9 @@
       "status_scheduled": "Schemalagd",
       "status_published": "Publicerad",
       "status_archived": "Arkiverad",
-      "status_failed": "Misslyckades"
+      "status_failed": "Misslyckades",
+      "generatedHeading": "Genererade bilder",
+      "contentHeading": "Kampanjinnehåll"
     },
     "upload": {
       "label": "Din egen bild (valfritt)",

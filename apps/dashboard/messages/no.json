@@ -753,7 +753,9 @@
       "status_scheduled": "Planlagt",
       "status_published": "Publisert",
       "status_archived": "Arkivert",
-      "status_failed": "Mislyktes"
+      "status_failed": "Mislyktes",
+      "generatedHeading": "Genererte bilder",
+      "contentHeading": "Kampanjeinnhold"
     },
     "upload": {
       "label": "Ditt eget bilde (valgfritt)",

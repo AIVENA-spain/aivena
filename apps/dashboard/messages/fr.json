@@ -753,7 +753,9 @@
       "status_scheduled": "Programmé",
       "status_published": "Publié",
       "status_archived": "Archivé",
-      "status_failed": "Échec"
+      "status_failed": "Échec",
+      "generatedHeading": "Images générées",
+      "contentHeading": "Contenu de la campagne"
     },
     "upload": {
       "label": "Votre propre image (facultatif)",

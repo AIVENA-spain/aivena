@@ -753,7 +753,9 @@
       "status_scheduled": "Geplant",
       "status_published": "Veröffentlicht",
       "status_archived": "Archiviert",
-      "status_failed": "Fehlgeschlagen"
+      "status_failed": "Fehlgeschlagen",
+      "generatedHeading": "Generierte Bilder",
+      "contentHeading": "Kampagneninhalte"
     },
     "upload": {
       "label": "Ihr eigenes Bild (optional)",

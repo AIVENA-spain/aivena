@@ -753,7 +753,9 @@
       "status_scheduled": "Ingepland",
       "status_published": "Gepubliceerd",
       "status_archived": "Gearchiveerd",
-      "status_failed": "Mislukt"
+      "status_failed": "Mislukt",
+      "generatedHeading": "Gegenereerde afbeeldingen",
+      "contentHeading": "Campagne-inhoud"
     },
     "upload": {
       "label": "Je eigen afbeelding (optioneel)",

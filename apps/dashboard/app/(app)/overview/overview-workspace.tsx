@@ -692,6 +692,12 @@ function RecentActivityCard({
                       {r.fullName}
                     </span>
                   ) : null}
+                  {r.excerptTranslated || r.excerpt ? (
+                    // Owner-language translation first, original as fallback.
+                    <span className="line-clamp-2 text-[11px] italic text-muted-foreground/80">
+                      “{r.excerptTranslated ?? r.excerpt}”
+                    </span>
+                  ) : null}
                 </div>
                 <RelativeTime
                   iso={r.occurredAt}

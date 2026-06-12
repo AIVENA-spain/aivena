@@ -441,10 +441,21 @@ export type ActivityRow = {
   eventType: string;
   label: string;
   channel: string | null;
+  /** Message excerpt (original) and its owner-language translation. */
+  excerpt: string | null;
+  excerptTranslated: string | null;
   occurredAt: string;
 };
 
 export type ActivityResponse = { rows: ActivityRow[] };
+
+export type LeadPickerRow = {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  phone: string | null;
+  language: string | null;
+};
 
 // ---- Performance --------------------------------------------------------------
 

@@ -217,6 +217,8 @@ route.get('/recent-activity', async (c) => {
         eventType: r.event_type,
         label: r.label,
         channel: r.channel,
+        excerpt: (r as Record<string, unknown>).excerpt ?? null,
+        excerptTranslated: (r as Record<string, unknown>).excerpt_translated ?? null,
         occurredAt: toIso(r.occurred_at) ?? '',
       })),
     });

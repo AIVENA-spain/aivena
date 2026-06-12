@@ -403,15 +403,15 @@
   .lp-mobile{ display:none; }
   @media (max-width:767px){
     .lp-desktop{ display:none !important; }
-    html, body{ background:#FAF8F3; }
-    .lp-mobile{ display:block; background:#FAF8F3; color:#0A0A0A; }
+    html, body{ background:#FFFFFF; }
+    .lp-mobile{ display:block; background:#FFFFFF; color:#0A0A0A; }
     body.m-sticky-on .cw-launch{ bottom:84px; }
     body.m-sticky-on .cw-panel{ bottom:84px; }
   }
   .lp-mobile .m-serif{ font-family:'Instrument Serif',serif; font-style:italic; font-weight:400; }
   .lp-mobile .m-mono{ font-family:'JetBrains Mono',monospace; }
-  .lp-mobile section{ position:relative; padding:26px 20px; background:#FAF8F3; color:#0A0A0A; border-top:1px solid #ECE8DE; overflow:hidden; }
-  .lp-mobile section.m-first{ border-top:none; padding-top:24px; }
+  .lp-mobile section{ position:relative; padding:34px 22px; background:#FFFFFF; color:#0A0A0A; border-top:1px solid #F2EFE9; overflow:hidden; }
+  .lp-mobile section.m-first{ border-top:none; padding-top:26px; }
   .m-rel{ position:relative; }
   .m-dots{ position:absolute; inset:0; overflow:hidden; pointer-events:none; }
   .m-dot{ position:absolute; border-radius:50%; animation:m-floatdot var(--t) ease-in-out var(--d) infinite; }
@@ -432,10 +432,10 @@
   .m-logo{ font-size:13px; color:#0A0A0A; letter-spacing:0.12em; font-weight:600; }
   .m-navbtn{ background:#0A0A0A; color:#FFFFFF; font-size:12px; font-weight:500; padding:7px 14px; border-radius:999px; text-decoration:none; }
   .m-navbtn b, .m-gbtn b, .m-bigbtn b{ color:#1FE874; font-weight:500; }
-  .m-h1{ font-size:27px; font-weight:600; color:#0A0A0A; line-height:1.2; }
-  .m-h1g{ font-size:27px; line-height:1.2; color:#0B7C3A; min-height:1.2em; transition:opacity 0.3s; }
-  .m-sub{ font-size:13.5px; color:#6E6A60; line-height:1.55; margin:12px 0 16px; }
-  .m-card{ background:#FFFFFF; border:1px solid #E4E0D6; border-radius:14px; box-shadow:0 4px 18px rgba(10,10,10,0.05); }
+  .m-h1{ font-size:30px; font-weight:600; color:#0A0A0A; line-height:1.18; letter-spacing:-0.01em; }
+  .m-h1g{ font-size:30px; line-height:1.18; color:#0B7C3A; min-height:1.2em; transition:opacity 0.3s; }
+  .m-sub{ font-size:14px; color:#6E6A60; line-height:1.6; margin:13px 0 18px; }
+  .m-card{ background:#FFFFFF; border:1px solid #ECE9E1; border-radius:16px; box-shadow:0 12px 34px rgba(10,10,10,0.07); }
   .m-chat{ padding:14px; min-height:140px; }
   .m-in{ background:#F1EEE6; border-radius:12px 12px 12px 4px; padding:9px 12px; max-width:86%; margin-bottom:9px; }
   .m-in p{ font-size:13px; color:#0A0A0A; }
@@ -448,11 +448,12 @@
   .m-out .m-msg{ font-size:13px; color:#0A0A0A; }
   .m-out .m-ok{ font-size:10px; color:#6E6A60; margin-top:4px; }
   .m-ok b{ color:#0B7C3A; font-weight:500; }
-  .m-gbtn{ display:inline-block; background:#0A0A0A; color:#FFFFFF; font-size:13.5px; font-weight:500; padding:12px 22px; border-radius:999px; margin-top:16px; text-decoration:none; }
+  .m-gbtn{ display:inline-block; background:#0A0A0A; color:#FFFFFF; font-size:14px; font-weight:500; padding:13px 24px; border-radius:999px; margin-top:18px; text-decoration:none; box-shadow:0 10px 26px rgba(10,10,10,0.18); }
   .m-trust{ font-size:10px; color:#9B968A; margin-top:13px; letter-spacing:0.04em; }
-  .m-h2{ font-size:18px; font-weight:600; color:#0A0A0A; line-height:1.35; }
+  .m-h2{ font-size:20px; font-weight:600; color:#0A0A0A; line-height:1.3; letter-spacing:-0.005em; }
   .m-h2 .m-gl{ color:#0B7C3A; }
-  .m-lead{ font-size:12px; color:#6E6A60; margin-top:3px; line-height:1.5; }
+  .m-kicker{ font-size:9.5px; letter-spacing:0.16em; color:#0B7C3A; margin-bottom:7px; font-weight:500; }
+  .m-lead{ font-size:12.5px; color:#6E6A60; margin-top:5px; line-height:1.55; }
   .m-steps{ display:flex; flex-direction:column; gap:10px; margin-top:14px; }
   .m-step{ display:flex; gap:11px; align-items:flex-start; }
   .m-step .m-n{ min-width:22px; height:22px; border-radius:50%; background:#EAF8EF; color:#0B7C3A; font-size:11px; display:flex; align-items:center; justify-content:center; font-weight:500; }
@@ -490,7 +491,7 @@
   .m-vwhead{ font-size:14px; font-weight:600; color:#0A0A0A; }
   .m-vwsub{ font-size:10px; color:#9B968A; margin-top:2px; }
   .m-vwfield{ display:flex; gap:8px; margin-top:11px; }
-  .m-vwinput{ flex:1; border:1px solid #E4E0D6; border-radius:999px; padding:9px 13px; font-size:11px; color:#9B968A; background:#FAF8F3; }
+  .m-vwinput{ flex:1; border:1px solid #ECE9E1; border-radius:999px; padding:9px 13px; font-size:11px; color:#9B968A; background:#FAF8F3; }
   .m-vwbtn{ background:#0A0A0A; color:#1FE874; font-size:11px; font-weight:500; padding:9px 15px; border-radius:999px; white-space:nowrap; }
   .m-vwconsent{ display:flex; gap:7px; align-items:flex-start; margin-top:10px; }
   .m-vwbox{ min-width:12px; height:12px; border:1px solid #C9C4B8; border-radius:3px; margin-top:1px; }
@@ -505,7 +506,7 @@
   .m-ba .m-ba-before p{ font-size:11.5px; color:#9B968A; margin-left:13px; white-space:nowrap; }
   .m-studiolist{ font-size:11.5px; color:#9B968A; margin-top:9px; }
   .m-tiers{ display:flex; gap:8px; margin-top:14px; }
-  .m-tier{ flex:1; background:#FFFFFF; border:1px solid #E4E0D6; border-radius:12px; padding:11px 9px; }
+  .m-tier{ flex:1; background:#FFFFFF; border:1px solid #ECE9E1; border-radius:12px; padding:12px 10px; box-shadow:0 6px 18px rgba(10,10,10,0.04); }
   .m-tier.m-pro{ flex:1.1; border:1.5px solid #0B7C3A; }
   .m-tier .m-name{ font-size:10px; letter-spacing:0.08em; color:#9B968A; }
   .m-tier.m-pro .m-name{ color:#0B7C3A; }
@@ -516,15 +517,15 @@
   .m-cats{ display:flex; align-items:center; gap:11px; }
   .m-catdot{ min-width:32px; height:32px; border-radius:50%; background:#EAF8EF; display:flex; align-items:center; justify-content:center; font-size:15px; }
   .m-cats p{ font-size:11.5px; color:#6E6A60; line-height:1.5; }
-  .m-cta{ text-align:center; padding:34px 20px 38px; }
+  .m-cta{ text-align:center; padding:42px 22px 46px; }
   .m-cta .m-h2{ font-size:21px; }
   .m-cta .m-sub2{ font-size:12.5px; color:#6E6A60; margin:12px 0 16px; line-height:1.55; }
-  .m-bigbtn{ display:inline-block; background:#0A0A0A; color:#FFFFFF; font-size:13.5px; font-weight:500; padding:13px 26px; border-radius:999px; animation:m-pulse 3.5s ease-in-out infinite; text-decoration:none; }
+  .m-bigbtn{ display:inline-block; background:#0A0A0A; color:#FFFFFF; font-size:14px; font-weight:500; padding:14px 28px; border-radius:999px; animation:m-pulse 3.5s ease-in-out infinite; text-decoration:none; box-shadow:0 12px 30px rgba(10,10,10,0.2); }
   .m-fine{ font-size:10px; color:#9B968A; margin-top:13px; letter-spacing:0.04em; }
-  .m-foot{ text-align:center; padding:18px 20px 26px; border-top:1px solid #ECE8DE; background:#FAF8F3; }
+  .m-foot{ text-align:center; padding:20px 22px 30px; border-top:1px solid #F2EFE9; background:#FFFFFF; }
   .m-foot p{ font-size:10px; color:#9B968A; line-height:1.6; }
   .m-foot a{ color:#6E6A60; text-decoration:none; }
-  .m-sticky{ display:none; position:fixed; left:0; right:0; bottom:0; z-index:70; padding:10px 16px calc(10px + env(safe-area-inset-bottom)); background:rgba(250,248,243,0.92); backdrop-filter:blur(8px); border-top:1px solid #E4E0D6; text-align:center; transform:translateY(110%); transition:transform 0.3s ease; }
+  .m-sticky{ display:none; position:fixed; left:0; right:0; bottom:0; z-index:70; padding:10px 16px calc(10px + env(safe-area-inset-bottom)); background:rgba(255,255,255,0.93); backdrop-filter:blur(10px); border-top:1px solid #F0EDE7; text-align:center; transform:translateY(110%); transition:transform 0.3s ease; }
   @media (max-width:767px){ .m-sticky{ display:block; } }
   body.m-sticky-on .m-sticky{ transform:translateY(0); }
   .m-sticky a{ display:inline-block; background:#0A0A0A; color:#FFFFFF; font-size:13px; font-weight:500; padding:11px 24px; border-radius:999px; text-decoration:none; }
@@ -1195,7 +1196,7 @@
         <a class="m-navbtn" href="mailto:christian@aivena.es?subject=AIVENA%20pilot">Start <b>&rarr;</b></a>
       </div>
       <p class="m-h1">Every buyer answered,</p>
-      <p class="m-h1g m-serif m-langcycle">en fran&ccedil;ais,</p>
+      <p class="m-h1g m-serif m-langcycle">in het Vlaams,</p>
       <p class="m-h1" style="margin-bottom:8px;">under your name.</p>
       <p class="m-sub">Real replies in minutes, in the buyer's language. You approve, it sends.</p>
       <div class="m-card m-chat">
@@ -1218,6 +1219,7 @@
   <section>
     <div class="m-dots" aria-hidden="true"></div>
     <div class="m-rel">
+      <p class="m-kicker m-mono">HOW IT WORKS</p>
       <p class="m-h2" style="margin-bottom:11px;">How every enquiry gets answered</p>
       <div class="m-steps">
         <div class="m-step"><span class="m-n m-mono">1</span><p>A buyer writes <span>&mdash; any channel, any hour</span></p></div>
@@ -1232,6 +1234,7 @@
   <section>
     <div class="m-dots" aria-hidden="true"></div>
     <div class="m-rel">
+      <p class="m-kicker m-mono">ONE INBOX</p>
       <p class="m-h2">One inbox. <span class="m-serif m-gl">Every channel.</span></p>
       <p class="m-lead">WhatsApp, web, forms, email, ads and missed calls land here as structured enquiries.</p>
       <div class="m-card" style="margin-top:13px;">
@@ -1274,6 +1277,7 @@
   <section>
     <div class="m-dots" aria-hidden="true"></div>
     <div class="m-rel">
+      <p class="m-kicker m-mono">MISSED CALLS</p>
       <p class="m-h2">A missed call is <span class="m-serif m-gl">not a lost buyer</span></p>
       <p class="m-lead">Your team is on a viewing. The phone rings anyway. Watch what happens.</p>
       <div class="m-card m-mcwrap" style="margin-top:13px;">
@@ -1305,6 +1309,7 @@
   <section>
     <div class="m-dots" aria-hidden="true"></div>
     <div class="m-rel">
+      <p class="m-kicker m-mono">VALUATIONS</p>
       <p class="m-h2">Sellers find you too. <span class="m-serif m-gl">From your own website.</span></p>
       <p class="m-lead">A valuation widget on your site gives homeowners an estimate &mdash; and, with their consent, becomes a seller enquiry in your inbox.</p>
       <div class="m-card m-vwidget" style="margin-top:13px;">
@@ -1330,6 +1335,7 @@
   <section>
     <div class="m-dots" aria-hidden="true"></div>
     <div class="m-rel">
+      <p class="m-kicker m-mono">STUDIO</p>
       <p class="m-h2">Marketing that <span class="m-serif m-gl">looks like you hired an agency</span></p>
       <div class="m-ba" aria-label="Before and after virtual staging">
         <div class="m-ba-after">After &middot; staged</div>
@@ -1342,6 +1348,7 @@
   <section>
     <div class="m-dots" aria-hidden="true"></div>
     <div class="m-rel">
+      <p class="m-kicker m-mono">PRICING</p>
       <p class="m-h2">Every feature, at <span class="m-serif m-gl">every tier</span></p>
       <p class="m-lead">Only voice minutes and image quotas scale. No setup fee.</p>
       <div class="m-tiers">
@@ -1799,7 +1806,7 @@ document.addEventListener('DOMContentLoaded', function(){
     });
 
     // Cycling hero language line.
-    var langs = ['en fran\u00e7ais,', 'p\u00e5 norsk,', 'auf Deutsch,', 'p\u00e5 svenska,', 'in het Nederlands,', 'po polsku,', 'in English,', 'suomeksi,'];
+    var langs = ['in het Vlaams,', 'p\u00e5 norsk,', 'auf Deutsch,', 'p\u00e5 svenska,', 'en fran\u00e7ais,', 'po polsku,', 'in English,', 'suomeksi,'];
     var li = 0;
     var le = root.querySelector('.m-langcycle');
     if (le && !reduce){

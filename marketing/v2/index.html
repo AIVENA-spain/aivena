@@ -398,18 +398,152 @@
   .cta-display{ font-family:'Instrument Serif',serif; font-weight:400; letter-spacing:-0.015em;
     font-size:clamp(2.6rem,6.4vw,5rem); line-height:1.05; }
   .cta-display em{ font-style:italic; color:#1FE874; }
+
+  /* ═══════════ MOBILE EXPERIENCE (<768px) — light cream tree ═══════════ */
+  .lp-mobile{ display:none; }
+  @media (max-width:767px){
+    .lp-desktop{ display:none !important; }
+    html, body{ background:#FAF8F3; }
+    .lp-mobile{ display:block; background:#FAF8F3; color:#0A0A0A; }
+    body.m-sticky-on .cw-launch{ bottom:84px; }
+    body.m-sticky-on .cw-panel{ bottom:84px; }
+  }
+  .lp-mobile .m-serif{ font-family:'Instrument Serif',serif; font-style:italic; font-weight:400; }
+  .lp-mobile .m-mono{ font-family:'JetBrains Mono',monospace; }
+  .lp-mobile section{ position:relative; padding:26px 20px; background:#FAF8F3; color:#0A0A0A; border-top:1px solid #ECE8DE; overflow:hidden; }
+  .lp-mobile section.m-first{ border-top:none; padding-top:24px; }
+  .m-rel{ position:relative; }
+  .m-dots{ position:absolute; inset:0; overflow:hidden; pointer-events:none; }
+  .m-dot{ position:absolute; border-radius:50%; animation:m-floatdot var(--t) ease-in-out var(--d) infinite; }
+  @keyframes m-floatdot{ 0%{ transform:translate(0,0); opacity:var(--o); } 50%{ transform:translate(var(--dx),var(--dy)); opacity:calc(var(--o)*0.3); } 100%{ transform:translate(0,0); opacity:var(--o); } }
+  @keyframes m-popin{ 0%,6%{ opacity:0; transform:translateY(8px); } 13%,84%{ opacity:1; transform:translateY(0); } 92%,100%{ opacity:0; transform:translateY(8px); } }
+  @keyframes m-blink{ 0%,60%,100%{ opacity:0.25; } 30%{ opacity:1; } }
+  @keyframes m-sweep{ 0%,8%{ width:16%; } 46%,58%{ width:84%; } 96%,100%{ width:16%; } }
+  @keyframes m-pulse{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.04); } }
+  @keyframes m-slidein{ 0%,8%{ opacity:0; transform:translateX(-10px); } 16%,88%{ opacity:1; transform:translateX(0); } 96%,100%{ opacity:0; transform:translateX(-10px); } }
+  @keyframes m-ring{ 0%,4%{ transform:rotate(0); } 5%{ transform:rotate(-14deg); } 7%{ transform:rotate(12deg); } 9%{ transform:rotate(-10deg); } 11%{ transform:rotate(8deg); } 13%,100%{ transform:rotate(0); } }
+  .m-bub{ animation:m-popin 10s ease-in-out infinite; opacity:0; }
+  .m-row{ animation:m-slidein 11s ease-in-out infinite; opacity:0; }
+  .m-mc{ animation:m-popin 11s ease-in-out infinite; opacity:0; }
+  .lp-mobile .m-off .m-dot, .lp-mobile .m-off .m-bub, .lp-mobile .m-off .m-row, .lp-mobile .m-off .m-mc,
+  .lp-mobile .m-off .m-typing span, .lp-mobile .m-off .m-ba-before, .lp-mobile .m-off .m-ringy{ animation-play-state:paused; }
+
+  .m-topbar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:22px; }
+  .m-logo{ font-size:13px; color:#0A0A0A; letter-spacing:0.12em; font-weight:600; }
+  .m-navbtn{ background:#0A0A0A; color:#FFFFFF; font-size:12px; font-weight:500; padding:7px 14px; border-radius:999px; text-decoration:none; }
+  .m-navbtn b, .m-gbtn b, .m-bigbtn b{ color:#1FE874; font-weight:500; }
+  .m-h1{ font-size:27px; font-weight:600; color:#0A0A0A; line-height:1.2; }
+  .m-h1g{ font-size:27px; line-height:1.2; color:#0B7C3A; min-height:1.2em; transition:opacity 0.3s; }
+  .m-sub{ font-size:13.5px; color:#6E6A60; line-height:1.55; margin:12px 0 16px; }
+  .m-card{ background:#FFFFFF; border:1px solid #E4E0D6; border-radius:14px; box-shadow:0 4px 18px rgba(10,10,10,0.05); }
+  .m-chat{ padding:14px; min-height:140px; }
+  .m-in{ background:#F1EEE6; border-radius:12px 12px 12px 4px; padding:9px 12px; max-width:86%; margin-bottom:9px; }
+  .m-in p{ font-size:13px; color:#0A0A0A; }
+  .m-meta{ font-size:10px; color:#9B968A; margin-top:3px; letter-spacing:0.06em; }
+  .m-typing{ display:inline-flex; gap:4px; background:#F1EEE6; border-radius:12px; padding:10px 13px; margin-bottom:9px; }
+  .m-typing span{ width:5px; height:5px; border-radius:50%; background:#0B7C3A; animation:m-blink 1.2s infinite; }
+  .m-typing span:nth-child(2){ animation-delay:0.2s; } .m-typing span:nth-child(3){ animation-delay:0.4s; }
+  .m-out{ background:#EAF8EF; border:1px solid #CBEBD6; border-radius:12px 12px 4px 12px; padding:9px 12px; max-width:90%; margin-left:auto; }
+  .m-out .m-tag{ font-size:10px; color:#0B7C3A; letter-spacing:0.08em; margin-bottom:3px; }
+  .m-out .m-msg{ font-size:13px; color:#0A0A0A; }
+  .m-out .m-ok{ font-size:10px; color:#6E6A60; margin-top:4px; }
+  .m-ok b{ color:#0B7C3A; font-weight:500; }
+  .m-gbtn{ display:inline-block; background:#0A0A0A; color:#FFFFFF; font-size:13.5px; font-weight:500; padding:12px 22px; border-radius:999px; margin-top:16px; text-decoration:none; }
+  .m-trust{ font-size:10px; color:#9B968A; margin-top:13px; letter-spacing:0.04em; }
+  .m-h2{ font-size:18px; font-weight:600; color:#0A0A0A; line-height:1.35; }
+  .m-h2 .m-gl{ color:#0B7C3A; }
+  .m-lead{ font-size:12px; color:#6E6A60; margin-top:3px; line-height:1.5; }
+  .m-steps{ display:flex; flex-direction:column; gap:10px; margin-top:14px; }
+  .m-step{ display:flex; gap:11px; align-items:flex-start; }
+  .m-step .m-n{ min-width:22px; height:22px; border-radius:50%; background:#EAF8EF; color:#0B7C3A; font-size:11px; display:flex; align-items:center; justify-content:center; font-weight:500; }
+  .m-step p{ font-size:13px; color:#0A0A0A; margin-top:1px; }
+  .m-step p span{ color:#9B968A; }
+  .m-inboxhead{ display:flex; justify-content:space-between; align-items:center; padding:11px 13px; border-bottom:1px solid #F0EDE4; }
+  .m-inboxhead .m-t{ font-size:13px; font-weight:600; color:#0A0A0A; }
+  .m-inboxhead .m-b{ font-size:10px; background:#EAF8EF; color:#0B7C3A; padding:3px 9px; border-radius:999px; font-weight:500; }
+  .m-erow{ display:flex; gap:11px; align-items:center; padding:11px 13px; border-bottom:1px solid #F5F2EA; }
+  .m-erow:last-child{ border-bottom:none; }
+  .m-av{ min-width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; }
+  .m-av.m-wa{ background:#EAF8EF; } .m-av.m-em{ background:#F1EEE6; } .m-av.m-va{ background:#EAF3FB; }
+  .m-erow .m-who{ font-size:13px; font-weight:500; color:#0A0A0A; }
+  .m-erow .m-what{ font-size:11.5px; color:#9B968A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:170px; }
+  .m-erow .m-right{ margin-left:auto; }
+  .m-tagdraft{ font-size:9px; background:#0A0A0A; color:#1FE874; padding:4px 8px; border-radius:999px; white-space:nowrap; }
+  .m-chanline{ font-size:9px; color:#B5B0A4; margin-top:3px; letter-spacing:0.04em; }
+  .m-inboxfoot{ font-size:11.5px; color:#9B968A; text-align:center; margin-top:10px; }
+  .m-mcwrap{ padding:14px; min-height:172px; }
+  .m-mcstep{ display:flex; align-items:center; gap:11px; margin-bottom:10px; }
+  .m-mcstep:last-child{ margin-bottom:0; }
+  .m-mcav{ min-width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; }
+  .m-mcav.m-red{ background:#FCEFEA; } .m-mcav.m-grn{ background:#EAF8EF; } .m-mcav.m-gry{ background:#F1EEE6; }
+  .m-ringy{ display:inline-block; animation:m-ring 4s infinite; }
+  .m-mcstep .m-l1{ font-size:13px; color:#0A0A0A; font-weight:500; }
+  .m-mcstep .m-l2{ font-size:10px; margin-top:1px; }
+  .m-l2.m-red{ color:#B0563A; } .m-l2.m-gry{ color:#9B968A; }
+  .m-mcbubble{ background:#EAF8EF; border-radius:10px; padding:8px 11px; flex:1; }
+  .m-mcbubble .m-m{ font-size:11.5px; color:#0B7C3A; }
+  .m-mcbubble .m-s{ font-size:9px; color:#9B968A; margin-top:2px; }
+  .m-mctask{ border:1px dashed #E4E0D6; border-radius:10px; padding:8px 11px; flex:1; }
+  .m-mctask .m-m{ font-size:11.5px; color:#0A0A0A; font-weight:500; }
+  .m-mctask .m-s{ font-size:9px; color:#9B968A; margin-top:2px; }
+  .m-vwidget{ padding:14px; }
+  .m-vwhead{ font-size:14px; font-weight:600; color:#0A0A0A; }
+  .m-vwsub{ font-size:10px; color:#9B968A; margin-top:2px; }
+  .m-vwfield{ display:flex; gap:8px; margin-top:11px; }
+  .m-vwinput{ flex:1; border:1px solid #E4E0D6; border-radius:999px; padding:9px 13px; font-size:11px; color:#9B968A; background:#FAF8F3; }
+  .m-vwbtn{ background:#0A0A0A; color:#1FE874; font-size:11px; font-weight:500; padding:9px 15px; border-radius:999px; white-space:nowrap; }
+  .m-vwconsent{ display:flex; gap:7px; align-items:flex-start; margin-top:10px; }
+  .m-vwbox{ min-width:12px; height:12px; border:1px solid #C9C4B8; border-radius:3px; margin-top:1px; }
+  .m-vwconsent p{ font-size:9.5px; color:#9B968A; line-height:1.4; }
+  .m-vwarrow{ text-align:center; font-size:12px; color:#0B7C3A; margin:9px 0; }
+  .m-vwresult{ background:#EAF8EF; border:1px solid #CBEBD6; border-radius:10px; padding:9px 11px; }
+  .m-vwresult .m-m{ font-size:11.5px; color:#0A0A0A; font-weight:500; }
+  .m-vwresult .m-s{ font-size:10px; color:#0B7C3A; margin-top:2px; }
+  .m-ba{ position:relative; border-radius:12px; overflow:hidden; border:1px solid #E4E0D6; height:96px; background:#EAF8EF; margin-top:12px; }
+  .m-ba .m-ba-after{ position:absolute; inset:0; display:flex; align-items:center; justify-content:flex-end; padding-right:13px; font-size:11.5px; color:#0B7C3A; }
+  .m-ba .m-ba-before{ position:absolute; top:0; bottom:0; left:0; background:#F1EEE6; border-right:2px solid #1FE874; animation:m-sweep 6s ease-in-out infinite; display:flex; align-items:center; }
+  .m-ba .m-ba-before p{ font-size:11.5px; color:#9B968A; margin-left:13px; white-space:nowrap; }
+  .m-studiolist{ font-size:11.5px; color:#9B968A; margin-top:9px; }
+  .m-tiers{ display:flex; gap:8px; margin-top:14px; }
+  .m-tier{ flex:1; background:#FFFFFF; border:1px solid #E4E0D6; border-radius:12px; padding:11px 9px; }
+  .m-tier.m-pro{ flex:1.1; border:1.5px solid #0B7C3A; }
+  .m-tier .m-name{ font-size:10px; letter-spacing:0.08em; color:#9B968A; }
+  .m-tier.m-pro .m-name{ color:#0B7C3A; }
+  .m-tier .m-price{ font-size:17px; font-weight:600; color:#0A0A0A; margin-top:2px; }
+  .m-pilot{ background:#EAF8EF; border:1px solid #CBEBD6; border-radius:12px; padding:10px 13px; margin-top:11px; font-size:11.5px; line-height:1.5; color:#0A0A0A; }
+  .m-pilot .m-serif{ color:#0B7C3A; }
+  .m-math{ font-size:11px; color:#9B968A; text-align:center; margin-top:11px; }
+  .m-cats{ display:flex; align-items:center; gap:11px; }
+  .m-catdot{ min-width:32px; height:32px; border-radius:50%; background:#EAF8EF; display:flex; align-items:center; justify-content:center; font-size:15px; }
+  .m-cats p{ font-size:11.5px; color:#6E6A60; line-height:1.5; }
+  .m-cta{ text-align:center; padding:34px 20px 38px; }
+  .m-cta .m-h2{ font-size:21px; }
+  .m-cta .m-sub2{ font-size:12.5px; color:#6E6A60; margin:12px 0 16px; line-height:1.55; }
+  .m-bigbtn{ display:inline-block; background:#0A0A0A; color:#FFFFFF; font-size:13.5px; font-weight:500; padding:13px 26px; border-radius:999px; animation:m-pulse 3.5s ease-in-out infinite; text-decoration:none; }
+  .m-fine{ font-size:10px; color:#9B968A; margin-top:13px; letter-spacing:0.04em; }
+  .m-foot{ text-align:center; padding:18px 20px 26px; border-top:1px solid #ECE8DE; background:#FAF8F3; }
+  .m-foot p{ font-size:10px; color:#9B968A; line-height:1.6; }
+  .m-foot a{ color:#6E6A60; text-decoration:none; }
+  .m-sticky{ display:none; position:fixed; left:0; right:0; bottom:0; z-index:70; padding:10px 16px calc(10px + env(safe-area-inset-bottom)); background:rgba(250,248,243,0.92); backdrop-filter:blur(8px); border-top:1px solid #E4E0D6; text-align:center; transform:translateY(110%); transition:transform 0.3s ease; }
+  @media (max-width:767px){ .m-sticky{ display:block; } }
+  body.m-sticky-on .m-sticky{ transform:translateY(0); }
+  .m-sticky a{ display:inline-block; background:#0A0A0A; color:#FFFFFF; font-size:13px; font-weight:500; padding:11px 24px; border-radius:999px; text-decoration:none; }
+  @media (prefers-reduced-motion: reduce){
+    .m-dot,.m-bub,.m-row,.m-mc,.m-typing span,.m-ba-before,.m-bigbtn,.m-ringy{ animation:none !important; }
+    .m-bub,.m-row,.m-mc{ opacity:1; }
+  }
 </style>
 </head>
 
 <body class="grain relative">
 
 <!-- ============ living background (subtle, green-tinted) ============ -->
-<div class="bg-field" id="vantaBg" aria-hidden="true"></div>
-<div class="bg-scrim" aria-hidden="true"></div>
-<div class="vignette" aria-hidden="true"></div>
+<div class="bg-field lp-desktop" id="vantaBg" aria-hidden="true"></div>
+<div class="bg-scrim lp-desktop" aria-hidden="true"></div>
+<div class="vignette lp-desktop" aria-hidden="true"></div>
 
 <!-- ============ NAV ============ -->
-<header class="fixed top-0 inset-x-0 z-50">
+<header class="lp-desktop fixed top-0 inset-x-0 z-50">
   <nav class="glass-2 mx-auto mt-3 sm:mt-4 max-w-6xl rounded-2xl px-4 sm:px-6 py-3 flex items-center justify-between">
     <a href="#top" class="flex items-center gap-3" aria-label="AIVENA home">
       <img src="assets/logo-mark-cream.png" alt="" class="h-7 w-auto" />
@@ -425,7 +559,7 @@
   </nav>
 </header>
 
-<main id="top" class="relative z-10">
+<main id="top" class="lp-desktop relative z-10">
 
 <!-- ============ HERO ============ -->
 <section class="px-4 pt-32 sm:pt-40 pb-20 sm:pb-28 max-w-6xl mx-auto">
@@ -848,7 +982,7 @@
   </div>
   <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
     <div class="reveal glass rounded-2xl p-6 card-hover" data-delay="1"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1FE874" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" class="mb-3"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><p class="font-500 mb-1">EU-hosted, GDPR-ready</p><p class="text-sm text-fg-muted leading-relaxed">Your customers' data stays in the EU, handled to GDPR standards.</p></div>
-    <div class="reveal glass rounded-2xl p-6 card-hover" data-delay="2"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1FE874" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" class="mb-3"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg><p class="font-500 mb-1">EU AI Act compliant</p><p class="text-sm text-fg-muted leading-relaxed">AI is disclosed on voice and chat — buyers always know.</p></div>
+    <div class="reveal glass rounded-2xl p-6 card-hover" data-delay="2"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1FE874" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" class="mb-3"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg><p class="font-500 mb-1">Built for the EU AI Act</p><p class="text-sm text-fg-muted leading-relaxed">AI is disclosed on voice and chat — buyers always know.</p></div>
     <div class="reveal glass rounded-2xl p-6 card-hover" data-delay="3"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1FE874" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" class="mb-3"><path d="M12 9v4M12 17h.01"/><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg><p class="font-500 mb-1">Never invents an answer</p><p class="text-sm text-fg-muted leading-relaxed">When it isn't certain, it hands the conversation to a human instead.</p></div>
     <div class="reveal glass rounded-2xl p-6 card-hover" data-delay="1"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1FE874" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" class="mb-3"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg><p class="font-500 mb-1">Fits around your CRM</p><p class="text-sm text-fg-muted leading-relaxed">No need to switch tools — it works alongside what you already use.</p></div>
     <div class="reveal glass rounded-2xl p-6 card-hover" data-delay="2"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1FE874" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" class="mb-3"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><p class="font-500 mb-1">Human-in-the-loop</p><p class="text-sm text-fg-muted leading-relaxed">The owner is always in control. AIVENA drafts; you decide.</p></div>
@@ -967,10 +1101,10 @@
 <!-- ============ FINAL CTA ============ -->
 <section id="start" class="px-4 py-24 sm:py-36">
   <div class="reveal max-w-3xl mx-auto text-center">
-    <h2 class="cta-display">The next enquiry<br/><em>arrives tonight.</em></h2>
-    <p class="mt-7 text-lg text-fg-soft measure mx-auto">Write to Christian and he'll show you AIVENA running on real conversations. Three pilot spots, then the free year is gone.</p>
+    <h2 class="cta-display">Your next buyer<br/><em>won't wait until Monday.</em></h2>
+    <p class="mt-7 text-lg text-fg-soft measure mx-auto">15 minutes with Christian — see AIVENA running on real conversations. Three pilot spots, then the free year is gone.</p>
     <div class="mt-9 flex flex-wrap justify-center gap-3">
-      <a href="mailto:christian@aivena.es?subject=AIVENA%20pilot" class="btn btn-green rounded-xl px-8 py-4 text-base cursor-pointer">Start the conversation</a>
+      <a href="mailto:christian@aivena.es?subject=AIVENA%20pilot" class="btn btn-green rounded-xl px-8 py-4 text-base cursor-pointer">Book a 15-minute walkthrough</a>
       <a href="#journey" class="btn btn-ghost rounded-xl px-8 py-4 text-base cursor-pointer">Watch the story again</a>
     </div>
     <p class="mt-6 data text-sm text-fg-muted">A year of AIVENA costs less than a single commission.</p>
@@ -1026,7 +1160,7 @@
 </main>
 
 <!-- ============ FOOTER ============ -->
-<footer class="relative z-10 px-4 pb-12">
+<footer class="lp-desktop relative z-10 px-4 pb-12">
   <div class="max-w-6xl mx-auto">
     <div class="h-px bg-gradient-to-r from-transparent via-green/40 to-transparent mb-10"></div>
     <div class="grid sm:grid-cols-[1.6fr,1fr] gap-10 mb-10">
@@ -1050,6 +1184,206 @@
   </div>
 </footer>
 
+<!-- ═══════════ MOBILE EXPERIENCE (<768px) ═══════════ -->
+<div class="lp-mobile" aria-label="AIVENA">
+
+  <section class="m-first" id="m-hero">
+    <div class="m-dots" aria-hidden="true"></div>
+    <div class="m-rel">
+      <div class="m-topbar">
+        <span class="m-logo">AIVENA</span>
+        <a class="m-navbtn" href="mailto:christian@aivena.es?subject=AIVENA%20pilot">Start <b>&rarr;</b></a>
+      </div>
+      <p class="m-h1">Every buyer answered,</p>
+      <p class="m-h1g m-serif m-langcycle">en fran&ccedil;ais,</p>
+      <p class="m-h1" style="margin-bottom:8px;">under your name.</p>
+      <p class="m-sub">Real replies in minutes, in the buyer's language. You approve, it sends.</p>
+      <div class="m-card m-chat">
+        <div class="m-bub m-in" style="animation-delay:0s;">
+          <p>Hei! Er rekkehuset i Guardamar fortsatt til salgs?</p>
+          <p class="m-meta m-mono">NORWEGIAN &middot; DETECTED</p>
+        </div>
+        <div class="m-bub m-typing" style="animation-delay:1.8s;"><span></span><span></span><span></span></div>
+        <div class="m-bub m-out" style="animation-delay:3.6s;">
+          <p class="m-tag m-mono">AIVENA DRAFT</p>
+          <p class="m-msg">Hei! Ja, rekkehuset er fortsatt til salgs. Vil du booke en visning?</p>
+          <p class="m-ok"><b>&#10003;</b> Sent under your agency's name</p>
+        </div>
+      </div>
+      <a class="m-gbtn" href="mailto:christian@aivena.es?subject=AIVENA%20pilot">Book a 15-minute walkthrough <b>&rarr;</b></a>
+      <p class="m-trust m-mono">EU-hosted &middot; GDPR &middot; 13 languages</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="m-dots" aria-hidden="true"></div>
+    <div class="m-rel">
+      <p class="m-h2" style="margin-bottom:11px;">How every enquiry gets answered</p>
+      <div class="m-steps">
+        <div class="m-step"><span class="m-n m-mono">1</span><p>A buyer writes <span>&mdash; any channel, any hour</span></p></div>
+        <div class="m-step"><span class="m-n m-mono">2</span><p>AIVENA reads it <span>&mdash; language, intent, urgency</span></p></div>
+        <div class="m-step"><span class="m-n m-mono">3</span><p>Writes the reply <span>&mdash; under your name</span></p></div>
+        <div class="m-step"><span class="m-n m-mono">4</span><p>You approve <span>&mdash; nothing sends until you do</span></p></div>
+        <div class="m-step"><span class="m-n m-mono">5</span><p>Sent to the buyer <span>&mdash; minutes after they wrote</span></p></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="m-dots" aria-hidden="true"></div>
+    <div class="m-rel">
+      <p class="m-h2">One inbox. <span class="m-serif m-gl">Every channel.</span></p>
+      <p class="m-lead">WhatsApp, web, forms, email, ads and missed calls land here as structured enquiries.</p>
+      <div class="m-card" style="margin-top:13px;">
+        <div class="m-inboxhead">
+          <span class="m-t">Today</span>
+          <span class="m-b">3 waiting for you</span>
+        </div>
+        <div class="m-erow m-row" style="animation-delay:0s;">
+          <span class="m-av m-wa" aria-hidden="true">&#128172;</span>
+          <div>
+            <p class="m-who">Emma Lindqvist</p>
+            <p class="m-what">&Auml;r l&auml;genheten i Villajoyosa till salu?</p>
+            <p class="m-chanline m-mono">WHATSAPP &middot; SV &middot; 23:14</p>
+          </div>
+          <div class="m-right"><span class="m-tagdraft">Draft ready</span></div>
+        </div>
+        <div class="m-erow m-row" style="animation-delay:1.4s;">
+          <span class="m-av m-em" aria-hidden="true">&#9993;</span>
+          <div>
+            <p class="m-who">Henrik Olsen</p>
+            <p class="m-what">Hei! Er rekkehuset fortsatt til salgs?</p>
+            <p class="m-chanline m-mono">EMAIL &middot; NO &middot; 07:12</p>
+          </div>
+          <div class="m-right"><span class="m-tagdraft">Draft ready</span></div>
+        </div>
+        <div class="m-erow m-row" style="animation-delay:2.8s;">
+          <span class="m-av m-va" aria-hidden="true">&#127968;</span>
+          <div>
+            <p class="m-who">Seller enquiry</p>
+            <p class="m-what">Valuation requested &middot; Calle Mayor 12</p>
+            <p class="m-chanline m-mono">YOUR WEBSITE &middot; ES &middot; 19:02</p>
+          </div>
+          <div class="m-right"><span class="m-tagdraft">Draft ready</span></div>
+        </div>
+      </div>
+      <p class="m-inboxfoot">Nothing slips through. Nothing sends without you.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="m-dots" aria-hidden="true"></div>
+    <div class="m-rel">
+      <p class="m-h2">A missed call is <span class="m-serif m-gl">not a lost buyer</span></p>
+      <p class="m-lead">Your team is on a viewing. The phone rings anyway. Watch what happens.</p>
+      <div class="m-card m-mcwrap" style="margin-top:13px;">
+        <div class="m-mcstep m-mc" style="animation-delay:0s;">
+          <span class="m-mcav m-red"><span class="m-ringy" aria-hidden="true">&#128222;</span></span>
+          <div>
+            <p class="m-l1">+47 &middot;&middot;&middot; &middot;&middot; 318 calling</p>
+            <p class="m-l2 m-red">Missed &middot; nobody could pick up</p>
+          </div>
+        </div>
+        <div class="m-mcstep m-mc" style="animation-delay:2.2s;">
+          <span class="m-mcav m-grn" aria-hidden="true">&#128172;</span>
+          <div class="m-mcbubble">
+            <p class="m-m">&laquo;Hei! Vi s&aring; at du ringte &mdash; hvordan kan vi hjelpe deg?&raquo;</p>
+            <p class="m-s">WhatsApp sent instantly &middot; in the caller's language</p>
+          </div>
+        </div>
+        <div class="m-mcstep m-mc" style="animation-delay:4.4s;">
+          <span class="m-mcav m-gry" aria-hidden="true">&#9745;</span>
+          <div class="m-mctask">
+            <p class="m-m">Callback task created</p>
+            <p class="m-s">Number, time and language &mdash; waiting in your inbox</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="m-dots" aria-hidden="true"></div>
+    <div class="m-rel">
+      <p class="m-h2">Sellers find you too. <span class="m-serif m-gl">From your own website.</span></p>
+      <p class="m-lead">A valuation widget on your site gives homeowners an estimate &mdash; and, with their consent, becomes a seller enquiry in your inbox.</p>
+      <div class="m-card m-vwidget" style="margin-top:13px;">
+        <p class="m-vwhead">What is your home worth?</p>
+        <p class="m-vwsub">Free estimate in 60 seconds &middot; on youragency.es</p>
+        <div class="m-vwfield">
+          <span class="m-vwinput">Calle Mayor 12, Torrevieja</span>
+          <span class="m-vwbtn">Get estimate</span>
+        </div>
+        <div class="m-vwconsent">
+          <span class="m-vwbox" aria-hidden="true"></span>
+          <p>I agree to be contacted about my valuation (consent logged)</p>
+        </div>
+        <p class="m-vwarrow" aria-hidden="true">&darr;</p>
+        <div class="m-vwresult">
+          <p class="m-m">New seller enquiry &middot; Calle Mayor 12</p>
+          <p class="m-s">&#10003; Estimate sent &middot; lead in your inbox with consent on record</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="m-dots" aria-hidden="true"></div>
+    <div class="m-rel">
+      <p class="m-h2">Marketing that <span class="m-serif m-gl">looks like you hired an agency</span></p>
+      <div class="m-ba" aria-label="Before and after virtual staging">
+        <div class="m-ba-after">After &middot; staged</div>
+        <div class="m-ba-before"><p>Before &middot; empty</p></div>
+      </div>
+      <p class="m-studiolist">Ad creative &middot; social posts &middot; virtual staging &middot; captions in the buyer's language</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="m-dots" aria-hidden="true"></div>
+    <div class="m-rel">
+      <p class="m-h2">Every feature, at <span class="m-serif m-gl">every tier</span></p>
+      <p class="m-lead">Only voice minutes and image quotas scale. No setup fee.</p>
+      <div class="m-tiers">
+        <div class="m-tier"><p class="m-name m-mono">STARTER</p><p class="m-price">&euro;599</p></div>
+        <div class="m-tier m-pro"><p class="m-name m-mono">PRO</p><p class="m-price">&euro;699</p></div>
+        <div class="m-tier"><p class="m-name m-mono">UNLIMITED</p><p class="m-price">&euro;999</p></div>
+      </div>
+      <div class="m-pilot"><span class="m-serif">Three agencies to start.</span> The first gets a full year free, the next two get three months free &mdash; in exchange for honest feedback.</div>
+      <p class="m-math m-mono">A year of AIVENA costs less than a single commission.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="m-dots" aria-hidden="true"></div>
+    <div class="m-cats m-rel">
+      <span class="m-catdot" aria-hidden="true">&#128049;</span>
+      <p>10% of every subscription feeds and cares for Costa Blanca street cats. Every euro documented publicly.</p>
+    </div>
+  </section>
+
+  <section class="m-cta">
+    <div class="m-dots" aria-hidden="true"></div>
+    <div class="m-rel">
+      <p class="m-h2">Your next buyer</p>
+      <p class="m-h2 m-serif m-gl" style="font-size:21px;">won't wait until Monday.</p>
+      <p class="m-sub2">15 minutes with Christian &mdash; see AIVENA on real conversations. Three pilot spots, then the free year is gone.</p>
+      <a class="m-bigbtn" href="mailto:christian@aivena.es?subject=AIVENA%20pilot">Book a 15-minute walkthrough <b>&rarr;</b></a>
+      <p class="m-fine m-mono">No setup fee &middot; no lock-in &middot; cancel anytime</p>
+    </div>
+  </section>
+
+  <div class="m-foot">
+    <p>AIVENA &middot; Costa Blanca &middot; <a href="mailto:christian@aivena.es">christian@aivena.es</a><br/>Privacy, Terms &amp; Cookie policies are being prepared and will be published shortly.</p>
+  </div>
+
+</div>
+
+<div class="m-sticky" aria-hidden="false">
+  <a href="mailto:christian@aivena.es?subject=AIVENA%20pilot">Book a 15-minute walkthrough <b style="color:#1FE874;font-weight:500;">&rarr;</b></a>
+</div>
+
+
 <script>
 const REDUCE = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -1058,6 +1392,16 @@ const REDUCE = matchMedia('(prefers-reduced-motion: reduce)').matches;
    on its crest — the gradient-dots look, recoloured to brand green. */
 (function(){
   const host=document.getElementById('vantaBg'); if(!host) return;
+  // Mobile uses the .lp-mobile dot fields — don't burn battery animating a
+  // hidden canvas. Lazy-init if the viewport later crosses to desktop.
+  const deskMq=window.matchMedia('(min-width:768px)');
+  if(!deskMq.matches){
+    const arm=e=>{ if(e.matches){ (deskMq.removeEventListener?deskMq.removeEventListener('change',arm):deskMq.removeListener(arm)); boot(); } };
+    (deskMq.addEventListener?deskMq.addEventListener('change',arm):deskMq.addListener(arm));
+    return;
+  }
+  boot();
+  function boot(){
   const cv=document.createElement('canvas');
   cv.style.cssText='position:absolute;inset:0;width:100%;height:100%;display:block';
   host.appendChild(cv);
@@ -1115,6 +1459,7 @@ const REDUCE = matchMedia('(prefers-reduced-motion: reduce)').matches;
   let t0=0;
   function tick(ts){ if(!t0) t0=ts; draw((ts-t0)/1000); requestAnimationFrame(tick); }
   requestAnimationFrame(tick);
+  } // boot()
 })();
 
 /* reveal + per-type triggers */
@@ -1336,7 +1681,7 @@ document.addEventListener('DOMContentLoaded', function(){
     {k:['missed call','missed-call'], a:"If a call is missed, AIVENA instantly sends that caller a WhatsApp in their language — before they ring the next agency."},
     {k:['voice','phone','caller','calls'], a:"A voice agent answers phone calls in the caller's own language. And any missed call instantly triggers a WhatsApp to the caller, in their language."},
     {k:['channel','whatsapp','email','form','facebook','google','instagram','inbox'], a:"Every channel you own lands in one inbox: WhatsApp, website chat, website forms, email, Facebook & Google lead ads, phone and missed calls. Only the channels you own — no portals."},
-    {k:['gdpr','data','secure','security','privacy','compliance','ai act','hosted','safe'], a:"EU-hosted and GDPR-ready, and EU AI Act compliant — AI is disclosed on voice and chat. Each agency's data is walled off and yours alone."},
+    {k:['gdpr','data','secure','security','privacy','compliance','ai act','hosted','safe'], a:"EU-hosted and GDPR-ready, and built for the EU AI Act — AI is disclosed on voice and chat. Each agency's data is walled off and yours alone."},
     {k:['valuation','seller','worth','owner','listing','win listing'], a:"A valuation widget sits on your site: a homeowner gets an instant valuation and you get a seller lead, with proper consent. AIVENA can also tell owners 'we have buyers for a property like yours.'"},
     {k:['studio','image','creative','ad ','ads','social','staging','renovation','visual','picture','photo'], a:"Studio generates branded ad creative for Meta, social posts and virtual-staging visuals — copy in the buyer's language. There are live examples in the Studio section just above this chat."},
     {k:['match','matching','right home','fit'], a:"AIVENA matches each buyer to the properties that actually fit them — budget, area, the features they asked for."},
@@ -1417,5 +1762,84 @@ document.addEventListener('DOMContentLoaded', function(){
 <!-- cookie consent (LOPDGDD) — must run on every page -->
 <script src="/assets/cookie-banner.js"></script>
 
+
+<script>
+/* ═══ Mobile experience: dot fields, language cycler, sticky CTA, off-screen pause ═══ */
+(function(){
+  var mq = window.matchMedia('(max-width:767px)');
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var root = document.querySelector('.lp-mobile');
+  if (!root) return;
+  var built = false;
+
+  function build(){
+    if (built || !mq.matches) return;
+    built = true;
+
+    // Scattered drifting dots — generated at runtime, per section.
+    root.querySelectorAll('.m-dots').forEach(function(c){
+      for (var i = 0; i < 26; i++){
+        var d = document.createElement('span');
+        d.className = 'm-dot';
+        var sz = 1.5 + Math.random() * 3;
+        d.style.width = sz + 'px';
+        d.style.height = sz + 'px';
+        d.style.left = Math.random() * 100 + '%';
+        d.style.top = Math.random() * 100 + '%';
+        d.style.background = Math.random() < 0.5 ? '#0B7C3A' : '#B5B0A4';
+        var o = (0.05 + Math.random() * 0.1).toFixed(2);
+        d.style.setProperty('--o', o);
+        d.style.opacity = o;
+        d.style.setProperty('--dx', ((Math.random() - 0.5) * 28).toFixed(0) + 'px');
+        d.style.setProperty('--dy', ((Math.random() - 0.5) * 28).toFixed(0) + 'px');
+        d.style.setProperty('--t', (8 + Math.random() * 10).toFixed(1) + 's');
+        d.style.setProperty('--d', (-Math.random() * 12).toFixed(1) + 's');
+        c.appendChild(d);
+      }
+    });
+
+    // Cycling hero language line.
+    var langs = ['en fran\u00e7ais,', 'p\u00e5 norsk,', 'auf Deutsch,', 'p\u00e5 svenska,', 'in het Nederlands,', 'po polsku,', 'in English,', 'suomeksi,'];
+    var li = 0;
+    var le = root.querySelector('.m-langcycle');
+    if (le && !reduce){
+      setInterval(function(){
+        le.style.opacity = '0';
+        setTimeout(function(){
+          li = (li + 1) % langs.length;
+          le.textContent = langs[li];
+          le.style.opacity = '1';
+        }, 320);
+      }, 2400);
+    }
+
+    // Pause section animations while off-screen (battery).
+    if ('IntersectionObserver' in window){
+      var io = new IntersectionObserver(function(entries){
+        entries.forEach(function(e){
+          e.target.classList.toggle('m-off', !e.isIntersecting);
+        });
+      }, { rootMargin: '120px 0px' });
+      root.querySelectorAll('section').forEach(function(sec){ io.observe(sec); });
+    }
+
+    // Sticky CTA bar after the hero scrolls out.
+    var hero = root.querySelector('#m-hero');
+    if (hero && 'IntersectionObserver' in window){
+      var hio = new IntersectionObserver(function(entries){
+        var heroVisible = entries[0].isIntersecting;
+        document.body.classList.toggle('m-sticky-on', mq.matches && !heroVisible);
+      }, { threshold: 0.05 });
+      hio.observe(hero);
+    }
+  }
+
+  build();
+  mq.addEventListener ? mq.addEventListener('change', build) : mq.addListener(build);
+  window.addEventListener('resize', function(){
+    if (!mq.matches) document.body.classList.remove('m-sticky-on');
+  });
+})();
+</script>
 </body>
 </html>

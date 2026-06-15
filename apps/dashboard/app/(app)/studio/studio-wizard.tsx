@@ -233,6 +233,12 @@ export function StudioWizard({ initialLibrary }: { initialLibrary: LibraryItem[]
       if (st === "completed") {
         setResultUrl(res.image_url as string);
         if (typeof res.revisions_remaining === "number") setRevisionsRemaining(res.revisions_remaining);
+        // A revision that failed refunds its slot and leaves the image as-is.
+        setError(
+          res.last_revision_error === true
+            ? "That revision couldn't be applied — your image is unchanged. Try again."
+            : null,
+        );
         setGenStatus("completed");
         libraryAction().then((l) => {
           if (l.ok && Array.isArray(l.items)) setLibrary(l.items as LibraryItem[]);

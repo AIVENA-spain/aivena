@@ -244,7 +244,17 @@ function metaNum(meta: Record<string, unknown> | null, ...path: string[]): numbe
 
 function shapeStatus(r: GenRow) {
   const composed = !!(r.result_metadata && r.result_metadata.composed === true);
-  const used = metaNum(r.result_metadata, 'revisions_used') ?? 0;
+  const meta = r.result_metadata;
+  // Vega v0.4.2: the slot is reserved atomically at accept-time, so
+  // `revisions_remaining` (= 2 - revisions_started) is authoritative and
+  // accounts for the in-flight one — use it directly, never recompute from
+  // completed (`revisions_used` lags ~90s behind kie). Fall back to the
+  // started/used math only on older rows that predate these fields.
+  const started = metaNum(meta, 'revisions_started');
+  const used = metaNum(meta, 'revisions_used') ?? 0;
+  const remaining =
+    metaNum(meta, 'revisions_remaining') ??
+    (started != null ? Math.max(0, 2 - started) : Math.max(0, 2 - used));
   return {
     id: r.id,
     status: r.status,
@@ -256,8 +266,10 @@ function shapeStatus(r: GenRow) {
     image_url: r.result_image_url,
     composed,
     qc_score: metaNum(r.result_metadata, 'qc', 'score'),
-    revisions_used: used,
-    revisions_remaining: Math.max(0, 2 - used),
+    revisions_used: used, // completed only — for display ("N edits applied")
+    revisions_remaining: remaining,
+    // A failed revision refunds its slot and leaves the image unchanged.
+    last_revision_error: !!(meta && meta.last_revision_error === true),
     created_at: r.created_at,
     completed_at: r.completed_at,
   };

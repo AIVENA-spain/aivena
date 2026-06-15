@@ -20,6 +20,7 @@ import contentRoute from './routes/content';
 import leadNotesRoute from './routes/lead-notes';
 import studioRoute from './routes/studio';
 import imagesRoute from './routes/images';
+import studioWizardRoute from './routes/studio-wizard';
 import adminRoute from './routes/admin';
 
 Sentry.init({
@@ -79,6 +80,8 @@ app.route('/api/v1/lead-notes', leadNotesRoute);
 app.route('/api/v1/studio', studioRoute);
 // Image generation (W13) — create via Edge Function, poll/list via fenced reads.
 app.route('/api/v1/images', imagesRoute);
+// Studio wizard proxy (W13 v0.6) — browser's only door to the image EFs.
+app.route('/api/studio', studioWizardRoute);
 
 // Webhook signature validation — provider-specific.
 // WhatsApp uses x-hub-signature-256 (Meta HMAC SHA-256 of raw body).

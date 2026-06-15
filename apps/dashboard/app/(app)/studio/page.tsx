@@ -1,46 +1,38 @@
 import { apiFetch } from "@/lib/api/client";
-import { getCurrentUserContext } from "@/lib/auth/context";
-import type {
-  ContentItemRow,
-  ContentItemsResponse,
-  PlanTier,
-  PropertiesResponse,
-  PropertyRow,
-  SettingsResponse,
-} from "@/lib/api/types";
 
-import { StudioTabs } from "./studio-tabs";
+import { StudioWizard } from "./studio-wizard";
 
 export const dynamic = "force-dynamic";
 
+type LibraryItem = {
+  id: string;
+  image_url: string;
+  generation_type: string;
+  content_type: string | null;
+  created_at: string;
+};
+
 /**
- * Studio — the W13 image-generation suite. The Create tab generates real images
- * (ad_creative / social_post / renovation) through the Hono /api/v1/images
- * routes → image-generate-create Edge Function, polling the async result; the
- * Library tab reads the agency's content_items. Renovation is €999-tier-gated.
+ * Studio (W13 v0.6) — the agent-facing image generator. A Smart/Wizard fork →
+ * content type → subject → look-by-sight → live fine-tune → generate → free
+ * revisions, all through the Hono /api/studio/* proxy (which holds the secret
+ * and resolves the agency). The generation engine lives entirely in Vega's
+ * Edge Functions; this is presentation + orchestration only.
+ *
+ * Server-fetches the finished-image library for the first paint; everything
+ * else is interactive.
  */
 export default async function StudioPage() {
-  const ctx = await getCurrentUserContext();
-  const agencyId = ctx?.activeAgency?.agencyId ?? null;
-
-  let properties: PropertyRow[] = [];
-  let planTier: PlanTier = "starter";
-  let library: ContentItemRow[] = [];
-
-  if (agencyId) {
-    const [propsRes, settingsRes, contentRes] = await Promise.allSettled([
-      apiFetch<PropertiesResponse>(
-        `/api/v1/agencies/${encodeURIComponent(agencyId)}/properties`,
-      ),
-      apiFetch<SettingsResponse>("/api/v1/settings"),
-      apiFetch<ContentItemsResponse>("/api/v1/content"),
-    ]);
-    if (propsRes.status === "fulfilled") properties = propsRes.value.properties;
-    if (settingsRes.status === "fulfilled") planTier = settingsRes.value.plan_tier;
-    if (contentRes.status === "fulfilled") library = contentRes.value.items;
+  let library: LibraryItem[] = [];
+  try {
+    const res = await apiFetch<{ ok: boolean; items?: LibraryItem[] }>(
+      "/api/studio/library",
+    );
+    if (res.ok && Array.isArray(res.items)) library = res.items;
+  } catch {
+    // Library is non-critical for first paint — the wizard still works; it
+    // refetches after each generation.
   }
 
-  return (
-    <StudioTabs properties={properties} planTier={planTier} library={library} />
-  );
+  return <StudioWizard initialLibrary={library} />;
 }

@@ -101,7 +101,11 @@ async function callEf(
 const GEN_TYPES = new Set(['ad_creative', 'social_post', 'renovation']);
 const CONTENT_TYPES = new Set(['listing', 'brand', 'educational', 'sold', 'launch']);
 const COMPOSITIONS = new Set([
+  // Original 6
   'full_bleed', 'bottom_panel', 'side_panel', 'framed', 'split', 'collage',
+  // v10 drop — 9 new single-photo layouts (studio-compose v10 / create v10).
+  'magazine', 'editorial', 'postcard', 'band', 'quote', 'stat',
+  'statement', 'project', 'price_hero',
 ]);
 const TEXT_TREATMENTS = new Set(['on_photo', 'scrim', 'negative_space']);
 const FONT_SETS = new Set(['serif', 'sans', 'mixed']);
@@ -155,7 +159,7 @@ function buildDesignBody(b: Record<string, unknown>): Record<string, unknown> | 
   if (str(b.language)) out.language = b.language;
 
   // Copy overrides — pass through verbatim (including empty string = hide).
-  for (const k of ['headline', 'kicker', 'cta_text', 'tagline', 'badge_text']) {
+  for (const k of ['headline', 'kicker', 'cta_text', 'tagline', 'badge_text', 'badge_label']) {
     if (typeof b[k] === 'string') out[k] = b[k];
   }
   if (Array.isArray(b.bullets)) {

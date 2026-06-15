@@ -67,12 +67,39 @@ const DEFAULT_LOOK: Record<
   launch: { composition: "full_bleed", font_set: "serif", color_treatment: "photo_only", text_treatment: "on_photo", mood: "golden_hour" },
 };
 
-const COMPOSITIONS_SINGLE = ["full_bleed", "bottom_panel", "side_panel", "framed"];
-const COMPOSITIONS_MULTI = [...COMPOSITIONS_SINGLE, "split", "collage"];
+// All single-photo layouts (4 originals + 9 from the v10 drop). split/collage
+// need 2 photos and are appended only when 2+ are selected.
+const SINGLE_PHOTO = [
+  "full_bleed", "bottom_panel", "side_panel", "framed",
+  "magazine", "editorial", "postcard", "band", "quote", "stat",
+  "statement", "project", "price_hero",
+];
+const COMPOSITIONS_SINGLE = SINGLE_PHOTO;
+const COMPOSITIONS_MULTI = [...SINGLE_PHOTO, "split", "collage"];
+
 const COMPOSITION_LABEL: Record<string, string> = {
   full_bleed: "Full bleed", bottom_panel: "Bottom panel", side_panel: "Side panel",
   framed: "Framed", split: "Split", collage: "Collage",
+  magazine: "Magazine", editorial: "Editorial", postcard: "Postcard",
+  band: "Color band", quote: "Quote", stat: "Stat card",
+  statement: "Statement", project: "Project", price_hero: "Price hero",
 };
+
+// Curated "choose by sight" sets per content type for the look grid (the
+// fine-tune Layout picker exposes all 15). Keeps the parallel preview load
+// bounded and shows looks that suit the content type. split/collage append
+// automatically when 2+ photos are selected.
+const LOOK_SET: Record<ContentType, string[]> = {
+  listing: ["bottom_panel", "magazine", "editorial", "stat", "price_hero", "band"],
+  sold: ["full_bleed", "magazine", "band", "price_hero", "postcard", "editorial"],
+  brand: ["side_panel", "postcard", "quote", "statement", "full_bleed", "framed"],
+  educational: ["bottom_panel", "framed", "full_bleed", "side_panel"],
+  launch: ["full_bleed", "band", "statement", "project", "magazine"],
+};
+
+// Which layouts read the pass-through copy fields (drives conditional inputs).
+const NEEDS_TAGLINE = new Set(["quote", "statement"]);
+const NEEDS_BULLETS = new Set(["statement", "project"]);
 
 const FORMATS = [
   { key: "square", label: "Square", w: 1080, h: 1080 },
@@ -155,6 +182,8 @@ export function StudioWizard({ initialLibrary }: { initialLibrary: LibraryItem[]
   // Copy overrides
   const [headline, setHeadline] = useState("");
   const [ctaText, setCtaText] = useState("");
+  const [tagline, setTagline] = useState(""); // quote / statement
+  const [bulletsText, setBulletsText] = useState(""); // statement / project — one per line
 
   // Generation
   const [genId, setGenId] = useState<string | null>(null);
@@ -187,9 +216,12 @@ export function StudioWizard({ initialLibrary }: { initialLibrary: LibraryItem[]
       if (photos.length) c.image_urls = photos;
       if (headline.trim()) c.headline = headline.trim();
       if (ctaText.trim()) c.cta_text = ctaText.trim();
+      if (tagline.trim()) c.tagline = tagline.trim();
+      const bullets = bulletsText.split("\n").map((b) => b.trim()).filter(Boolean).slice(0, 4);
+      if (bullets.length) c.bullets = bullets;
       return { ...c, ...overrides };
     },
-    [contentType, composition, textTreatment, colorTreatment, fontSet, format, language, mood, propertyId, photos, headline, ctaText],
+    [contentType, composition, textTreatment, colorTreatment, fontSet, format, language, mood, propertyId, photos, headline, ctaText, tagline, bulletsText],
   );
 
   function applyDefaultLook(ct: ContentType) {
@@ -344,7 +376,10 @@ export function StudioWizard({ initialLibrary }: { initialLibrary: LibraryItem[]
 
       {screen === "look" && contentType && (
         <LookStep
-          compositions={compositions}
+          compositions={[
+            ...LOOK_SET[contentType],
+            ...(photos.length >= 2 ? ["split", "collage"] : []),
+          ]}
           choicesFor={(comp) => baseChoices({ composition: comp })}
           selected={composition}
           onPick={(comp) => { setComposition(comp); setScreen("finetune"); }}
@@ -363,6 +398,8 @@ export function StudioWizard({ initialLibrary }: { initialLibrary: LibraryItem[]
           mood={mood} setMood={setMood}
           headline={headline} setHeadline={setHeadline}
           ctaText={ctaText} setCtaText={setCtaText}
+          tagline={tagline} setTagline={setTagline}
+          bulletsText={bulletsText} setBulletsText={setBulletsText}
           buildChoices={baseChoices}
           onGenerate={runGenerate}
         />
@@ -732,14 +769,19 @@ function FineTuneStep(props: {
   mood: string; setMood: (v: string) => void;
   headline: string; setHeadline: (v: string) => void;
   ctaText: string; setCtaText: (v: string) => void;
+  tagline: string; setTagline: (v: string) => void;
+  bulletsText: string; setBulletsText: (v: string) => void;
   buildChoices: (o?: Partial<DesignChoices>) => DesignChoices;
   onGenerate: () => void;
 }) {
   const {
     compositions, composition, setComposition, textTreatment, setTextTreatment,
     colorTreatment, setColorTreatment, fontSet, setFontSet, format, setFormat,
-    mood, setMood, headline, setHeadline, ctaText, setCtaText, buildChoices, onGenerate,
+    mood, setMood, headline, setHeadline, ctaText, setCtaText,
+    tagline, setTagline, bulletsText, setBulletsText, buildChoices, onGenerate,
   } = props;
+  const showTagline = NEEDS_TAGLINE.has(composition);
+  const showBullets = NEEDS_BULLETS.has(composition);
 
   const [preview, setPreview] = useState<string | null>(null);
   const [busy, setBusy] = useState(true);
@@ -759,7 +801,9 @@ function FineTuneStep(props: {
         setPreview(r.signed_url as string);
         setToast(null);
       } else {
-        setToast("Couldn't update the preview."); // keep the last good image
+        // Keep the last good image; show the EF's friendly line
+        // (e.g. photo_unavailable, preview_not_composable) when present.
+        setToast(typeof r.message === "string" ? r.message : "Couldn't update the preview.");
       }
       setBusy(false);
     }, 250);
@@ -814,6 +858,25 @@ function FineTuneStep(props: {
           <Input id="ft-cta" value={ctaText} onChange={(e) => setCtaText(e.target.value)}
             placeholder="e.g. Book a viewing" />
         </div>
+
+        {/* This layout reads a tagline (the pull-quote / statement lines). */}
+        {showTagline ? (
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="ft-tagline">Tagline</Label>
+            <Input id="ft-tagline" value={tagline} onChange={(e) => setTagline(e.target.value)}
+              placeholder={composition === "quote" ? "The quote to feature" : "2–4 short sentences"} />
+          </div>
+        ) : null}
+
+        {/* This layout reads bullets (amenities / feature columns). */}
+        {showBullets ? (
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="ft-bullets">Bullets <span className="font-normal text-muted-foreground">(one per line, up to 4)</span></Label>
+            <textarea id="ft-bullets" rows={4} value={bulletsText} onChange={(e) => setBulletsText(e.target.value)}
+              placeholder={"Sea views\nPrivate pool\n2 parking"}
+              className="rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+          </div>
+        ) : null}
 
         <Button type="button" onClick={onGenerate} className="gap-1.5">
           <Sparkles className="h-4 w-4" aria-hidden /> Generate

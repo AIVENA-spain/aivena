@@ -106,6 +106,8 @@ const COMPOSITIONS = new Set([
   // v10 drop — 9 new single-photo layouts (studio-compose v10 / create v10).
   'magazine', 'editorial', 'postcard', 'band', 'quote', 'stat',
   'statement', 'project', 'price_hero',
+  // v3.5 — premium new-development hero (studio-compose v3.5.1 / create v0.6.5).
+  'launch_hero',
 ]);
 const TEXT_TREATMENTS = new Set(['on_photo', 'scrim', 'negative_space']);
 const FONT_SETS = new Set(['serif', 'sans', 'mixed']);

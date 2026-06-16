@@ -85,8 +85,8 @@ const CONTENT: Record<Flow, ContentCfg> = {
   launch: {
     key: "launch", label: "New development", desc: "Launch a project", icon: Rocket,
     generation_type: "social_post", property: "optional",
-    layouts: ["project", "statement", "band", "full_bleed", "price_hero"],
-    default: "full_bleed", priceLabel: "From price",
+    layouts: ["launch_hero", "project", "statement", "band", "full_bleed", "price_hero"],
+    default: "launch_hero", priceLabel: "From price",
   },
   renovation: {
     key: "renovation", label: "Redesign a room", desc: "Restyle a space", icon: Paintbrush,
@@ -108,11 +108,14 @@ const COMPOSITION_LABEL: Record<string, string> = {
   magazine: "Magazine", editorial: "Editorial", postcard: "Postcard",
   band: "Color band", quote: "Quote", stat: "Stat card",
   statement: "Statement", project: "Project", price_hero: "Price hero",
+  launch_hero: "Launch hero",
 };
 
 // Which copy inputs each layout renders (per the v10 layout map).
-type CopyFlags = { headline?: boolean; tagline?: boolean; bullets?: boolean; cta?: boolean };
+// `badge` = the gold eyebrow above the headline (launch_hero → copy.badge_text).
+type CopyFlags = { headline?: boolean; tagline?: boolean; bullets?: boolean; cta?: boolean; badge?: boolean };
 const LAYOUT_FIELDS: Record<string, CopyFlags> = {
+  launch_hero: { badge: true, headline: true, tagline: true },
   full_bleed: { headline: true, tagline: true, bullets: true, cta: true },
   bottom_panel: { headline: true, tagline: true, bullets: true, cta: true },
   side_panel: { headline: true, tagline: true, bullets: true, cta: true },
@@ -196,6 +199,7 @@ export function StudioWizard({ initialLibrary }: { initialLibrary: LibraryItem[]
   const [tagline, setTagline] = useState("");
   const [bulletsText, setBulletsText] = useState("");
   const [priceText, setPriceText] = useState("");
+  const [badgeText, setBadgeText] = useState(""); // eyebrow → copy.badge_text (launch_hero)
 
   // Renovation
   const [renoPrompt, setRenoPrompt] = useState("");
@@ -244,6 +248,7 @@ export function StudioWizard({ initialLibrary }: { initialLibrary: LibraryItem[]
       if (propertyId && CONTENT[ct].property !== "none") c.source_property_id = propertyId;
       if (photos.length) c.image_urls = photos;
       const f = LAYOUT_FIELDS[overrides?.composition ?? composition] ?? fields;
+      if (f.badge && badgeText.trim()) c.badge_text = badgeText.trim();
       if (f.headline && headline.trim()) c.headline = headline.trim();
       if (f.cta && ctaText.trim()) c.cta_text = ctaText.trim();
       if (f.tagline && tagline.trim()) c.tagline = tagline.trim();
@@ -256,7 +261,7 @@ export function StudioWizard({ initialLibrary }: { initialLibrary: LibraryItem[]
       if (CONTENT[ct].priceLabel && priceText.trim()) c.price_text = priceText.trim();
       return { ...c, ...overrides };
     },
-    [flow, composition, textTreatment, colorTreatment, fontSet, format, language, mood, propertyId, photos, headline, ctaText, tagline, bulletsText, priceText, fields],
+    [flow, composition, textTreatment, colorTreatment, fontSet, format, language, mood, propertyId, photos, headline, ctaText, tagline, bulletsText, priceText, badgeText, fields],
   );
 
   function startFlow(f: Flow, smart: boolean) {
@@ -279,7 +284,7 @@ export function StudioWizard({ initialLibrary }: { initialLibrary: LibraryItem[]
   function reset() {
     setScreen("fork"); setMode("wizard"); setFlow(null);
     setPropertyId(null); setPropertyTitle(null); setPhotos([]);
-    setHeadline(""); setCtaText(""); setTagline(""); setBulletsText(""); setPriceText(""); setRenoPrompt("");
+    setHeadline(""); setCtaText(""); setTagline(""); setBulletsText(""); setPriceText(""); setBadgeText(""); setRenoPrompt("");
     setGenId(null); setGenStatus("idle"); setResultUrl(null); setRevisionsRemaining(2);
     setIsRenovationResult(false); setError(null);
   }
@@ -416,6 +421,7 @@ export function StudioWizard({ initialLibrary }: { initialLibrary: LibraryItem[]
           format={format} setFormat={setFormat}
           mood={mood} setMood={setMood}
           headline={headline} setHeadline={setHeadline}
+          badgeText={badgeText} setBadgeText={setBadgeText}
           ctaText={ctaText} setCtaText={setCtaText}
           tagline={tagline} setTagline={setTagline}
           bulletsText={bulletsText} setBulletsText={setBulletsText}
@@ -895,6 +901,7 @@ function FineTuneStep(props: {
   format: typeof FORMATS[number]; setFormat: (v: typeof FORMATS[number]) => void;
   mood: string; setMood: (v: string) => void;
   headline: string; setHeadline: (v: string) => void;
+  badgeText: string; setBadgeText: (v: string) => void;
   ctaText: string; setCtaText: (v: string) => void;
   tagline: string; setTagline: (v: string) => void;
   bulletsText: string; setBulletsText: (v: string) => void;
@@ -905,8 +912,8 @@ function FineTuneStep(props: {
   const {
     layoutSet, priceLabel, composition, setComposition, textTreatment, setTextTreatment,
     colorTreatment, setColorTreatment, fontSet, setFontSet, format, setFormat, mood, setMood,
-    headline, setHeadline, ctaText, setCtaText, tagline, setTagline, bulletsText, setBulletsText,
-    priceText, setPriceText, buildChoices, onGenerate,
+    headline, setHeadline, badgeText, setBadgeText, ctaText, setCtaText, tagline, setTagline,
+    bulletsText, setBulletsText, priceText, setPriceText, buildChoices, onGenerate,
   } = props;
 
   const f = LAYOUT_FIELDS[composition] ?? { headline: true, cta: true };
@@ -960,12 +967,22 @@ function FineTuneStep(props: {
         <Picker label="Mood (final only)" value={mood} onChange={setMood} options={MOODS.map((o) => ({ value: o.key, label: o.label }))} />
 
         {/* Copy — only the rows the layout renders; values persist on switch. */}
+        {f.badge ? (
+          <Field id="ft-badge" label="Eyebrow" value={badgeText} onChange={setBadgeText}
+            placeholder="e.g. New development" />
+        ) : null}
         {f.headline ? (
           <Field id="ft-headline" label="Headline" value={headline} onChange={setHeadline} placeholder="Leave blank to use the auto headline" />
         ) : null}
         {f.tagline ? (
-          <Field id="ft-tagline" label="Tagline" value={tagline} onChange={setTagline}
-            placeholder={composition === "quote" ? "The quote to feature" : "2–4 short sentences"} />
+          <Field id="ft-tagline"
+            label={composition === "launch_hero" ? "Subtitle" : "Tagline"}
+            value={tagline} onChange={setTagline}
+            placeholder={
+              composition === "quote" ? "The quote to feature"
+                : composition === "launch_hero" ? "One line under the headline"
+                  : "2–4 short sentences"
+            } />
         ) : null}
         {f.bullets ? (
           <div className="flex flex-col gap-1.5">

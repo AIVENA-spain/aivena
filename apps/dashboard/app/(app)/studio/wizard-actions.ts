@@ -44,8 +44,9 @@ async function call(
 
 export type DesignChoices = {
   generation_type: "ad_creative" | "social_post" | "renovation";
-  content_type: "listing" | "brand" | "educational" | "sold" | "launch";
-  composition: string;
+  // content_type/composition/dimensions are omitted for renovation (no overlay).
+  content_type?: "listing" | "brand" | "educational" | "sold" | "launch";
+  composition?: string;
   text_treatment?: string;
   font_set?: string;
   color_treatment?: string;
@@ -53,9 +54,9 @@ export type DesignChoices = {
   image_urls?: string[];
   image_storage_paths?: string[];
   source_image_url?: string;
-  width: number;
-  height: number;
-  language: string;
+  width?: number;
+  height?: number;
+  language?: string;
   headline?: string;
   kicker?: string;
   cta_text?: string;
@@ -63,8 +64,12 @@ export type DesignChoices = {
   badge_text?: string;
   bullets?: string[];
   stats?: { label: string; value: string }[];
+  /** Display-ready price string for sold/launch (e.g. "450.000 €"). */
+  price_text?: string;
   mood?: string;
   prompt?: string;
+  /** "none" for renovation — tells the EF to skip the marketing overlay. */
+  template?: string;
 };
 
 export async function previewAction(choices: DesignChoices): Promise<Envelope> {

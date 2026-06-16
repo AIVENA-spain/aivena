@@ -159,7 +159,8 @@ function buildDesignBody(b: Record<string, unknown>): Record<string, unknown> | 
   if (str(b.language)) out.language = b.language;
 
   // Copy overrides — pass through verbatim (including empty string = hide).
-  for (const k of ['headline', 'kicker', 'cta_text', 'tagline', 'badge_text', 'badge_label']) {
+  // price_text is a display-ready string the renderer draws as-is (sold/launch).
+  for (const k of ['headline', 'kicker', 'cta_text', 'tagline', 'badge_text', 'badge_label', 'price_text']) {
     if (typeof b[k] === 'string') out[k] = b[k];
   }
   if (Array.isArray(b.bullets)) {
@@ -195,6 +196,38 @@ route.post('/generate', async (c) => {
   const agencyId = c.get('agencyId');
   const user = c.get('user');
   const b = await readJson(c);
+
+  // Renovation (room redesign) is a distinct path: no design overlay, no
+  // composition/content_type. template:"none" tells the EF to return the
+  // redesigned PHOTO, not a marketing creative. Source must be a public URL
+  // kie.ai can fetch; width/height omitted so the room's framing is kept.
+  if (b.generation_type === 'renovation') {
+    const sourceImageUrl = str(b.source_image_url);
+    const prompt = typeof b.prompt === 'string' ? b.prompt.trim() : '';
+    if (!sourceImageUrl) {
+      return c.json(
+        { ok: false, error: 'missing_source_image', message: 'Please add a room photo to redesign.' },
+        400,
+      );
+    }
+    if (!prompt) {
+      return c.json(
+        { ok: false, error: 'missing_prompt', message: 'Please describe the new look you want.' },
+        400,
+      );
+    }
+    const renoBody: Record<string, unknown> = {
+      agency_id: agencyId,
+      requested_by: user?.sub,
+      generation_type: 'renovation',
+      template: 'none',
+      source_image_url: sourceImageUrl,
+      prompt,
+    };
+    if (str(b.language)) renoBody.language = b.language;
+    return callEf(c, 'image-generate-create', renoBody);
+  }
+
   const design = buildDesignBody(b);
   if (!design) return c.json(INVALID, 400);
 

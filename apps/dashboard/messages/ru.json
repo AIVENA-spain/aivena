@@ -135,7 +135,11 @@
       "translationLabel": "Перевод (на ваш язык)",
       "translatedFrom": "Переведено с {lang}",
       "showOriginal": "Показать оригинал",
-      "showTranslation": "Показать перевод"
+      "showTranslation": "Показать перевод",
+      "failedWindow": "Didn't send — outside WhatsApp's 24-hour reply window.",
+      "failedGeneric": "Didn't send. Please try again, and contact support if it keeps happening.",
+      "sending": "Sending…",
+      "notDelivered": "Not delivered"
     },
     "summary": {
       "h": "Сводка по лиду",
@@ -223,6 +227,15 @@
       "deleteConfirmYes": "Удалить",
       "usedByAiOn": "Используется ИИ",
       "usedByAiOff": "Не используется ИИ"
+    },
+    "window": {
+      "closedTitle": "Outside the 24-hour WhatsApp window",
+      "closedBody": "WhatsApp only allows free-text replies within 24 hours of the buyer's last message. {name}'s last message was {time}, so the window has closed. You can reply again as soon as they message you.",
+      "closedBodyGeneric": "WhatsApp only allows free-text replies within 24 hours of the buyer's last message, and that window has closed. You can reply again as soon as {name} messages you.",
+      "neverTitle": "No WhatsApp reply window yet",
+      "neverBody": "This buyer hasn't messaged on WhatsApp yet, so there's no open reply window. You can reply once they message you first.",
+      "templatesSoon": "Approved templates coming soon",
+      "thisBuyer": "This buyer"
     }
   },
   "approvals": {

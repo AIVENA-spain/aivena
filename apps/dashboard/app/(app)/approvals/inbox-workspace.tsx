@@ -11,11 +11,12 @@ import {
   useTransition,
 } from "react";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useFormatter, useNow, useTranslations } from "next-intl";
 import {
   AlertTriangle,
   Building2,
   CalendarClock,
+  Clock,
   Globe,
   Home,
   Inbox as InboxIcon,
@@ -49,6 +50,7 @@ import type {
   InboxRow,
   TaskDetailResponse,
   ThreadMessage,
+  WhatsappState,
 } from "@/lib/api/types";
 
 // ---------- helpers ----------
@@ -109,6 +111,22 @@ function ChannelIcon({ channel }: { channel: string | null }) {
 
 function isWhatsappChannel(channel: string | null | undefined): boolean {
   return (channel ?? "").toLowerCase() === "whatsapp";
+}
+
+/**
+ * Honest delivery state for an OUTBOUND message, from its `status`:
+ *   - undelivered / failed / cancelled → "failed" (never reached the buyer)
+ *   - queued                          → "pending" (in flight; not yet confirmed)
+ *   - sent / read / delivered / other → "delivered"
+ * Inbound messages don't use this (they're always rendered as received).
+ */
+function outboundDeliveryState(
+  status: string | null,
+): "delivered" | "pending" | "failed" {
+  const s = (status ?? "").toLowerCase();
+  if (s === "undelivered" || s === "failed" || s === "cancelled") return "failed";
+  if (s === "queued") return "pending";
+  return "delivered";
 }
 
 /**
@@ -789,6 +807,20 @@ function ThreadAndReply({
 
   const headSubline = `${lead.area ?? "—"} · ${languageLabel(lead.language)}`;
 
+  // WhatsApp 24h-window state (null for non-WhatsApp leads or if the lookup
+  // failed). Drives composer gating + the per-message failure reason lookup.
+  const whatsappState =
+    threadEntry?.status === "ok"
+      ? (threadEntry.data?.whatsappState ?? null)
+      : null;
+  const failureByMsg = useMemo(() => {
+    const m = new Map<string, string | null>();
+    whatsappState?.failed_messages?.forEach((f) =>
+      m.set(f.message_id, f.failure_reason_code),
+    );
+    return m;
+  }, [whatsappState]);
+
   // WhatsApp-style: the newest message lives at the bottom — jump there when
   // the thread arrives or the selected lead changes.
   const threadBodyRef = useRef<HTMLDivElement>(null);
@@ -848,6 +880,7 @@ function ThreadAndReply({
               key={m.id}
               msg={m}
               leadLanguage={lead.language}
+              failureReason={failureByMsg.get(m.id) ?? null}
               t={tThread}
             />
           ))
@@ -862,6 +895,7 @@ function ThreadAndReply({
                   content: threadEntry.data.originalMessage,
                   bodyClean: null,
                   bodyTranslatedOwner: null,
+                  status: null,
                   createdAt: lead.taskCreatedAt,
                 }}
                 leadLanguage={lead.language}
@@ -884,6 +918,8 @@ function ThreadAndReply({
         key={lead.taskId}
         taskId={lead.taskId}
         channel={lead.channel}
+        leadName={lead.fullName}
+        whatsappState={whatsappState}
         initialSubject={lead.aiReplySubject ?? ""}
         initialBody={lead.aiReplyBody ?? ""}
         translatedDraft={
@@ -1029,13 +1065,23 @@ function dedupeThread(thread: ThreadMessage[]): ThreadMessage[] {
 function ThreadBubble({
   msg,
   leadLanguage,
+  failureReason,
   t,
 }: {
   msg: ThreadMessage;
   leadLanguage: string | null;
+  /** Raw provider code for a non-delivered outbound (mapped to friendly copy,
+   *  never shown raw). Looked up from whatsapp_state.failed_messages by id. */
+  failureReason?: string | null;
   t: ReturnType<typeof useTranslations<"inbox.thread">>;
 }) {
   const inbound = msg.direction === "inbound";
+  // Honest delivery state — an outbound that never reached the buyer must never
+  // look "sent" (the bug this fixes). Inbound is always "received".
+  const delivery = inbound ? "inbound" : outboundDeliveryState(msg.status);
+  const failed = delivery === "failed";
+  const pending = delivery === "pending";
+
   // Inbound bodies carry the buyer's quote chain / footer in `content`;
   // `bodyClean` is the server-stripped version. Outbound is composed in the
   // dashboard and never quoted, so it renders raw `content`.
@@ -1049,13 +1095,33 @@ function ThreadBubble({
   const [showOriginal, setShowOriginal] = useState(false);
   const primary = hasTranslation && !showOriginal ? translated : original;
 
+  // Friendly, code-free reason for a non-delivered send (Law-2). The 24h-window
+  // rejection gets its own line; everything else is the generic retry copy.
+  const reasonText = failed
+    ? failureReason === "twilio_error_63016"
+      ? t("failedWindow")
+      : t("failedGeneric")
+    : null;
+
+  const metaLabel = inbound
+    ? t("inbound")
+    : failed
+      ? t("notDelivered")
+      : pending
+        ? t("sending")
+        : t("outbound");
+
   return (
     <div
       className={cn(
         "max-w-[76%] rounded-[13px] px-3.5 py-2.5 text-[12.5px] leading-[1.5]",
         inbound
           ? "self-start rounded-bl-[4px] bg-muted/70 text-foreground"
-          : "self-end rounded-br-[4px] bg-brand-soft text-foreground",
+          : failed
+            ? "self-end rounded-br-[4px] border border-amber-500/40 bg-amber-500/5 text-foreground"
+            : pending
+              ? "self-end rounded-br-[4px] bg-brand-soft/50 text-foreground"
+              : "self-end rounded-br-[4px] bg-brand-soft text-foreground",
       )}
     >
       {hasTranslation && !showOriginal ? (
@@ -1064,7 +1130,7 @@ function ThreadBubble({
           {t("translatedFrom", { lang: languageName(leadLanguage) })}
         </div>
       ) : null}
-      <div className="whitespace-pre-wrap">
+      <div className={cn("whitespace-pre-wrap", failed && "opacity-70")}>
         {primary ?? <span className="italic opacity-70">(empty)</span>}
       </div>
       {hasTranslation ? (
@@ -1076,9 +1142,15 @@ function ThreadBubble({
           {showOriginal ? t("showTranslation") : t("showOriginal")}
         </button>
       ) : null}
-      <div className="mt-1.5 font-mono text-[9.5px] text-muted-foreground">
-        {inbound ? t("inbound") : t("outbound")} ·{" "}
-        <RelativeTime iso={msg.createdAt} />
+      {failed && reasonText ? (
+        <div className="mt-1.5 flex items-start gap-1 text-[10.5px] font-medium text-amber-700 dark:text-amber-300">
+          <AlertTriangle className="mt-px h-3 w-3 shrink-0" aria-hidden strokeWidth={2} />
+          <span>{reasonText}</span>
+        </div>
+      ) : null}
+      <div className="mt-1.5 flex items-center gap-1 font-mono text-[9.5px] text-muted-foreground">
+        {pending ? <Clock className="h-2.5 w-2.5" aria-hidden strokeWidth={2} /> : null}
+        {metaLabel} · <RelativeTime iso={msg.createdAt} />
       </div>
     </div>
   );
@@ -1089,18 +1161,28 @@ function ThreadBubble({
 function ReplyZone({
   taskId,
   channel,
+  leadName,
+  whatsappState,
   initialSubject,
   initialBody,
   translatedDraft,
 }: {
   taskId: string;
   channel: string | null;
+  leadName: string | null;
+  /** WhatsApp 24h-window state; null for non-WhatsApp leads or on lookup failure. */
+  whatsappState?: WhatsappState | null;
   initialSubject: string;
   initialBody: string;
   /** v1.14.4 — owner-language translation of the AI draft; NULL = show original only. */
   translatedDraft?: string | null;
 }) {
   const t = useTranslations("inbox.reply");
+  const tWindow = useTranslations("inbox.window");
+  const format = useFormatter();
+  // Stable "now" (server render time, carried to the client) — avoids the
+  // relativeTime ENVIRONMENT_FALLBACK warning and any SSR/hydration drift.
+  const now = useNow();
 
   // WhatsApp has no subject line — hide the subject field/preview entirely.
   // The approve RPC is channel-aware and ignores subject for WhatsApp, so the
@@ -1109,6 +1191,24 @@ function ReplyZone({
 
   // Send / approve action — reuses the existing wired path.
   const [sendState, sendAction, sending] = useActionState(approveTaskAction, {});
+
+  // Composer gating (Part B + D). `window_open` from the RPC is the single
+  // source of truth — never recomputed here. The approve guard can also reject
+  // a stale-open composer mid-flight (windowClosed flag) → flip locally too.
+  const [forcedClosed, setForcedClosed] = useState(false);
+  useEffect(() => {
+    if (sendState.windowClosed) setForcedClosed(true);
+  }, [sendState.windowClosed]);
+  const closed =
+    (isWhatsapp && whatsappState?.window_open === false) || forcedClosed;
+  // "Never messaged" only when we positively know there's no prior inbound.
+  const neverMessaged =
+    !!whatsappState && whatsappState.last_inbound_whatsapp_at == null;
+  const lastInbound = whatsappState?.last_inbound_whatsapp_at ?? null;
+  const relTime = lastInbound
+    ? format.relativeTime(new Date(lastInbound), now)
+    : null;
+  const name = leadName?.trim() || tWindow("thisBuyer");
   const [dismissState, dismissAction, dismissing] = useActionState(
     dismissTaskAction,
     {},
@@ -1132,6 +1232,24 @@ function ReplyZone({
 
   return (
     <div className="border-t border-border bg-card px-5 py-4">
+      {closed ? (
+        <div className="rounded-[13px] border border-amber-500/30 bg-amber-500/5 p-3.5">
+          <div className="mb-1.5 flex items-center gap-1.5 font-mono text-[9.5px] font-bold uppercase tracking-[0.05em] text-amber-700 dark:text-amber-300">
+            <Lock className="h-3.5 w-3.5" aria-hidden strokeWidth={2} />
+            {neverMessaged ? tWindow("neverTitle") : tWindow("closedTitle")}
+          </div>
+          <p className="text-[12.5px] leading-[1.5] text-muted-foreground">
+            {neverMessaged
+              ? tWindow("neverBody")
+              : relTime
+                ? tWindow("closedBody", { name, time: relTime })
+                : tWindow("closedBodyGeneric", { name })}
+          </p>
+          <div className="mt-2.5 font-mono text-[9px] uppercase tracking-[0.05em] text-muted-foreground/70">
+            {tWindow("templatesSoon")}
+          </div>
+        </div>
+      ) : (
       <div className="rounded-[13px] border border-brand/20 bg-brand-soft p-3.5">
         <div className="mb-1.5 flex items-center gap-1.5 font-mono text-[9.5px] font-bold uppercase tracking-[0.05em] text-brand">
           <span className="h-1.5 w-1.5 rounded-full bg-brand" />
@@ -1203,6 +1321,7 @@ function ReplyZone({
           </>
         )}
       </div>
+      )}
 
       {sendState.error ? (
         <div
@@ -1213,31 +1332,37 @@ function ReplyZone({
         </div>
       ) : null}
 
-      {/* Action row — Send / Edit / Dismiss (existing wired actions) */}
+      {/* Action row — Send / Edit / Dismiss (existing wired actions).
+          When the window is closed we drop Send + Edit (a free-text send is
+          guaranteed to fail) but keep Dismiss so the task isn't stuck. */}
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <form action={sendAction}>
-          <input type="hidden" name="taskId" value={taskId} />
-          <input type="hidden" name="subject" value={subject} />
-          <input type="hidden" name="body" value={body} />
-          <Button
-            type="submit"
-            className="gap-1.5"
-            disabled={sending || dismissing || !body}
-          >
-            <span className="h-1.5 w-1.5 rounded-full bg-brand" aria-hidden />
-            {sending ? t("sending") : t("send")}
-          </Button>
-        </form>
+        {!closed ? (
+          <>
+            <form action={sendAction}>
+              <input type="hidden" name="taskId" value={taskId} />
+              <input type="hidden" name="subject" value={subject} />
+              <input type="hidden" name="body" value={body} />
+              <Button
+                type="submit"
+                className="gap-1.5"
+                disabled={sending || dismissing || !body}
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-brand" aria-hidden />
+                {sending ? t("sending") : t("send")}
+              </Button>
+            </form>
 
-        <Button
-          type="button"
-          variant="outline"
-          className="gap-1.5"
-          onClick={() => setEditing((v) => !v)}
-        >
-          <Pencil className="h-3.5 w-3.5" aria-hidden />
-          {editing ? t("editing") : t("edit")}
-        </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="gap-1.5"
+              onClick={() => setEditing((v) => !v)}
+            >
+              <Pencil className="h-3.5 w-3.5" aria-hidden />
+              {editing ? t("editing") : t("edit")}
+            </Button>
+          </>
+        ) : null}
 
         <Button
           type="button"

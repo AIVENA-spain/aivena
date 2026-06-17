@@ -51,6 +51,9 @@ type ThreadRow = {
   message_type: string;
   content: string | null;
   body_clean: string | null;
+  /** Delivery status: received | queued | sent | read | undelivered | failed |
+   *  cancelled. The last three mean "did NOT reach the buyer". */
+  status: string | null;
   /** v1.14.4 — owner-language translation of this message; NULL until Vega's
    *  auto-fill backend populates it (or when source language == target). */
   body_translated_owner: string | null;
@@ -78,6 +81,11 @@ const APPROVE_ERROR_MESSAGES: Record<string, string> = {
   agency_settings_missing: "Agency settings aren't configured yet.",
   agency_branding_missing: "Agency branding isn't configured yet.",
   final_body_empty: "The message body can't be empty.",
+  // WhatsApp/Meta hard-rejects free-text outside the 24h window. The approve
+  // RPC now guards this before queuing a doomed send (raises P0001 with this
+  // token). Friendly, code-free per Law-2.
+  whatsapp_window_closed:
+    "Can't send a free-text reply — you're outside WhatsApp's 24-hour window. Wait for the buyer to message again.",
 };
 
 function toIso(value: Date | string): string {
@@ -227,12 +235,29 @@ route.get('/:id', async (c) => {
   if (r.conversation_id) {
     const threadResult = await tx.execute(sql`
       SELECT id, direction, message_type, content, body_clean,
-             body_translated_owner, created_at
+             body_translated_owner, status, created_at
       FROM public.conversation_messages
       WHERE conversation_id::text = ${r.conversation_id}
       ORDER BY created_at ASC
     `);
     thread = threadResult as unknown as ThreadRow[];
+  }
+
+  // WhatsApp 24h-window state (Vega's SECURITY INVOKER RPC; runs under the same
+  // agency + role tx context as everything else here). It tells the client
+  // whether a free-text reply is allowed and which past sends never delivered.
+  // It self-reports `channel`, so the client applies the window UI only for
+  // WhatsApp leads. A failure here must not break the thread load — degrade to
+  // null (the approve RPC still guards the doomed send server-side) and log.
+  let whatsappState: unknown = null;
+  try {
+    const stateResult = await tx.execute(sql`
+      SELECT dashboard_lead_whatsapp_state(${r.lead_id}::uuid) AS state
+    `);
+    const stateRows = stateResult as unknown as Array<{ state: unknown }>;
+    whatsappState = stateRows[0]?.state ?? null;
+  } catch (err) {
+    console.error('[tasks/:id] whatsapp_state failed:', r.lead_id, err);
   }
 
   const task = mapTask(r);
@@ -257,8 +282,10 @@ route.get('/:id', async (c) => {
       content: t.content,
       bodyClean: t.body_clean,
       bodyTranslatedOwner: t.body_translated_owner,
+      status: t.status,
       createdAt: toIso(t.created_at),
     })),
+    whatsappState,
   });
 });
 

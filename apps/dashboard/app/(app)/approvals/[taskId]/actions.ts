@@ -6,7 +6,23 @@ import { redirect } from "next/navigation";
 import { apiFetch, ApiError } from "@/lib/api/client";
 import type { ApproveResponse } from "@/lib/api/types";
 
-export type ActionState = { error?: string };
+export type ActionState = {
+  error?: string;
+  /** True when the API rejected with whatsapp_window_closed — the composer
+   *  should flip to the closed-window state (Part D). */
+  windowClosed?: boolean;
+};
+
+/** The API tags this domain rejection with a stable code in the error body. */
+function isWindowClosed(err: unknown): boolean {
+  return (
+    err instanceof ApiError &&
+    err.status === 422 &&
+    typeof err.body === "object" &&
+    err.body !== null &&
+    (err.body as { code?: unknown }).code === "whatsapp_window_closed"
+  );
+}
 
 const APPROVE_FALLBACK =
   "Something went wrong sending this reply. Please try again — if it keeps happening, contact support.";
@@ -64,6 +80,7 @@ export async function approveTaskAction(
   } catch (err) {
     return {
       error: userFacingError(err, APPROVE_FALLBACK, "approve"),
+      windowClosed: isWindowClosed(err),
     };
   }
 

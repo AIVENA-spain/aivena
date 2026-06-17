@@ -323,7 +323,37 @@ export type ThreadMessage = {
    * cases the UI shows only the original — no empty translation pane).
    */
   bodyTranslatedOwner: string | null;
+  /**
+   * Delivery status: received | queued | sent | read | undelivered | failed |
+   * cancelled. The last three mean the outbound never reached the buyer and
+   * must render as "not delivered", never as sent. May be null on old rows.
+   */
+  status: string | null;
   createdAt: string;
+};
+
+/** A past outbound that did NOT deliver (undelivered/failed/cancelled). */
+export type WhatsappFailedMessage = {
+  message_id: string;
+  status: string;
+  /** Raw provider code (e.g. "twilio_error_63016"); map to friendly copy, never show raw. */
+  failure_reason_code: string | null;
+};
+
+/**
+ * WhatsApp 24-hour-window state for a lead (Vega's dashboard_lead_whatsapp_state
+ * RPC). `window_open` is the single source of truth for composer gating — never
+ * recompute client-side. `channel` self-reports so the window UI applies only to
+ * WhatsApp leads. All timestamp fields are null when the buyer never messaged.
+ */
+export type WhatsappState = {
+  lead_id: string;
+  channel: string | null;
+  window_open: boolean;
+  last_inbound_whatsapp_at: string | null;
+  window_expires_at: string | null;
+  hours_since_last_inbound: number | null;
+  failed_messages: WhatsappFailedMessage[];
 };
 
 export type TaskDetailResponse = {
@@ -341,6 +371,8 @@ export type TaskDetailResponse = {
   lead: ApiTask["lead"];
   originalMessage: string | null;
   thread: ThreadMessage[];
+  /** Null for non-WhatsApp leads or if the state lookup failed (degrade gracefully). */
+  whatsappState: WhatsappState | null;
 };
 
 export type ApproveResponse = {

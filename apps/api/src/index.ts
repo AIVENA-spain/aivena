@@ -18,7 +18,11 @@ import propertiesRoute from './routes/properties';
 import bookingsRoute from './routes/bookings';
 import contentRoute from './routes/content';
 import leadNotesRoute from './routes/lead-notes';
+import leadsRoute from './routes/leads';
+import conversationsRoute from './routes/conversations';
+import matchesRoute from './routes/matches';
 import studioRoute from './routes/studio';
+import studioRenderRoute from './routes/studio-render';
 import imagesRoute from './routes/images';
 import studioWizardRoute from './routes/studio-wizard';
 import adminRoute from './routes/admin';
@@ -51,6 +55,12 @@ app.get('/health', (c) => {
   return c.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Studio template render (Phase 1) — mounted OUTSIDE /api/* on purpose: it is
+// authenticated by x-internal-secret (internal callers — the n8n test caller,
+// the kie step later), NOT a user JWT, so the /api/* auth + agency-context
+// middleware must never run on it. POST /studio/render.
+app.route('/studio', studioRenderRoute);
+
 // Protected API routes — require a verified Supabase access token AND a
 // transaction-scoped agency context for RLS.
 app.use('/api/*', authMiddleware);
@@ -76,6 +86,13 @@ app.route('/api/v1/bookings', bookingsRoute);
 app.route('/api/v1/content', contentRoute);
 // Lead notes — direct SELECT read + SECURITY DEFINER write RPCs.
 app.route('/api/v1/lead-notes', leadNotesRoute);
+// Leads — write-side lead actions via SECURITY DEFINER RPCs (suggest-properties,
+// freeform reply) plus the WhatsApp-window read for the persistent composer.
+app.route('/api/v1/leads', leadsRoute);
+// Conversations — pending suggested-reply read for the persistent composer.
+app.route('/api/v1/conversations', conversationsRoute);
+// Matches (W20) — read-only reverse-prospecting via two SECURITY INVOKER RPCs.
+app.route('/api/v1/matches', matchesRoute);
 // Studio uploads — agent's own reference image → agency-assets bucket.
 app.route('/api/v1/studio', studioRoute);
 // Image generation (W13) — create via Edge Function, poll/list via fenced reads.

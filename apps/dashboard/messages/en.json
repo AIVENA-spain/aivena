@@ -235,7 +235,12 @@
       "neverTitle": "No WhatsApp reply window yet",
       "neverBody": "This buyer hasn't messaged on WhatsApp yet, so there's no open reply window. You can reply once they message you first.",
       "templatesSoon": "Approved templates coming soon",
-      "thisBuyer": "This buyer"
+      "thisBuyer": "This buyer",
+      "reengageLead": "Send the approved check-in below to re-open the conversation. Once they reply, you can message freely again.",
+      "reengagePreviewLabel": "Check-in message",
+      "reengageSend": "Send check-in message",
+      "reengageSent": "Check-in sent — we'll let you know when they reply.",
+      "reengageNoPreview": "An approved check-in message will be sent to re-open the conversation."
     },
     "composer": {
       "placeholder": "Write a message…",

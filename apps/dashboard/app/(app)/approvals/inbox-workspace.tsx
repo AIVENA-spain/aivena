@@ -44,6 +44,8 @@ import {
   sendSuggestedAction,
   sendFreeformAction,
   dismissSuggestedAction,
+  getReengagePreviewAction,
+  reengageAction,
   type ComposerState,
   type PendingSuggestion,
 } from "./composer-actions";
@@ -1391,6 +1393,14 @@ function Composer({
   const [shownPendingId, setShownPendingId] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
   const [supersedeAvailable, setSupersedeAvailable] = useState(false);
+  // Closed-window re-engagement (WhatsApp): preview of the approved template, a
+  // send-in-flight flag, and a sent flag. Sending a template does NOT reopen the
+  // window from our side — that happens when the buyer replies — so after a
+  // successful send we show a "sent" confirmation rather than the button again.
+  const [reengagePreview, setReengagePreview] = useState<string | null>(null);
+  const [reengagePreviewLoaded, setReengagePreviewLoaded] = useState(false);
+  const [reengaging, setReengaging] = useState(false);
+  const [reengaged, setReengaged] = useState(false);
 
   const pending = pollState?.pending ?? null;
   const whatsapp = pollState?.whatsapp ?? null;
@@ -1428,6 +1438,22 @@ function Composer({
       clearInterval(id);
     };
   }, [refetch]);
+
+  // Once the WhatsApp window is known-closed, fetch the rendered preview of the
+  // approved re-engagement template (what the buyer will receive). Fetched once;
+  // null body → the affordance shows a calm fallback, never an empty box.
+  useEffect(() => {
+    if (!windowClosed || reengagePreviewLoaded) return;
+    let alive = true;
+    void getReengagePreviewAction(leadId).then((res) => {
+      if (!alive) return;
+      if (res.ok) setReengagePreview(res.data.body);
+      setReengagePreviewLoaded(true);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [windowClosed, reengagePreviewLoaded, leadId]);
 
   // Sync rule — reconcile the textarea against the freshly-polled pending task.
   useEffect(() => {
@@ -1509,6 +1535,27 @@ function Composer({
     } else {
       setError(res.error);
       setBusy(false); // keep the text so the operator can retry
+      // Defensive catch: the window closed between the last poll and this send.
+      // Re-poll so windowClosed flips true → the composer swaps to the
+      // re-engage affordance instead of leaving a dead error.
+      if (res.windowClosed) void refetch();
+    }
+  }
+
+  /** Send the approved re-engagement template to re-open a closed window. */
+  async function handleReengage() {
+    if (reengaging || reengaged) return;
+    setReengaging(true);
+    setError(null);
+    const res = await reengageAction(leadId);
+    if (res.ok) {
+      setReengaged(true);
+      setReengaging(false);
+      setError(null);
+      onActionDone(); // reconcile the thread → the queued template bubble appears
+    } else {
+      setError(res.error);
+      setReengaging(false);
     }
   }
 
@@ -1568,6 +1615,70 @@ function Composer({
         </div>
       ) : null}
 
+      {windowClosed ? (
+        /* CLOSED WINDOW — a freeform reply is illegal until the buyer messages
+           again; the only WhatsApp-legal action is the approved re-engagement
+           template. Replace the freeform composer with it. */
+        <div className="flex flex-col gap-3">
+          {reengaged ? (
+            <div className="flex items-start gap-1.5 rounded-[13px] border border-brand/20 bg-brand-soft/50 p-3 text-[12.5px] text-foreground">
+              <MessageCircle
+                className="mt-px h-3.5 w-3.5 shrink-0 text-brand"
+                aria-hidden
+                strokeWidth={2}
+              />
+              <span>{tWindow("reengageSent")}</span>
+            </div>
+          ) : (
+            <>
+              <p className="text-[12.5px] leading-[1.5] text-muted-foreground">
+                {tWindow("reengageLead")}
+              </p>
+              <div className="rounded-md border border-border bg-muted/40 px-3 py-2">
+                <div className="mb-1 flex items-center gap-1 font-mono text-[8.5px] uppercase tracking-[0.05em] text-muted-foreground">
+                  <MessageCircle className="h-3 w-3" aria-hidden strokeWidth={1.9} />
+                  {tWindow("reengagePreviewLabel")}
+                </div>
+                <p className="whitespace-pre-wrap text-[12px] leading-[1.5] text-foreground">
+                  {reengagePreview ?? tWindow("reengageNoPreview")}
+                </p>
+              </div>
+              {error ? (
+                <div
+                  role="alert"
+                  className="rounded-md border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-[12.5px] text-rose-700 dark:text-rose-300"
+                >
+                  {error}
+                </div>
+              ) : null}
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  className="gap-1.5"
+                  disabled={reengaging}
+                  onClick={handleReengage}
+                >
+                  <MessageCircle className="h-3.5 w-3.5" aria-hidden />
+                  {reengaging ? t("sending") : tWindow("reengageSend")}
+                </Button>
+                {isSuggested ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="gap-1.5 text-muted-foreground hover:text-foreground"
+                    disabled={busy}
+                    onClick={handleDismiss}
+                  >
+                    <X className="h-3.5 w-3.5" aria-hidden />
+                    {busy ? t("dismissing") : t("dismiss")}
+                  </Button>
+                ) : null}
+              </div>
+            </>
+          )}
+        </div>
+      ) : (
+        <>
       {/* State label — SUGGESTED shows the AI tag (reused styling); FREEFORM
           shows nothing special. */}
       {isSuggested ? (
@@ -1679,6 +1790,8 @@ function Composer({
           </Button>
         ) : null}
       </div>
+        </>
+      )}
     </div>
   );
 }

@@ -21,6 +21,7 @@ import leadNotesRoute from './routes/lead-notes';
 import leadsRoute from './routes/leads';
 import conversationsRoute from './routes/conversations';
 import matchesRoute from './routes/matches';
+import whatsappRoute from './routes/whatsapp';
 import studioRoute from './routes/studio';
 import studioRenderRoute from './routes/studio-render';
 import imagesRoute from './routes/images';
@@ -93,6 +94,8 @@ app.route('/api/v1/leads', leadsRoute);
 app.route('/api/v1/conversations', conversationsRoute);
 // Matches (W20) — read-only reverse-prospecting via two SECURITY INVOKER RPCs.
 app.route('/api/v1/matches', matchesRoute);
+// WhatsApp re-engagement — closed-window template send (send_reengagement_template).
+app.route('/api/v1/whatsapp', whatsappRoute);
 // Studio uploads — agent's own reference image → agency-assets bucket.
 app.route('/api/v1/studio', studioRoute);
 // Image generation (W13) — create via Edge Function, poll/list via fenced reads.

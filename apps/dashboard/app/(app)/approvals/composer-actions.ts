@@ -16,7 +16,9 @@ const GENERIC =
   "Something went wrong sending that — please try again, and contact support if it keeps happening.";
 
 type Ok<T> = { ok: true; data: T };
-type Err = { ok: false; error: string };
+/** `windowClosed` is set when a send was rejected because the WhatsApp 24h
+ *  window has closed — the composer flips to the re-engage affordance. */
+type Err = { ok: false; error: string; windowClosed?: boolean };
 
 /** Pending suggested-reply task for the open conversation (null when none). */
 export type PendingSuggestion = {
@@ -35,6 +37,17 @@ export type ComposerState = {
   whatsapp: WhatsappState | null;
 };
 
+/** The API tags a closed-window rejection with this stable code in the body. */
+function isWindowClosed(err: unknown): boolean {
+  return (
+    err instanceof ApiError &&
+    err.status === 422 &&
+    typeof err.body === "object" &&
+    err.body !== null &&
+    (err.body as { code?: unknown }).code === "whatsapp_window_closed"
+  );
+}
+
 /** Map a thrown error to a friendly string: API 4xx text passes through, else generic. */
 function toErr(scope: string, err: unknown): Err {
   const detail =
@@ -45,7 +58,7 @@ function toErr(scope: string, err: unknown): Err {
         : String(err);
   console.error(`[composer] ${scope} failed:`, detail);
   if (err instanceof ApiError && err.status < 500 && err.message) {
-    return { ok: false, error: err.message };
+    return { ok: false, error: err.message, windowClosed: isWindowClosed(err) };
   }
   return { ok: false, error: GENERIC };
 }
@@ -140,5 +153,59 @@ export async function dismissSuggestedAction(
     return { ok: true, data: null };
   } catch (err) {
     return toErr("dismissSuggested", err);
+  }
+}
+
+/**
+ * Rendered preview of the approved re-engagement template (`agency_followup_v1`)
+ * for this lead — what the buyer will receive. Rendered server-side identically
+ * to the send RPC. `body` is null when no template is available; the composer
+ * shows a calm fallback rather than an empty box.
+ */
+export async function getReengagePreviewAction(
+  leadId: string,
+): Promise<Ok<{ body: string | null }> | Err> {
+  try {
+    const res = await apiFetch<{ ok: boolean; body: string | null }>(
+      `/api/v1/whatsapp/reengage-preview?lead_id=${encodeURIComponent(leadId)}`,
+    );
+    return { ok: true, data: { body: res.body ?? null } };
+  } catch (err) {
+    return toErr("reengagePreview", err);
+  }
+}
+
+/**
+ * Send the approved re-engagement template to re-open a closed WhatsApp window.
+ * The API maps every precondition failure (opted-out, no phone, cooldown, …) to
+ * friendly copy; this forwards it. The outbound queued message lands in the
+ * thread and transitions to sent/failed honestly via the send pipeline.
+ */
+export async function reengageAction(
+  leadId: string,
+): Promise<
+  | Ok<{ send_queue_id: string; conversation_message_id: string; rendered_body: string }>
+  | Err
+> {
+  try {
+    const res = await apiFetch<{
+      ok: boolean;
+      send_queue_id: string;
+      conversation_message_id: string;
+      rendered_body: string;
+    }>(`/api/v1/whatsapp/reengage`, {
+      method: "POST",
+      body: JSON.stringify({ lead_id: leadId }),
+    });
+    return {
+      ok: true,
+      data: {
+        send_queue_id: res.send_queue_id,
+        conversation_message_id: res.conversation_message_id,
+        rendered_body: res.rendered_body,
+      },
+    };
+  } catch (err) {
+    return toErr("reengage", err);
   }
 }

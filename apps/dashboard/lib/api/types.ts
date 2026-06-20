@@ -310,6 +310,52 @@ export type LeadNoteRow = {
 
 export type LeadNotesResponse = { notes: LeadNoteRow[] };
 
+// ── Matches (W20 reverse-prospecting, read-only) ───────────────────────────
+
+export interface Match {
+  rank: number;
+  similarity: number;
+  property_id: string;
+  external_id: string | null;
+  title: string;
+  property_type: string;
+  price: number | null;
+  price_currency: string | null;
+  bedrooms: number | null;
+  bathrooms: number | null;
+  area_sqm: number | null;
+  location_city: string | null;
+  location_region: string | null;
+  source_url: string | null;
+  images: string[] | null;
+}
+
+export interface LeadWithMatch {
+  lead_id: string;
+  full_name: string;
+  language: string | null;
+  score: number | null;
+  temperature: 'super_hot' | 'hot' | 'warm' | 'cold' | string;
+  property_type_pref: string | null;
+  bedrooms_min: number | null;
+  bedrooms_max: number | null;
+  bathrooms_min: number | null;
+  budget_extracted: string | null;
+  location_interest_extracted: string | null;
+  summary: string | null;
+  match_count: number;
+  top_property_id: string;
+  top_title: string;
+  top_property_type: string;
+  top_price: number | null;
+  top_price_currency: string | null;
+  top_bedrooms: number | null;
+  top_bathrooms: number | null;
+  top_location_city: string | null;
+  top_images: string[] | null;
+  top_similarity: number;
+}
+
 export type ThreadMessage = {
   id: string;
   direction: string;

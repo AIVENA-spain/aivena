@@ -236,6 +236,13 @@
       "neverBody": "This buyer hasn't messaged on WhatsApp yet, so there's no open reply window. You can reply once they message you first.",
       "templatesSoon": "Approved templates coming soon",
       "thisBuyer": "This buyer"
+    },
+    "composer": {
+      "placeholder": "Kirjoita viesti…",
+      "windowBanner": "Tämä ostaja ei ole vastannut yli 24 tuntiin. WhatsApp sallii viestit vasta, kun hän vastaa uudelleen, joten tätä ei voi lähettää juuri nyt.",
+      "aiCouldntDraft": "Tekoäly ei pystynyt laatimaan vastausta tähän — kirjoita se itse.",
+      "supersede": "Uudempi ehdotettu vastaus on saatavilla — päivitä",
+      "translatedPreview": "Translated preview"
     }
   },
   "approvals": {
@@ -835,13 +842,21 @@
     "contextError": "Työtilaasi ei voitu ladata. Päivitä sivu ja yritä uudelleen."
   },
   "matches": {
-    "subtitle": "Kun lisäät kohteen, AIVENA vertaa sitä jo yhteystiedoissasi oleviin ostajiin ja nostaa heidät tähän — sinä päätät, keneen otat yhteyttä.",
-    "emptyTitle": "Ei vielä osumia",
-    "emptyBody": "Osumat ilmestyvät tähän, kun uusi kohde vastaa yhteystiedoissasi olevaa ostajaa. Mitään ei lähetetä automaattisesti.",
-    "howTitle": "Näin se toimii",
-    "how1": "Tuot tai lisäät kohteen luetteloosi.",
-    "how2": "AIVENA vertaa sitä olemassa oleviin ostajayhteystietoihisi osumatoleranssiesi puitteissa.",
-    "how3": "Mahdolliset osumat näkyvät tässä manuaalista käsittelyä varten."
+    "title": "Matches",
+    "subtitle": "Buyers you can serve right now.",
+    "emptyBody": "No matches yet — they appear automatically once leads are scored and properties are synced.",
+    "lookingFor": "Looking for",
+    "matchedProperties": "Matched properties",
+    "panelEmpty": "No property matches yet for this lead.",
+    "viewListing": "View listing",
+    "match": "match",
+    "more": "+{n} more",
+    "unitBed": "bed",
+    "unitBath": "bath",
+    "unitStudio": "Studio",
+    "priceOnRequest": "Price on request",
+    "suggestToLead": "Suggest these to {name}",
+    "suggesting": "Suggesting…"
   },
   "valuation": {
     "title": "Mitä kohteesi on arvoinen?",

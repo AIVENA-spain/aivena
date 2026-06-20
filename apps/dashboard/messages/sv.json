@@ -236,6 +236,13 @@
       "neverBody": "This buyer hasn't messaged on WhatsApp yet, so there's no open reply window. You can reply once they message you first.",
       "templatesSoon": "Approved templates coming soon",
       "thisBuyer": "This buyer"
+    },
+    "composer": {
+      "placeholder": "Skriv ett meddelande…",
+      "windowBanner": "Den här köparen har inte svarat på över 24 timmar. WhatsApp tillåter endast meddelanden när de svarar igen, så detta kan inte skickas just nu.",
+      "aiCouldntDraft": "AI:n kunde inte skapa ett svar här — skriv ett själv.",
+      "supersede": "Ett nyare föreslaget svar finns tillgängligt — uppdatera",
+      "translatedPreview": "Translated preview"
     }
   },
   "approvals": {
@@ -835,13 +842,21 @@
     "contextError": "Kunde inte läsa in din arbetsyta. Uppdatera sidan och försök igen."
   },
   "matches": {
-    "subtitle": "När du lägger till ett objekt matchar AIVENA det mot köparna som redan finns i dina kontakter och visar dem här – du bestämmer vem du vill kontakta.",
-    "emptyTitle": "Inga matchningar ännu",
-    "emptyBody": "Matchningar visas här när ett nytt objekt matchar en köpare i dina kontakter. Inget skickas automatiskt.",
-    "howTitle": "Så fungerar det",
-    "how1": "Du importerar eller lägger till ett objekt i din katalog.",
-    "how2": "AIVENA jämför det mot dina befintliga köparkontakter inom dina matchningstoleranser.",
-    "how3": "Alla matchningar visas här för dig att hantera manuellt."
+    "title": "Matches",
+    "subtitle": "Buyers you can serve right now.",
+    "emptyBody": "No matches yet — they appear automatically once leads are scored and properties are synced.",
+    "lookingFor": "Looking for",
+    "matchedProperties": "Matched properties",
+    "panelEmpty": "No property matches yet for this lead.",
+    "viewListing": "View listing",
+    "match": "match",
+    "more": "+{n} more",
+    "unitBed": "bed",
+    "unitBath": "bath",
+    "unitStudio": "Studio",
+    "priceOnRequest": "Price on request",
+    "suggestToLead": "Suggest these to {name}",
+    "suggesting": "Suggesting…"
   },
   "valuation": {
     "title": "Vad är din bostad värd?",

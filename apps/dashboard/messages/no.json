@@ -236,6 +236,13 @@
       "neverBody": "This buyer hasn't messaged on WhatsApp yet, so there's no open reply window. You can reply once they message you first.",
       "templatesSoon": "Approved templates coming soon",
       "thisBuyer": "This buyer"
+    },
+    "composer": {
+      "placeholder": "Skriv en melding…",
+      "windowBanner": "Denne kjøperen har ikke svart på over 24 timer. WhatsApp tillater bare meldinger når de svarer igjen, så dette kan ikke sendes akkurat nå.",
+      "aiCouldntDraft": "AI-en klarte ikke å lage et svar her — skriv et selv.",
+      "supersede": "Et nyere foreslått svar er tilgjengelig — oppdater",
+      "translatedPreview": "Translated preview"
     }
   },
   "approvals": {
@@ -835,13 +842,21 @@
     "contextError": "Kunne ikke laste inn arbeidsområdet ditt. Oppdater og prøv igjen."
   },
   "matches": {
-    "subtitle": "Når du legger til en eiendom, matcher AIVENA den mot kjøperne som allerede ligger i kontaktene dine, og viser dem her – du bestemmer hvem du vil ta kontakt med.",
-    "emptyTitle": "Ingen treff ennå",
-    "emptyBody": "Treff vises her når en ny eiendom matcher en kjøper i kontaktene dine. Ingenting sendes automatisk.",
-    "howTitle": "Slik fungerer det",
-    "how1": "Du importerer eller legger til en eiendom i porteføljen din.",
-    "how2": "AIVENA sjekker den mot de eksisterende kjøperkontaktene dine innenfor matchetoleransene dine.",
-    "how3": "Eventuelle treff vises her, så du kan følge dem opp manuelt."
+    "title": "Matches",
+    "subtitle": "Buyers you can serve right now.",
+    "emptyBody": "No matches yet — they appear automatically once leads are scored and properties are synced.",
+    "lookingFor": "Looking for",
+    "matchedProperties": "Matched properties",
+    "panelEmpty": "No property matches yet for this lead.",
+    "viewListing": "View listing",
+    "match": "match",
+    "more": "+{n} more",
+    "unitBed": "bed",
+    "unitBath": "bath",
+    "unitStudio": "Studio",
+    "priceOnRequest": "Price on request",
+    "suggestToLead": "Suggest these to {name}",
+    "suggesting": "Suggesting…"
   },
   "valuation": {
     "title": "Hva er eiendommen din verdt?",

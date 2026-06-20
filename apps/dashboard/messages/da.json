@@ -236,6 +236,13 @@
       "neverBody": "This buyer hasn't messaged on WhatsApp yet, so there's no open reply window. You can reply once they message you first.",
       "templatesSoon": "Approved templates coming soon",
       "thisBuyer": "This buyer"
+    },
+    "composer": {
+      "placeholder": "Skriv en besked…",
+      "windowBanner": "Denne køber har ikke svaret i over 24 timer. WhatsApp tillader kun beskeder, når de svarer igen, så dette kan ikke sendes lige nu.",
+      "aiCouldntDraft": "AI'en kunne ikke udarbejde et svar her — skriv venligst et selv.",
+      "supersede": "Et nyere foreslået svar er tilgængeligt — opdater",
+      "translatedPreview": "Translated preview"
     }
   },
   "approvals": {
@@ -835,13 +842,21 @@
     "contextError": "Vi kunne ikke indlæse dit workspace. Opdatér siden, og prøv igen."
   },
   "matches": {
-    "subtitle": "Når du tilføjer en bolig, matcher AIVENA den mod de købere, der allerede er i dine kontakter, og viser dem her — du bestemmer, hvem du vil kontakte.",
-    "emptyTitle": "Ingen match endnu",
-    "emptyBody": "Match vises her, når en ny bolig passer til en køber i dine kontakter. Intet sendes automatisk.",
-    "howTitle": "Sådan virker det",
-    "how1": "Du importerer eller tilføjer en bolig til dit katalog.",
-    "how2": "AIVENA tjekker den mod dine eksisterende køberkontakter inden for dine matchtolerancer.",
-    "how3": "Eventuelle match vises her, så du selv kan tage stilling til dem."
+    "title": "Matches",
+    "subtitle": "Buyers you can serve right now.",
+    "emptyBody": "No matches yet — they appear automatically once leads are scored and properties are synced.",
+    "lookingFor": "Looking for",
+    "matchedProperties": "Matched properties",
+    "panelEmpty": "No property matches yet for this lead.",
+    "viewListing": "View listing",
+    "match": "match",
+    "more": "+{n} more",
+    "unitBed": "bed",
+    "unitBath": "bath",
+    "unitStudio": "Studio",
+    "priceOnRequest": "Price on request",
+    "suggestToLead": "Suggest these to {name}",
+    "suggesting": "Suggesting…"
   },
   "valuation": {
     "title": "Hvad er din bolig værd?",

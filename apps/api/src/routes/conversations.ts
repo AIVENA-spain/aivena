@@ -25,6 +25,7 @@ const GENERIC = 'Something went wrong — please try again.';
 type PendingRow = {
   id: string;
   message_body: string | null;
+  suggested_reply_translated_owner: string | null;
   raw_payload: Record<string, unknown> | null;
   created_at: Date | string;
 };
@@ -39,7 +40,7 @@ route.get('/:conversationId/pending-suggestion', async (c) => {
   }
   try {
     const result = await tx.execute(sql`
-      SELECT id, message_body, raw_payload, created_at
+      SELECT id, message_body, suggested_reply_translated_owner, raw_payload, created_at
         FROM public.dashboard_tasks
        WHERE conversation_id = ${conversationId}
          AND agency_id = current_setting('app.current_agency_id', true)
@@ -63,6 +64,11 @@ route.get('/:conversationId/pending-suggestion', async (c) => {
       data: {
         id: row.id,
         message_body: row.message_body ?? '',
+        // The AI draft translated into the agency's language — a read-only
+        // reference for the composer. Null when no translation is needed
+        // (same-language lead) or has not landed yet (brief window post-create).
+        suggested_reply_translated_owner:
+          row.suggested_reply_translated_owner ?? null,
         ai_draft_pending: aiDraftPending,
         lead_language: leadLanguage,
       },

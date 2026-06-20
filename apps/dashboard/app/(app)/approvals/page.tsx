@@ -23,9 +23,9 @@ export const dynamic = "force-dynamic";
 export default async function InboxPage({
   searchParams,
 }: {
-  searchParams: Promise<{ lead?: string }>;
+  searchParams: Promise<{ lead?: string; leadId?: string }>;
 }) {
-  const { lead } = await searchParams;
+  const { lead, leadId } = await searchParams;
   const locale = await getLocale();
 
   let rows: InboxResponse["rows"] = [];
@@ -56,6 +56,7 @@ export default async function InboxPage({
       locale={locale}
       rows={rows}
       initialTaskId={lead}
+      initialLeadId={leadId}
     />
   );
 }

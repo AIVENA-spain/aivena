@@ -236,6 +236,13 @@
       "neverBody": "This buyer hasn't messaged on WhatsApp yet, so there's no open reply window. You can reply once they message you first.",
       "templatesSoon": "Approved templates coming soon",
       "thisBuyer": "This buyer"
+    },
+    "composer": {
+      "placeholder": "Écrire un message…",
+      "windowBanner": "Cet acheteur n'a pas répondu depuis plus de 24 heures. WhatsApp n'autorise les messages qu'une fois qu'il répond à nouveau, ce message ne peut donc pas être envoyé pour le moment.",
+      "aiCouldntDraft": "L'IA n'a pas pu rédiger de réponse ici — veuillez en écrire une.",
+      "supersede": "Une réponse suggérée plus récente est disponible — actualiser",
+      "translatedPreview": "Translated preview"
     }
   },
   "approvals": {
@@ -835,13 +842,21 @@
     "contextError": "Impossible de charger votre espace de travail. Veuillez actualiser et réessayer."
   },
   "matches": {
-    "subtitle": "Lorsque vous ajoutez un bien, AIVENA le compare aux acheteurs déjà présents dans vos contacts et les fait apparaître ici — c’est vous qui décidez qui contacter.",
-    "emptyTitle": "Aucune correspondance pour le moment",
-    "emptyBody": "Les correspondances apparaissent ici lorsqu’un nouveau bien correspond à un acheteur de vos contacts. Rien n’est envoyé automatiquement.",
-    "howTitle": "Comment ça marche",
-    "how1": "Vous importez ou ajoutez un bien à votre catalogue.",
-    "how2": "AIVENA le compare à vos contacts acheteurs existants selon vos tolérances de correspondance.",
-    "how3": "Toutes les correspondances s’affichent ici pour que vous puissiez agir manuellement."
+    "title": "Matches",
+    "subtitle": "Buyers you can serve right now.",
+    "emptyBody": "No matches yet — they appear automatically once leads are scored and properties are synced.",
+    "lookingFor": "Looking for",
+    "matchedProperties": "Matched properties",
+    "panelEmpty": "No property matches yet for this lead.",
+    "viewListing": "View listing",
+    "match": "match",
+    "more": "+{n} more",
+    "unitBed": "bed",
+    "unitBath": "bath",
+    "unitStudio": "Studio",
+    "priceOnRequest": "Price on request",
+    "suggestToLead": "Suggest these to {name}",
+    "suggesting": "Suggesting…"
   },
   "valuation": {
     "title": "Quelle est la valeur de votre bien ?",

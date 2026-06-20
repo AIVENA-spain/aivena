@@ -236,6 +236,13 @@
       "neverBody": "This buyer hasn't messaged on WhatsApp yet, so there's no open reply window. You can reply once they message you first.",
       "templatesSoon": "Approved templates coming soon",
       "thisBuyer": "This buyer"
+    },
+    "composer": {
+      "placeholder": "Schrijf een bericht…",
+      "windowBanner": "Deze koper heeft al meer dan 24 uur niet gereageerd. WhatsApp staat berichten pas toe zodra hij weer reageert, dus dit kan nu niet worden verzonden.",
+      "aiCouldntDraft": "De AI kon hier geen antwoord opstellen — schrijf er zelf een.",
+      "supersede": "Er is een nieuwer voorgesteld antwoord beschikbaar — vernieuwen",
+      "translatedPreview": "Translated preview"
     }
   },
   "approvals": {
@@ -835,13 +842,21 @@
     "contextError": "We konden je werkruimte niet laden. Vernieuw de pagina en probeer het opnieuw."
   },
   "matches": {
-    "subtitle": "Wanneer je een woning toevoegt, vergelijkt AIVENA deze met de kopers die al in je contacten staan en toont ze hier — jij bepaalt wie je benadert.",
-    "emptyTitle": "Nog geen matches",
-    "emptyBody": "Matches verschijnen hier wanneer een nieuwe woning aansluit bij een koper in je contacten. Er wordt niets automatisch verstuurd.",
-    "howTitle": "Hoe het werkt",
-    "how1": "Je importeert of voegt een woning toe aan je aanbod.",
-    "how2": "AIVENA vergelijkt deze met je bestaande kopercontacten binnen je matchmarges.",
-    "how3": "Eventuele matches verschijnen hier zodat je ze handmatig kunt oppakken."
+    "title": "Matches",
+    "subtitle": "Buyers you can serve right now.",
+    "emptyBody": "No matches yet — they appear automatically once leads are scored and properties are synced.",
+    "lookingFor": "Looking for",
+    "matchedProperties": "Matched properties",
+    "panelEmpty": "No property matches yet for this lead.",
+    "viewListing": "View listing",
+    "match": "match",
+    "more": "+{n} more",
+    "unitBed": "bed",
+    "unitBath": "bath",
+    "unitStudio": "Studio",
+    "priceOnRequest": "Price on request",
+    "suggestToLead": "Suggest these to {name}",
+    "suggesting": "Suggesting…"
   },
   "valuation": {
     "title": "Wat is je woning waard?",

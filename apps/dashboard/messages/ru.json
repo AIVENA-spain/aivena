@@ -236,6 +236,13 @@
       "neverBody": "This buyer hasn't messaged on WhatsApp yet, so there's no open reply window. You can reply once they message you first.",
       "templatesSoon": "Approved templates coming soon",
       "thisBuyer": "This buyer"
+    },
+    "composer": {
+      "placeholder": "Напишите сообщение…",
+      "windowBanner": "Этот покупатель не отвечал более 24 часов. WhatsApp разрешает сообщения только после того, как он ответит снова, поэтому сейчас отправить нельзя.",
+      "aiCouldntDraft": "ИИ не смог составить здесь ответ — пожалуйста, напишите его сами.",
+      "supersede": "Доступен более новый предложенный ответ — обновить",
+      "translatedPreview": "Translated preview"
     }
   },
   "approvals": {
@@ -835,13 +842,21 @@
     "contextError": "Не удалось загрузить рабочее пространство. Обновите страницу и попробуйте ещё раз."
   },
   "matches": {
-    "subtitle": "Когда вы добавляете объект, AIVENA сопоставляет его с покупателями из ваших контактов и показывает их здесь — а вы решаете, с кем связаться.",
-    "emptyTitle": "Совпадений пока нет",
-    "emptyBody": "Совпадения появятся здесь, когда новый объект подойдёт покупателю из ваших контактов. Ничего не отправляется автоматически.",
-    "howTitle": "Как это работает",
-    "how1": "Вы импортируете или добавляете объект в каталог.",
-    "how2": "AIVENA сверяет его с вашими существующими контактами покупателей в рамках заданных допусков.",
-    "how3": "Все совпадения появляются здесь, и вы обрабатываете их вручную."
+    "title": "Matches",
+    "subtitle": "Buyers you can serve right now.",
+    "emptyBody": "No matches yet — they appear automatically once leads are scored and properties are synced.",
+    "lookingFor": "Looking for",
+    "matchedProperties": "Matched properties",
+    "panelEmpty": "No property matches yet for this lead.",
+    "viewListing": "View listing",
+    "match": "match",
+    "more": "+{n} more",
+    "unitBed": "bed",
+    "unitBath": "bath",
+    "unitStudio": "Studio",
+    "priceOnRequest": "Price on request",
+    "suggestToLead": "Suggest these to {name}",
+    "suggesting": "Suggesting…"
   },
   "valuation": {
     "title": "Сколько стоит ваша недвижимость?",

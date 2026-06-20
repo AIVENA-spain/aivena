@@ -236,6 +236,13 @@
       "neverBody": "This buyer hasn't messaged on WhatsApp yet, so there's no open reply window. You can reply once they message you first.",
       "templatesSoon": "Approved templates coming soon",
       "thisBuyer": "This buyer"
+    },
+    "composer": {
+      "placeholder": "Write a message…",
+      "windowBanner": "This buyer hasn't replied in over 24 hours. WhatsApp only allows messages once they reply again, so this can't be sent right now.",
+      "aiCouldntDraft": "The AI couldn't draft a reply here — please write one.",
+      "supersede": "A newer suggested reply is available — refresh",
+      "translatedPreview": "Translated preview"
     }
   },
   "approvals": {
@@ -835,13 +842,21 @@
     "contextError": "Couldn't load your workspace. Please refresh and try again."
   },
   "matches": {
-    "subtitle": "When you add a property, AIVENA matches it against the buyers already in your contacts and surfaces them here — you decide who to reach out to.",
-    "emptyTitle": "No matches yet",
-    "emptyBody": "Matches appear here when a new property matches a buyer in your contacts. Nothing is sent automatically.",
-    "howTitle": "How it works",
-    "how1": "You import or add a property to your catalog.",
-    "how2": "AIVENA checks it against your existing buyer contacts within your match tolerances.",
-    "how3": "Any matches show up here for you to action manually."
+    "title": "Matches",
+    "subtitle": "Buyers you can serve right now.",
+    "emptyBody": "No matches yet — they appear automatically once leads are scored and properties are synced.",
+    "lookingFor": "Looking for",
+    "matchedProperties": "Matched properties",
+    "panelEmpty": "No property matches yet for this lead.",
+    "viewListing": "View listing",
+    "match": "match",
+    "more": "+{n} more",
+    "unitBed": "bed",
+    "unitBath": "bath",
+    "unitStudio": "Studio",
+    "priceOnRequest": "Price on request",
+    "suggestToLead": "Suggest these to {name}",
+    "suggesting": "Suggesting…"
   },
   "valuation": {
     "title": "What’s your property worth?",

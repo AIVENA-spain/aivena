@@ -2,7 +2,6 @@
 
 import {
   Fragment,
-  useActionState,
   useCallback,
   useEffect,
   useMemo,
@@ -10,7 +9,7 @@ import {
   useState,
   useTransition,
 } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useFormatter, useNow, useTranslations } from "next-intl";
 import {
   AlertTriangle,
@@ -26,7 +25,6 @@ import {
   Mail,
   MessageCircle,
   MessageSquare,
-  Pencil,
   Phone,
   Send,
   X,
@@ -40,17 +38,21 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RelativeTime } from "@/components/ui/relative-time";
-import {
-  approveTaskAction,
-  dismissTaskAction,
-} from "@/app/(app)/approvals/[taskId]/actions";
 import { loadTaskDetailAction } from "./inbox-actions";
+import {
+  getComposerStateAction,
+  sendSuggestedAction,
+  sendFreeformAction,
+  dismissSuggestedAction,
+  type ComposerState,
+  type PendingSuggestion,
+} from "./composer-actions";
 import { LeadNotes } from "./lead-notes";
+import { MatchedProperties } from "@/app/(app)/matches/matched-properties";
 import type {
   InboxRow,
   TaskDetailResponse,
   ThreadMessage,
-  WhatsappState,
 } from "@/lib/api/types";
 
 // ---------- helpers ----------
@@ -177,6 +179,39 @@ function languageName(code: string | null): string {
   return LANG_NAME[code.toLowerCase()] ?? code.toUpperCase();
 }
 
+/**
+ * Linkify http(s) URLs inside message text: split on URLs and render those as
+ * real <a> links (new tab, noopener), leaving plain text untouched so the
+ * caller's `whitespace-pre-wrap` keeps newlines. Long unbroken URLs wrap via
+ * `break-all`. The trailing-punctuation trim keeps a sentence's "." or ")"
+ * out of the href.
+ */
+const URL_RE = /(https?:\/\/[^\s]+)/g;
+function linkifyText(text: string): React.ReactNode {
+  if (!text) return text;
+  const parts = text.split(URL_RE);
+  return parts.map((part, i) => {
+    if (i % 2 === 1) {
+      const trailing = part.match(/[.,;:!?)\]]+$/)?.[0] ?? "";
+      const href = trailing ? part.slice(0, part.length - trailing.length) : part;
+      return (
+        <Fragment key={i}>
+          <a
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline break-all"
+          >
+            {href}
+          </a>
+          {trailing}
+        </Fragment>
+      );
+    }
+    return <Fragment key={i}>{part}</Fragment>;
+  });
+}
+
 function scoreTemperatureLine(
   score: number | null,
   temperature: string | null,
@@ -274,10 +309,13 @@ export function InboxWorkspace({
   locale,
   rows,
   initialTaskId,
+  initialLeadId,
 }: {
   locale: string;
   rows: InboxRow[];
   initialTaskId?: string;
+  /** Open a specific lead by its leadId (Matches rows link with ?leadId=). */
+  initialLeadId?: string;
 }) {
   const t = useTranslations("inbox");
   const router = useRouter();
@@ -301,6 +339,15 @@ export function InboxWorkspace({
   const buyers = useMemo(() => rows.filter((r) => !isSeller(r)), [rows]);
   const sellers = useMemo(() => rows.filter((r) => isSeller(r)), [rows]);
 
+  // Resolve the initial selection to a taskId. ?lead=<taskId> wins; otherwise
+  // ?leadId=<leadId> (used by the Matches surface) maps to the matching row's
+  // taskId. If neither matches a row, fall through to the normal defaults.
+  const resolvedInitialTaskId =
+    initialTaskId ??
+    (initialLeadId
+      ? (rows.find((r) => r.leadId === initialLeadId)?.taskId ?? undefined)
+      : undefined);
+
   // Both streams are deduped by conversation, ordered needs-you-first, and
   // carry per-conversation state for the badges + the "Handled" divider.
   const buyerGroups = useMemo(() => groupConversations(buyers), [buyers]);
@@ -318,9 +365,15 @@ export function InboxWorkspace({
 
   // Default stream = first stream with items needing action; else buyers.
   const initialStream: Stream = (() => {
-    if (initialTaskId && buyers.some((r) => r.taskId === initialTaskId))
+    if (
+      resolvedInitialTaskId &&
+      buyers.some((r) => r.taskId === resolvedInitialTaskId)
+    )
       return "buyers";
-    if (initialTaskId && sellers.some((r) => r.taskId === initialTaskId))
+    if (
+      resolvedInitialTaskId &&
+      sellers.some((r) => r.taskId === resolvedInitialTaskId)
+    )
       return "sellers";
     if (buyers.length > 0) return "buyers";
     if (sellers.length > 0) return "sellers";
@@ -334,9 +387,9 @@ export function InboxWorkspace({
 
   // Selected lead by stream — independent so switching streams doesn't reset.
   const initialSelected =
-    initialTaskId &&
-    [...buyers, ...sellers].some((r) => r.taskId === initialTaskId)
-      ? initialTaskId
+    resolvedInitialTaskId &&
+    [...buyers, ...sellers].some((r) => r.taskId === resolvedInitialTaskId)
+      ? resolvedInitialTaskId
       : (buyers[0]?.taskId ?? sellers[0]?.taskId ?? null);
   const [selectedBuyerId, setSelectedBuyerId] = useState<string | null>(
     isSeller(rows.find((r) => r.taskId === initialSelected) ?? ({} as InboxRow))
@@ -344,7 +397,9 @@ export function InboxWorkspace({
       : initialSelected,
   );
   const [selectedSellerId, setSelectedSellerId] = useState<string | null>(
-    sellers[0]?.taskId ?? null,
+    isSeller(rows.find((r) => r.taskId === initialSelected) ?? ({} as InboxRow))
+      ? initialSelected
+      : (sellers[0]?.taskId ?? null),
   );
 
   const activeRows = stream === "buyers" ? buyers : sellers;
@@ -382,9 +437,108 @@ export function InboxWorkspace({
     [],
   );
 
+  // FIX #1 — force a re-fetch of a thread that's already loaded, WITHOUT
+  // flashing the loading skeleton: we keep showing the current (stale) thread
+  // and swap it in place once the fresh detail arrives. Used to reconcile the
+  // just-sent message's status (queued → delivered) after an approve/dismiss.
+  const reloadThread = useCallback((taskId: string) => {
+    loadedRef.current.add(taskId); // already loaded; keep the cached bubble up
+    startThreadLoad(async () => {
+      const result = await loadTaskDetailAction(taskId);
+      if (!result.ok) return; // keep the old thread on a transient refetch fail
+      setThreadCache((prev) => ({
+        ...prev,
+        [taskId]: { status: "ok", data: result.detail },
+      }));
+    });
+  }, []);
+
+  // Force-refetch the open thread now + at ~2s and ~4.5s so a just-sent outbound
+  // reconciles (queued → delivered, ~4s through send_queue) and any stuck
+  // spinner clears. Shared by the ?approved/?dismissed effect and the composer's
+  // onActionDone. Returns a cleanup that cancels the pending refetches.
+  const reconcileThread = useCallback(
+    (taskId: string) => {
+      reloadThread(taskId);
+      const t1 = setTimeout(() => reloadThread(taskId), 2000);
+      const t2 = setTimeout(() => reloadThread(taskId), 4500);
+      return () => {
+        clearTimeout(t1);
+        clearTimeout(t2);
+      };
+    },
+    [reloadThread],
+  );
+
+  // The composer just sent/dismissed for the open conversation. Refresh the
+  // server rows (so taskStatus history flips) and reconcile the thread so the
+  // new outbound's status settles. router.refresh() is the rows refresh.
+  const onComposerDone = useCallback(() => {
+    const sel = stream === "buyers" ? selectedBuyerId : selectedSellerId;
+    router.refresh();
+    if (sel) reconcileThread(sel);
+  }, [stream, selectedBuyerId, selectedSellerId, router, reconcileThread]);
+
   useEffect(() => {
     if (selectedId && view === "convo") loadThread(selectedId);
   }, [selectedId, view, loadThread]);
+
+  // FIX #1 — after an approve/dismiss the shared server action redirects to
+  // /approvals?approved=1 | ?dismissed=1 (revalidating the server rows but
+  // dropping ?lead). When that flag lands with a conversation still selected,
+  // re-sync: refresh the rows (so taskStatus flips → the reply card vanishes)
+  // and re-fetch the open thread now + at ~2s and ~4.5s so the new outbound's
+  // status reconciles (queued → delivered, ~4s through send_queue). Then
+  // restore ?lead so a reload reopens the same conversation. The ref guards
+  // the effect to run exactly once per flag occurrence.
+  const searchParams = useSearchParams();
+  const reconciledFlagRef = useRef<string | null>(null);
+  useEffect(() => {
+    const flag = searchParams.get("approved")
+      ? "approved"
+      : searchParams.get("dismissed")
+        ? "dismissed"
+        : null;
+    if (!flag) {
+      reconciledFlagRef.current = null;
+      return;
+    }
+    const sel = stream === "buyers" ? selectedBuyerId : selectedSellerId;
+    if (!sel) return;
+    const guardKey = `${flag}:${sel}`;
+    if (reconciledFlagRef.current === guardKey) return;
+    reconciledFlagRef.current = guardKey;
+
+    router.refresh();
+    const cancel = reconcileThread(sel);
+    router.replace(`/approvals?lead=${encodeURIComponent(sel)}`, {
+      scroll: false,
+    });
+    return cancel;
+  }, [
+    searchParams,
+    stream,
+    selectedBuyerId,
+    selectedSellerId,
+    reconcileThread,
+    router,
+  ]);
+
+  // #3 — a "suggest matched properties" task was just created for the open
+  // lead. Refresh the server rows (so the new pending task row arrives →
+  // `selected` resolves to it with taskStatus 'pending', surfacing the
+  // suggested-reply card), select it in the current stream, and load its
+  // thread. Same-stream as the current selection (it's the same lead).
+  const handleSuggested = useCallback(
+    (taskId: string) => {
+      router.refresh();
+      if (stream === "buyers") setSelectedBuyerId(taskId);
+      else setSelectedSellerId(taskId);
+      loadThread(taskId);
+      syncLeadUrl(taskId);
+    },
+    [router, stream, loadThread, syncLeadUrl],
+  );
 
   return (
     <div className="flex flex-col gap-3.5">
@@ -440,6 +594,8 @@ export function InboxWorkspace({
             threadEntry={
               selectedBuyerId ? threadCache[selectedBuyerId] : undefined
             }
+            onSuggested={handleSuggested}
+            onComposerDone={onComposerDone}
             locale={locale}
           />
         ) : (
@@ -476,6 +632,8 @@ export function InboxWorkspace({
               threadEntry={
                 selectedSellerId ? threadCache[selectedSellerId] : undefined
               }
+              onSuggested={handleSuggested}
+              onComposerDone={onComposerDone}
               locale={locale}
             />
           ) : (
@@ -658,6 +816,8 @@ function BuyersConvoView({
   onSelect,
   selected,
   threadEntry,
+  onSuggested,
+  onComposerDone,
   locale,
 }: {
   rows: InboxRow[];
@@ -667,6 +827,10 @@ function BuyersConvoView({
   onSelect: (id: string) => void;
   selected: InboxRow | null;
   threadEntry?: { status: "loading" | "ok" | "failed"; data?: TaskDetailResponse };
+  /** Create a property-suggestion task for the open lead, then open it. */
+  onSuggested?: (taskId: string) => void;
+  /** Reconcile the open thread + refresh rows after a composer send/dismiss. */
+  onComposerDone: () => void;
   locale: string;
 }) {
   const t = useTranslations("inbox");
@@ -768,6 +932,7 @@ function BuyersConvoView({
           <ThreadAndReply
             lead={selected}
             threadEntry={threadEntry}
+            onComposerDone={onComposerDone}
             locale={locale}
           />
         ) : (
@@ -783,6 +948,12 @@ function BuyersConvoView({
           <>
             <LeadSummary lead={selected} />
             <LeadNotes key={selected.leadId} leadId={selected.leadId} />
+            <MatchedProperties
+              key={"m-" + selected.leadId}
+              leadId={selected.leadId}
+              leadName={selected.fullName}
+              onSuggested={onSuggested}
+            />
           </>
         ) : null}
       </div>
@@ -795,10 +966,13 @@ function BuyersConvoView({
 function ThreadAndReply({
   lead,
   threadEntry,
+  onComposerDone,
   locale,
 }: {
   lead: InboxRow;
   threadEntry?: { status: "loading" | "ok" | "failed"; data?: TaskDetailResponse };
+  /** Reconcile the open thread + refresh rows after a composer send/dismiss. */
+  onComposerDone: () => void;
   locale: string;
 }) {
   const t = useTranslations("inbox");
@@ -913,20 +1087,18 @@ function ThreadAndReply({
       {/* Viewing confirm-time affordance (W11-lite) — only for viewing tasks. */}
       {isViewing ? <ViewingConfirmCard /> : null}
 
-      {/* Reply zone */}
-      <ReplyZone
-        key={lead.taskId}
-        taskId={lead.taskId}
+      {/* Persistent composer — always rendered, pinned at the bottom of the
+          conversation. Keyed by conversation (falling back to lead) so it
+          remounts with fresh state per conversation. Polls for a pending
+          suggested reply (SUGGESTED state) and falls back to FREEFORM. */}
+      <Composer
+        key={lead.conversationId ?? lead.leadId}
+        conversationId={lead.conversationId}
+        leadId={lead.leadId}
         channel={lead.channel}
         leadName={lead.fullName}
-        whatsappState={whatsappState}
-        initialSubject={lead.aiReplySubject ?? ""}
-        initialBody={lead.aiReplyBody ?? ""}
-        translatedDraft={
-          threadEntry?.status === "ok"
-            ? (threadEntry.data?.task.suggestedReplyTranslatedOwner ?? null)
-            : null
-        }
+        suggestedSubject={lead.aiReplySubject}
+        onActionDone={onComposerDone}
       />
     </div>
   );
@@ -1087,11 +1259,16 @@ function ThreadBubble({
   // dashboard and never quoted, so it renders raw `content`.
   const original = inbound ? (msg.bodyClean ?? msg.content) : msg.content;
   const translated = msg.bodyTranslatedOwner?.trim() || null;
+  // Both directions: when a translation into the agency's language exists, read
+  // it by default with a toggle to reveal the original. Outbound now carries a
+  // translation too (backfilled), so the operator can read what was sent on
+  // their behalf — not just the lead-language text. Null translation (same
+  // language, or not landed yet) → original only, no toggle, no label.
   const hasTranslation =
-    inbound && translated !== null && translated !== original?.trim();
+    translated !== null && translated !== original?.trim();
 
-  // Inbound with a translation: read the owner-language version by default,
-  // with a toggle to reveal the original. Everything else renders the original.
+  // Read the owner-language version by default, with a toggle to reveal the
+  // original. When there's no translation, render the original.
   const [showOriginal, setShowOriginal] = useState(false);
   const primary = hasTranslation && !showOriginal ? translated : original;
 
@@ -1114,7 +1291,7 @@ function ThreadBubble({
   return (
     <div
       className={cn(
-        "max-w-[76%] rounded-[13px] px-3.5 py-2.5 text-[12.5px] leading-[1.5]",
+        "min-w-0 max-w-[76%] break-words [overflow-wrap:anywhere] rounded-[13px] px-3.5 py-2.5 text-[12.5px] leading-[1.5]",
         inbound
           ? "self-start rounded-bl-[4px] bg-muted/70 text-foreground"
           : failed
@@ -1131,7 +1308,11 @@ function ThreadBubble({
         </div>
       ) : null}
       <div className={cn("whitespace-pre-wrap", failed && "opacity-70")}>
-        {primary ?? <span className="italic opacity-70">(empty)</span>}
+        {primary ? (
+          linkifyText(primary)
+        ) : (
+          <span className="italic opacity-70">(empty)</span>
+        )}
       </div>
       {hasTranslation ? (
         <button
@@ -1156,262 +1337,348 @@ function ThreadBubble({
   );
 }
 
-// ---------- reply zone (Send / Edit / Dismiss) ----------
+// ---------- persistent composer (freeform + suggested) ----------
 
-function ReplyZone({
-  taskId,
+/**
+ * The persistent composer pinned at the bottom of the open conversation. Two
+ * states, driven by polling for a pending suggested_reply task:
+ *
+ *   FREEFORM  — no pending suggestion. Empty textarea; Send → send_custom_reply.
+ *   SUGGESTED — a pending suggested_reply exists. Textarea pre-filled with the
+ *               AI draft (editable), labelled; Send → approve_dashboard_task;
+ *               Dismiss → dismiss_dashboard_task.
+ *
+ * After a successful send/dismiss the composer clears to empty FREEFORM, refetches
+ * its state, and calls onActionDone() (the parent reconciles the thread + refreshes
+ * rows). It polls on mount, on conversationId change (the parent keys it by
+ * conversation so it remounts), on window focus, and every 18s — so a freshly
+ * drafted suggestion appears after the buyer replies.
+ */
+function Composer({
+  conversationId,
+  leadId,
   channel,
   leadName,
-  whatsappState,
-  initialSubject,
-  initialBody,
-  translatedDraft,
+  suggestedSubject,
+  onActionDone,
 }: {
-  taskId: string;
+  conversationId: string | null;
+  leadId: string;
   channel: string | null;
   leadName: string | null;
-  /** WhatsApp 24h-window state; null for non-WhatsApp leads or on lookup failure. */
-  whatsappState?: WhatsappState | null;
-  initialSubject: string;
-  initialBody: string;
-  /** v1.14.4 — owner-language translation of the AI draft; NULL = show original only. */
-  translatedDraft?: string | null;
+  /** AI-drafted subject (email only), prefilled in the suggested state. */
+  suggestedSubject: string | null;
+  /** Reconcile the thread + refresh rows after a send/dismiss. */
+  onActionDone: () => void;
 }) {
   const t = useTranslations("inbox.reply");
+  const tComposer = useTranslations("inbox.composer");
   const tWindow = useTranslations("inbox.window");
   const format = useFormatter();
-  // Stable "now" (server render time, carried to the client) — avoids the
-  // relativeTime ENVIRONMENT_FALLBACK warning and any SSR/hydration drift.
+  // Stable "now" (server render time) — avoids relativeTime fallback warnings.
   const now = useNow();
 
-  // WhatsApp has no subject line — hide the subject field/preview entirely.
-  // The approve RPC is channel-aware and ignores subject for WhatsApp, so the
-  // (empty) hidden subject input below is harmless.
   const isWhatsapp = isWhatsappChannel(channel);
 
-  // Send / approve action — reuses the existing wired path.
-  const [sendState, sendAction, sending] = useActionState(approveTaskAction, {});
+  // Composer text + the operator's edit/dirty tracking.
+  const [text, setText] = useState("");
+  const [subject, setSubject] = useState(suggestedSubject ?? "");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [pollState, setPollState] = useState<ComposerState | null>(null);
+  // The suggestion id currently loaded into the textarea (so a re-poll of the
+  // SAME suggestion doesn't clobber edits, but a NEWER one offers a refresh).
+  const [shownPendingId, setShownPendingId] = useState<string | null>(null);
+  const [dirty, setDirty] = useState(false);
+  const [supersedeAvailable, setSupersedeAvailable] = useState(false);
 
-  // Composer gating (Part B + D). `window_open` from the RPC is the single
-  // source of truth — never recomputed here. The approve guard can also reject
-  // a stale-open composer mid-flight (windowClosed flag) → flip locally too.
-  const [forcedClosed, setForcedClosed] = useState(false);
-  useEffect(() => {
-    if (sendState.windowClosed) setForcedClosed(true);
-  }, [sendState.windowClosed]);
-  const closed =
-    (isWhatsapp && whatsappState?.window_open === false) || forcedClosed;
-  // "Never messaged" only when we positively know there's no prior inbound.
+  const pending = pollState?.pending ?? null;
+  const whatsapp = pollState?.whatsapp ?? null;
+
+  // WhatsApp window is closed only when the RPC positively says so. Email never
+  // has window logic. `window_open` is the single source of truth.
+  const windowClosed = isWhatsapp && whatsapp?.window_open === false;
   const neverMessaged =
-    !!whatsappState && whatsappState.last_inbound_whatsapp_at == null;
-  const lastInbound = whatsappState?.last_inbound_whatsapp_at ?? null;
+    !!whatsapp && whatsapp.last_inbound_whatsapp_at == null;
+  const lastInbound = whatsapp?.last_inbound_whatsapp_at ?? null;
   const relTime = lastInbound
     ? format.relativeTime(new Date(lastInbound), now)
     : null;
   const name = leadName?.trim() || tWindow("thisBuyer");
-  const [dismissState, dismissAction, dismissing] = useActionState(
-    dismissTaskAction,
-    {},
-  );
 
-  // The parent keys this component by taskId, so selecting a different task
-  // remounts it with fresh initial state — no reset effect needed (and no
-  // synchronous setState in an effect). A data refresh of the same task no
-  // longer clobbers in-progress edits, which the old reset effect did.
-  const [editing, setEditing] = useState(false);
-  const [subject, setSubject] = useState(initialSubject);
-  const [body, setBody] = useState(initialBody);
-  const [dismissOpen, setDismissOpen] = useState(false);
+  // Refetch the composer state. We keep the latest-call guard in a ref so a
+  // slow earlier poll can't overwrite a newer one's result.
+  const reqRef = useRef(0);
+  const refetch = useCallback(async () => {
+    const req = ++reqRef.current;
+    const res = await getComposerStateAction(conversationId, leadId, channel);
+    if (req !== reqRef.current) return; // a newer poll already landed
+    if (res.ok) setPollState(res.data);
+    // A transient poll failure is silent — we keep the last good state.
+  }, [conversationId, leadId, channel]);
 
-  // Prefer the owner-language translation for reading the AI draft, when one
-  // exists and differs from the original (what actually gets sent).
-  const hasTranslatedDraft =
-    !!translatedDraft &&
-    translatedDraft.trim().length > 0 &&
-    translatedDraft.trim() !== body.trim();
+  // Poll on mount + on window focus + every 18s; clear on unmount.
+  useEffect(() => {
+    void refetch();
+    const onFocus = () => void refetch();
+    window.addEventListener("focus", onFocus);
+    const id = setInterval(() => void refetch(), 18000);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      clearInterval(id);
+    };
+  }, [refetch]);
+
+  // Sync rule — reconcile the textarea against the freshly-polled pending task.
+  useEffect(() => {
+    if (!pending) {
+      // FREEFORM. Do NOT clobber text the user is typing; text only clears on a
+      // successful send/dismiss. Just drop any stale suggested-state markers.
+      setShownPendingId(null);
+      setSupersedeAvailable(false);
+      return;
+    }
+    if (pending.ai_draft_pending) {
+      // The AI couldn't draft here — show the empty composer with a note; the
+      // operator writes their own reply (Send still approves with the typed text).
+      if (!dirty && shownPendingId !== pending.id) {
+        setText("");
+        setShownPendingId(pending.id);
+      }
+      setSupersedeAvailable(false);
+      return;
+    }
+    // A real AI draft is pending.
+    if (!dirty) {
+      // Adopt the draft (and the email subject) when the operator hasn't edited.
+      if (shownPendingId !== pending.id) {
+        setText(pending.message_body);
+        if (!isWhatsapp) setSubject(suggestedSubject ?? "");
+        setShownPendingId(pending.id);
+      }
+      setSupersedeAvailable(false);
+    } else if (pending.id !== shownPendingId) {
+      // The operator is mid-edit on an older draft and a newer one arrived —
+      // offer a subtle refresh rather than discarding their work.
+      setSupersedeAvailable(true);
+    }
+  }, [pending, dirty, shownPendingId, isWhatsapp, suggestedSubject]);
+
+  // Load the newer suggested draft, discarding the in-progress edit (operator
+  // chose "refresh"). Clears dirty so the next render adopts it cleanly.
+  const loadNewerDraft = useCallback(() => {
+    if (!pending) return;
+    setText(pending.message_body);
+    if (!isWhatsapp) setSubject(suggestedSubject ?? "");
+    setShownPendingId(pending.id);
+    setDirty(false);
+    setSupersedeAvailable(false);
+    setError(null);
+  }, [pending, isWhatsapp, suggestedSubject]);
+
+  const trimmed = text.trim();
+  const sendDisabled = busy || windowClosed || trimmed.length === 0;
+
+  async function handleSend() {
+    if (sendDisabled) return; // double-submit + state guard
+    setBusy(true);
+    setError(null);
+    const res = pending
+      ? await sendSuggestedAction(pending.id, text)
+      : await sendFreeformAction(
+          leadId,
+          text,
+          !isWhatsapp ? (subject.trim() || null) : null,
+          isWhatsapp ? "whatsapp" : "email",
+        );
+    if (res.ok) {
+      setText("");
+      setSubject(suggestedSubject ?? "");
+      setDirty(false);
+      // Mark the just-acted suggestion as already-shown (NOT null) so the sync
+      // effect can't re-adopt its draft into the cleared textarea in the window
+      // before the refetch nulls `pending` — otherwise the box refills with the
+      // message we just sent (a stale freeform re-send risk). The refetch then
+      // sets pending → null and the effect resets shownPendingId to null.
+      setShownPendingId(pending?.id ?? null);
+      setSupersedeAvailable(false);
+      setError(null);
+      setBusy(false);
+      void refetch();
+      onActionDone();
+    } else {
+      setError(res.error);
+      setBusy(false); // keep the text so the operator can retry
+    }
+  }
+
+  async function handleDismiss() {
+    if (!pending || busy) return;
+    setBusy(true);
+    setError(null);
+    const res = await dismissSuggestedAction(pending.id);
+    if (res.ok) {
+      setText("");
+      setSubject(suggestedSubject ?? "");
+      setDirty(false);
+      // Same re-adopt guard as handleSend — keep the acted id so the cleared
+      // textarea isn't refilled with the dismissed draft before refetch.
+      setShownPendingId(pending?.id ?? null);
+      setSupersedeAvailable(false);
+      setError(null);
+      setBusy(false);
+      void refetch();
+      onActionDone();
+    } else {
+      setError(res.error);
+      setBusy(false);
+    }
+  }
+
+  const isSuggested = pending !== null;
+  const aiDraftPending = pending?.ai_draft_pending === true;
+  // Read-only translated preview of the AI draft, in the agency's language, so
+  // the operator can read a draft written in the lead's language. Reference
+  // only — the editable textarea (lead language) is always what Send transmits.
+  // Null when there's no real draft (ai_draft_pending), no translation needed
+  // (same-language lead), or it hasn't landed yet → the helper just hides.
+  const draftPreview =
+    isSuggested && !aiDraftPending
+      ? (pending?.suggested_reply_translated_owner?.trim() || null)
+      : null;
 
   return (
     <div className="border-t border-border bg-card px-5 py-4">
-      {closed ? (
-        <div className="rounded-[13px] border border-amber-500/30 bg-amber-500/5 p-3.5">
+      {/* WhatsApp 24h window banner — honest, code-free (Law 2). Send is
+          disabled while it's up; the textarea stays editable. */}
+      {windowClosed ? (
+        <div className="mb-3 rounded-[13px] border border-amber-500/30 bg-amber-500/5 p-3.5">
           <div className="mb-1.5 flex items-center gap-1.5 font-mono text-[9.5px] font-bold uppercase tracking-[0.05em] text-amber-700 dark:text-amber-300">
             <Lock className="h-3.5 w-3.5" aria-hidden strokeWidth={2} />
             {neverMessaged ? tWindow("neverTitle") : tWindow("closedTitle")}
           </div>
           <p className="text-[12.5px] leading-[1.5] text-muted-foreground">
-            {neverMessaged
-              ? tWindow("neverBody")
-              : relTime
-                ? tWindow("closedBody", { name, time: relTime })
-                : tWindow("closedBodyGeneric", { name })}
+            {tComposer("windowBanner")}
           </p>
-          <div className="mt-2.5 font-mono text-[9px] uppercase tracking-[0.05em] text-muted-foreground/70">
-            {tWindow("templatesSoon")}
-          </div>
+          {!neverMessaged && relTime ? (
+            <p className="mt-1.5 text-[11.5px] leading-[1.5] text-muted-foreground/80">
+              {tWindow("closedBody", { name, time: relTime })}
+            </p>
+          ) : null}
         </div>
-      ) : (
-      <div className="rounded-[13px] border border-brand/20 bg-brand-soft p-3.5">
+      ) : null}
+
+      {/* State label — SUGGESTED shows the AI tag (reused styling); FREEFORM
+          shows nothing special. */}
+      {isSuggested ? (
         <div className="mb-1.5 flex items-center gap-1.5 font-mono text-[9.5px] font-bold uppercase tracking-[0.05em] text-brand">
           <span className="h-1.5 w-1.5 rounded-full bg-brand" />
           {t("aiSuggested")}
         </div>
+      ) : null}
 
-        {editing ? (
-          <div className="flex flex-col gap-2.5">
-            {!isWhatsapp ? (
-              <div className="flex flex-col gap-1">
-                <label
-                  htmlFor={`subj-${taskId}`}
-                  className="font-mono text-[9.5px] uppercase tracking-wide text-muted-foreground"
-                >
-                  {t("subjectLabel")}
-                </label>
-                <Input
-                  id={`subj-${taskId}`}
-                  value={subject}
-                  onChange={(e) => setSubject(e.target.value)}
-                />
-              </div>
-            ) : null}
-            <div className="flex flex-col gap-1">
-              <label
-                htmlFor={`body-${taskId}`}
-                className="font-mono text-[9.5px] uppercase tracking-wide text-muted-foreground"
-              >
-                {t("bodyLabel")}
-              </label>
-              <textarea
-                id={`body-${taskId}`}
-                rows={6}
-                value={body}
-                onChange={(e) => setBody(e.target.value)}
-                className="rounded-md border border-border bg-background px-3 py-2 text-[12.5px] leading-[1.5] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              />
-            </div>
+      {/* "AI couldn't draft" note — empty textarea, operator writes their own. */}
+      {aiDraftPending ? (
+        <p className="mb-2 text-[12px] leading-[1.5] text-muted-foreground">
+          {tComposer("aiCouldntDraft")}
+        </p>
+      ) : null}
+
+      {/* Supersede affordance — a newer draft arrived while the operator was
+          editing an older one. */}
+      {supersedeAvailable ? (
+        <button
+          type="button"
+          onClick={loadNewerDraft}
+          className="mb-2 inline-flex items-center gap-1 rounded-md bg-brand-soft px-2 py-1 text-[11px] font-medium text-brand underline-offset-2 hover:underline"
+        >
+          {tComposer("supersede")}
+        </button>
+      ) : null}
+
+      {/* Email subject — prefilled in the suggested state, editable. WhatsApp
+          has no subject. */}
+      {!isWhatsapp ? (
+        <div className="mb-2 flex flex-col gap-1">
+          <label
+            htmlFor={`composer-subj-${leadId}`}
+            className="font-mono text-[9.5px] uppercase tracking-wide text-muted-foreground"
+          >
+            {t("subjectLabel")}
+          </label>
+          <Input
+            id={`composer-subj-${leadId}`}
+            value={subject}
+            onChange={(e) => {
+              setSubject(e.target.value);
+              setDirty(true);
+            }}
+          />
+        </div>
+      ) : null}
+
+      <textarea
+        id={`composer-body-${leadId}`}
+        rows={4}
+        value={text}
+        onChange={(e) => {
+          setText(e.target.value);
+          setDirty(true);
+        }}
+        placeholder={tComposer("placeholder")}
+        className="w-full rounded-md border border-border bg-background px-3 py-2 text-[12.5px] leading-[1.5] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      />
+
+      {/* Read-only translated preview of the AI draft — lets the operator read a
+          draft written in the lead's language. Visually a static, muted block
+          (not an input) so it's unmistakable that editing happens in the box
+          above and this never changes what Send transmits. Reflects the original
+          AI draft; not re-translated as the operator edits (no endpoint for it). */}
+      {draftPreview ? (
+        <div className="mt-2 rounded-md border border-border bg-muted/40 px-3 py-2">
+          <div className="mb-1 flex items-center gap-1 font-mono text-[8.5px] uppercase tracking-[0.05em] text-muted-foreground">
+            <Languages className="h-3 w-3" aria-hidden strokeWidth={1.9} />
+            {tComposer("translatedPreview")}
           </div>
-        ) : (
-          <>
-            {!isWhatsapp && subject ? (
-              <div className="text-[11.5px] font-semibold text-foreground">
-                {subject}
-              </div>
-            ) : null}
-            {hasTranslatedDraft ? (
-              <>
-                {/* Owner-language translation is the primary read (so the
-                    owner understands what they're approving); the original
-                    below is what AIVENA actually sends to the buyer. */}
-                <p className="mt-1 whitespace-pre-wrap text-[12.5px] leading-[1.5] text-foreground">
-                  {translatedDraft}
-                </p>
-                <div className="mt-2 border-t border-brand/20 pt-2">
-                  <div className="mb-1 font-mono text-[8.5px] uppercase tracking-[0.05em] text-muted-foreground">
-                    {t("sentOriginal")}
-                  </div>
-                  <p className="whitespace-pre-wrap text-[12px] leading-[1.5] text-muted-foreground">
-                    {body}
-                  </p>
-                </div>
-              </>
-            ) : (
-              <p className="mt-1 whitespace-pre-wrap text-[12.5px] leading-[1.5] text-foreground">
-                {body}
-              </p>
-            )}
-          </>
-        )}
-      </div>
-      )}
+          <p className="whitespace-pre-wrap text-[12px] leading-[1.5] text-muted-foreground">
+            {draftPreview}
+          </p>
+        </div>
+      ) : null}
 
-      {sendState.error ? (
+      {error ? (
         <div
           role="alert"
           className="mt-3 rounded-md border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-[12.5px] text-rose-700 dark:text-rose-300"
         >
-          {sendState.error}
+          {error}
         </div>
       ) : null}
 
-      {/* Action row — Send / Edit / Dismiss (existing wired actions).
-          When the window is closed we drop Send + Edit (a free-text send is
-          guaranteed to fail) but keep Dismiss so the task isn't stuck. */}
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        {!closed ? (
-          <>
-            <form action={sendAction}>
-              <input type="hidden" name="taskId" value={taskId} />
-              <input type="hidden" name="subject" value={subject} />
-              <input type="hidden" name="body" value={body} />
-              <Button
-                type="submit"
-                className="gap-1.5"
-                disabled={sending || dismissing || !body}
-              >
-                <span className="h-1.5 w-1.5 rounded-full bg-brand" aria-hidden />
-                {sending ? t("sending") : t("send")}
-              </Button>
-            </form>
-
-            <Button
-              type="button"
-              variant="outline"
-              className="gap-1.5"
-              onClick={() => setEditing((v) => !v)}
-            >
-              <Pencil className="h-3.5 w-3.5" aria-hidden />
-              {editing ? t("editing") : t("edit")}
-            </Button>
-          </>
-        ) : null}
-
         <Button
           type="button"
-          variant="ghost"
-          className="gap-1.5 text-muted-foreground hover:text-foreground"
-          onClick={() => setDismissOpen((v) => !v)}
+          className="gap-1.5"
+          disabled={sendDisabled}
+          onClick={handleSend}
         >
-          <X className="h-3.5 w-3.5" aria-hidden />
-          {t("dismiss")}
+          <Send className="h-3.5 w-3.5" aria-hidden />
+          {busy ? t("sending") : t("send")}
         </Button>
-      </div>
 
-      {dismissOpen ? (
-        <form
-          action={dismissAction}
-          className="mt-3 flex flex-col gap-2 rounded-md border border-border bg-muted/40 p-3"
-        >
-          <input type="hidden" name="taskId" value={taskId} />
-          <label className="font-mono text-[9.5px] uppercase tracking-wide text-muted-foreground">
-            {t("dismissReasonLabel")}
-          </label>
-          <Input
-            name="reason"
-            placeholder={t("dismissReasonPlaceholder")}
-            required
-          />
-          {dismissState.error ? (
-            <div
-              role="alert"
-              className="rounded-md border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-[12.5px] text-rose-700 dark:text-rose-300"
-            >
-              {dismissState.error}
-            </div>
-          ) : null}
-          <div className="flex gap-2">
-            <Button type="submit" variant="outline" disabled={dismissing}>
-              {dismissing ? t("dismissing") : t("confirmDismiss")}
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => setDismissOpen(false)}
-              disabled={dismissing}
-            >
-              {t("cancel")}
-            </Button>
-          </div>
-        </form>
-      ) : null}
+        {isSuggested ? (
+          <Button
+            type="button"
+            variant="ghost"
+            className="gap-1.5 text-muted-foreground hover:text-foreground"
+            disabled={busy}
+            onClick={handleDismiss}
+          >
+            <X className="h-3.5 w-3.5" aria-hidden />
+            {busy ? t("dismissing") : t("dismiss")}
+          </Button>
+        ) : null}
+      </div>
     </div>
   );
 }

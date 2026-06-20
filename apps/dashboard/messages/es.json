@@ -236,6 +236,13 @@
       "neverBody": "This buyer hasn't messaged on WhatsApp yet, so there's no open reply window. You can reply once they message you first.",
       "templatesSoon": "Approved templates coming soon",
       "thisBuyer": "This buyer"
+    },
+    "composer": {
+      "placeholder": "Escribe un mensaje…",
+      "windowBanner": "Este comprador no ha respondido en más de 24 horas. WhatsApp solo permite enviar mensajes cuando vuelva a responder, así que ahora mismo no se puede enviar.",
+      "aiCouldntDraft": "La IA no pudo redactar una respuesta aquí; por favor, escribe una.",
+      "supersede": "Hay una respuesta sugerida más reciente: actualizar",
+      "translatedPreview": "Translated preview"
     }
   },
   "approvals": {
@@ -835,13 +842,21 @@
     "contextError": "No hemos podido cargar tu espacio de trabajo. Actualiza la página e inténtalo de nuevo."
   },
   "matches": {
-    "subtitle": "Cuando añades una propiedad, AIVENA la compara con los compradores que ya tienes en tus contactos y los muestra aquí; tú decides a quién contactar.",
-    "emptyTitle": "Aún no hay coincidencias",
-    "emptyBody": "Las coincidencias aparecerán aquí cuando una nueva propiedad encaje con un comprador de tus contactos. No se envía nada automáticamente.",
-    "howTitle": "Cómo funciona",
-    "how1": "Importas o añades una propiedad a tu catálogo.",
-    "how2": "AIVENA la compara con tus contactos de compradores existentes según tus márgenes de coincidencia.",
-    "how3": "Cualquier coincidencia aparece aquí para que la gestiones manualmente."
+    "title": "Matches",
+    "subtitle": "Buyers you can serve right now.",
+    "emptyBody": "No matches yet — they appear automatically once leads are scored and properties are synced.",
+    "lookingFor": "Looking for",
+    "matchedProperties": "Matched properties",
+    "panelEmpty": "No property matches yet for this lead.",
+    "viewListing": "View listing",
+    "match": "match",
+    "more": "+{n} more",
+    "unitBed": "bed",
+    "unitBath": "bath",
+    "unitStudio": "Studio",
+    "priceOnRequest": "Price on request",
+    "suggestToLead": "Suggest these to {name}",
+    "suggesting": "Suggesting…"
   },
   "valuation": {
     "title": "¿Cuánto vale tu propiedad?",

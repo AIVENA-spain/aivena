@@ -575,8 +575,15 @@ const LOGO_ERROR_MAP: Record<string, string> = {
 
 route.post('/logo', async (c) => {
   const tx = c.get('tx');
+  // agency_id is sourced from the authed session (set by agencyContextMiddleware),
+  // NEVER from the client. The Edge Function REQUIRES it in the body and
+  // independently re-verifies the caller is owner of this agency.
+  const agencyId = c.get('agencyId');
   const authHeader = c.req.header('Authorization') ?? '';
   if (!authHeader.startsWith('Bearer ')) {
+    return c.json({ error: 'Sign in again to upload a logo.' }, 401);
+  }
+  if (!agencyId) {
     return c.json({ error: 'Sign in again to upload a logo.' }, 401);
   }
 
@@ -599,6 +606,10 @@ route.post('/logo', async (c) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
+        // Forwarding agency_id is the fix: omitting it made the EF return
+        // `missing_fields` (400), which the proxy surfaced as the generic
+        // "Logo upload failed" error while logo_url stayed null.
+        agency_id: agencyId,
         filename,
         content_type: contentType,
         content_base64: contentBase64,

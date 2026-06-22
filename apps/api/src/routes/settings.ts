@@ -5,6 +5,42 @@ import { env } from '../../../../packages/config/env';
 const route = new Hono();
 
 /**
+ * Role gate for agency settings WRITES.
+ *
+ * The settings tables are RLS-fenced on `agency_id` only (no role check), so
+ * role enforcement must live here. Stricter allowlist for now (default-deny):
+ * only `owner` and `aivena_staff` may mutate agency-wide config (branding, AI
+ * rules, reply lanes, languages, operational behaviour). `agent`, `viewer`, and
+ * any unknown/missing role are blocked until granular per-field permissions
+ * exist. Reads (GET) stay open to any agency member.
+ *
+ * Exported for unit testing the truth table.
+ */
+const SETTINGS_WRITE_ROLES = new Set(['owner', 'aivena_staff']);
+const WRITE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+
+export function canWriteSettings(
+  method: string,
+  role: string | null | undefined,
+): boolean {
+  if (!WRITE_METHODS.has(method)) return true; // reads always allowed
+  return !!role && SETTINGS_WRITE_ROLES.has(role); // writes: owner/aivena_staff only
+}
+
+// Applies to every route in this sub-app; registered before the handlers so it
+// runs first. `role` is set by agencyContextMiddleware (app.current_user_role).
+// A 403 here rolls back the agency-context transaction (nothing is written).
+route.use('*', async (c, next) => {
+  if (!canWriteSettings(c.req.method, c.get('role'))) {
+    return c.json(
+      { error: 'You don\'t have permission to change agency settings — ask an agency owner to make this change.' },
+      403,
+    );
+  }
+  return next();
+});
+
+/**
  * Settings — agency-scoped, lives inside the agency-context transaction
  * (RLS scoped via app.current_agency_id). The single read is dashboard_settings(0)
  * (Vega's locked contract); writes target the individual tables the contract

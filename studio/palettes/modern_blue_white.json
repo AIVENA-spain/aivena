@@ -1,0 +1,16 @@
+{
+  "name": "modern_blue_white",
+  "label": "Clean modern blue/white agency palette",
+  "tokens": {
+    "brand.primary": { "hex": "#ffffff", "opacity": 1.0 },
+    "brand.accent": { "hex": "#ffffff", "opacity": 1.0 },
+    "template.background": { "hex": "#000000", "opacity": 1.0 },
+    "template.overlay": { "hex": "#000000", "opacity": 1.0 },
+    "text.primary": { "hex": "#dce7f5", "opacity": 1.0 },
+    "text.muted": { "hex": "#aebfd6", "opacity": 1.0 },
+    "badge.fill": { "hex": "#dce7f5", "opacity": 1.0 },
+    "badge.text": { "hex": "#dce7f5", "opacity": 1.0 },
+    "icon.fill": { "hex": "#ffffff", "opacity": 1.0 }
+  },
+  "locked_tokens": ["template.background", "template.overlay", "icon.fill"]
+}

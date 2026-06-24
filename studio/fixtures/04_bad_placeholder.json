@@ -1,0 +1,8 @@
+{
+  "id": "04_bad_placeholder",
+  "base_template": "04",
+  "values": "values/04_bad_placeholder.json",
+  "describe": "Body uses the Canva placeholder copy ('...available for rent...'). placeholder_scan must hard-fail.",
+  "expect": [{ "gate": "F_placeholder", "element": "body" }],
+  "manifest_patch": {}
+}

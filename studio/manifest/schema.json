@@ -1,0 +1,176 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aivena.studio/manifest/schema.json",
+  "title": "AIVENA Studio template manifest",
+  "description": "Phase 1 manifest schema. Text layers separate measured `target` (what studio_diff checks) from `render` params (what studio_render consumes / studio_calibrate produces).",
+  "type": "object",
+  "required": ["template_id", "schema_version", "canvas", "source", "fonts", "default_tolerances_px", "layers", "placeholder_denylist"],
+  "additionalProperties": true,
+  "properties": {
+    "template_id": { "type": "string", "minLength": 1 },
+    "schema_version": { "type": "integer", "minimum": 1 },
+    "canvas": {
+      "type": "object",
+      "required": ["viewBox", "output", "scale"],
+      "properties": {
+        "viewBox": { "type": "array", "items": { "type": "number" }, "minItems": 2, "maxItems": 2 },
+        "output": { "type": "array", "items": { "type": "number" }, "minItems": 2, "maxItems": 2 },
+        "scale": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
+    "source": {
+      "type": "object",
+      "required": ["ref_png", "nophoto_svg"],
+      "properties": {
+        "ref_png": { "type": "string", "minLength": 1 },
+        "nophoto_svg": { "type": "string", "minLength": 1 }
+      }
+    },
+    "fonts": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": { "type": "string", "minLength": 1 }
+    },
+    "default_tolerances_px": {
+      "type": "object",
+      "additionalProperties": { "type": "number" }
+    },
+    "placeholder_denylist": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "layers": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/layer" }
+    }
+  },
+  "$defs": {
+    "box": { "type": "array", "items": { "type": "number" }, "minItems": 4, "maxItems": 4 },
+    "point": { "type": "array", "items": { "type": "number" }, "minItems": 2, "maxItems": 2 },
+    "proof_compare": { "enum": ["source", "manifest"] },
+    "text_target": {
+      "type": "object",
+      "properties": {
+        "ink_left": { "type": "number" },
+        "width": { "type": "number" },
+        "cap_height": { "type": "number" },
+        "baseline": { "type": "number" }
+      },
+      "additionalProperties": true
+    },
+    "text_render": {
+      "type": "object",
+      "required": ["size"],
+      "properties": {
+        "size": { "type": "number", "exclusiveMinimum": 0 },
+        "scaleX": { "type": "number", "exclusiveMinimum": 0 },
+        "tracking_px": { "type": "number" },
+        "translate_x": { "type": "number" },
+        "baseline": { "type": "number" },
+        "anchor": { "$ref": "#/$defs/point" }
+      },
+      "additionalProperties": true
+    },
+    "block_render": {
+      "type": "object",
+      "required": ["size", "box", "baseline_last", "line_spacing", "autosize_min"],
+      "properties": {
+        "size": { "type": "number", "exclusiveMinimum": 0 },
+        "tracking_px": { "type": "number" },
+        "box": { "$ref": "#/$defs/box" },
+        "baseline_last": { "type": "number" },
+        "line_spacing": { "type": "number", "exclusiveMinimum": 0 },
+        "wrap": { "type": "boolean" },
+        "widow_guard": { "type": "boolean" },
+        "autosize_min": { "type": "number", "exclusiveMinimum": 0 }
+      },
+      "additionalProperties": true
+    },
+    "layer": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": true,
+      "properties": { "type": { "enum": ["photo_slot", "overlay", "fixed_art", "editable_text", "editable_text_block"] } },
+      "allOf": [
+        {
+          "if": { "properties": { "type": { "const": "photo_slot" } } },
+          "then": {
+            "required": ["box", "fit", "focal", "tol_px"],
+            "properties": {
+              "box": { "$ref": "#/$defs/box" },
+              "fit": { "enum": ["cover", "contain", "stretch"] },
+              "focal": { "$ref": "#/$defs/point" },
+              "tol_px": { "type": "number" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "overlay" } } },
+          "then": {
+            "required": ["kind", "box"],
+            "properties": {
+              "kind": { "enum": ["solid", "asset", "gradient"] },
+              "box": { "$ref": "#/$defs/box" }
+            },
+            "allOf": [
+              { "if": { "properties": { "kind": { "const": "solid" } } }, "then": { "required": ["color", "opacity"] } },
+              { "if": { "properties": { "kind": { "const": "asset" } } }, "then": { "required": ["asset", "fit"] } },
+              { "if": { "properties": { "kind": { "const": "gradient" } } }, "then": { "required": ["axis", "stops"] } }
+            ]
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "fixed_art" } } },
+          "then": {
+            "required": ["asset", "box", "tol_px"],
+            "properties": {
+              "asset": { "type": "string", "minLength": 1 },
+              "box": { "$ref": "#/$defs/box" },
+              "tol_px": { "type": "number" },
+              "proof_compare": { "$ref": "#/$defs/proof_compare" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "editable_text" } } },
+          "then": {
+            "required": ["value_from", "font", "color", "opacity", "align", "proof_compare", "tol_px", "target", "render"],
+            "properties": {
+              "value_from": { "type": "string", "minLength": 1 },
+              "font": { "type": "string", "minLength": 1 },
+              "weight": { "type": "number" },
+              "format": { "type": "string" },
+              "pluralize": { "type": "object" },
+              "color": { "type": "string" },
+              "opacity": { "type": "number", "minimum": 0, "maximum": 1 },
+              "align": { "enum": ["ink_left", "center"] },
+              "proof_compare": { "$ref": "#/$defs/proof_compare" },
+              "tol_px": { "type": "number" },
+              "target": { "$ref": "#/$defs/text_target" },
+              "render": { "$ref": "#/$defs/text_render" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "editable_text_block" } } },
+          "then": {
+            "required": ["value_from", "font", "color", "opacity", "align", "proof_compare", "tol_px", "target", "render"],
+            "properties": {
+              "value_from": { "type": "string", "minLength": 1 },
+              "font": { "type": "string", "minLength": 1 },
+              "weight": { "type": "number" },
+              "color": { "type": "string" },
+              "opacity": { "type": "number", "minimum": 0, "maximum": 1 },
+              "align": { "enum": ["ink_left", "center"] },
+              "proof_compare": { "$ref": "#/$defs/proof_compare" },
+              "tol_px": { "type": "number" },
+              "target": { "$ref": "#/$defs/text_target" },
+              "render": { "$ref": "#/$defs/block_render" }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "lang": "en",
+  "locale": "en-GB",
+  "title_adjective": { "luxury": "Luxury" },
+  "title_type": { "apartment": "Apartment" },
+  "stat_unit_area": "M²",
+  "stat_bedroom": { "one": "BEDROOM", "other": "BEDROOMS" },
+  "stat_bathroom": { "one": "BATHROOM", "other": "BATHROOMS" },
+  "body_type": { "apartment": "apartment" },
+  "body_bedroom": { "one": "bedroom", "other": "bedrooms" },
+  "body_bathroom": { "one": "bathroom", "other": "bathrooms" },
+  "body": {
+    "long": "A {beds}-bedroom {type} in {city}, offering {size} of living space and {baths} {bathroom}.",
+    "medium": "{beds}-bedroom {type} in {city} — {size}, {baths} {bathroom}.",
+    "short": "{beds}-bed {type} in {city}, {size}.",
+    "ultra_short": "{size} {type} in {city}."
+  }
+}

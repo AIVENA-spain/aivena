@@ -1,0 +1,99 @@
+{
+  "template_id": "04_luxury_apartment",
+  "schema_version": 3,
+  "note": "Phase 2A editable manifest. Separate from the Phase-1 (v2) manifest so `validate:04` stays green. Locked chrome reused from #4; text is slot-driven, colours tokenized, language slot-based.",
+  "canvas": { "viewBox": [810, 1012.5], "output": [1080, 1350], "scale": 1.33333 },
+  "source": { "ref_png": "assets/04/source_ref.png", "nophoto_svg": "assets/04/source_nophoto.svg" },
+  "fonts": {
+    "Prata": "fonts/Prata-Regular.ttf",
+    "Poppins": "fonts/Poppins-Regular.ttf",
+    "LibreCaslonText": "fonts/LibreCaslonText-Regular.ttf"
+  },
+  "font_coverage_note": "Prata lacks Polish-specific diacritics (ł ą ę ś ż ź ć ń); the pl title vocabulary avoids them. Poppins + LibreCaslonText cover all es/no/de/pl diacritics. The glyph_coverage gate enforces this.",
+
+  "colour_tokens": {
+    "brand.primary": { "role": "primary brand colour", "default": "#ffffff", "locked": false },
+    "brand.accent": { "role": "title / accent", "default": "#ffffff", "locked": false },
+    "template.background": { "role": "base fill", "default": "#000000", "locked": true },
+    "template.overlay": { "role": "film / legibility", "default": "#000000", "locked": true },
+    "text.primary": { "role": "stats + body", "default": "#ffffff", "locked": false },
+    "text.muted": { "role": "secondary text", "default": "#e6e6e6", "locked": false },
+    "badge.fill": { "role": "badge background", "default": "#ffffff", "locked": false },
+    "badge.text": { "role": "badge text", "default": "#ffffff", "locked": false },
+    "icon.fill": { "role": "stat icons (raster, locked in 2A)", "default": "#ffffff", "locked": true }
+  },
+
+  "safe_areas": {
+    "title": [140, 700, 945, 1090],
+    "stat_row": [120, 95, 960, 260],
+    "body": [95, 1115, 985, 1255]
+  },
+  "layout_groups": {
+    "title_block": ["title"],
+    "stat_row": ["stat_area", "stat_beds", "stat_baths"],
+    "body_block": ["body"]
+  },
+  "language_rules": { "languages": ["en", "es", "no", "de", "pl"], "default": "en" },
+  "qa_rules": {
+    "contrast": { "large_min": 3.0, "body_min": 4.5 },
+    "title_overlap_min_gap_px": 8
+  },
+  "diff_config": {
+    "luma_threshold": 60,
+    "crop_pixel_pct": { "title": 60, "statrow": 8, "body": 95 },
+    "full_image_luma_delta": 30, "full_image_pct": 35,
+    "_note": "Phase-2 diff thresholds are LOOSE/compatibility-only: the Phase-2 fit engine re-fits multilingual/variant copy and is NOT trying to pixel-match the Canva (that is Phase-1's calibrate job). Phase-1 `validate:04` is unchanged and stays strict."
+  },
+
+  "locked_layers": [
+    { "z": 0, "id": "hero", "type": "photo_slot", "asset": "assets/04/photo_test.jpg", "box": [0, 0, 1080, 1350], "fit": "cover", "focal": [0.5, 0.45], "locked": true, "editable": false },
+    { "z": 1, "id": "black_base", "type": "overlay", "kind": "solid", "color_token": "template.background", "opacity": 0.26, "box": [0, 0, 1080, 1350], "locked": true },
+    { "z": 2, "id": "film", "type": "overlay", "kind": "asset", "asset": "assets/04/film.png", "box": [0, 0, 1080, 1080], "fit": "stretch", "locked": true },
+    { "z": 3, "id": "legibility", "type": "overlay", "kind": "gradient", "box": [0, 0, 1080, 1350], "axis": "vertical", "color_token": "template.overlay",
+      "stops": [ { "offset": 0.42, "opacity": 0.0 }, { "offset": 0.6, "opacity": 0.4 }, { "offset": 0.78, "opacity": 0.38 }, { "offset": 1.0, "opacity": 0.68 } ], "locked": true },
+    { "z": 4, "id": "stat_icons", "type": "fixed_art", "asset": "assets/04/icons.png", "box": [0, 0, 1080, 1350], "color_token": "icon.fill", "raster": true, "locked": true, "editable": false }
+  ],
+
+  "text_slots": [
+    { "z": 6, "id": "title", "purpose": "title", "editable": true, "source": "composed",
+      "font": "Prata", "color_token": "brand.accent", "align": "center", "safe_area": "title", "max_lines": 2,
+      "font_size": { "min": 120, "max": 205 }, "scaleX": { "min": 0.74, "max": 1.0 }, "tracking": { "min": -12, "max": 2 },
+      "line_gap_ratio": { "min": 0.82, "max": 1.0 },
+      "parts": [
+        { "role": "adjective", "fact": "luxury", "source": "editorial_or_literal", "subjective_claim": true, "rewrite_mode": "translate-only", "editorial_lock": null },
+        { "role": "type", "fact": "property_type", "source": "property_fact", "rewrite_mode": "translate-only" }
+      ],
+      "qa_checks": ["fits", "contain", "contrast", "no_orphan", "hierarchy", "glyph_coverage", "factual"],
+      "proof_compare": "source" },
+
+    { "z": 5, "id": "stat_area", "purpose": "stats", "editable": true, "required": true, "source": "property_fact", "fact": "size.built_sqm",
+      "rewrite_mode": "format-size", "format": "{v} {unit}", "translatable": false, "font": "Poppins", "color_token": "text.primary",
+      "anchor": [275, 237], "font_size": { "min": 18, "max": 24 }, "size": 21.1, "tracking": 5.8, "max_lines": 1, "measure_region": [170, 214, 382, 256],
+      "qa_checks": ["fits", "contain", "contrast", "factual", "glyph_coverage"], "proof_compare": "manifest" },
+
+    { "z": 5, "id": "stat_beds", "purpose": "stats", "editable": true, "required": true, "source": "property_fact", "fact": "bedrooms",
+      "rewrite_mode": "translate-only", "format": "{v} {word}", "pluralize": "bedroom", "translatable": true, "font": "Poppins", "color_token": "text.primary",
+      "anchor": [539, 237], "font_size": { "min": 18, "max": 24 }, "size": 21.1, "tracking": 5.8, "max_lines": 1, "measure_region": [430, 214, 648, 256],
+      "qa_checks": ["fits", "contain", "contrast", "factual", "glyph_coverage"], "proof_compare": "manifest" },
+
+    { "z": 5, "id": "stat_baths", "purpose": "stats", "editable": true, "required": true, "source": "property_fact", "fact": "bathrooms",
+      "rewrite_mode": "translate-only", "format": "{v} {word}", "pluralize": "bathroom", "translatable": true, "font": "Poppins", "color_token": "text.primary",
+      "anchor": [805, 237], "font_size": { "min": 18, "max": 24 }, "size": 21.1, "tracking": 5.8, "max_lines": 1, "measure_region": [696, 214, 914, 256],
+      "qa_checks": ["fits", "contain", "contrast", "factual", "glyph_coverage"], "proof_compare": "manifest" },
+
+    { "z": 7, "id": "body", "purpose": "body", "editable": true, "required": true, "source": "generated_copy",
+      "rewrite_mode": "translate-and-polish", "translatable": true, "font": "LibreCaslonText", "color_token": "text.primary", "align": "center",
+      "safe_area": "body", "box": [95, 1095, 890, 160], "baseline_last": 1237, "line_spacing": { "min": 34, "max": 42 }, "default_line_spacing": 39,
+      "font_size": { "min": 24, "max": 32 }, "tracking": { "min": -0.5, "max": 0.5 }, "max_lines": 4,
+      "fallback_variants": ["long", "medium", "short", "ultra_short"], "max_chars_soft": 150, "overflow_behavior": "shrink_then_shorter_then_fail",
+      "qa_checks": ["fits", "contain", "contrast", "no_orphan", "no_placeholder", "factual", "glyph_coverage"], "proof_compare": "manifest" },
+
+    { "z": 5, "id": "price", "purpose": "price", "editable": true, "required": false, "source": "property_fact", "fact": "price.amount",
+      "rewrite_mode": "format-price", "translatable": false, "font": "Poppins", "color_token": "text.primary",
+      "anchor": [540, 300], "font_size": { "min": 22, "max": 34 }, "size": 28, "tracking": 1.0, "max_lines": 1, "measure_region": [300, 280, 780, 320],
+      "missing_behavior": "omit_and_flag",
+      "qa_checks": ["fits", "contain", "factual"], "proof_compare": "manifest" }
+  ],
+
+  "placeholder_denylist": ["available for rent", "lorem ipsum", "everything you need for a stylish", "comfortable, and convenient lifestyle"]
+}

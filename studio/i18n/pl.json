@@ -1,0 +1,18 @@
+{
+  "lang": "pl",
+  "locale": "pl-PL",
+  "title_adjective": { "luxury": "Luksusowy" },
+  "title_type": { "apartment": "Apartament" },
+  "stat_unit_area": "M²",
+  "stat_bedroom": { "one": "SYPIALNIA", "other": "SYPIALNIE" },
+  "stat_bathroom": { "one": "ŁAZIENKA", "other": "ŁAZIENKI" },
+  "body_type": { "apartment": "Apartament" },
+  "body_bedroom": { "one": "sypialnia", "other": "sypialnie" },
+  "body_bathroom": { "one": "łazienka", "other": "łazienki" },
+  "body": {
+    "long": "{type} w {city} o powierzchni {size}, {beds} {bedroom} i {baths} {bathroom}.",
+    "medium": "{type} w {city} — {size}, {beds} {bedroom}, {baths} {bathroom}.",
+    "short": "{type} w {city}, {size}, {beds} {bedroom}.",
+    "ultra_short": "{type} w {city}, {size}."
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "_note": "Conservative default subjective-claim list (Phase 2A). Agency-tunable later; do not block the build on tuning. Each claim needs a supporting fact (feature flag / threshold) OR an explicit editorial_lock, else it is classified unverified_subjective_claim and blocks a 'factuality clean' verdict.",
+  "version": 1,
+  "claims": [
+    { "term": "luxury", "supported_by": ["feature:luxury"], "note": "agency editorial unless a luxury feature flag exists" },
+    { "term": "luxurious", "supported_by": ["feature:luxury"] },
+    { "term": "renovated", "supported_by": ["feature:renovated", "fact:year_renovated"] },
+    { "term": "refurbished", "supported_by": ["feature:renovated", "fact:year_renovated"] },
+    { "term": "sea view", "supported_by": ["feature:sea_view"] },
+    { "term": "modern", "supported_by": ["feature:modern", "fact:year_built>=2010"] },
+    { "term": "exclusive", "supported_by": ["feature:exclusive"] },
+    { "term": "premium", "supported_by": ["feature:premium"] },
+    { "term": "spacious", "supported_by": ["fact:built_sqm>=120"] },
+    { "term": "stunning", "supported_by": [] },
+    { "term": "prime", "supported_by": ["feature:prime_location"] },
+    { "term": "deluxe", "supported_by": ["feature:luxury"] },
+    { "term": "high-end", "supported_by": ["feature:luxury"] },
+    { "term": "panoramic", "supported_by": ["feature:panoramic_view"] },
+    { "term": "bright", "supported_by": ["feature:bright"] },
+    { "term": "beachfront", "supported_by": ["feature:beachfront"] },
+    { "term": "investment opportunity", "supported_by": ["feature:investment"] },
+    { "term": "key-ready", "supported_by": ["feature:key_ready", "fact:status:ready"] },
+    { "term": "new build", "supported_by": ["feature:new_build", "fact:year_built>=2022"] },
+    { "term": "fully furnished", "supported_by": ["feature:furnished"] }
+  ],
+  "per_language_terms": {
+    "en": { "luxury": ["luxury", "luxurious"], "sea view": ["sea view"], "modern": ["modern"], "spacious": ["spacious"], "bright": ["bright"], "renovated": ["renovated"] },
+    "es": { "luxury": ["lujo", "de lujo", "lujoso"], "sea view": ["vistas al mar"], "modern": ["moderno", "moderna"], "spacious": ["espacioso", "amplio"], "bright": ["luminoso"], "renovated": ["reformado"] },
+    "no": { "luxury": ["luksus", "luksuriøs"], "sea view": ["sjøutsikt"], "modern": ["moderne"], "spacious": ["romslig"], "bright": ["lys"], "renovated": ["renovert"] },
+    "de": { "luxury": ["luxus", "luxuriös"], "sea view": ["meerblick"], "modern": ["modern"], "spacious": ["geräumig"], "bright": ["hell"], "renovated": ["renoviert"] },
+    "pl": { "luxury": ["luksus", "luksusowy", "luksusowe"], "sea view": ["widok na morze"], "modern": ["nowoczesny"], "spacious": ["przestronny"], "bright": ["jasny"], "renovated": ["odnowiony"] }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "name": "_bad_contrast",
+  "label": "FAIL FIXTURE — unreadable dark text on dark backdrop",
+  "tokens": {
+    "brand.primary": { "hex": "#4d4d4d", "opacity": 1.0 },
+    "brand.accent": { "hex": "#4d4d4d", "opacity": 1.0 },
+    "template.background": { "hex": "#000000", "opacity": 1.0 },
+    "template.overlay": { "hex": "#000000", "opacity": 1.0 },
+    "text.primary": { "hex": "#4d4d4d", "opacity": 1.0 },
+    "text.muted": { "hex": "#3a3a3a", "opacity": 1.0 },
+    "badge.fill": { "hex": "#4d4d4d", "opacity": 1.0 },
+    "badge.text": { "hex": "#4d4d4d", "opacity": 1.0 },
+    "icon.fill": { "hex": "#ffffff", "opacity": 1.0 }
+  },
+  "locked_tokens": ["template.background", "template.overlay", "icon.fill"]
+}

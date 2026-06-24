@@ -1,0 +1,13 @@
+{
+  "id": "IC-26537-nobeds",
+  "property_type": "apartment",
+  "location": { "city": "Torrevieja", "province": "Alicante", "country": "Spain" },
+  "price": { "amount": null, "currency": "EUR", "period": null },
+  "size": { "built_sqm": 55, "plot_sqm": null },
+  "bedrooms": null,
+  "bathrooms": 1,
+  "image": "assets/04/photo_test.jpg",
+  "features": [],
+  "selling_points": [],
+  "_note": "FAIL FIXTURE: bedrooms missing. stat_beds is required => must fail (required fact missing), not invent a number."
+}

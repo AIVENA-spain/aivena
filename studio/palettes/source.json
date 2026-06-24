@@ -1,0 +1,16 @@
+{
+  "name": "source",
+  "label": "Original / source colours",
+  "tokens": {
+    "brand.primary": { "hex": "#ffffff", "opacity": 1.0 },
+    "brand.accent": { "hex": "#ffffff", "opacity": 0.74 },
+    "template.background": { "hex": "#000000", "opacity": 1.0 },
+    "template.overlay": { "hex": "#000000", "opacity": 1.0 },
+    "text.primary": { "hex": "#ffffff", "opacity": 1.0 },
+    "text.muted": { "hex": "#e6e6e6", "opacity": 1.0 },
+    "badge.fill": { "hex": "#ffffff", "opacity": 1.0 },
+    "badge.text": { "hex": "#ffffff", "opacity": 1.0 },
+    "icon.fill": { "hex": "#ffffff", "opacity": 1.0 }
+  },
+  "locked_tokens": ["template.background", "template.overlay", "icon.fill"]
+}

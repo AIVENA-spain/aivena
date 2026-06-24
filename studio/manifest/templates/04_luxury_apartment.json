@@ -1,0 +1,404 @@
+{
+  "template_id": "04_luxury_apartment",
+  "schema_version": 2,
+  "migrated_from": "first-pass worked example; title/render split formalized; title render blocks are STALE until studio_calibrate runs",
+  "canvas": {
+    "viewBox": [
+      810,
+      1012.5
+    ],
+    "output": [
+      1080,
+      1350
+    ],
+    "scale": 1.33333
+  },
+  "source": {
+    "ref_png": "assets/04/source_ref.png",
+    "nophoto_svg": "assets/04/source_nophoto.svg"
+  },
+  "fonts": {
+    "Prata": "fonts/Prata-Regular.ttf",
+    "Poppins": "fonts/Poppins-Regular.ttf",
+    "LibreCaslonText": "fonts/LibreCaslonText-Regular.ttf"
+  },
+  "default_tolerances_px": {
+    "text": 2,
+    "icon": 3,
+    "overlay": 2
+  },
+  "diff_config": {
+    "luma_threshold": 60,
+    "crop_pixel_pct": {
+      "title": 38,
+      "statrow": 6,
+      "body": 8,
+      "icons": 5
+    },
+    "weight_band_pct": 15,
+    "colour_channel_delta": 24,
+    "opacity_delta": 0.05,
+    "full_image_luma_delta": 30,
+    "full_image_pct": 6,
+    "_notes": "title crop floor ~26% (Canva-outlined Prata vs TTF render, hairline strokes; tolerance R=2px); broken spacing ~53%. title threshold 38 separates cleanly. Gate A (2px bbox/cap/baseline/width) is the strict primary title gate; B is secondary."
+  },
+  "layers": [
+    {
+      "z": 0,
+      "id": "hero",
+      "type": "photo_slot",
+      "asset": "assets/04/photo_test.jpg",
+      "box": [
+        0,
+        0,
+        1080,
+        1350
+      ],
+      "fit": "cover",
+      "focal": [
+        0.5,
+        0.45
+      ],
+      "tol_px": 6
+    },
+    {
+      "z": 1,
+      "id": "black_base",
+      "type": "overlay",
+      "kind": "solid",
+      "color": "#000000",
+      "opacity": 0.26,
+      "box": [
+        0,
+        0,
+        1080,
+        1350
+      ]
+    },
+    {
+      "z": 2,
+      "id": "film",
+      "type": "overlay",
+      "kind": "asset",
+      "asset": "assets/04/film.png",
+      "box": [
+        0,
+        0,
+        1080,
+        1080
+      ],
+      "fit": "stretch",
+      "proof_compare": "source",
+      "tol_px": 2
+    },
+    {
+      "z": 3,
+      "id": "legibility",
+      "type": "overlay",
+      "kind": "gradient",
+      "box": [
+        0,
+        0,
+        1080,
+        1350
+      ],
+      "axis": "vertical",
+      "stops": [
+        {
+          "offset": 0.42,
+          "color": "#000000",
+          "opacity": 0
+        },
+        {
+          "offset": 0.6,
+          "color": "#000000",
+          "opacity": 0.4
+        },
+        {
+          "offset": 0.78,
+          "color": "#000000",
+          "opacity": 0.38
+        },
+        {
+          "offset": 1,
+          "color": "#000000",
+          "opacity": 0.68
+        }
+      ]
+    },
+    {
+      "z": 4,
+      "id": "stat_icons",
+      "type": "fixed_art",
+      "asset": "assets/04/icons.png",
+      "box": [
+        0,
+        0,
+        1080,
+        1350
+      ],
+      "proof_compare": "source",
+      "tol_px": 3,
+      "measure_region": [
+        0,
+        88,
+        1080,
+        195
+      ],
+      "cap_mode": "fullbox",
+      "note": "icons + dividers (white ink y~108-195). NOTE: source has a thin ~8px element below y195 not present in the extracted icons.png (minor extraction crop); measure band ends at 195 to compare the icon glyphs."
+    },
+    {
+      "z": 5,
+      "id": "stat_area",
+      "type": "editable_text",
+      "content": "variable",
+      "value_from": "area_sqm",
+      "format": "{v} M2",
+      "font": "Poppins",
+      "weight": 400,
+      "color": "#ffffff",
+      "opacity": 1,
+      "align": "center",
+      "proof_compare": "manifest",
+      "tol_px": 2,
+      "measure_region": [
+        170,
+        214,
+        382,
+        256
+      ],
+      "cap_mode": "fullbox",
+      "target": {
+        "cap_height": 15
+      },
+      "render": {
+        "size": 21.1,
+        "tracking_px": 5.8,
+        "scaleX": 1,
+        "anchor": [
+          275,
+          237
+        ]
+      }
+    },
+    {
+      "z": 5,
+      "id": "stat_beds",
+      "type": "editable_text",
+      "content": "variable",
+      "value_from": "bedrooms",
+      "format": "{v} BEDROOM",
+      "pluralize": {
+        "plural": "{v} BEDROOMS"
+      },
+      "font": "Poppins",
+      "weight": 400,
+      "color": "#ffffff",
+      "opacity": 1,
+      "align": "center",
+      "proof_compare": "manifest",
+      "tol_px": 2,
+      "measure_region": [
+        430,
+        214,
+        648,
+        256
+      ],
+      "cap_mode": "fullbox",
+      "target": {
+        "cap_height": 15
+      },
+      "render": {
+        "size": 21.1,
+        "tracking_px": 5.8,
+        "scaleX": 1,
+        "anchor": [
+          539,
+          237
+        ]
+      }
+    },
+    {
+      "z": 5,
+      "id": "stat_baths",
+      "type": "editable_text",
+      "content": "variable",
+      "value_from": "bathrooms",
+      "format": "{v} BATHROOM",
+      "pluralize": {
+        "plural": "{v} BATHROOMS"
+      },
+      "font": "Poppins",
+      "weight": 400,
+      "color": "#ffffff",
+      "opacity": 1,
+      "align": "center",
+      "proof_compare": "manifest",
+      "tol_px": 2,
+      "measure_region": [
+        696,
+        214,
+        914,
+        256
+      ],
+      "cap_mode": "fullbox",
+      "target": {
+        "cap_height": 15
+      },
+      "render": {
+        "size": 21.1,
+        "tracking_px": 5.8,
+        "scaleX": 1,
+        "anchor": [
+          805,
+          237
+        ]
+      }
+    },
+    {
+      "z": 6,
+      "id": "title_line1",
+      "type": "editable_text",
+      "content": "variable",
+      "value_from": "title_word1",
+      "font": "Prata",
+      "color": "#ffffff",
+      "opacity": 0.74,
+      "align": "ink_left",
+      "proof_compare": "source",
+      "tol_px": 2,
+      "calibrate_required": true,
+      "measure_region": [
+        250,
+        700,
+        822,
+        896
+      ],
+      "cap_mode": "first_glyph",
+      "target": {
+        "ink_left": 283,
+        "width": 514,
+        "cap_height": 158,
+        "baseline": 893
+      },
+      "render": {
+        "size": 197.5,
+        "scaleX": 0.78,
+        "tracking_px": -4.86,
+        "translate_x": 277,
+        "baseline": 894
+      },
+      "calibrated": {
+        "converged_at_iter": 2,
+        "final_deltas": {
+          "cap_height": 1,
+          "width": -1,
+          "ink_left": 0,
+          "baseline": 0
+        },
+        "source_target": {
+          "ink_left": 283,
+          "width": 515,
+          "cap_height": 158,
+          "baseline": 893
+        }
+      }
+    },
+    {
+      "z": 6,
+      "id": "title_line2",
+      "type": "editable_text",
+      "content": "variable",
+      "value_from": "title_word2",
+      "font": "Prata",
+      "color": "#ffffff",
+      "opacity": 1,
+      "align": "ink_left",
+      "proof_compare": "source",
+      "tol_px": 2,
+      "calibrate_required": true,
+      "measure_region": [
+        140,
+        906,
+        952,
+        1095
+      ],
+      "cap_mode": "first_glyph",
+      "target": {
+        "ink_left": 159,
+        "width": 760,
+        "cap_height": 162,
+        "baseline": 1067
+      },
+      "render": {
+        "size": 196.34,
+        "scaleX": 0.79,
+        "tracking_px": -8.21,
+        "translate_x": 164,
+        "baseline": 1068
+      },
+      "calibrated": {
+        "converged_at_iter": 3,
+        "final_deltas": {
+          "cap_height": 1,
+          "width": 0,
+          "ink_left": 0,
+          "baseline": 0
+        },
+        "source_target": {
+          "ink_left": 159,
+          "width": 761,
+          "cap_height": 161,
+          "baseline": 1067
+        }
+      }
+    },
+    {
+      "z": 7,
+      "id": "body",
+      "type": "editable_text_block",
+      "content": "variable",
+      "value_from": "generated_copy",
+      "font": "LibreCaslonText",
+      "weight": 400,
+      "color": "#ffffff",
+      "opacity": 1,
+      "align": "center",
+      "proof_compare": "manifest",
+      "tol_px": 2,
+      "measure_region": [
+        95,
+        1128,
+        985,
+        1250
+      ],
+      "cap_mode": "fullbox",
+      "target": {
+        "cap_height": 23
+      },
+      "render": {
+        "size": 30.3,
+        "tracking_px": 0,
+        "box": [
+          95,
+          1095,
+          890,
+          160
+        ],
+        "baseline_last": 1237,
+        "line_spacing": 39,
+        "wrap": true,
+        "widow_guard": true,
+        "autosize_min": 26
+      }
+    }
+  ],
+  "placeholder_denylist": [
+    "available for rent",
+    "everything you need for a stylish",
+    "comfortable, and convenient lifestyle",
+    "lorem ipsum"
+  ],
+  "values_status": "MIGRATED to schema_version 2 (target/render split). Title render blocks initialized to render_params_stale (KNOWN-WRONG: cap ~144 / baseline 879) and flagged calibrate_required:true. studio_measure re-derives source targets; studio_calibrate must converge the title render blocks to the measured targets."
+}

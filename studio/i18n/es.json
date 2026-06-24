@@ -1,0 +1,18 @@
+{
+  "lang": "es",
+  "locale": "es-ES",
+  "title_adjective": { "luxury": "Lujo" },
+  "title_type": { "apartment": "Apartamento" },
+  "stat_unit_area": "M²",
+  "stat_bedroom": { "one": "DORMITORIO", "other": "DORMITORIOS" },
+  "stat_bathroom": { "one": "BAÑO", "other": "BAÑOS" },
+  "body_type": { "apartment": "apartamento" },
+  "body_bedroom": { "one": "dormitorio", "other": "dormitorios" },
+  "body_bathroom": { "one": "baño", "other": "baños" },
+  "body": {
+    "long": "{type} de {beds} {bedroom} en {city}, con {size} de superficie y {baths} {bathroom}.",
+    "medium": "{type} de {beds} {bedroom} en {city} — {size}, {baths} {bathroom}.",
+    "short": "{type} en {city}, {size}, {beds} {bedroom}.",
+    "ultra_short": "{type} en {city}, {size}."
+  }
+}

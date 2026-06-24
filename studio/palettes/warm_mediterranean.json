@@ -1,0 +1,16 @@
+{
+  "name": "warm_mediterranean",
+  "label": "Warm Mediterranean agency palette",
+  "tokens": {
+    "brand.primary": { "hex": "#f3e7d3", "opacity": 1.0 },
+    "brand.accent": { "hex": "#e8c9a0", "opacity": 0.95 },
+    "template.background": { "hex": "#000000", "opacity": 1.0 },
+    "template.overlay": { "hex": "#000000", "opacity": 1.0 },
+    "text.primary": { "hex": "#f3e7d3", "opacity": 1.0 },
+    "text.muted": { "hex": "#d8c4a6", "opacity": 1.0 },
+    "badge.fill": { "hex": "#f3e7d3", "opacity": 1.0 },
+    "badge.text": { "hex": "#f3e7d3", "opacity": 1.0 },
+    "icon.fill": { "hex": "#ffffff", "opacity": 1.0 }
+  },
+  "locked_tokens": ["template.background", "template.overlay", "icon.fill"]
+}

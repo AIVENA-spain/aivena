@@ -1,0 +1,13 @@
+{
+  "id": "04_bad_title_spacing",
+  "base_template": "04",
+  "values": "values/04_good.json",
+  "describe": "Title rendered loose: scaleX 1, tracking 0 (no condense). Title gets too wide.",
+  "expect": [{ "gate": "A_bbox", "element": "title_line1" }, { "gate": "B_crop", "element": "title" }],
+  "manifest_patch": {
+    "layers": {
+      "title_line1": { "render": { "scaleX": 1.0, "tracking_px": 0.0 } },
+      "title_line2": { "render": { "scaleX": 1.0, "tracking_px": 0.0 } }
+    }
+  }
+}

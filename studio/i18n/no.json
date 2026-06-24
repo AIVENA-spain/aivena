@@ -1,0 +1,18 @@
+{
+  "lang": "no",
+  "locale": "nb-NO",
+  "title_adjective": { "luxury": "Luksus" },
+  "title_type": { "apartment": "Leilighet" },
+  "stat_unit_area": "M²",
+  "stat_bedroom": { "one": "SOVEROM", "other": "SOVEROM" },
+  "stat_bathroom": { "one": "BAD", "other": "BAD" },
+  "body_type": { "apartment": "leilighet" },
+  "body_bedroom": { "one": "soverom", "other": "soverom" },
+  "body_bathroom": { "one": "bad", "other": "bad" },
+  "body": {
+    "long": "{type} i {city} på {size}, med {beds} {bedroom} og {baths} {bathroom}.",
+    "medium": "{type} i {city} — {size}, {beds} {bedroom}, {baths} {bathroom}.",
+    "short": "{type} i {city}, {size}, {beds} {bedroom}.",
+    "ultra_short": "{type} i {city}, {size}."
+  }
+}

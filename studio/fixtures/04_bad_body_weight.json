@@ -1,0 +1,13 @@
+{
+  "id": "04_bad_body_weight",
+  "base_template": "04",
+  "values": "values/04_good.json",
+  "describe": "Body rendered in Libre Caslon DISPLAY (thin) instead of TEXT (heavier). Stroke weight wrong.",
+  "expect": [{ "gate": "C_weight", "element": "body" }],
+  "manifest_patch": {
+    "fonts": { "LibreCaslonDisplay": "fonts/LibreCaslonDisplay-Regular.ttf" },
+    "layers": {
+      "body": { "font": "LibreCaslonDisplay" }
+    }
+  }
+}

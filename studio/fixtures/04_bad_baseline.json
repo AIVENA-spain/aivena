@@ -1,0 +1,13 @@
+{
+  "id": "04_bad_baseline",
+  "base_template": "04",
+  "values": "values/04_good.json",
+  "describe": "Title baseline shifted +10px down (after calibration). The whole title moves; top and bottom both off.",
+  "expect": [{ "gate": "A_bbox", "element": "title_line1" }, { "gate": "A_bbox", "element": "title_line2" }],
+  "manifest_delta": {
+    "layers": {
+      "title_line1": { "render": { "baseline": 10 } },
+      "title_line2": { "render": { "baseline": 10 } }
+    }
+  }
+}

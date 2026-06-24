@@ -1,0 +1,13 @@
+{
+  "id": "IC-26537",
+  "property_type": "apartment",
+  "location": { "city": "Torrevieja", "province": "Alicante", "country": "Spain" },
+  "price": { "amount": null, "currency": "EUR", "period": null },
+  "size": { "built_sqm": 55, "plot_sqm": null },
+  "bedrooms": 1,
+  "bathrooms": 1,
+  "image": "assets/04/photo_test.jpg",
+  "features": [],
+  "selling_points": [],
+  "_note": "Real IC-26537 facts for the Phase 2A proof. price.amount=null => missing => price slot omitted + flagged. features/selling_points empty => no factual support for any subjective claim (e.g. 'luxury')."
+}

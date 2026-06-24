@@ -1,0 +1,18 @@
+{
+  "lang": "de",
+  "locale": "de-DE",
+  "title_adjective": { "luxury": "Luxus" },
+  "title_type": { "apartment": "Wohnung" },
+  "stat_unit_area": "M²",
+  "stat_bedroom": { "one": "SCHLAFZIMMER", "other": "SCHLAFZIMMER" },
+  "stat_bathroom": { "one": "BAD", "other": "BÄDER" },
+  "body_type": { "apartment": "Wohnung" },
+  "body_bedroom": { "one": "Schlafzimmer", "other": "Schlafzimmer" },
+  "body_bathroom": { "one": "Bad", "other": "Bäder" },
+  "body": {
+    "long": "{type} in {city} mit {size}, {beds} {bedroom} und {baths} {bathroom}.",
+    "medium": "{type} in {city} — {size}, {beds} {bedroom}, {baths} {bathroom}.",
+    "short": "{type} in {city}, {size}, {beds} {bedroom}.",
+    "ultra_short": "{type} in {city}, {size}."
+  }
+}

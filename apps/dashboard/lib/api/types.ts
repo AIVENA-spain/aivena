@@ -614,3 +614,85 @@ export type PerformanceResponse = {
   recovered_leads: PerfGatedMetric;
   missed_call_recovery: PerfGatedMetric;
 };
+
+// ── Day-2 Client Intelligence ──────────────────────────────────────────────
+
+/**
+ * Match explanation (dashboard_match_explanation) — honest "why matched" for a
+ * lead's property matches. Verdicts mean exactly what they say: `not_confirmed`
+ * is "the listing data doesn't say", NOT "no"; `unknown` is "preference/data
+ * missing". Never render either as a hard negative.
+ */
+export type MatchDimensionKey =
+  | "budget"
+  | "location"
+  | "bedrooms"
+  | "bathrooms"
+  | "property_type";
+
+export type MatchDimensionVerdict =
+  | "match"
+  | "slightly_over"
+  | "over_budget"
+  | "different_area"
+  | "mismatch"
+  | "unknown";
+
+export type MatchDimension = {
+  key: MatchDimensionKey;
+  lead_value: string | number | null;
+  property_value: string | number | null;
+  verdict: MatchDimensionVerdict;
+};
+
+export type MatchFeatureVerdict = "confirmed" | "not_confirmed";
+
+export type MatchFeature = {
+  name: string;
+  requested: boolean;
+  verdict: MatchFeatureVerdict;
+};
+
+export type MatchExplanationItem = {
+  property_id: string;
+  reference: string | null;
+  title: string | null;
+  similarity: number;
+  rank: number | null;
+  match_status: string | null;
+  dimensions: MatchDimension[];
+  features: MatchFeature[];
+};
+
+export type MatchExplanationResponse = {
+  ok: true;
+  lead_id: string;
+  matches: MatchExplanationItem[];
+};
+
+/**
+ * Lead intel (GET /api/v1/leads/:leadId/intel) — read-only buyer-profile,
+ * next-best-action, and follow-up fields off `leads`. Every field is nullable;
+ * a null is an honest "not captured yet", rendered as "—" — never fabricated.
+ * Day-3 fields (motivation/objections/best_property_angle) are deliberately NOT
+ * here and stay "Unknown" placeholders in the UI.
+ */
+export type LeadIntel = {
+  urgency: string | null;
+  timeframe: string | null;
+  budget_extracted: number | null;
+  budget_raw: string | null;
+  location_interest_extracted: string | null;
+  location_interest_raw: string | null;
+  bedrooms_min: number | null;
+  bedrooms_max: number | null;
+  bathrooms_min: number | null;
+  property_type_pref: string | null;
+  next_action: string | null;
+  recommended_channel: string | null;
+  reasoning_summary: string | null;
+  followup_paused: boolean | null;
+  next_followup_at: string | null;
+};
+
+export type LeadIntelResponse = { ok: true; data: LeadIntel };

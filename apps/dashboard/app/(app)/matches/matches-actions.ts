@@ -1,7 +1,11 @@
 "use server";
 
 import { apiFetch, ApiError } from "@/lib/api/client";
-import type { Match } from "@/lib/api/types";
+import type {
+  Match,
+  MatchExplanationItem,
+  MatchExplanationResponse,
+} from "@/lib/api/types";
 
 /**
  * Matches server actions — thin proxy onto the read-only Hono matches route,
@@ -11,8 +15,7 @@ import type { Match } from "@/lib/api/types";
  * status codes or DB detail (Law 2).
  */
 
-const GENERIC =
-  "Something went wrong loading matches. Please refresh, and contact support if it persists.";
+const GENERIC = "Couldn't load matches right now.";
 
 type Ok<T> = { ok: true; data: T };
 type Err = { ok: false; error: string };
@@ -38,6 +41,39 @@ export async function getLeadMatchesAction(
       return { ok: false, error: err.message };
     }
     return { ok: false, error: GENERIC };
+  }
+}
+
+const EXPLAIN_GENERIC = "Couldn't load match details.";
+
+/**
+ * "Why matched" explanation for a lead's property matches (Day-2). Lazy /
+ * expand-on-demand: pass a propertyId to focus a single card, or omit for all.
+ * Read-only; API-supplied friendly 4xx text passes through, anything else →
+ * the calm generic line (Law 2 — no codes/detail).
+ */
+export async function getMatchExplanationAction(
+  leadId: string,
+  propertyId?: string,
+): Promise<Ok<MatchExplanationItem[]> | Err> {
+  const qs = propertyId ? `?propertyId=${encodeURIComponent(propertyId)}` : "";
+  try {
+    const res = await apiFetch<MatchExplanationResponse>(
+      `/api/v1/matches/${encodeURIComponent(leadId)}/explanation${qs}`,
+    );
+    return { ok: true, data: res.matches ?? [] };
+  } catch (err) {
+    const detail =
+      err instanceof ApiError
+        ? `${err.status} ${err.message}`
+        : err instanceof Error
+          ? err.message
+          : String(err);
+    console.error("[matches] getMatchExplanation failed:", detail);
+    if (err instanceof ApiError && err.status < 500 && err.message) {
+      return { ok: false, error: err.message };
+    }
+    return { ok: false, error: EXPLAIN_GENERIC };
   }
 }
 

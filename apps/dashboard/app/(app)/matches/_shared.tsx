@@ -1,9 +1,11 @@
-"use client";
-
-import { useState } from "react";
-import { Building2 } from "lucide-react";
-
 import { cn } from "@/lib/utils";
+
+// PropertyThumb needs client state (image-error fallback), so it lives in its
+// own "use client" module and is re-exported here for callers' convenience.
+// Keeping THIS file free of "use client" is deliberate: the pure formatters
+// below are then server-safe and can be called from the server-rendered
+// /matches page (a "use client" export cannot be invoked on the server).
+export { PropertyThumb } from "./property-thumb";
 
 /**
  * Shared formatting helpers + tiny presentational components for the Matches
@@ -28,13 +30,15 @@ export type MatchLabels = {
 
 /** Price on request when null; else currency glyph + grouped digits. EUR → €. */
 export function fmtPrice(
-  price: number | null,
+  price: number | string | null,
   currency: string | null,
   labels: Pick<MatchLabels, "priceOnRequest">,
 ): string {
   if (price == null) return labels.priceOnRequest;
   const sym = !currency || currency.toUpperCase() === "EUR" ? "€" : currency;
-  return `${sym}${price.toLocaleString("en-GB")}`;
+  const num = typeof price === "number" ? price : Number(price);
+  const shown = Number.isFinite(num) ? num.toLocaleString("en-GB") : String(price);
+  return `${sym}${shown}`;
 }
 
 /** "Studio" when beds===0; else present parts joined with " · ", null sides omitted. */
@@ -140,50 +144,6 @@ export function TemperaturePill({ temp }: { temp: string }) {
     >
       {label}
     </span>
-  );
-}
-
-/**
- * Property thumbnail with a guaranteed graceful fallback: a neutral Building2
- * glyph on bg-muted whenever there is no src OR the image fails to load. Never
- * renders a broken <img>.
- */
-export function PropertyThumb({
-  src,
-  alt,
-  className,
-}: {
-  src: string | null | undefined;
-  alt: string;
-  className?: string;
-}) {
-  const [failed, setFailed] = useState(false);
-  const showImg = !!src && !failed;
-  return (
-    <div
-      className={cn(
-        "flex items-center justify-center overflow-hidden bg-muted text-muted-foreground",
-        className,
-      )}
-    >
-      {showImg ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={src ?? undefined}
-          alt={alt}
-          loading="lazy"
-          referrerPolicy="no-referrer"
-          onError={() => setFailed(true)}
-          className="h-full w-full object-cover"
-        />
-      ) : (
-        <Building2
-          className="h-1/3 w-1/3 opacity-60"
-          aria-hidden
-          strokeWidth={1.6}
-        />
-      )}
-    </div>
   );
 }
 

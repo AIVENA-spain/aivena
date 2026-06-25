@@ -189,6 +189,52 @@ route.post('/:leadId/reply', async (c) => {
   }
 });
 
+// GET /:leadId/intel — read-only buyer-intelligence fields for the selected lead
+// (Day-2 Client Intelligence right panel: Buyer Profile, Next Best Action,
+// Follow-up). Repo-native direct SELECT, tenant-fenced by the agency GUC the
+// middleware set per-request (defence in depth alongside RLS) — exactly the
+// pattern the lead-notes list read uses. NO Day-3 columns (motivation/objections/
+// best_property_angle) and NO writes. Any null field is a real "not captured yet"
+// and the UI renders it as "—"; we never fabricate a value (Law 2 — honesty).
+route.get('/:leadId/intel', async (c) => {
+  const tx = c.get('tx');
+  const leadId = c.req.param('leadId');
+  if (!UUID_RE.test(leadId)) {
+    return c.json({ ok: false, error: 'A valid lead id is required.' }, 400);
+  }
+  try {
+    const result = await tx.execute(sql`
+      SELECT urgency,
+             timeframe,
+             budget_extracted,
+             budget_raw,
+             location_interest_extracted,
+             location_interest_raw,
+             bedrooms_min,
+             bedrooms_max,
+             bathrooms_min,
+             property_type_pref,
+             next_action,
+             recommended_channel,
+             reasoning_summary,
+             followup_paused,
+             next_followup_at
+        FROM public.leads
+       WHERE id = ${leadId}::uuid
+         AND agency_id = current_setting('app.current_agency_id', true)
+    `);
+    const rows = result as unknown as Array<Record<string, unknown>>;
+    if (rows.length === 0) {
+      // Missing or wrong-tenant lead — calm, not an error surface.
+      return c.json({ ok: false, error: "Couldn't load this lead's details." }, 404);
+    }
+    return c.json({ ok: true, data: rows[0] });
+  } catch (err) {
+    console.error('[leads/intel] read failed:', leadId, err);
+    return c.json({ ok: false, error: GENERIC }, 500);
+  }
+});
+
 // GET /:leadId/whatsapp-state — dashboard_lead_whatsapp_state (SECURITY INVOKER;
 // runs under the same agency + role tx context). Never leaks: any throw → calm
 // generic 500 with null data is never returned; we return a friendly error.

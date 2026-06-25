@@ -71,26 +71,26 @@
  * specifically want the dark/ink+green dot look.
  */
 :root {
-  --background: #FAF8F3;
-  --foreground: #10131A;
+  --background: #FBFAF7;      /* warm off-white / cream canvas */
+  --foreground: #111827;      /* deep charcoal/navy ink */
   --card: #FFFFFF;
-  --card-foreground: #10131A;
+  --card-foreground: #111827;
   --popover: #FFFFFF;
-  --popover-foreground: #10131A;
-  --primary: #10131A;
+  --popover-foreground: #111827;
+  --primary: #111827;
   --primary-foreground: #FFFFFF;
   --secondary: #F4F1EA;
-  --secondary-foreground: #10131A;
-  --muted: #F4F1EA;
-  --muted-foreground: #5C636C;
+  --secondary-foreground: #111827;
+  --muted: #F5F2EC;          /* warm cream-grey surface */
+  --muted-foreground: #6B7280;
   --accent: #F4F1EA;
-  --accent-foreground: #10131A;
+  --accent-foreground: #111827;
   --destructive: oklch(0.577 0.245 27.325);
-  --border: #ECE8DE;
-  --input: #ECE8DE;
+  --border: #E8E5DE;         /* soft warm-grey border */
+  --input: #E8E5DE;
   --ring: #969BA3;
-  --brand: #0B7C3A;          /* deep green — usable as text on cream */
-  --brand-soft: #E9FAF0;     /* very pale green — for active-nav, AI tag bg */
+  --brand: #0B7A3A;          /* calm emerald — usable as text on cream */
+  --brand-soft: #EAF7EF;     /* very soft green tint — active-nav, AI tag bg */
   --brand-fg: #FFFFFF;       /* foreground on a brand-coloured fill */
   --chart-1: #1FE874;
   --chart-2: #5CEFA0;

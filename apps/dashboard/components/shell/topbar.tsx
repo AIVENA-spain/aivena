@@ -49,7 +49,10 @@ export function Topbar({
   const tRoot = useTranslations();
 
   const titleKey = activeNavTKey(pathname);
-  const title = tNav(titleKey);
+  // /approvals shows a breadcrumb-style title to match the product header.
+  const title = pathname.startsWith("/approvals")
+    ? tRoot("approvals.pageTitle")
+    : tNav(titleKey);
   const agencyName = ctx.activeAgency?.agency.displayName ?? "";
   const firstNameRaw = ctx.email.split("@")[0]?.split(".")[0] ?? "";
   const firstName = firstNameRaw
@@ -63,12 +66,7 @@ export function Topbar({
   // the /inbox stub — fall back to the greeting; no fabricated copy.
   let subtitle: ReactNode = null;
   if (pathname.startsWith("/approvals")) {
-    subtitle =
-      inboxCount === null
-        ? null
-        : inboxCount === 0
-          ? tRoot("approvals.subtitleZero")
-          : tRoot("approvals.subtitle", { n: inboxCount });
+    subtitle = tRoot("approvals.pageSubtitle");
   } else if (pathname.startsWith("/performance")) {
     // performance.subtitle carries an <em> fragment (Instrument Serif italic).
     subtitle = tRoot.rich("performance.subtitle", {

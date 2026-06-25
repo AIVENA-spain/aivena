@@ -2,9 +2,27 @@ import { getLocale } from "next-intl/server";
 
 import { apiFetch, ApiError } from "@/lib/api/client";
 import { PageLoadError } from "@/components/shell/page-error";
-import type { InboxResponse } from "@/lib/api/types";
+import type { InboxResponse, SettingsResponse } from "@/lib/api/types";
 
 import { InboxWorkspace } from "./inbox-workspace";
+
+/**
+ * Build an author_user_id → email map from the team read-contract so notes can
+ * show who wrote them (never the raw uuid). Best-effort: a failed settings load
+ * just means notes fall back to a calm "Teammate" label — never blocks the inbox.
+ */
+async function getAuthorMap(): Promise<Record<string, string>> {
+  try {
+    const res = await apiFetch<SettingsResponse>("/api/v1/settings");
+    const map: Record<string, string> = {};
+    for (const m of res.team?.members ?? []) {
+      if (m.user_id && m.email) map[m.user_id] = m.email;
+    }
+    return map;
+  } catch {
+    return {};
+  }
+}
 
 export const dynamic = "force-dynamic";
 
@@ -30,12 +48,16 @@ export default async function InboxPage({
 
   let rows: InboxResponse["rows"] = [];
   let loadFailed = false;
+  let authors: Record<string, string> = {};
 
   try {
-    const res = await apiFetch<InboxResponse>(
-      "/api/v1/overview/inbox?limit=100&days=30",
-    );
+    // Inbox is the critical load; the author map is best-effort alongside it.
+    const [res, authorMap] = await Promise.all([
+      apiFetch<InboxResponse>("/api/v1/overview/inbox?limit=100&days=30"),
+      getAuthorMap(),
+    ]);
     rows = res.rows;
+    authors = authorMap;
   } catch (err) {
     loadFailed = true;
     const detail =
@@ -57,6 +79,7 @@ export default async function InboxPage({
       rows={rows}
       initialTaskId={lead}
       initialLeadId={leadId}
+      authors={authors}
     />
   );
 }

@@ -150,7 +150,7 @@ export default async function AppLayout({
           inboxCount={inboxCount}
         />
         <main className="flex-1 overflow-y-auto px-6 py-6">
-          <div className="mx-auto w-full max-w-6xl">{children}</div>
+          <div className="mx-auto w-full max-w-7xl">{children}</div>
         </main>
       </div>
       <AssistantWidget />

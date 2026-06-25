@@ -26,6 +26,7 @@ import {
   MessageCircle,
   MessageSquare,
   Phone,
+  Search,
   Send,
   X,
   type LucideIcon,
@@ -49,8 +50,7 @@ import {
   type ComposerState,
   type PendingSuggestion,
 } from "./composer-actions";
-import { LeadNotes } from "./lead-notes";
-import { MatchedProperties } from "@/app/(app)/matches/matched-properties";
+import { ClientIntelligence } from "./client-intelligence";
 import type {
   InboxRow,
   TaskDetailResponse,
@@ -214,17 +214,6 @@ function linkifyText(text: string): React.ReactNode {
   });
 }
 
-function scoreTemperatureLine(
-  score: number | null,
-  temperature: string | null,
-): string {
-  const t = temperature ? temperature.replace("_", " ") : null;
-  if (typeof score === "number" && t) return `${t} · score ${score}`;
-  if (typeof score === "number") return `score ${score}`;
-  if (t) return t;
-  return "";
-}
-
 /**
  * Conversation state for the row badge. Precedence is encoded in
  * `resolveConvoState`: anything needing the operator ("needsYou") wins over
@@ -312,12 +301,15 @@ export function InboxWorkspace({
   rows,
   initialTaskId,
   initialLeadId,
+  authors,
 }: {
   locale: string;
   rows: InboxRow[];
   initialTaskId?: string;
   /** Open a specific lead by its leadId (Matches rows link with ?leadId=). */
   initialLeadId?: string;
+  /** author_user_id → email, for resolving note authors to a name. */
+  authors?: Record<string, string>;
 }) {
   const t = useTranslations("inbox");
   const router = useRouter();
@@ -599,6 +591,7 @@ export function InboxWorkspace({
             onSuggested={handleSuggested}
             onComposerDone={onComposerDone}
             locale={locale}
+            authors={authors}
           />
         ) : (
           <BuyersCardsView
@@ -637,6 +630,7 @@ export function InboxWorkspace({
               onSuggested={handleSuggested}
               onComposerDone={onComposerDone}
               locale={locale}
+              authors={authors}
             />
           ) : (
             <BuyersCardsView
@@ -821,6 +815,7 @@ function BuyersConvoView({
   onSuggested,
   onComposerDone,
   locale,
+  authors,
 }: {
   rows: InboxRow[];
   /** Present only for the buyers stream (item D). Undefined = no dedup/badge. */
@@ -834,8 +829,11 @@ function BuyersConvoView({
   /** Reconcile the open thread + refresh rows after a composer send/dismiss. */
   onComposerDone: () => void;
   locale: string;
+  /** author_user_id → email, for resolving note authors to a name. */
+  authors?: Record<string, string>;
 }) {
   const t = useTranslations("inbox");
+  const [query, setQuery] = useState("");
 
   if (rows.length === 0) {
     return (
@@ -849,17 +847,48 @@ function BuyersConvoView({
     );
   }
 
+  // Client-side filter for the conversation list search box.
+  const q = query.trim().toLowerCase();
+  const visibleRows = q
+    ? rows.filter(
+        (r) =>
+          (r.fullName ?? "").toLowerCase().includes(q) ||
+          (r.latestInboundPreview ?? "").toLowerCase().includes(q),
+      )
+    : rows;
+
   // Rows arrive needs-you-first; the divider marks where handled rows begin.
   // Only shown when both groups are non-empty (index > 0 ⇒ ≥1 needs-you above).
   const firstHandledIdx = groupInfo
-    ? rows.findIndex((r) => groupInfo.get(r.taskId)?.state !== "needsYou")
+    ? visibleRows.findIndex((r) => groupInfo.get(r.taskId)?.state !== "needsYou")
     : -1;
 
   return (
-    <div className="grid grid-cols-1 overflow-hidden rounded-xl border border-border bg-card shadow-elevated lg:grid-cols-[270px_minmax(0,1fr)_240px]">
+    <div className="grid grid-cols-1 overflow-hidden rounded-xl border border-border bg-card shadow-elevated lg:h-[calc(100dvh-11.5rem)] lg:min-h-[560px] lg:max-h-[940px] lg:grid-rows-1 lg:grid-cols-[230px_minmax(0,1fr)_minmax(0,1.5fr)]">
       {/* Left: convo list */}
-      <ul className="flex max-h-[640px] flex-col overflow-y-auto border-b border-border lg:border-b-0 lg:border-r">
-        {rows.map((r, i) => {
+      <div className="flex min-h-0 flex-col border-b border-border lg:border-b-0 lg:border-r">
+        <div className="shrink-0 border-b border-border p-2.5">
+          <div className="relative">
+            <Search
+              className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
+              aria-hidden
+            />
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={t("searchPlaceholder")}
+              className="w-full rounded-lg border border-border bg-background py-1.5 pl-8 pr-2.5 text-[12px] text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            />
+          </div>
+        </div>
+        <ul className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+          {visibleRows.length === 0 ? (
+            <li className="px-4 py-6 text-center text-[12px] text-muted-foreground">
+              {t("searchNoResults")}
+            </li>
+          ) : null}
+          {visibleRows.map((r, i) => {
           const group = groupInfo?.get(r.taskId);
           const isSel = group
             ? selectedId != null && group.taskIds.includes(selectedId)
@@ -926,10 +955,11 @@ function BuyersConvoView({
             </li>
           );
         })}
-      </ul>
+        </ul>
+      </div>
 
       {/* Middle: thread + reply */}
-      <div className="flex min-w-0 flex-col">
+      <div className="flex min-h-0 min-w-0 flex-col">
         {selected ? (
           <ThreadAndReply
             lead={selected}
@@ -944,19 +974,15 @@ function BuyersConvoView({
         )}
       </div>
 
-      {/* Right: summary + notes */}
-      <div className="flex max-h-[640px] flex-col gap-4 overflow-y-auto border-t border-border p-5 lg:border-t-0 lg:border-l">
+      {/* Right: stacked Client Intelligence panel */}
+      <div className="flex min-h-0 flex-col overflow-y-auto border-t border-border bg-muted/20 p-5 lg:border-t-0 lg:border-l">
         {selected ? (
-          <>
-            <LeadSummary lead={selected} />
-            <LeadNotes key={selected.leadId} leadId={selected.leadId} />
-            <MatchedProperties
-              key={"m-" + selected.leadId}
-              leadId={selected.leadId}
-              leadName={selected.fullName}
-              onSuggested={onSuggested}
-            />
-          </>
+          <ClientIntelligence
+            key={selected.leadId}
+            lead={selected}
+            authors={authors}
+            onSuggested={onSuggested}
+          />
         ) : null}
       </div>
     </div>
@@ -1042,7 +1068,7 @@ function ThreadAndReply({
       {/* Body */}
       <div
         ref={threadBodyRef}
-        className="flex max-h-[420px] flex-1 flex-col gap-2.5 overflow-y-auto p-5"
+        className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto p-5"
       >
         {threadEntry?.status === "loading" || threadEntry === undefined ? (
           <ThreadSkeleton />
@@ -1599,19 +1625,14 @@ function Composer({
       {/* WhatsApp 24h window banner — honest, code-free (Law 2). Send is
           disabled while it's up; the textarea stays editable. */}
       {windowClosed ? (
-        <div className="mb-3 rounded-[13px] border border-amber-500/30 bg-amber-500/5 p-3.5">
-          <div className="mb-1.5 flex items-center gap-1.5 font-mono text-[9.5px] font-bold uppercase tracking-[0.05em] text-amber-700 dark:text-amber-300">
-            <Lock className="h-3.5 w-3.5" aria-hidden strokeWidth={2} />
+        <div className="mb-2.5 rounded-xl border border-amber-500/15 bg-amber-500/[0.045] px-3.5 py-2.5">
+          <div className="mb-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-amber-600 dark:text-amber-300/90">
+            <Lock className="h-3 w-3" aria-hidden strokeWidth={1.75} />
             {neverMessaged ? tWindow("neverTitle") : tWindow("closedTitle")}
           </div>
-          <p className="text-[12.5px] leading-[1.5] text-muted-foreground">
+          <p className="text-[12.5px] leading-[1.55] text-muted-foreground">
             {tComposer("windowBanner")}
           </p>
-          {!neverMessaged && relTime ? (
-            <p className="mt-1.5 text-[11.5px] leading-[1.5] text-muted-foreground/80">
-              {tWindow("closedBody", { name, time: relTime })}
-            </p>
-          ) : null}
         </div>
       ) : null}
 
@@ -1797,32 +1818,6 @@ function Composer({
 }
 
 // ---------- summary pane ----------
-
-function LeadSummary({ lead }: { lead: InboxRow }) {
-  const t = useTranslations("inbox.summary");
-  const scoreLine = scoreTemperatureLine(lead.score, lead.temperature);
-  return (
-    <div className="flex flex-col gap-3">
-      <div className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.05em] text-muted-foreground">
-        {t("h")}
-      </div>
-      <SummaryField label={t("area")} value={lead.area ?? "—"} />
-      <SummaryField
-        label={t("score")}
-        value={scoreLine || "—"}
-      />
-      <SummaryField label={t("source")} value={lead.source ?? "—"} />
-      <SummaryField
-        label={t("language")}
-        value={languageLabel(lead.language)}
-      />
-      <SummaryField
-        label={t("channel")}
-        value={lead.channel ?? "—"}
-      />
-    </div>
-  );
-}
 
 function SummaryField({ label, value }: { label: string; value: string }) {
   return (

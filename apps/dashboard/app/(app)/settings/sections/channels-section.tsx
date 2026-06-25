@@ -2,248 +2,145 @@
 
 import { useCallback, useId, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
-import { Mail, MessageSquare, CalendarDays, Sparkles, X } from "lucide-react";
+import { Mail, MessageSquare, CalendarDays, Sparkles } from "lucide-react";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { saveIdentityAction } from "../section-actions";
 import type { SettingsResponse } from "@/lib/api/types";
 
-type ModalKind = "whatsapp" | "calendar" | "social";
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
- * Connected channels — Email is live (uses profile.sending_domain); the other
- * three are stubbed-but-real-feeling. Each Connect button opens a modal that
- * mirrors the real connection flow's first step, and submission returns a
- * friendly "we'll email you when it's live" — no fake success.
+ * Channels & sending identity — accordion body. Channel rows are READ-ONLY
+ * status (no Connect buttons — none have a live agency-facing connect path):
+ * Email = domain verified, WhatsApp = connected · replies off, Calendar/Social
+ * = coming soon. Reply-to is the one editable control (POST /identity →
+ * agency_email_config.reply_to).
  */
+type Status = "verified" | "repliesOff" | "comingSoon";
+
 export function ChannelsSection({
   channels,
   sendingDomain,
+  fromEmail,
+  replyTo: initialReplyTo,
 }: {
   channels: SettingsResponse["channels"];
   sendingDomain: string;
+  fromEmail: string;
+  replyTo: string;
 }) {
   const t = useTranslations("settings.channels");
-  const [openModal, setOpenModal] = useState<ModalKind | null>(null);
-  const [submittedToast, setSubmittedToast] = useState(false);
+  const ti = useTranslations("settings.identity");
 
-  const onSubmitModal = useCallback(() => {
-    setOpenModal(null);
-    setSubmittedToast(true);
-    window.setTimeout(() => setSubmittedToast(false), 3500);
-  }, []);
+  const replyToId = useId();
+  const [replyTo, setReplyTo] = useState(initialReplyTo ?? "");
+  const [savingReply, startSavingReply] = useTransition();
+  const [replyError, setReplyError] = useState<string | null>(null);
+  const [replySavedAt, setReplySavedAt] = useState<number | null>(null);
+
+  const onSaveReplyTo = useCallback(() => {
+    setReplyError(null);
+    if (!EMAIL_RE.test(replyTo.trim())) {
+      setReplyError(ti("replyToLabel"));
+      return;
+    }
+    startSavingReply(async () => {
+      const res = await saveIdentityAction(replyTo.trim());
+      if (res.ok) setReplySavedAt(Date.now());
+      else setReplyError(res.error);
+    });
+  }, [replyTo, ti]);
+
+  const emailStatus: Status = sendingDomain ? "verified" : "comingSoon";
+  const whatsappStatus: Status = channels.whatsapp.live ? "verified" : "repliesOff";
 
   return (
-    <Card id="channels" className="scroll-mt-24">
-      <CardHeader>
-        <CardTitle>{t("title")}</CardTitle>
-        <CardDescription>{t("subtitle")}</CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col">
-        <ChannelRow
-          icon={<Mail className="h-4 w-4" />}
-          iconBg="bg-blue-500/15 text-blue-600 dark:text-blue-300"
-          name={t("email")}
-          sub={t("emailHint", { domain: sendingDomain || "—" })}
-          right={
-            <span className="rounded-full bg-brand-soft px-3 py-1 text-[10.5px] font-semibold text-brand">
-              {t("connectedPill")}
-            </span>
-          }
-          subline={null}
-          first
-        />
-        <ChannelRow
-          icon={<MessageSquare className="h-4 w-4" />}
-          iconBg="bg-emerald-500/15 text-emerald-600 dark:text-emerald-300"
-          name={t("whatsapp")}
-          sub={t("whatsappSub")}
-          right={
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={() => setOpenModal("whatsapp")}
-            >
-              {t("connectBtn")}
-            </Button>
-          }
-          subline={t("comingSoonNote")}
-        />
-        <ChannelRow
-          icon={<CalendarDays className="h-4 w-4" />}
-          iconBg="bg-blue-500/12 text-blue-600 dark:text-blue-300"
-          name={t("calendar")}
-          sub={t("calendarSub")}
-          right={
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={() => setOpenModal("calendar")}
-            >
-              {t("connectBtn")}
-            </Button>
-          }
-          subline={t("comingSoonNote")}
-        />
-        <ChannelRow
-          icon={<Sparkles className="h-4 w-4" />}
-          iconBg="bg-purple-500/15 text-purple-600 dark:text-purple-300"
-          name={t("social")}
-          sub={t("socialSub")}
-          right={
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={() => setOpenModal("social")}
-            >
-              {t("connectBtn")}
-            </Button>
-          }
-          subline={t("comingSoonNote")}
-        />
+    <div className="flex flex-col gap-1">
+      <Row
+        icon={<Mail className="h-4 w-4" />}
+        iconCls="bg-blue-500/15 text-blue-600 dark:text-blue-300"
+        name={t("email")}
+        sub={fromEmail ? `${sendingDomain || "—"} · ${fromEmail}` : sendingDomain || "—"}
+        status={emailStatus}
+        first
+      />
+      <Row
+        icon={<MessageSquare className="h-4 w-4" />}
+        iconCls="bg-emerald-500/15 text-emerald-600 dark:text-emerald-300"
+        name={t("whatsapp")}
+        sub={t("whatsappSub")}
+        status={whatsappStatus}
+      />
+      <Row
+        icon={<CalendarDays className="h-4 w-4" />}
+        iconCls="bg-blue-500/12 text-blue-600 dark:text-blue-300"
+        name={t("calendar")}
+        sub={t("calendarSub")}
+        status="comingSoon"
+      />
+      <Row
+        icon={<Sparkles className="h-4 w-4" />}
+        iconCls="bg-purple-500/15 text-purple-600 dark:text-purple-300"
+        name={t("social")}
+        sub={t("socialSub")}
+        status="comingSoon"
+      />
 
-        {submittedToast ? (
-          <p className="mt-3 text-xs text-brand" aria-live="polite">
-            {t("submittedToast")}
-          </p>
+      {/* Reply-to — the one editable control (sending domain stays read-only) */}
+      <div className="mt-3 flex flex-col gap-2 border-t border-border/60 pt-4">
+        <Label htmlFor={replyToId}>{ti("replyToLabel")}</Label>
+        <div className="flex items-center gap-2">
+          <Input id={replyToId} type="email" value={replyTo} onChange={(e) => setReplyTo(e.target.value)} className="max-w-sm" spellCheck={false} />
+          <Button type="button" size="sm" onClick={onSaveReplyTo} disabled={savingReply}>{ti("saveBtn")}</Button>
+        </div>
+        <p className="text-[11px] text-muted-foreground">{t("replyToHint")}</p>
+        {replyError ? (
+          <p className="text-xs text-red-600 dark:text-red-300" role="alert">{replyError}</p>
+        ) : replySavedAt ? (
+          <p className="text-xs text-brand" aria-live="polite">{ti("savedToast")}</p>
         ) : null}
-      </CardContent>
-
-      {openModal ? (
-        <ConnectModal kind={openModal} onClose={() => setOpenModal(null)} onSubmit={onSubmitModal} />
-      ) : null}
-    </Card>
+      </div>
+    </div>
   );
 }
 
-function ChannelRow({
+function Row({
   icon,
-  iconBg,
+  iconCls,
   name,
   sub,
-  right,
-  subline,
+  status,
   first,
 }: {
   icon: React.ReactNode;
-  iconBg: string;
+  iconCls: string;
   name: string;
   sub: string;
-  right: React.ReactNode;
-  subline: string | null;
+  status: Status;
   first?: boolean;
 }) {
   return (
-    <div
-      className={`flex flex-col gap-1 py-3 ${first ? "" : "border-t border-border/60"}`}
-    >
-      <div className="flex items-center gap-3">
-        <span
-          aria-hidden
-          className={`flex h-9 w-9 items-center justify-center rounded-lg ${iconBg}`}
-        >
-          {icon}
-        </span>
-        <div className="min-w-0 flex-1">
-          <div className="text-[13px] font-semibold text-foreground">{name}</div>
-          <div className="text-[11.5px] text-muted-foreground">{sub}</div>
-        </div>
-        {right}
+    <div className={`flex items-center gap-3 py-2.5 ${first ? "" : "border-t border-border/60"}`}>
+      <span aria-hidden className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${iconCls}`}>{icon}</span>
+      <div className="min-w-0 flex-1">
+        <div className="text-[13px] font-semibold text-foreground">{name}</div>
+        <div className="truncate text-[11.5px] text-muted-foreground">{sub}</div>
       </div>
-      {subline ? (
-        <p className="ml-12 text-[11px] text-muted-foreground">{subline}</p>
-      ) : null}
+      <StatusPill status={status} />
     </div>
   );
 }
 
-function ConnectModal({
-  kind,
-  onClose,
-  onSubmit,
-}: {
-  kind: ModalKind;
-  onClose: () => void;
-  onSubmit: () => void;
-}) {
+function StatusPill({ status }: { status: Status }) {
   const t = useTranslations("settings.channels");
-  const phoneId = useId();
-  const [phone, setPhone] = useState("");
-  const [pending, startPending] = useTransition();
-
-  const title =
-    kind === "whatsapp" ? t("whatsappModalTitle") : kind === "calendar" ? t("calendarModalTitle") : t("socialModalTitle");
-  const body =
-    kind === "whatsapp" ? t("whatsappModalBody") : kind === "calendar" ? t("calendarModalBody") : t("socialModalBody");
-  const submitLabel =
-    kind === "whatsapp" ? t("whatsappSubmit") : kind === "calendar" ? t("calendarSubmit") : t("socialSubmit");
-
-  const handleSubmit = () => {
-    // No backend yet — give the request a brief pending state for honesty,
-    // then close and surface the friendly toast.
-    startPending(() => {
-      window.setTimeout(onSubmit, 250);
-    });
+  const map: Record<Status, { label: string; cls: string }> = {
+    verified: { label: t("pillVerified"), cls: "bg-brand-soft text-brand" },
+    repliesOff: { label: t("pillRepliesOff"), cls: "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300" },
+    comingSoon: { label: t("pillComingSoon"), cls: "bg-muted text-muted-foreground" },
   };
-
-  return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label={title}
-      className="fixed inset-0 z-50 flex items-start justify-center bg-foreground/40 p-6 pt-24"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div className="w-full max-w-md rounded-lg border border-border bg-card shadow-elevated">
-        <div className="flex items-center gap-3 border-b border-border/60 p-4">
-          <h3 className="flex-1 text-[15px] font-semibold text-foreground">{title}</h3>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label={t("modalCancel")}
-            className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-        <div className="flex flex-col gap-4 p-4">
-          <p className="text-[12.5px] leading-relaxed text-muted-foreground">{body}</p>
-
-          {kind === "whatsapp" ? (
-            <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor={phoneId}
-                className="text-[12px] font-medium text-foreground"
-              >
-                {t("whatsappPhoneLabel")}
-              </label>
-              <Input
-                id={phoneId}
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder={t("whatsappPhonePlaceholder")}
-                className="max-w-sm font-mono text-[12px]"
-              />
-            </div>
-          ) : null}
-
-          <div className="flex items-center justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" size="sm" onClick={onClose}>
-              {t("modalCancel")}
-            </Button>
-            <Button type="button" size="sm" disabled={pending} onClick={handleSubmit}>
-              {submitLabel}
-            </Button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  const { label, cls } = map[status];
+  return <span className={`shrink-0 rounded-full px-3 py-1 text-[10.5px] font-semibold ${cls}`}>{label}</span>;
 }

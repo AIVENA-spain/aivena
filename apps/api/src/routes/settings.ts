@@ -233,11 +233,27 @@ route.post('/branding', async (c) => {
   const signatureName = trimOrNull(body.email_signature_name) ?? '';
   const signatureRole = trimOrNull(body.email_signature_role) ?? '';
 
-  const tone = typeof body.tone === 'string' ? body.tone : '';
-  if (tone && !TONE_VALUES.has(tone)) {
-    return c.json({ error: 'Choose a tone from the available options.' }, 400);
-  }
-  const brandVoice = typeof body.brand_voice === 'string' ? body.brand_voice : '';
+  // NOTE: tone + brand_voice are intentionally NOT written here. "Follow-up
+  // tone" is read-only in the pilot Settings view (its canonical column is
+  // unresolved — dashboard reads agency_branding.tone, the follow-up engine
+  // consumes agency_settings.tone; reconcile before it becomes editable), and
+  // "Agency voice" (brand_voice) is disabled ("not yet applied"). Writing them
+  // here would silently overwrite the existing values.
+
+  // Tier-1a contact/link fields — all optional. trimOrNull => empty persists as
+  // NULL (clean round-trip: NULL reads back as an empty input). No strict format
+  // gate here; the form does light client-side URL validation.
+  const phone          = trimOrNull(body.phone);
+  const whatsappNumber = trimOrNull(body.whatsapp_number);
+  const websiteUrl     = trimOrNull(body.website_url);
+  const bookingUrl     = trimOrNull(body.booking_url);
+  const officeAddress  = trimOrNull(body.office_address);
+  const city           = trimOrNull(body.city);
+  const region         = trimOrNull(body.region);
+  const country        = trimOrNull(body.country);
+  const instagramUrl   = trimOrNull(body.instagram_url);
+  const facebookUrl    = trimOrNull(body.facebook_url);
+  const linkedinUrl    = trimOrNull(body.linkedin_url);
 
   try {
     const result = await tx.execute(sql`
@@ -246,8 +262,17 @@ route.post('/branding', async (c) => {
              primary_color        = ${primaryColor},
              email_signature_name = ${signatureName},
              email_signature_role = ${signatureRole},
-             tone                 = ${tone || null},
-             brand_voice          = ${brandVoice},
+             phone                = ${phone},
+             whatsapp_number      = ${whatsappNumber},
+             website_url          = ${websiteUrl},
+             booking_url          = ${bookingUrl},
+             office_address       = ${officeAddress},
+             city                 = ${city},
+             region               = ${region},
+             country              = ${country},
+             instagram_url        = ${instagramUrl},
+             facebook_url         = ${facebookUrl},
+             linkedin_url         = ${linkedinUrl},
              branding_reviewed_at = now(),
              updated_at           = now()
        WHERE agency_id = current_setting('app.current_agency_id', true)

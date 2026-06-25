@@ -41,8 +41,21 @@ export type BrandingPayload = {
   primary_color: string;
   email_signature_name: string;
   email_signature_role: string;
-  tone: string | null;
-  brand_voice: string;
+  // tone + brand_voice are intentionally NOT part of the branding save in the
+  // pilot view (tone is read-only pending column reconciliation; agency voice
+  // is disabled). See settings.ts /branding.
+  // Tier-1a contact/links — optional; empty strings persist as NULL server-side.
+  phone: string;
+  whatsapp_number: string;
+  website_url: string;
+  booking_url: string;
+  office_address: string;
+  city: string;
+  region: string;
+  country: string;
+  instagram_url: string;
+  facebook_url: string;
+  linkedin_url: string;
 };
 
 export async function saveBrandingAction(

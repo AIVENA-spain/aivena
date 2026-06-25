@@ -1,55 +1,36 @@
 import { getTranslations } from "next-intl/server";
+import { Image as ImageIcon, SlidersHorizontal, Mail, Globe, Users, CreditCard } from "lucide-react";
 
 import { apiFetch, ApiError } from "@/lib/api/client";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { PageLoadError } from "@/components/shell/page-error";
 import { getCurrentUserContext } from "@/lib/auth/context";
 import type { SettingsResponse } from "@/lib/api/types";
 
-import { PreferencesForm } from "./preferences-form";
+import { AccordionSection, StatusDot, StatusTag } from "./accordion";
+import { hasAutoSend } from "./automation-safety";
 import { ChecklistSection } from "./sections/checklist-section";
-import { PlanSection } from "./sections/plan-section";
-import { BrandingAndVoiceSection } from "./sections/branding-section";
-import { IdentitySection } from "./sections/identity-section";
-import { AiRulesSection } from "./sections/ai-rules-section";
-import { LanguagesSection } from "./sections/languages-section";
+import { BrandingSection } from "./sections/branding-section";
+import { AiSection } from "./sections/ai-section";
 import { ChannelsSection } from "./sections/channels-section";
+import { LanguagesSection } from "./sections/languages-section";
 import { TeamSection } from "./sections/team-section";
+import { PlanPrefsSection } from "./sections/plan-prefs-section";
 
 export const dynamic = "force-dynamic";
 
-type PreferencesResponse = {
-  uiLanguage: string;
-  messageLanguage: string;
-  theme: string;
-};
-
-const FALLBACK_PREFERENCES: PreferencesResponse = {
-  uiLanguage: "en",
-  messageLanguage: "en",
-  theme: "system",
-};
+type PreferencesResponse = { uiLanguage: string; messageLanguage: string; theme: string };
+const FALLBACK_PREFERENCES: PreferencesResponse = { uiLanguage: "en", messageLanguage: "en", theme: "system" };
 
 /**
- * Settings — the operator's whole agency in one page. Server-rendered shell;
- * each section is its own client island where interactivity is required.
- *
- * Data sources (both fetched in parallel inside the agency-context tx):
- *   - `/api/v1/settings`             → dashboard_settings(0) (Vega's contract)
- *   - `/api/v1/me/preferences`       → the caller's own user_preferences row
- *
- * Failure model: any infrastructure-level failure ( the API down, schema cache
- * cold) shows the canonical friendly PageLoadError. Per-section save errors
- * are surfaced inline by each client section.
+ * Settings — agency control center, accordion layout (per the finalized spec).
+ * Server shell fetches the settings contract + the caller's prefs; each section
+ * renders inside a collapsible AccordionSection. Branding (open by default) is
+ * the editable centre; AI/channels/languages carry the active controls; team
+ * and plan are read-only.
  */
 export default async function SettingsPage() {
   const t = await getTranslations("settings");
+  const ta = await getTranslations("settings.accordion");
 
   const [settingsRes, prefsRes, ctx] = await Promise.allSettled([
     apiFetch<SettingsResponse>("/api/v1/settings"),
@@ -62,71 +43,113 @@ export default async function SettingsPage() {
     return <PageLoadError />;
   }
   const settings = settingsRes.value;
+  const preferences = prefsRes.status === "fulfilled" ? prefsRes.value : FALLBACK_PREFERENCES;
+  if (prefsRes.status === "rejected") logFailure("preferences", prefsRes.reason);
 
-  const preferences =
-    prefsRes.status === "fulfilled" ? prefsRes.value : FALLBACK_PREFERENCES;
-  if (prefsRes.status === "rejected") {
-    logFailure("preferences", prefsRes.reason);
-  }
+  const currentUserId = ctx.status === "fulfilled" && ctx.value ? ctx.value.userId : "";
 
-  const currentUserId =
-    ctx.status === "fulfilled" && ctx.value ? ctx.value.userId : "";
-  const role =
-    ctx.status === "fulfilled" && ctx.value
-      ? ctx.value.activeAgency?.role ?? null
-      : null;
-  const isOwner = role === "owner";
+  const lanes = settings.reply_lanes;
+  const langCount = settings.profile.supported_languages.length;
+  const memberCount = settings.team.member_count;
+  const aiSafe = !hasAutoSend(lanes);
+  const whatsappLive = Boolean(settings.channels.whatsapp.connected && settings.channels.whatsapp.live);
+  const signedInEmail =
+    settings.team.members.find((m) => m.user_id === currentUserId)?.email ?? "";
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* Personal */}
-      <Card id="personal" className="scroll-mt-24">
-        <CardHeader>
-          <CardTitle>{t("personal")}</CardTitle>
-          <CardDescription>{t("personalDescription")}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <PreferencesForm initial={preferences} />
-        </CardContent>
-      </Card>
-
-      <ChecklistSection checklist={settings.setup_checklist} />
-
-      <PlanSection planTier={settings.plan_tier} quotas={settings.quotas} />
-
-      <BrandingAndVoiceSection branding={settings.branding} />
-
-      <IdentitySection profile={settings.profile} />
-
-      <AiRulesSection
-        initialLanes={settings.reply_lanes}
-        initialWorkingHours={settings.config.working_hours}
-        initialTimezone={settings.config.timezone}
-      />
-
-      <LanguagesSection
-        initial={settings.profile.supported_languages}
-        translationTarget={settings.translation_target_language}
-        dashboardDisplay={settings.dashboard_display_language}
-        canEditDefault={isOwner}
-      />
-
-      <ChannelsSection
+    <div className="mx-auto flex w-full max-w-[920px] flex-col gap-3">
+      {/* Setup status strip */}
+      <ChecklistSection
+        checklist={settings.setup_checklist}
+        lanes={lanes}
         channels={settings.channels}
-        sendingDomain={settings.profile.sending_domain}
+        workingHours={settings.config.working_hours}
       />
 
-      <TeamSection team={settings.team} currentUserId={currentUserId} />
+      {/* 1. Agency profile & branding (open) */}
+      <AccordionSection
+        defaultOpen
+        icon={<ImageIcon className="h-[18px] w-[18px]" />}
+        title={ta("brandingTitle")}
+        subtitle={settings.branding.brand_name || ta("brandingSubtitle")}
+        status={<StatusDot />}
+      >
+        <BrandingSection branding={settings.branding} />
+      </AccordionSection>
+
+      {/* 2. AI behaviour & approvals */}
+      <AccordionSection
+        icon={<SlidersHorizontal className="h-[18px] w-[18px]" />}
+        title={ta("aiTitle")}
+        subtitle={ta("aiSubtitle")}
+        status={aiSafe ? <StatusDot /> : <StatusTag tone="warn">{ta("statusReview")}</StatusTag>}
+      >
+        <AiSection branding={settings.branding} initialLanes={lanes} />
+      </AccordionSection>
+
+      {/* 3. Channels & sending identity */}
+      <AccordionSection
+        icon={<Mail className="h-[18px] w-[18px]" />}
+        title={ta("channelsTitle")}
+        subtitle={ta("channelsSubtitle")}
+        status={whatsappLive ? <StatusDot /> : <StatusTag tone="warn">{ta("statusRepliesOff")}</StatusTag>}
+      >
+        <ChannelsSection
+          channels={settings.channels}
+          sendingDomain={settings.profile.sending_domain}
+          fromEmail={settings.profile.from_email}
+          replyTo={settings.profile.reply_to}
+        />
+      </AccordionSection>
+
+      {/* 4. Languages & working hours */}
+      <AccordionSection
+        icon={<Globe className="h-[18px] w-[18px]" />}
+        title={ta("languagesTitle")}
+        subtitle={ta("languagesSubtitle", { count: langCount })}
+        status={<StatusDot />}
+      >
+        <LanguagesSection
+          initial={settings.profile.supported_languages}
+          translationTarget={settings.translation_target_language}
+          initialWorkingHours={settings.config.working_hours}
+          initialTimezone={settings.config.timezone}
+        />
+      </AccordionSection>
+
+      {/* 5. Team & access */}
+      <AccordionSection
+        icon={<Users className="h-[18px] w-[18px]" />}
+        title={ta("teamTitle")}
+        subtitle={ta("teamSubtitle", { count: memberCount })}
+        status={<StatusTag tone="warn">{ta("statusInviteAgents")}</StatusTag>}
+      >
+        <TeamSection team={settings.team} currentUserId={currentUserId} />
+      </AccordionSection>
+
+      {/* 6. Plan & preferences */}
+      <AccordionSection
+        icon={<CreditCard className="h-[18px] w-[18px]" />}
+        title={ta("planTitle")}
+        subtitle={ta("planSubtitle", { tier: settings.plan_tier })}
+        status={<span className="rounded-full bg-muted px-2.5 py-1 font-mono text-[10.5px] text-muted-foreground">{settings.plan_tier}</span>}
+      >
+        <PlanPrefsSection
+          planTier={settings.plan_tier}
+          region={settings.profile.region ?? ""}
+          dashboardLanguage={settings.dashboard_display_language}
+          theme={preferences.theme}
+          signedInEmail={signedInEmail}
+        />
+      </AccordionSection>
+
+      <p className="px-1 pt-1 text-[11px] text-muted-foreground">{t("personalDescription")}</p>
     </div>
   );
 }
 
 function logFailure(scope: string, err: unknown): void {
   const detail =
-    err instanceof ApiError
-      ? `${err.status} ${err.message}`
-      : err instanceof Error
-        ? err.message
-        : String(err);
+    err instanceof ApiError ? `${err.status} ${err.message}` : err instanceof Error ? err.message : String(err);
   console.error(`[/settings] ${scope} fetch failed:`, detail);
 }

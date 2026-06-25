@@ -144,6 +144,17 @@ export type SettingsResponse = {
     logo_url: string | null;
     primary_color: string;
     accent_color: string | null;
+    phone: string | null;
+    whatsapp_number: string | null;
+    website_url: string | null;
+    booking_url: string | null;
+    office_address: string | null;
+    city: string | null;
+    region: string | null;
+    country: string | null;
+    instagram_url: string | null;
+    facebook_url: string | null;
+    linkedin_url: string | null;
     email_signature_name: string;
     email_signature_role: string;
     email_footer_text: string | null;

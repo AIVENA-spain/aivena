@@ -1,10 +1,10 @@
 import { describe, it, expect } from "vitest";
 import type { ReadinessItem, ReadinessStatus } from "@/lib/api/types";
 import {
-  statusLabel,
+  statusLabelKey,
   statusTone,
   isDone,
-  providerName,
+  providerNameKey,
   orderItems,
   summarize,
 } from "./readiness-display";
@@ -21,10 +21,21 @@ function item(id: string, status: ReadinessStatus, owner: ReadinessItem["owner"]
   };
 }
 
+// Must stay in sync with the settings.readiness.status.* keys in messages/*.json.
+const STATUS_KEY: Record<ReadinessStatus, string> = {
+  ready: "ready",
+  live_but_unproven: "inProgress",
+  manual_fallback: "manual",
+  missing: "actionNeeded",
+  needs_decision: "needsDecision",
+  blocked: "waitingAivena",
+  unavailable: "unavailable",
+};
+
 describe("status chip mapping", () => {
-  it("labels every status (total coverage, no undefined)", () => {
+  it("returns the expected i18n key suffix for every status (total coverage)", () => {
     for (const s of ALL_STATUSES) {
-      expect(statusLabel(s)).toBeTruthy();
+      expect(statusLabelKey(s)).toBe(STATUS_KEY[s]);
       expect(["good", "warn", "info", "muted"]).toContain(statusTone(s));
     }
   });
@@ -43,13 +54,13 @@ describe("status chip mapping", () => {
   });
 });
 
-describe("providerName", () => {
-  it("names every provider id", () => {
-    expect(providerName("email")).toBe("Email");
-    expect(providerName("whatsapp")).toBe("WhatsApp");
-    expect(providerName("whatsapp_templates_multilang")).toBe("Multilingual templates");
-    expect(providerName("calendar")).toBe("Calendar");
-    expect(providerName("property_feed")).toBe("Property catalog");
+describe("providerNameKey", () => {
+  it("returns the expected i18n key suffix for every provider id", () => {
+    expect(providerNameKey("email")).toBe("email");
+    expect(providerNameKey("whatsapp")).toBe("whatsapp");
+    expect(providerNameKey("whatsapp_templates_multilang")).toBe("multilang");
+    expect(providerNameKey("calendar")).toBe("calendar");
+    expect(providerNameKey("property_feed")).toBe("feed");
   });
 });
 

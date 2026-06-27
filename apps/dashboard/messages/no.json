@@ -333,6 +333,27 @@
     "pageSubtitle": "Review conversations, AI insights, and take action."
   },
   "settings": {
+    "readiness": {
+      "title": "Oppsettfremdrift",
+      "count": "{done} av {total} klare",
+      "aivenaHandling": "AIVENA tar seg av dette",
+      "status": {
+        "ready": "Klar",
+        "inProgress": "Pågår",
+        "manual": "Håndteres av AIVENA",
+        "actionNeeded": "Handling kreves",
+        "needsDecision": "Krever en beslutning",
+        "waitingAivena": "Venter på AIVENA",
+        "unavailable": "Status utilgjengelig"
+      },
+      "provider": {
+        "email": "E-post",
+        "whatsapp": "WhatsApp",
+        "multilang": "Flerspråklige maler",
+        "calendar": "Kalender",
+        "feed": "Eiendomskatalog"
+      }
+    },
     "title": "Innstillinger",
     "subtitle": "How your agency works, sends, and shows up to your clients",
     "personal": "Personlig",

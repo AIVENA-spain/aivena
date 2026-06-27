@@ -1,7 +1,10 @@
+"use client";
+
+import { useTranslations } from "next-intl";
 import { Mail, MessageSquare, Languages, CalendarDays, Building2 } from "lucide-react";
 
 import type { ReadinessProviderId, ReadinessProviderState } from "@/lib/api/types";
-import { statusLabel, statusTone, providerName, type ChipTone } from "./readiness-display";
+import { statusLabelKey, statusTone, providerNameKey, type ChipTone } from "./readiness-display";
 
 /**
  * Provider Connection cards (workboard D3) — honest per-provider readiness from
@@ -9,6 +12,9 @@ import { statusLabel, statusTone, providerName, type ChipTone } from "./readines
  * unavailable/missing shows exactly that (e.g. WhatsApp = "Status unavailable"
  * while Chat 3's readiness RPC is undeployed). There are no Connect buttons yet
  * — the connect flows (Embedded Signup H3, Calendar OAuth L1) are separate builds.
+ *
+ * Localization (D9): provider names + status chips via settings.readiness.*; the
+ * per-provider `detail` line is API-provided (English).
  */
 const TONE_CLS: Record<ChipTone, string> = {
   good: "bg-brand-soft text-brand",
@@ -34,6 +40,7 @@ const ICON_CLS: Record<ReadinessProviderId, string> = {
 };
 
 export function ProviderCards({ providers }: { providers: ReadinessProviderState[] }) {
+  const t = useTranslations("settings.readiness");
   return (
     <div className="flex flex-col gap-1">
       {providers.map((p, i) => (
@@ -45,11 +52,11 @@ export function ProviderCards({ providers }: { providers: ReadinessProviderState
             {ICON[p.provider]}
           </span>
           <div className="min-w-0 flex-1">
-            <div className="text-[13px] font-semibold text-foreground">{providerName(p.provider)}</div>
+            <div className="text-[13px] font-semibold text-foreground">{t(`provider.${providerNameKey(p.provider)}`)}</div>
             <div className="truncate text-[11.5px] text-muted-foreground">{p.detail}</div>
           </div>
           <span className={`shrink-0 rounded-full px-3 py-1 text-[10.5px] font-semibold ${TONE_CLS[statusTone(p.status)]}`}>
-            {statusLabel(p.status)}
+            {t(`status.${statusLabelKey(p.status)}`)}
           </span>
         </div>
       ))}

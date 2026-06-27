@@ -333,6 +333,27 @@
     "pageSubtitle": "Review conversations, AI insights, and take action."
   },
   "settings": {
+    "readiness": {
+      "title": "Ход настройки",
+      "count": "Готово {done} из {total}",
+      "aivenaHandling": "AIVENA занимается этим",
+      "status": {
+        "ready": "Готово",
+        "inProgress": "В процессе",
+        "manual": "Обрабатывает AIVENA",
+        "actionNeeded": "Требуется действие",
+        "needsDecision": "Требуется решение",
+        "waitingAivena": "Ожидание AIVENA",
+        "unavailable": "Статус недоступен"
+      },
+      "provider": {
+        "email": "Эл. почта",
+        "whatsapp": "WhatsApp",
+        "multilang": "Многоязычные шаблоны",
+        "calendar": "Календарь",
+        "feed": "Каталог объектов"
+      }
+    },
     "title": "Настройки",
     "subtitle": "How your agency works, sends, and shows up to your clients",
     "personal": "Личные",

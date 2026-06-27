@@ -333,6 +333,27 @@
     "pageSubtitle": "Review conversations, AI insights, and take action."
   },
   "settings": {
+    "readiness": {
+      "title": "Voortgang installatie",
+      "count": "{done} van {total} gereed",
+      "aivenaHandling": "AIVENA regelt dit",
+      "status": {
+        "ready": "Gereed",
+        "inProgress": "Bezig",
+        "manual": "Beheerd door AIVENA",
+        "actionNeeded": "Actie vereist",
+        "needsDecision": "Beslissing nodig",
+        "waitingAivena": "Wacht op AIVENA",
+        "unavailable": "Status niet beschikbaar"
+      },
+      "provider": {
+        "email": "E-mail",
+        "whatsapp": "WhatsApp",
+        "multilang": "Meertalige sjablonen",
+        "calendar": "Agenda",
+        "feed": "Vastgoedcatalogus"
+      }
+    },
     "title": "Instellingen",
     "subtitle": "How your agency works, sends, and shows up to your clients",
     "personal": "Persoonlijk",

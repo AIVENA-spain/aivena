@@ -333,6 +333,27 @@
     "pageSubtitle": "Review conversations, AI insights, and take action."
   },
   "settings": {
+    "readiness": {
+      "title": "Käyttöönoton edistyminen",
+      "count": "{done}/{total} valmiina",
+      "aivenaHandling": "AIVENA hoitaa tämän",
+      "status": {
+        "ready": "Valmis",
+        "inProgress": "Käynnissä",
+        "manual": "AIVENA hoitaa",
+        "actionNeeded": "Toimenpide tarvitaan",
+        "needsDecision": "Vaatii päätöksen",
+        "waitingAivena": "Odottaa AIVENAa",
+        "unavailable": "Tila ei saatavilla"
+      },
+      "provider": {
+        "email": "Sähköposti",
+        "whatsapp": "WhatsApp",
+        "multilang": "Monikieliset mallit",
+        "calendar": "Kalenteri",
+        "feed": "Kiinteistöluettelo"
+      }
+    },
     "title": "Asetukset",
     "subtitle": "How your agency works, sends, and shows up to your clients",
     "personal": "Henkilökohtaiset",

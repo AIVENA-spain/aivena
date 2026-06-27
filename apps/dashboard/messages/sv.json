@@ -333,6 +333,27 @@
     "pageSubtitle": "Review conversations, AI insights, and take action."
   },
   "settings": {
+    "readiness": {
+      "title": "Konfigurationsförlopp",
+      "count": "{done} av {total} klara",
+      "aivenaHandling": "AIVENA sköter detta",
+      "status": {
+        "ready": "Klar",
+        "inProgress": "Pågår",
+        "manual": "Hanteras av AIVENA",
+        "actionNeeded": "Åtgärd krävs",
+        "needsDecision": "Beslut krävs",
+        "waitingAivena": "Väntar på AIVENA",
+        "unavailable": "Status ej tillgänglig"
+      },
+      "provider": {
+        "email": "E-post",
+        "whatsapp": "WhatsApp",
+        "multilang": "Flerspråkiga mallar",
+        "calendar": "Kalender",
+        "feed": "Fastighetskatalog"
+      }
+    },
     "title": "Inställningar",
     "subtitle": "How your agency works, sends, and shows up to your clients",
     "personal": "Personligt",

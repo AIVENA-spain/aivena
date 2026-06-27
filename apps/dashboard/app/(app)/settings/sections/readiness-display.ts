@@ -3,9 +3,11 @@
  * node vitest env. They turn the `GET /api/v1/readiness` model into display
  * primitives (chip label + tone, progress summary, ordering, provider names).
  *
- * Copy here is the English source of truth (the API already returns English
- * `label`/`uiCopy`/`detail`). Localizing this surface is a tracked follow-up
- * (workboard D9) — the right fix is the API returning localized copy.
+ * The fixed chrome (status chip labels, provider names, headings) is localized
+ * via next-intl (settings.readiness.*): these functions return the i18n key
+ * SUFFIX and the components resolve it with t(). The per-item dynamic copy
+ * (item.label/uiCopy, provider.detail) still comes from the API in English —
+ * the API is the source of truth; localizing that is the remaining D9 step.
  *
  * Honesty: nothing is invented. `unavailable`/`blocked` are shown as-is; there
  * is no mapping that turns an unproven/missing signal into a "ready" chip.
@@ -18,16 +20,16 @@ import type {
 
 export type ChipTone = "good" | "warn" | "info" | "muted";
 
-/** Short status chip label (English data). */
-export function statusLabel(s: ReadinessStatus): string {
+/** i18n key suffix for the status chip → settings.readiness.status.<key>. */
+export function statusLabelKey(s: ReadinessStatus): string {
   switch (s) {
-    case "ready": return "Ready";
-    case "live_but_unproven": return "In progress";
-    case "manual_fallback": return "Handled by AIVENA";
-    case "missing": return "Action needed";
-    case "needs_decision": return "Needs a decision";
-    case "blocked": return "Waiting on AIVENA";
-    case "unavailable": return "Status unavailable";
+    case "ready": return "ready";
+    case "live_but_unproven": return "inProgress";
+    case "manual_fallback": return "manual";
+    case "missing": return "actionNeeded";
+    case "needs_decision": return "needsDecision";
+    case "blocked": return "waitingAivena";
+    case "unavailable": return "unavailable";
   }
 }
 
@@ -48,13 +50,14 @@ export function isDone(s: ReadinessStatus): boolean {
   return s === "ready" || s === "manual_fallback";
 }
 
-export function providerName(p: ReadinessProviderId): string {
+/** i18n key suffix for the provider name → settings.readiness.provider.<key>. */
+export function providerNameKey(p: ReadinessProviderId): string {
   switch (p) {
-    case "email": return "Email";
-    case "whatsapp": return "WhatsApp";
-    case "whatsapp_templates_multilang": return "Multilingual templates";
-    case "calendar": return "Calendar";
-    case "property_feed": return "Property catalog";
+    case "email": return "email";
+    case "whatsapp": return "whatsapp";
+    case "whatsapp_templates_multilang": return "multilang";
+    case "calendar": return "calendar";
+    case "property_feed": return "feed";
   }
 }
 

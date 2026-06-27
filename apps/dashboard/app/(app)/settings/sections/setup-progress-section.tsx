@@ -1,8 +1,9 @@
+import { getTranslations } from "next-intl/server";
 import { Check, AlertTriangle, Clock } from "lucide-react";
 
 import type { ReadinessItem, ReadinessResponse } from "@/lib/api/types";
 import {
-  statusLabel,
+  statusLabelKey,
   statusTone,
   isDone,
   summarize,
@@ -17,8 +18,9 @@ import {
  * Honest by construction: every row's status comes straight from the readiness
  * signal; nothing is upgraded to "ready". The headline bar counts only the
  * agency's own items, so the always-blocked admin go-live item never drags it.
- * Per-item copy (label/uiCopy) is server-provided (English source of truth) —
- * see readiness-display for the localization follow-up (D9).
+ *
+ * Localization (D9): the fixed chrome (headings + status chips) is localized via
+ * settings.readiness.*; per-item label/uiCopy is API-provided (English).
  */
 const TONE_CLS: Record<ChipTone, string> = {
   good: "bg-brand-soft text-brand",
@@ -27,15 +29,17 @@ const TONE_CLS: Record<ChipTone, string> = {
   muted: "bg-muted text-muted-foreground",
 };
 
-export function SetupProgressSection({ readiness }: { readiness: ReadinessResponse }) {
+export async function SetupProgressSection({ readiness }: { readiness: ReadinessResponse }) {
+  const t = await getTranslations("settings.readiness");
   const { agencyItems, aivenaItems, done, total, pct } = summarize(readiness.items);
+  const statusText = (it: ReadinessItem) => t(`status.${statusLabelKey(it.status)}`);
 
   return (
     <section className="rounded-xl bg-card text-card-foreground shadow-elevated ring-1 ring-foreground/10">
       <div className="flex flex-col gap-3.5 px-5 py-4">
         <div className="flex items-baseline gap-3">
-          <span className="text-[14px] font-semibold text-foreground">Setup progress</span>
-          <span className="text-[12px] text-muted-foreground">{done} of {total} ready</span>
+          <span className="text-[14px] font-semibold text-foreground">{t("title")}</span>
+          <span className="text-[12px] text-muted-foreground">{t("count", { done, total })}</span>
         </div>
         <div className="h-1.5 overflow-hidden rounded-full bg-muted">
           <div className="h-full rounded-full bg-brand transition-all" style={{ width: `${pct}%` }} aria-hidden />
@@ -43,7 +47,7 @@ export function SetupProgressSection({ readiness }: { readiness: ReadinessRespon
 
         <div className="mt-1 flex flex-col gap-0.5">
           {agencyItems.map((it) => (
-            <ItemRow key={it.id} item={it} />
+            <ItemRow key={it.id} item={it} statusText={statusText(it)} />
           ))}
         </div>
 
@@ -51,11 +55,11 @@ export function SetupProgressSection({ readiness }: { readiness: ReadinessRespon
           <div className="mt-2 border-t border-border/60 pt-3">
             <div className="mb-1.5 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
               <Clock className="h-3 w-3" aria-hidden />
-              AIVENA is handling
+              {t("aivenaHandling")}
             </div>
             <div className="flex flex-col gap-0.5">
               {aivenaItems.map((it) => (
-                <ItemRow key={it.id} item={it} muted />
+                <ItemRow key={it.id} item={it} statusText={statusText(it)} muted />
               ))}
             </div>
           </div>
@@ -65,7 +69,7 @@ export function SetupProgressSection({ readiness }: { readiness: ReadinessRespon
   );
 }
 
-function ItemRow({ item, muted }: { item: ReadinessItem; muted?: boolean }) {
+function ItemRow({ item, statusText, muted }: { item: ReadinessItem; statusText: string; muted?: boolean }) {
   const done = isDone(item.status);
   return (
     <div className="flex items-start gap-2.5 py-1.5">
@@ -80,18 +84,12 @@ function ItemRow({ item, muted }: { item: ReadinessItem; muted?: boolean }) {
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <span className="text-[13px] font-medium text-foreground">{item.label}</span>
-          <Chip status={item.status} />
+          <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${TONE_CLS[statusTone(item.status)]}`}>
+            {statusText}
+          </span>
         </div>
         <p className="text-[11.5px] leading-snug text-muted-foreground">{item.uiCopy}</p>
       </div>
     </div>
-  );
-}
-
-function Chip({ status }: { status: ReadinessItem["status"] }) {
-  return (
-    <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${TONE_CLS[statusTone(status)]}`}>
-      {statusLabel(status)}
-    </span>
   );
 }

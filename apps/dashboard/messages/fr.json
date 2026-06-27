@@ -333,6 +333,27 @@
     "pageSubtitle": "Review conversations, AI insights, and take action."
   },
   "settings": {
+    "readiness": {
+      "title": "Progression de la configuration",
+      "count": "{done} sur {total} prêts",
+      "aivenaHandling": "AIVENA s'en charge",
+      "status": {
+        "ready": "Prêt",
+        "inProgress": "En cours",
+        "manual": "Géré par AIVENA",
+        "actionNeeded": "Action requise",
+        "needsDecision": "Décision requise",
+        "waitingAivena": "En attente d'AIVENA",
+        "unavailable": "Statut indisponible"
+      },
+      "provider": {
+        "email": "E-mail",
+        "whatsapp": "WhatsApp",
+        "multilang": "Modèles multilingues",
+        "calendar": "Calendrier",
+        "feed": "Catalogue de biens"
+      }
+    },
     "title": "Paramètres",
     "subtitle": "How your agency works, sends, and shows up to your clients",
     "personal": "Personnel",

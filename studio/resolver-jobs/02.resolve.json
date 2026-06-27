@@ -1,0 +1,10 @@
+{
+  "template_id": "02_open_house",
+  "_status": "BLOCKED — no #2 source asset in the repo. Drop a 1080x1350 nophoto render (white outlined text on black) at assets/02/source_nophoto.png (or a Canva #2 SVG at source_svg). NO assumed fonts: Italiana / Monsieur La Doulaise are untrusted notes and are intentionally NOT used as ground_truth. layer_bbox values are placeholders to be set against the real asset.",
+  "source_render": "assets/02/source_nophoto.png",
+  "layers": [
+    { "layer_id": "open", "text": "open", "layer_bbox": [0, 0, 1080, 1350], "metric": "x", "match_mode": "shape", "categories": ["script"] },
+    { "layer_id": "HOUSE", "text": "HOUSE", "layer_bbox": [0, 0, 1080, 1350], "metric": "cap", "match_mode": "shape", "categories": ["serif", "display"] },
+    { "layer_id": "footer_contact", "text": "CONTACT", "layer_bbox": [0, 0, 1080, 1350], "metric": "cap", "match_mode": "metric", "categories": ["sans", "serif"] }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "template_id": "04_luxury_apartment",
+  "source_render": "out/resolver/04_nophoto_ss3.png",
+  "source_svg": "assets/04/source_nophoto.svg",
+  "metadata": { "metadata_font": "Times New Roman", "metadata_reliable": false, "in_library": false },
+  "_note": "Visual-equivalence task: choose the best editable LOCAL serif match for the #4 title and label honestly. Candidates = local serifs only (Prata, Libre Caslon Text, Libre Caslon Display). No Prata bias. Metadata 'Times New Roman' is unreliable (label/pixels disagree) and is not in the library.",
+  "layers": [
+    { "layer_id": "title", "text": "Luxury", "layer_bbox": [250, 700, 822, 896], "metric": "cap", "match_mode": "shape", "categories": ["serif", "display"] }
+  ]
+}

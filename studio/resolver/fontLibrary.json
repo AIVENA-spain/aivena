@@ -1,0 +1,10 @@
+{
+  "library_version": "v0-2026-06-25",
+  "_note": "v0 library = the fonts already in studio/fonts. declared_family is the TTF's INTERNAL family name (verified at load against the name table); `label` is the human name. No network fonts. The Canva-API metadata path is deferred (see README).",
+  "fonts": [
+    { "id": "prata-400", "declared_family": "Prata", "label": "Prata", "file": "fonts/Prata-Regular.ttf", "category": "display", "weight": 400, "style": "normal", "license_ok": true },
+    { "id": "poppins-400", "declared_family": "Poppins", "label": "Poppins", "file": "fonts/Poppins-Regular.ttf", "category": "sans", "weight": 400, "style": "normal", "license_ok": true },
+    { "id": "librecaslontext-400", "declared_family": "LCText400", "label": "Libre Caslon Text", "file": "fonts/LibreCaslonText-Regular.ttf", "category": "serif", "weight": 400, "style": "normal", "license_ok": true },
+    { "id": "librecaslondisplay-400", "declared_family": "Libre Caslon Display", "label": "Libre Caslon Display", "file": "fonts/LibreCaslonDisplay-Regular.ttf", "category": "serif", "weight": 400, "style": "normal", "license_ok": true }
+  ]
+}

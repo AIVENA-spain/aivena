@@ -1,0 +1,10 @@
+{
+  "kind": "resolve",
+  "_proves": "true font removed from library -> must fail closed (LOW/fail, needs seed), never a false HIGH on a different font",
+  "string": "Apartment",
+  "metric": "cap",
+  "match_mode": "shape",
+  "true_font_id": "prata-400",
+  "exclude_ids": ["prata-400"],
+  "expect": "fail"
+}

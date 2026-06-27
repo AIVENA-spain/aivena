@@ -1,0 +1,14 @@
+{
+  "kind": "resolve",
+  "_proves": "two near-identical library fonts -> true one ranks first but separation < 0.06 -> decision review (not accept). Proves separation gating.",
+  "string": "Apartment",
+  "metric": "cap",
+  "match_mode": "shape",
+  "extra_fonts": [
+    { "id": "prata-a", "declared_family": "Prata", "label": "Prata (copy A)", "file": "fonts/Prata-Regular.ttf", "category": "display", "weight": 400, "style": "normal", "license_ok": true },
+    { "id": "prata-b", "declared_family": "Prata", "label": "Prata (copy B)", "file": "fonts/Prata-Regular.ttf", "category": "display", "weight": 400, "style": "normal", "license_ok": true }
+  ],
+  "use_only": ["prata-a", "prata-b"],
+  "true_font_id": "prata-a",
+  "expect": "review"
+}

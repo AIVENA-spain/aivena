@@ -1,0 +1,10 @@
+{
+  "template_id": "04_luxury_apartment",
+  "source_render": "out/resolver/04_nophoto.png",
+  "source_svg": "assets/04/source_nophoto.svg",
+  "layers": [
+    { "layer_id": "title", "text": "Luxury", "layer_bbox": [250, 700, 822, 896], "metric": "cap", "match_mode": "shape", "categories": ["serif", "display"], "ground_truth": { "family": "Prata" } },
+    { "layer_id": "stats", "text": "(content-independent; source stat text not used)", "layer_bbox": [410, 210, 670, 262], "metric": "cap", "match_mode": "metric", "categories": ["sans", "serif"], "ground_truth": { "family": "Poppins" } },
+    { "layer_id": "body", "text": "(content-independent; source body text not used)", "layer_bbox": [95, 1095, 985, 1260], "metric": "x", "match_mode": "metric", "categories": ["serif"], "ground_truth": { "family": "Libre Caslon Text" } }
+  ]
+}

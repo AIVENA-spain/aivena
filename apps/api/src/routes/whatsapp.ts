@@ -169,4 +169,72 @@ route.get('/reengage-preview', async (c) => {
   }
 });
 
+// ---------------------------------------------------------------------------
+// GET /readiness — provider-approval readiness for the authed agency.
+//
+// Fronts get_whatsapp_provider_readiness() (SECURITY DEFINER, granted to aivena_app).
+// agencyContextMiddleware has already set app.current_agency_id on this tx, so the RPC
+// reads the tenant fence server-side — the agency is NEVER taken from the client.
+// Law-2: on any failure (agency_context_unset / agency_not_found / contract drift / 5xx)
+// we return ONLY the friendly envelope and log the real cause server-side.
+// ---------------------------------------------------------------------------
+
+const KeyLang = z.object({ template_key: z.string(), language: z.string() });
+
+// B3 contract (Chat 3 main): "approved" = PROVIDER-VERIFIED (provider_status='approved' AND
+// provider_synced_at NOT NULL), never the hand seed; "unknown" = not yet reconciled (synced_at
+// NULL). The count is informational — `closed_window_template_ready` is the usability gate and
+// stays false without sender readiness. `provider_truth_verified` = resolved set fully provider-backed.
+export const WhatsAppReadinessSchema = z.object({
+  ok: z.literal(true),
+  agency_id: z.string(),
+  whatsapp_sender_ready: z.boolean(),
+  whatsapp_channel_enabled: z.boolean(),
+  templates_provider_approved: z.object({ count: z.number().int(), items: z.array(KeyLang) }),
+  templates_provider_unknown: z.object({ count: z.number().int(), items: z.array(KeyLang) }),
+  languages_ready: z.array(z.string()),
+  languages_pending: z.array(z.string()),
+  closed_window_template_ready: z.boolean(),
+  provider_truth_verified: z.boolean(),
+  last_provider_sync_at: z.string().datetime({ offset: true }).nullable(),
+  template_send_path_proven: z.boolean(),
+});
+
+export type WhatsAppReadiness = z.infer<typeof WhatsAppReadinessSchema>;
+
+export const READINESS_UNAVAILABLE = {
+  ok: false as const,
+  error: 'whatsapp_readiness_unavailable',
+  message:
+    'Could not load WhatsApp status. Please refresh, and contact support if it persists.',
+};
+
+route.get('/readiness', async (c) => {
+  const tx = c.get('tx');
+  try {
+    const result = await tx.execute(
+      sql`SELECT public.get_whatsapp_provider_readiness() AS readiness`,
+    );
+    const rows = result as unknown as Array<{ readiness: unknown }>;
+    const raw = rows[0]?.readiness;
+    // jsonb arrives as an object via postgres-js, but tolerate a string just in case.
+    const obj = typeof raw === 'string' ? JSON.parse(raw) : raw;
+
+    const parsed = WhatsAppReadinessSchema.safeParse(obj);
+    if (!parsed.success) {
+      // ok:false envelopes (agency_context_unset / agency_not_found) fail the literal(true)
+      // check and land here too — exactly what we want: never leak the raw cause.
+      console.error(
+        '[whatsapp/readiness] unavailable:',
+        (obj as { error?: unknown } | null)?.error ?? parsed.error.flatten(),
+      );
+      return c.json(READINESS_UNAVAILABLE, 503);
+    }
+    return c.json(parsed.data);
+  } catch (err) {
+    console.error('[whatsapp/readiness] failed:', err);
+    return c.json(READINESS_UNAVAILABLE, 503);
+  }
+});
+
 export default route;

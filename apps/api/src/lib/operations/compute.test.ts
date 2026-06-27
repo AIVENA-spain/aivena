@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   computeOperations,
   classifyLead,
+  dedupeLifecycleByLead,
   isFailedDelivery,
   taskLabel,
   ageHours,
@@ -202,5 +203,98 @@ describe('computeOperations — WhatsApp present (consumed) flips provider state
       whatsapp: { whatsapp_sender_ready: true, whatsapp_channel_enabled: true, template_send_path_proven: false, last_provider_sync_at: '2026-06-24T10:00:00Z' },
     }));
     expect(res.providers.find((p) => p.provider === 'whatsapp')!.state).toBe('degraded');
+  });
+});
+
+// Regression: the live Marte Brenno bug — dashboard_inbox returns one row per
+// actionable inbox item, so a single lead with many items must NOT repeat once
+// per item in the at-risk list. Lifecycle/at-risk is per-LEAD.
+const lc = (over: Partial<LifecycleRow> = {}): LifecycleRow => ({
+  lead_id: 'L',
+  lead_name: 'L',
+  channel: 'whatsapp',
+  temperature: null,
+  task_status: null,
+  age_seconds: null,
+  latest_inbound_at: null,
+  last_outbound_at: null,
+  lead_status: 'active',
+  ...over,
+});
+
+describe('dedupeLifecycleByLead — per-lead collapse', () => {
+  it('many inbox rows for the SAME lead collapse to one entry (failed send → at_risk)', () => {
+    const rows = Array.from({ length: 15 }, (_, i) =>
+      lc({ lead_id: 'marte', lead_name: 'Marte Brenno', latest_inbound_at: hoursAgo(i + 1) }));
+    const out = dedupeLifecycleByLead(rows, new Set(['marte']), NOW);
+    expect(out.length).toBe(1);
+    expect(out[0].row.lead_id).toBe('marte');
+    expect(out[0].bucket).toBe('at_risk');
+  });
+
+  it('different leads stay separate', () => {
+    const rows = [lc({ lead_id: 'a' }), lc({ lead_id: 'b' }), lc({ lead_id: 'c' })];
+    expect(dedupeLifecycleByLead(rows, new Set(), NOW).map((h) => h.row.lead_id).sort()).toEqual(['a', 'b', 'c']);
+  });
+
+  it('keeps the MOST URGENT bucket across a lead\'s rows', () => {
+    const rows = [
+      lc({ lead_id: 'x', latest_inbound_at: hoursAgo(10), last_outbound_at: hoursAgo(1) }), // healthy
+      lc({ lead_id: 'x', task_status: 'pending', age_seconds: 2 * 3600 }), // waiting_on_you
+      lc({ lead_id: 'x', task_status: 'pending', age_seconds: 30 * 3600 }), // stuck
+    ];
+    const out = dedupeLifecycleByLead(rows, new Set(), NOW);
+    expect(out.length).toBe(1);
+    expect(out[0].bucket).toBe('stuck');
+  });
+
+  it('ties on bucket break to the most recent activity', () => {
+    const older = lc({ lead_id: 'y', task_status: 'pending', age_seconds: 30 * 3600, latest_inbound_at: hoursAgo(40) });
+    const newer = lc({ lead_id: 'y', task_status: 'pending', age_seconds: 25 * 3600, latest_inbound_at: hoursAgo(2) });
+    const out = dedupeLifecycleByLead([older, newer], new Set(), NOW);
+    expect(out.length).toBe(1);
+    expect(out[0].bucket).toBe('stuck');
+    expect(out[0].row.latest_inbound_at).toBe(hoursAgo(2)); // newer wins the tie
+  });
+});
+
+describe('computeOperations — dedupe keeps Operations honest (integration)', () => {
+  it('15 inbox rows for one lead with a failed send → ONE at-risk row + count 1, send still visible', () => {
+    const lifecycle = Array.from({ length: 15 }, (_, i) =>
+      lc({ lead_id: 'marte', lead_name: 'Marte Brenno', latest_inbound_at: hoursAgo(i + 1) }));
+    const res = computeOperations('demo', {
+      failedSends: [{ message_id: 'm', lead_id: 'marte', lead_name: 'Marte Brenno', channel: 'whatsapp', status: 'undelivered', at: hoursAgo(3), preview: null }],
+      openTasks: [],
+      lifecycle,
+      whatsapp: null,
+      email: null,
+      nowMs: NOW,
+    });
+    expect(res.lifecycle.atRisk.length).toBe(1);
+    expect(res.lifecycle.atRisk[0].leadId).toBe('marte');
+    expect(res.lifecycle.buckets.find((b) => b.key === 'at_risk')?.count).toBe(1);
+    expect(res.attention.atRiskLeads).toBe(1);
+    expect(res.failedSends.count).toBe(1); // real failure still visible — not hidden
+  });
+
+  it('multiple leads still appear separately with honest per-lead bucket counts', () => {
+    const res = computeOperations('demo', {
+      failedSends: [{ message_id: 'm', lead_id: 'a', lead_name: 'A', channel: 'whatsapp', status: 'failed', at: hoursAgo(2), preview: null }],
+      openTasks: [],
+      lifecycle: [
+        lc({ lead_id: 'a', lead_name: 'A' }),
+        lc({ lead_id: 'a', lead_name: 'A' }), // dup of A → collapses (at_risk via failed send)
+        lc({ lead_id: 'b', lead_name: 'B', task_status: 'pending', age_seconds: 30 * 3600 }), // stuck
+        lc({ lead_id: 'c', lead_name: 'C', latest_inbound_at: hoursAgo(10), last_outbound_at: hoursAgo(1) }), // healthy
+      ],
+      whatsapp: null,
+      email: null,
+      nowMs: NOW,
+    });
+    const counts = Object.fromEntries(res.lifecycle.buckets.map((b) => [b.key, b.count]));
+    expect(counts['at_risk']).toBe(1); // lead A counted once
+    expect(counts['stuck']).toBe(1); // lead B
+    expect(counts['healthy']).toBe(1); // lead C
+    expect(res.lifecycle.atRisk.map((r) => r.leadId).sort()).toEqual(['a', 'b']);
   });
 });

@@ -261,6 +261,56 @@ export function classifyLead(
   return { bucket: 'healthy', reason: 'No action needed' };
 }
 
+/** Bucket urgency for per-lead collapse (higher = more urgent; never hide risk). */
+const BUCKET_RANK: Record<HealthBucket, number> = {
+  at_risk: 4,
+  stuck: 3,
+  waiting_on_you: 2,
+  awaiting_reply: 1,
+  healthy: 0,
+};
+
+/** Most-recent activity (ms) on a lifecycle row, for tie-breaking equal buckets. */
+function recencyMs(row: LifecycleRow): number {
+  const a = row.latest_inbound_at ? Date.parse(row.latest_inbound_at) : NaN;
+  const b = row.last_outbound_at ? Date.parse(row.last_outbound_at) : NaN;
+  return Math.max(Number.isNaN(a) ? -Infinity : a, Number.isNaN(b) ? -Infinity : b);
+}
+
+export type LeadHealth = { row: LifecycleRow; bucket: HealthBucket; reason: string };
+
+/**
+ * Collapse per-inbox-item lifecycle rows to ONE entry per lead.
+ *
+ * `dashboard_inbox` returns one row per actionable inbox item (correct for the
+ * Inbox itself), so a single lead with many items would otherwise repeat once
+ * per item in the at-risk list — the live Marte Brenno bug (15 inbox rows → 15
+ * at-risk rows, all flagged because that lead has a failed send). We keep the
+ * **most urgent** bucket per lead; ties break to the **most recent** activity.
+ * Real risk is never hidden: a lead with any at-risk item still surfaces
+ * `at_risk` — exactly once.
+ */
+export function dedupeLifecycleByLead(
+  rows: LifecycleRow[],
+  failedLeadIds: ReadonlySet<string>,
+  nowMs: number,
+): LeadHealth[] {
+  const best = new Map<string, LeadHealth>();
+  for (const row of rows) {
+    const c = classifyLead(row, failedLeadIds, nowMs);
+    const prev = best.get(row.lead_id);
+    if (!prev) {
+      best.set(row.lead_id, { row, bucket: c.bucket, reason: c.reason });
+      continue;
+    }
+    const delta = BUCKET_RANK[c.bucket] - BUCKET_RANK[prev.bucket];
+    if (delta > 0 || (delta === 0 && recencyMs(row) > recencyMs(prev.row))) {
+      best.set(row.lead_id, { row, bucket: c.bucket, reason: c.reason });
+    }
+  }
+  return Array.from(best.values());
+}
+
 function whatsappState(wa: WhatsAppOpsSignal): { state: OpsProviderState; detail: string } {
   if (!wa) {
     return {
@@ -357,12 +407,15 @@ export function computeOperations(agencyId: string, s: OperationsSignals): Opera
   ).length;
 
   // ---- Lifecycle health (F4) ------------------------------------------------
+  // Collapse to ONE entry per lead FIRST — dashboard_inbox returns one row per
+  // actionable inbox item, so without this a single lead repeats once per item
+  // (the Marte Brenno bug). bucketCounts + atRisk are therefore per-LEAD, honest.
   const lifecycleAvailable = s.lifecycle !== null;
   const lifeRows = s.lifecycle ?? [];
+  const perLead = dedupeLifecycleByLead(lifeRows, failedLeadIds, now);
   const bucketCounts = new Map<HealthBucket, number>();
   const atRisk: OperationsResponse['lifecycle']['atRisk'] = [];
-  for (const row of lifeRows) {
-    const { bucket, reason } = classifyLead(row, failedLeadIds, now);
+  for (const { row, bucket, reason } of perLead) {
     bucketCounts.set(bucket, (bucketCounts.get(bucket) ?? 0) + 1);
     if (bucket === 'at_risk' || bucket === 'stuck') {
       const lastActivityAt = firstNonNull(row.latest_inbound_at, row.last_outbound_at);

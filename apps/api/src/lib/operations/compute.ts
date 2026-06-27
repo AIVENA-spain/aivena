@@ -225,21 +225,34 @@ function firstNonNull(...vals: Array<string | null | undefined>): string | null 
   return null;
 }
 
+/** Per-lead failed-send cross-signal: lead_id → most-recent failure time + count. */
+export type FailedByLead = ReadonlyMap<string, { at: string | null; count: number }>;
+
 /**
  * Derive a lead's lifecycle-health bucket + a concrete reason from real signals.
- * `failedLeadIds` = leads with at least one undelivered send (cross-signal).
+ * `failedByLead` = leads with ≥1 undelivered send (most-recent failure time +
+ * count). The failed-send reason is worded so it does NOT imply the lead's
+ * LATEST send failed (an old failure can co-exist with a fresh reply); the
+ * caller ages such rows from the failure time, never the latest activity.
  */
 export function classifyLead(
   row: LifecycleRow,
-  failedLeadIds: ReadonlySet<string>,
+  failedByLead: FailedByLead,
   nowMs: number,
 ): { bucket: HealthBucket; reason: string } {
   const pending = row.task_status === 'pending';
   const taskAgeH =
     typeof row.age_seconds === 'number' ? Math.max(0, Math.round((row.age_seconds / 3600) * 10) / 10) : null;
 
-  if (row.lead_id && failedLeadIds.has(row.lead_id)) {
-    return { bucket: 'at_risk', reason: 'Last send to this lead did not reach them' };
+  const failed = row.lead_id ? failedByLead.get(row.lead_id) : undefined;
+  if (failed) {
+    return {
+      bucket: 'at_risk',
+      reason:
+        failed.count > 1
+          ? `Has ${failed.count} unresolved failed sends`
+          : 'Has an unresolved failed send',
+    };
   }
   if (pending && row.temperature && HOT_TEMPS.has(row.temperature)) {
     return { bucket: 'at_risk', reason: 'Hot lead waiting on a decision' };
@@ -292,12 +305,12 @@ export type LeadHealth = { row: LifecycleRow; bucket: HealthBucket; reason: stri
  */
 export function dedupeLifecycleByLead(
   rows: LifecycleRow[],
-  failedLeadIds: ReadonlySet<string>,
+  failedByLead: FailedByLead,
   nowMs: number,
 ): LeadHealth[] {
   const best = new Map<string, LeadHealth>();
   for (const row of rows) {
-    const c = classifyLead(row, failedLeadIds, nowMs);
+    const c = classifyLead(row, failedByLead, nowMs);
     const prev = best.get(row.lead_id);
     if (!prev) {
       best.set(row.lead_id, { row, bucket: c.bucket, reason: c.reason });
@@ -342,8 +355,15 @@ export function computeOperations(agencyId: string, s: OperationsSignals): Opera
   // ---- Failed sends (F2) ----------------------------------------------------
   const failedAvailable = s.failedSends !== null;
   const failedRows = s.failedSends ?? [];
-  const failedLeadIds = new Set<string>();
-  for (const r of failedRows) if (r.lead_id) failedLeadIds.add(r.lead_id);
+  // lead_id → most-recent failure time + count. failedRows arrive newest-first
+  // (route orders by send time DESC), so the FIRST per lead is the most recent.
+  const failedByLead = new Map<string, { at: string | null; count: number }>();
+  for (const r of failedRows) {
+    if (!r.lead_id) continue;
+    const prev = failedByLead.get(r.lead_id);
+    if (prev) prev.count += 1;
+    else failedByLead.set(r.lead_id, { at: r.at, count: 1 });
+  }
 
   const failedItems = failedRows.map((r) => ({
     messageId: r.message_id,
@@ -412,23 +432,31 @@ export function computeOperations(agencyId: string, s: OperationsSignals): Opera
   // (the Marte Brenno bug). bucketCounts + atRisk are therefore per-LEAD, honest.
   const lifecycleAvailable = s.lifecycle !== null;
   const lifeRows = s.lifecycle ?? [];
-  const perLead = dedupeLifecycleByLead(lifeRows, failedLeadIds, now);
+  const perLead = dedupeLifecycleByLead(lifeRows, failedByLead, now);
   const bucketCounts = new Map<HealthBucket, number>();
   const atRisk: OperationsResponse['lifecycle']['atRisk'] = [];
   for (const { row, bucket, reason } of perLead) {
     bucketCounts.set(bucket, (bucketCounts.get(bucket) ?? 0) + 1);
     if (bucket === 'at_risk' || bucket === 'stuck') {
-      const lastActivityAt = firstNonNull(row.latest_inbound_at, row.last_outbound_at);
+      // A failed-send-driven risk is aged from the FAILED SEND itself (it may be
+      // days old) — NOT the lead's latest activity (the lead may have just
+      // replied). Other risks age from the pending task / latest activity.
+      const failed = row.lead_id ? failedByLead.get(row.lead_id) : undefined;
+      const lastActivityAt = failed
+        ? failed.at
+        : firstNonNull(row.latest_inbound_at, row.last_outbound_at);
+      const ageH = failed
+        ? ageHours(failed.at, now)
+        : typeof row.age_seconds === 'number'
+          ? Math.max(0, Math.round((row.age_seconds / 3600) * 10) / 10)
+          : ageHours(lastActivityAt, now);
       atRisk.push({
         leadId: row.lead_id,
         leadName: row.lead_name,
         bucket,
         reason,
         temperature: row.temperature,
-        ageHours:
-          typeof row.age_seconds === 'number'
-            ? Math.max(0, Math.round((row.age_seconds / 3600) * 10) / 10)
-            : ageHours(lastActivityAt, now),
+        ageHours: ageH,
         lastActivityAt,
       });
     }

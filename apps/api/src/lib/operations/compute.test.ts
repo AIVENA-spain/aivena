@@ -84,8 +84,8 @@ describe('classifyLead — lifecycle truth table', () => {
     lead_id: 'L', lead_name: null, channel: null, temperature: null,
     task_status: null, age_seconds: null, latest_inbound_at: null, last_outbound_at: null, lead_status: null,
   };
-  const failed = new Set<string>(['L']);
-  const none = new Set<string>();
+  const failed = new Map<string, { at: string | null; count: number }>([['L', { at: hoursAgo(100), count: 1 }]]);
+  const none = new Map<string, { at: string | null; count: number }>();
 
   it('failed send → at_risk (highest priority)', () => {
     expect(classifyLead({ ...base, task_status: 'pending' }, failed, NOW).bucket).toBe('at_risk');
@@ -226,7 +226,7 @@ describe('dedupeLifecycleByLead — per-lead collapse', () => {
   it('many inbox rows for the SAME lead collapse to one entry (failed send → at_risk)', () => {
     const rows = Array.from({ length: 15 }, (_, i) =>
       lc({ lead_id: 'marte', lead_name: 'Marte Brenno', latest_inbound_at: hoursAgo(i + 1) }));
-    const out = dedupeLifecycleByLead(rows, new Set(['marte']), NOW);
+    const out = dedupeLifecycleByLead(rows, new Map([['marte', { at: hoursAgo(120), count: 1 }]]), NOW);
     expect(out.length).toBe(1);
     expect(out[0].row.lead_id).toBe('marte');
     expect(out[0].bucket).toBe('at_risk');
@@ -234,7 +234,7 @@ describe('dedupeLifecycleByLead — per-lead collapse', () => {
 
   it('different leads stay separate', () => {
     const rows = [lc({ lead_id: 'a' }), lc({ lead_id: 'b' }), lc({ lead_id: 'c' })];
-    expect(dedupeLifecycleByLead(rows, new Set(), NOW).map((h) => h.row.lead_id).sort()).toEqual(['a', 'b', 'c']);
+    expect(dedupeLifecycleByLead(rows, new Map(), NOW).map((h) => h.row.lead_id).sort()).toEqual(['a', 'b', 'c']);
   });
 
   it('keeps the MOST URGENT bucket across a lead\'s rows', () => {
@@ -243,7 +243,7 @@ describe('dedupeLifecycleByLead — per-lead collapse', () => {
       lc({ lead_id: 'x', task_status: 'pending', age_seconds: 2 * 3600 }), // waiting_on_you
       lc({ lead_id: 'x', task_status: 'pending', age_seconds: 30 * 3600 }), // stuck
     ];
-    const out = dedupeLifecycleByLead(rows, new Set(), NOW);
+    const out = dedupeLifecycleByLead(rows, new Map(), NOW);
     expect(out.length).toBe(1);
     expect(out[0].bucket).toBe('stuck');
   });
@@ -251,7 +251,7 @@ describe('dedupeLifecycleByLead — per-lead collapse', () => {
   it('ties on bucket break to the most recent activity', () => {
     const older = lc({ lead_id: 'y', task_status: 'pending', age_seconds: 30 * 3600, latest_inbound_at: hoursAgo(40) });
     const newer = lc({ lead_id: 'y', task_status: 'pending', age_seconds: 25 * 3600, latest_inbound_at: hoursAgo(2) });
-    const out = dedupeLifecycleByLead([older, newer], new Set(), NOW);
+    const out = dedupeLifecycleByLead([older, newer], new Map(), NOW);
     expect(out.length).toBe(1);
     expect(out[0].bucket).toBe('stuck');
     expect(out[0].row.latest_inbound_at).toBe(hoursAgo(2)); // newer wins the tie
@@ -296,5 +296,58 @@ describe('computeOperations — dedupe keeps Operations honest (integration)', (
     expect(counts['stuck']).toBe(1); // lead B
     expect(counts['healthy']).toBe(1); // lead C
     expect(res.lifecycle.atRisk.map((r) => r.leadId).sort()).toEqual(['a', 'b']);
+  });
+});
+
+// Regression: a failed-send-driven at-risk row must age from the FAILURE, not
+// the lead's latest activity — the live Marte case showed "...did not reach
+// them · 2h" where 2h was a fresh reply and the real failure was 12 days old.
+describe('computeOperations — failed-send at-risk uses the FAILURE age + clear wording', () => {
+  it('ages from the failed send (not the latest reply) and rewords the reason', () => {
+    const res = computeOperations('demo', {
+      failedSends: [{ message_id: 'm', lead_id: 'marte', lead_name: 'Marte Brenno', channel: 'whatsapp', status: 'undelivered', at: hoursAgo(288), preview: null }],
+      openTasks: [],
+      lifecycle: [lc({ lead_id: 'marte', lead_name: 'Marte Brenno', latest_inbound_at: hoursAgo(2), last_outbound_at: hoursAgo(2) })],
+      whatsapp: null,
+      email: null,
+      nowMs: NOW,
+    });
+    expect(res.lifecycle.atRisk).toHaveLength(1);
+    const r = res.lifecycle.atRisk[0];
+    expect(r.reason).toBe('Has an unresolved failed send');
+    expect(r.reason).not.toMatch(/last send/i); // no longer implies the LATEST send failed
+    expect(r.ageHours).toBe(288); // 12d — the failure, NOT the 2h reply
+    expect(r.lastActivityAt).toBe(hoursAgo(288));
+  });
+
+  it('multiple failures → pluralised reason + most-recent failure age', () => {
+    const res = computeOperations('demo', {
+      failedSends: [
+        { message_id: 'm1', lead_id: 'x', lead_name: 'X', channel: 'whatsapp', status: 'failed', at: hoursAgo(5), preview: null },
+        { message_id: 'm2', lead_id: 'x', lead_name: 'X', channel: 'whatsapp', status: 'undelivered', at: hoursAgo(50), preview: null },
+      ],
+      openTasks: [],
+      lifecycle: [lc({ lead_id: 'x', lead_name: 'X', latest_inbound_at: hoursAgo(1) })],
+      whatsapp: null,
+      email: null,
+      nowMs: NOW,
+    });
+    const r = res.lifecycle.atRisk[0];
+    expect(r.reason).toBe('Has 2 unresolved failed sends');
+    expect(r.ageHours).toBe(5); // most-recent failure (failedRows are newest-first)
+  });
+
+  it('a NON-failed at-risk (hot lead) still ages from its pending task, not a failure', () => {
+    const res = computeOperations('demo', {
+      failedSends: [],
+      openTasks: [],
+      lifecycle: [lc({ lead_id: 'hot', lead_name: 'Hot', task_status: 'pending', temperature: 'super_hot', age_seconds: 3 * 3600 })],
+      whatsapp: null,
+      email: null,
+      nowMs: NOW,
+    });
+    const r = res.lifecycle.atRisk[0];
+    expect(r.reason).toBe('Hot lead waiting on a decision');
+    expect(r.ageHours).toBe(3);
   });
 });

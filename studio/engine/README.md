@@ -50,6 +50,23 @@ Properties proven (`out/engine/<id>/engine_proof/`):
 Reuses `src/lib/compose.ts` (`composeOne`), `src/lib/fonts.ts`, the vault (`vault/buildVault.ts`), and the
 adjudicator report. No engine logic was duplicated; no matcher/threshold tuning.
 
-## Unblocks `Q3`
-The bindings + `extracted_manifest.json` are the input for wiring approved manifests into `studio-compose`
-on the production renderer (Engine Proof B). The title remains gated on `Q9` (font/source truth).
+## Additional tools
+```
+npx tsx engine/confirmFonts.ts            # Q8: confirm shipping fonts are static (no resvg variable-weight footgun)
+npx tsx engine/multilingualSpotCheck.ts   # Q9: ES/DE/NO title accent render check (Libre Caslon Display, incl. Ÿ)
+npx tsx engine/q3LocalWiring.ts           # Q3 (local half): render an APPROVED manifest through studio-compose
+```
+
+### `Q9` — #4 title production improvement (applied)
+The #4 title source font is unresolved/proprietary, so it stays `needs_seed` in **faithful** mode. In
+**production** mode a deliberate `production_override` selects **Libre Caslon Display** (honest label
+`visual_substitute`, recorded `improvement_reason`: license-safe, full multilingual coverage incl. Ÿ which
+Prata lacks, pairs with the Libre Caslon Text body) → template `ready_with_improvement`. `faithful_label`
+preserves the honest record. `studio_adjudicate 04 --mode production` vs `--mode faithful`.
+
+### `Q3` (local half) — wire approved manifests → studio-compose
+`composeOne` now accepts `manifestPath` (default = the #4 editable manifest), so studio-compose renders any
+**approved** manifest by path. `q3LocalWiring.ts` proves the extractor's `extracted_manifest.json` renders
+through the engine on real `IC-26537` with the Libre Caslon Display title, render-equivalent to canonical.
+This is the LOCAL wiring (Engine Proof A). **Engine Proof B — the deployed Railway `/studio/render` — is the
+GATED remainder** (needs deploy + network + Chat 3 CC); not exercised here.

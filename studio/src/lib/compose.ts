@@ -52,6 +52,7 @@ export interface ComposeOpts {
   template?: string; lang: string; palette: string; mode?: "source_faithful" | "fact_safe";
   factsId?: string; editorialLock?: any; nameBase?: string; outDir?: string;
   edit?: { slot: string; text: string }; disableWidow?: boolean;
+  manifestPath?: string; // Q3: render an arbitrary APPROVED manifest (default = the #4 editable manifest)
 }
 export interface ComposeResult {
   ok: boolean; reason?: string; nameBase: string; lang: string; palette: string; mode: string;
@@ -64,7 +65,7 @@ export async function composeOne(opts: ComposeOpts): Promise<ComposeResult> {
   const template = opts.template || "04";
   const mode = opts.mode || "source_faithful";
   const lang = opts.lang, paletteName = opts.palette;
-  const manifest = JSON.parse(fs.readFileSync(abs(`manifest/templates/04_luxury_apartment.editable.json`), "utf8"));
+  const manifest = JSON.parse(fs.readFileSync(abs(opts.manifestPath || `manifest/templates/04_luxury_apartment.editable.json`), "utf8"));
   const facts = JSON.parse(fs.readFileSync(abs(`facts/${opts.factsId || "IC-26537"}.json`), "utf8"));
   const palette = loadPalette(paletteName);
   const L = loadLang(lang);

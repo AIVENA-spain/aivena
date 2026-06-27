@@ -9,6 +9,7 @@ export async function composeCmd(args: any): Promise<any> {
     factsId: args.facts || "IC-26537",
   };
   if (args["name-base"]) opts.nameBase = args["name-base"];
+  if (args.manifest) opts.manifestPath = args.manifest; // render an approved manifest by path (Q3 wiring)
   if (args["edit-slot"]) opts.edit = { slot: args["edit-slot"], text: args["edit-text"] || "" };
   if (args["editorial-lock"]) opts.editorialLock = { claim: args["editorial-lock"], approved_by: "agency_demo", scope: "template" };
 

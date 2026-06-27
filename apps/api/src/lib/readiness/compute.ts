@@ -63,8 +63,13 @@ export type ReadinessGate = {
   blockedBy: string[];
 };
 
+/** Agency global pilot lifecycle (agencies.pilot_status, C2). */
+export type PilotStatus = 'setup' | 'ready_for_pilot' | 'live' | 'paused' | 'blocked';
+
 export type ReadinessResponse = {
   agencyId: string;
+  /** The real agencies.pilot_status (C2); null if unreadable / unknown value. Read-only here. */
+  pilotStatus: PilotStatus | null;
   items: ReadinessItem[];
   providers: ReadinessProvider[];
   gates: ReadinessGate[];
@@ -123,6 +128,8 @@ export type ReadinessSignals = {
   calendar: { oauthCount: number } | null;
   /** null = the WhatsApp readiness RPC could not be consumed (not deployed / failed). */
   whatsapp: WhatsAppSignal | null;
+  /** agencies.pilot_status (C2); null if unreadable or an unknown value. */
+  pilotStatus: PilotStatus | null;
 };
 
 // --- helpers -----------------------------------------------------------------
@@ -302,13 +309,27 @@ export function computeReadiness(agencyId: string, s: ReadinessSignals): Readine
     blockedBy: [],
   });
 
-  // Lifecycle / admin go-live — no DB state in Phase 1 (agencies.status has no go-live value).
+  // Lifecycle / admin go-live — reflects the REAL agencies.pilot_status (C2).
+  // Read-only here; the admin WRITE path (flip to live) is C3. Never auto-flips.
+  const ps = s.pilotStatus;
+  const lifeStatus: ReadinessStatus =
+    ps === 'live' ? 'ready'
+    : ps === 'ready_for_pilot' ? 'live_but_unproven'
+    : ps === null ? 'unavailable'
+    : 'blocked'; // setup / paused / blocked → not live yet
+  const lifeCopy =
+    ps === 'live' ? 'Live in pilot'
+    : ps === 'ready_for_pilot' ? 'Ready for pilot — awaiting AIVENA go-live'
+    : ps === 'paused' ? 'Pilot paused by AIVENA'
+    : ps === 'blocked' ? 'Held on a setup / external gate'
+    : ps === 'setup' ? 'In setup — AIVENA flips live once required items pass'
+    : 'Pilot lifecycle unavailable';
   push({
     id: 'lifecycle.go_live', label: 'Admin go-live approval', area: 'C', gate: 'G1', owner: 'aivena',
-    agencyEditable: false, adminApproved: false,
-    status: 'blocked',
-    signal: { source: 'agencies.status (CHECK active|paused|archived — no go-live state; admin gate is Phase 3)', value: ag?.status ?? 'unavailable' },
-    uiCopy: 'AIVENA flips an agency live only when required items pass (admin gate not built yet — Phase 3)',
+    agencyEditable: false, adminApproved: ps === 'live',
+    status: lifeStatus,
+    signal: { source: 'agencies.pilot_status (C2; admin-only flip via the C3 RPC, not yet built)', value: ps ?? 'unavailable' },
+    uiCopy: lifeCopy,
     blockedBy: [],
   });
 
@@ -431,11 +452,11 @@ export function computeReadiness(agencyId: string, s: ReadinessSignals): Readine
   const g1 = gates.find((x) => x.gate === 'G1')!;
   const goLiveBlockers = Array.from(new Set([...g1.blockedBy]));
   const goLive = {
-    eligible: false, // never true in Phase 1 — the admin gate + lifecycle store do not exist yet
-    scope: 'agency-config readiness only (admin/manual gates tracked off-platform until the Phase 3 go-live gate exists)',
+    eligible: false, // never true until the C3 admin go-live gate exists; go-live is flipped admin-only, never auto on computed eligibility
+    scope: 'agency-config readiness only (the admin go-live gate + manual-gate attestations land in C3)',
     blockedBy: goLiveBlockers,
-    note: 'Manual gates (autónomo, legal pages, test-data cleanup, the admin go-live decision) have no DB representation in Phase 1 and are reported as blocked/awaiting-AIVENA — never as passed.',
+    note: `Pilot lifecycle = agencies.pilot_status='${s.pilotStatus ?? 'unavailable'}' (read-only here). Eligibility stays false until the C3 admin gate exists; manual gates (autónomo, legal pages, test-data cleanup) have no DB signal and show blocked/awaiting-AIVENA — never passed.`,
   };
 
-  return { agencyId, items, providers, gates, goLive };
+  return { agencyId, pilotStatus: s.pilotStatus, items, providers, gates, goLive };
 }

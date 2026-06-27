@@ -53,13 +53,14 @@ function demoSignals(over: Partial<ReadinessSignals> = {}): ReadinessSignals {
     consent: { count: 1 },
     calendar: { oauthCount: 0 },
     whatsapp: null,
+    pilotStatus: 'setup',
     ...over,
   };
 }
 
 const nullSignals: ReadinessSignals = {
   agency: null, branding: null, settings: null, email: null, team: null,
-  templates: null, properties: null, consent: null, calendar: null, whatsapp: null,
+  templates: null, properties: null, consent: null, calendar: null, whatsapp: null, pilotStatus: null,
 };
 
 const byId = (items: ReadinessItem[]) => Object.fromEntries(items.map((i) => [i.id, i]));
@@ -121,14 +122,29 @@ describe('computeReadiness — demo agency live fixture', () => {
     expect(items['provider.calendar'].status).toBe('missing');
   });
 
-  it('go-live is never eligible in Phase 1 and lifecycle is blocked', () => {
+  it('reflects the real pilot_status (setup → blocked) and go-live is never eligible in Phase 1', () => {
+    expect(res.pilotStatus).toBe('setup');
     expect(items['lifecycle.go_live'].status).toBe('blocked');
     expect(items['lifecycle.go_live'].adminApproved).toBe(false);
+    expect(items['lifecycle.go_live'].signal.value).toBe('setup');
     expect(res.goLive.eligible).toBe(false);
     const g1 = res.gates.find((g) => g.gate === 'G1')!;
     expect(g1.status).toBe('blocked');
     expect(g1.blockedBy).toContain('lifecycle.go_live');
     expect(res.goLive.blockedBy).toContain('lifecycle.go_live');
+  });
+
+  it('maps each pilot_status to an honest lifecycle state (read-only — never auto-flips)', () => {
+    const life = (p: ReadinessSignals['pilotStatus']) =>
+      byId(computeReadiness('a', demoSignals({ pilotStatus: p })).items)['lifecycle.go_live'];
+    expect(life('live').status).toBe('ready');
+    expect(life('live').adminApproved).toBe(true);
+    expect(life('ready_for_pilot').status).toBe('live_but_unproven');
+    expect(life('ready_for_pilot').adminApproved).toBe(false);
+    expect(life('paused').status).toBe('blocked');
+    expect(life('blocked').status).toBe('blocked');
+    expect(life(null).status).toBe('unavailable');
+    expect(computeReadiness('a', demoSignals({ pilotStatus: 'live' })).pilotStatus).toBe('live');
   });
 
   it('NO FAKE STATE: every item carries a non-empty signal.source', () => {

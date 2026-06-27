@@ -745,9 +745,13 @@ export type ReadinessGateState = {
   blockedBy: string[];
 };
 
+export type PilotStatus = "setup" | "ready_for_pilot" | "live" | "paused" | "blocked";
+
 export type ReadinessResponse = {
   computedAt: string;
   agencyId: string;
+  /** Real agencies.pilot_status (C2) — global pilot lifecycle; null if unreadable. */
+  pilotStatus: PilotStatus | null;
   items: ReadinessItem[];
   providers: ReadinessProviderState[];
   gates: ReadinessGateState[];

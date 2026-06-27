@@ -6,6 +6,7 @@ import {
   computeReadiness,
   type ReadinessSignals,
   type WhatsAppSignal,
+  type PilotStatus,
 } from '../lib/readiness/compute';
 
 const route = new Hono();
@@ -120,16 +121,21 @@ route.get('/', async (c) => {
     null,
   );
 
-  const agencyLangs = await safe<string[] | null>(
+  // agencies row: supported_languages (drift check) + pilot_status (C2 lifecycle, read-only).
+  const agencyMeta = await safe<{ supported_languages: string[] | null; pilot_status: string | null } | null>(
     tx,
     async (sp) => {
       const r = await sp.execute(
-        sql`SELECT supported_languages FROM public.agencies WHERE id = ${AGENCY_GUC}`,
+        sql`SELECT supported_languages, pilot_status FROM public.agencies WHERE id = ${AGENCY_GUC}`,
       );
-      return rows<{ supported_languages: string[] | null }>(r)[0]?.supported_languages ?? null;
+      return rows<{ supported_languages: string[] | null; pilot_status: string | null }>(r)[0] ?? null;
     },
     null,
   );
+  const VALID_PILOT = ['setup', 'ready_for_pilot', 'live', 'paused', 'blocked'];
+  const pilotStatus = (agencyMeta?.pilot_status && VALID_PILOT.includes(agencyMeta.pilot_status)
+    ? agencyMeta.pilot_status
+    : null) as PilotStatus | null;
 
   const templates = await safe<{ enApproved: number; nonEnApproved: number } | null>(
     tx,
@@ -216,7 +222,7 @@ route.get('/', async (c) => {
           trading_name: profile.name ?? null,
           status: profile.status ?? null,
           primary_region: profile.region ?? null,
-          supported_languages: agencyLangs,
+          supported_languages: agencyMeta?.supported_languages ?? null,
         }
       : null,
     branding: branding
@@ -259,6 +265,7 @@ route.get('/', async (c) => {
     consent,
     calendar,
     whatsapp: waParsed,
+    pilotStatus,
   };
 
   const result = computeReadiness(agencyId, signals);

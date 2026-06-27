@@ -5,8 +5,8 @@ import { useTranslations } from "next-intl";
 import { Bot, X, Send, ShieldCheck, Sparkles } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { getOperationsSummaryAction } from "@/app/(app)/assistant-actions";
-import { looksLikeAttentionAsk } from "@/lib/assistant/operations-summary";
+import { getAssistantAnswerAction } from "@/app/(app)/assistant-actions";
+import { routeIntent, type AssistantIntent } from "@/lib/assistant/operations-summary";
 
 type ChatMessage = { id: number; role: "user" | "assistant"; text: string };
 
@@ -38,11 +38,12 @@ export function AssistantWidget() {
   }, [messages]);
 
   /**
-   * The one thing the assistant can answer WITHOUT the LLM: a read-only
-   * operational "what needs your attention" summary from /api/v1/operations
-   * (the same aggregate the Command Center shows). No provider call, no gate.
+   * Deterministic answers the assistant gives WITHOUT the LLM, from the
+   * read-only /api/v1/operations aggregate: a prioritised "today" plan, a
+   * "what's wrong" summary, a task glossary, or a WhatsApp explanation. No
+   * provider call, no gate. (Free-form / research chat still waits on N1/N2.)
    */
-  async function runSummary(userText: string) {
+  async function runIntent(intent: AssistantIntent, userText: string) {
     if (busy) return;
     const userId = (idRef.current += 1);
     const loadingId = (idRef.current += 1);
@@ -52,8 +53,8 @@ export function AssistantWidget() {
       { id: loadingId, role: "assistant", text: t("summaryLoading") },
     ]);
     setBusy(true);
-    const res = await getOperationsSummaryAction();
-    const reply = res.ok ? res.summary : res.error;
+    const res = await getAssistantAnswerAction(intent);
+    const reply = res.ok ? res.answer : res.error;
     setMessages((prev) => prev.map((m) => (m.id === loadingId ? { ...m, text: reply } : m)));
     setBusy(false);
   }
@@ -62,10 +63,11 @@ export function AssistantWidget() {
     const text = input.trim();
     if (!text || busy) return;
     setInput("");
-    // Operational/status asks → the live no-LLM summary. Everything else
+    // Operational asks → the matching live no-LLM answer. Everything else
     // honestly waits for the Anthropic-DPA gate (free-form chat reply, N2).
-    if (looksLikeAttentionAsk(text)) {
-      void runSummary(text);
+    const intent = routeIntent(text);
+    if (intent) {
+      void runIntent(intent, text);
       return;
     }
     const userId = (idRef.current += 1);
@@ -76,6 +78,15 @@ export function AssistantWidget() {
       { id: botId, role: "assistant", text: t("chatGated") },
     ]);
   }
+
+  // Quick-start chips → deterministic intents. The user-facing label is sent as
+  // the "user" message so the chat reads naturally.
+  const CHIPS: Array<{ intent: AssistantIntent; key: "chipToday" | "chipWrong" | "chipTasks" | "chipWhatsapp" }> = [
+    { intent: "today", key: "chipToday" },
+    { intent: "wrong", key: "chipWrong" },
+    { intent: "tasks", key: "chipTasks" },
+    { intent: "whatsapp", key: "chipWhatsapp" },
+  ];
 
   return (
     <>
@@ -141,15 +152,20 @@ export function AssistantWidget() {
           <div className="flex flex-col gap-2 rounded-lg bg-muted/40 px-3 py-3">
             <p className="text-[13px] text-foreground">{t("greeting")}</p>
             <p className="text-[12px] text-muted-foreground">{t("capabilities")}</p>
-            <button
-              type="button"
-              onClick={() => void runSummary(t("summarizeAction"))}
-              disabled={busy}
-              className="mt-1 inline-flex w-fit items-center gap-1.5 rounded-full border border-brand/30 bg-brand-soft px-3 py-1.5 text-[12px] font-medium text-brand transition-colors hover:bg-brand/10 disabled:opacity-50"
-            >
-              <Sparkles className="h-3.5 w-3.5" aria-hidden />
-              {t("summarizeAction")}
-            </button>
+            <div className="mt-1 flex flex-wrap gap-1.5">
+              {CHIPS.map((c) => (
+                <button
+                  key={c.intent}
+                  type="button"
+                  onClick={() => void runIntent(c.intent, t(c.key))}
+                  disabled={busy}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-brand/30 bg-brand-soft px-3 py-1.5 text-[12px] font-medium text-brand transition-colors hover:bg-brand/10 disabled:opacity-50"
+                >
+                  <Sparkles className="h-3 w-3" aria-hidden />
+                  {t(c.key)}
+                </button>
+              ))}
+            </div>
           </div>
 
           {messages.map((m) => (

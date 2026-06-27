@@ -2,28 +2,29 @@
 
 import { apiFetch, ApiError } from "@/lib/api/client";
 import type { OperationsResponse } from "@/lib/api/types";
-import { formatOperationsSummary } from "@/lib/assistant/operations-summary";
+import { answerFor, type AssistantIntent } from "@/lib/assistant/operations-summary";
 
 /**
- * AIVENA Assistant — read-only operational summary (no LLM).
+ * AIVENA Assistant — read-only deterministic answers (no LLM).
  *
  * Thin server action over GET /api/v1/operations (the same aggregate the
- * Command Center renders), formatted into a plain-language "what needs your
- * attention" briefing. This is the assistant slice that works BEFORE the
- * Anthropic-DPA gate (N1/N2) opens the free-form chat reply. No provider call,
- * no new secret, no lead-private deep read, no write. Friendly errors only.
+ * Command Center reads). Given an intent ("today" / "wrong" / "tasks" /
+ * "whatsapp") it returns a short, guiding, plain-language answer. This is the
+ * assistant slice that works BEFORE the Anthropic-DPA gate (N1/N2) opens the
+ * free-form / research chat. No provider call, no new secret, no lead-private
+ * deep read, no write. Friendly errors only.
  */
 
-const GENERIC = "Couldn't load your operations summary right now.";
+const GENERIC = "Couldn't load your live data right now — please try again in a moment.";
 
-export type AssistantSummaryResult =
-  | { ok: true; summary: string }
+export type AssistantAnswerResult =
+  | { ok: true; answer: string }
   | { ok: false; error: string };
 
-export async function getOperationsSummaryAction(): Promise<AssistantSummaryResult> {
+export async function getAssistantAnswerAction(intent: AssistantIntent): Promise<AssistantAnswerResult> {
   try {
     const data = await apiFetch<OperationsResponse>("/api/v1/operations");
-    return { ok: true, summary: formatOperationsSummary(data) };
+    return { ok: true, answer: answerFor(intent, data) };
   } catch (err) {
     const detail =
       err instanceof ApiError
@@ -31,7 +32,7 @@ export async function getOperationsSummaryAction(): Promise<AssistantSummaryResu
         : err instanceof Error
           ? err.message
           : String(err);
-    console.error("[assistant/summary] load failed:", detail);
+    console.error("[assistant/answer] load failed:", detail);
     return { ok: false, error: GENERIC };
   }
 }

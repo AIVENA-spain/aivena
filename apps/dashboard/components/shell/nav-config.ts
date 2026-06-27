@@ -45,7 +45,11 @@ export type NavItem = {
 export const PRIMARY_NAV: NavItem[] = [
   { tKey: "overview", href: "/", iconName: "overview", roles: ["owner", "agent", "viewer"] },
   { tKey: "inbox", href: "/approvals", iconName: "inbox", roles: ["owner", "agent", "viewer"] },
-  { tKey: "operations", href: "/operations", iconName: "operations", roles: ["owner", "agent", "viewer"] },
+  // Command Center (/operations) is intentionally NOT in the agency nav — per the
+  // 2026-06-27 product correction it's advanced/internal diagnostics + the data
+  // source for the AIVENA Assistant (the primary attention layer), not the main
+  // agency workflow. The route stays live (direct URL / assistant); re-add this
+  // line to restore the nav entry if the direction changes.
   { tKey: "properties", href: "/properties", iconName: "properties", roles: ["owner", "agent", "viewer"] },
   { tKey: "viewings", href: "/viewings", iconName: "viewings", roles: ["owner", "agent", "viewer"] },
   { tKey: "performance", href: "/performance", iconName: "performance", roles: ["owner", "agent", "viewer"] },

@@ -1037,7 +1037,11 @@
     "contextError": "We konden je werkruimte niet laden. Vernieuw de pagina en probeer het opnieuw.",
     "summarizeAction": "What needs my attention?",
     "summaryLoading": "Checking what needs your attention…",
-    "chatGated": "AI chat replies are being switched on. Meanwhile, tap \"What needs my attention?\" for a live summary."
+    "chatGated": "Full AI chat is being switched on. For now, use the quick buttons above — I can tell you what to do today, what’s wrong, explain your tasks, or your WhatsApp status.",
+    "chipToday": "What should I do today?",
+    "chipWrong": "What’s wrong?",
+    "chipTasks": "Explain these tasks",
+    "chipWhatsapp": "Why is WhatsApp degraded?"
   },
   "matches": {
     "title": "Matches",

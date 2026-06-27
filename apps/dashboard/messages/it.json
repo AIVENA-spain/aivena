@@ -1034,7 +1034,10 @@
     "send": "Invia",
     "sessionOnly": "Questa chat non viene salvata",
     "activating": "WAA è in fase di attivazione — torna a controllare a breve.",
-    "contextError": "Impossibile caricare il tuo spazio di lavoro. Aggiorna la pagina e riprova."
+    "contextError": "Impossibile caricare il tuo spazio di lavoro. Aggiorna la pagina e riprova.",
+    "summarizeAction": "What needs my attention?",
+    "summaryLoading": "Checking what needs your attention…",
+    "chatGated": "AI chat replies are being switched on. Meanwhile, tap \"What needs my attention?\" for a live summary."
   },
   "matches": {
     "title": "Matches",

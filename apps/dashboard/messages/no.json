@@ -1034,7 +1034,10 @@
     "send": "Send",
     "sessionOnly": "Denne chatten lagres ikke",
     "activating": "WAA aktiveres – kom tilbake snart.",
-    "contextError": "Kunne ikke laste inn arbeidsområdet ditt. Oppdater og prøv igjen."
+    "contextError": "Kunne ikke laste inn arbeidsområdet ditt. Oppdater og prøv igjen.",
+    "summarizeAction": "What needs my attention?",
+    "summaryLoading": "Checking what needs your attention…",
+    "chatGated": "AI chat replies are being switched on. Meanwhile, tap \"What needs my attention?\" for a live summary."
   },
   "matches": {
     "title": "Matches",

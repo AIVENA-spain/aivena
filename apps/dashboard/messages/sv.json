@@ -1034,7 +1034,10 @@
     "send": "Skicka",
     "sessionOnly": "Den här chatten sparas inte",
     "activating": "WAA håller på att aktiveras – kom tillbaka snart.",
-    "contextError": "Kunde inte läsa in din arbetsyta. Uppdatera sidan och försök igen."
+    "contextError": "Kunde inte läsa in din arbetsyta. Uppdatera sidan och försök igen.",
+    "summarizeAction": "What needs my attention?",
+    "summaryLoading": "Checking what needs your attention…",
+    "chatGated": "AI chat replies are being switched on. Meanwhile, tap \"What needs my attention?\" for a live summary."
   },
   "matches": {
     "title": "Matches",

@@ -1034,7 +1034,10 @@
     "send": "Wyślij",
     "sessionOnly": "Ta rozmowa nie jest zapisywana",
     "activating": "WAA jest aktywowane — sprawdź ponownie wkrótce.",
-    "contextError": "Nie udało się wczytać Twojego obszaru roboczego. Odśwież stronę i spróbuj ponownie."
+    "contextError": "Nie udało się wczytać Twojego obszaru roboczego. Odśwież stronę i spróbuj ponownie.",
+    "summarizeAction": "What needs my attention?",
+    "summaryLoading": "Checking what needs your attention…",
+    "chatGated": "AI chat replies are being switched on. Meanwhile, tap \"What needs my attention?\" for a live summary."
   },
   "matches": {
     "title": "Matches",

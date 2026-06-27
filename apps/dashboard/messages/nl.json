@@ -1034,7 +1034,10 @@
     "send": "Versturen",
     "sessionOnly": "Deze chat wordt niet bewaard",
     "activating": "WAA wordt geactiveerd — kom binnenkort terug.",
-    "contextError": "We konden je werkruimte niet laden. Vernieuw de pagina en probeer het opnieuw."
+    "contextError": "We konden je werkruimte niet laden. Vernieuw de pagina en probeer het opnieuw.",
+    "summarizeAction": "What needs my attention?",
+    "summaryLoading": "Checking what needs your attention…",
+    "chatGated": "AI chat replies are being switched on. Meanwhile, tap \"What needs my attention?\" for a live summary."
   },
   "matches": {
     "title": "Matches",

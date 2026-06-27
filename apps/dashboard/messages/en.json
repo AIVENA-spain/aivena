@@ -1034,7 +1034,10 @@
     "send": "Send",
     "sessionOnly": "This chat isn’t saved",
     "activating": "WAA is being activated — please check back soon.",
-    "contextError": "Couldn't load your workspace. Please refresh and try again."
+    "contextError": "Couldn't load your workspace. Please refresh and try again.",
+    "summarizeAction": "What needs my attention?",
+    "summaryLoading": "Checking what needs your attention…",
+    "chatGated": "AI chat replies are being switched on. Meanwhile, tap \"What needs my attention?\" for a live summary."
   },
   "matches": {
     "title": "Matches",

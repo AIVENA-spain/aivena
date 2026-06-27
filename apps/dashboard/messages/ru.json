@@ -1034,7 +1034,10 @@
     "send": "Отправить",
     "sessionOnly": "Этот чат не сохраняется",
     "activating": "WAA активируется — загляните чуть позже.",
-    "contextError": "Не удалось загрузить рабочее пространство. Обновите страницу и попробуйте ещё раз."
+    "contextError": "Не удалось загрузить рабочее пространство. Обновите страницу и попробуйте ещё раз.",
+    "summarizeAction": "What needs my attention?",
+    "summaryLoading": "Checking what needs your attention…",
+    "chatGated": "AI chat replies are being switched on. Meanwhile, tap \"What needs my attention?\" for a live summary."
   },
   "matches": {
     "title": "Matches",

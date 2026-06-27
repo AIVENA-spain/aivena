@@ -2,9 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Bot, X, Send, ShieldCheck } from "lucide-react";
+import { Bot, X, Send, ShieldCheck, Sparkles } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { getOperationsSummaryAction } from "@/app/(app)/assistant-actions";
+import { looksLikeAttentionAsk } from "@/lib/assistant/operations-summary";
 
 type ChatMessage = { id: number; role: "user" | "assistant"; text: string };
 
@@ -27,6 +29,7 @@ export function AssistantWidget() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
+  const [busy, setBusy] = useState(false);
   const idRef = useRef(0);
   const bodyRef = useRef<HTMLDivElement>(null);
 
@@ -34,18 +37,44 @@ export function AssistantWidget() {
     if (bodyRef.current) bodyRef.current.scrollTop = bodyRef.current.scrollHeight;
   }, [messages]);
 
+  /**
+   * The one thing the assistant can answer WITHOUT the LLM: a read-only
+   * operational "what needs your attention" summary from /api/v1/operations
+   * (the same aggregate the Command Center shows). No provider call, no gate.
+   */
+  async function runSummary(userText: string) {
+    if (busy) return;
+    const userId = (idRef.current += 1);
+    const loadingId = (idRef.current += 1);
+    setMessages((prev) => [
+      ...prev,
+      { id: userId, role: "user", text: userText },
+      { id: loadingId, role: "assistant", text: t("summaryLoading") },
+    ]);
+    setBusy(true);
+    const res = await getOperationsSummaryAction();
+    const reply = res.ok ? res.summary : res.error;
+    setMessages((prev) => prev.map((m) => (m.id === loadingId ? { ...m, text: reply } : m)));
+    setBusy(false);
+  }
+
   function handleSend() {
     const text = input.trim();
-    if (!text) return;
+    if (!text || busy) return;
+    setInput("");
+    // Operational/status asks → the live no-LLM summary. Everything else
+    // honestly waits for the Anthropic-DPA gate (free-form chat reply, N2).
+    if (looksLikeAttentionAsk(text)) {
+      void runSummary(text);
+      return;
+    }
     const userId = (idRef.current += 1);
     const botId = (idRef.current += 1);
     setMessages((prev) => [
       ...prev,
       { id: userId, role: "user", text },
-      // LLM-call path stubs out until the Anthropic DPA gate opens.
-      { id: botId, role: "assistant", text: t("activating") },
+      { id: botId, role: "assistant", text: t("chatGated") },
     ]);
-    setInput("");
   }
 
   return (
@@ -112,13 +141,22 @@ export function AssistantWidget() {
           <div className="flex flex-col gap-2 rounded-lg bg-muted/40 px-3 py-3">
             <p className="text-[13px] text-foreground">{t("greeting")}</p>
             <p className="text-[12px] text-muted-foreground">{t("capabilities")}</p>
+            <button
+              type="button"
+              onClick={() => void runSummary(t("summarizeAction"))}
+              disabled={busy}
+              className="mt-1 inline-flex w-fit items-center gap-1.5 rounded-full border border-brand/30 bg-brand-soft px-3 py-1.5 text-[12px] font-medium text-brand transition-colors hover:bg-brand/10 disabled:opacity-50"
+            >
+              <Sparkles className="h-3.5 w-3.5" aria-hidden />
+              {t("summarizeAction")}
+            </button>
           </div>
 
           {messages.map((m) => (
             <div
               key={m.id}
               className={cn(
-                "max-w-[85%] rounded-2xl px-3 py-2 text-[13px] leading-snug",
+                "max-w-[85%] whitespace-pre-line rounded-2xl px-3 py-2 text-[13px] leading-snug",
                 m.role === "user"
                   ? "ml-auto rounded-tr-sm bg-primary text-primary-foreground"
                   : "mr-auto rounded-tl-sm bg-muted text-foreground",
@@ -143,12 +181,13 @@ export function AssistantWidget() {
                 }
               }}
               placeholder={t("inputPlaceholder")}
-              className="flex-1 resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand/40"
+              disabled={busy}
+              className="flex-1 resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand/40 disabled:opacity-50"
             />
             <button
               type="button"
               onClick={handleSend}
-              disabled={input.trim().length === 0}
+              disabled={busy || input.trim().length === 0}
               aria-label={t("send")}
               className="flex h-9 w-9 flex-none items-center justify-center rounded-lg bg-primary text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
             >

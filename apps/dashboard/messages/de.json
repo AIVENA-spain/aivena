@@ -1034,7 +1034,10 @@
     "send": "Senden",
     "sessionOnly": "Dieser Chat wird nicht gespeichert",
     "activating": "WAA wird aktiviert – bitte schauen Sie bald wieder vorbei.",
-    "contextError": "Ihr Arbeitsbereich konnte nicht geladen werden. Bitte aktualisieren Sie die Seite und versuchen Sie es erneut."
+    "contextError": "Ihr Arbeitsbereich konnte nicht geladen werden. Bitte aktualisieren Sie die Seite und versuchen Sie es erneut.",
+    "summarizeAction": "What needs my attention?",
+    "summaryLoading": "Checking what needs your attention…",
+    "chatGated": "AI chat replies are being switched on. Meanwhile, tap \"What needs my attention?\" for a live summary."
   },
   "matches": {
     "title": "Matches",

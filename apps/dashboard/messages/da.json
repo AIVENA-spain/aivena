@@ -1034,7 +1034,10 @@
     "send": "Send",
     "sessionOnly": "Denne chat gemmes ikke",
     "activating": "WAA er ved at blive aktiveret — kig forbi igen om lidt.",
-    "contextError": "Vi kunne ikke indlæse dit workspace. Opdatér siden, og prøv igen."
+    "contextError": "Vi kunne ikke indlæse dit workspace. Opdatér siden, og prøv igen.",
+    "summarizeAction": "What needs my attention?",
+    "summaryLoading": "Checking what needs your attention…",
+    "chatGated": "AI chat replies are being switched on. Meanwhile, tap \"What needs my attention?\" for a live summary."
   },
   "matches": {
     "title": "Matches",

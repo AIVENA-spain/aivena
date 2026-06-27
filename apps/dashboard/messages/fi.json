@@ -1034,7 +1034,10 @@
     "send": "Lähetä",
     "sessionOnly": "Tätä keskustelua ei tallenneta",
     "activating": "WAA:ta aktivoidaan — tarkista tilanne pian uudelleen.",
-    "contextError": "Työtilaasi ei voitu ladata. Päivitä sivu ja yritä uudelleen."
+    "contextError": "Työtilaasi ei voitu ladata. Päivitä sivu ja yritä uudelleen.",
+    "summarizeAction": "What needs my attention?",
+    "summaryLoading": "Checking what needs your attention…",
+    "chatGated": "AI chat replies are being switched on. Meanwhile, tap \"What needs my attention?\" for a live summary."
   },
   "matches": {
     "title": "Matches",

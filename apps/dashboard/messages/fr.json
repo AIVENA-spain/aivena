@@ -1034,7 +1034,10 @@
     "send": "Envoyer",
     "sessionOnly": "Cette conversation n’est pas enregistrée",
     "activating": "WAA est en cours d’activation — revenez bientôt.",
-    "contextError": "Impossible de charger votre espace de travail. Veuillez actualiser et réessayer."
+    "contextError": "Impossible de charger votre espace de travail. Veuillez actualiser et réessayer.",
+    "summarizeAction": "What needs my attention?",
+    "summaryLoading": "Checking what needs your attention…",
+    "chatGated": "AI chat replies are being switched on. Meanwhile, tap \"What needs my attention?\" for a live summary."
   },
   "matches": {
     "title": "Matches",

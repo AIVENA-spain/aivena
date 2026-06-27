@@ -25,7 +25,7 @@ function labelFromScore(score: number, selected: boolean, metadataReliable: bool
 // shape mode) — no re-tuning. Computes per-layer leave-one-out from the layer's known-true font.
 export async function matchLayer(
   sourceImg: RGBA, v1layer: LayerSpec, intake: IntakeLayer, shortlist: Shortlisted[],
-  outDir: string, id: string, version: string, opts: ResolveOpts,
+  outDir: string, id: string, version: string, opts: ResolveOpts, mode: "faithful" | "production" = "faithful",
 ): Promise<LayerOutcome> {
   const lib = shortlistLib(shortlist, version);
   const renders: { font: LibFont; img: RGBA }[] = [];
@@ -65,10 +65,26 @@ export async function matchLayer(
 
   const selected = score >= USABLE_BAR && separation >= THRESHOLDS.high_separation && leave_one_out_ok;
   const rank1IsNamed = !!intake.metadata_font && norm(rank1_font) === norm(intake.metadata_font);
-  const label = labelFromScore(score, selected, metaReliable, rank1IsNamed);
+  const faithful_label = labelFromScore(score, selected, metaReliable, rank1IsNamed);
 
-  let reason: string;
-  if (label === "needs_seed") {
+  // production-mode improvement override: deliberately pick an active vault font for a recorded MEASURABLE
+  // reason. Honest — labelled visual_substitute (never exact/verified); faithful_label preserves the truth.
+  let label = faithful_label;
+  let selected_font: string | null = selected ? rank1_font : null;
+  let selected_id: string | null = selected ? res.best.font_id : null;
+  let improvement_reason: string | null = null;
+  let outScore = score, outRank1 = rank1_font, reason: string;
+
+  if (mode === "production" && intake.production_override) {
+    const ov = intake.production_override;
+    const ovEntry = candidates.find((c) => norm(c.font) === norm(ov.font));
+    const ovTop = res.top.find((c) => norm(c.family) === norm(ov.font));
+    if (!ovEntry || !ovTop) throw new Error(`production_override font '${ov.font}' for layer '${intake.id}' is not among the active candidates`);
+    label = "visual_substitute";
+    selected_font = ov.font; selected_id = ovTop.font_id;
+    improvement_reason = ov.reason; outScore = ovEntry.score; outRank1 = ov.font;
+    reason = `production improvement: ${ov.font} chosen for a measurable reason (faithful = ${faithful_label}). ${ov.reason}`;
+  } else if (faithful_label === "needs_seed") {
     const why = score < USABLE_BAR ? `best active candidate ${rank1_font} ${score} < USABLE ${USABLE_BAR}` :
       !leave_one_out_ok ? `selection blocked: leave-one-out not clean (a wrong font would falsely accept)` :
       `separation ${separation} < ${THRESHOLDS.high_separation} (ambiguous)`;
@@ -79,10 +95,10 @@ export async function matchLayer(
 
   return {
     id: intake.id, type: intake.type, match_mode: intake.match_mode,
-    selected_font: selected ? rank1_font : null, selected_id: selected ? res.best.font_id : null,
+    selected_font, selected_id,
     known_true_font: intake.known_true_font ?? null, downgraded_by_guard: false,
-    label, score, rank1_font, separation, leave_one_out_ok, measurement_quality: res.measurement_quality,
-    improvement_reason: null, reason,
+    faithful_label, label, score: outScore, rank1_font: outRank1, separation, leave_one_out_ok, measurement_quality: res.measurement_quality,
+    improvement_reason, reason,
     shortlist_ids: shortlist.map((s) => s.entry.id), bbox: v1layer.layer_bbox as [number, number, number, number], candidates,
     ranked: res.top, renders, srcBox: srcBoxOut.box, raw: res,
     metadata_font: intake.metadata_font, metadata_reliable: metaReliable,

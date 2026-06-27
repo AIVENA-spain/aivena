@@ -24,6 +24,9 @@ export const IntakeLayer = z.object({
   // engine-only, never used by selection: the known-true font (for the pre-filter acceptance guard + LOO).
   known_true_font: z.string().nullable().optional(),
   language: z.string().optional(), // optional required-language tag for the cmap pre-filter
+  // PRODUCTION-mode only: a deliberate improvement override — pick this active vault font for a MEASURABLE
+  // reason (license-safe / language coverage / fit), recorded. Ignored in faithful mode (which stays honest).
+  production_override: z.object({ font: z.string(), reason: z.string() }).optional(),
 });
 export type IntakeLayer = z.infer<typeof IntakeLayer>;
 
@@ -51,6 +54,7 @@ export interface LayerOutcome {
   selected_id: string | null;
   known_true_font: string | null; // engine-only: the layer's known-true font (guard + LOO)
   downgraded_by_guard: boolean;   // set if the cross-layer guard demoted this layer
+  faithful_label: LayerLabel;     // the label faithful mode gives (preserved when a production override applies)
   label: LayerLabel;
   score: number;                   // metric layers: v1 confidence; shape layers: visual_match_score
   rank1_font: string;              // display name of rank-1 candidate (even if not selected)

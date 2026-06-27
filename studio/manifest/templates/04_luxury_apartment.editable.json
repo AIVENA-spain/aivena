@@ -7,7 +7,8 @@
   "fonts": {
     "Prata": "fonts/Prata-Regular.ttf",
     "Poppins": "fonts/Poppins-Regular.ttf",
-    "LibreCaslonText": "fonts/LibreCaslonText-Regular.ttf"
+    "LibreCaslonText": "fonts/LibreCaslonText-Regular.ttf",
+    "LibreCaslonDisplay": "fonts/LibreCaslonDisplay-Regular.ttf"
   },
   "font_coverage_note": "Prata lacks Polish-specific diacritics (ł ą ę ś ż ź ć ń); the pl title vocabulary avoids them. Poppins + LibreCaslonText cover all es/no/de/pl diacritics. The glyph_coverage gate enforces this.",
 
@@ -56,8 +57,10 @@
 
   "text_slots": [
     { "z": 6, "id": "title", "purpose": "title", "editable": true, "source": "composed",
-      "font": "Prata", "color_token": "brand.accent", "align": "center", "safe_area": "title", "max_lines": 2,
-      "font_size": { "min": 120, "max": 205 }, "scaleX": { "min": 0.74, "max": 1.0 }, "tracking": { "min": -12, "max": 2 },
+      "font": "LibreCaslonDisplay", "font_mode": "production_improvement", "faithful_title_font": "needs_seed",
+      "improvement_reason": "Q9 production-mode improvement (not a faithful/source-font match): license-safe (OFL), full multilingual coverage — Prata misses Ÿ (U+0178) while Libre Caslon Display covers it + all es/de/no diacritics; the true source title font is unresolved/proprietary (stays needs_seed in faithful mode, parked non-blocking); pairs with the confirmed Libre Caslon Text body.",
+      "color_token": "brand.accent", "align": "center", "safe_area": "title", "max_lines": 2,
+      "font_size": { "min": 120, "max": 230 }, "scaleX": { "min": 0.74, "max": 1.0 }, "tracking": { "min": -12, "max": 2 },
       "line_gap_ratio": { "min": 0.82, "max": 1.0 },
       "parts": [
         { "role": "adjective", "fact": "luxury", "source": "editorial_or_literal", "subjective_claim": true, "rewrite_mode": "translate-only", "editorial_lock": null },

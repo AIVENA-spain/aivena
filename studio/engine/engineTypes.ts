@@ -18,7 +18,9 @@ export const FontBinding = z.object({
   vault_status: z.string().nullable(),    // active | seed_only | rejected
   production_safe: z.boolean(),
   confirmed: z.boolean(),                 // adjudicator confirms this slot's font (verified/exact)
-  agrees_with_manifest: z.boolean(),      // manifest font == adjudicator-confirmed font
+  improvement: z.boolean(),               // a deliberate production-mode improvement (visual_substitute + reason)
+  faithful_label: z.string(),             // what faithful mode says (e.g. needs_seed for the #4 title)
+  agrees_with_manifest: z.boolean(),      // manifest font == adjudicator-selected font
   note: z.string(),
 });
 export type FontBinding = z.infer<typeof FontBinding>;
@@ -29,9 +31,10 @@ export const ManifestBindings = z.object({
   vault_version: z.string(),
   adjudication_status: z.string(),        // the adjudicator's template status (e.g. needs_seed)
   bindings: z.array(FontBinding),
-  unresolved_slots: z.array(z.string()),  // slots whose font is not adjudicator-confirmed (need seed)
+  unresolved_slots: z.array(z.string()),  // slots neither confirmed nor a recorded production improvement
   all_fonts_vault_backed: z.boolean(),
-  all_confirmed: z.boolean(),
+  all_confirmed: z.boolean(),             // every slot faithful-confirmed (improvements do NOT count)
+  all_resolved: z.boolean(),              // every slot confirmed OR a recorded production improvement
 });
 export type ManifestBindings = z.infer<typeof ManifestBindings>;
 

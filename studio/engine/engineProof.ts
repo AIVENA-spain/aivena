@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { abs } from "../src/lib/paths";
 import { composeOne } from "../src/lib/compose";
+import { adjudicate } from "../adjudicate/studio_adjudicate";
 import { extractManifest } from "./extractManifest";
 import { EngineProof, ProofLayer, ManifestBindings } from "./engineTypes";
 
@@ -69,7 +70,9 @@ export async function buildEngineProof(templateId: string, propertyId: string, b
   };
 
   const caveats: string[] = [];
-  if (!bindings.all_confirmed) caveats.push(`title font NOT adjudicator-confirmed (needs_seed, Q9) — rendered with the manifest's unconfirmed ${fontOf("title")}; not production-faithful for the title`);
+  const titleBinding = bindings.bindings.find((b) => b.slot_id === "title");
+  if (titleBinding?.improvement) caveats.push(`title font is a Q9 production-mode improvement: ${fontOf("title")} (visual_substitute, NOT a faithful/source-font match); the true source title font remains needs_seed, parked non-blocking`);
+  else if (!bindings.all_confirmed) caveats.push(`title font NOT adjudicator-confirmed (needs_seed) — rendered with the manifest's unconfirmed ${fontOf("title")}; not production-faithful for the title`);
   caveats.push("LOCAL engine proof (Engine Proof A): the production renderer (Railway /studio/render, Q3 Engine Proof B) is NOT exercised here");
   if (claims.length) caveats.push(`subjective claim(s) ${claims.map((c: any) => c.term).join(", ")} present and FLAGGED (source_faithful), not asserted as fact`);
 
@@ -107,6 +110,9 @@ export async function buildRefusalProof(templateId: string, propertyId: string, 
 }
 
 export async function runEngineProof(templateId: string): Promise<{ proofs: EngineProof[]; ok: boolean; outDir: string }> {
+  // post-Q9 the canonical #4 state is PRODUCTION (ready_with_improvement). Regenerate the production report
+  // so the extractor binds the production decision (title = Libre Caslon Display improvement).
+  await adjudicate(templateId, { mode: "production", generatedAt: "engine_proof", quiet: true });
   const { bindings } = extractManifest(templateId);
   const outDir = abs(`out/engine/${templateId}/engine_proof`);
   fs.mkdirSync(outDir, { recursive: true });

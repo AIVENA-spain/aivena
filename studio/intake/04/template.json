@@ -12,7 +12,8 @@
       "id": "title", "type": "headline", "editable": true, "text": "Luxury",
       "layer_bbox": [250, 700, 822, 896], "metric": "cap", "match_mode": "shape",
       "categories": ["serif", "display"], "opacity": 1.0, "color": "#FFFFFF",
-      "metadata_font": "Times New Roman", "metadata_reliable": false, "known_true_font": "Prata"
+      "metadata_font": "Times New Roman", "metadata_reliable": false, "known_true_font": "Prata",
+      "production_override": { "font": "Libre Caslon Display", "reason": "Q9: license-safe (OFL), full multilingual coverage — Prata misses Ÿ (U+0178) while Libre Caslon Display covers it + all es/de/no diacritics; true source title font unresolved/proprietary (stays needs_seed in faithful mode, parked non-blocking); pairs with the confirmed Libre Caslon Text body." }
     },
     {
       "id": "stats", "type": "stat", "editable": true, "text": null,

@@ -10,6 +10,7 @@ export const ReportLayer = z.object({
   type: z.string(),
   selected_font: z.string().nullable(),
   label: z.string(),
+  faithful_label: z.string(),
   score: z.number(),
   rank: z.number(),
   separation: z.number(),
@@ -44,7 +45,7 @@ export function buildReport(args: {
   missingSource: string[]; engineError: string | null; generatedAt: string;
 }): AdjudicateReport {
   const layers = args.outcomes.map((o) => ({
-    id: o.id, type: o.type, selected_font: o.selected_font, label: o.label,
+    id: o.id, type: o.type, selected_font: o.selected_font, label: o.label, faithful_label: o.faithful_label,
     score: r3(o.score), rank: 1, separation: r3(o.separation), leave_one_out_ok: o.leave_one_out_ok,
     candidates: o.candidates.map((c) => ({ font: c.font, score: r3(c.score), rank: c.rank })),
     improvement_reason: o.improvement_reason, reason: o.reason,

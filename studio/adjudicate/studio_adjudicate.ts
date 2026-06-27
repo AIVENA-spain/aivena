@@ -94,7 +94,7 @@ export async function adjudicate(id: string, opts: AdjudicateOpts = {}): Promise
       }
       if (!trueInShortlist()) throw new Error(`acceptance guard: known-true font '${L.known_true_font}' for layer '${L.id}' was pre-filtered out (bug)`);
 
-      const oc = await matchLayer(sourceImg, v1, L, pf.shortlist, outDir, L.id, vault.vault_version, opts2);
+      const oc = await matchLayer(sourceImg, v1, L, pf.shortlist, outDir, L.id, vault.vault_version, opts2, mode);
       log(`  [${oc.id}] ${oc.label} score=${oc.score} sep=${oc.separation} loo_ok=${oc.leave_one_out_ok} selected=${oc.selected_font ?? "—"}`);
       outcomes.push(oc);
     }

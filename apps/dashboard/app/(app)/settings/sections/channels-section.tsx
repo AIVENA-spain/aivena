@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { saveIdentityAction } from "../section-actions";
-import type { SettingsResponse } from "@/lib/api/types";
+import { ProviderCards } from "./provider-cards";
+import type { SettingsResponse, ReadinessProviderState } from "@/lib/api/types";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -26,11 +27,15 @@ export function ChannelsSection({
   sendingDomain,
   fromEmail,
   replyTo: initialReplyTo,
+  providers,
 }: {
   channels: SettingsResponse["channels"];
   sendingDomain: string;
   fromEmail: string;
   replyTo: string;
+  /** Live provider readiness (D3) from GET /api/v1/readiness; falls back to the
+   *  static rows below when readiness can't load (e.g. non-owner 403). */
+  providers?: ReadinessProviderState[];
 }) {
   const t = useTranslations("settings.channels");
   const ti = useTranslations("settings.identity");
@@ -57,37 +62,47 @@ export function ChannelsSection({
   const emailStatus: Status = sendingDomain ? "verified" : "comingSoon";
   const whatsappStatus: Status = channels.whatsapp.live ? "verified" : "repliesOff";
 
+  const hasReadiness = Boolean(providers && providers.length > 0);
+
   return (
     <div className="flex flex-col gap-1">
-      <Row
-        icon={<Mail className="h-4 w-4" />}
-        iconCls="bg-blue-500/15 text-blue-600 dark:text-blue-300"
-        name={t("email")}
-        sub={fromEmail ? `${sendingDomain || "—"} · ${fromEmail}` : sendingDomain || "—"}
-        status={emailStatus}
-        first
-      />
-      <Row
-        icon={<MessageSquare className="h-4 w-4" />}
-        iconCls="bg-emerald-500/15 text-emerald-600 dark:text-emerald-300"
-        name={t("whatsapp")}
-        sub={t("whatsappSub")}
-        status={whatsappStatus}
-      />
-      <Row
-        icon={<CalendarDays className="h-4 w-4" />}
-        iconCls="bg-blue-500/12 text-blue-600 dark:text-blue-300"
-        name={t("calendar")}
-        sub={t("calendarSub")}
-        status="comingSoon"
-      />
-      <Row
-        icon={<Sparkles className="h-4 w-4" />}
-        iconCls="bg-purple-500/15 text-purple-600 dark:text-purple-300"
-        name={t("social")}
-        sub={t("socialSub")}
-        status="comingSoon"
-      />
+      {hasReadiness ? (
+        // D3 — live provider readiness from GET /api/v1/readiness (honest states).
+        <ProviderCards providers={providers!} />
+      ) : (
+        // Fallback — static rows when readiness can't load (e.g. non-owner 403).
+        <>
+          <Row
+            icon={<Mail className="h-4 w-4" />}
+            iconCls="bg-blue-500/15 text-blue-600 dark:text-blue-300"
+            name={t("email")}
+            sub={fromEmail ? `${sendingDomain || "—"} · ${fromEmail}` : sendingDomain || "—"}
+            status={emailStatus}
+            first
+          />
+          <Row
+            icon={<MessageSquare className="h-4 w-4" />}
+            iconCls="bg-emerald-500/15 text-emerald-600 dark:text-emerald-300"
+            name={t("whatsapp")}
+            sub={t("whatsappSub")}
+            status={whatsappStatus}
+          />
+          <Row
+            icon={<CalendarDays className="h-4 w-4" />}
+            iconCls="bg-blue-500/12 text-blue-600 dark:text-blue-300"
+            name={t("calendar")}
+            sub={t("calendarSub")}
+            status="comingSoon"
+          />
+          <Row
+            icon={<Sparkles className="h-4 w-4" />}
+            iconCls="bg-purple-500/15 text-purple-600 dark:text-purple-300"
+            name={t("social")}
+            sub={t("socialSub")}
+            status="comingSoon"
+          />
+        </>
+      )}
 
       {/* Reply-to — the one editable control (sending domain stays read-only) */}
       <div className="mt-3 flex flex-col gap-2 border-t border-border/60 pt-4">

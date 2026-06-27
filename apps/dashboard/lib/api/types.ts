@@ -696,3 +696,147 @@ export type LeadIntel = {
 };
 
 export type LeadIntelResponse = { ok: true; data: LeadIntel };
+
+// --- Readiness (Phase 1) — mirrors apps/api/src/lib/readiness/compute.ts -----
+// GET /api/v1/readiness. Per-item/provider/gate go-live readiness, computed from
+// live signals only. Item `label`/`uiCopy` + provider `detail` are server-provided
+// copy (English source of truth); the dashboard renders them as data.
+export type ReadinessStatus =
+  | "ready"
+  | "live_but_unproven"
+  | "manual_fallback"
+  | "missing"
+  | "blocked"
+  | "needs_decision"
+  | "unavailable";
+
+export type ReadinessOwner = "agency" | "aivena" | "system";
+
+export type ReadinessGateId =
+  | "G1" | "G2" | "G3" | "G4" | "G5" | "G6" | "G7" | "G8" | "G9" | "G10" | "G11";
+
+export type ReadinessItem = {
+  id: string;
+  label: string;
+  area: string;
+  gate: ReadinessGateId;
+  owner: ReadinessOwner;
+  status: ReadinessStatus;
+  agencyEditable: boolean;
+  adminApproved: boolean | null;
+  signal: { source: string; value: string };
+  uiCopy: string;
+  blockedBy: string[];
+};
+
+export type ReadinessProviderId =
+  | "email" | "whatsapp" | "whatsapp_templates_multilang" | "calendar" | "property_feed";
+
+export type ReadinessProviderState = {
+  provider: ReadinessProviderId;
+  status: ReadinessStatus;
+  detail: string;
+  source: string;
+};
+
+export type ReadinessGateState = {
+  gate: ReadinessGateId;
+  status: "open" | "blocked";
+  blockedBy: string[];
+};
+
+export type ReadinessResponse = {
+  computedAt: string;
+  agencyId: string;
+  items: ReadinessItem[];
+  providers: ReadinessProviderState[];
+  gates: ReadinessGateState[];
+  goLive: { eligible: boolean; scope: string; blockedBy: string[]; note: string };
+};
+
+// --- Command center / operations (F1 + F2 + F4) — read-only ops surface ------
+
+export type OpsProviderState =
+  | "ready"
+  | "degraded"
+  | "disconnected"
+  | "unavailable" // signal could not be read — NOT asserted as disconnected
+  | "unknown"; // no verification mechanism yet — never faked as ready
+
+export type OpsHealthBucket =
+  | "at_risk"
+  | "stuck"
+  | "waiting_on_you"
+  | "awaiting_reply"
+  | "healthy";
+
+export type OpsFailedSend = {
+  messageId: string;
+  leadId: string | null;
+  leadName: string | null;
+  channel: string | null;
+  status: string;
+  at: string | null;
+  ageHours: number | null;
+  preview: string | null;
+};
+
+export type OpsTask = {
+  taskId: string;
+  leadId: string | null;
+  leadName: string | null;
+  type: string;
+  label: string;
+  status: string;
+  priority: string | null;
+  temperature: string | null;
+  title: string | null;
+  createdAt: string | null;
+  ageHours: number | null;
+};
+
+export type OpsAtRiskLead = {
+  leadId: string;
+  leadName: string | null;
+  bucket: OpsHealthBucket;
+  reason: string;
+  temperature: string | null;
+  ageHours: number | null;
+  lastActivityAt: string | null;
+};
+
+export type OperationsResponse = {
+  computedAt: string;
+  agencyId: string;
+  attention: {
+    failedSends: number;
+    openTasks: number;
+    atRiskLeads: number;
+    providerIssues: number;
+    openActionItems: number;
+  };
+  failedSends: {
+    count: number;
+    items: OpsFailedSend[];
+    note: string;
+    available: boolean;
+  };
+  actionQueue: {
+    total: number;
+    byType: Array<{ type: string; label: string; count: number }>;
+    items: OpsTask[];
+    available: boolean;
+  };
+  providers: Array<{
+    provider: "whatsapp" | "email";
+    state: OpsProviderState;
+    detail: string;
+    source: string;
+  }>;
+  lifecycle: {
+    buckets: Array<{ key: OpsHealthBucket; label: string; count: number }>;
+    atRisk: OpsAtRiskLead[];
+    available: boolean;
+  };
+  signalHealth: Array<{ signal: string; ok: boolean; source: string }>;
+};

@@ -4,11 +4,12 @@ import { Image as ImageIcon, SlidersHorizontal, Mail, Globe, Users, CreditCard }
 import { apiFetch, ApiError } from "@/lib/api/client";
 import { PageLoadError } from "@/components/shell/page-error";
 import { getCurrentUserContext } from "@/lib/auth/context";
-import type { SettingsResponse } from "@/lib/api/types";
+import type { SettingsResponse, ReadinessResponse } from "@/lib/api/types";
 
 import { AccordionSection, StatusDot, StatusTag } from "./accordion";
 import { hasAutoSend } from "./automation-safety";
 import { ChecklistSection } from "./sections/checklist-section";
+import { SetupProgressSection } from "./sections/setup-progress-section";
 import { BrandingSection } from "./sections/branding-section";
 import { AiSection } from "./sections/ai-section";
 import { ChannelsSection } from "./sections/channels-section";
@@ -32,9 +33,10 @@ export default async function SettingsPage() {
   const t = await getTranslations("settings");
   const ta = await getTranslations("settings.accordion");
 
-  const [settingsRes, prefsRes, ctx] = await Promise.allSettled([
+  const [settingsRes, prefsRes, readinessRes, ctx] = await Promise.allSettled([
     apiFetch<SettingsResponse>("/api/v1/settings"),
     apiFetch<PreferencesResponse>("/api/v1/me/preferences"),
+    apiFetch<ReadinessResponse>("/api/v1/readiness"),
     getCurrentUserContext(),
   ]);
 
@@ -45,6 +47,12 @@ export default async function SettingsPage() {
   const settings = settingsRes.value;
   const preferences = prefsRes.status === "fulfilled" ? prefsRes.value : FALLBACK_PREFERENCES;
   if (prefsRes.status === "rejected") logFailure("preferences", prefsRes.reason);
+
+  // Readiness (D2/D3) is enhancement, not load-critical: a non-owner gets 403 and
+  // a pre-deploy build gets 404 — either way we fall back to the settings-derived
+  // ChecklistSection + static channel rows. Never block the page on it.
+  const readiness = readinessRes.status === "fulfilled" ? readinessRes.value : null;
+  if (readinessRes.status === "rejected") logFailure("readiness", readinessRes.reason);
 
   const currentUserId = ctx.status === "fulfilled" && ctx.value ? ctx.value.userId : "";
 
@@ -58,13 +66,18 @@ export default async function SettingsPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-[920px] flex-col gap-3">
-      {/* Setup status strip */}
-      <ChecklistSection
-        checklist={settings.setup_checklist}
-        lanes={lanes}
-        channels={settings.channels}
-        workingHours={settings.config.working_hours}
-      />
+      {/* Setup status strip — readiness-driven (D2) when available, else the
+          settings-derived checklist as a graceful fallback. */}
+      {readiness ? (
+        <SetupProgressSection readiness={readiness} />
+      ) : (
+        <ChecklistSection
+          checklist={settings.setup_checklist}
+          lanes={lanes}
+          channels={settings.channels}
+          workingHours={settings.config.working_hours}
+        />
+      )}
 
       {/* 1. Agency profile & branding (open) */}
       <AccordionSection
@@ -99,6 +112,7 @@ export default async function SettingsPage() {
           sendingDomain={settings.profile.sending_domain}
           fromEmail={settings.profile.from_email}
           replyTo={settings.profile.reply_to}
+          providers={readiness?.providers}
         />
       </AccordionSection>
 

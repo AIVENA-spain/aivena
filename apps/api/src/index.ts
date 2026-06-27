@@ -22,6 +22,7 @@ import leadsRoute from './routes/leads';
 import conversationsRoute from './routes/conversations';
 import matchesRoute from './routes/matches';
 import whatsappRoute from './routes/whatsapp';
+import readinessRoute from './routes/readiness';
 import studioRoute from './routes/studio';
 import studioRenderRoute from './routes/studio-render';
 import imagesRoute from './routes/images';
@@ -96,6 +97,9 @@ app.route('/api/v1/conversations', conversationsRoute);
 app.route('/api/v1/matches', matchesRoute);
 // WhatsApp re-engagement — closed-window template send (send_reengagement_template).
 app.route('/api/v1/whatsapp', whatsappRoute);
+// Go-live readiness (Phase 1, read-only) — per-item/provider/gate status computed
+// from live signals; owner/aivena_staff; consumes WhatsApp readiness, degrades honestly.
+app.route('/api/v1/readiness', readinessRoute);
 // Studio uploads — agent's own reference image → agency-assets bucket.
 app.route('/api/v1/studio', studioRoute);
 // Image generation (W13) — create via Edge Function, poll/list via fenced reads.

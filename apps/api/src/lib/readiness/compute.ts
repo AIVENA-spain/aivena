@@ -1,0 +1,441 @@
+/**
+ * Readiness model (Phase 1) — PURE compute. No I/O, no DB, no Date.now().
+ *
+ * The route gathers raw live signals (each in its own savepoint so a missing
+ * table/RPC degrades that one signal instead of aborting the request) and hands
+ * them to `computeReadiness`, which derives per-item + per-provider + per-gate
+ * status entirely from those signals.
+ *
+ * Hard rules (mirror the workboard Safety/proof checklist):
+ *  - No fake states. Every item carries a `signal.source`; a null signal yields
+ *    `unavailable` / `needs_verify`, never an invented "ready"/"connected".
+ *  - Email is NEVER "verified" without a real provider signal (none exists in
+ *    the DB today → it is `live_but_unproven`, "configured, not proven").
+ *  - WhatsApp readiness is CONSUMED from Chat 3's RPC, never re-derived here; a
+ *    null `whatsapp` signal (RPC not deployed) → `unavailable`, never blocked-as-fake.
+ *  - The admin go-live decision is a Phase-3 write; Phase 1 only reports
+ *    eligibility signals and always returns `goLive.eligible=false`.
+ */
+
+export type ReadinessStatus =
+  | 'ready'
+  | 'live_but_unproven'
+  | 'manual_fallback'
+  | 'missing'
+  | 'blocked'
+  | 'needs_decision'
+  | 'unavailable';
+
+export type ReadinessOwner = 'agency' | 'aivena' | 'system';
+
+export type Gate =
+  | 'G1' | 'G2' | 'G3' | 'G4' | 'G5' | 'G6' | 'G7' | 'G8' | 'G9' | 'G10' | 'G11';
+
+/** A status counts as "satisfied for gate purposes" only if it is genuinely
+ *  done OR an explicitly-acceptable manual fallback. Everything else blocks. */
+const SATISFIED: ReadonlySet<ReadinessStatus> = new Set(['ready', 'manual_fallback']);
+
+export type ReadinessItem = {
+  id: string;
+  label: string;
+  area: string; // workboard area letter A–X
+  gate: Gate;
+  owner: ReadinessOwner;
+  status: ReadinessStatus;
+  agencyEditable: boolean;
+  /** null = no admin-approval concept; false = required & not yet approved (no store yet → Phase 3). */
+  adminApproved: boolean | null;
+  signal: { source: string; value: string };
+  uiCopy: string;
+  blockedBy: string[];
+};
+
+export type ReadinessProvider = {
+  provider: 'email' | 'whatsapp' | 'whatsapp_templates_multilang' | 'calendar' | 'property_feed';
+  status: ReadinessStatus;
+  detail: string;
+  source: string;
+};
+
+export type ReadinessGate = {
+  gate: Gate;
+  status: 'open' | 'blocked';
+  blockedBy: string[];
+};
+
+export type ReadinessResponse = {
+  agencyId: string;
+  items: ReadinessItem[];
+  providers: ReadinessProvider[];
+  gates: ReadinessGate[];
+  goLive: {
+    eligible: boolean;
+    scope: string;
+    blockedBy: string[];
+    note: string;
+  };
+};
+
+// --- Signal inputs (what the route gathers; null = could not read → degrade) ---
+
+export type WhatsAppSignal = {
+  whatsapp_sender_ready: boolean;
+  whatsapp_channel_enabled: boolean;
+  templates_provider_approved: { count: number };
+  languages_ready: string[];
+  template_send_path_proven: boolean;
+  last_provider_sync_at: string | null;
+};
+
+export type ReadinessSignals = {
+  agency: {
+    legal_name: string | null;
+    trading_name: string | null;
+    status: string | null;
+    primary_region: string | null;
+    supported_languages: string[] | null;
+  } | null;
+  branding: {
+    logo_url: string | null;
+    primary_color: string | null;
+    accent_color: string | null;
+    phone: string | null;
+    website_url: string | null;
+    city: string | null;
+    region: string | null;
+    country: string | null;
+    branding_reviewed_at: string | null;
+  } | null;
+  settings: {
+    supported_languages: string[] | null;
+    timezone: string | null;
+    working_hours: Record<string, unknown> | null;
+    tone: string | null;
+    reply_rules: Record<string, unknown> | null;
+    human_approval_required: boolean | null;
+    reply_handling_mode: string | null;
+  } | null;
+  email: { from_email: string | null; domain_verified: boolean | null } | null;
+  team: { owners: number; agents: number } | null;
+  templates: { enApproved: number; nonEnApproved: number } | null;
+  properties: { count: number } | null;
+  consent: { count: number } | null;
+  calendar: { oauthCount: number } | null;
+  /** null = the WhatsApp readiness RPC could not be consumed (not deployed / failed). */
+  whatsapp: WhatsAppSignal | null;
+};
+
+// --- helpers -----------------------------------------------------------------
+
+const has = (v: string | null | undefined): boolean => typeof v === 'string' && v.trim().length > 0;
+
+/** A placeholder website is the AIVENA marketing site standing in for a real agency site. */
+const isPlaceholderWebsite = (url: string | null): boolean =>
+  has(url) && /(^|\/\/|\.)aivena\.es(\/|$)/i.test(url as string);
+
+function workingHoursTimezone(wh: Record<string, unknown> | null): string | null {
+  const tz = wh && typeof wh === 'object' ? (wh as { timezone?: unknown }).timezone : null;
+  return typeof tz === 'string' && tz.length > 0 ? tz : null;
+}
+
+function anyDayEnabled(wh: Record<string, unknown> | null): boolean {
+  if (!wh || typeof wh !== 'object') return false;
+  return Object.values(wh).some(
+    (slot) => slot && typeof slot === 'object' && (slot as { enabled?: unknown }).enabled === true,
+  );
+}
+
+function defaultLane(reply_rules: Record<string, unknown> | null): string | null {
+  const dl = reply_rules && typeof reply_rules === 'object' ? (reply_rules as { default_lane?: unknown }).default_lane : null;
+  return typeof dl === 'string' ? dl : null;
+}
+
+// --- the compute -------------------------------------------------------------
+
+export function computeReadiness(agencyId: string, s: ReadinessSignals): ReadinessResponse {
+  const items: ReadinessItem[] = [];
+  const push = (i: ReadinessItem) => items.push(i);
+
+  // ---- A. Identity / profile -------------------------------------------------
+  const ag = s.agency;
+  const br = s.branding;
+  const st = s.settings;
+
+  push({
+    id: 'identity.name', label: 'Agency name', area: 'A', gate: 'G1', owner: 'agency',
+    agencyEditable: true, adminApproved: null,
+    status: ag && has(ag.legal_name) && has(ag.trading_name) ? 'ready'
+      : ag && (has(ag.legal_name) || has(ag.trading_name)) ? 'live_but_unproven'
+      : ag ? 'missing' : 'unavailable',
+    signal: { source: 'agencies.legal_name + trading_name', value: ag ? `legal=${ag.legal_name ?? '∅'} · trading=${ag.trading_name ?? '∅'}` : 'unavailable' },
+    uiCopy: ag && has(ag.legal_name) && has(ag.trading_name) ? 'Agency name set' : 'Add the legal + trading name',
+    blockedBy: [],
+  });
+
+  push({
+    id: 'identity.logo', label: 'Logo', area: 'A', gate: 'G1', owner: 'agency',
+    agencyEditable: true, adminApproved: null,
+    status: br && has(br.logo_url) ? 'ready' : br ? 'missing' : 'unavailable',
+    signal: { source: 'agency_branding.logo_url (presence; object reachability not checked in Phase 1)', value: br?.logo_url ?? 'unavailable' },
+    uiCopy: br && has(br.logo_url) ? 'Logo uploaded' : 'Add your logo (a monogram is used until then)',
+    blockedBy: [],
+  });
+
+  push({
+    id: 'identity.colors', label: 'Brand colours', area: 'A', gate: 'G1', owner: 'agency',
+    agencyEditable: true, adminApproved: null,
+    status: br && has(br.primary_color) ? 'ready' : br ? 'missing' : 'unavailable',
+    signal: { source: 'agency_branding.primary_color/accent_color', value: br ? `primary=${br.primary_color ?? '∅'} · accent=${br.accent_color ?? '∅'}` : 'unavailable' },
+    uiCopy: br && has(br.primary_color) ? 'Brand colours set' : 'Set your brand colour (AIVENA defaults used until then)',
+    blockedBy: [],
+  });
+
+  push({
+    id: 'identity.phone', label: 'Contact phone', area: 'A', gate: 'G1', owner: 'agency',
+    agencyEditable: true, adminApproved: null,
+    status: br && has(br.phone) ? 'ready' : br ? 'missing' : 'unavailable',
+    signal: { source: 'agency_branding.phone', value: br?.phone ?? 'unavailable' },
+    uiCopy: br && has(br.phone) ? 'Contact phone set' : 'Add a contact phone',
+    blockedBy: [],
+  });
+
+  const website = br?.website_url ?? null;
+  push({
+    id: 'identity.website', label: 'Agency website', area: 'A', gate: 'G1', owner: 'agency',
+    agencyEditable: true, adminApproved: null,
+    status: !br ? 'unavailable' : isPlaceholderWebsite(website) ? 'needs_decision' : has(website) ? 'ready' : 'needs_decision',
+    signal: { source: 'agency_branding.website_url', value: website ?? '∅' },
+    uiCopy: isPlaceholderWebsite(website) ? 'Website points to a placeholder — confirm the agency’s real site (or confirm it is not required for pilot)' : has(website) ? 'Website set' : 'Decide whether a website is required for pilot',
+    blockedBy: [],
+  });
+
+  push({
+    id: 'identity.areas', label: 'Service area', area: 'A', gate: 'G1', owner: 'agency',
+    agencyEditable: true, adminApproved: null,
+    status: !br ? 'unavailable' : has(br.city) && (has(br.region) || has(ag?.primary_region ?? null)) ? 'ready' : has(br.city) ? 'live_but_unproven' : 'missing',
+    signal: { source: 'agency_branding.city/region/country + agencies.primary_region', value: br ? `city=${br.city ?? '∅'} · region=${br.region ?? '∅'} · primary_region=${ag?.primary_region ?? '∅'}` : 'unavailable' },
+    uiCopy: has(br?.city ?? null) && (has(br?.region ?? null) || has(ag?.primary_region ?? null)) ? 'Service area set' : 'Add the service region (matching still works on zone tables)',
+    blockedBy: [],
+  });
+
+  // Languages + the dual-source drift check (D7).
+  const sLangs = st?.supported_languages ?? null;
+  const aLangs = ag?.supported_languages ?? null;
+  const langsAgree = JSON.stringify((sLangs ?? []).slice().sort()) === JSON.stringify((aLangs ?? []).slice().sort());
+  push({
+    id: 'identity.languages', label: 'Languages served', area: 'A', gate: 'G1', owner: 'agency',
+    agencyEditable: true, adminApproved: null,
+    status: !st ? 'unavailable' : (sLangs && sLangs.length > 0) ? (langsAgree ? 'ready' : 'live_but_unproven') : 'missing',
+    signal: { source: 'agency_settings.supported_languages (+ agencies.supported_languages drift check)', value: `settings=[${(sLangs ?? []).join(',')}] · agencies=[${(aLangs ?? []).join(',')}] · agree=${langsAgree}` },
+    uiCopy: (sLangs && sLangs.length > 0) ? (langsAgree ? `${sLangs.length} languages served` : 'Languages set but the two source columns disagree — reconcile (D7)') : 'Choose the languages you serve',
+    blockedBy: [],
+  });
+
+  // Timezone — working_hours.timezone is authoritative; flag the W3 mismatch.
+  const whTz = workingHoursTimezone(st?.working_hours ?? null);
+  const colTz = st?.timezone ?? null;
+  const tzMismatch = has(whTz) && has(colTz) && whTz !== colTz;
+  push({
+    id: 'identity.timezone', label: 'Timezone', area: 'A', gate: 'G1', owner: 'agency',
+    agencyEditable: true, adminApproved: null,
+    status: !st ? 'unavailable' : has(whTz) ? (tzMismatch ? 'live_but_unproven' : 'ready') : 'missing',
+    signal: { source: 'agency_settings.working_hours.timezone (authoritative) vs agency_settings.timezone', value: `working_hours=${whTz ?? '∅'} · column=${colTz ?? '∅'} · mismatch=${tzMismatch}` },
+    uiCopy: tzMismatch ? 'Timezone sources disagree — the W3 send-timing fix reads working_hours.timezone (J4)' : has(whTz) ? 'Timezone set' : 'Set your timezone',
+    blockedBy: [],
+  });
+
+  push({
+    id: 'identity.working_hours', label: 'Working hours', area: 'A', gate: 'G1', owner: 'agency',
+    agencyEditable: true, adminApproved: null,
+    status: !st ? 'unavailable' : anyDayEnabled(st.working_hours) ? 'ready' : 'missing',
+    signal: { source: 'agency_settings.working_hours (enabled day slots)', value: anyDayEnabled(st?.working_hours ?? null) ? 'at least one open day' : 'no open days' },
+    uiCopy: anyDayEnabled(st?.working_hours ?? null) ? 'Working hours set' : 'Set your working hours',
+    blockedBy: [],
+  });
+
+  push({
+    id: 'identity.tone', label: 'Follow-up tone', area: 'A', gate: 'G1', owner: 'agency',
+    agencyEditable: false, adminApproved: null,
+    status: !st ? 'unavailable' : has(st.tone) ? 'ready' : 'missing',
+    signal: { source: 'agency_settings.tone (read-only in Settings; canonical pending D4 reconciliation)', value: st?.tone ?? '∅' },
+    uiCopy: has(st?.tone ?? null) ? 'Follow-up tone set (read-only during pilot)' : 'Tone not set',
+    blockedBy: [],
+  });
+
+  // Approval-first posture (system safety gate).
+  const approvalFirst = !!st && st.reply_handling_mode === 'manual' && st.human_approval_required === true && defaultLane(st.reply_rules) !== 'auto_send';
+  push({
+    id: 'posture.approval_first', label: 'Approval-first safety posture', area: 'A', gate: 'G1', owner: 'system',
+    agencyEditable: false, adminApproved: null,
+    status: !st ? 'unavailable' : approvalFirst ? 'ready' : 'live_but_unproven',
+    signal: { source: 'agency_settings.reply_handling_mode + human_approval_required + reply_rules.default_lane', value: st ? `mode=${st.reply_handling_mode} · approval=${st.human_approval_required} · default_lane=${defaultLane(st.reply_rules) ?? '∅'}` : 'unavailable' },
+    uiCopy: approvalFirst ? 'Approval-first — your team reviews before anything sends' : 'Review the automation posture before any pilot',
+    blockedBy: [],
+  });
+
+  // Team.
+  push({
+    id: 'team.owner', label: 'Owner', area: 'A', gate: 'G1', owner: 'agency',
+    agencyEditable: false, adminApproved: true,
+    status: !s.team ? 'unavailable' : s.team.owners >= 1 ? 'ready' : 'missing',
+    signal: { source: 'user_agencies (role=owner count)', value: s.team ? `owners=${s.team.owners}` : 'unavailable' },
+    uiCopy: s.team && s.team.owners >= 1 ? 'Owner assigned' : 'Assign an agency owner',
+    blockedBy: [],
+  });
+
+  push({
+    id: 'team.agents', label: 'Agent seats', area: 'A', gate: 'G1', owner: 'aivena',
+    agencyEditable: false, adminApproved: true,
+    status: 'manual_fallback',
+    signal: { source: 'user_agencies (role=agent count)', value: s.team ? `agents=${s.team.agents}` : 'unavailable' },
+    uiCopy: 'Team invites are handled by AIVENA during pilot — contact us',
+    blockedBy: [],
+  });
+
+  // Consent capture (mechanism exists; enforcement-before-marketing-send is the unproven part).
+  push({
+    id: 'consent.captured', label: 'Consent capture', area: 'S', gate: 'G1', owner: 'system',
+    agencyEditable: false, adminApproved: null,
+    status: !s.consent ? 'unavailable' : 'live_but_unproven',
+    signal: { source: 'consent_log (row presence; enforcement-before-marketing-send not verified here)', value: s.consent ? `rows=${s.consent.count}` : 'unavailable' },
+    uiCopy: 'Consent is captured at intake; confirm it gates every marketing/re-engage send',
+    blockedBy: [],
+  });
+
+  // Lifecycle / admin go-live — no DB state in Phase 1 (agencies.status has no go-live value).
+  push({
+    id: 'lifecycle.go_live', label: 'Admin go-live approval', area: 'C', gate: 'G1', owner: 'aivena',
+    agencyEditable: false, adminApproved: false,
+    status: 'blocked',
+    signal: { source: 'agencies.status (CHECK active|paused|archived — no go-live state; admin gate is Phase 3)', value: ag?.status ?? 'unavailable' },
+    uiCopy: 'AIVENA flips an agency live only when required items pass (admin gate not built yet — Phase 3)',
+    blockedBy: [],
+  });
+
+  // ---- B. Providers ----------------------------------------------------------
+  const providers: ReadinessProvider[] = [];
+
+  // Email — never "ready"/"verified" without a real SEND proven. domain_verified
+  // (a real provider DNS signal from dashboard_settings.profile) sharpens the copy
+  // but is NOT "verified sending": a verified domain with zero sends is still unproven.
+  const emailConfigured = !!s.email && has(s.email.from_email);
+  const domainVerified = s.email?.domain_verified === true;
+  const emailStatus: ReadinessStatus = !s.email ? 'unavailable' : emailConfigured ? 'live_but_unproven' : 'missing';
+  const emailDetail = !s.email
+    ? 'unavailable'
+    : !emailConfigured
+      ? 'Not configured'
+      : domainVerified
+        ? 'Sending domain verified; no real send proven yet (one send + inbound round-trip pending)'
+        : 'from_email set; sending domain not verified; no send proven';
+  push({
+    id: 'provider.email', label: 'Email sending', area: 'J', gate: 'G4', owner: 'agency',
+    agencyEditable: false, adminApproved: null,
+    status: emailStatus,
+    signal: { source: 'agency_email_config.from_email + profile.domain_verified (a real send is still unproven — zero sends to date)', value: s.email ? `from_email=${s.email.from_email ?? '∅'} · domain_verified=${domainVerified}` : 'unavailable' },
+    uiCopy: emailConfigured ? (domainVerified ? 'Email domain verified — a real send is not yet proven' : 'Email configured — domain not verified, sending not proven') : 'Set up email sending',
+    blockedBy: [],
+  });
+  providers.push({
+    provider: 'email',
+    status: emailStatus,
+    detail: emailDetail,
+    source: 'agency_email_config.from_email + profile.domain_verified',
+  });
+
+  // WhatsApp — CONSUMED from Chat 3's RPC. null = unavailable (RPC not deployed), never faked.
+  const wa = s.whatsapp;
+  const waStatus: ReadinessStatus = !wa
+    ? 'unavailable'
+    : wa.whatsapp_sender_ready && wa.whatsapp_channel_enabled && wa.template_send_path_proven
+      ? 'ready'
+      : wa.whatsapp_sender_ready
+        ? 'live_but_unproven'
+        : 'missing';
+  push({
+    id: 'provider.whatsapp', label: 'WhatsApp sending', area: 'H', gate: 'G2', owner: 'system',
+    agencyEditable: false, adminApproved: null,
+    status: waStatus,
+    signal: { source: 'consumed from get_whatsapp_provider_readiness() via /whatsapp/readiness (Chat 3)', value: wa ? `sender_ready=${wa.whatsapp_sender_ready} · channel_enabled=${wa.whatsapp_channel_enabled} · send_proven=${wa.template_send_path_proven}` : 'unavailable (readiness RPC not deployed yet)' },
+    uiCopy: !wa ? 'WhatsApp status not yet available (provider readiness service pending — Chat 3 H1)' : waStatus === 'ready' ? 'WhatsApp ready' : wa.whatsapp_sender_ready ? 'Sender connected — template send not yet proven; automation off' : 'WhatsApp not connected',
+    blockedBy: [],
+  });
+  providers.push({
+    provider: 'whatsapp',
+    status: waStatus,
+    detail: !wa ? 'Provider readiness RPC not deployed (consume-and-degrade); will light up when Chat 3 ships Phase 1c' : `sender_ready=${wa.whatsapp_sender_ready}, channel_enabled=${wa.whatsapp_channel_enabled}, send_proven=${wa.template_send_path_proven}, last_sync=${wa.last_provider_sync_at ?? 'unknown'}`,
+    source: 'get_whatsapp_provider_readiness()',
+  });
+
+  // Multilingual WhatsApp templates.
+  const nonEn = wa ? wa.languages_ready.filter((l) => l !== 'en').length : (s.templates?.nonEnApproved ?? null);
+  const mlStatus: ReadinessStatus = nonEn === null ? 'unavailable' : nonEn > 0 ? 'ready' : 'missing';
+  push({
+    id: 'provider.templates_multilang', label: 'Multilingual WhatsApp templates', area: 'I', gate: 'G3', owner: 'aivena',
+    agencyEditable: false, adminApproved: null,
+    status: mlStatus,
+    signal: { source: wa ? 'get_whatsapp_provider_readiness().languages_ready (non-en)' : 'whatsapp_templates (status=approved, language<>en) — seed, not provider-verified', value: nonEn === null ? 'unavailable' : `non_english_approved=${nonEn}` },
+    uiCopy: mlStatus === 'ready' ? 'Multilingual templates approved' : 'English templates only — other languages in progress',
+    blockedBy: [],
+  });
+  providers.push({
+    provider: 'whatsapp_templates_multilang',
+    status: mlStatus,
+    detail: nonEn === null ? 'unavailable' : nonEn > 0 ? `${nonEn} non-English languages approved` : 'No non-English templates yet (English-only)',
+    source: wa ? 'languages_ready' : 'whatsapp_templates (seed)',
+  });
+
+  // Calendar (viewings) — no connect flow exists yet; data-driven by oauth creds.
+  const calStatus: ReadinessStatus = !s.calendar ? 'unavailable' : s.calendar.oauthCount > 0 ? 'live_but_unproven' : 'missing';
+  push({
+    id: 'provider.calendar', label: 'Calendar (viewings)', area: 'L', gate: 'G7', owner: 'agency',
+    agencyEditable: false, adminApproved: null,
+    status: calStatus,
+    signal: { source: 'agency_oauth_credentials (count; Calendar OAuth connect flow + watcher not live yet)', value: s.calendar ? `oauth_credentials=${s.calendar.oauthCount}` : 'unavailable' },
+    uiCopy: calStatus === 'missing' ? 'Calendar not connected — viewings handled manually' : 'Calendar credentials present — connect flow/watcher not yet live',
+    blockedBy: [],
+  });
+  providers.push({
+    provider: 'calendar',
+    status: calStatus,
+    detail: !s.calendar ? 'unavailable' : s.calendar.oauthCount > 0 ? 'OAuth credentials present; watcher not live' : 'Not connected (manual viewing fallback)',
+    source: 'agency_oauth_credentials',
+  });
+
+  // Property feed / catalog.
+  const propCount = s.properties?.count ?? null;
+  const feedStatus: ReadinessStatus = propCount === null ? 'unavailable' : propCount > 0 ? 'manual_fallback' : 'missing';
+  push({
+    id: 'provider.property_feed', label: 'Property catalog / feed', area: 'O', gate: 'G8', owner: 'agency',
+    agencyEditable: false, adminApproved: true,
+    status: feedStatus,
+    signal: { source: 'properties (count; production feed vs scraper/import not distinguishable in Phase 1)', value: propCount === null ? 'unavailable' : `properties=${propCount}` },
+    uiCopy: feedStatus === 'manual_fallback' ? 'Catalog present — production feed + AIVENA quality check pending' : 'No properties imported yet',
+    blockedBy: [],
+  });
+  providers.push({
+    provider: 'property_feed',
+    status: feedStatus,
+    detail: propCount === null ? 'unavailable' : propCount > 0 ? `${propCount} properties present (source verification pending)` : 'No catalog',
+    source: 'properties',
+  });
+
+  // ---- Gates rollup ----------------------------------------------------------
+  const gateList: Gate[] = ['G1', 'G2', 'G3', 'G4', 'G5', 'G6', 'G7', 'G8', 'G9', 'G10', 'G11'];
+  const gates: ReadinessGate[] = gateList.map((g) => {
+    const blockedBy = items.filter((it) => it.gate === g && !SATISFIED.has(it.status)).map((it) => it.id);
+    return { gate: g, status: blockedBy.length ? 'blocked' : 'open', blockedBy };
+  });
+
+  // ---- Go-live (Phase 1: eligibility signals only; the write is Phase 3) -----
+  const g1 = gates.find((x) => x.gate === 'G1')!;
+  const goLiveBlockers = Array.from(new Set([...g1.blockedBy]));
+  const goLive = {
+    eligible: false, // never true in Phase 1 — the admin gate + lifecycle store do not exist yet
+    scope: 'agency-config readiness only (admin/manual gates tracked off-platform until the Phase 3 go-live gate exists)',
+    blockedBy: goLiveBlockers,
+    note: 'Manual gates (autónomo, legal pages, test-data cleanup, the admin go-live decision) have no DB representation in Phase 1 and are reported as blocked/awaiting-AIVENA — never as passed.',
+  };
+
+  return { agencyId, items, providers, gates, goLive };
+}

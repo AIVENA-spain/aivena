@@ -1,0 +1,397 @@
+{
+  "generated_by": "studio/engine/bucketInventory.ts",
+  "bucket": "studio-templates",
+  "templates_found": 13,
+  "templates_expected_count": 13,
+  "instagram_current": 13,
+  "facebook_later": 0,
+  "note": "tokenized SVGs analysed (raw <n>.svg also in bucket). other_tokens are non-photo @@..@@ placeholders (recolour/text). text_elements=0 => Canva-outlined text (NOT editable) => the Studio engine must re-inject editable text via the manifest.",
+  "templates": [
+    {
+      "template": "1",
+      "name": "1.tokenized.svg",
+      "ok": true,
+      "post_type_inferred": "Open House",
+      "bytes": 1934338,
+      "width": 1080,
+      "height": 1350,
+      "aspect": "4:5 portrait",
+      "family": "instagram/current",
+      "photo_slots": 1,
+      "photo_tokens": [
+        "@@PHOTO0@@"
+      ],
+      "other_tokens": [],
+      "image_tags": 1,
+      "text_elements": 0,
+      "tspan_elements": 0,
+      "path_elements": 1856,
+      "fonts": [],
+      "distinct_fill_colours": 4,
+      "fills": [
+        "#000000",
+        "#ffffff",
+        "#182440",
+        "#ecefeb"
+      ],
+      "editable_text_present": false
+    },
+    {
+      "template": "2",
+      "name": "2.tokenized.svg",
+      "ok": true,
+      "post_type_inferred": "Luxury listing (villa)",
+      "bytes": 466772,
+      "width": 1080,
+      "height": 1350,
+      "aspect": "4:5 portrait",
+      "family": "instagram/current",
+      "photo_slots": 1,
+      "photo_tokens": [
+        "@@PHOTO0@@"
+      ],
+      "other_tokens": [],
+      "image_tags": 1,
+      "text_elements": 0,
+      "tspan_elements": 0,
+      "path_elements": 858,
+      "fonts": [],
+      "distinct_fill_colours": 3,
+      "fills": [
+        "#ffffff",
+        "#2a2b2f",
+        "#553929"
+      ],
+      "editable_text_present": false
+    },
+    {
+      "template": "3",
+      "name": "3.tokenized.svg",
+      "ok": true,
+      "post_type_inferred": "Luxury listing (apartment)",
+      "bytes": 151150,
+      "width": 1080,
+      "height": 1350,
+      "aspect": "4:5 portrait",
+      "family": "instagram/current",
+      "photo_slots": 1,
+      "photo_tokens": [
+        "@@PHOTO0@@"
+      ],
+      "other_tokens": [],
+      "image_tags": 1,
+      "text_elements": 0,
+      "tspan_elements": 0,
+      "path_elements": 214,
+      "fonts": [],
+      "distinct_fill_colours": 2,
+      "fills": [
+        "#ffffff",
+        "#000000"
+      ],
+      "editable_text_present": false
+    },
+    {
+      "template": "4",
+      "name": "4.tokenized.svg",
+      "ok": true,
+      "post_type_inferred": "Luxury listing (apartment)",
+      "bytes": 303185,
+      "width": 1080,
+      "height": 1350,
+      "aspect": "4:5 portrait",
+      "family": "instagram/current",
+      "photo_slots": 1,
+      "photo_tokens": [
+        "@@PHOTO0@@"
+      ],
+      "other_tokens": [],
+      "image_tags": 2,
+      "text_elements": 0,
+      "tspan_elements": 0,
+      "path_elements": 194,
+      "fonts": [],
+      "distinct_fill_colours": 2,
+      "fills": [
+        "#ffffff",
+        "#000000"
+      ],
+      "editable_text_present": false
+    },
+    {
+      "template": "5",
+      "name": "5.tokenized.svg",
+      "ok": true,
+      "post_type_inferred": "Listing (villa)",
+      "bytes": 128420,
+      "width": 1080,
+      "height": 1350,
+      "aspect": "4:5 portrait",
+      "family": "instagram/current",
+      "photo_slots": 1,
+      "photo_tokens": [
+        "@@PHOTO0@@"
+      ],
+      "other_tokens": [],
+      "image_tags": 2,
+      "text_elements": 0,
+      "tspan_elements": 0,
+      "path_elements": 125,
+      "fonts": [],
+      "distinct_fill_colours": 2,
+      "fills": [
+        "#000000",
+        "#ffffff"
+      ],
+      "editable_text_present": false
+    },
+    {
+      "template": "6",
+      "name": "6.tokenized.svg",
+      "ok": true,
+      "post_type_inferred": "Open House (multi-photo gallery)",
+      "bytes": 59321,
+      "width": 1080,
+      "height": 1350,
+      "aspect": "4:5 portrait",
+      "family": "instagram/current",
+      "photo_slots": 4,
+      "photo_tokens": [
+        "@@PHOTO0@@",
+        "@@PHOTO1@@",
+        "@@PHOTO2@@",
+        "@@PHOTO3@@"
+      ],
+      "other_tokens": [],
+      "image_tags": 4,
+      "text_elements": 0,
+      "tspan_elements": 0,
+      "path_elements": 71,
+      "fonts": [],
+      "distinct_fill_colours": 3,
+      "fills": [
+        "#ffffff",
+        "#f8f7f2",
+        "#000000"
+      ],
+      "editable_text_present": false
+    },
+    {
+      "template": "6b",
+      "name": "6b.tokenized.svg",
+      "ok": true,
+      "post_type_inferred": "Open House variant (multi-photo)",
+      "bytes": 118722,
+      "width": 1080,
+      "height": 1350,
+      "aspect": "4:5 portrait",
+      "family": "instagram/current",
+      "photo_slots": 4,
+      "photo_tokens": [
+        "@@PHOTO0@@",
+        "@@PHOTO1@@",
+        "@@PHOTO2@@",
+        "@@PHOTO3@@"
+      ],
+      "other_tokens": [],
+      "image_tags": 4,
+      "text_elements": 0,
+      "tspan_elements": 0,
+      "path_elements": 163,
+      "fonts": [],
+      "distinct_fill_colours": 4,
+      "fills": [
+        "#ffffff",
+        "#f8f7f2",
+        "#000000",
+        "#1a130e"
+      ],
+      "editable_text_present": false
+    },
+    {
+      "template": "7",
+      "name": "7.tokenized.svg",
+      "ok": true,
+      "post_type_inferred": "Agency/brand promo — 'Discover Your Dream' (multi-photo)",
+      "bytes": 269866,
+      "width": 1080,
+      "height": 1350,
+      "aspect": "4:5 portrait",
+      "family": "instagram/current",
+      "photo_slots": 4,
+      "photo_tokens": [
+        "@@PHOTO0@@",
+        "@@PHOTO1@@",
+        "@@PHOTO2@@",
+        "@@PHOTO3@@"
+      ],
+      "other_tokens": [],
+      "image_tags": 7,
+      "text_elements": 0,
+      "tspan_elements": 0,
+      "path_elements": 301,
+      "fonts": [],
+      "distinct_fill_colours": 5,
+      "fills": [
+        "#ffffff",
+        "#f7f7f7",
+        "#c9bda4",
+        "#1a130e",
+        "#242424"
+      ],
+      "editable_text_present": false
+    },
+    {
+      "template": "8",
+      "name": "8.tokenized.svg",
+      "ok": true,
+      "post_type_inferred": "Minimal listing / gallery (4 photos)",
+      "bytes": 12818,
+      "width": 1080,
+      "height": 1350,
+      "aspect": "4:5 portrait",
+      "family": "instagram/current",
+      "photo_slots": 4,
+      "photo_tokens": [
+        "@@PHOTO0@@",
+        "@@PHOTO1@@",
+        "@@PHOTO2@@",
+        "@@PHOTO3@@"
+      ],
+      "other_tokens": [],
+      "image_tags": 4,
+      "text_elements": 0,
+      "tspan_elements": 0,
+      "path_elements": 29,
+      "fonts": [],
+      "distinct_fill_colours": 2,
+      "fills": [
+        "#ffffff",
+        "#342722"
+      ],
+      "editable_text_present": false
+    },
+    {
+      "template": "10",
+      "name": "10.tokenized.svg",
+      "ok": true,
+      "post_type_inferred": "New Listing (multi-photo)",
+      "bytes": 76931,
+      "width": 1080,
+      "height": 1350,
+      "aspect": "4:5 portrait",
+      "family": "instagram/current",
+      "photo_slots": 4,
+      "photo_tokens": [
+        "@@PHOTO0@@",
+        "@@PHOTO1@@",
+        "@@PHOTO2@@",
+        "@@PHOTO3@@"
+      ],
+      "other_tokens": [],
+      "image_tags": 4,
+      "text_elements": 0,
+      "tspan_elements": 0,
+      "path_elements": 109,
+      "fonts": [],
+      "distinct_fill_colours": 5,
+      "fills": [
+        "#ffffff",
+        "#f6f1ea",
+        "#7ea6ad",
+        "#faefe0",
+        "#1b1a1a"
+      ],
+      "editable_text_present": false
+    },
+    {
+      "template": "11",
+      "name": "11.tokenized.svg",
+      "ok": true,
+      "post_type_inferred": "Brand / CTA — 'Step Into Your Dream Home'",
+      "bytes": 91502,
+      "width": 1080,
+      "height": 1350,
+      "aspect": "4:5 portrait",
+      "family": "instagram/current",
+      "photo_slots": 1,
+      "photo_tokens": [
+        "@@PHOTO0@@"
+      ],
+      "other_tokens": [],
+      "image_tags": 1,
+      "text_elements": 0,
+      "tspan_elements": 0,
+      "path_elements": 123,
+      "fonts": [],
+      "distinct_fill_colours": 6,
+      "fills": [
+        "#ffffff",
+        "#f1f1f1",
+        "#dfdfdf",
+        "#1e1e1e",
+        "#000000",
+        "#2a1e1e"
+      ],
+      "editable_text_present": false
+    },
+    {
+      "template": "14",
+      "name": "14.tokenized.svg",
+      "ok": true,
+      "post_type_inferred": "Just Sold announcement",
+      "bytes": 282197,
+      "width": 1080,
+      "height": 1350,
+      "aspect": "4:5 portrait",
+      "family": "instagram/current",
+      "photo_slots": 1,
+      "photo_tokens": [
+        "@@PHOTO0@@"
+      ],
+      "other_tokens": [],
+      "image_tags": 9,
+      "text_elements": 0,
+      "tspan_elements": 0,
+      "path_elements": 174,
+      "fonts": [],
+      "distinct_fill_colours": 5,
+      "fills": [
+        "#ffffff",
+        "#cac6ba",
+        "#343434",
+        "#000000",
+        "#1a130e"
+      ],
+      "editable_text_present": false
+    },
+    {
+      "template": "15",
+      "name": "15.tokenized.svg",
+      "ok": true,
+      "post_type_inferred": "Luxury Living",
+      "bytes": 9804147,
+      "width": 1080,
+      "height": 1350,
+      "aspect": "4:5 portrait",
+      "family": "instagram/current",
+      "photo_slots": 2,
+      "photo_tokens": [
+        "@@PHOTO0@@",
+        "@@PHOTO1@@"
+      ],
+      "other_tokens": [],
+      "image_tags": 9,
+      "text_elements": 0,
+      "tspan_elements": 0,
+      "path_elements": 248,
+      "fonts": [],
+      "distinct_fill_colours": 2,
+      "fills": [
+        "#ffffff",
+        "#000000"
+      ],
+      "editable_text_present": false
+    }
+  ]
+}

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
+  Activity,
   Building2,
   CalendarCheck,
   ImageIcon,
@@ -25,6 +26,7 @@ import { AccountChip } from "./account-chip";
 const ICONS: Record<NavItem["iconName"], LucideIcon> = {
   overview: LayoutGrid,
   inbox: Inbox,
+  operations: Activity,
   properties: Building2,
   viewings: CalendarCheck,
   performance: LineChart,

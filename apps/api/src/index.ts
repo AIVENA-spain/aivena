@@ -23,6 +23,7 @@ import conversationsRoute from './routes/conversations';
 import matchesRoute from './routes/matches';
 import whatsappRoute from './routes/whatsapp';
 import readinessRoute from './routes/readiness';
+import operationsRoute from './routes/operations';
 import studioRoute from './routes/studio';
 import studioRenderRoute from './routes/studio-render';
 import imagesRoute from './routes/images';
@@ -100,6 +101,10 @@ app.route('/api/v1/whatsapp', whatsappRoute);
 // Go-live readiness (Phase 1, read-only) — per-item/provider/gate status computed
 // from live signals; owner/aivena_staff; consumes WhatsApp readiness, degrades honestly.
 app.route('/api/v1/readiness', readinessRoute);
+// Command center / operations (F1+F2+F4, read-only) — aggregated failed sends,
+// open action queue, provider health, and lead-lifecycle health from live
+// signals; all agency members; each signal savepoint-isolated (degrade, never fake).
+app.route('/api/v1/operations', operationsRoute);
 // Studio uploads — agent's own reference image → agency-assets bucket.
 app.route('/api/v1/studio', studioRoute);
 // Image generation (W13) — create via Edge Function, poll/list via fenced reads.

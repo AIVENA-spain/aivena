@@ -18,7 +18,8 @@
     "ads": "Anuncios",
     "tasks": "Tareas",
     "leads": "Leads",
-    "team": "Equipo"
+    "team": "Equipo",
+    "operations": "Command center"
   },
   "topbar": {
     "switchAgency": "Cambiar de agencia",

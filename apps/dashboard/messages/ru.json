@@ -18,7 +18,8 @@
     "ads": "Реклама",
     "tasks": "Задачи",
     "leads": "Лиды",
-    "team": "Команда"
+    "team": "Команда",
+    "operations": "Command center"
   },
   "topbar": {
     "switchAgency": "Сменить агентство",

@@ -18,7 +18,8 @@
     "ads": "Anzeigen",
     "tasks": "Aufgaben",
     "leads": "Leads",
-    "team": "Team"
+    "team": "Team",
+    "operations": "Command center"
   },
   "topbar": {
     "switchAgency": "Agentur wechseln",

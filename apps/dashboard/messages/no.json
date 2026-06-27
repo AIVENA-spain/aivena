@@ -18,7 +18,8 @@
     "ads": "Annonser",
     "tasks": "Oppgaver",
     "leads": "Leads",
-    "team": "Team"
+    "team": "Team",
+    "operations": "Command center"
   },
   "topbar": {
     "switchAgency": "Bytt meglerkontor",

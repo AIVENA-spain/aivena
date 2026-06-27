@@ -18,7 +18,8 @@
     "ads": "Mainokset",
     "tasks": "Tehtävät",
     "leads": "Liidit",
-    "team": "Tiimi"
+    "team": "Tiimi",
+    "operations": "Command center"
   },
   "topbar": {
     "switchAgency": "Vaihda toimistoa",

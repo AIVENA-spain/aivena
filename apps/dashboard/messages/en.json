@@ -18,7 +18,8 @@
     "ads": "Ads",
     "tasks": "Tasks",
     "leads": "Leads",
-    "team": "Team"
+    "team": "Team",
+    "operations": "Command center"
   },
   "topbar": {
     "switchAgency": "Switch agency",

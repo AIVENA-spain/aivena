@@ -1,0 +1,30 @@
+{
+  "template_id": "04",
+  "_note": "Studio #4 (Luxury Apartment) intake. Geometry reuses the frozen v1 measured values; layer_bbox is corners [x0,y0,x1,y1] in source.png px at canvas width 1080 (the v1 resolver convention). source.png = the rendered reference (assets/04/source_ref.png); measurement uses source.svg_nophoto rendered at SS with the film overlay suppressed. known_true_font is engine-only (pre-filter acceptance guard + leave-one-out), never used in selection.",
+  "canvas": { "width": 1080, "height": 1350 },
+  "source": {
+    "svg_nophoto": "assets/04/source_nophoto.svg",
+    "png": "assets/04/source_ref.png"
+  },
+  "fixed_assets": ["assets/04/film.png", "assets/04/icons.png"],
+  "layers": [
+    {
+      "id": "title", "type": "headline", "editable": true, "text": "Luxury",
+      "layer_bbox": [250, 700, 822, 896], "metric": "cap", "match_mode": "shape",
+      "categories": ["serif", "display"], "opacity": 1.0, "color": "#FFFFFF",
+      "metadata_font": "Times New Roman", "metadata_reliable": false, "known_true_font": "Prata"
+    },
+    {
+      "id": "stats", "type": "stat", "editable": true, "text": null,
+      "layer_bbox": [410, 210, 670, 262], "metric": "cap", "match_mode": "features",
+      "categories": ["sans", "serif"], "opacity": 1.0, "color": "#FFFFFF",
+      "metadata_font": null, "metadata_reliable": false, "known_true_font": "Poppins"
+    },
+    {
+      "id": "body", "type": "body", "editable": true, "text": null,
+      "layer_bbox": [95, 1095, 985, 1260], "metric": "x", "match_mode": "features",
+      "categories": ["serif"], "opacity": 1.0, "color": "#FFFFFF",
+      "metadata_font": null, "metadata_reliable": false, "known_true_font": "Libre Caslon Text"
+    }
+  ]
+}

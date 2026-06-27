@@ -1,0 +1,17 @@
+{
+  "template_id": "_fix_missing_source",
+  "_note": "Fixture: a valid template whose source.png is genuinely absent. The blocked_missing_source pre-check must fire and name the .png, NOT proceed to scoring and return needs_seed.",
+  "canvas": { "width": 1080, "height": 1350 },
+  "source": {
+    "svg_nophoto": "assets/04/source_nophoto.svg",
+    "png": "assets/04/__DELIBERATELY_ABSENT__.png"
+  },
+  "layers": [
+    {
+      "id": "title", "type": "headline", "editable": true, "text": "Luxury",
+      "layer_bbox": [250, 700, 822, 896], "metric": "cap", "match_mode": "shape",
+      "categories": ["serif", "display"], "opacity": 1.0, "color": "#FFFFFF",
+      "metadata_font": null, "metadata_reliable": false, "known_true_font": null
+    }
+  ]
+}

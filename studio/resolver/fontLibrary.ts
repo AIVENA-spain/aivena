@@ -12,8 +12,11 @@ export interface FontMetrics { capRatio: number; xRatio: number; stemRatio: numb
 export interface LibFont extends FontEntry { verified_family: string; metrics: FontMetrics; }
 export interface LoadedLibrary { library_version: string; fonts: LibFont[]; warnings: string[]; excluded: { id: string; reason: string }[]; }
 
-const REF = 220;
-async function computeMetrics(family: string): Promise<FontMetrics> {
+export const METRIC_REF = 220;
+const REF = METRIC_REF;
+// Exported for reuse by the Font Vault builder (Stage 1) so vault metrics are computed by the EXACT
+// v1 method — never a second implementation (keeps the frozen calibration intact).
+export async function computeMetrics(family: string): Promise<FontMetrics> {
   const capImg = await renderStringRGBA(family, "H", REF);
   const cap = inkBox(capImg, regionOf([0, 0, capImg.width - 1, capImg.height - 1]), 60);
   const xImg = await renderStringRGBA(family, "x", REF);

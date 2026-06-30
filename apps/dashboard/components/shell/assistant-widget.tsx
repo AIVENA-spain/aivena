@@ -1,14 +1,21 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { Bot, X, Send, ShieldCheck, Sparkles } from "lucide-react";
+import { Bot, X, Send, ShieldCheck, Sparkles, ClipboardList } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { getAssistantAnswerAction } from "@/app/(app)/assistant-actions";
 import { routeIntent, type AssistantIntent } from "@/lib/assistant/operations-summary";
 
-type ChatMessage = { id: number; role: "user" | "assistant"; text: string };
+type ChatCta = { href: string; label: string };
+type ChatMessage = { id: number; role: "user" | "assistant"; text: string; cta?: ChatCta };
+
+/** Task-related answers may reference leads with no Inbox thread — give them a
+ *  real home (the /tasks action list) instead of a dead end. */
+const TASK_INTENTS: ReadonlySet<AssistantIntent> = new Set(["today", "wrong", "tasks"]);
+const TASKS_CTA: ChatCta = { href: "/tasks", label: "Open the Tasks list" };
 
 /**
  * AIVENA Assistant (WAA). Floating bottom-right launcher → right side panel,
@@ -55,7 +62,10 @@ export function AssistantWidget() {
     setBusy(true);
     const res = await getAssistantAnswerAction(intent);
     const reply = res.ok ? res.answer : res.error;
-    setMessages((prev) => prev.map((m) => (m.id === loadingId ? { ...m, text: reply } : m)));
+    // On task-related answers, attach a clickable path to the /tasks home so a
+    // mentioned lead (incl. ones with no Inbox thread) is never a dead end.
+    const cta = res.ok && TASK_INTENTS.has(intent) ? TASKS_CTA : undefined;
+    setMessages((prev) => prev.map((m) => (m.id === loadingId ? { ...m, text: reply, cta } : m)));
     setBusy(false);
   }
 
@@ -172,13 +182,30 @@ export function AssistantWidget() {
             <div
               key={m.id}
               className={cn(
-                "max-w-[85%] whitespace-pre-line rounded-2xl px-3 py-2 text-[13px] leading-snug",
-                m.role === "user"
-                  ? "ml-auto rounded-tr-sm bg-primary text-primary-foreground"
-                  : "mr-auto rounded-tl-sm bg-muted text-foreground",
+                "flex flex-col gap-1",
+                m.role === "user" ? "items-end" : "items-start",
               )}
             >
-              {m.text}
+              <div
+                className={cn(
+                  "max-w-[85%] whitespace-pre-line rounded-2xl px-3 py-2 text-[13px] leading-snug",
+                  m.role === "user"
+                    ? "rounded-tr-sm bg-primary text-primary-foreground"
+                    : "rounded-tl-sm bg-muted text-foreground",
+                )}
+              >
+                {m.text}
+              </div>
+              {m.cta ? (
+                <Link
+                  href={m.cta.href}
+                  onClick={() => setOpen(false)}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-brand/30 bg-brand-soft px-3 py-1.5 text-[12px] font-medium text-brand transition-colors hover:bg-brand/10"
+                >
+                  <ClipboardList className="h-3 w-3" aria-hidden />
+                  {m.cta.label}
+                </Link>
+              ) : null}
             </div>
           ))}
         </div>

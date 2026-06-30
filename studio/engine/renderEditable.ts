@@ -25,6 +25,7 @@ export const EditableManifest = z.object({
   source_svg: z.string(),
   photo_token: z.string(),
   colour_tokens: z.record(z.string(), z.object({ default: z.string(), locked: z.boolean() })),
+  overlay: z.object({ role: z.string(), opacity: z.number() }).optional(), // legibility scrim over the photo
   text_slots: z.array(EditableSlot),
 });
 export type EditableManifest = z.infer<typeof EditableManifest>;
@@ -53,9 +54,13 @@ function localBg(img: RGBA, b: number[], margin = 10): string {
 export async function renderEditable(m: EditableManifest, palette: Palette = {}, photoUri = GREY): Promise<{ svg: string; png: Buffer; editableTextCount: number }> {
   const [W, H] = [m.canvas.width, m.canvas.height];
   const src = fs.readFileSync(abs(m.source_svg), "utf8");
-  // background raster = source SVG with the photo token filled
+  // background raster = source SVG with the photo token filled, then an optional legibility scrim baked in,
+  // so the knockout samples the FINAL backdrop tone (covers the baked outlined text with the right colour).
   const filled = src.split(m.photo_token).join(photoUri).replace(/@@PHOTO\d+@@/g, GREY);
-  const bgPng = renderTemplatePng(filled, W);
+  const photoUriPng = "data:image/png;base64," + renderTemplatePng(filled, W).toString("base64");
+  const scrim = m.overlay ? `<rect x="0" y="0" width="${W}" height="${H}" fill="${roleHex(m, palette, m.overlay.role)}" fill-opacity="${m.overlay.opacity}"/>` : "";
+  const bgSvg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><image x="0" y="0" width="${W}" height="${H}" xlink:href="${photoUriPng}"/>${scrim}</svg>`;
+  const bgPng = renderTemplatePng(bgSvg, W);
   const bgUri = "data:image/png;base64," + bgPng.toString("base64");
   const bgRGBA = await pngToRGBA(bgPng, false);
 

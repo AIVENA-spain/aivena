@@ -1,0 +1,30 @@
+{
+  "template_id": "1",
+  "_note": "FIRST-PROOF editable manifest for #1 (Open House) — a DARK template (white text on black/photo). Geometry from the auto-intake draft (intake/1), colours from engine/colourTokenize (bg #000, ink #fff). Text re-rendered as editable <text> (outlined Canva source knocked out, never final). Colours are role tokens resolved from the agency palette (colour wheel). Title font defaults to Libre Caslon Display (serif), stats/cta to Poppins, pending per-template font adjudication. No invented property facts: title/living-room label/badge/contact are template/agency copy; bedroom + bathroom stats are the real property facts.",
+  "canvas": { "width": 1080, "height": 1350 },
+  "source_svg": "assets/1/source.tokenized.svg",
+  "photo_token": "@@PHOTO0@@",
+  "overlay": { "role": "overlay", "opacity": 0.45 },
+  "colour_tokens": {
+    "background": { "default": "#000000", "locked": false },
+    "overlay": { "default": "#000000", "locked": true },
+    "title": { "default": "#ffffff", "locked": false },
+    "subtitle/body": { "default": "#ffffff", "locked": false },
+    "accent": { "default": "#ffffff", "locked": false },
+    "badge.fill": { "default": "#ffffff", "locked": false },
+    "badge.text": { "default": "#ffffff", "locked": false },
+    "divider": { "default": "#ffffff", "locked": false },
+    "icon": { "default": "#ffffff", "locked": true },
+    "stat.label": { "default": "#ffffff", "locked": false },
+    "stat.value": { "default": "#ffffff", "locked": false },
+    "cta": { "default": "#ffffff", "locked": false }
+  },
+  "text_slots": [
+    { "id": "stat_left", "role": "stat.value", "source": "property_fact", "bbox": [90, 118, 330, 182], "font": "Poppins", "align": "center", "text": "1 BEDROOM" },
+    { "id": "stat_center", "role": "stat.label", "source": "template_copy", "bbox": [420, 118, 660, 182], "font": "Poppins", "align": "center", "text": "LIVING ROOM" },
+    { "id": "stat_right", "role": "stat.value", "source": "property_fact", "bbox": [750, 118, 998, 182], "font": "Poppins", "align": "center", "text": "1 BATHROOM" },
+    { "id": "title", "role": "title", "source": "template_copy", "bbox": [133, 440, 947, 900], "font": "LibreCaslonDisplay", "align": "center", "text": "OPEN\nHOUSE" },
+    { "id": "badge", "role": "badge.text", "source": "template_copy", "bbox": [82, 1224, 312, 1272], "font": "Poppins", "align": "left", "text": "SCHEDULE A CALL" },
+    { "id": "contact", "role": "cta", "source": "template_copy", "bbox": [345, 1224, 998, 1272], "font": "Poppins", "align": "left", "text": "123-456-7890   ·   reallygreatsite.com" }
+  ]
+}

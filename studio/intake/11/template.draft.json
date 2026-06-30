@@ -1,0 +1,115 @@
+{
+  "template": "11",
+  "ok": true,
+  "canvas": {
+    "width": 1080,
+    "height": 1350
+  },
+  "aspect": 0.8,
+  "photo_slots": [
+    {
+      "token": "@@PHOTO0@@",
+      "bbox": [
+        54,
+        577,
+        836,
+        1300
+      ]
+    }
+  ],
+  "image_slot_count": 1,
+  "text_regions": [
+    {
+      "candidate_type": "stat",
+      "bbox": [
+        104,
+        130,
+        241,
+        171
+      ],
+      "height": 41
+    },
+    {
+      "candidate_type": "stat",
+      "bbox": [
+        809,
+        131,
+        990,
+        147
+      ],
+      "height": 16
+    },
+    {
+      "candidate_type": "title",
+      "bbox": [
+        100,
+        267,
+        943,
+        353
+      ],
+      "height": 86
+    },
+    {
+      "candidate_type": "subtitle/body",
+      "bbox": [
+        104,
+        379,
+        809,
+        465
+      ],
+      "height": 86
+    },
+    {
+      "candidate_type": "label",
+      "bbox": [
+        878,
+        387,
+        950,
+        459
+      ],
+      "height": 72
+    },
+    {
+      "candidate_type": "label",
+      "bbox": [
+        463,
+        1205,
+        974,
+        1231
+      ],
+      "height": 26
+    }
+  ],
+  "colour_fills": [
+    "#000000",
+    "#1e1e1e",
+    "#2a1e1e",
+    "#dfdfdf",
+    "#f1f1f1",
+    "#ffffff"
+  ],
+  "colour_role_candidates": {
+    "background": "#000000",
+    "title": "#ffffff",
+    "subtitle/body": "#ffffff",
+    "accent": "#dfdfdf"
+  },
+  "draft": true,
+  "needs_human_measure_confirm": true,
+  "editable_text_target": true,
+  "_note": "FIRST-PASS auto-intake from the tokenized Canva SVG. text_regions/colour roles are candidates to confirm; outlined source text is NOT final — the editable manifest re-renders real text. See #4 for the proven final template.json.",
+  "role_set": [
+    "background",
+    "overlay",
+    "title",
+    "subtitle/body",
+    "accent",
+    "badge.fill",
+    "badge.text",
+    "divider",
+    "icon",
+    "stat.label",
+    "stat.value",
+    "cta"
+  ]
+}

@@ -1,0 +1,99 @@
+{
+  "template": "15",
+  "ok": true,
+  "canvas": {
+    "width": 1080,
+    "height": 1350
+  },
+  "aspect": 0.8,
+  "photo_slots": [
+    {
+      "token": "@@PHOTO0@@",
+      "bbox": [
+        108,
+        275,
+        971,
+        1178
+      ]
+    },
+    {
+      "token": "@@PHOTO1@@",
+      "bbox": [
+        91,
+        1068,
+        216,
+        1192
+      ]
+    }
+  ],
+  "image_slot_count": 9,
+  "text_regions": [
+    {
+      "candidate_type": "label",
+      "bbox": [
+        228,
+        90,
+        851,
+        262
+      ],
+      "height": 172
+    },
+    {
+      "candidate_type": "title",
+      "bbox": [
+        573,
+        890,
+        931,
+        1139
+      ],
+      "height": 249
+    },
+    {
+      "candidate_type": "label",
+      "bbox": [
+        187,
+        1214,
+        388,
+        1265
+      ],
+      "height": 51
+    },
+    {
+      "candidate_type": "subtitle/body",
+      "bbox": [
+        580,
+        1201,
+        908,
+        1256
+      ],
+      "height": 55
+    }
+  ],
+  "colour_fills": [
+    "#000000",
+    "#ffffff"
+  ],
+  "colour_role_candidates": {
+    "background": "#000000",
+    "title": "#ffffff",
+    "subtitle/body": "#ffffff"
+  },
+  "draft": true,
+  "needs_human_measure_confirm": true,
+  "editable_text_target": true,
+  "_note": "FIRST-PASS auto-intake from the tokenized Canva SVG. text_regions/colour roles are candidates to confirm; outlined source text is NOT final — the editable manifest re-renders real text. See #4 for the proven final template.json.",
+  "role_set": [
+    "background",
+    "overlay",
+    "title",
+    "subtitle/body",
+    "accent",
+    "badge.fill",
+    "badge.text",
+    "divider",
+    "icon",
+    "stat.label",
+    "stat.value",
+    "cta"
+  ]
+}

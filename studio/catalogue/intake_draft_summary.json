@@ -1,0 +1,1213 @@
+{
+  "generated_by": "studio/engine/autoIntake.ts",
+  "templates": 13,
+  "validation_vs_04": {
+    "stat_row": {
+      "known": [
+        120,
+        200,
+        960,
+        270
+      ],
+      "best_overlap_detected": [
+        414,
+        114,
+        665,
+        243
+      ],
+      "iou": 0.13,
+      "covered": true
+    },
+    "title": {
+      "known": [
+        140,
+        700,
+        952,
+        1095
+      ],
+      "best_overlap_detected": [
+        94,
+        735,
+        986,
+        1248
+      ],
+      "iou": 0.6,
+      "covered": true
+    },
+    "body": {
+      "known": [
+        95,
+        1095,
+        985,
+        1262
+      ],
+      "best_overlap_detected": [
+        94,
+        735,
+        986,
+        1248
+      ],
+      "iou": 0.29,
+      "covered": true
+    }
+  },
+  "rows": [
+    {
+      "template": "1",
+      "ok": true,
+      "canvas": {
+        "width": 1080,
+        "height": 1350
+      },
+      "aspect": 0.8,
+      "photo_slots": [
+        {
+          "token": "@@PHOTO0@@",
+          "bbox": [
+            0,
+            0,
+            1079,
+            1348
+          ]
+        }
+      ],
+      "image_slot_count": 1,
+      "text_regions": [
+        {
+          "candidate_type": "stat",
+          "bbox": [
+            121,
+            122,
+            288,
+            180
+          ],
+          "height": 58
+        },
+        {
+          "candidate_type": "stat",
+          "bbox": [
+            487,
+            122,
+            593,
+            180
+          ],
+          "height": 58
+        },
+        {
+          "candidate_type": "stat",
+          "bbox": [
+            780,
+            122,
+            968,
+            180
+          ],
+          "height": 58
+        },
+        {
+          "candidate_type": "title",
+          "bbox": [
+            133,
+            440,
+            947,
+            900
+          ],
+          "height": 460
+        },
+        {
+          "candidate_type": "subtitle/body",
+          "bbox": [
+            82,
+            1218,
+            995,
+            1278
+          ],
+          "height": 60
+        }
+      ],
+      "colour_fills": [
+        "#000000",
+        "#182440",
+        "#ecefeb",
+        "#ffffff"
+      ],
+      "colour_role_candidates": {
+        "background": "#000000",
+        "title": "#ffffff",
+        "subtitle/body": "#ffffff",
+        "accent": "#ecefeb"
+      }
+    },
+    {
+      "template": "2",
+      "ok": true,
+      "canvas": {
+        "width": 1080,
+        "height": 1350
+      },
+      "aspect": 0.8,
+      "photo_slots": [
+        {
+          "token": "@@PHOTO0@@",
+          "bbox": [
+            0,
+            0,
+            1079,
+            1348
+          ]
+        }
+      ],
+      "image_slot_count": 1,
+      "text_regions": [
+        {
+          "candidate_type": "title",
+          "bbox": [
+            0,
+            1242,
+            1079,
+            1348
+          ],
+          "height": 106
+        }
+      ],
+      "colour_fills": [
+        "#2a2b2f",
+        "#553929",
+        "#ffffff"
+      ],
+      "colour_role_candidates": {
+        "background": "#2a2b2f",
+        "title": "#ffffff",
+        "subtitle/body": "#ffffff",
+        "accent": "#553929"
+      }
+    },
+    {
+      "template": "3",
+      "ok": true,
+      "canvas": {
+        "width": 1080,
+        "height": 1350
+      },
+      "aspect": 0.8,
+      "photo_slots": [
+        {
+          "token": "@@PHOTO0@@",
+          "bbox": [
+            0,
+            1,
+            1079,
+            1079
+          ]
+        }
+      ],
+      "image_slot_count": 1,
+      "text_regions": [
+        {
+          "candidate_type": "label",
+          "bbox": [
+            90,
+            75,
+            974,
+            225
+          ],
+          "height": 150
+        },
+        {
+          "candidate_type": "label",
+          "bbox": [
+            110,
+            268,
+            969,
+            352
+          ],
+          "height": 84
+        },
+        {
+          "candidate_type": "title",
+          "bbox": [
+            108,
+            961,
+            971,
+            1189
+          ],
+          "height": 228
+        },
+        {
+          "candidate_type": "subtitle/body",
+          "bbox": [
+            333,
+            1230,
+            745,
+            1250
+          ],
+          "height": 20
+        }
+      ],
+      "colour_fills": [
+        "#000000",
+        "#ffffff"
+      ],
+      "colour_role_candidates": {
+        "background": "#000000",
+        "title": "#ffffff",
+        "subtitle/body": "#ffffff"
+      }
+    },
+    {
+      "template": "4",
+      "ok": true,
+      "canvas": {
+        "width": 1080,
+        "height": 1350
+      },
+      "aspect": 0.8,
+      "photo_slots": [
+        {
+          "token": "@@PHOTO0@@",
+          "bbox": [
+            334,
+            0,
+            1079,
+            1348
+          ]
+        }
+      ],
+      "image_slot_count": 2,
+      "text_regions": [
+        {
+          "candidate_type": "badge",
+          "bbox": [
+            224,
+            108,
+            326,
+            243
+          ],
+          "height": 135
+        },
+        {
+          "candidate_type": "badge",
+          "bbox": [
+            414,
+            114,
+            665,
+            243
+          ],
+          "height": 129
+        },
+        {
+          "candidate_type": "badge",
+          "bbox": [
+            716,
+            108,
+            894,
+            243
+          ],
+          "height": 135
+        },
+        {
+          "candidate_type": "title",
+          "bbox": [
+            94,
+            735,
+            986,
+            1248
+          ],
+          "height": 513
+        }
+      ],
+      "colour_fills": [
+        "#000000",
+        "#ffffff"
+      ],
+      "colour_role_candidates": {
+        "background": "#000000",
+        "title": "#ffffff",
+        "subtitle/body": "#ffffff"
+      }
+    },
+    {
+      "template": "5",
+      "ok": true,
+      "canvas": {
+        "width": 1080,
+        "height": 1350
+      },
+      "aspect": 0.8,
+      "photo_slots": [
+        {
+          "token": "@@PHOTO0@@",
+          "bbox": [
+            0,
+            134,
+            1079,
+            1214
+          ]
+        }
+      ],
+      "image_slot_count": 2,
+      "text_regions": [
+        {
+          "candidate_type": "title",
+          "bbox": [
+            167,
+            85,
+            912,
+            470
+          ],
+          "height": 385
+        },
+        {
+          "candidate_type": "label",
+          "bbox": [
+            435,
+            789,
+            645,
+            851
+          ],
+          "height": 62
+        },
+        {
+          "candidate_type": "label",
+          "bbox": [
+            220,
+            919,
+            322,
+            1054
+          ],
+          "height": 135
+        },
+        {
+          "candidate_type": "label",
+          "bbox": [
+            410,
+            925,
+            661,
+            1054
+          ],
+          "height": 129
+        },
+        {
+          "candidate_type": "label",
+          "bbox": [
+            712,
+            919,
+            890,
+            1054
+          ],
+          "height": 135
+        },
+        {
+          "candidate_type": "label",
+          "bbox": [
+            447,
+            1127,
+            633,
+            1151
+          ],
+          "height": 24
+        },
+        {
+          "candidate_type": "subtitle/body",
+          "bbox": [
+            222,
+            1183,
+            856,
+            1241
+          ],
+          "height": 58
+        }
+      ],
+      "colour_fills": [
+        "#000000",
+        "#ffffff"
+      ],
+      "colour_role_candidates": {
+        "background": "#000000",
+        "title": "#ffffff",
+        "subtitle/body": "#ffffff"
+      }
+    },
+    {
+      "template": "6",
+      "ok": true,
+      "canvas": {
+        "width": 1080,
+        "height": 1350
+      },
+      "aspect": 0.8,
+      "photo_slots": [
+        {
+          "token": "@@PHOTO0@@",
+          "bbox": [
+            0,
+            225,
+            539,
+            1124
+          ]
+        },
+        {
+          "token": "@@PHOTO1@@",
+          "bbox": [
+            398,
+            252,
+            681,
+            541
+          ]
+        },
+        {
+          "token": "@@PHOTO2@@",
+          "bbox": [
+            715,
+            252,
+            997,
+            541
+          ]
+        },
+        {
+          "token": "@@PHOTO3@@",
+          "bbox": [
+            82,
+            249,
+            364,
+            543
+          ]
+        }
+      ],
+      "image_slot_count": 4,
+      "text_regions": [
+        {
+          "candidate_type": "badge",
+          "bbox": [
+            682,
+            94,
+            998,
+            125
+          ],
+          "height": 31
+        },
+        {
+          "candidate_type": "title",
+          "bbox": [
+            79,
+            200,
+            1000,
+            593
+          ],
+          "height": 393
+        },
+        {
+          "candidate_type": "label",
+          "bbox": [
+            676,
+            671,
+            998,
+            734
+          ],
+          "height": 63
+        },
+        {
+          "candidate_type": "subtitle/body",
+          "bbox": [
+            596,
+            962,
+            980,
+            1228
+          ],
+          "height": 266
+        }
+      ],
+      "colour_fills": [
+        "#000000",
+        "#f8f7f2",
+        "#ffffff"
+      ],
+      "colour_role_candidates": {
+        "background": "#000000",
+        "title": "#ffffff",
+        "subtitle/body": "#ffffff",
+        "accent": "#f8f7f2"
+      }
+    },
+    {
+      "template": "6b",
+      "ok": true,
+      "canvas": {
+        "width": 1080,
+        "height": 1350
+      },
+      "aspect": 0.8,
+      "photo_slots": [
+        {
+          "token": "@@PHOTO0@@",
+          "bbox": [
+            0,
+            225,
+            539,
+            1124
+          ]
+        },
+        {
+          "token": "@@PHOTO1@@",
+          "bbox": [
+            398,
+            252,
+            681,
+            541
+          ]
+        },
+        {
+          "token": "@@PHOTO2@@",
+          "bbox": [
+            715,
+            252,
+            997,
+            541
+          ]
+        },
+        {
+          "token": "@@PHOTO3@@",
+          "bbox": [
+            82,
+            249,
+            364,
+            543
+          ]
+        }
+      ],
+      "image_slot_count": 4,
+      "text_regions": [
+        {
+          "candidate_type": "badge",
+          "bbox": [
+            682,
+            94,
+            998,
+            125
+          ],
+          "height": 31
+        },
+        {
+          "candidate_type": "title",
+          "bbox": [
+            79,
+            200,
+            1000,
+            593
+          ],
+          "height": 393
+        },
+        {
+          "candidate_type": "label",
+          "bbox": [
+            601,
+            663,
+            963,
+            787
+          ],
+          "height": 124
+        },
+        {
+          "candidate_type": "label",
+          "bbox": [
+            603,
+            815,
+            997,
+            919
+          ],
+          "height": 104
+        },
+        {
+          "candidate_type": "subtitle/body",
+          "bbox": [
+            624,
+            965,
+            998,
+            1103
+          ],
+          "height": 138
+        },
+        {
+          "candidate_type": "label",
+          "bbox": [
+            590,
+            1223,
+            661,
+            1317
+          ],
+          "height": 94
+        },
+        {
+          "candidate_type": "label",
+          "bbox": [
+            722,
+            1227,
+            895,
+            1317
+          ],
+          "height": 90
+        },
+        {
+          "candidate_type": "label",
+          "bbox": [
+            931,
+            1223,
+            1079,
+            1317
+          ],
+          "height": 94
+        }
+      ],
+      "colour_fills": [
+        "#000000",
+        "#1a130e",
+        "#f8f7f2",
+        "#ffffff"
+      ],
+      "colour_role_candidates": {
+        "background": "#000000",
+        "title": "#ffffff",
+        "subtitle/body": "#ffffff",
+        "accent": "#f8f7f2"
+      }
+    },
+    {
+      "template": "7",
+      "ok": true,
+      "canvas": {
+        "width": 1080,
+        "height": 1350
+      },
+      "aspect": 0.8,
+      "photo_slots": [
+        {
+          "token": "@@PHOTO0@@",
+          "bbox": [
+            191,
+            0,
+            888,
+            646
+          ]
+        },
+        {
+          "token": "@@PHOTO1@@",
+          "bbox": [
+            746,
+            1015,
+            966,
+            1234
+          ]
+        },
+        {
+          "token": "@@PHOTO2@@",
+          "bbox": [
+            113,
+            1015,
+            333,
+            1234
+          ]
+        },
+        {
+          "token": "@@PHOTO3@@",
+          "bbox": [
+            430,
+            1015,
+            649,
+            1234
+          ]
+        }
+      ],
+      "image_slot_count": 7,
+      "text_regions": [
+        {
+          "candidate_type": "badge",
+          "bbox": [
+            721,
+            46,
+            904,
+            95
+          ],
+          "height": 49
+        },
+        {
+          "candidate_type": "title",
+          "bbox": [
+            69,
+            499,
+            1009,
+            974
+          ],
+          "height": 475
+        },
+        {
+          "candidate_type": "subtitle/body",
+          "bbox": [
+            0,
+            1275,
+            1079,
+            1348
+          ],
+          "height": 73
+        }
+      ],
+      "colour_fills": [
+        "#1a130e",
+        "#242424",
+        "#c9bda4",
+        "#f7f7f7",
+        "#ffffff"
+      ],
+      "colour_role_candidates": {
+        "background": "#1a130e",
+        "title": "#ffffff",
+        "subtitle/body": "#ffffff",
+        "accent": "#c9bda4"
+      }
+    },
+    {
+      "template": "8",
+      "ok": true,
+      "canvas": {
+        "width": 1080,
+        "height": 1350
+      },
+      "aspect": 0.8,
+      "photo_slots": [
+        {
+          "token": "@@PHOTO0@@",
+          "bbox": [
+            0,
+            0,
+            1079,
+            569
+          ]
+        },
+        {
+          "token": "@@PHOTO1@@",
+          "bbox": [
+            0,
+            580,
+            534,
+            1348
+          ]
+        },
+        {
+          "token": "@@PHOTO2@@",
+          "bbox": [
+            545,
+            579,
+            1079,
+            959
+          ]
+        },
+        {
+          "token": "@@PHOTO3@@",
+          "bbox": [
+            545,
+            969,
+            1079,
+            1348
+          ]
+        }
+      ],
+      "image_slot_count": 4,
+      "text_regions": [
+        {
+          "candidate_type": "title",
+          "bbox": [
+            557,
+            25,
+            1079,
+            49
+          ],
+          "height": 24
+        }
+      ],
+      "colour_fills": [
+        "#342722",
+        "#ffffff"
+      ],
+      "colour_role_candidates": {
+        "background": "#342722",
+        "title": "#ffffff",
+        "subtitle/body": "#ffffff"
+      }
+    },
+    {
+      "template": "10",
+      "ok": true,
+      "canvas": {
+        "width": 1080,
+        "height": 1350
+      },
+      "aspect": 0.8,
+      "photo_slots": [
+        {
+          "token": "@@PHOTO0@@",
+          "bbox": [
+            46,
+            280,
+            1037,
+            1069
+          ]
+        },
+        {
+          "token": "@@PHOTO1@@",
+          "bbox": [
+            652,
+            44,
+            831,
+            240
+          ]
+        },
+        {
+          "token": "@@PHOTO2@@",
+          "bbox": [
+            446,
+            44,
+            626,
+            240
+          ]
+        },
+        {
+          "token": "@@PHOTO3@@",
+          "bbox": [
+            858,
+            44,
+            1037,
+            240
+          ]
+        }
+      ],
+      "image_slot_count": 4,
+      "text_regions": [
+        {
+          "candidate_type": "badge",
+          "bbox": [
+            54,
+            47,
+            399,
+            235
+          ],
+          "height": 188
+        },
+        {
+          "candidate_type": "label",
+          "bbox": [
+            447,
+            976,
+            1012,
+            1044
+          ],
+          "height": 68
+        },
+        {
+          "candidate_type": "subtitle/body",
+          "bbox": [
+            46,
+            1104,
+            402,
+            1216
+          ],
+          "height": 112
+        },
+        {
+          "candidate_type": "title",
+          "bbox": [
+            453,
+            1099,
+            1031,
+            1291
+          ],
+          "height": 192
+        }
+      ],
+      "colour_fills": [
+        "#1b1a1a",
+        "#7ea6ad",
+        "#f6f1ea",
+        "#faefe0",
+        "#ffffff"
+      ],
+      "colour_role_candidates": {
+        "background": "#1b1a1a",
+        "title": "#ffffff",
+        "subtitle/body": "#ffffff",
+        "accent": "#faefe0"
+      }
+    },
+    {
+      "template": "11",
+      "ok": true,
+      "canvas": {
+        "width": 1080,
+        "height": 1350
+      },
+      "aspect": 0.8,
+      "photo_slots": [
+        {
+          "token": "@@PHOTO0@@",
+          "bbox": [
+            54,
+            577,
+            836,
+            1300
+          ]
+        }
+      ],
+      "image_slot_count": 1,
+      "text_regions": [
+        {
+          "candidate_type": "stat",
+          "bbox": [
+            104,
+            130,
+            241,
+            171
+          ],
+          "height": 41
+        },
+        {
+          "candidate_type": "stat",
+          "bbox": [
+            809,
+            131,
+            990,
+            147
+          ],
+          "height": 16
+        },
+        {
+          "candidate_type": "title",
+          "bbox": [
+            100,
+            267,
+            943,
+            353
+          ],
+          "height": 86
+        },
+        {
+          "candidate_type": "subtitle/body",
+          "bbox": [
+            104,
+            379,
+            809,
+            465
+          ],
+          "height": 86
+        },
+        {
+          "candidate_type": "label",
+          "bbox": [
+            878,
+            387,
+            950,
+            459
+          ],
+          "height": 72
+        },
+        {
+          "candidate_type": "label",
+          "bbox": [
+            463,
+            1205,
+            974,
+            1231
+          ],
+          "height": 26
+        }
+      ],
+      "colour_fills": [
+        "#000000",
+        "#1e1e1e",
+        "#2a1e1e",
+        "#dfdfdf",
+        "#f1f1f1",
+        "#ffffff"
+      ],
+      "colour_role_candidates": {
+        "background": "#000000",
+        "title": "#ffffff",
+        "subtitle/body": "#ffffff",
+        "accent": "#dfdfdf"
+      }
+    },
+    {
+      "template": "14",
+      "ok": true,
+      "canvas": {
+        "width": 1080,
+        "height": 1350
+      },
+      "aspect": 0.8,
+      "photo_slots": [
+        {
+          "token": "@@PHOTO0@@",
+          "bbox": [
+            180,
+            404,
+            899,
+            1123
+          ]
+        }
+      ],
+      "image_slot_count": 9,
+      "text_regions": [
+        {
+          "candidate_type": "label",
+          "bbox": [
+            183,
+            132,
+            878,
+            230
+          ],
+          "height": 98
+        },
+        {
+          "candidate_type": "label",
+          "bbox": [
+            321,
+            320,
+            392,
+            413
+          ],
+          "height": 93
+        },
+        {
+          "candidate_type": "label",
+          "bbox": [
+            453,
+            324,
+            626,
+            413
+          ],
+          "height": 89
+        },
+        {
+          "candidate_type": "label",
+          "bbox": [
+            662,
+            320,
+            785,
+            413
+          ],
+          "height": 93
+        },
+        {
+          "candidate_type": "subtitle/body",
+          "bbox": [
+            92,
+            1146,
+            653,
+            1289
+          ],
+          "height": 143
+        },
+        {
+          "candidate_type": "title",
+          "bbox": [
+            853,
+            1124,
+            1007,
+            1294
+          ],
+          "height": 170
+        }
+      ],
+      "colour_fills": [
+        "#000000",
+        "#1a130e",
+        "#343434",
+        "#cac6ba",
+        "#ffffff"
+      ],
+      "colour_role_candidates": {
+        "background": "#000000",
+        "title": "#ffffff",
+        "subtitle/body": "#ffffff",
+        "accent": "#343434"
+      }
+    },
+    {
+      "template": "15",
+      "ok": true,
+      "canvas": {
+        "width": 1080,
+        "height": 1350
+      },
+      "aspect": 0.8,
+      "photo_slots": [
+        {
+          "token": "@@PHOTO0@@",
+          "bbox": [
+            108,
+            275,
+            971,
+            1178
+          ]
+        },
+        {
+          "token": "@@PHOTO1@@",
+          "bbox": [
+            91,
+            1068,
+            216,
+            1192
+          ]
+        }
+      ],
+      "image_slot_count": 9,
+      "text_regions": [
+        {
+          "candidate_type": "label",
+          "bbox": [
+            228,
+            90,
+            851,
+            262
+          ],
+          "height": 172
+        },
+        {
+          "candidate_type": "title",
+          "bbox": [
+            573,
+            890,
+            931,
+            1139
+          ],
+          "height": 249
+        },
+        {
+          "candidate_type": "label",
+          "bbox": [
+            187,
+            1214,
+            388,
+            1265
+          ],
+          "height": 51
+        },
+        {
+          "candidate_type": "subtitle/body",
+          "bbox": [
+            580,
+            1201,
+            908,
+            1256
+          ],
+          "height": 55
+        }
+      ],
+      "colour_fills": [
+        "#000000",
+        "#ffffff"
+      ],
+      "colour_role_candidates": {
+        "background": "#000000",
+        "title": "#ffffff",
+        "subtitle/body": "#ffffff"
+      }
+    }
+  ]
+}

@@ -1,0 +1,121 @@
+{
+  "template": "10",
+  "ok": true,
+  "canvas": {
+    "width": 1080,
+    "height": 1350
+  },
+  "aspect": 0.8,
+  "photo_slots": [
+    {
+      "token": "@@PHOTO0@@",
+      "bbox": [
+        46,
+        280,
+        1037,
+        1069
+      ]
+    },
+    {
+      "token": "@@PHOTO1@@",
+      "bbox": [
+        652,
+        44,
+        831,
+        240
+      ]
+    },
+    {
+      "token": "@@PHOTO2@@",
+      "bbox": [
+        446,
+        44,
+        626,
+        240
+      ]
+    },
+    {
+      "token": "@@PHOTO3@@",
+      "bbox": [
+        858,
+        44,
+        1037,
+        240
+      ]
+    }
+  ],
+  "image_slot_count": 4,
+  "text_regions": [
+    {
+      "candidate_type": "badge",
+      "bbox": [
+        54,
+        47,
+        399,
+        235
+      ],
+      "height": 188
+    },
+    {
+      "candidate_type": "label",
+      "bbox": [
+        447,
+        976,
+        1012,
+        1044
+      ],
+      "height": 68
+    },
+    {
+      "candidate_type": "subtitle/body",
+      "bbox": [
+        46,
+        1104,
+        402,
+        1216
+      ],
+      "height": 112
+    },
+    {
+      "candidate_type": "title",
+      "bbox": [
+        453,
+        1099,
+        1031,
+        1291
+      ],
+      "height": 192
+    }
+  ],
+  "colour_fills": [
+    "#1b1a1a",
+    "#7ea6ad",
+    "#f6f1ea",
+    "#faefe0",
+    "#ffffff"
+  ],
+  "colour_role_candidates": {
+    "background": "#1b1a1a",
+    "title": "#ffffff",
+    "subtitle/body": "#ffffff",
+    "accent": "#faefe0"
+  },
+  "draft": true,
+  "needs_human_measure_confirm": true,
+  "editable_text_target": true,
+  "_note": "FIRST-PASS auto-intake from the tokenized Canva SVG. text_regions/colour roles are candidates to confirm; outlined source text is NOT final — the editable manifest re-renders real text. See #4 for the proven final template.json.",
+  "role_set": [
+    "background",
+    "overlay",
+    "title",
+    "subtitle/body",
+    "accent",
+    "badge.fill",
+    "badge.text",
+    "divider",
+    "icon",
+    "stat.label",
+    "stat.value",
+    "cta"
+  ]
+}

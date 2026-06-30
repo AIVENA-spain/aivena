@@ -1,0 +1,111 @@
+{
+  "template": "7",
+  "ok": true,
+  "canvas": {
+    "width": 1080,
+    "height": 1350
+  },
+  "aspect": 0.8,
+  "photo_slots": [
+    {
+      "token": "@@PHOTO0@@",
+      "bbox": [
+        191,
+        0,
+        888,
+        646
+      ]
+    },
+    {
+      "token": "@@PHOTO1@@",
+      "bbox": [
+        746,
+        1015,
+        966,
+        1234
+      ]
+    },
+    {
+      "token": "@@PHOTO2@@",
+      "bbox": [
+        113,
+        1015,
+        333,
+        1234
+      ]
+    },
+    {
+      "token": "@@PHOTO3@@",
+      "bbox": [
+        430,
+        1015,
+        649,
+        1234
+      ]
+    }
+  ],
+  "image_slot_count": 7,
+  "text_regions": [
+    {
+      "candidate_type": "badge",
+      "bbox": [
+        721,
+        46,
+        904,
+        95
+      ],
+      "height": 49
+    },
+    {
+      "candidate_type": "title",
+      "bbox": [
+        69,
+        499,
+        1009,
+        974
+      ],
+      "height": 475
+    },
+    {
+      "candidate_type": "subtitle/body",
+      "bbox": [
+        0,
+        1275,
+        1079,
+        1348
+      ],
+      "height": 73
+    }
+  ],
+  "colour_fills": [
+    "#1a130e",
+    "#242424",
+    "#c9bda4",
+    "#f7f7f7",
+    "#ffffff"
+  ],
+  "colour_role_candidates": {
+    "background": "#1a130e",
+    "title": "#ffffff",
+    "subtitle/body": "#ffffff",
+    "accent": "#c9bda4"
+  },
+  "draft": true,
+  "needs_human_measure_confirm": true,
+  "editable_text_target": true,
+  "_note": "FIRST-PASS auto-intake from the tokenized Canva SVG. text_regions/colour roles are candidates to confirm; outlined source text is NOT final — the editable manifest re-renders real text. See #4 for the proven final template.json.",
+  "role_set": [
+    "background",
+    "overlay",
+    "title",
+    "subtitle/body",
+    "accent",
+    "badge.fill",
+    "badge.text",
+    "divider",
+    "icon",
+    "stat.label",
+    "stat.value",
+    "cta"
+  ]
+}

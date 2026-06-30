@@ -1,0 +1,62 @@
+{
+  "template": "2",
+  "ok": true,
+  "canvas": {
+    "width": 1080,
+    "height": 1350
+  },
+  "aspect": 0.8,
+  "photo_slots": [
+    {
+      "token": "@@PHOTO0@@",
+      "bbox": [
+        0,
+        0,
+        1079,
+        1348
+      ]
+    }
+  ],
+  "image_slot_count": 1,
+  "text_regions": [
+    {
+      "candidate_type": "title",
+      "bbox": [
+        0,
+        1242,
+        1079,
+        1348
+      ],
+      "height": 106
+    }
+  ],
+  "colour_fills": [
+    "#2a2b2f",
+    "#553929",
+    "#ffffff"
+  ],
+  "colour_role_candidates": {
+    "background": "#2a2b2f",
+    "title": "#ffffff",
+    "subtitle/body": "#ffffff",
+    "accent": "#553929"
+  },
+  "draft": true,
+  "needs_human_measure_confirm": true,
+  "editable_text_target": true,
+  "_note": "FIRST-PASS auto-intake from the tokenized Canva SVG. text_regions/colour roles are candidates to confirm; outlined source text is NOT final — the editable manifest re-renders real text. See #4 for the proven final template.json.",
+  "role_set": [
+    "background",
+    "overlay",
+    "title",
+    "subtitle/body",
+    "accent",
+    "badge.fill",
+    "badge.text",
+    "divider",
+    "icon",
+    "stat.label",
+    "stat.value",
+    "cta"
+  ]
+}

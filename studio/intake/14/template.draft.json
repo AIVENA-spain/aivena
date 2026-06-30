@@ -1,0 +1,114 @@
+{
+  "template": "14",
+  "ok": true,
+  "canvas": {
+    "width": 1080,
+    "height": 1350
+  },
+  "aspect": 0.8,
+  "photo_slots": [
+    {
+      "token": "@@PHOTO0@@",
+      "bbox": [
+        180,
+        404,
+        899,
+        1123
+      ]
+    }
+  ],
+  "image_slot_count": 9,
+  "text_regions": [
+    {
+      "candidate_type": "label",
+      "bbox": [
+        183,
+        132,
+        878,
+        230
+      ],
+      "height": 98
+    },
+    {
+      "candidate_type": "label",
+      "bbox": [
+        321,
+        320,
+        392,
+        413
+      ],
+      "height": 93
+    },
+    {
+      "candidate_type": "label",
+      "bbox": [
+        453,
+        324,
+        626,
+        413
+      ],
+      "height": 89
+    },
+    {
+      "candidate_type": "label",
+      "bbox": [
+        662,
+        320,
+        785,
+        413
+      ],
+      "height": 93
+    },
+    {
+      "candidate_type": "subtitle/body",
+      "bbox": [
+        92,
+        1146,
+        653,
+        1289
+      ],
+      "height": 143
+    },
+    {
+      "candidate_type": "title",
+      "bbox": [
+        853,
+        1124,
+        1007,
+        1294
+      ],
+      "height": 170
+    }
+  ],
+  "colour_fills": [
+    "#000000",
+    "#1a130e",
+    "#343434",
+    "#cac6ba",
+    "#ffffff"
+  ],
+  "colour_role_candidates": {
+    "background": "#000000",
+    "title": "#ffffff",
+    "subtitle/body": "#ffffff",
+    "accent": "#343434"
+  },
+  "draft": true,
+  "needs_human_measure_confirm": true,
+  "editable_text_target": true,
+  "_note": "FIRST-PASS auto-intake from the tokenized Canva SVG. text_regions/colour roles are candidates to confirm; outlined source text is NOT final — the editable manifest re-renders real text. See #4 for the proven final template.json.",
+  "role_set": [
+    "background",
+    "overlay",
+    "title",
+    "subtitle/body",
+    "accent",
+    "badge.fill",
+    "badge.text",
+    "divider",
+    "icon",
+    "stat.label",
+    "stat.value",
+    "cta"
+  ]
+}

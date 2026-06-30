@@ -28,7 +28,18 @@ Not "waiting for a navy/gold brand decision" — the work is **role→token mapp
 - **Cross-role collision handling (Q4 finding, reframed):** where several roles share a default hex (e.g. #4 source: 5 roles → `#ffffff`), the tokenizer/UI must expose them as **separate controls** so recolouring one role (e.g. title accent → gold) doesn't silently change others. `engine/colourMap.ts` flags these collisions per template so the token design separates them. This is **tokenization work**, not a brand-colour blocker.
 - **navy/gold** (#0B2545/#C9A45C) are just two possible agency picks — the wheel must not hardcode them; they become palette values once an agency (or a default theme) chooses them.
 
+## Bulk auto-intake (DONE — first-pass drafts for all 13)
+`engine/autoIntake.ts` produces a **draft intake skeleton** per template (`studio/intake/<n>/template.draft.json` +
+`studio/catalogue/intake_draft_summary.json`) by analysing the tokenized SVG:
+- **canvas** + aspect; **photo slots** per distinct `@@PHOTOn@@` token (render-that-token-magenta vs stripped, full diff bbox — robust to overlays, post-transform/clip). Multi-photo grids resolve correctly (#7 → hero + 3 thumbnails).
+- **text-region candidates** via polarity-aware ink projection (modal-bg detection → bands → blocks), with heuristic `title`/`subtitle-body`/`stat`/`badge`/`label` labels.
+- **colour fills** + first-pass **colour-role candidates** (darkest→background, lightest→title/body ink, mid→accent), against the flexible role set.
+- Validated against #4: a detected region overlaps each known #4 content zone (stat_row / title / body) — **3/3 covered**.
+
+**Known first-pass limits (drafts, not final):** heavy dark overlays can mask part of a photo box (e.g. #4 photo detected as the right ~2/3, true box is full-canvas); vertically-packed text merges into one region (#4 title's 2 lines + body); heuristic labels are hints. A human/next-step refines each draft into a final `intake/<n>/template.json` + editable manifest (the proven #4 path). **Outlined source text is never final — the editable manifest re-renders real editable text.**
+
 ## Tooling status
-- `engine/bucketInventory.ts` — discovery/inventory (this catalogue). Re-runs as templates are added/updated. Needs `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` (repo `.env`).
-- `vault/`, `adjudicate/`, `engine/extractManifest.ts`, `engine/engineProof.ts`, `engine/colourMap.ts`, `engine/q3LocalWiring.ts` — the proven #4 toolchain that each template runs through.
-- **Next** per template: prepare `intake/<n>/` (geometry measure) — currently only #4 done. Bulk intake of the other 12 is the follow-on build (each is a measure pass; no decisions blocking the structural work, though post-type taxonomy + canonical palettes are Chat 1 main / `Q5`).
+- `engine/bucketInventory.ts` — discovery/inventory (catalogue). Re-runs as templates are added/updated. Needs `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` (repo `.env`).
+- `engine/autoIntake.ts` — bulk first-pass intake drafts (above).
+- `vault/`, `adjudicate/`, `engine/extractManifest.ts`, `engine/engineProof.ts`, `engine/colourMap.ts`, `engine/q3LocalWiring.ts` — the proven #4 toolchain that each refined template runs through.
+- **Next** per template: refine each draft → measured `intake/<n>/template.json` → adjudicate → editable manifest (editable text + colour tokens) → render proof. Only #4 is fully done; the 12 drafts are the head-start. **Asset gap:** templates 9/12/13/16–22 + all Facebook-size templates are absent from every bucket (owner: Christian/Chat 1 main — export from Canva + upload). Post-type taxonomy + canonical palettes/roles = Chat 1 main / `Q5`/`Q4` (do not block the structural refinement).

@@ -1,0 +1,160 @@
+{
+  "template": "6b",
+  "ok": true,
+  "canvas": {
+    "width": 1080,
+    "height": 1350
+  },
+  "aspect": 0.8,
+  "photo_slots": [
+    {
+      "token": "@@PHOTO0@@",
+      "bbox": [
+        0,
+        225,
+        539,
+        1124
+      ]
+    },
+    {
+      "token": "@@PHOTO1@@",
+      "bbox": [
+        398,
+        252,
+        681,
+        541
+      ]
+    },
+    {
+      "token": "@@PHOTO2@@",
+      "bbox": [
+        715,
+        252,
+        997,
+        541
+      ]
+    },
+    {
+      "token": "@@PHOTO3@@",
+      "bbox": [
+        82,
+        249,
+        364,
+        543
+      ]
+    }
+  ],
+  "image_slot_count": 4,
+  "text_regions": [
+    {
+      "candidate_type": "badge",
+      "bbox": [
+        682,
+        94,
+        998,
+        125
+      ],
+      "height": 31
+    },
+    {
+      "candidate_type": "title",
+      "bbox": [
+        79,
+        200,
+        1000,
+        593
+      ],
+      "height": 393
+    },
+    {
+      "candidate_type": "label",
+      "bbox": [
+        601,
+        663,
+        963,
+        787
+      ],
+      "height": 124
+    },
+    {
+      "candidate_type": "label",
+      "bbox": [
+        603,
+        815,
+        997,
+        919
+      ],
+      "height": 104
+    },
+    {
+      "candidate_type": "subtitle/body",
+      "bbox": [
+        624,
+        965,
+        998,
+        1103
+      ],
+      "height": 138
+    },
+    {
+      "candidate_type": "label",
+      "bbox": [
+        590,
+        1223,
+        661,
+        1317
+      ],
+      "height": 94
+    },
+    {
+      "candidate_type": "label",
+      "bbox": [
+        722,
+        1227,
+        895,
+        1317
+      ],
+      "height": 90
+    },
+    {
+      "candidate_type": "label",
+      "bbox": [
+        931,
+        1223,
+        1079,
+        1317
+      ],
+      "height": 94
+    }
+  ],
+  "colour_fills": [
+    "#000000",
+    "#1a130e",
+    "#f8f7f2",
+    "#ffffff"
+  ],
+  "colour_role_candidates": {
+    "background": "#000000",
+    "title": "#ffffff",
+    "subtitle/body": "#ffffff",
+    "accent": "#f8f7f2"
+  },
+  "draft": true,
+  "needs_human_measure_confirm": true,
+  "editable_text_target": true,
+  "_note": "FIRST-PASS auto-intake from the tokenized Canva SVG. text_regions/colour roles are candidates to confirm; outlined source text is NOT final — the editable manifest re-renders real text. See #4 for the proven final template.json.",
+  "role_set": [
+    "background",
+    "overlay",
+    "title",
+    "subtitle/body",
+    "accent",
+    "badge.fill",
+    "badge.text",
+    "divider",
+    "icon",
+    "stat.label",
+    "stat.value",
+    "cta"
+  ]
+}

@@ -2,9 +2,12 @@ import { describe, it, expect } from 'vitest';
 import { canReadReadiness } from './readiness';
 import {
   computeReadiness,
+  evaluateGoLive,
   type ReadinessSignals,
   type ReadinessItem,
+  type ReadinessResponse,
   type WhatsAppSignal,
+  type GoLiveAttestations,
 } from '../lib/readiness/compute';
 
 // Fixture seeded from LIVE demo reads (demo-costa-homes-pilot01, 2026-06-27):
@@ -186,5 +189,96 @@ describe('computeReadiness — all signals null (full degradation, no throw, no 
   });
   it('still cites a signal source for every item', () => {
     for (const it of res.items) expect(it.signal.source.length).toBeGreaterThan(0);
+  });
+});
+
+// ── C3 go-live decision (server-side; the admin endpoint recomputes then calls this) ──
+describe('evaluateGoLive — staff pilot transition (never trust the browser)', () => {
+  // evaluateGoLive only reads readiness.goLive.blockedBy; a thin cast is enough.
+  const mkReadiness = (blockedBy: string[]): ReadinessResponse =>
+    ({ goLive: { blockedBy } } as ReadinessResponse);
+  const ALL_ATTEST: GoLiveAttestations = {
+    autonomo_corrected: true,
+    legal_pages_published: true,
+    dpa_consent_live: true,
+    test_data_cleaned: true,
+  };
+
+  it('setup/paused/blocked are always allowed (staff lifecycle control), even with open blockers', () => {
+    const r = mkReadiness(['identity.name', 'provider.email']);
+    for (const t of ['setup', 'paused', 'blocked'] as const) {
+      const d = evaluateGoLive(t, r, {}, false);
+      expect(d.allowed).toBe(true);
+      expect(d.overrideUsed).toBe(false);
+    }
+  });
+
+  it('ready_for_pilot is blocked by unresolved readiness unless explicitly overridden', () => {
+    const r = mkReadiness(['identity.name']);
+    const blocked = evaluateGoLive('ready_for_pilot', r, {}, false);
+    expect(blocked.allowed).toBe(false);
+    expect(blocked.configBlockers).toEqual(['identity.name']);
+
+    const overridden = evaluateGoLive('ready_for_pilot', r, {}, true);
+    expect(overridden.allowed).toBe(true);
+    expect(overridden.overrideUsed).toBe(true);
+    expect(overridden.configBlockers).toEqual(['identity.name']);
+  });
+
+  it('ready_for_pilot with a clean readiness picture is allowed without override', () => {
+    const d = evaluateGoLive('ready_for_pilot', mkReadiness([]), {}, false);
+    expect(d.allowed).toBe(true);
+    expect(d.overrideUsed).toBe(false);
+  });
+
+  it('the self-referential lifecycle.go_live blocker is excluded from configBlockers', () => {
+    // A clean agency still lists lifecycle.go_live (pilot_status not yet live) — it must
+    // not count as its own blocker, or nothing could ever transition.
+    const d = evaluateGoLive('ready_for_pilot', mkReadiness(['lifecycle.go_live']), {}, false);
+    expect(d.configBlockers).toEqual([]);
+    expect(d.allowed).toBe(true);
+  });
+
+  it('live requires EVERY manual attestation — missing ones block even with override (attestations are not override-able)', () => {
+    const clean = mkReadiness([]);
+    const missingOne = evaluateGoLive('live', clean, { ...ALL_ATTEST, dpa_consent_live: false }, true);
+    expect(missingOne.allowed).toBe(false);
+    expect(missingOne.missingAttestations).toEqual(['dpa_consent_live']);
+
+    const noneGiven = evaluateGoLive('live', clean, {}, true);
+    expect(noneGiven.allowed).toBe(false);
+    expect(noneGiven.missingAttestations).toEqual([
+      'autonomo_corrected',
+      'legal_pages_published',
+      'dpa_consent_live',
+      'test_data_cleaned',
+    ]);
+  });
+
+  it('override bypasses a soft readiness gap for live but STILL requires all attestations', () => {
+    const soft = mkReadiness(['identity.website']);
+    // override true + a config gap, but attestations complete → allowed, override recorded
+    const ok = evaluateGoLive('live', soft, ALL_ATTEST, true);
+    expect(ok.allowed).toBe(true);
+    expect(ok.overrideUsed).toBe(true);
+    expect(ok.configBlockers).toEqual(['identity.website']);
+
+    // same soft gap, attestations complete, but NO override → still blocked on readiness
+    const stillBlocked = evaluateGoLive('live', soft, ALL_ATTEST, false);
+    expect(stillBlocked.allowed).toBe(false);
+    expect(stillBlocked.configBlockers).toEqual(['identity.website']);
+  });
+
+  it('live with clean readiness + all attestations is allowed, with overrideUsed=false', () => {
+    const d = evaluateGoLive('live', mkReadiness([]), ALL_ATTEST, false);
+    expect(d.allowed).toBe(true);
+    expect(d.overrideUsed).toBe(false);
+    expect(d.missingAttestations).toEqual([]);
+  });
+
+  it('overrideUsed is false when override is passed but there was nothing to override', () => {
+    const d = evaluateGoLive('ready_for_pilot', mkReadiness([]), {}, true);
+    expect(d.allowed).toBe(true);
+    expect(d.overrideUsed).toBe(false);
   });
 });

@@ -1,5 +1,7 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
+import { sql } from 'drizzle-orm';
+import { db } from '../../../../../packages/db/client';
 import {
   userClient,
   handleRpc,
@@ -8,6 +10,13 @@ import {
   statusForRpcError,
   ADMIN_GENERIC_ERROR,
 } from './_shared';
+import { gatherReadinessSignals } from '../../lib/readiness/gather';
+import {
+  computeReadiness,
+  evaluateGoLive,
+  type PilotStatus,
+  type GoLiveAttestations,
+} from '../../lib/readiness/compute';
 
 /**
  * Admin → Agencies. Staff-only (gated by requireAivenaStaff). Each handler is a
@@ -191,6 +200,85 @@ route.get('/:id', async (c) => {
   const supabase = userClient(c);
   const rpc = await supabase.rpc('admin_get_agency', { p_agency_id: id });
   return handleRpc(c, 'detail', rpc);
+});
+
+// ─── POST /api/v1/admin/agencies/:id/go-live — staff sets the pilot lifecycle (C3) ──
+// Staff-only (requireAivenaStaff gates /api/v1/admin/*). Server-side readiness
+// recompute for the TARGET agency (never trust the browser); `live` requires every
+// manual attestation; an explicit override bypasses ONLY soft readiness gaps (and is
+// recorded), never the attestations. The actual write + audit happen in the
+// SECURITY DEFINER set_agency_pilot_status RPC, called staff-JWT-bound so auth.uid()
+// resolves (is_aivena_staff()) — `aivena_app` cannot write pilot_status directly.
+const PILOT_TARGETS = ['setup', 'ready_for_pilot', 'live', 'paused', 'blocked'];
+
+route.post('/:id/go-live', async (c) => {
+  const id = c.req.param('id');
+  if (!id) return c.json({ ok: false, error: 'That agency could not be found.' }, 404);
+
+  const body = await readJson(c);
+  const target = body.target;
+  if (typeof target !== 'string' || !PILOT_TARGETS.includes(target)) {
+    return c.json(
+      { ok: false, error: 'Choose a valid pilot status (setup, ready_for_pilot, live, paused, blocked).' },
+      400,
+    );
+  }
+  const attestations = (body.attestations && typeof body.attestations === 'object' && !Array.isArray(body.attestations)
+    ? body.attestations
+    : {}) as GoLiveAttestations;
+  const override = body.override === true;
+  const reason = typeof body.reason === 'string' ? body.reason.slice(0, 500) : null;
+
+  // Server-side readiness recompute for the TARGET agency (its own tx + GUC).
+  let readiness;
+  try {
+    readiness = await db.transaction(async (tx) => {
+      await tx.execute(
+        sql`SELECT set_config('app.current_agency_id', ${id}, true),
+                   set_config('app.current_user_role', 'aivena_staff', true)`,
+      );
+      const signals = await gatherReadinessSignals(tx);
+      return computeReadiness(id, signals);
+    });
+  } catch (err) {
+    console.error('[admin/go-live] readiness recompute failed:', err);
+    return c.json({ ok: false, error: ADMIN_GENERIC_ERROR }, 500);
+  }
+
+  const decision = evaluateGoLive(target as PilotStatus, readiness, attestations, override);
+  if (!decision.allowed) {
+    return c.json(
+      {
+        ok: false,
+        error: decision.reason,
+        blockedBy: decision.configBlockers,
+        missingAttestations: decision.missingAttestations,
+      },
+      422,
+    );
+  }
+
+  // Write + audit via the staff-JWT-bound SECURITY DEFINER RPC (the only writer).
+  const metadata = {
+    via: 'admin_go_live_endpoint',
+    target,
+    override: decision.overrideUsed,
+    override_blockers: decision.overrideUsed ? decision.configBlockers : [],
+    reason,
+    eligibility_snapshot: {
+      pilot_status_before: readiness.pilotStatus,
+      go_live_blocked_by: readiness.goLive.blockedBy,
+    },
+    ...(target === 'live' ? { attestations } : {}),
+  };
+
+  const supabase = userClient(c);
+  const rpc = await supabase.rpc('set_agency_pilot_status', {
+    p_agency_id: id,
+    p_target: target,
+    p_metadata: metadata,
+  });
+  return handleRpc(c, 'go-live', rpc);
 });
 
 export default route;

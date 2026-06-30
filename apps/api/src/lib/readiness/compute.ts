@@ -460,3 +460,87 @@ export function computeReadiness(agencyId: string, s: ReadinessSignals): Readine
 
   return { agencyId, pilotStatus: s.pilotStatus, items, providers, gates, goLive };
 }
+
+// --- Go-live decision (C3) — PURE; the admin endpoint recomputes readiness then calls this ---
+
+export type GoLiveAttestations = {
+  autonomo_corrected?: boolean;
+  legal_pages_published?: boolean;
+  dpa_consent_live?: boolean;
+  test_data_cleaned?: boolean;
+};
+
+/** The external/manual gates with no DB signal — all required (and NOT override-able) for `live`. */
+export const REQUIRED_ATTESTATIONS = [
+  'autonomo_corrected',
+  'legal_pages_published',
+  'dpa_consent_live',
+  'test_data_cleaned',
+] as const;
+
+export type GoLiveDecision = {
+  allowed: boolean;
+  reason: string;
+  /** readiness item ids blocking (excludes the self-referential `lifecycle.go_live`). */
+  configBlockers: string[];
+  missingAttestations: string[];
+  overrideUsed: boolean;
+};
+
+/**
+ * Decide whether a staff-initiated pilot_status transition is allowed, from a
+ * SERVER-SIDE readiness recompute (never the browser's word).
+ *  - setup / paused / blocked: always allowed (staff lifecycle control).
+ *  - ready_for_pilot: requires all non-lifecycle G1 readiness items satisfied,
+ *    unless `override` (a soft-block bypass that is RECORDED, never silent).
+ *  - live: the above PLUS every manual attestation true. Attestations are a HARD
+ *    gate — `override` can bypass a readiness gap but NEVER the legal/external
+ *    attestations, so an unready agency can't be forced live without confirming
+ *    the autónomo / legal-pages / DPA / test-data-clean gates.
+ */
+export function evaluateGoLive(
+  target: PilotStatus,
+  readiness: ReadinessResponse,
+  attestations: GoLiveAttestations,
+  override: boolean,
+): GoLiveDecision {
+  const configBlockers = readiness.goLive.blockedBy.filter((id) => id !== 'lifecycle.go_live');
+
+  if (target === 'setup' || target === 'paused' || target === 'blocked') {
+    return { allowed: true, reason: `Set to ${target}.`, configBlockers: [], missingAttestations: [], overrideUsed: false };
+  }
+
+  if (configBlockers.length > 0 && !override) {
+    return {
+      allowed: false,
+      reason: `Not ready — resolve these first: ${configBlockers.join(', ')}.`,
+      configBlockers,
+      missingAttestations: [],
+      overrideUsed: false,
+    };
+  }
+
+  if (target === 'live') {
+    const missingAttestations = REQUIRED_ATTESTATIONS.filter((k) => attestations[k] !== true);
+    if (missingAttestations.length > 0) {
+      return {
+        allowed: false,
+        reason: `Go-live needs every manual confirmation first: ${missingAttestations.join(', ')}.`,
+        configBlockers,
+        missingAttestations,
+        overrideUsed: false,
+      };
+    }
+  }
+
+  const overrideUsed = override && configBlockers.length > 0;
+  return {
+    allowed: true,
+    reason: overrideUsed
+      ? `Allowed via explicit override (unresolved readiness: ${configBlockers.join(', ')}).`
+      : `Eligible for ${target}.`,
+    configBlockers,
+    missingAttestations: [],
+    overrideUsed,
+  };
+}

@@ -1,5 +1,6 @@
 {
   "template_id": "1",
+  "title_font_status": "ADJUDICATED 2026-06-27 (shape mode): needs_seed — no clearly-close vault font (best Poppins 0.613 ≈ Libre Caslon Text 0.600, sep 0.013, all < USABLE 0.72; ambiguous/noisy on 4 wide caps). 'OPEN HOUSE' is a high-contrast display serif the vault lacks. Kept Libre Caslon Display as a category-correct (high-contrast serif) production placeholder; the exact Canva face needs Christian/Canva source confirmation before a faithful claim.",
   "_note": "FIRST-PROOF editable manifest for #1 (Open House) — a DARK template (white text on black/photo). Geometry from the auto-intake draft (intake/1), colours from engine/colourTokenize (bg #000, ink #fff). Text re-rendered as editable <text> (outlined Canva source knocked out, never final). Colours are role tokens resolved from the agency palette (colour wheel). Title font defaults to Libre Caslon Display (serif), stats/cta to Poppins, pending per-template font adjudication. No invented property facts: title/living-room label/badge/contact are template/agency copy; bedroom + bathroom stats are the real property facts.",
   "canvas": { "width": 1080, "height": 1350 },
   "source_svg": "assets/1/source.tokenized.svg",

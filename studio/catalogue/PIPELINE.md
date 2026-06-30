@@ -47,6 +47,16 @@ Not "waiting for a navy/gold brand decision" — the work is **role→token mapp
 - **#1 proof** (Open House — DARK template; `proofEditable.ts`, `1.editable.json`, `assets/1/`): 5/5 — 7 `<text data-editable>` (stat row ×3 + title 2 lines + badge + cta); photo fills + 0.45 legibility overlay; **all 6 white-default roles recolour to 5 distinct colours independently** (title/stat/badge/cta). Proves the path across the opposite polarity from #11. Proof art (gitignored): `out/engine/<id>/proof/recolour_A_vs_B.png`.
 - First-proof grade for both — fonts default (Poppins / Libre Caslon Display) pending per-template adjudication; geometry from the auto-intake draft; no invented property facts (stats = real bedroom/bathroom; title/labels/contact = template/agency copy). Remaining per-template manual needs: precise geometry measurement, font adjudication, overlay/contrast tuning, and badge-pill styling (badge currently re-rendered as plain text).
 
+## Font adjudication — titles (2026-06-27)
+`engine/adjudicateFont.ts` runs the frozen v1 adjudicator (SHAPE mode — render the known title line in each
+active vault font + align glyph outlines; content-independent features alone cannot tell a serif title from a
+sans one). Result (`catalogue/font_adjudication.json`): **all three promoted titles = `needs_seed`** — no
+vault font is a clearly-close match (all < USABLE 0.72):
+- **#4 "Luxury"** → needs_seed (best Libre Caslon Text 0.579) — reproduces the Q9 finding; #4 title stays the **Libre Caslon Display** production improvement (faithful = needs_seed).
+- **#11 "STEP INTO YOUR"** → needs_seed (best 0.447) — a bold geometric sans the vault lacks; **Poppins** kept as a category-correct (sans) placeholder.
+- **#1 "OPEN"** → needs_seed (best Poppins 0.613 ≈ Libre Caslon Text 0.600, ambiguous) — a high-contrast display serif the vault lacks; **Libre Caslon Display** kept as a category-correct placeholder.
+**No fonts were blindly changed.** The honest read: the vault (Prata/Poppins/Libre Caslon Text/Display + Tinos seed_only) does **not** contain the Canva title faces. To reach a *faithful* title, the actual source fonts must be identified + seeded — **needs Christian / Canva source confirmation** per template. Until then the manifests use category-correct production placeholders (recorded in each manifest's `title_font_status`).
+
 ## Tooling status
 - `engine/bucketInventory.ts` — discovery/inventory (catalogue). Re-runs as templates are added/updated. Needs `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` (repo `.env`).
 - `engine/autoIntake.ts` — bulk first-pass intake drafts (above).

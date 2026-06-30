@@ -23,6 +23,13 @@ export type AssistantIntent = "today" | "wrong" | "tasks" | "whatsapp";
 
 const RECENT_FAIL_HOURS = 72; // recent = urgent; older = "decide what to do"
 
+// A task/flag for a lead that is NOT in the Inbox (no conversation) AND older than
+// this is treated as a STALE flag with no agency-facing home — it must NOT be
+// presented as an urgent "reach out today" item (that's the Katarzyna case: a
+// "super-hot" lead silent for weeks with an un-actioned alert). It is still shown
+// honestly, demoted, with the only real action it has: review / clear (resolve).
+const STALE_NON_INBOX_HOURS = 168; // 7 days
+
 const PROVIDER_LABEL: Record<string, string> = { whatsapp: "WhatsApp", email: "Email" };
 
 const TASK_EXPLAIN: Record<string, string> = {
@@ -64,7 +71,23 @@ function leadLocation(name: string, inInbox: boolean): string {
 
 // --- concern model (prioritised "today" plan) --------------------------------
 
-type Concern = { priority: number; emoji: string; title: string; guidance: string; location: string | null; offTab: boolean };
+type Concern = {
+  priority: number;
+  emoji: string;
+  title: string;
+  guidance: string;
+  location: string | null;
+  offTab: boolean;
+  // A lead/task with no Inbox home (no conversation) AND stale — demoted out of the
+  // urgent plan; surfaced honestly as "older flagged, review/clear" instead.
+  staleFlag: boolean;
+  leadName: string | null;
+};
+
+/** Is this an item the agency CANNOT open or act on in-app yet (no Inbox home) and stale? */
+function isStaleNonInbox(inInbox: boolean, ageHours: number | null): boolean {
+  return !inInbox && ageHours !== null && ageHours > STALE_NON_INBOX_HOURS;
+}
 
 function buildConcerns(d: OperationsResponse): Concern[] {
   const out: Concern[] = [];
@@ -75,21 +98,23 @@ function buildConcerns(d: OperationsResponse): Concern[] {
     const who = item.leadName ?? "a lead";
     const loc = leadLocation(who, item.inInbox);
     const offTab = !item.inInbox;
+    const stale = isStaleNonInbox(item.inInbox, item.ageHours);
+    const leadName = item.leadName ?? null;
     switch (item.type) {
       case "suggested_reply":
-        out.push({ priority: 1, emoji: "💬", title: `Review ${who}'s reply`, guidance: "It may be holding up the buyer's response, so it's the most time-sensitive.", location: loc, offTab });
+        out.push({ priority: 1, emoji: "💬", title: `Review ${who}'s reply`, guidance: "It may be holding up the buyer's response, so it's the most time-sensitive.", location: loc, offTab, staleFlag: stale, leadName });
         break;
       case "super_hot_alert":
-        out.push({ priority: 2, emoji: "🔥", title: `Hot lead: ${who}`, guidance: "Very engaged right now — reach out while they're warm.", location: loc, offTab });
+        out.push({ priority: 2, emoji: "🔥", title: `Hot lead: ${who}`, guidance: "Very engaged right now — reach out while they're warm.", location: loc, offTab, staleFlag: stale, leadName });
         break;
       case "viewing_booking_needed":
-        out.push({ priority: 3, emoji: "📅", title: `Viewing to book: ${who}`, guidance: "Confirm a time with the buyer.", location: loc, offTab });
+        out.push({ priority: 3, emoji: "📅", title: `Viewing to book: ${who}`, guidance: "Confirm a time with the buyer.", location: loc, offTab, staleFlag: stale, leadName });
         break;
       case "human_review_needed":
-        out.push({ priority: 5, emoji: "⚠️", title: `Needs your review: ${who}`, guidance: "AIVENA flagged something it wasn't sure about.", location: loc, offTab });
+        out.push({ priority: 5, emoji: "⚠️", title: `Needs your review: ${who}`, guidance: "AIVENA flagged something it wasn't sure about.", location: loc, offTab, staleFlag: stale, leadName });
         break;
       default:
-        out.push({ priority: 6, emoji: "⚠️", title: `${item.label}: ${who}`, guidance: "Take a look when you can.", location: loc, offTab });
+        out.push({ priority: 6, emoji: "⚠️", title: `${item.label}: ${who}`, guidance: "Take a look when you can.", location: loc, offTab, staleFlag: stale, leadName });
     }
   }
 
@@ -98,24 +123,39 @@ function buildConcerns(d: OperationsResponse): Concern[] {
     const who = f.leadName ?? "a lead";
     const recent = f.ageHours !== null && f.ageHours < RECENT_FAIL_HOURS;
     const loc = f.inInbox ? "👉 Open them in the Inbox to retry or reply." : `👉 Reach out to ${who} directly.`;
+    const stale = isStaleNonInbox(f.inInbox, f.ageHours);
+    const leadName = f.leadName ?? null;
     if (recent) {
-      out.push({ priority: 2, emoji: "⚠️", title: `Failed message to ${who} (${ageWord(f.ageHours)})`, guidance: "It's recent — retry or reply manually so they're not left waiting.", location: loc, offTab: !f.inInbox });
+      out.push({ priority: 2, emoji: "⚠️", title: `Failed message to ${who} (${ageWord(f.ageHours)})`, guidance: "It's recent — retry or reply manually so they're not left waiting.", location: loc, offTab: !f.inInbox, staleFlag: stale, leadName });
     } else {
-      out.push({ priority: 6, emoji: "⚠️", title: `Old failed message to ${who} (${ageWord(f.ageHours)})`, guidance: "It's old, so probably not urgent — retry, reply manually, or mark it resolved if it no longer matters.", location: loc, offTab: !f.inInbox });
+      out.push({ priority: 6, emoji: "⚠️", title: `Old failed message to ${who} (${ageWord(f.ageHours)})`, guidance: "It's old, so probably not urgent — retry, reply manually, or mark it resolved if it no longer matters.", location: loc, offTab: !f.inInbox, staleFlag: stale, leadName });
     }
   }
 
-  // Provider health.
+  // Provider health (always has a home — Settings → Channels).
   for (const p of d.providers) {
     const label = PROVIDER_LABEL[p.provider] ?? p.provider;
     if (p.state === "disconnected") {
-      out.push({ priority: 2, emoji: "🛠️", title: `${label} isn't connected`, guidance: "Reconnect it so AIVENA can message buyers.", location: "👉 Open Settings → Channels.", offTab: false });
+      out.push({ priority: 2, emoji: "🛠️", title: `${label} isn't connected`, guidance: "Reconnect it so AIVENA can message buyers.", location: "👉 Open Settings → Channels.", offTab: false, staleFlag: false, leadName: null });
     } else if (p.state === "degraded") {
-      out.push({ priority: 7, emoji: "🛠️", title: `${label} channel is off`, guidance: `${p.detail} AIVENA may not send automatically.`, location: "👉 Open Settings → Channels.", offTab: false });
+      out.push({ priority: 7, emoji: "🛠️", title: `${label} channel is off`, guidance: `${p.detail} AIVENA may not send automatically.`, location: "👉 Open Settings → Channels.", offTab: false, staleFlag: false, leadName: null });
     }
   }
 
   return out.sort((a, b) => a.priority - b.priority);
+}
+
+/** Honest one-liner for the demoted "no Inbox home" flags — names up to 2 leads. */
+function staleFooter(stale: Concern[]): string {
+  const names = Array.from(new Set(stale.map((c) => c.leadName).filter((n): n is string => !!n)));
+  const shown = names.slice(0, 2).join(", ");
+  const extra = names.length > 2 ? ` +${names.length - 2} more` : "";
+  const who = shown ? ` (${shown}${extra})` : "";
+  const n = stale.length;
+  return (
+    `🧹 Plus ${n} older flagged item${n > 1 ? "s" : ""}${who} for lead${names.length > 1 ? "s" : ""} with no conversation yet — ` +
+    "not urgent, and there's no Inbox thread to open. Review or clear them when you can (a one-click resolve is coming)."
+  );
 }
 
 const SCOPE_NOTE = "ℹ️ I check across all your leads, not just the tab you're viewing.";
@@ -125,19 +165,32 @@ const MAX_TODAY = 3;
 
 export function buildTodayPlan(d: OperationsResponse): string {
   const concerns = buildConcerns(d);
-  if (concerns.length === 0) {
+  const live = concerns.filter((c) => !c.staleFlag); // actionable now (Inbox / fresh / Settings)
+  const stale = concerns.filter((c) => c.staleFlag); // no Inbox home, demoted
+
+  if (live.length === 0 && stale.length === 0) {
     return "✅ You're all caught up — nothing needs your attention right now. 🎉";
   }
-  const top = concerns.slice(0, MAX_TODAY);
-  const lines = ["Here's what I'd do first today 👇", ""];
+
+  const lines: string[] = [];
+  if (live.length === 0) {
+    // Only stale, no-home flags remain — never present these as "do today".
+    lines.push("✅ Nothing urgent needs you right now.", "");
+    lines.push(staleFooter(stale));
+    return lines.join("\n");
+  }
+
+  const top = live.slice(0, MAX_TODAY);
+  lines.push("Here's what I'd do first today 👇", "");
   top.forEach((c, i) => {
     lines.push(`${i + 1}. ${c.emoji} ${c.title}`);
     lines.push(`   ${c.guidance}`);
     if (c.location) lines.push(`   ${c.location}`);
     lines.push("");
   });
-  const rest = concerns.length - top.length;
+  const rest = live.length - top.length;
   lines.push(rest > 0 ? `👉 Plus ${rest} more lower-priority item${rest > 1 ? "s" : ""} — nothing else looks urgent.` : "✅ Nothing else looks urgent right now.");
+  if (stale.length > 0) lines.push(`\n${staleFooter(stale)}`);
   if (top.some((c) => c.offTab)) lines.push(`\n${SCOPE_NOTE}`);
   return lines.join("\n");
 }
@@ -157,6 +210,8 @@ export function buildWhatsWrong(d: OperationsResponse): string {
   if (d.actionQueue.total > 0) {
     const types = d.actionQueue.byType.map((t) => `${t.count} ${t.label.toLowerCase()}`).join(", ");
     lines.push(`💬 ${d.actionQueue.total} open task${d.actionQueue.total > 1 ? "s" : ""}${types ? `: ${types}` : ""}.`);
+    const noHome = d.actionQueue.items.filter((i) => i.type !== "send_issue" && isStaleNonInbox(i.inInbox, i.ageHours)).length;
+    if (noHome > 0) lines.push(`🧹 ${noHome} of these ${noHome > 1 ? "are" : "is"} an older flag for a lead with no conversation (no Inbox thread) — review or clear, not urgent.`);
   }
   for (const p of d.providers.filter((x) => x.state === "disconnected" || x.state === "degraded")) {
     lines.push(`🛠️ ${PROVIDER_LABEL[p.provider] ?? p.provider} is ${p.state} — ${p.detail}`);
@@ -176,8 +231,10 @@ export function explainTasks(d: OperationsResponse): string {
   }
   lines.push("");
   lines.push("👉 Open them in the Inbox to act, or mark one resolved once it's handled.");
-  // If any open task's lead isn't in the Inbox, say so honestly.
-  if (d.actionQueue.items.some((i) => !i.inInbox)) lines.push(`\n${SCOPE_NOTE} Some flagged leads have no conversation yet, so they aren't in the Inbox queue.`);
+  // If any open task's lead isn't in the Inbox, say so honestly — no dead-end "open it".
+  if (d.actionQueue.items.some((i) => i.type !== "send_issue" && !i.inInbox)) {
+    lines.push(`\n${SCOPE_NOTE} A few flagged leads have no conversation yet, so they aren't in the Inbox queue — there's nothing to open; you can review or clear those when you want.`);
+  }
   return lines.join("\n");
 }
 

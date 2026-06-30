@@ -1,0 +1,27 @@
+{
+  "template_id": "11",
+  "_note": "FIRST-PROOF editable manifest for #11 (Property Listing / CTA). Geometry from the auto-intake draft (intake/11), colours from engine/colourTokenize. Text is re-rendered as editable <text> (the outlined Canva source is knocked out, never final). Colours are role tokens resolved from the agency palette (colour wheel). Fonts default to Poppins (sans) pending per-template font adjudication. No invented property facts: title/eyebrow/brand are template/agency copy; the address uses the real property location.",
+  "canvas": { "width": 1080, "height": 1350 },
+  "source_svg": "assets/11/source.tokenized.svg",
+  "photo_token": "@@PHOTO0@@",
+  "colour_tokens": {
+    "background": { "default": "#ffffff", "locked": false },
+    "overlay": { "default": "#ffffff", "locked": true },
+    "title": { "default": "#000000", "locked": false },
+    "subtitle/body": { "default": "#000000", "locked": false },
+    "accent": { "default": "#000000", "locked": false },
+    "badge.fill": { "default": "#ffffff", "locked": false },
+    "badge.text": { "default": "#000000", "locked": false },
+    "divider": { "default": "#000000", "locked": false },
+    "icon": { "default": "#000000", "locked": true },
+    "stat.label": { "default": "#000000", "locked": false },
+    "stat.value": { "default": "#000000", "locked": false },
+    "cta": { "default": "#000000", "locked": false }
+  },
+  "text_slots": [
+    { "id": "brand", "role": "badge.text", "source": "template_copy", "bbox": [104, 130, 330, 171], "font": "Poppins", "align": "left", "text": "YOUR AGENCY" },
+    { "id": "eyebrow", "role": "accent", "source": "template_copy", "bbox": [770, 126, 990, 150], "font": "Poppins", "align": "right", "text": "PROPERTY LISTING" },
+    { "id": "title", "role": "title", "source": "template_copy", "bbox": [100, 263, 945, 470], "font": "Poppins", "align": "left", "text": "STEP INTO YOUR\nDREAM HOME" },
+    { "id": "address", "role": "cta", "source": "property_fact", "bbox": [463, 1203, 974, 1233], "font": "Poppins", "align": "left", "text": "Torrevieja, Alicante" }
+  ]
+}

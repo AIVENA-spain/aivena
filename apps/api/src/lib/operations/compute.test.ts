@@ -351,3 +351,25 @@ describe('computeOperations — failed-send at-risk uses the FAILURE age + clear
     expect(r.ageHours).toBe(3);
   });
 });
+
+// Regression: the Katarzyna case — a task whose lead has NO conversation isn't in
+// dashboard_inbox, so it must be marked inInbox:false (no Inbox home to open).
+describe('computeOperations — inInbox marks Inbox-openable vs pipeline-only', () => {
+  it('task lead present in lifecycle → inInbox true; absent → inInbox false', () => {
+    const res = computeOperations('demo', {
+      failedSends: null,
+      openTasks: [
+        { task_id: 't-marte', lead_id: 'marte', lead_name: 'Marte', task_type: 'suggested_reply', status: 'pending', priority: null, temperature: 'warm', title: null, created_at: hoursAgo(2) },
+        { task_id: 't-kat', lead_id: 'kat', lead_name: 'Katarzyna', task_type: 'super_hot_alert', status: 'open', priority: 'high', temperature: 'super_hot', title: null, created_at: hoursAgo(8) },
+      ],
+      // Only Marte has a dashboard_inbox row (a conversation); Katarzyna does not.
+      lifecycle: [lc({ lead_id: 'marte', lead_name: 'Marte', latest_inbound_at: hoursAgo(2) })],
+      whatsapp: null,
+      email: null,
+      nowMs: NOW,
+    });
+    const byLead = Object.fromEntries(res.actionQueue.items.map((i) => [i.leadId, i.inInbox]));
+    expect(byLead['marte']).toBe(true);
+    expect(byLead['kat']).toBe(false);
+  });
+});

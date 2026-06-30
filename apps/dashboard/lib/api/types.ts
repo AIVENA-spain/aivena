@@ -783,6 +783,8 @@ export type OpsFailedSend = {
   at: string | null;
   ageHours: number | null;
   preview: string | null;
+  /** True = this lead is openable in the Inbox (has a dashboard_inbox row). */
+  inInbox: boolean;
 };
 
 export type OpsTask = {
@@ -797,6 +799,8 @@ export type OpsTask = {
   title: string | null;
   createdAt: string | null;
   ageHours: number | null;
+  /** True = this lead is openable in the Inbox (has a dashboard_inbox row). */
+  inInbox: boolean;
 };
 
 export type OpsAtRiskLead = {
@@ -807,6 +811,8 @@ export type OpsAtRiskLead = {
   temperature: string | null;
   ageHours: number | null;
   lastActivityAt: string | null;
+  /** True = this lead is openable in the Inbox (has a dashboard_inbox row). */
+  inInbox: boolean;
 };
 
 export type OperationsResponse = {

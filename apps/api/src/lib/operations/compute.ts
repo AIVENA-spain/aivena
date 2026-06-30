@@ -164,6 +164,8 @@ export type OperationsResponse = {
       at: string | null;
       ageHours: number | null;
       preview: string | null;
+      /** True = this lead is openable in the Inbox (has a dashboard_inbox row). */
+      inInbox: boolean;
     }>;
     /** Honest note about automatic fallback-task creation (F3, Chat 3). */
     note: string;
@@ -184,6 +186,8 @@ export type OperationsResponse = {
       title: string | null;
       createdAt: string | null;
       ageHours: number | null;
+      /** True = this lead is openable in the Inbox (has a dashboard_inbox row). */
+      inInbox: boolean;
     }>;
     available: boolean;
   };
@@ -203,6 +207,8 @@ export type OperationsResponse = {
       temperature: string | null;
       ageHours: number | null;
       lastActivityAt: string | null;
+      /** True = this lead is openable in the Inbox (has a dashboard_inbox row). */
+      inInbox: boolean;
     }>;
     available: boolean;
   };
@@ -365,6 +371,13 @@ export function computeOperations(agencyId: string, s: OperationsSignals): Opera
     else failedByLead.set(r.lead_id, { at: r.at, count: 1 });
   }
 
+  // Leads that actually appear in the Inbox = those with a dashboard_inbox row
+  // (conversation-backed). A task/failure whose lead is NOT here has no Inbox
+  // home today (e.g. a hot lead with no conversation), so the assistant must NOT
+  // imply "open it in the inbox" — it says where it really lives instead.
+  const inboxLeadIds = new Set<string>();
+  for (const r of s.lifecycle ?? []) if (r.lead_id) inboxLeadIds.add(r.lead_id);
+
   const failedItems = failedRows.map((r) => ({
     messageId: r.message_id,
     leadId: r.lead_id,
@@ -374,6 +387,7 @@ export function computeOperations(agencyId: string, s: OperationsSignals): Opera
     at: r.at,
     ageHours: ageHours(r.at, now),
     preview: r.preview ? r.preview.slice(0, 160) : null,
+    inInbox: r.lead_id ? inboxLeadIds.has(r.lead_id) : false,
   }));
 
   // ---- Open action queue (F2 + F1) -----------------------------------------
@@ -397,6 +411,7 @@ export function computeOperations(agencyId: string, s: OperationsSignals): Opera
     title: t.title,
     createdAt: t.created_at,
     ageHours: ageHours(t.created_at, now),
+    inInbox: t.lead_id ? inboxLeadIds.has(t.lead_id) : false,
   }));
 
   // ---- Providers ------------------------------------------------------------
@@ -458,6 +473,7 @@ export function computeOperations(agencyId: string, s: OperationsSignals): Opera
         temperature: row.temperature,
         ageHours: ageH,
         lastActivityAt,
+        inInbox: row.lead_id ? inboxLeadIds.has(row.lead_id) : false,
       });
     }
   }

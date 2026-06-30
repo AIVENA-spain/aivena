@@ -154,7 +154,7 @@ function staleFooter(stale: Concern[]): string {
   const n = stale.length;
   return (
     `🧹 Plus ${n} older flagged item${n > 1 ? "s" : ""}${who} for lead${names.length > 1 ? "s" : ""} with no conversation yet — ` +
-    "not urgent, and there's no Inbox thread to open. Review or clear them when you can (a one-click resolve is coming)."
+    "not urgent, and there's no Inbox thread to open. Review or clear them in your Tasks list when you can."
   );
 }
 

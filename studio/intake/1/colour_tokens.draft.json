@@ -1,0 +1,68 @@
+{
+  "template_id": "1",
+  "generated_by": "studio/engine/colourTokenize.ts",
+  "background_hex": "#000000",
+  "dominant_ink_hex": "#eeeeee",
+  "tokens": {
+    "background": {
+      "default": "#000000",
+      "locked": false,
+      "sampled": false
+    },
+    "overlay": {
+      "default": "#000000",
+      "locked": true,
+      "sampled": false
+    },
+    "title": {
+      "default": "#eeeeee",
+      "locked": false,
+      "sampled": true
+    },
+    "subtitle/body": {
+      "default": "#ffffff",
+      "locked": false,
+      "sampled": true
+    },
+    "accent": {
+      "default": "#eeeeee",
+      "locked": false,
+      "sampled": false
+    },
+    "badge.fill": {
+      "default": "#000000",
+      "locked": false,
+      "sampled": false
+    },
+    "badge.text": {
+      "default": "#eeeeee",
+      "locked": false,
+      "sampled": false
+    },
+    "divider": {
+      "default": "#eeeeee",
+      "locked": false,
+      "sampled": false
+    },
+    "icon": {
+      "default": "#eeeeee",
+      "locked": true,
+      "sampled": false
+    },
+    "stat.label": {
+      "default": "#eeeeee",
+      "locked": false,
+      "sampled": false
+    },
+    "stat.value": {
+      "default": "#ffffff",
+      "locked": false,
+      "sampled": true
+    },
+    "cta": {
+      "default": "#eeeeee",
+      "locked": false,
+      "sampled": false
+    }
+  }
+}

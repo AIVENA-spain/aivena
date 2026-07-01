@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useActionState, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import {
+  Activity,
   ArrowDownRight,
   ArrowRight,
   ArrowUpRight,
@@ -670,9 +671,7 @@ function RecentActivityCard({
       </CardHeader>
       <CardContent className="p-0">
         {visible.length === 0 ? (
-          <p className="px-4 py-8 text-center text-sm text-muted-foreground">
-            {t("empty")}
-          </p>
+          <EmptyState icon={Activity} title={t("empty")} />
         ) : (
           <ul className="divide-y divide-border">
             {visible.map((r) => (

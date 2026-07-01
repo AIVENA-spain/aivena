@@ -37,7 +37,8 @@ type DashboardSettings = {
     region?: string | null;
     supported_languages?: string[] | null;
     from_email?: string | null;
-    domain_verified?: boolean | null;
+    send_proven?: boolean | null;
+    send_proven_at?: string | null;
   } | null;
   branding?: {
     logo_url?: string | null;
@@ -208,7 +209,7 @@ export async function gatherReadinessSignals(tx: Tx): Promise<ReadinessSignals> 
             reply_handling_mode: config?.reply_handling_mode ?? null,
           }
         : null,
-    email: profile ? { from_email: profile.from_email ?? null, domain_verified: profile.domain_verified ?? null } : null,
+    email: profile ? { from_email: profile.from_email ?? null, send_proven: profile.send_proven ?? null, send_proven_at: profile.send_proven_at ?? null } : null,
     team: members
       ? {
           owners: members.filter((m) => m.role === 'owner').length,

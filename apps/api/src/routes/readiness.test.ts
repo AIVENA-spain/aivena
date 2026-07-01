@@ -49,7 +49,7 @@ function demoSignals(over: Partial<ReadinessSignals> = {}): ReadinessSignals {
       human_approval_required: true,
       reply_handling_mode: 'manual',
     },
-    email: { from_email: 'costahomes@send.aivena.es', domain_verified: true },
+    email: { from_email: 'costahomes@send.aivena.es', send_proven: true, send_proven_at: '2026-06-15T12:24:20.988Z' },
     team: { owners: 2, agents: 0 },
     templates: { enApproved: 8, nonEnApproved: 0 },
     properties: { count: 141 },
@@ -104,9 +104,24 @@ describe('computeReadiness — demo agency live fixture', () => {
     expect(items['team.agents'].status).toBe('manual_fallback');
   });
 
-  it('email is never ready/verified even with a verified domain (no send proven)', () => {
-    expect(items['provider.email'].status).toBe('live_but_unproven');
-    expect(items['provider.email'].status).not.toBe('ready');
+  it('email is "ready" ONLY because a REAL send is proven (provider_audit_log), never faked', () => {
+    // demo has real successful Resend sends → send_proven=true (last 2026-06-15)
+    expect(items['provider.email'].status).toBe('ready');
+    const p = res.providers.find((x) => x.provider === 'email')!;
+    expect(p.detail).toContain('Email sending proven');
+    expect(p.detail).not.toMatch(/domain verified/i);
+  });
+
+  it('email with from_email but NO proven send is "configured — sending not proven" (never faked/ready)', () => {
+    const noSend = computeReadiness(
+      'demo-costa-homes-pilot01',
+      demoSignals({ email: { from_email: 'costahomes@send.aivena.es', send_proven: false, send_proven_at: null } }),
+    );
+    const e = byId(noSend.items)['provider.email'];
+    expect(e.status).toBe('live_but_unproven');
+    expect(e.status).not.toBe('ready');
+    const p = noSend.providers.find((x) => x.provider === 'email')!;
+    expect(p.detail).toBe('Email configured — sending not proven');
   });
 
   it('WhatsApp degrades to unavailable when the RPC is not deployed (no fake state)', () => {

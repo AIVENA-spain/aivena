@@ -120,7 +120,7 @@ export type ReadinessSignals = {
     human_approval_required: boolean | null;
     reply_handling_mode: string | null;
   } | null;
-  email: { from_email: string | null; domain_verified: boolean | null } | null;
+  email: { from_email: string | null; send_proven: boolean | null; send_proven_at: string | null } | null;
   team: { owners: number; agents: number } | null;
   templates: { enApproved: number; nonEnApproved: number } | null;
   properties: { count: number } | null;
@@ -336,32 +336,40 @@ export function computeReadiness(agencyId: string, s: ReadinessSignals): Readine
   // ---- B. Providers ----------------------------------------------------------
   const providers: ReadinessProvider[] = [];
 
-  // Email — never "ready"/"verified" without a real SEND proven. domain_verified
-  // (a real provider DNS signal from dashboard_settings.profile) sharpens the copy
-  // but is NOT "verified sending": a verified domain with zero sends is still unproven.
+  // Email — "proven" ONLY when a REAL successful send exists in provider_audit_log
+  // (send_proven from dashboard_settings.profile: a Resend 2xx with a provider_message_id).
+  // from_email present is merely "configured". We do NOT claim DNS/domain verification —
+  // there is no real Resend domain signal yet (that is J3b); copy never says "domain verified".
   const emailConfigured = !!s.email && has(s.email.from_email);
-  const domainVerified = s.email?.domain_verified === true;
-  const emailStatus: ReadinessStatus = !s.email ? 'unavailable' : emailConfigured ? 'live_but_unproven' : 'missing';
+  const sendProven = s.email?.send_proven === true;
+  const sendProvenAt = s.email?.send_proven_at ?? null;
+  const emailStatus: ReadinessStatus = !s.email
+    ? 'unavailable'
+    : emailConfigured && sendProven
+      ? 'ready'
+      : emailConfigured
+        ? 'live_but_unproven'
+        : 'missing';
   const emailDetail = !s.email
     ? 'unavailable'
     : !emailConfigured
       ? 'Not configured'
-      : domainVerified
-        ? 'Sending domain verified; no real send proven yet (one send + inbound round-trip pending)'
-        : 'from_email set; sending domain not verified; no send proven';
+      : sendProven
+        ? `Email sending proven — a real send succeeded at the provider${sendProvenAt ? ` (last: ${sendProvenAt})` : ''}`
+        : 'Email configured — sending not proven';
   push({
     id: 'provider.email', label: 'Email sending', area: 'J', gate: 'G4', owner: 'agency',
     agencyEditable: false, adminApproved: null,
     status: emailStatus,
-    signal: { source: 'agency_email_config.from_email + profile.domain_verified (a real send is still unproven — zero sends to date)', value: s.email ? `from_email=${s.email.from_email ?? '∅'} · domain_verified=${domainVerified}` : 'unavailable' },
-    uiCopy: emailConfigured ? (domainVerified ? 'Email domain verified — a real send is not yet proven' : 'Email configured — domain not verified, sending not proven') : 'Set up email sending',
+    signal: { source: 'agency_email_config.from_email + profile.send_proven (real successful Resend send in provider_audit_log)', value: s.email ? `from_email=${s.email.from_email ?? '∅'} · send_proven=${sendProven}${sendProvenAt ? ` · last=${sendProvenAt}` : ''}` : 'unavailable' },
+    uiCopy: emailConfigured ? (sendProven ? 'Email sending proven — a real send succeeded' : 'Email configured — sending not proven') : 'Set up email sending',
     blockedBy: [],
   });
   providers.push({
     provider: 'email',
     status: emailStatus,
     detail: emailDetail,
-    source: 'agency_email_config.from_email + profile.domain_verified',
+    source: 'agency_email_config.from_email + profile.send_proven (real provider_audit_log send)',
   });
 
   // WhatsApp — CONSUMED from Chat 3's RPC. null = unavailable (RPC not deployed), never faked.

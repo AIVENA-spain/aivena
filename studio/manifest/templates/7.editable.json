@@ -1,0 +1,34 @@
+{
+  "template_id": "7",
+  "title_font_status": "NOT YET adjudicated; title is a bold sans — Poppins placeholder (category-correct) pending shape adjudication + Canva source confirmation.",
+  "_note": "FIRST-PROOF editable manifest for #7 (Discover Your Dream — MULTI-PHOTO: hero + 3 thumbnails). Geometry from the auto-intake draft (intake/7), colours from engine/colourTokenize (light template: white bg, dark text, beige feature panel). Text re-rendered as editable <text> (outlined Canva source knocked out per-region, never final). Colours are role tokens resolved from the agency palette. No invented property facts: brand/title/body/features-header/contact are template/agency copy. The right-panel feature LIST (4 Bedrooms/3 Bathrooms/…) is left baked for this first proof (a remaining per-template manual need); only the header is re-rendered.",
+  "canvas": { "width": 1080, "height": 1350 },
+  "source_svg": "assets/7/source.tokenized.svg",
+  "photo_slots": [
+    { "token": "@@PHOTO0@@" },
+    { "token": "@@PHOTO1@@" },
+    { "token": "@@PHOTO2@@" },
+    { "token": "@@PHOTO3@@" }
+  ],
+  "colour_tokens": {
+    "background": { "default": "#ffffff", "locked": false },
+    "overlay": { "default": "#000000", "locked": true },
+    "title": { "default": "#1a1a1a", "locked": false },
+    "subtitle/body": { "default": "#333333", "locked": false },
+    "accent": { "default": "#ccbbaa", "locked": false },
+    "badge.fill": { "default": "#ffffff", "locked": false },
+    "badge.text": { "default": "#222222", "locked": false },
+    "divider": { "default": "#222222", "locked": false },
+    "icon": { "default": "#222222", "locked": true },
+    "stat.label": { "default": "#222222", "locked": false },
+    "stat.value": { "default": "#222222", "locked": false },
+    "cta": { "default": "#ffffff", "locked": false }
+  },
+  "text_slots": [
+    { "id": "brand", "role": "badge.text", "source": "template_copy", "bbox": [700, 42, 915, 100], "font": "Poppins", "align": "right", "text": "Rimberio Real Estate" },
+    { "id": "title", "role": "title", "source": "template_copy", "bbox": [52, 500, 580, 830], "font": "Poppins", "align": "left", "text": "Discover\nYour Dream\nReal Estate" },
+    { "id": "body", "role": "subtitle/body", "source": "template_copy", "bbox": [52, 878, 580, 975], "font": "Poppins", "align": "left", "text": "This ultra-modern luxury home is\ndesigned for the bold and refined." },
+    { "id": "features_header", "role": "stat.label", "source": "template_copy", "bbox": [718, 556, 1012, 602], "font": "Poppins", "align": "left", "text": "Home Features:" },
+    { "id": "contact", "role": "cta", "source": "template_copy", "bbox": [30, 1292, 1050, 1334], "font": "Poppins", "align": "center", "text": "CONTACT US AT   ·   +123-456-7890   ·   www.reallygreatsite.com" }
+  ]
+}

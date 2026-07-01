@@ -23,7 +23,8 @@ export const EditableManifest = z.object({
   template_id: z.string(),
   canvas: z.object({ width: z.number(), height: z.number() }),
   source_svg: z.string(),
-  photo_token: z.string(),
+  photo_token: z.string().optional(),                                   // single-photo templates
+  photo_slots: z.array(z.object({ token: z.string() })).optional(),     // multi-photo templates (hero + thumbnails)
   colour_tokens: z.record(z.string(), z.object({ default: z.string(), locked: z.boolean() })),
   overlay: z.object({ role: z.string(), opacity: z.number() }).optional(), // legibility scrim over the photo
   text_slots: z.array(EditableSlot),
@@ -51,12 +52,19 @@ function localBg(img: RGBA, b: number[], margin = 10): string {
   return "#" + [med(0), med(1), med(2)].map((v) => v.toString(16).padStart(2, "0")).join("");
 }
 
-export async function renderEditable(m: EditableManifest, palette: Palette = {}, photoUri = GREY): Promise<{ svg: string; png: Buffer; editableTextCount: number }> {
+export async function renderEditable(m: EditableManifest, palette: Palette = {}, photos: string | Record<string, string> = GREY): Promise<{ svg: string; png: Buffer; editableTextCount: number; photosFilled: number }> {
   const [W, H] = [m.canvas.width, m.canvas.height];
   const src = fs.readFileSync(abs(m.source_svg), "utf8");
-  // background raster = source SVG with the photo token filled, then an optional legibility scrim baked in,
-  // so the knockout samples the FINAL backdrop tone (covers the baked outlined text with the right colour).
-  const filled = src.split(m.photo_token).join(photoUri).replace(/@@PHOTO\d+@@/g, GREY);
+  // background raster = source SVG with EACH photo token filled (hero + thumbnails), then an optional
+  // legibility scrim baked in, so the knockout samples the FINAL backdrop tone.
+  const tokens = m.photo_slots?.map((p) => p.token) ?? (m.photo_token ? [m.photo_token] : []);
+  let filled = src, photosFilled = 0;
+  for (const tok of tokens) {
+    const uri = typeof photos === "string" ? photos : (photos[tok] || GREY);
+    if (filled.includes(tok)) photosFilled++;
+    filled = filled.split(tok).join(uri);
+  }
+  filled = filled.replace(/@@PHOTO\d+@@/g, GREY); // any stray token -> neutral
   const photoUriPng = "data:image/png;base64," + renderTemplatePng(filled, W).toString("base64");
   const scrim = m.overlay ? `<rect x="0" y="0" width="${W}" height="${H}" fill="${roleHex(m, palette, m.overlay.role)}" fill-opacity="${m.overlay.opacity}"/>` : "";
   const bgSvg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><image x="0" y="0" width="${W}" height="${H}" xlink:href="${photoUriPng}"/>${scrim}</svg>`;
@@ -86,7 +94,7 @@ export async function renderEditable(m: EditableManifest, palette: Palette = {},
   }
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><image x="0" y="0" width="${W}" height="${H}" xlink:href="${bgUri}"/>${overlay}</svg>`;
   const png = renderTemplatePng(svg, W);
-  return { svg, png, editableTextCount };
+  return { svg, png, editableTextCount, photosFilled };
 }
 
 export function loadEditableManifest(p: string): EditableManifest {

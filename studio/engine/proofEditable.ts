@@ -14,19 +14,32 @@ export async function proveEditable(manifestPath: string, demoPhoto?: string): P
   const add = (n: string, ok: boolean, d = "") => checks.push({ name: n, ok, detail: d });
   const m: EditableManifest = loadEditableManifest(manifestPath);
   const outDir = abs(`out/engine/${m.template_id}/proof`); fs.mkdirSync(outDir, { recursive: true });
-  const photo = demoPhoto || ("data:image/jpeg;base64," + fs.readFileSync(abs("assets/04/photo_test.jpg")).toString("base64"));
+  const realPhoto = demoPhoto || ("data:image/jpeg;base64," + fs.readFileSync(abs("assets/04/photo_test.jpg")).toString("base64"));
+
+  // photos: single-photo -> the real demo; multi-photo -> real hero + distinct-coloured thumbnail swatches
+  // (so the render clearly shows each of the N slots filled with a different image).
+  const sharp0 = (await import("sharp")).default;
+  const swatch = async (hex: string) => "data:image/png;base64," + (await sharp0({ create: { width: 16, height: 16, channels: 3, background: hex } }).png().toBuffer()).toString("base64");
+  const swatches = ["#4a6fa5", "#6b8e4e", "#a5674a"];
+  let photos: string | Record<string, string> = realPhoto;
+  const expectPhotos = m.photo_slots?.length ?? (m.photo_token ? 1 : 0);
+  if (m.photo_slots && m.photo_slots.length > 1) {
+    const map: Record<string, string> = {};
+    for (let i = 0; i < m.photo_slots.length; i++) map[m.photo_slots[i].token] = i === 0 ? realPhoto : await swatch(swatches[(i - 1) % swatches.length]);
+    photos = map;
+  }
 
   // assign each distinct role used by a slot a distinct test colour
   const roles = [...new Set(m.text_slots.map((s) => s.role))];
   const paletteB: Palette = {}; roles.forEach((r, i) => (paletteB[r] = WHEEL[i % WHEEL.length]));
 
-  const A = await renderEditable(m, {}, photo);
-  const B = await renderEditable(m, paletteB, photo);
+  const A = await renderEditable(m, {}, photos);
+  const B = await renderEditable(m, paletteB, photos);
   fs.writeFileSync(path.join(outDir, "editable_A_default.svg"), A.svg); fs.writeFileSync(path.join(outDir, "editable_A_default.png"), A.png);
   fs.writeFileSync(path.join(outDir, "editable_B_recoloured.svg"), B.svg); fs.writeFileSync(path.join(outDir, "editable_B_recoloured.png"), B.png);
 
   add("text stays editable (data-editable <text>)", A.editableTextCount >= m.text_slots.length && /<text[^>]*data-editable="true"/.test(A.svg), `${A.editableTextCount} editable <text>`);
-  add("photo slot fills (no @@PHOTO token; image embedded)", !/@@PHOTO\d+@@/.test(A.svg) && A.svg.includes("data:image"), "");
+  add(`all ${expectPhotos} photo slot(s) fill (no @@PHOTO token; image embedded)`, A.photosFilled === expectPhotos && !/@@PHOTO\d+@@/.test(A.svg) && A.svg.includes("data:image"), `filled ${A.photosFilled}/${expectPhotos}`);
 
   // every slot recolours to its role's assigned colour
   let recolourOk = true, detail: string[] = [];

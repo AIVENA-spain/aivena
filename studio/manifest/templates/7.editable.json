@@ -1,7 +1,7 @@
 {
   "template_id": "7",
-  "title_font_status": "NOT YET adjudicated; title is a bold sans — Poppins placeholder (category-correct) pending shape adjudication + Canva source confirmation.",
-  "_note": "FIRST-PROOF editable manifest for #7 (Discover Your Dream — MULTI-PHOTO: hero + 3 thumbnails). Geometry from the auto-intake draft (intake/7), colours from engine/colourTokenize (light template: white bg, dark text, beige feature panel). Text re-rendered as editable <text> (outlined Canva source knocked out per-region, never final). Colours are role tokens resolved from the agency palette. No invented property facts: brand/title/body/features-header/contact are template/agency copy. The right-panel feature LIST (4 Bedrooms/3 Bathrooms/…) is left baked for this first proof (a remaining per-template manual need); only the header is re-rendered.",
+  "title_font_status": "needs_seed (bold geometric sans not in vault) — Poppins-Regular + faux-bold stroke as a category-correct placeholder (lighter/approximate vs the original); Canva source font confirmation owed.",
+  "_note": "#7 (Discover Your Dream — MULTI-PHOTO) rebuilt against the actual Canva layout. Every text bbox/size measured from the rendered baked source (out/bucket/7.dbg_bg.png), NOT the auto-intake draft. ALL visible text is a real editable <text> slot: brand, 3-line title, 2-line body, Home-Features header, the 5 feature rows, and the 3 CTA text pieces. Only true ICONS/ART stay baked (feature icons x655-707; CTA phone icon x358-390 + location icon x653-685) — text beside them is editable and its bbox starts after the icon. Colours are role tokens (agency colour wheel). No invented property facts: all copy is the Canva template's own default text; no property fact is asserted. Real photos fill all 4 slots in the proof.",
   "canvas": { "width": 1080, "height": 1350 },
   "source_svg": "assets/7/source.tokenized.svg",
   "photo_slots": [
@@ -17,18 +17,25 @@
     "subtitle/body": { "default": "#333333", "locked": false },
     "accent": { "default": "#ccbbaa", "locked": false },
     "badge.fill": { "default": "#ffffff", "locked": false },
-    "badge.text": { "default": "#222222", "locked": false },
-    "divider": { "default": "#222222", "locked": false },
-    "icon": { "default": "#222222", "locked": true },
-    "stat.label": { "default": "#222222", "locked": false },
+    "badge.text": { "default": "#1a1a1a", "locked": false },
+    "divider": { "default": "#1a1a1a", "locked": false },
+    "icon": { "default": "#1a1a1a", "locked": true },
+    "stat.label": { "default": "#1a1a1a", "locked": false },
     "stat.value": { "default": "#222222", "locked": false },
     "cta": { "default": "#ffffff", "locked": false }
   },
   "text_slots": [
-    { "id": "brand", "role": "badge.text", "source": "template_copy", "bbox": [700, 42, 915, 100], "font": "Poppins", "align": "right", "text": "Rimberio Real Estate" },
-    { "id": "title", "role": "title", "source": "template_copy", "bbox": [52, 500, 580, 830], "font": "Poppins", "align": "left", "text": "Discover\nYour Dream\nReal Estate" },
-    { "id": "body", "role": "subtitle/body", "source": "template_copy", "bbox": [52, 878, 580, 975], "font": "Poppins", "align": "left", "text": "This ultra-modern luxury home is\ndesigned for the bold and refined." },
-    { "id": "features_header", "role": "stat.label", "source": "template_copy", "bbox": [718, 556, 1012, 602], "font": "Poppins", "align": "left", "text": "Home Features:" },
-    { "id": "contact", "role": "cta", "source": "template_copy", "bbox": [30, 1292, 1050, 1334], "font": "Poppins", "align": "center", "text": "CONTACT US AT   ·   +123-456-7890   ·   www.reallygreatsite.com" }
+    { "id": "brand", "role": "badge.text", "source": "template_copy", "bbox": [721, 44, 910, 98], "size": 24, "line_height": 26, "weight": "bold", "font": "Poppins", "align": "left", "text": "Rimberio\nReal Estate" },
+    { "id": "title", "role": "title", "source": "template_copy", "bbox": [69, 590, 600, 840], "size": 85, "line_height": 87, "weight": "bold", "font": "Poppins", "align": "left", "text": "Discover\nYour Dream\nReal Estate" },
+    { "id": "body", "role": "subtitle/body", "source": "template_copy", "bbox": [70, 898, 590, 974], "size": 30, "line_height": 37, "font": "Poppins", "align": "left", "text": "This ultra-modern luxury home is\ndesigned for the bold and refined." },
+    { "id": "features_header", "role": "stat.label", "source": "template_copy", "bbox": [658, 540, 905, 575], "size": 30, "weight": "bold", "font": "Poppins", "align": "left", "text": "Home Features:" },
+    { "id": "feat_1", "role": "stat.value", "source": "template_copy", "bbox": [718, 612, 1010, 648], "size": 31, "font": "Poppins", "align": "left", "text": "4 Bedrooms" },
+    { "id": "feat_2", "role": "stat.value", "source": "template_copy", "bbox": [718, 682, 1010, 718], "size": 31, "font": "Poppins", "align": "left", "text": "3 Bathrooms" },
+    { "id": "feat_3", "role": "stat.value", "source": "template_copy", "bbox": [718, 752, 1010, 788], "size": 31, "font": "Poppins", "align": "left", "text": "Modern Kitchen" },
+    { "id": "feat_4", "role": "stat.value", "source": "template_copy", "bbox": [718, 822, 1010, 858], "size": 31, "font": "Poppins", "align": "left", "text": "Living Room" },
+    { "id": "feat_5", "role": "stat.value", "source": "template_copy", "bbox": [718, 892, 1010, 928], "size": 31, "font": "Poppins", "align": "left", "text": "Car Garage" },
+    { "id": "cta_label", "role": "cta", "source": "template_copy", "bbox": [71, 1295, 300, 1332], "size": 26, "weight": "bold", "font": "Poppins", "align": "left", "text": "CONTACT US AT" },
+    { "id": "cta_phone", "role": "cta", "source": "template_copy", "bbox": [398, 1295, 600, 1332], "size": 26, "font": "Poppins", "align": "left", "text": "+123-456-7890" },
+    { "id": "cta_web", "role": "cta", "source": "template_copy", "bbox": [692, 1295, 995, 1332], "size": 26, "font": "Poppins", "align": "left", "text": "www.reallygreatsite.com" }
   ]
 }

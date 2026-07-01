@@ -18,6 +18,9 @@ export const EditableSlot = z.object({
   font: z.string(),               // vault font key the renderer loads (resvg fontDir)
   align: z.enum(["left", "center", "right"]).default("left"),
   text: z.string(),               // may contain \n for multiple lines
+  size: z.number().optional(),        // explicit font-size px (overrides the bbox heuristic; enables tight display type)
+  line_height: z.number().optional(), // explicit line pitch px (for tight multi-line titles)
+  weight: z.string().optional(),      // "bold"/"600"/"700" -> faux-bold (same-colour stroke; vault has no bold face yet)
 });
 export const EditableManifest = z.object({
   template_id: z.string(),
@@ -78,27 +81,49 @@ export async function renderEditable(m: EditableManifest, palette: Palette = {},
     const [x0, y0, x1, y1] = s.bbox;
     const lines = s.text.split("\n");
     const bw = x1 - x0, bh = y1 - y0;
-    const fontSize = Math.max(8, (bh / lines.length) * 0.78);
-    const lineH = bh / lines.length;
+    const fontSize = s.size ?? Math.max(8, (bh / lines.length) * 0.78);
+    const lineH = s.line_height ?? (bh / lines.length);
     const fill = roleHex(m, palette, s.role);
     const anchor = s.align === "center" ? "middle" : s.align === "right" ? "end" : "start";
     const tx = s.align === "center" ? x0 + bw / 2 : s.align === "right" ? x1 : x0;
     const knockHex = localBg(bgRGBA, [x0, y0, x1, y1]);
+    // faux-bold: the vault has no bold face, so a same-colour stroke thickens the regular glyph to match
+    // a bold source title/label (flagged needs_seed — this is a visual approximation, not the real face).
+    const bold = /bold|[6-9]00/.test(s.weight || "");
+    const strokeAttr = bold ? ` stroke="${fill}" stroke-width="${(fontSize * 0.042).toFixed(2)}" paint-order="stroke"` : "";
     // knockout the baked (outlined) source text in this region, then draw editable <text> on top
     overlay += `<rect x="${x0}" y="${y0}" width="${bw}" height="${bh}" fill="${knockHex}"/>`;
     lines.forEach((ln, i) => {
-      const by = y0 + (i + 1) * lineH - lineH * 0.22;
-      overlay += `<text data-slot-id="${s.id}" data-editable="true" data-role="${s.role}" x="${tx}" y="${by.toFixed(1)}" text-anchor="${anchor}" font-family="${s.font}" font-size="${fontSize.toFixed(1)}" fill="${fill}">${esc(ln)}</text>`;
+      // when size is explicit, place the first baseline from the ascent so tight display type sits inside the bbox
+      const by = s.size ? (y0 + fontSize * 0.82 + i * lineH) : (y0 + (i + 1) * lineH - lineH * 0.22);
+      overlay += `<text data-slot-id="${s.id}" data-editable="true" data-role="${s.role}" x="${tx}" y="${by.toFixed(1)}" text-anchor="${anchor}" font-family="${s.font}" font-size="${fontSize.toFixed(1)}"${strokeAttr} fill="${fill}">${esc(ln)}</text>`;
       editableTextCount++;
     });
   }
+  // Render the overlay ALONE (transparent) then composite onto the bg raster with sharp. Putting the text in
+  // the SAME svg as a large embedded data-URI <image> trips a resvg coordinate quirk (text after the image
+  // mis-scales/relocates); the overlay renders correctly on its own, so composite it separately.
+  const overlaySvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${overlay}</svg>`;
+  const overlayPng = renderTemplatePng(overlaySvg, W);
+  const png = await (await import("sharp")).default(bgPng).composite([{ input: overlayPng, top: 0, left: 0 }]).png().toBuffer();
+  // svg kept for record + the editability/photo-fill checks (grep for <text data-editable> + the embedded image)
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><image x="0" y="0" width="${W}" height="${H}" xlink:href="${bgUri}"/>${overlay}</svg>`;
-  const png = renderTemplatePng(svg, W);
   return { svg, png, editableTextCount, photosFilled };
 }
 
 export function loadEditableManifest(p: string): EditableManifest {
   return EditableManifest.parse(JSON.parse(fs.readFileSync(abs(p), "utf8")));
+}
+
+// the ORIGINAL template look: source SVG with every photo token filled, NO editable overlay. Used as the
+// reference side of the side-by-side visual comparison.
+export function renderFilledSource(m: EditableManifest, photos: string | Record<string, string> = GREY): Buffer {
+  const src = fs.readFileSync(abs(m.source_svg), "utf8");
+  const tokens = m.photo_slots?.map((p) => p.token) ?? (m.photo_token ? [m.photo_token] : []);
+  let filled = src;
+  for (const tok of tokens) filled = filled.split(tok).join(typeof photos === "string" ? photos : (photos[tok] || GREY));
+  filled = filled.replace(/@@PHOTO\d+@@/g, GREY);
+  return renderTemplatePng(filled, m.canvas.width);
 }
 
 if (require.main === module) {

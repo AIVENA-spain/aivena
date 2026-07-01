@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
  */
 const TABS: { key: string; label: string; seg: string; ready: boolean }[] = [
   { key: "overview", label: "Overview", seg: "", ready: true },
+  { key: "golive", label: "Go-Live", seg: "go-live", ready: true },
   { key: "settings", label: "Settings", seg: "settings", ready: false },
   { key: "branding", label: "Branding", seg: "branding", ready: false },
   { key: "team", label: "Team", seg: "team", ready: false },

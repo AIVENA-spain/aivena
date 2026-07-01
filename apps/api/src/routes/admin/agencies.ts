@@ -202,6 +202,36 @@ route.get('/:id', async (c) => {
   return handleRpc(c, 'detail', rpc);
 });
 
+// Recompute the B2 readiness model for a TARGET agency (not the caller). Sets the RLS
+// GUC to :id in its own tx, gathers live signals, computes — the exact recompute the
+// go-live gate uses, so the admin readiness panel and the go-live decision always agree.
+async function recomputeReadinessForAgency(id: string) {
+  return db.transaction(async (tx) => {
+    await tx.execute(
+      sql`SELECT set_config('app.current_agency_id', ${id}, true),
+                 set_config('app.current_user_role', 'aivena_staff', true)`,
+    );
+    const signals = await gatherReadinessSignals(tx);
+    return computeReadiness(id, signals);
+  });
+}
+
+// ─── GET /api/v1/admin/agencies/:id/readiness — staff readiness read for a target agency (C4) ──
+// Staff-only (requireAivenaStaff gates /api/v1/admin/*). READ-ONLY, no writes, no grants.
+// The admin go-live UI needs a target agency's readiness to render honestly; GET
+// /api/v1/readiness is self-scoped to the caller's agency, so staff use this instead.
+route.get('/:id/readiness', async (c) => {
+  const id = c.req.param('id');
+  if (!id) return c.json({ ok: false, error: 'That agency could not be found.' }, 404);
+  try {
+    const result = await recomputeReadinessForAgency(id);
+    return c.json({ computedAt: new Date().toISOString(), ...result });
+  } catch (err) {
+    console.error('[admin/readiness] recompute failed:', err);
+    return c.json({ ok: false, error: ADMIN_GENERIC_ERROR }, 500);
+  }
+});
+
 // ─── POST /api/v1/admin/agencies/:id/go-live — staff sets the pilot lifecycle (C3) ──
 // Staff-only (requireAivenaStaff gates /api/v1/admin/*). Server-side readiness
 // recompute for the TARGET agency (never trust the browser); `live` requires every
@@ -229,17 +259,10 @@ route.post('/:id/go-live', async (c) => {
   const override = body.override === true;
   const reason = typeof body.reason === 'string' ? body.reason.slice(0, 500) : null;
 
-  // Server-side readiness recompute for the TARGET agency (its own tx + GUC).
+  // Server-side readiness recompute for the TARGET agency (never trust the browser).
   let readiness;
   try {
-    readiness = await db.transaction(async (tx) => {
-      await tx.execute(
-        sql`SELECT set_config('app.current_agency_id', ${id}, true),
-                   set_config('app.current_user_role', 'aivena_staff', true)`,
-      );
-      const signals = await gatherReadinessSignals(tx);
-      return computeReadiness(id, signals);
-    });
+    readiness = await recomputeReadinessForAgency(id);
   } catch (err) {
     console.error('[admin/go-live] readiness recompute failed:', err);
     return c.json({ ok: false, error: ADMIN_GENERIC_ERROR }, 500);

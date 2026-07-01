@@ -1,5 +1,7 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+
 import { apiFetch, ApiError } from "@/lib/api/client";
 import type {
   AdminAgenciesResponse,
@@ -9,6 +11,7 @@ import type {
   CreateAgencyResult,
   SlugCheckResult,
 } from "@/lib/api/admin-types";
+import type { ReadinessResponse } from "@/lib/api/types";
 
 type Ok<T> = { ok: true; data: T };
 type Err = { ok: false; error: string };
@@ -115,5 +118,80 @@ export async function checkSlugAction(slug: string): Promise<SlugCheckResult> {
     return { available: Boolean(res.available), reason: res.reason ?? null };
   } catch {
     return { available: true };
+  }
+}
+
+/**
+ * Staff read of a TARGET agency's go-live readiness (C4). Backed by the
+ * staff-only GET /api/v1/admin/agencies/:id/readiness — which recomputes the B2
+ * model for :id server-side, so the panel reads the selected agency (never the
+ * caller's). Read-only.
+ */
+export async function getAgencyReadinessAction(
+  id: string,
+): Promise<ActionResult<ReadinessResponse>> {
+  try {
+    const res = await apiFetch<ReadinessResponse>(
+      `/api/v1/admin/agencies/${encodeURIComponent(id)}/readiness`,
+    );
+    return { ok: true, data: res };
+  } catch (err) {
+    return actionError("getAgencyReadiness", err);
+  }
+}
+
+/** A blocked (422) go-live attempt keeps the server's honest detail so the UI
+ *  can list exactly what's unresolved — it is never flattened to a bare string. */
+export type SetPilotStatusResult =
+  | { ok: true; data: { pilot_status?: string; from?: string } }
+  | { ok: false; error: string; blockedBy?: string[]; missingAttestations?: string[] };
+
+/**
+ * Staff sets an agency's pilot lifecycle (C3/C4) via POST
+ * /api/v1/admin/agencies/:id/go-live. The server recomputes readiness, enforces
+ * the attestations for `live`, records any override, and writes+audits through
+ * the SECURITY DEFINER RPC. The BROWSER never decides readiness — a 422 here is
+ * surfaced verbatim (blockedBy + missingAttestations) so nothing is faked.
+ */
+export async function setPilotStatusAction(
+  agencyId: string,
+  input: {
+    target: string;
+    attestations?: Record<string, boolean>;
+    override?: boolean;
+    reason?: string | null;
+  },
+): Promise<SetPilotStatusResult> {
+  try {
+    const res = await apiFetch<{ ok: true; pilot_status?: string; from?: string }>(
+      `/api/v1/admin/agencies/${encodeURIComponent(agencyId)}/go-live`,
+      { method: "POST", body: JSON.stringify(input) },
+    );
+    revalidatePath(`/admin/agencies/${agencyId}/go-live`);
+    revalidatePath(`/admin/agencies/${agencyId}`);
+    return { ok: true, data: { pilot_status: res.pilot_status, from: res.from } };
+  } catch (err) {
+    // 422 = the go-live gate blocked it — carry the structured detail to the UI.
+    if (
+      err instanceof ApiError &&
+      err.status === 422 &&
+      err.body &&
+      typeof err.body === "object"
+    ) {
+      const b = err.body as {
+        error?: unknown;
+        blockedBy?: unknown;
+        missingAttestations?: unknown;
+      };
+      return {
+        ok: false,
+        error: typeof b.error === "string" ? b.error : "This change was blocked.",
+        blockedBy: Array.isArray(b.blockedBy) ? b.blockedBy.map(String) : [],
+        missingAttestations: Array.isArray(b.missingAttestations)
+          ? b.missingAttestations.map(String)
+          : [],
+      };
+    }
+    return actionError("setPilotStatus", err);
   }
 }

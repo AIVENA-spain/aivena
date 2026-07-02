@@ -12,7 +12,6 @@ import type { OpsTask } from "@/lib/api/types";
 import { dismissTaskAction } from "./actions";
 import {
   rowReducer,
-  activeCount,
   whyItMatters,
   ageLabel,
   inboxHref,
@@ -51,8 +50,12 @@ export function TasksWorkspace({ tasks }: { tasks: OpsTask[] }) {
     })();
   }
 
-  const active = activeCount(rows);
-  const allResolved = rows.length > 0 && active === 0;
+  // A resolved task leaves the active list immediately (Christian's cleanup):
+  // resolved rows are filtered out of the render, and only kept in state to feed
+  // the tiny "resolved this session" counter. On refresh they're gone for real —
+  // /operations only returns pending/open tasks.
+  const visible = rows.filter((r) => r.state !== "resolved");
+  const resolvedCount = rows.length - visible.length;
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
@@ -73,9 +76,17 @@ export function TasksWorkspace({ tasks }: { tasks: OpsTask[] }) {
             description="No open tasks need a decision right now."
           />
         </div>
+      ) : visible.length === 0 ? (
+        <div className="rounded-xl border border-border bg-card shadow-soft">
+          <EmptyState
+            icon={CheckCircle2}
+            title="All caught up"
+            description={`You resolved ${resolvedCount} task${resolvedCount > 1 ? "s" : ""} — nothing else needs a decision right now.`}
+          />
+        </div>
       ) : (
         <div className="flex flex-col gap-2.5">
-          {rows.map((row) => (
+          {visible.map((row) => (
             <TaskRow
               key={row.task.taskId}
               row={row}
@@ -85,9 +96,9 @@ export function TasksWorkspace({ tasks }: { tasks: OpsTask[] }) {
               onSetReason={(reason) => dispatch(row.task.taskId, { type: "SET_REASON", reason })}
             />
           ))}
-          {allResolved ? (
-            <p className="px-1 py-2 text-center text-[13px] text-muted-foreground">
-              All tasks resolved 🎉
+          {resolvedCount > 0 ? (
+            <p className="px-1 pt-1 text-center text-[12px] text-muted-foreground">
+              ✓ {resolvedCount} resolved this session
             </p>
           ) : null}
         </div>
@@ -128,12 +139,7 @@ function TaskRow({
   const href = inboxHref(task);
 
   return (
-    <div
-      className={cn(
-        "rounded-xl border border-border bg-card px-4 py-3 shadow-soft transition-opacity",
-        state === "resolved" && "opacity-60",
-      )}
-    >
+    <div className="rounded-xl border border-border bg-card px-4 py-3 shadow-soft">
       <div className="flex flex-wrap items-start justify-between gap-3">
         {/* Left: what + why */}
         <div className="flex min-w-0 flex-col gap-1">
@@ -156,14 +162,10 @@ function TaskRow({
           {age ? <p className="text-[11px] text-muted-foreground">{age}</p> : null}
         </div>
 
-        {/* Right: action zone (two-step confirm) */}
+        {/* Right: action zone (two-step confirm). Resolved rows never reach here —
+            they're filtered out of the list the moment they resolve. */}
         <div className="flex flex-none items-center gap-2">
-          {state === "resolved" ? (
-            <span className="inline-flex items-center gap-1 text-[12.5px] font-medium text-brand">
-              <CheckCircle2 className="h-4 w-4" aria-hidden />
-              Resolved
-            </span>
-          ) : state === "saving" ? (
+          {state === "saving" ? (
             <span className="text-[12.5px] text-muted-foreground">Resolving…</span>
           ) : state === "confirming" ? (
             <div className="flex items-center gap-1.5">

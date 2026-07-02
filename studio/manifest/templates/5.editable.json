@@ -1,0 +1,33 @@
+{
+  "template_id": "5",
+  "title_font_status": "needs_seed — high-contrast display serif (Didone-like) not in vault; Libre Caslon Display kept as a category-correct placeholder (like #1). Canva source font confirmation owed.",
+  "_note": "#5 (Listing — DARK: photo background + dark overlay + white text). Every text bbox measured from the rendered baked source. ALL visible text is a real editable <text> slot: 2-line serif title, price label + value, the 3-stat row, the MORE-INFO label, and the website pill text. The stat ICONS (house=area, bed=beds, bath=baths) are baked art and stay — their meanings are UNIVERSAL (area/beds/baths), so unlike #7 they always match. Colours are role tokens (agency colour wheel). No invented property facts: title/stats/price = real facts; labels + website = agency/template copy. Missing facts (e.g. no size/price) hide their slot.",
+  "canvas": { "width": 1080, "height": 1350 },
+  "source_svg": "assets/5/source.tokenized.svg",
+  "photo_token": "@@PHOTO0@@",
+  "overlay": { "role": "overlay", "opacity": 0.52 },
+  "colour_tokens": {
+    "background": { "default": "#000000", "locked": false },
+    "overlay": { "default": "#000000", "locked": true },
+    "title": { "default": "#ffffff", "locked": false },
+    "subtitle/body": { "default": "#ffffff", "locked": false },
+    "accent": { "default": "#ffffff", "locked": false },
+    "badge.fill": { "default": "#ffffff", "locked": false },
+    "badge.text": { "default": "#ffffff", "locked": false },
+    "divider": { "default": "#ffffff", "locked": true },
+    "icon": { "default": "#ffffff", "locked": true },
+    "stat.label": { "default": "#ffffff", "locked": false },
+    "stat.value": { "default": "#ffffff", "locked": false },
+    "cta": { "default": "#ffffff", "locked": false }
+  },
+  "text_slots": [
+    { "id": "title", "role": "title", "source": "property_fact", "bbox": [150, 78, 930, 486], "size": 150, "line_height": 182, "valign": "center", "font": "LibreCaslonDisplay", "align": "center", "text": "La Zenia\nApartment" },
+    { "id": "price_label", "role": "stat.label", "source": "template_copy", "bbox": [420, 784, 660, 818], "size": 26, "valign": "center", "font": "Poppins", "align": "center", "text": "START FROM:" },
+    { "id": "price_value", "role": "stat.value", "source": "property_fact", "bbox": [410, 820, 670, 862], "size": 32, "valign": "center", "font": "Poppins", "align": "center", "text": "€300 000" },
+    { "id": "stat_area", "role": "subtitle/body", "source": "property_fact", "bbox": [196, 1020, 406, 1066], "size": 26, "pad": 8, "valign": "center", "font": "Poppins", "align": "center", "text": "500 M²" },
+    { "id": "stat_beds", "role": "subtitle/body", "source": "property_fact", "bbox": [414, 1020, 656, 1066], "size": 26, "pad": 8, "valign": "center", "font": "Poppins", "align": "center", "text": "3 BEDROOMS" },
+    { "id": "stat_baths", "role": "subtitle/body", "source": "property_fact", "bbox": [664, 1020, 896, 1066], "size": 26, "pad": 8, "valign": "center", "font": "Poppins", "align": "center", "text": "2 BATHROOMS" },
+    { "id": "cta_label", "role": "stat.label", "source": "template_copy", "bbox": [420, 1120, 660, 1160], "size": 26, "valign": "center", "font": "Poppins", "align": "center", "text": "MORE INFO:" },
+    { "id": "cta_web", "role": "accent", "source": "template_copy", "bbox": [240, 1192, 844, 1236], "size": 28, "pad": 14, "valign": "center", "font": "Poppins", "align": "center", "text": "WWW.REALLYGREATSITE.COM" }
+  ]
+}

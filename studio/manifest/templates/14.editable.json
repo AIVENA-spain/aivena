@@ -1,0 +1,33 @@
+{
+  "template_id": "14",
+  "title_font_status": "needs_seed — bold geometric sans (with an italic accent on 'SOLD!') not in vault; Poppins-Regular + faux-bold as a category-correct placeholder. Canva source font confirmation owed.",
+  "_note": "#14 (Just Sold — LIGHT). Every text bbox measured from the rendered baked source. Editable <text> slots: the JUST SOLD! headline (post-type copy), the 3-stat row, the 3 contact lines, and the agency-name block that REPLACES the baked 'Snag Space' placeholder logo (knocked out — a real agency-logo image slot is a future enhancement; the agency name is rendered as text so no wrong agency is shown). The stat ICONS (house=area, bed=beds, bath=baths) are baked art and stay — universally correct. Colours are role tokens (agency colour wheel). No invented facts: stats + the sold-location line are real; phone/web/agency-name are agency data; JUST SOLD! + labels are template copy. Missing facts hide their slot.",
+  "canvas": { "width": 1080, "height": 1350 },
+  "source_svg": "assets/14/source.tokenized.svg",
+  "photo_token": "@@PHOTO0@@",
+  "knockout_regions": [[840, 1126, 1016, 1306]],
+  "colour_tokens": {
+    "background": { "default": "#c9c5b9", "locked": true },
+    "overlay": { "default": "#c9c5b9", "locked": true },
+    "title": { "default": "#1a1a1a", "locked": false },
+    "subtitle/body": { "default": "#1a1a1a", "locked": false },
+    "accent": { "default": "#1a1a1a", "locked": false },
+    "badge.fill": { "default": "#1a1a1a", "locked": false },
+    "badge.text": { "default": "#1a1a1a", "locked": false },
+    "divider": { "default": "#1a1a1a", "locked": true },
+    "icon": { "default": "#1a1a1a", "locked": true },
+    "stat.label": { "default": "#1a1a1a", "locked": false },
+    "stat.value": { "default": "#1a1a1a", "locked": false },
+    "cta": { "default": "#1a1a1a", "locked": false }
+  },
+  "text_slots": [
+    { "id": "title", "role": "title", "source": "template_copy", "bbox": [180, 122, 888, 244], "size": 96, "valign": "center", "weight": "bold", "font": "Poppins", "align": "center", "text": "JUST SOLD!" },
+    { "id": "stat_area", "role": "stat.value", "source": "property_fact", "bbox": [288, 390, 452, 426], "size": 21, "pad": 6, "valign": "center", "font": "Poppins", "align": "center", "text": "500 M²" },
+    { "id": "stat_beds", "role": "stat.value", "source": "property_fact", "bbox": [456, 390, 624, 426], "size": 21, "pad": 6, "valign": "center", "font": "Poppins", "align": "center", "text": "3 BEDROOMS" },
+    { "id": "stat_baths", "role": "stat.value", "source": "property_fact", "bbox": [628, 390, 800, 426], "size": 21, "pad": 6, "valign": "center", "font": "Poppins", "align": "center", "text": "2 BATHROOMS" },
+    { "id": "contact_addr", "role": "subtitle/body", "source": "property_fact", "bbox": [90, 1144, 680, 1188], "size": 34, "valign": "center", "font": "Poppins", "align": "left", "text": "123 Anywhere St., Any City" },
+    { "id": "contact_phone", "role": "subtitle/body", "source": "template_copy", "bbox": [90, 1192, 680, 1240], "size": 34, "valign": "center", "font": "Poppins", "align": "left", "text": "+123-456-7890" },
+    { "id": "contact_web", "role": "cta", "source": "template_copy", "bbox": [90, 1252, 680, 1298], "size": 34, "valign": "center", "font": "Poppins", "align": "left", "text": "www.reallygreatsite.com" },
+    { "id": "brand", "role": "badge.text", "source": "template_copy", "bbox": [842, 1150, 1016, 1290], "size": 24, "line_height": 30, "weight": "600", "valign": "center", "font": "Poppins", "align": "center", "text": "Snag Space" }
+  ]
+}

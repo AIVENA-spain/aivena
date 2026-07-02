@@ -11,8 +11,8 @@ import { composeOne } from "../src/lib/compose";
 // (chalet / apartment / bungalow; 5 / 2 / 0 features; missing size) so the result is consistent for any listing.
 
 const FIX = JSON.parse(fs.readFileSync(abs("facts/studio_demo_properties.json"), "utf8"));
-const AGENCY = FIX.agency;
-const PROPS: any[] = FIX.properties;
+export const AGENCY = FIX.agency;
+export const PROPS: any[] = FIX.properties;
 const SUPA = "https://atminvhrybxegpdtnnpl.supabase.co/storage/v1/object/public";
 
 const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
@@ -64,6 +64,21 @@ function deriveSlots(p: any, agency: any, templateId: string): Record<string, { 
     featureRows(p).forEach((r, i) => (out[`feat_${i + 1}`] = T(r)));
     return out;
   }
+  if (templateId === "5") return {
+    title: T(`${typeCap} in\n${p.city}`),
+    price_label: T(price ? "PRICE:" : ""), price_value: T(price || ""),
+    stat_area: T(p.size ? `${p.size} M²` : ""),
+    stat_beds: T(plural(p.beds, "Bedroom").toUpperCase()),
+    stat_baths: T(plural(p.baths, "Bathroom").toUpperCase()),
+    cta_web: T(agency.web),
+  };
+  if (templateId === "14") return {
+    stat_area: T(p.size ? `${p.size} M²` : ""),
+    stat_beds: T(plural(p.beds, "Bedroom").toUpperCase()),
+    stat_baths: T(plural(p.baths, "Bathroom").toUpperCase()),
+    contact_addr: T(loc), contact_phone: T(agency.phone), contact_web: T(agency.web),
+    brand: T(splitTwoLines(agency.name)),
+  };
   return {};
 }
 
@@ -82,7 +97,7 @@ function applyDerived(m: EditableManifest, derived: Record<string, { text: strin
 }
 
 const jpgUri = (f: string) => "data:image/jpeg;base64," + fs.readFileSync(f).toString("base64");
-async function ensureImages(p: any): Promise<string[]> {
+export async function ensureImages(p: any): Promise<string[]> {
   const dir = abs(`out/realprop/${p.id}`); fs.mkdirSync(dir, { recursive: true });
   const local: string[] = [];
   for (let i = 0; i < p.images.length; i++) {
@@ -93,7 +108,7 @@ async function ensureImages(p: any): Promise<string[]> {
   return local;
 }
 
-async function renderEditableFor(p: any, templateId: string, imgs: string[]) {
+export async function renderEditableFor(p: any, templateId: string, imgs: string[]) {
   const m = applyDerived(loadEditableManifest(`manifest/templates/${templateId}.editable.json`), deriveSlots(p, AGENCY, templateId));
   let photos: string | Record<string, string>;
   if (m.photo_slots && m.photo_slots.length > 1) { const map: Record<string, string> = {}; m.photo_slots.forEach((s, i) => (map[s.token] = jpgUri(imgs[i % imgs.length]))); photos = map; }
@@ -205,4 +220,4 @@ async function main() {
   if (!report.qa_all_pass) process.exit(1);
 }
 
-main().catch((e) => { console.error("ERROR:", e.stack || e.message); process.exit(1); });
+if (require.main === module) main().catch((e) => { console.error("ERROR:", e.stack || e.message); process.exit(1); });

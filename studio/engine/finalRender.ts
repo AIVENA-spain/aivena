@@ -19,7 +19,14 @@ const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? "" : "s"}`;
 const priceStr = (p: number | null) => (p != null ? "€" + Number(p).toLocaleString("en-US") : null);
 const lumaHex = (hex: string) => { const h = hex.replace("#", ""); const [r, g, b] = [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16)); return 0.299 * r + 0.587 * g + 0.114 * b; };
-function splitTwoLines(s: string): string { const w = s.trim().split(/\s+/); if (w.length < 2) return s; const mid = Math.ceil(w.length / 2); return w.slice(0, mid).join(" ") + "\n" + w.slice(mid).join(" "); }
+// split a multi-word name into two BALANCED lines (pick the word break that most evens the two line lengths) —
+// e.g. "Mediterráneo Costa Homes" -> "Mediterráneo" / "Costa Homes", not "Mediterráneo Costa" / "Homes".
+function splitTwoLines(s: string): string {
+  const w = s.trim().split(/\s+/); if (w.length < 2) return s;
+  let best = 1, bestDiff = Infinity;
+  for (let i = 1; i < w.length; i++) { const a = w.slice(0, i).join(" ").length, b = w.slice(i).join(" ").length; if (Math.abs(a - b) < bestDiff) { bestDiff = Math.abs(a - b); best = i; } }
+  return w.slice(0, best).join(" ") + "\n" + w.slice(best).join(" ");
+}
 
 // GENERAL feature list for #7: beds, baths, then the property's own top real features. Empty rows are hidden
 // (a 0-feature property shows only beds+baths). Works for any property_type / feature set — no cherry-picking.

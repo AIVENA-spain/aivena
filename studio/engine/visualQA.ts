@@ -56,10 +56,18 @@ export async function runVisualQA(m: EditableManifest, r: { png: Buffer; layout:
   //    region must render as a near-uniform patch
   if (m.knockout_regions?.length) {
     const img = await pngToRGBA(r.png, false);
-    const textBoxes = m.text_slots.filter((s) => s.text.trim()).map((s) => s.bbox);
+    const excl = m.text_slots.filter((s) => s.text.trim()).map((s) => s.bbox);
+    // the adaptive-panel trim creates a legitimate bg-colour band below the content — exclude it (its
+    // beige→bg transition is intended, not a stray artifact).
+    if (m.adaptive_panel) {
+      const ap = m.adaptive_panel;
+      const lastY = m.text_slots.filter((s) => ap.fit_to.includes(s.id) && s.text.trim()).reduce((mx, s) => Math.max(mx, s.bbox[3]), ap.area[1]);
+      const cutY = Math.round(lastY + ap.pad);
+      if (cutY < ap.area[3]) excl.push([ap.area[0], cutY, ap.area[2], ap.area[3]]);
+    }
     for (const kr of m.knockout_regions) {
-      const s = lumaStdExcl(img, kr, textBoxes);
-      if (s.n < 40) continue; // region fully under drawn text — nothing artifact-like to verify here
+      const s = lumaStdExcl(img, kr, excl);
+      if (s.n < 40) continue; // region fully under drawn text / trimmed band — nothing artifact-like to verify
       add("knockout region clean (stray artifact removed)", s.std < 24, `stddev ${s.std.toFixed(1)} (n=${s.n})`);
     }
   }

@@ -11,6 +11,7 @@
     { "token": "@@PHOTO3@@" }
   ],
   "knockout_regions": [[648, 598, 712, 940]],
+  "adaptive_panel": { "area": [611, 497, 1012, 978], "fit_to": ["feat_1", "feat_2", "feat_3", "feat_4", "feat_5"], "pad": 30, "fill_role": "background" },
   "colour_tokens": {
     "background": { "default": "#ffffff", "locked": false },
     "overlay": { "default": "#000000", "locked": true },

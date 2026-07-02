@@ -47,6 +47,10 @@ export const EditableManifest = z.object({
   colour_tokens: z.record(z.string(), z.object({ default: z.string(), locked: z.boolean() })),
   overlay: z.object({ role: z.string(), opacity: z.number() }).optional(), // legibility scrim over the photo
   knockout_regions: z.array(z.tuple([z.number(), z.number(), z.number(), z.number()])).optional(), // knock out stray baked source art (local-bg fill, no text)
+  // ADAPTIVE PANEL: a baked panel (e.g. #7's feature panel) trimmed to its content — everything in `area` below
+  // the last non-empty `fit_to` slot (+ pad) is filled with `fill_role` (the page bg), so a 2-row list doesn't
+  // leave a tall empty panel. Fill is drawn LAST (over the baked panel bottom + any empty-row knockouts).
+  adaptive_panel: z.object({ area: z.tuple([z.number(), z.number(), z.number(), z.number()]), fit_to: z.array(z.string()), pad: z.number(), fill_role: z.string() }).optional(),
   text_slots: z.array(EditableSlot),
 });
 export type EditableManifest = z.infer<typeof EditableManifest>;
@@ -139,6 +143,14 @@ export async function renderEditable(m: EditableManifest, palette: Palette = {},
       overlay += `<text data-slot-id="${s.id}" data-editable="true" data-role="${s.role}" x="${tx}" y="${by.toFixed(1)}" text-anchor="${anchor}" font-family="${s.font}" font-size="${fontSize.toFixed(1)}"${strokeAttr} fill="${fill}">${esc(ln)}</text>`;
       editableTextCount++;
     });
+  }
+  // adaptive panel: trim the baked panel to its rendered content (fill everything below the last non-empty
+  // fit_to slot with the page bg). Drawn LAST so it covers the baked panel's bottom + any empty-row knockouts.
+  if (m.adaptive_panel) {
+    const ap = m.adaptive_panel;
+    const lastY = m.text_slots.filter((s) => ap.fit_to.includes(s.id) && s.text.trim()).reduce((mx, s) => Math.max(mx, s.bbox[3]), ap.area[1]);
+    const cutY = Math.round(lastY + ap.pad);
+    if (cutY < ap.area[3]) overlay += `<rect x="${ap.area[0]}" y="${cutY}" width="${ap.area[2] - ap.area[0]}" height="${ap.area[3] - cutY}" fill="${roleHex(m, palette, ap.fill_role)}"/>`;
   }
   // Render the overlay ALONE (transparent) then composite onto the bg raster with sharp. Putting the text in
   // the SAME svg as a large embedded data-URI <image> trips a resvg coordinate quirk (text after the image

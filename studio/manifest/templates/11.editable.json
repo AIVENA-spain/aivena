@@ -21,7 +21,7 @@
     "cta": { "default": "#000000", "locked": false }
   },
   "text_slots": [
-    { "id": "brand", "role": "badge.text", "source": "template_copy", "bbox": [104, 130, 330, 171], "font": "Poppins", "align": "left", "text": "YOUR AGENCY" },
+    { "id": "brand", "role": "badge.text", "source": "template_copy", "bbox": [104, 120, 472, 192], "size": 29, "line_height": 33, "valign": "center", "weight": "600", "font": "Poppins", "align": "left", "text": "YOUR AGENCY" },
     { "id": "eyebrow", "role": "accent", "source": "template_copy", "bbox": [760, 124, 1014, 152], "pad": 36, "font": "Poppins", "align": "right", "text": "PROPERTY LISTING" },
     { "id": "title", "role": "title", "source": "template_copy", "bbox": [100, 263, 945, 470], "font": "Poppins", "align": "left", "text": "STEP INTO YOUR\nDREAM HOME" },
     { "id": "address", "role": "cta", "source": "property_fact", "bbox": [463, 1203, 974, 1233], "font": "Poppins", "align": "left", "text": "Torrevieja, Alicante" }

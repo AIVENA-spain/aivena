@@ -1553,6 +1553,13 @@ function Composer({
     : null;
   const name = leadName?.trim() || tWindow("thisBuyer");
 
+  // Plain, proactive explanation for the closed 24h window (Item 4 — Christian's
+  // "the UI didn't feel clear"). Dynamic: names the buyer + when they last wrote.
+  const windowTitle = neverMessaged ? "No WhatsApp chat yet" : "WhatsApp window closed";
+  const windowBody = neverMessaged
+    ? `${name} hasn't messaged you on WhatsApp yet, so WhatsApp won't allow a normal message. To reach ${name}, send the approved check-in below.`
+    : `${name} last replied ${relTime ?? "a while ago"}. WhatsApp only allows normal replies within 24 hours of the buyer's message. To contact ${name} now, use the approved check-in below — or wait until they reply.`;
+
   // Refetch the composer state. We keep the latest-call guard in a ref so a
   // slow earlier poll can't overwrite a newer one's result.
   const reqRef = useRef(0);
@@ -1739,10 +1746,10 @@ function Composer({
         <div className="mb-2.5 rounded-xl border border-amber-500/15 bg-amber-500/[0.045] px-3.5 py-2.5">
           <div className="mb-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-amber-600 dark:text-amber-300/90">
             <Lock className="h-3 w-3" aria-hidden strokeWidth={1.75} />
-            {neverMessaged ? tWindow("neverTitle") : tWindow("closedTitle")}
+            {windowTitle}
           </div>
           <p className="text-[12.5px] leading-[1.55] text-muted-foreground">
-            {tComposer("windowBanner")}
+            {windowBody}
           </p>
         </div>
       ) : null}

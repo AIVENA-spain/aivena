@@ -23,22 +23,51 @@ export function PropertiesView({ properties }: { properties: PropertyRow[] }) {
   const nf = new Intl.NumberFormat(intlLocaleFor(locale));
   const [importing, setImporting] = useState(false);
   const [query, setQuery] = useState("");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [bedsFilter, setBedsFilter] = useState("any");
+  const [statusFilter, setStatusFilter] = useState("all");
 
-  // Client-side, read-only filter over the already-loaded catalog. Matches
-  // city/area first, then title + reference. `expandSearchTerms` also turns a
-  // TOWN query into its districts (e.g. "Torrevieja" → "La Mata"), since the
-  // catalog stores the district as the city. Fast for the pilot list size; a
-  // server-side ?q= is only needed if a catalog ever grows to thousands.
+  // Distinct type/status values present in the catalog (drive the filters, and
+  // let us hide a filter that has no variety — e.g. an all-"active" catalog).
+  const distinct = (get: (p: PropertyRow) => string | null) => {
+    const set = new Set<string>();
+    for (const p of properties) {
+      const v = (get(p) ?? "").trim().toLowerCase();
+      if (v) set.add(v);
+    }
+    return [...set].sort();
+  };
+  const types = useMemo(() => distinct((p) => p.property_type), [properties]);
+  const statuses = useMemo(() => distinct((p) => p.status), [properties]);
+
+  const filtersActive =
+    typeFilter !== "all" || bedsFilter !== "any" || statusFilter !== "all";
+  const resetAll = () => {
+    setQuery("");
+    setTypeFilter("all");
+    setBedsFilter("any");
+    setStatusFilter("all");
+  };
+
+  // Client-side, read-only filter over the already-loaded catalog: search
+  // (city/area first — `expandSearchTerms` turns a TOWN into its districts, e.g.
+  // "Torrevieja" → "La Mata") AND type/bedrooms/status. Fast for the pilot list
+  // size; a server-side ?q= is only needed if a catalog ever grows to thousands.
   const terms = useMemo(() => expandSearchTerms(query), [query]);
   const filtered = useMemo(() => {
-    if (terms.length === 0) return properties;
     return properties.filter((p) => {
-      const fields = [p.location_city, p.location_region, p.title, p.external_id].map(
-        (field) => (field ?? "").toLowerCase(),
-      );
-      return terms.some((term) => fields.some((field) => field.includes(term)));
+      if (terms.length > 0) {
+        const fields = [p.location_city, p.location_region, p.title, p.external_id].map(
+          (field) => (field ?? "").toLowerCase(),
+        );
+        if (!terms.some((term) => fields.some((field) => field.includes(term)))) return false;
+      }
+      if (typeFilter !== "all" && (p.property_type ?? "").toLowerCase() !== typeFilter) return false;
+      if (bedsFilter !== "any" && (p.bedrooms ?? 0) < Number(bedsFilter)) return false;
+      if (statusFilter !== "all" && (p.status ?? "").toLowerCase() !== statusFilter) return false;
+      return true;
     });
-  }, [properties, terms]);
+  }, [properties, terms, typeFilter, bedsFilter, statusFilter]);
 
   return (
     <div className="flex flex-col gap-5">
@@ -80,6 +109,69 @@ export function PropertiesView({ properties }: { properties: PropertyRow[] }) {
             )}
           </Button>
         </div>
+
+        {/* Filters — client-side, compose with the search (AND). */}
+        {properties.length > 0 ? (
+          <div className="flex flex-wrap items-center gap-2">
+            {types.length > 1 ? (
+              <select
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value)}
+                aria-label="Filter by property type"
+                className="h-8 rounded-lg border border-border bg-card px-2 text-[12.5px] text-foreground shadow-soft focus:outline-none focus:ring-2 focus:ring-brand/40"
+              >
+                <option value="all">All types</option>
+                {types.map((ty) => (
+                  <option key={ty} value={ty}>
+                    {ty.charAt(0).toUpperCase() + ty.slice(1)}
+                  </option>
+                ))}
+              </select>
+            ) : null}
+            <select
+              value={bedsFilter}
+              onChange={(e) => setBedsFilter(e.target.value)}
+              aria-label="Filter by minimum bedrooms"
+              className="h-8 rounded-lg border border-border bg-card px-2 text-[12.5px] text-foreground shadow-soft focus:outline-none focus:ring-2 focus:ring-brand/40"
+            >
+              <option value="any">Any beds</option>
+              <option value="1">1+ beds</option>
+              <option value="2">2+ beds</option>
+              <option value="3">3+ beds</option>
+              <option value="4">4+ beds</option>
+            </select>
+            {statuses.length > 1 ? (
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                aria-label="Filter by status"
+                className="h-8 rounded-lg border border-border bg-card px-2 text-[12.5px] text-foreground shadow-soft focus:outline-none focus:ring-2 focus:ring-brand/40"
+              >
+                <option value="all">All statuses</option>
+                {statuses.map((st) => (
+                  <option key={st} value={st}>
+                    {st.charAt(0).toUpperCase() + st.slice(1)}
+                  </option>
+                ))}
+              </select>
+            ) : null}
+            {query.trim() || filtersActive ? (
+              <button
+                type="button"
+                onClick={resetAll}
+                className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-[12px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                <X className="h-3 w-3" aria-hidden />
+                Clear
+              </button>
+            ) : null}
+            <span className="ml-auto text-[12px] text-muted-foreground">
+              {filtered.length === properties.length
+                ? `${properties.length} propert${properties.length === 1 ? "y" : "ies"}`
+                : `${filtered.length} of ${properties.length}`}
+            </span>
+          </div>
+        ) : null}
       </div>
 
       {/* Inline import panel */}
@@ -110,12 +202,14 @@ export function PropertiesView({ properties }: { properties: PropertyRow[] }) {
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-muted text-muted-foreground">
             <Search className="h-6 w-6" aria-hidden strokeWidth={1.7} />
           </div>
-          <p className="text-sm font-medium text-foreground">No properties match “{query.trim()}”.</p>
-          <p className="max-w-md text-sm text-muted-foreground">
-            Try a different city or area, or clear the search to see all listings.
+          <p className="text-sm font-medium text-foreground">
+            {query.trim() ? `No properties match “${query.trim()}”.` : "No properties match these filters."}
           </p>
-          <Button type="button" size="sm" variant="outline" className="mt-1" onClick={() => setQuery("")}>
-            Clear search
+          <p className="max-w-md text-sm text-muted-foreground">
+            Try a different city, area, or filter — or clear everything to see all listings.
+          </p>
+          <Button type="button" size="sm" variant="outline" className="mt-1" onClick={resetAll}>
+            Clear search &amp; filters
           </Button>
         </div>
       ) : (

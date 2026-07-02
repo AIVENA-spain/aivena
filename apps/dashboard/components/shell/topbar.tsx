@@ -54,10 +54,24 @@ export function Topbar({
   const tRoot = useTranslations();
 
   const titleKey = activeNavTKey(pathname);
+  // Admin agency sub-pages: the nav match resolves every /admin/* route to the
+  // "All Agencies" list item, which is confusing once you're *inside* one agency.
+  // Give these an honest breadcrumb-style title (admin is English-only, brief §12;
+  // the agency's own name renders in the page's PageHeading just below the topbar).
+  const adminAgencyTitle =
+    pathname.startsWith("/admin/agencies/") && pathname !== "/admin/agencies"
+      ? pathname.endsWith("/go-live")
+        ? "Agency · Go-Live"
+        : pathname === "/admin/agencies/new"
+          ? "New agency"
+          : "Agency details"
+      : null;
   // /approvals shows a breadcrumb-style title to match the product header.
-  const title = pathname.startsWith("/approvals")
-    ? tRoot("approvals.pageTitle")
-    : tNav(titleKey);
+  const title = adminAgencyTitle
+    ? adminAgencyTitle
+    : pathname.startsWith("/approvals")
+      ? tRoot("approvals.pageTitle")
+      : tNav(titleKey);
   const agencyName = ctx.activeAgency?.agency.displayName ?? "";
   const firstNameRaw = ctx.email.split("@")[0]?.split(".")[0] ?? "";
   const firstName = firstNameRaw
@@ -93,6 +107,10 @@ export function Topbar({
         <em className="font-serif italic text-foreground">{chunks}</em>
       ),
     });
+  } else if (adminAgencyTitle) {
+    // Admin pages are viewing OTHER agencies — the personal greeting (which names
+    // the staff user's own agency) would mislead here. Show an honest admin line.
+    subtitle = "Internal admin — AIVENA staff";
   } else {
     subtitle = null;
   }

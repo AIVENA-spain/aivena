@@ -9,6 +9,9 @@ import {
   canSubmit,
   visibleBlockers,
   SELF_BLOCKER_ID,
+  blockerLabel,
+  providerDisplayName,
+  providerPlainText,
   STATUS_LABEL,
   type Attestations,
 } from "./go-live-display";
@@ -107,6 +110,66 @@ describe("go-live-display — visibleBlockers mirrors the server go-live gate", 
       "provider.email",
     ]);
     expect(visibleBlockers([])).toEqual([]);
+  });
+});
+
+describe("go-live-display — blocker labels are specific (issue 2)", () => {
+  it("maps vague API labels to specific admin labels", () => {
+    expect(blockerLabel("identity.name", "Agency name")).toBe("Legal agency name not confirmed");
+    expect(blockerLabel("identity.website", "Agency website")).toBe(
+      "Agency website not confirmed (placeholder)",
+    );
+    expect(blockerLabel("identity.timezone", "Timezone")).toBe("Timezone needs confirmation");
+    expect(blockerLabel("team.owner", "Owner")).toBe("Agency owner not confirmed");
+    expect(blockerLabel("consent.captured", "Consent capture")).toBe("Consent capture not proven");
+  });
+  it("falls back to the API label for an unknown id (never blanks)", () => {
+    expect(blockerLabel("some.future.item", "Future item")).toBe("Future item");
+  });
+});
+
+describe("go-live-display — provider copy is plain, never raw booleans (issue 3)", () => {
+  it("turns the raw WhatsApp booleans into a sentence (sender + send proven, channel off)", () => {
+    const out = providerPlainText({
+      provider: "whatsapp",
+      status: "live_but_unproven",
+      detail: "sender_ready=true, channel_enabled=false, send_proven=true, last_sync=2026-06-24",
+    });
+    expect(out).not.toMatch(/sender_ready=|channel_enabled=|send_proven=/); // no raw tokens
+    expect(out.toLowerCase()).toContain("sender is connected");
+    expect(out.toLowerCase()).toContain("test send has been proven");
+    expect(out.toLowerCase()).toContain("channel isn't enabled");
+  });
+  it("WhatsApp not connected → plain", () => {
+    expect(
+      providerPlainText({
+        provider: "whatsapp",
+        status: "missing",
+        detail: "sender_ready=false, channel_enabled=false, send_proven=false, last_sync=unknown",
+      }),
+    ).toBe("WhatsApp sender is not connected yet.");
+  });
+  it("WhatsApp RPC-not-deployed (non-structured detail) → status sentence, no crash", () => {
+    const out = providerPlainText({
+      provider: "whatsapp",
+      status: "unavailable",
+      detail: "Provider readiness RPC not deployed (consume-and-degrade)",
+    });
+    expect(out).toBe("WhatsApp sending status isn't available yet.");
+  });
+  it("non-WhatsApp providers keep their already-plain detail", () => {
+    expect(
+      providerPlainText({ provider: "property_feed", status: "manual_fallback", detail: "141 properties present (source verification pending)" }),
+    ).toBe("141 properties present (source verification pending)");
+  });
+  it("a bare 'unavailable' detail becomes a friendly line", () => {
+    expect(providerPlainText({ provider: "calendar", status: "unavailable", detail: "unavailable" })).toBe(
+      "Calendar (viewings) status isn't available yet.",
+    );
+  });
+  it("providerDisplayName is human-readable", () => {
+    expect(providerDisplayName("email")).toBe("Email sending");
+    expect(providerDisplayName("whatsapp")).toBe("WhatsApp sending");
   });
 });
 

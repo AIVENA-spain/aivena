@@ -10,7 +10,14 @@ import {
   type ChipTone,
 } from "@/app/(app)/settings/sections/readiness-display";
 
-import { STATUS_LABEL, PILOT_STATUS_LABEL, visibleBlockers } from "./go-live-display";
+import {
+  STATUS_LABEL,
+  PILOT_STATUS_LABEL,
+  visibleBlockers,
+  blockerLabel,
+  providerDisplayName,
+  providerPlainText,
+} from "./go-live-display";
 
 /**
  * Read-only readiness panel for the admin go-live surface (C4). Renders the
@@ -50,7 +57,7 @@ function Chip({ tone, children }: { tone: ChipTone; children: React.ReactNode })
 
 export function ReadinessPanel({ readiness }: { readiness: ReadinessResponse }) {
   const items = orderItems(readiness.items);
-  const labelById = new Map(readiness.items.map((i) => [i.id, i.label]));
+  const itemById = new Map(readiness.items.map((i) => [i.id, i]));
   // Mirror the server's go-live gate — it strips the self-referential lifecycle item,
   // so the panel must too (else a ready agency shows a blocker the transition ignores).
   const blockers = visibleBlockers(readiness.goLive.blockedBy);
@@ -91,10 +98,22 @@ export function ReadinessPanel({ readiness }: { readiness: ReadinessResponse }) 
             <AlertTriangle className="h-3.5 w-3.5 flex-none" aria-hidden />
             Blocking go-live
           </div>
-          <ul className="mt-1.5 flex flex-col gap-1 text-[12.5px] text-amber-800 dark:text-amber-200/90">
-            {blockers.map((id) => (
-              <li key={id}>· {labelById.get(id) ?? id}</li>
-            ))}
+          <ul className="mt-1.5 flex flex-col gap-1.5 text-amber-800 dark:text-amber-200/90">
+            {blockers.map((id) => {
+              const item = itemById.get(id);
+              return (
+                <li key={id} className="flex flex-col">
+                  <span className="text-[12.5px] font-medium">
+                    · {blockerLabel(id, item?.label ?? id)}
+                  </span>
+                  {item?.uiCopy ? (
+                    <span className="pl-3 text-[11.5px] text-amber-700/85 dark:text-amber-200/70">
+                      {item.uiCopy}
+                    </span>
+                  ) : null}
+                </li>
+              );
+            })}
           </ul>
         </div>
       ) : (
@@ -131,11 +150,22 @@ export function ReadinessPanel({ readiness }: { readiness: ReadinessResponse }) 
           <ul className="flex flex-col divide-y divide-border/60">
             {readiness.providers.map((p) => (
               <li key={p.provider} className="flex items-start justify-between gap-3 py-2">
-                <div className="flex min-w-0 flex-col">
-                  <span className="text-[13px] font-medium capitalize text-foreground">
-                    {p.provider.replace(/_/g, " ")}
+                <div className="flex min-w-0 flex-col gap-0.5">
+                  <span className="text-[13px] font-medium text-foreground">
+                    {providerDisplayName(p.provider)}
                   </span>
-                  <span className="text-[12px] text-muted-foreground">{p.detail}</span>
+                  {/* Plain-language main copy — never raw booleans. */}
+                  <span className="text-[12px] text-muted-foreground">{providerPlainText(p)}</span>
+                  {/* Raw technical fields live behind an optional, collapsed disclosure. */}
+                  <details className="mt-0.5 text-[11px] text-muted-foreground/80">
+                    <summary className="cursor-pointer select-none text-muted-foreground/70 hover:text-muted-foreground">
+                      Technical details
+                    </summary>
+                    <div className="mt-1 flex flex-col gap-0.5 pl-1 font-mono">
+                      <span>detail: {p.detail}</span>
+                      <span>source: {p.source}</span>
+                    </div>
+                  </details>
                 </div>
                 <Chip tone={statusTone(p.status)}>{STATUS_LABEL[p.status]}</Chip>
               </li>

@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, CheckCircle2, ShieldAlert } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ShieldAlert, ShieldCheck } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
@@ -19,6 +19,7 @@ import {
   overrideApplicable,
   reasonRequired,
   canSubmit,
+  allAttestationsChecked,
   type Attestations,
   type AttestationKey,
   type PilotTarget,
@@ -110,6 +111,27 @@ export function GoLiveControl({
         </p>
       </div>
 
+      {/* Go-live requirements — ALWAYS visible so staff see the 4 manual gates upfront,
+          before they even pick "Go live". */}
+      <div className="rounded-lg border border-border bg-muted/20 p-3">
+        <div className="flex items-center gap-1.5 text-[12px] font-semibold text-foreground">
+          <ShieldCheck className="h-4 w-4 flex-none text-muted-foreground" aria-hidden />
+          Going live requires 4 manual confirmations
+        </div>
+        <p className="mt-1 text-[11.5px] text-muted-foreground">
+          These are staff attestations with no automatic signal — <b>Go live stays blocked until
+          all four are ticked</b>, and an override cannot bypass them.
+        </p>
+        <ul className="mt-2 grid gap-1.5 sm:grid-cols-2">
+          {ATTESTATIONS.map((a) => (
+            <li key={a.key} className="flex items-start gap-1.5 text-[12px] text-foreground">
+              <span className="mt-1 h-1.5 w-1.5 flex-none rounded-full bg-muted-foreground/50" aria-hidden />
+              {a.label}
+            </li>
+          ))}
+        </ul>
+      </div>
+
       {/* Target selector */}
       <div className="flex flex-wrap gap-2">
         {TARGETS.map((t) => {
@@ -139,17 +161,22 @@ export function GoLiveControl({
             {TARGETS.find((t) => t.key === target)?.blurb}
           </p>
 
-          {/* Four manual attestations — only for `live`, hard-gated (not override-able). */}
+          {/* Four manual attestations — only for `live`, hard-gated (not override-able).
+              Prominent bordered block + a live "N of 4 confirmed" counter. */}
           {attestationsRequired(target) ? (
-            <fieldset className="flex flex-col gap-2">
-              <legend className="mb-1 text-[12px] font-medium text-foreground">
-                Confirm every manual gate to go live
+            <fieldset className="flex flex-col gap-2 rounded-lg border-2 border-amber-300 bg-amber-50/50 p-3 dark:border-amber-500/40 dark:bg-amber-500/10">
+              <legend className="flex items-center gap-2 px-1 text-[12px] font-semibold text-amber-800 dark:text-amber-200">
+                <ShieldCheck className="h-4 w-4 flex-none" aria-hidden />
+                Confirm all 4 manual gates to go live
+                <span className="rounded-full bg-amber-200/70 px-1.5 py-0.5 text-[11px] font-medium text-amber-900 dark:bg-amber-500/25 dark:text-amber-100">
+                  {ATTESTATIONS.filter((a) => attestations[a.key] === true).length} of 4 confirmed
+                </span>
               </legend>
               {ATTESTATIONS.map((a) => (
                 <label
                   key={a.key}
                   htmlFor={`att-${a.key}`}
-                  className="flex cursor-pointer items-start gap-2.5"
+                  className="flex cursor-pointer items-start gap-2.5 rounded-md p-1 hover:bg-amber-100/40 dark:hover:bg-amber-500/10"
                 >
                   <input
                     id={`att-${a.key}`}
@@ -157,10 +184,10 @@ export function GoLiveControl({
                     checked={attestations[a.key] === true}
                     onChange={() => toggleAttestation(a.key)}
                     disabled={pending}
-                    className="mt-0.5 h-4 w-4 flex-none accent-brand"
+                    className="mt-0.5 h-4 w-4 flex-none accent-amber-600"
                   />
                   <span className="flex flex-col">
-                    <span className="text-[13px] text-foreground">{a.label}</span>
+                    <span className="text-[13px] font-medium text-foreground">{a.label}</span>
                     <span className="text-[12px] text-muted-foreground">{a.help}</span>
                   </span>
                 </label>
@@ -218,7 +245,11 @@ export function GoLiveControl({
               disabled={!submittable}
               onClick={submit}
             >
-              {pending ? "Applying…" : (TARGETS.find((t) => t.key === target)?.label ?? "Apply")}
+              {pending
+                ? "Applying…"
+                : target === "live" && !allAttestationsChecked(attestations)
+                  ? "Confirm all 4 to go live"
+                  : (TARGETS.find((t) => t.key === target)?.label ?? "Apply")}
             </Button>
             <Button type="button" size="sm" variant="ghost" disabled={pending} onClick={reset}>
               Cancel

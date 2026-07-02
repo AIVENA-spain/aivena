@@ -9,7 +9,7 @@
  *    button is pressable, never whether the agency is "ready". The server's
  *    /go-live 422 (blockedBy + missingAttestations) is always the source of truth.
  */
-import type { PilotStatus, ReadinessStatus } from "@/lib/api/types";
+import type { PilotStatus, ReadinessStatus, ReadinessProviderId } from "@/lib/api/types";
 
 /** English chip text for a readiness status (admin panel; mirrors the honest model). */
 export const STATUS_LABEL: Record<ReadinessStatus, string> = {
@@ -74,6 +74,100 @@ export const SELF_BLOCKER_ID = "lifecycle.go_live";
 /** Blockers the operator can actually act on — mirrors the server's configBlockers. */
 export function visibleBlockers(blockedBy: string[]): string[] {
   return blockedBy.filter((id) => id !== SELF_BLOCKER_ID);
+}
+
+/**
+ * Admin-facing, specific blocker labels (issue 2). The API item labels are
+ * category-level ("Agency name", "Owner", "Timezone") which reads as vague on
+ * the go-live page — the staff member can SEE an agency name and some users, so
+ * "Agency name" makes them wonder what's actually missing. These restate the
+ * real gap. The live per-item action text (item.uiCopy) is shown alongside as
+ * the help line, so nothing is invented — the reason still comes from the model.
+ */
+export const ADMIN_BLOCKER_LABEL: Record<string, string> = {
+  "identity.name": "Legal agency name not confirmed",
+  "identity.logo": "Logo not uploaded",
+  "identity.colors": "Brand colours not set",
+  "identity.phone": "Contact phone missing",
+  "identity.website": "Agency website not confirmed (placeholder)",
+  "identity.areas": "Service area not set",
+  "identity.languages": "Languages served not confirmed",
+  "identity.timezone": "Timezone needs confirmation",
+  "identity.working_hours": "Working hours not set",
+  "identity.tone": "Follow-up tone not set",
+  "posture.approval_first": "Automation safety posture not confirmed",
+  "team.owner": "Agency owner not confirmed",
+  "team.agents": "Agent seats pending (AIVENA-handled)",
+  "consent.captured": "Consent capture not proven",
+};
+
+/** Specific admin label for a blocker id, falling back to the API label. */
+export function blockerLabel(id: string, apiLabel: string): string {
+  return ADMIN_BLOCKER_LABEL[id] ?? apiLabel;
+}
+
+// ── Provider/config plain language (issue 3) ─────────────────────────────────
+
+export function providerDisplayName(p: ReadinessProviderId): string {
+  switch (p) {
+    case "email": return "Email sending";
+    case "whatsapp": return "WhatsApp sending";
+    case "whatsapp_templates_multilang": return "Multilingual WhatsApp templates";
+    case "calendar": return "Calendar (viewings)";
+    case "property_feed": return "Property catalog / feed";
+  }
+}
+
+/** Plain sentence from a readiness status (for providers whose detail isn't already prose). */
+function statusSentence(status: ReadinessStatus, name: string): string {
+  switch (status) {
+    case "ready": return `${name} is ready.`;
+    case "live_but_unproven": return `${name} is set up, but not fully proven yet.`;
+    case "manual_fallback": return `${name} is handled manually for now.`;
+    case "missing": return `${name} is not set up yet.`;
+    case "needs_decision": return `${name} needs a decision.`;
+    case "blocked": return `${name} is waiting on AIVENA.`;
+    case "unavailable": return `${name} status isn't available yet.`;
+  }
+}
+
+/** Defensive parse of a `key=true|false` token from a raw detail string. */
+function boolToken(detail: string, key: string): boolean | undefined {
+  const m = new RegExp(`${key}=(true|false)`).exec(detail);
+  return m ? m[1] === "true" : undefined;
+}
+
+/**
+ * Non-developer-readable main line for a provider (issue 3). WhatsApp's raw
+ * `sender_ready=…, channel_enabled=…, send_proven=…` string is turned into a
+ * sentence; other providers already ship prose `detail`, so we use it (mapping a
+ * bare "unavailable" to a friendly line). The raw `detail`/`source` still show,
+ * but only behind a collapsed "Technical details" disclosure in the panel.
+ */
+export function providerPlainText(p: {
+  provider: ReadinessProviderId;
+  status: ReadinessStatus;
+  detail: string;
+}): string {
+  const name = providerDisplayName(p.provider);
+  if (p.provider === "whatsapp") {
+    const sender = boolToken(p.detail, "sender_ready");
+    if (sender === undefined) return statusSentence(p.status, name); // RPC not deployed / non-structured
+    if (!sender) return "WhatsApp sender is not connected yet.";
+    const proven = boolToken(p.detail, "send_proven");
+    const channel = boolToken(p.detail, "channel_enabled");
+    const clauses = [
+      "WhatsApp sender is connected",
+      proven ? "a test send has been proven" : "a test send is not proven yet",
+      channel ? "and the channel is enabled" : "but the channel isn't enabled yet",
+    ];
+    return `${clauses[0]}, ${clauses[1]}, ${clauses[2]}.`;
+  }
+  const detail = p.detail?.trim();
+  if (!detail || detail.toLowerCase() === "unavailable") {
+    return statusSentence(p.status, name);
+  }
+  return detail;
 }
 
 /** The lifecycle transitions the control offers (maps 1:1 to PILOT_TARGETS on the API). */

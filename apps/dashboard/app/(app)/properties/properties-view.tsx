@@ -10,6 +10,7 @@ import { intlLocaleFor } from "@/lib/i18n/date-locale";
 import type { PropertyRow } from "@/lib/api/types";
 
 import { PropertyImportPanel } from "./import-panel";
+import { expandSearchTerms } from "./town-aliases";
 
 /**
  * Properties — first-class catalog page (§5.17). Card grid of the agency's
@@ -24,17 +25,20 @@ export function PropertiesView({ properties }: { properties: PropertyRow[] }) {
   const [query, setQuery] = useState("");
 
   // Client-side, read-only filter over the already-loaded catalog. Matches
-  // city/area first, then title + reference. Fast for the pilot list size; a
+  // city/area first, then title + reference. `expandSearchTerms` also turns a
+  // TOWN query into its districts (e.g. "Torrevieja" → "La Mata"), since the
+  // catalog stores the district as the city. Fast for the pilot list size; a
   // server-side ?q= is only needed if a catalog ever grows to thousands.
-  const q = query.trim().toLowerCase();
+  const terms = useMemo(() => expandSearchTerms(query), [query]);
   const filtered = useMemo(() => {
-    if (!q) return properties;
-    return properties.filter((p) =>
-      [p.location_city, p.location_region, p.title, p.external_id].some((field) =>
-        (field ?? "").toLowerCase().includes(q),
-      ),
-    );
-  }, [properties, q]);
+    if (terms.length === 0) return properties;
+    return properties.filter((p) => {
+      const fields = [p.location_city, p.location_region, p.title, p.external_id].map(
+        (field) => (field ?? "").toLowerCase(),
+      );
+      return terms.some((term) => fields.some((field) => field.includes(term)));
+    });
+  }, [properties, terms]);
 
   return (
     <div className="flex flex-col gap-5">
@@ -51,7 +55,7 @@ export function PropertiesView({ properties }: { properties: PropertyRow[] }) {
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search by city, area, title, or reference…"
+              placeholder="Search properties by city, area, title, or reference…"
               aria-label="Search properties by city, area, title, or reference"
               className="h-9 w-full rounded-lg border border-border bg-card pl-8 pr-3 text-[13px] text-foreground shadow-soft placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand/40"
             />

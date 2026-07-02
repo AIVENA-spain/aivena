@@ -3,7 +3,7 @@
 import { type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Bell, CalendarDays, Search } from "lucide-react";
+import { Bell, CalendarDays } from "lucide-react";
 
 import type { UserContext } from "@/lib/auth/context";
 import { PRIMARY_NAV, ADMIN_NAV } from "./nav-config";
@@ -139,31 +139,11 @@ export function Topbar({
       {/* Right cluster */}
       <div className="ml-auto flex items-center gap-2">
         {/*
-          Global search — visual only at this step. The form has no action
-          and submission is a no-op; wiring (typeahead, scope to active
-          agency) lands in a later step per the design plan.
+          Global search removed for now — it was visual-only (no action / no-op)
+          and read as a working search, which confused agents (two search bars on
+          pages like Properties). Page-specific search stays where it's useful
+          (e.g. Properties). Re-add a real global search here when it's wired.
         */}
-        <form
-          role="search"
-          onSubmit={(e) => e.preventDefault()}
-          className="hidden lg:block"
-        >
-          <label className="relative block">
-            <span className="sr-only">{tBar("searchPlaceholder")}</span>
-            <Search
-              className="pointer-events-none absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
-              aria-hidden
-            />
-            <input
-              type="search"
-              autoComplete="off"
-              spellCheck={false}
-              placeholder={tBar("searchPlaceholder")}
-              className="h-9 w-64 rounded-lg border border-border bg-card pl-8 pr-3 text-[12.5px] text-foreground shadow-soft placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            />
-          </label>
-        </form>
-
         <div className="hidden items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-2 text-[12px] text-muted-foreground shadow-soft sm:flex">
           <CalendarDays className="h-3.5 w-3.5" aria-hidden />
           <span>{dateLabel}</span>

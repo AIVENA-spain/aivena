@@ -1,0 +1,20 @@
+{
+  "_note": "REAL demo properties (agency demo-costa-homes-pilot01 = Mediterráneo Costa Homes), pulled READ-ONLY from Supabase public.properties + public.agency_branding, for the cross-type consistency proof. Deliberately spans property types (chalet/apartment/bungalow), beds/baths, price, and feature counts (5/2/0) + a missing size — to prove the general derivation works for ALL properties, not one. No invented facts.",
+  "agency": {
+    "name": "Mediterráneo Costa Homes",
+    "phone": "+34 600 999 066",
+    "web": "aivena.es",
+    "navy": "#0B2545", "gold": "#C9A45C", "cream": "#F8F5EF", "text": "#1F2933"
+  },
+  "properties": [
+    { "id": "IC-28746", "type": "chalet", "city": "San Javier", "region": "Alicante", "price": 285000, "beds": 2, "baths": 2, "size": 90,
+      "features": ["Furnished", "Private Pool", "Air Conditioning", "Terrace", "Solarium"],
+      "images": ["property-images/montinmo/IC-28746/41682_w_xl.jpg", "property-images/montinmo/IC-28746/41683_w_xl.jpg", "property-images/montinmo/IC-28746/41684_w_xl.jpg", "property-images/montinmo/IC-28746/41685_w_xl.jpg"] },
+    { "id": "2038", "type": "apartment", "city": "Guardamar Del Segura", "region": "Alicante", "price": 115000, "beds": 2, "baths": 1, "size": 65,
+      "features": ["Parking", "Balcony"],
+      "images": ["property-images/montinmo/2038/24156_w_xl.jpg", "property-images/montinmo/2038/24148_w_xl.jpg", "property-images/montinmo/2038/24149_w_xl.jpg", "property-images/montinmo/2038/24152_w_xl.jpg"] },
+    { "id": "IC-13589", "type": "bungalow", "city": "Altea", "region": "Alicante", "price": 385000, "beds": 3, "baths": 2, "size": null,
+      "features": [],
+      "images": ["property-images/montinmo/IC-13589/94564_w_xl.jpg", "property-images/montinmo/IC-13589/94565_w_xl.jpg", "property-images/montinmo/IC-13589/94566_w_xl.jpg", "property-images/montinmo/IC-13589/94567_w_xl.jpg"] }
+  ]
+}

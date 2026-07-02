@@ -1,7 +1,7 @@
 {
   "template_id": "7",
   "title_font_status": "needs_seed (bold geometric sans not in vault) — Poppins-Regular + faux-bold stroke as a category-correct placeholder (lighter/approximate vs the original); Canva source font confirmation owed.",
-  "_note": "#7 (Discover Your Dream — MULTI-PHOTO) rebuilt against the actual Canva layout. Every text bbox/size measured from the rendered baked source (out/bucket/7.dbg_bg.png), NOT the auto-intake draft. ALL visible text is a real editable <text> slot: brand, 3-line title, 2-line body, Home-Features header, the 5 feature rows, and the 3 CTA text pieces. Only true ICONS/ART stay baked (feature icons x655-707; CTA phone icon x358-390 + location icon x653-685) — text beside them is editable and its bbox starts after the icon. Colours are role tokens (agency colour wheel). No invented property facts: all copy is the Canva template's own default text; no property fact is asserted. Real photos fill all 4 slots in the proof.",
+  "_note": "#7 (Discover Your Dream — MULTI-PHOTO) rebuilt against the actual Canva layout. Every text bbox/size measured from the rendered baked source. ALL visible text is a real editable <text> slot: brand, title, body, Home-Features header, 5 feature rows, 3 CTA pieces. The baked feature ICONS (x655-704, bed/bath/kitchen/sofa/garage) are KNOCKED OUT: their fixed meanings can't track arbitrary real features across properties, so per the general rule they're neutralized (no icon) rather than cherry-picking text to fit them; feature rows are a clean left-aligned text list shifted into the freed space. A stray baked page-mark at the CTA bar's right end is also knocked out. Colours are role tokens (agency colour wheel). Feature rows are DATA-DRIVEN (property_fact) — derived generally from facts (beds, baths, top real features); empty rows are hidden. Real photos fill all 4 slots.",
   "canvas": { "width": 1080, "height": 1350 },
   "source_svg": "assets/7/source.tokenized.svg",
   "photo_slots": [
@@ -10,6 +10,7 @@
     { "token": "@@PHOTO2@@" },
     { "token": "@@PHOTO3@@" }
   ],
+  "knockout_regions": [[648, 598, 712, 940]],
   "colour_tokens": {
     "background": { "default": "#ffffff", "locked": false },
     "overlay": { "default": "#000000", "locked": true },
@@ -29,13 +30,13 @@
     { "id": "title", "role": "title", "source": "template_copy", "bbox": [69, 590, 600, 840], "size": 85, "line_height": 87, "valign": "center", "weight": "bold", "font": "Poppins", "align": "left", "text": "Discover\nYour Dream\nReal Estate" },
     { "id": "body", "role": "subtitle/body", "source": "template_copy", "bbox": [70, 898, 590, 974], "size": 30, "line_height": 37, "font": "Poppins", "align": "left", "text": "This ultra-modern luxury home is\ndesigned for the bold and refined." },
     { "id": "features_header", "role": "stat.label", "source": "template_copy", "bbox": [658, 540, 905, 575], "size": 30, "weight": "bold", "font": "Poppins", "align": "left", "text": "Home Features:" },
-    { "id": "feat_1", "role": "stat.value", "source": "template_copy", "bbox": [718, 612, 1010, 648], "size": 31, "font": "Poppins", "align": "left", "text": "4 Bedrooms" },
-    { "id": "feat_2", "role": "stat.value", "source": "template_copy", "bbox": [718, 682, 1010, 718], "size": 31, "font": "Poppins", "align": "left", "text": "3 Bathrooms" },
-    { "id": "feat_3", "role": "stat.value", "source": "template_copy", "bbox": [718, 752, 1010, 788], "size": 31, "font": "Poppins", "align": "left", "text": "Modern Kitchen" },
-    { "id": "feat_4", "role": "stat.value", "source": "template_copy", "bbox": [718, 822, 1010, 858], "size": 31, "font": "Poppins", "align": "left", "text": "Living Room" },
-    { "id": "feat_5", "role": "stat.value", "source": "template_copy", "bbox": [718, 892, 1010, 928], "size": 31, "font": "Poppins", "align": "left", "text": "Car Garage" },
+    { "id": "feat_1", "role": "stat.value", "source": "property_fact", "bbox": [662, 612, 1010, 648], "size": 31, "font": "Poppins", "align": "left", "text": "4 Bedrooms" },
+    { "id": "feat_2", "role": "stat.value", "source": "property_fact", "bbox": [662, 682, 1010, 718], "size": 31, "font": "Poppins", "align": "left", "text": "3 Bathrooms" },
+    { "id": "feat_3", "role": "stat.value", "source": "property_fact", "bbox": [662, 752, 1010, 788], "size": 31, "font": "Poppins", "align": "left", "text": "Modern Kitchen" },
+    { "id": "feat_4", "role": "stat.value", "source": "property_fact", "bbox": [662, 822, 1010, 858], "size": 31, "font": "Poppins", "align": "left", "text": "Living Room" },
+    { "id": "feat_5", "role": "stat.value", "source": "property_fact", "bbox": [662, 892, 1010, 928], "size": 31, "font": "Poppins", "align": "left", "text": "Car Garage" },
     { "id": "cta_label", "role": "cta", "source": "template_copy", "bbox": [71, 1295, 300, 1332], "size": 26, "weight": "bold", "font": "Poppins", "align": "left", "text": "CONTACT US AT" },
     { "id": "cta_phone", "role": "cta", "source": "template_copy", "bbox": [398, 1295, 600, 1332], "size": 26, "font": "Poppins", "align": "left", "text": "+123-456-7890" },
-    { "id": "cta_web", "role": "cta", "source": "template_copy", "bbox": [692, 1295, 995, 1332], "size": 26, "font": "Poppins", "align": "left", "text": "www.reallygreatsite.com" }
+    { "id": "cta_web", "role": "cta", "source": "template_copy", "bbox": [692, 1295, 1022, 1332], "size": 26, "font": "Poppins", "align": "left", "text": "www.reallygreatsite.com" }
   ]
 }

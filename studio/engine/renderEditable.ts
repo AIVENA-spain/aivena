@@ -103,6 +103,9 @@ export async function renderEditable(m: EditableManifest, palette: Palette = {},
   }
   for (const s of m.text_slots) {
     const [x0, y0, x1, y1] = s.bbox;
+    // empty slot → knock out the baked source text but draw nothing, so a data-driven derivation can HIDE a row
+    // (e.g. a property with fewer real features than the template has feature rows) without leaking baked copy.
+    if (!s.text.trim()) { overlay += `<rect x="${x0}" y="${y0}" width="${x1 - x0}" height="${y1 - y0}" fill="${localBg(bgRGBA, [x0, y0, x1, y1])}"/>`; continue; }
     const lines = s.text.split("\n");
     const bw = x1 - x0, bh = y1 - y0;
     const pad = s.pad ?? 0;

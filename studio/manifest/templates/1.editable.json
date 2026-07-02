@@ -6,6 +6,7 @@
   "source_svg": "assets/1/source.tokenized.svg",
   "photo_token": "@@PHOTO0@@",
   "overlay": { "role": "overlay", "opacity": 0.45 },
+  "knockout_regions": [[78, 1214, 1002, 1282]],
   "colour_tokens": {
     "background": { "default": "#000000", "locked": false },
     "overlay": { "default": "#000000", "locked": true },
@@ -25,7 +26,7 @@
     { "id": "stat_center", "role": "stat.label", "source": "template_copy", "bbox": [392, 118, 688, 182], "size": 32, "pad": 18, "valign": "center", "font": "Poppins", "align": "center", "text": "LIVING ROOM" },
     { "id": "stat_right", "role": "stat.value", "source": "property_fact", "bbox": [724, 118, 998, 182], "size": 32, "pad": 18, "valign": "center", "font": "Poppins", "align": "center", "text": "1 BATHROOM" },
     { "id": "title", "role": "title", "source": "template_copy", "bbox": [133, 440, 947, 900], "font": "LibreCaslonDisplay", "align": "center", "text": "OPEN\nHOUSE" },
-    { "id": "badge", "role": "badge.text", "source": "template_copy", "bbox": [82, 1224, 312, 1272], "font": "Poppins", "align": "left", "text": "SCHEDULE A CALL" },
-    { "id": "contact", "role": "cta", "source": "template_copy", "bbox": [345, 1224, 998, 1272], "font": "Poppins", "align": "left", "text": "123-456-7890   ·   reallygreatsite.com" }
+    { "id": "badge", "role": "badge.text", "source": "template_copy", "bbox": [90, 1222, 404, 1274], "size": 30, "pad": 10, "valign": "center", "font": "Poppins", "align": "left", "text": "SCHEDULE A CALL" },
+    { "id": "contact", "role": "cta", "source": "template_copy", "bbox": [436, 1222, 992, 1274], "size": 30, "pad": 10, "valign": "center", "font": "Poppins", "align": "right", "text": "123-456-7890   ·   reallygreatsite.com" }
   ]
 }

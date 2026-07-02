@@ -5,7 +5,7 @@
   "canvas": { "width": 1080, "height": 1350 },
   "source_svg": "assets/11/source.tokenized.svg",
   "photo_token": "@@PHOTO0@@",
-  "knockout_regions": [[986, 122, 1016, 156]],
+  "knockout_regions": [[986, 122, 1016, 156], [940, 396, 986, 452]],
   "colour_tokens": {
     "background": { "default": "#ffffff", "locked": false },
     "overlay": { "default": "#ffffff", "locked": true },

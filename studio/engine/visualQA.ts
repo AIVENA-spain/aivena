@@ -17,16 +17,21 @@ import { renderEditable, loadEditableManifest, EditableManifest, SlotLayout, Pal
 
 export type QACheck = { slot?: string; name: string; ok: boolean; detail?: string };
 
-function lumaStd(img: RGBA, b: number[]): number {
+// luma stddev over a box, EXCLUDING pixels that fall inside any of `exclude` (the drawn text bboxes). A knockout
+// region that underlies text (e.g. a full CTA-bar knockout) is only verified on its text-free parts — where a
+// stray baked artifact or a leaked baked glyph would still show.
+function lumaStdExcl(img: RGBA, b: number[], exclude: number[][]): { std: number; n: number } {
+  const inAny = (x: number, y: number) => exclude.some((e) => x >= e[0] && x < e[2] && y >= e[1] && y < e[3]);
   const vals: number[] = [];
   for (let y = Math.max(0, b[1]); y < Math.min(img.height, b[3]); y++)
     for (let x = Math.max(0, b[0]); x < Math.min(img.width, b[2]); x++) {
+      if (inAny(x, y)) continue;
       const i = (y * img.width + x) * 4;
       vals.push(0.299 * img.data[i] + 0.587 * img.data[i + 1] + 0.114 * img.data[i + 2]);
     }
-  if (!vals.length) return 0;
+  if (!vals.length) return { std: 0, n: 0 };
   const m = vals.reduce((a, v) => a + v, 0) / vals.length;
-  return Math.sqrt(vals.reduce((a, v) => a + (v - m) * (v - m), 0) / vals.length);
+  return { std: Math.sqrt(vals.reduce((a, v) => a + (v - m) * (v - m), 0) / vals.length), n: vals.length };
 }
 
 export async function runVisualQA(m: EditableManifest, r: { png: Buffer; layout: SlotLayout[] }): Promise<{ ok: boolean; checks: QACheck[] }> {
@@ -47,11 +52,28 @@ export async function runVisualQA(m: EditableManifest, r: { png: Buffer; layout:
       add("title copy meaningful (≥2 words or ≥10 chars)", t.split(/\s+/).length >= 2 || t.length >= 10, `"${t}"`, L.id);
     }
   }
-  // 5. no stray baked artifacts — each declared knockout region must render as a near-uniform patch
+  // 5. no stray baked artifacts (incl. CTA-bar marks + neutralized icon columns) — each declared knockout
+  //    region must render as a near-uniform patch
   if (m.knockout_regions?.length) {
     const img = await pngToRGBA(r.png, false);
-    for (const kr of m.knockout_regions) add("knockout region clean (stray artifact removed)", lumaStd(img, kr) < 24, `stddev ${lumaStd(img, kr).toFixed(1)}`);
+    const textBoxes = m.text_slots.filter((s) => s.text.trim()).map((s) => s.bbox);
+    for (const kr of m.knockout_regions) {
+      const s = lumaStdExcl(img, kr, textBoxes);
+      if (s.n < 40) continue; // region fully under drawn text — nothing artifact-like to verify here
+      add("knockout region clean (stray artifact removed)", s.std < 24, `stddev ${s.std.toFixed(1)} (n=${s.n})`);
+    }
   }
+  // 6. no CTA/adjacent-slot collision — two text slots must not overlap in BOTH axes (they'd collide/overprint).
+  //    Combined with the width-in-safe-zone check (text stays inside each bbox), this guarantees no CTA overlap
+  //    regardless of how long the agency's phone/website is.
+  const S = m.text_slots;
+  const collisions: string[] = [];
+  for (let i = 0; i < S.length; i++) for (let j = i + 1; j < S.length; j++) {
+    const a = S[i].bbox, b = S[j].bbox;
+    const xov = Math.min(a[2], b[2]) - Math.max(a[0], b[0]), yov = Math.min(a[3], b[3]) - Math.max(a[1], b[1]);
+    if (xov > 2 && yov > 2) collisions.push(`${S[i].id}×${S[j].id}(${xov.toFixed(0)}×${yov.toFixed(0)})`);
+  }
+  add("no slot-bbox collision (CTA/contact safe)", collisions.length === 0, collisions.join(" "));
   return { ok: checks.every((c) => c.ok), checks };
 }
 

@@ -13,12 +13,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useFormatter, useNow, useTranslations } from "next-intl";
 import {
   AlertTriangle,
+  ArrowLeft,
   Building2,
   CalendarClock,
   Clock,
   Globe,
   Home,
   Inbox as InboxIcon,
+  Info,
   Languages,
   LayoutGrid,
   Lock,
@@ -582,6 +584,7 @@ export function InboxWorkspace({
               loadThread(id);
               syncLeadUrl(id);
             }}
+            onBack={() => setSelectedBuyerId(null)}
             selected={
               selected && !isSeller(selected) ? selected : null
             }
@@ -621,6 +624,7 @@ export function InboxWorkspace({
                 loadThread(id);
                 syncLeadUrl(id);
               }}
+              onBack={() => setSelectedSellerId(null)}
               selected={
                 selected && isSeller(selected) ? selected : null
               }
@@ -810,6 +814,7 @@ function BuyersConvoView({
   groupInfo,
   selectedId,
   onSelect,
+  onBack,
   selected,
   threadEntry,
   onSuggested,
@@ -822,6 +827,8 @@ function BuyersConvoView({
   groupInfo?: ConvoGroupInfo;
   selectedId: string | null;
   onSelect: (id: string) => void;
+  /** Deselect → return to the list (mobile back button). Desktop never calls it. */
+  onBack?: () => void;
   selected: InboxRow | null;
   threadEntry?: { status: "loading" | "ok" | "failed"; data?: TaskDetailResponse };
   /** Create a property-suggestion task for the open lead, then open it. */
@@ -834,6 +841,13 @@ function BuyersConvoView({
 }) {
   const t = useTranslations("inbox");
   const [query, setQuery] = useState("");
+  // Mobile-only: the client/property Details sheet (below lg it slides over the
+  // thread; on desktop it's always the third grid column). No effect on desktop.
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const handleBack = () => {
+    setDetailsOpen(false);
+    onBack?.();
+  };
 
   if (rows.length === 0) {
     return (
@@ -865,8 +879,14 @@ function BuyersConvoView({
 
   return (
     <div className="grid grid-cols-1 overflow-hidden rounded-xl border border-border bg-card shadow-elevated lg:h-[calc(100dvh-11.5rem)] lg:min-h-[560px] lg:max-h-[940px] lg:grid-rows-1 lg:grid-cols-[230px_minmax(0,1fr)_minmax(0,1.5fr)]">
-      {/* Left: convo list */}
-      <div className="flex min-h-0 flex-col border-b border-border lg:border-b-0 lg:border-r">
+      {/* Left: convo list. Mobile: shown until a lead is picked, then swapped
+          for the thread (drill-down). Desktop: always the first column. */}
+      <div
+        className={cn(
+          "min-h-0 flex-col border-b border-border lg:flex lg:border-b-0 lg:border-r",
+          selected ? "hidden" : "flex",
+        )}
+      >
         <div className="shrink-0 border-b border-border p-2.5">
           <div className="relative">
             <Search
@@ -958,15 +978,45 @@ function BuyersConvoView({
         </ul>
       </div>
 
-      {/* Middle: thread + reply */}
-      <div className="flex min-h-0 min-w-0 flex-col">
+      {/* Middle: thread + reply. Mobile: shown once a lead is picked, with a
+          back arrow (to the list) and a Details button (opens the sheet). */}
+      <div
+        className={cn(
+          "min-h-0 min-w-0 flex-col lg:flex",
+          selected ? "flex" : "hidden",
+        )}
+      >
         {selected ? (
-          <ThreadAndReply
-            lead={selected}
-            threadEntry={threadEntry}
-            onComposerDone={onComposerDone}
-            locale={locale}
-          />
+          <>
+            {/* Mobile-only thread header: back + name + Details */}
+            <div className="flex shrink-0 items-center gap-2 border-b border-border px-2.5 py-2 lg:hidden">
+              <button
+                type="button"
+                onClick={handleBack}
+                aria-label="Back to list"
+                className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                <ArrowLeft className="h-4 w-4" aria-hidden />
+              </button>
+              <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-foreground">
+                {selected.fullName ?? "Unknown"}
+              </span>
+              <button
+                type="button"
+                onClick={() => setDetailsOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-[12px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                <Info className="h-3.5 w-3.5" aria-hidden />
+                Details
+              </button>
+            </div>
+            <ThreadAndReply
+              lead={selected}
+              threadEntry={threadEntry}
+              onComposerDone={onComposerDone}
+              locale={locale}
+            />
+          </>
         ) : (
           <div className="flex flex-1 items-center justify-center p-8 text-center text-sm text-muted-foreground">
             {t("buyers.emptyConvo")}
@@ -974,15 +1024,45 @@ function BuyersConvoView({
         )}
       </div>
 
-      {/* Right: stacked Client Intelligence panel */}
-      <div className="flex min-h-0 flex-col overflow-y-auto border-t border-border bg-muted/20 p-5 lg:border-t-0 lg:border-l">
+      {/* Right: Client Intelligence. Desktop: the third column. Mobile: hidden
+          until Details is tapped, then a bottom sheet over the thread. One
+          instance either way (no duplicate mount). */}
+      {detailsOpen && selected ? (
+        <div
+          className="fixed inset-0 z-40 bg-foreground/30 lg:hidden"
+          onClick={() => setDetailsOpen(false)}
+          aria-hidden
+        />
+      ) : null}
+      <div
+        className={cn(
+          "min-h-0 flex-col overflow-y-auto bg-muted/20 lg:flex lg:border-l lg:border-border lg:p-5",
+          detailsOpen && selected
+            ? "fixed inset-x-0 bottom-0 top-16 z-50 flex rounded-t-2xl border border-border bg-card p-5 shadow-2xl lg:static lg:inset-auto lg:z-auto lg:rounded-none lg:border-0 lg:border-l lg:bg-muted/20 lg:shadow-none"
+            : "hidden",
+        )}
+      >
         {selected ? (
-          <ClientIntelligence
-            key={selected.leadId}
-            lead={selected}
-            authors={authors}
-            onSuggested={onSuggested}
-          />
+          <>
+            {/* Mobile-only sheet header: close */}
+            <div className="mb-3 flex shrink-0 items-center justify-between lg:hidden">
+              <span className="text-[13px] font-semibold text-foreground">Details</span>
+              <button
+                type="button"
+                onClick={() => setDetailsOpen(false)}
+                aria-label="Close details"
+                className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                <X className="h-4 w-4" aria-hidden />
+              </button>
+            </div>
+            <ClientIntelligence
+              key={selected.leadId}
+              lead={selected}
+              authors={authors}
+              onSuggested={onSuggested}
+            />
+          </>
         ) : null}
       </div>
     </div>

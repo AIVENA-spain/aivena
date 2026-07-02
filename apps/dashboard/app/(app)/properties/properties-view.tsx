@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { Building2, Plus, X } from "lucide-react";
+import { Building2, Plus, Search, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -21,31 +21,61 @@ export function PropertiesView({ properties }: { properties: PropertyRow[] }) {
   const locale = useLocale();
   const nf = new Intl.NumberFormat(intlLocaleFor(locale));
   const [importing, setImporting] = useState(false);
+  const [query, setQuery] = useState("");
+
+  // Client-side, read-only filter over the already-loaded catalog. Matches
+  // city/area first, then title + reference. Fast for the pilot list size; a
+  // server-side ?q= is only needed if a catalog ever grows to thousands.
+  const q = query.trim().toLowerCase();
+  const filtered = useMemo(() => {
+    if (!q) return properties;
+    return properties.filter((p) =>
+      [p.location_city, p.location_region, p.title, p.external_id].some((field) =>
+        (field ?? "").toLowerCase().includes(q),
+      ),
+    );
+  }, [properties, q]);
 
   return (
     <div className="flex flex-col gap-5">
-      {/* Toolbar */}
-      <div className="flex items-center justify-between gap-3">
+      {/* Toolbar: search (city/area first) + import */}
+      <div className="flex flex-col gap-2">
         <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
-        <Button
-          type="button"
-          size="sm"
-          variant={importing ? "outline" : "default"}
-          className="gap-1.5"
-          onClick={() => setImporting((v) => !v)}
-        >
-          {importing ? (
-            <>
-              <X className="h-3.5 w-3.5" aria-hidden />
-              {t("closeImport")}
-            </>
-          ) : (
-            <>
-              <Plus className="h-3.5 w-3.5" aria-hidden />
-              {t("importCta")}
-            </>
-          )}
-        </Button>
+        <div className="flex items-center gap-3">
+          <div className="relative min-w-0 flex-1 sm:max-w-sm">
+            <Search
+              className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
+              aria-hidden
+            />
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search by city, area, title, or reference…"
+              aria-label="Search properties by city, area, title, or reference"
+              className="h-9 w-full rounded-lg border border-border bg-card pl-8 pr-3 text-[13px] text-foreground shadow-soft placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand/40"
+            />
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            variant={importing ? "outline" : "default"}
+            className="ml-auto flex-none gap-1.5"
+            onClick={() => setImporting((v) => !v)}
+          >
+            {importing ? (
+              <>
+                <X className="h-3.5 w-3.5" aria-hidden />
+                {t("closeImport")}
+              </>
+            ) : (
+              <>
+                <Plus className="h-3.5 w-3.5" aria-hidden />
+                {t("importCta")}
+              </>
+            )}
+          </Button>
+        </div>
       </div>
 
       {/* Inline import panel */}
@@ -71,9 +101,22 @@ export function PropertiesView({ properties }: { properties: PropertyRow[] }) {
             </Button>
           ) : null}
         </div>
+      ) : filtered.length === 0 ? (
+        <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border bg-card px-6 py-16 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+            <Search className="h-6 w-6" aria-hidden strokeWidth={1.7} />
+          </div>
+          <p className="text-sm font-medium text-foreground">No properties match “{query.trim()}”.</p>
+          <p className="max-w-md text-sm text-muted-foreground">
+            Try a different city or area, or clear the search to see all listings.
+          </p>
+          <Button type="button" size="sm" variant="outline" className="mt-1" onClick={() => setQuery("")}>
+            Clear search
+          </Button>
+        </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {properties.map((p) => (
+          {filtered.map((p) => (
             <PropertyCard key={p.id} p={p} nf={nf} t={t} />
           ))}
         </div>

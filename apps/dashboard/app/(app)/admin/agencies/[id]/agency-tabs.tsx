@@ -16,7 +16,7 @@ const TABS: { key: string; label: string; seg: string; ready: boolean }[] = [
   { key: "settings", label: "Settings", seg: "settings", ready: false },
   { key: "branding", label: "Branding", seg: "branding", ready: false },
   { key: "team", label: "Team", seg: "team", ready: false },
-  { key: "audit", label: "Audit", seg: "audit", ready: false },
+  { key: "audit", label: "Audit", seg: "audit", ready: true },
 ];
 
 export function AgencyTabs({ agencyId }: { agencyId: string }) {

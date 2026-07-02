@@ -7,6 +7,7 @@ import type {
   AdminAgenciesResponse,
   AdminAgencyDetail,
   AdminAgencyListItem,
+  AgencyAuditEntry,
   CreateAgencyInput,
   CreateAgencyResult,
   SlugCheckResult,
@@ -193,5 +194,68 @@ export async function setPilotStatusAction(
       };
     }
     return actionError("setPilotStatus", err);
+  }
+}
+
+/**
+ * Staff archive/restore of an agency (Phase 1) — soft only, via `agencies.status`
+ * (the API/RPC never hard-deletes). The RPC enforces: reason required; live agencies
+ * can't be archived; a non-test agency needs its slug typed back (`confirmSlug`).
+ * Audited server-side.
+ */
+export async function setAgencyStatusAction(
+  agencyId: string,
+  input: { status: "active" | "paused" | "archived"; reason: string; confirmSlug?: string | null },
+): Promise<ActionResult<{ status: string; from: string }>> {
+  try {
+    const res = await apiFetch<{ ok: true; status: string; from: string }>(
+      `/api/v1/admin/agencies/${encodeURIComponent(agencyId)}/status`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          status: input.status,
+          reason: input.reason,
+          confirm_slug: input.confirmSlug ?? null,
+        }),
+      },
+    );
+    revalidatePath(`/admin/agencies/${agencyId}`);
+    revalidatePath("/admin/agencies");
+    return { ok: true, data: { status: res.status, from: res.from } };
+  } catch (err) {
+    return actionError("setAgencyStatus", err);
+  }
+}
+
+/** Staff mark/unmark an agency as an internal test/demo agency (server truth). Audited. */
+export async function setAgencyTestFlagAction(
+  agencyId: string,
+  isTest: boolean,
+  reason?: string,
+): Promise<ActionResult<{ is_test: boolean }>> {
+  try {
+    const res = await apiFetch<{ ok: true; is_test: boolean }>(
+      `/api/v1/admin/agencies/${encodeURIComponent(agencyId)}/test-flag`,
+      { method: "POST", body: JSON.stringify({ is_test: isTest, reason: reason ?? null }) },
+    );
+    revalidatePath(`/admin/agencies/${agencyId}`);
+    revalidatePath("/admin/agencies");
+    return { ok: true, data: { is_test: res.is_test } };
+  } catch (err) {
+    return actionError("setAgencyTestFlag", err);
+  }
+}
+
+/** Staff read of an agency's audit trail (Phase 1 Audit tab). Read-only. */
+export async function getAgencyAuditAction(
+  agencyId: string,
+): Promise<ActionResult<AgencyAuditEntry[]>> {
+  try {
+    const res = await apiFetch<{ ok: true; entries: AgencyAuditEntry[] }>(
+      `/api/v1/admin/agencies/${encodeURIComponent(agencyId)}/audit`,
+    );
+    return { ok: true, data: res.entries ?? [] };
+  } catch (err) {
+    return actionError("getAgencyAudit", err);
   }
 }

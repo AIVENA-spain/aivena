@@ -304,4 +304,47 @@ route.post('/:id/go-live', async (c) => {
   return handleRpc(c, 'go-live', rpc);
 });
 
+// ─── POST /api/v1/admin/agencies/:id/status — staff archive/restore (Phase 1) ──
+// Staff-only. Soft archive/restore via agencies.status (NO hard delete). The RPC
+// blocks archiving a live agency, requires the slug for a non-test agency (strong
+// confirm), requires a reason, and audits every change.
+route.post('/:id/status', async (c) => {
+  const id = c.req.param('id');
+  if (!id) return c.json({ ok: false, error: 'That agency could not be found.' }, 404);
+  const body = await readJson(c);
+  const status = typeof body.status === 'string' ? body.status : '';
+  const reason = typeof body.reason === 'string' ? body.reason : '';
+  const confirmSlug = typeof body.confirm_slug === 'string' ? body.confirm_slug : null;
+  const rpc = await userClient(c).rpc('admin_set_agency_status', {
+    p_agency_id: id,
+    p_status: status,
+    p_reason: reason,
+    p_confirm_slug: confirmSlug,
+  });
+  return handleRpc(c, 'set-status', rpc);
+});
+
+// ─── POST /api/v1/admin/agencies/:id/test-flag — staff mark/unmark test (Phase 1) ──
+route.post('/:id/test-flag', async (c) => {
+  const id = c.req.param('id');
+  if (!id) return c.json({ ok: false, error: 'That agency could not be found.' }, 404);
+  const body = await readJson(c);
+  const isTest = body.is_test === true;
+  const reason = typeof body.reason === 'string' ? body.reason : null;
+  const rpc = await userClient(c).rpc('admin_set_agency_test_flag', {
+    p_agency_id: id,
+    p_is_test: isTest,
+    p_reason: reason,
+  });
+  return handleRpc(c, 'test-flag', rpc);
+});
+
+// ─── GET /api/v1/admin/agencies/:id/audit — staff read of the agency's audit trail ──
+route.get('/:id/audit', async (c) => {
+  const id = c.req.param('id');
+  if (!id) return c.json({ ok: false, error: 'That agency could not be found.' }, 404);
+  const rpc = await userClient(c).rpc('admin_list_agency_audit', { p_agency_id: id, p_limit: 100 });
+  return handleRpc(c, 'audit', rpc);
+});
+
 export default route;

@@ -8,6 +8,8 @@ import { Card } from "@/components/ui/card";
 import { PageHeading } from "../../_components/page-heading";
 import { getAgencyAction } from "../../admin-actions";
 import { AgencyTabs } from "./agency-tabs";
+import { AdminControls } from "./admin-controls";
+import type { AgencyStatus } from "@/lib/api/admin-types";
 
 export const dynamic = "force-dynamic";
 
@@ -150,6 +152,18 @@ export default async function AgencyDetailPage({
       </div>
 
       <AgencyTabs agencyId={agency.id} />
+
+      <AdminControls
+        agencyId={agency.id}
+        slug={agency.slug}
+        status={status as AgencyStatus}
+        isTest={(agency as Record<string, unknown>).is_test === true}
+        pilotStatus={
+          typeof (agency as Record<string, unknown>).pilot_status === "string"
+            ? ((agency as Record<string, unknown>).pilot_status as string)
+            : null
+        }
+      />
 
       {/* Overview body */}
       <div className="grid gap-3 lg:grid-cols-2">

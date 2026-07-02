@@ -16,8 +16,6 @@ import type {
   AgencyStatus,
   PlanTier,
 } from "@/lib/api/admin-types";
-import { isTestAgency } from "./test-agencies";
-
 function TestBadge() {
   return (
     <span className="inline-flex items-center rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
@@ -81,19 +79,19 @@ export function AgenciesList({
   const [status, setStatus] = useState<string>("all");
   const [plan, setPlan] = useState<string>("all");
   const [search, setSearch] = useState("");
-  // TEMP UI-only: internal test agencies are hidden by default (see ./test-agencies).
-  // No DB/archive/delete — just this view. The real is_test-flag solution is parked.
+  // Internal test agencies (agencies.is_test, server truth) are hidden by default —
+  // hidden from the view, never deleted. Toggle to show them.
   const [showTest, setShowTest] = useState(false);
 
   const testCount = useMemo(
-    () => initialAgencies.filter((a) => isTestAgency(a.id)).length,
+    () => initialAgencies.filter((a) => a.is_test).length,
     [initialAgencies],
   );
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return initialAgencies.filter((a) => {
-      if (!showTest && isTestAgency(a.id)) return false;
+      if (!showTest && a.is_test) return false;
       if (status !== "all" && a.status !== status) return false;
       if (plan !== "all" && a.plan_tier !== plan) return false;
       if (q) {
@@ -175,17 +173,26 @@ export function AgenciesList({
           <option value="unlimited">Unlimited</option>
         </Select>
         {testCount > 0 ? (
-          <label className="flex flex-none cursor-pointer items-center gap-1.5 whitespace-nowrap text-[12.5px] text-muted-foreground">
+          <label
+            className="flex flex-none cursor-pointer items-center gap-1.5 whitespace-nowrap text-[12.5px] text-muted-foreground"
+            title="Test agencies are hidden from this list, not deleted."
+          >
             <input
               type="checkbox"
               checked={showTest}
               onChange={(e) => setShowTest(e.target.checked)}
               className="h-3.5 w-3.5 accent-muted-foreground"
             />
-            Show test agencies ({testCount})
+            Show hidden test agencies ({testCount})
           </label>
         ) : null}
       </div>
+      {testCount > 0 && !showTest ? (
+        <p className="text-[11.5px] text-muted-foreground">
+          {testCount} test {testCount === 1 ? "agency is" : "agencies are"} hidden from this list —
+          hidden, not deleted. Use the toggle to show {testCount === 1 ? "it" : "them"}.
+        </p>
+      ) : null}
 
       {filtered.length === 0 ? (
         <Card>
@@ -222,7 +229,7 @@ export function AgenciesList({
                         <span className="font-medium text-foreground">
                           {a.trading_name ?? a.slug}
                         </span>
-                        {isTestAgency(a.id) ? <TestBadge /> : null}
+                        {a.is_test ? <TestBadge /> : null}
                       </div>
                       <div className="font-mono text-[11px] text-muted-foreground">
                         {a.slug}
@@ -269,7 +276,7 @@ export function AgenciesList({
                     <span className="font-medium text-foreground">
                       {a.trading_name ?? a.slug}
                     </span>
-                    {isTestAgency(a.id) ? <TestBadge /> : null}
+                    {a.is_test ? <TestBadge /> : null}
                   </span>
                   <PlanPill tier={a.plan_tier} />
                 </div>

@@ -15,6 +15,8 @@ export type AdminAgencyListItem = {
   trading_name: string | null;
   legal_name: string | null;
   status: AgencyStatus;
+  /** Internal test/demo agency — hidden from the list by default (server truth). */
+  is_test: boolean;
   plan_tier: PlanTier;
   default_language: string | null;
   primary_owner_email: string | null;
@@ -23,6 +25,16 @@ export type AdminAgencyListItem = {
   pending_invitation_count: number;
   created_at: string;
   updated_at: string;
+};
+
+/** One row of the agency audit trail (GET /api/v1/admin/agencies/:id/audit). */
+export type AgencyAuditEntry = {
+  id: string;
+  created_at: string;
+  actor_email: string | null;
+  event_type: string;
+  action: string | null;
+  metadata: Record<string, unknown>;
 };
 
 export type AdminAgenciesResponse = {

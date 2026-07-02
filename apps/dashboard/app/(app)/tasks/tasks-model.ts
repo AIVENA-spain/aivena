@@ -21,19 +21,25 @@ export type RowState = "idle" | "confirming" | "saving" | "resolved" | "error";
 export type RowEvent =
   | { type: "ASK" } // first click — open the confirm step (NO write)
   | { type: "CANCEL" } // back out of confirm / error
+  | { type: "SET_REASON"; reason: string } // operator picks WHY (only while confirming)
   | { type: "CONFIRM" } // explicit second click — commit (→ saving, write fires)
   | { type: "SUCCESS" } // dismiss RPC succeeded
   | { type: "FAIL"; error: string }; // dismiss RPC failed (friendly message)
 
-export type Row = { task: OpsTask; state: RowState; error: string | null };
+export type Row = { task: OpsTask; state: RowState; error: string | null; reason: string };
 
 /** Pure transition. Guards keep the write to a single, explicit confirm. */
 export function rowReducer(row: Row, ev: RowEvent): Row {
   switch (ev.type) {
     case "ASK":
-      // Only from a resting state → confirming. NEVER writes.
+      // Only from a resting state → confirming. NEVER writes. Reason resets to default.
       return row.state === "idle" || row.state === "error"
-        ? { ...row, state: "confirming", error: null }
+        ? { ...row, state: "confirming", error: null, reason: DEFAULT_REASON }
+        : row;
+    case "SET_REASON":
+      // Operator adjusts the reason during the confirm step; no state change, no write.
+      return row.state === "confirming" && isValidReason(ev.reason)
+        ? { ...row, reason: ev.reason }
         : row;
     case "CANCEL":
       return row.state === "confirming" || row.state === "error"
@@ -64,6 +70,49 @@ export function isActive(state: RowState): boolean {
 
 export function activeCount(rows: Row[]): number {
   return rows.filter((r) => isActive(r.state)).length;
+}
+
+// ---- dismissal reasons (MUST match the dismiss_dashboard_task whitelist) ------
+
+/**
+ * The exact reasons `dismiss_dashboard_task` accepts — sending anything else
+ * raises `invalid_dismissal_reason` (the red-text bug). Labels are what the
+ * operator sees; the operator picks the honest reason on the confirm step so the
+ * audited `lead_event` records the real reason.
+ */
+export const DISMISS_REASONS: ReadonlyArray<{ value: string; label: string }> = [
+  { value: "handled_externally", label: "Handled" },
+  { value: "not_relevant", label: "Not relevant" },
+  { value: "duplicate", label: "Duplicate" },
+  { value: "wrong_number", label: "Wrong number" },
+  { value: "dropped_lead", label: "Dropped lead" },
+];
+
+export const DEFAULT_REASON = "handled_externally";
+
+export function isValidReason(reason: string): boolean {
+  return DISMISS_REASONS.some((r) => r.value === reason);
+}
+
+// ---- friendly error copy (a raw RPC code must NEVER reach the user) -----------
+
+const DISMISS_ERROR_COPY: Record<string, string> = {
+  invalid_dismissal_reason: "Sorry — I couldn't resolve that task just now. Please try again.",
+  task_already_handled: "This task was already handled — refresh to see its latest state.",
+  task_not_found: "That task no longer exists — it may have been resolved already.",
+};
+
+export const GENERIC_DISMISS_ERROR =
+  "Something went wrong updating that task — please try again, and contact support if it keeps happening.";
+
+/**
+ * Map an RPC code (or anything unknown/raw) to friendly copy. This is the guard
+ * that stopped `invalid_dismissal_reason` rendering raw: an unmapped/raw code
+ * collapses to the generic line, never the code itself.
+ */
+export function friendlyDismissError(code: string | null | undefined): string {
+  if (code && DISMISS_ERROR_COPY[code]) return DISMISS_ERROR_COPY[code];
+  return GENERIC_DISMISS_ERROR;
 }
 
 // ---- presentation helpers (pure) --------------------------------------------

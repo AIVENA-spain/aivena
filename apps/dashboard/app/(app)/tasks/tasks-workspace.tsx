@@ -16,23 +16,23 @@ import {
   whyItMatters,
   ageLabel,
   inboxHref,
+  DISMISS_REASONS,
+  DEFAULT_REASON,
   type Row,
   type RowEvent,
 } from "./tasks-model";
 
-/** Stable audit reason recorded on every resolve (dismiss_dashboard_task). */
-const RESOLVE_REASON = "Marked resolved from the Tasks list";
-
 /**
  * /tasks — the agency-facing action home for every open `dashboard_task` (F7).
  * Honesty-first: a non-Inbox lead gets NO "open" link (it would dead-end); its
- * only in-app action is Resolve, here. Resolve is two-step (a first click asks,
- * an explicit confirm commits) and writes exactly once; nothing auto-resolves;
- * history is preserved (dismiss, never delete).
+ * only in-app action is Resolve, here. Resolve is two-step (a first click asks
+ * + lets the operator pick an honest reason, an explicit confirm commits) and
+ * writes exactly once; nothing auto-resolves; history is preserved (dismiss,
+ * never delete). The reason is one of the RPC whitelist values — never free text.
  */
 export function TasksWorkspace({ tasks }: { tasks: OpsTask[] }) {
   const [rows, setRows] = useState<Row[]>(() =>
-    tasks.map((task) => ({ task, state: "idle", error: null })),
+    tasks.map((task) => ({ task, state: "idle", error: null, reason: DEFAULT_REASON })),
   );
 
   function dispatch(taskId: string, ev: RowEvent) {
@@ -43,9 +43,10 @@ export function TasksWorkspace({ tasks }: { tasks: OpsTask[] }) {
     // Guard: only commit from `confirming` so a repeated confirm can't double-write.
     const row = rows.find((r) => r.task.taskId === taskId);
     if (!row || row.state !== "confirming") return;
+    const reason = row.reason;
     dispatch(taskId, { type: "CONFIRM" });
     void (async () => {
-      const res = await dismissTaskAction(taskId, RESOLVE_REASON);
+      const res = await dismissTaskAction(taskId, reason);
       dispatch(taskId, res.ok ? { type: "SUCCESS" } : { type: "FAIL", error: res.error });
     })();
   }
@@ -81,6 +82,7 @@ export function TasksWorkspace({ tasks }: { tasks: OpsTask[] }) {
               onAsk={() => dispatch(row.task.taskId, { type: "ASK" })}
               onCancel={() => dispatch(row.task.taskId, { type: "CANCEL" })}
               onConfirm={() => onConfirm(row.task.taskId)}
+              onSetReason={(reason) => dispatch(row.task.taskId, { type: "SET_REASON", reason })}
             />
           ))}
           {allResolved ? (
@@ -112,11 +114,13 @@ function TaskRow({
   onAsk,
   onCancel,
   onConfirm,
+  onSetReason,
 }: {
   row: Row;
   onAsk: () => void;
   onCancel: () => void;
   onConfirm: () => void;
+  onSetReason: (reason: string) => void;
 }) {
   const { task, state, error } = row;
   const who = task.leadName ?? "Unknown lead";
@@ -163,12 +167,27 @@ function TaskRow({
             <span className="text-[12.5px] text-muted-foreground">Resolving…</span>
           ) : state === "confirming" ? (
             <div className="flex items-center gap-1.5">
+              <label className="sr-only" htmlFor={`reason-${task.taskId}`}>
+                Reason
+              </label>
+              <select
+                id={`reason-${task.taskId}`}
+                value={row.reason}
+                onChange={(e) => onSetReason(e.target.value)}
+                className="h-7 rounded-md border border-border bg-background px-1.5 text-[12px] text-foreground focus:outline-none focus:ring-2 focus:ring-brand/40"
+              >
+                {DISMISS_REASONS.map((r) => (
+                  <option key={r.value} value={r.value}>
+                    {r.label}
+                  </option>
+                ))}
+              </select>
               <button
                 type="button"
                 onClick={onConfirm}
                 className={cn(buttonVariants({ variant: "default", size: "sm" }))}
               >
-                Confirm resolve
+                Confirm
               </button>
               <button
                 type="button"
@@ -200,7 +219,7 @@ function TaskRow({
       {/* Confirm helper + error live below the row so the action zone stays compact */}
       {state === "confirming" ? (
         <p className="mt-2 text-[12px] text-muted-foreground">
-          Mark this resolved? It clears from your list — the task history is kept.
+          Pick a reason and confirm to clear this from your list — the task history is kept.
         </p>
       ) : null}
       {state === "error" && error ? (

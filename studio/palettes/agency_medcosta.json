@@ -1,0 +1,17 @@
+{
+  "name": "agency_medcosta",
+  "label": "Mediterráneo Costa Homes (real agency brand — navy/gold/cream)",
+  "_note": "Real agency brand palette for demo-costa-homes-pilot01, from public.agency_branding (primary #0B2545 navy, accent #C9A45C gold, background #F8F5EF cream). Mapped onto the #4 (dark) token set: title=brand.accent renders GOLD; stats/body/price=text.primary render CREAM on the dark hero; bg/overlay stay black (locked, legibility).",
+  "tokens": {
+    "brand.primary": { "hex": "#F8F5EF", "opacity": 1 },
+    "brand.accent": { "hex": "#C9A45C", "opacity": 1 },
+    "template.background": { "hex": "#000000", "opacity": 1 },
+    "template.overlay": { "hex": "#000000", "opacity": 1 },
+    "text.primary": { "hex": "#F8F5EF", "opacity": 1 },
+    "text.muted": { "hex": "#D8D2C6", "opacity": 1 },
+    "badge.fill": { "hex": "#C9A45C", "opacity": 1 },
+    "badge.text": { "hex": "#0B2545", "opacity": 1 },
+    "icon.fill": { "hex": "#F8F5EF", "opacity": 1 }
+  },
+  "locked_tokens": ["template.background", "template.overlay", "icon.fill"]
+}

@@ -1,0 +1,13 @@
+{
+  "id": "IC-28746",
+  "property_type": "chalet",
+  "location": { "city": "San Javier", "province": "Alicante", "country": "Spain" },
+  "price": { "amount": 285000, "currency": "EUR", "period": null },
+  "size": { "built_sqm": 90, "plot_sqm": null },
+  "bedrooms": 2,
+  "bathrooms": 2,
+  "image": "out/realprop/IC-28746/41682.jpg",
+  "features": ["Furnished", "Private Pool", "Air Conditioning", "Terrace", "Solarium", "Home appliances", "Yard", "Intercom", "Reinforced door", "Smoke outlet", "Porch"],
+  "selling_points": [],
+  "_note": "REAL property IC-28746 'Chalet in San Javier', agency demo-costa-homes-pilot01 (Mediterráneo Costa Homes). Pulled READ-ONLY from Supabase (public.properties) for the real-property final-render proof. All facts are the real listing's; no invention. Photos in out/realprop/IC-28746/ downloaded from the public property-images bucket."
+}

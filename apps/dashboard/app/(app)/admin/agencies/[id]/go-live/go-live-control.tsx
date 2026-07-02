@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, CheckCircle2, ShieldAlert, ShieldCheck } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Lock, ShieldAlert, ShieldCheck } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
@@ -245,11 +245,16 @@ export function GoLiveControl({
               disabled={!submittable}
               onClick={submit}
             >
-              {pending
-                ? "Applying…"
-                : target === "live" && !allAttestationsChecked(attestations)
-                  ? "Confirm all 4 to go live"
-                  : (TARGETS.find((t) => t.key === target)?.label ?? "Apply")}
+              {pending ? (
+                "Applying…"
+              ) : target === "live" && !allAttestationsChecked(attestations) ? (
+                <>
+                  <Lock aria-hidden />
+                  Confirm all 4 to go live
+                </>
+              ) : (
+                (TARGETS.find((t) => t.key === target)?.label ?? "Apply")
+              )}
             </Button>
             <Button type="button" size="sm" variant="ghost" disabled={pending} onClick={reset}>
               Cancel

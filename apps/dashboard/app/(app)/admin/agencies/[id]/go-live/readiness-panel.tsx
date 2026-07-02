@@ -1,8 +1,6 @@
-import { AlertTriangle, CheckCircle2 } from "lucide-react";
-
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
-import type { ReadinessResponse } from "@/lib/api/types";
+import type { ReadinessItem, ReadinessProviderState, ReadinessResponse } from "@/lib/api/types";
 import {
   statusTone,
   orderItems,
@@ -12,19 +10,23 @@ import {
 
 import {
   STATUS_LABEL,
-  PILOT_STATUS_LABEL,
-  visibleBlockers,
-  blockerLabel,
-  providerDisplayName,
+  sectionForItem,
+  SECTION_ORDER,
+  SECTION_LABEL,
   providerPlainText,
+  providerItemId,
+  blockerLabel,
+  type GoLiveSection,
 } from "./go-live-display";
 
 /**
- * Read-only readiness panel for the admin go-live surface (C4). Renders the
- * TARGET agency's live recompute exactly as the server reports it — current
- * pilot status, blockers, every readiness item, and provider/config state. It
- * NEVER invents "ready": each chip is the honest status straight from the model.
- * English-only (admin surface, brief §12).
+ * Detailed readiness for the admin go-live screen (issue B) — the per-check
+ * detail BELOW the summary card + control. Grouped into 4 plain sections; within
+ * each, the checks that still need action show first and the already-"ready"
+ * checks collapse behind a "N ready" disclosure, so the page isn't a wall of
+ * orange. Provider checks show plain copy with raw fields behind a "Technical
+ * details" disclosure. Honest: each chip is the server status, never invented.
+ * English-only (admin surface).
  */
 
 const TONE_CLS: Record<ChipTone, string> = {
@@ -32,14 +34,6 @@ const TONE_CLS: Record<ChipTone, string> = {
   info: "bg-sky-50 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300",
   warn: "bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300",
   muted: "bg-muted text-muted-foreground",
-};
-
-const PILOT_TONE: Record<string, string> = {
-  live: "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300",
-  ready_for_pilot: "bg-sky-50 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300",
-  setup: "bg-muted text-muted-foreground",
-  paused: "bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300",
-  blocked: "bg-red-50 text-red-700 dark:bg-red-500/15 dark:text-red-300",
 };
 
 function Chip({ tone, children }: { tone: ChipTone; children: React.ReactNode }) {
@@ -55,124 +49,123 @@ function Chip({ tone, children }: { tone: ChipTone; children: React.ReactNode })
   );
 }
 
+function ItemRow({ item, provider }: { item: ReadinessItem; provider?: ReadinessProviderState }) {
+  const mainCopy = provider ? providerPlainText(provider) : item.uiCopy;
+  // Not-yet-ready checks use the specific admin label ("Legal agency name not
+  // confirmed"), matching the summary card; ready checks keep the neutral label.
+  const title = isDone(item.status) ? item.label : blockerLabel(item.id, item.label);
+  return (
+    <li className="flex items-start justify-between gap-3 py-2">
+      <div className="flex min-w-0 flex-col gap-0.5">
+        <span className="text-[13px] font-medium text-foreground">{title}</span>
+        <span className="text-[12px] text-muted-foreground">{mainCopy}</span>
+        {provider ? (
+          <details className="mt-0.5 text-[11px] text-muted-foreground/80">
+            <summary className="cursor-pointer select-none text-muted-foreground/70 hover:text-muted-foreground">
+              Technical details
+            </summary>
+            <div className="mt-1 flex flex-col gap-0.5 pl-1 font-mono">
+              <span>detail: {provider.detail}</span>
+              <span>source: {provider.source}</span>
+            </div>
+          </details>
+        ) : null}
+      </div>
+      <Chip tone={statusTone(item.status)}>{STATUS_LABEL[item.status]}</Chip>
+    </li>
+  );
+}
+
+function Section({
+  title,
+  items,
+  providerFor,
+}: {
+  title: string;
+  items: ReadinessItem[];
+  providerFor: (id: string) => ReadinessProviderState | undefined;
+}) {
+  const todo = items.filter((i) => !isDone(i.status));
+  const done = items.filter((i) => isDone(i.status));
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="text-[12px] font-semibold text-foreground">{title}</h3>
+        <span
+          className={cn(
+            "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium",
+            todo.length > 0
+              ? "bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300"
+              : "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300",
+          )}
+        >
+          {todo.length > 0
+            ? `${todo.length} need${todo.length === 1 ? "s" : ""} action`
+            : "All ready"}
+        </span>
+      </div>
+
+      {todo.length > 0 ? (
+        <ul className="flex flex-col divide-y divide-border/60">
+          {todo.map((it) => (
+            <ItemRow key={it.id} item={it} provider={providerFor(it.id)} />
+          ))}
+        </ul>
+      ) : null}
+
+      {done.length > 0 ? (
+        <details className="text-[12px]">
+          <summary className="cursor-pointer select-none py-1 text-muted-foreground hover:text-foreground">
+            {done.length} ready ✓
+          </summary>
+          <ul className="flex flex-col divide-y divide-border/40 opacity-80">
+            {done.map((it) => (
+              <ItemRow key={it.id} item={it} provider={providerFor(it.id)} />
+            ))}
+          </ul>
+        </details>
+      ) : null}
+    </div>
+  );
+}
+
 export function ReadinessPanel({ readiness }: { readiness: ReadinessResponse }) {
-  const items = orderItems(readiness.items);
-  const itemById = new Map(readiness.items.map((i) => [i.id, i]));
-  // Mirror the server's go-live gate — it strips the self-referential lifecycle item,
-  // so the panel must too (else a ready agency shows a blocker the transition ignores).
-  const blockers = visibleBlockers(readiness.goLive.blockedBy);
-  const doneCount = readiness.items.filter((i) => isDone(i.status)).length;
-  const pilot = readiness.pilotStatus;
+  const providerById = new Map(readiness.providers.map((p) => [providerItemId(p.provider), p]));
+  const providerFor = (id: string) => providerById.get(id);
+
+  const bySection: Record<GoLiveSection, ReadinessItem[]> = {
+    setup: [],
+    providers: [],
+    legal: [],
+    safety: [],
+  };
+  for (const it of orderItems(readiness.items)) bySection[sectionForItem(it.id)].push(it);
 
   return (
     <Card className="gap-4 p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold text-foreground">Go-live readiness</h2>
-        <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
-          <span>Current status</span>
-          <span
-            className={cn(
-              "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium capitalize",
-              pilot ? (PILOT_TONE[pilot] ?? "bg-muted text-muted-foreground") : "bg-muted text-muted-foreground",
-            )}
-          >
-            {pilot ? PILOT_STATUS_LABEL[pilot] : "Unknown"}
-          </span>
-        </div>
+        <h2 className="text-sm font-semibold text-foreground">Readiness checks</h2>
+        <span className="text-[11px] text-muted-foreground">
+          computed{" "}
+          {new Date(readiness.computedAt).toLocaleString(undefined, {
+            day: "numeric",
+            month: "short",
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
+        </span>
       </div>
 
-      <p className="text-[12.5px] text-muted-foreground">
-        {doneCount} of {readiness.items.length} checks done · computed{" "}
-        {new Date(readiness.computedAt).toLocaleString(undefined, {
-          day: "numeric",
-          month: "short",
-          hour: "2-digit",
-          minute: "2-digit",
-        })}
-      </p>
-
-      {/* Blockers — what stands between this agency and go-live, from the server. */}
-      {blockers.length > 0 ? (
-        <div className="rounded-lg border border-amber-200 bg-amber-50/60 px-3 py-2.5 dark:border-amber-500/25 dark:bg-amber-500/10">
-          <div className="flex items-center gap-1.5 text-[12px] font-medium text-amber-700 dark:text-amber-300">
-            <AlertTriangle className="h-3.5 w-3.5 flex-none" aria-hidden />
-            Blocking go-live
-          </div>
-          <ul className="mt-1.5 flex flex-col gap-1.5 text-amber-800 dark:text-amber-200/90">
-            {blockers.map((id) => {
-              const item = itemById.get(id);
-              return (
-                <li key={id} className="flex flex-col">
-                  <span className="text-[12.5px] font-medium">
-                    · {blockerLabel(id, item?.label ?? id)}
-                  </span>
-                  {item?.uiCopy ? (
-                    <span className="pl-3 text-[11.5px] text-amber-700/85 dark:text-amber-200/70">
-                      {item.uiCopy}
-                    </span>
-                  ) : null}
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      ) : (
-        <div className="flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50/60 px-3 py-2.5 text-[12.5px] text-emerald-700 dark:border-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-300">
-          <CheckCircle2 className="h-3.5 w-3.5 flex-none" aria-hidden />
-          No readiness blockers reported by the server.
-        </div>
+      {SECTION_ORDER.map((section) =>
+        bySection[section].length > 0 ? (
+          <Section
+            key={section}
+            title={SECTION_LABEL[section]}
+            items={bySection[section]}
+            providerFor={providerFor}
+          />
+        ) : null,
       )}
-
-      {/* Every readiness item — honest status, flat (staff see the whole picture). */}
-      <div className="flex flex-col gap-1.5">
-        <h3 className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-          Checks
-        </h3>
-        <ul className="flex flex-col divide-y divide-border/60">
-          {items.map((item) => (
-            <li key={item.id} className="flex items-start justify-between gap-3 py-2">
-              <div className="flex min-w-0 flex-col">
-                <span className="text-[13px] font-medium text-foreground">{item.label}</span>
-                <span className="text-[12px] text-muted-foreground">{item.uiCopy}</span>
-              </div>
-              <Chip tone={statusTone(item.status)}>{STATUS_LABEL[item.status]}</Chip>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      {/* Provider / config connections. */}
-      {readiness.providers.length > 0 ? (
-        <div className="flex flex-col gap-1.5">
-          <h3 className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-            Providers &amp; config
-          </h3>
-          <ul className="flex flex-col divide-y divide-border/60">
-            {readiness.providers.map((p) => (
-              <li key={p.provider} className="flex items-start justify-between gap-3 py-2">
-                <div className="flex min-w-0 flex-col gap-0.5">
-                  <span className="text-[13px] font-medium text-foreground">
-                    {providerDisplayName(p.provider)}
-                  </span>
-                  {/* Plain-language main copy — never raw booleans. */}
-                  <span className="text-[12px] text-muted-foreground">{providerPlainText(p)}</span>
-                  {/* Raw technical fields live behind an optional, collapsed disclosure. */}
-                  <details className="mt-0.5 text-[11px] text-muted-foreground/80">
-                    <summary className="cursor-pointer select-none text-muted-foreground/70 hover:text-muted-foreground">
-                      Technical details
-                    </summary>
-                    <div className="mt-1 flex flex-col gap-0.5 pl-1 font-mono">
-                      <span>detail: {p.detail}</span>
-                      <span>source: {p.source}</span>
-                    </div>
-                  </details>
-                </div>
-                <Chip tone={statusTone(p.status)}>{STATUS_LABEL[p.status]}</Chip>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
     </Card>
   );
 }

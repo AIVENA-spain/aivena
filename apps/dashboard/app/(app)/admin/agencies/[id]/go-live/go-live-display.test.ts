@@ -12,6 +12,11 @@ import {
   blockerLabel,
   providerDisplayName,
   providerPlainText,
+  sectionForItem,
+  SECTION_ORDER,
+  goLiveState,
+  GO_LIVE_STATE_LABEL,
+  providerItemId,
   STATUS_LABEL,
   type Attestations,
 } from "./go-live-display";
@@ -170,6 +175,60 @@ describe("go-live-display — provider copy is plain, never raw booleans (issue 
   it("providerDisplayName is human-readable", () => {
     expect(providerDisplayName("email")).toBe("Email sending");
     expect(providerDisplayName("whatsapp")).toBe("WhatsApp sending");
+  });
+  it("providerItemId joins provider state → item id, incl. the asymmetric multilang one", () => {
+    expect(providerItemId("email")).toBe("provider.email");
+    expect(providerItemId("whatsapp")).toBe("provider.whatsapp");
+    expect(providerItemId("calendar")).toBe("provider.calendar");
+    expect(providerItemId("property_feed")).toBe("provider.property_feed");
+    // API item id is provider.templates_multilang, provider-state id is whatsapp_templates_multilang
+    expect(providerItemId("whatsapp_templates_multilang")).toBe("provider.templates_multilang");
+    expect(sectionForItem(providerItemId("whatsapp_templates_multilang"))).toBe("providers");
+  });
+});
+
+describe("go-live-display — section grouping (issue B)", () => {
+  it("maps identity/team items to Agency setup", () => {
+    for (const id of ["identity.name", "identity.website", "identity.timezone", "team.owner"]) {
+      expect(sectionForItem(id)).toBe("setup");
+    }
+  });
+  it("maps provider items to Providers", () => {
+    for (const id of ["provider.email", "provider.whatsapp", "provider.calendar"]) {
+      expect(sectionForItem(id)).toBe("providers");
+    }
+  });
+  it("maps consent to Legal & consent", () => {
+    expect(sectionForItem("consent.captured")).toBe("legal");
+  });
+  it("maps posture + lifecycle to Safety / manual checks (NOT setup)", () => {
+    expect(sectionForItem("posture.approval_first")).toBe("safety");
+    expect(sectionForItem("lifecycle.go_live")).toBe("safety");
+  });
+  it("unknown ids fall back to setup (never crash)", () => {
+    expect(sectionForItem("some.future.item")).toBe("setup");
+  });
+  it("SECTION_ORDER covers the 4 sections", () => {
+    expect(SECTION_ORDER).toEqual(["setup", "providers", "legal", "safety"]);
+  });
+});
+
+describe("go-live-display — top summary verdict (issue B)", () => {
+  it("reflects the lifecycle for live/paused/blocked regardless of blocker count", () => {
+    expect(goLiveState("live", 5)).toBe("live");
+    expect(goLiveState("paused", 0)).toBe("paused");
+    expect(goLiveState("blocked", 0)).toBe("blocked");
+  });
+  it("setup/ready_for_pilot → not_ready with blockers, ready without", () => {
+    expect(goLiveState("setup", 3)).toBe("not_ready");
+    expect(goLiveState("setup", 0)).toBe("ready");
+    expect(goLiveState("ready_for_pilot", 2)).toBe("not_ready");
+    expect(goLiveState(null, 0)).toBe("ready");
+  });
+  it("every state has a human label", () => {
+    for (const s of ["live", "paused", "blocked", "ready", "not_ready"] as const) {
+      expect(GO_LIVE_STATE_LABEL[s].length).toBeGreaterThan(0);
+    }
   });
 });
 

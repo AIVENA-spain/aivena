@@ -108,6 +108,17 @@ export function blockerLabel(id: string, apiLabel: string): string {
 
 // ── Provider/config plain language (issue 3) ─────────────────────────────────
 
+/**
+ * The readiness ITEM id for a provider state. The API is asymmetric for one
+ * provider: the item id is `provider.templates_multilang` but the provider-state
+ * id is `whatsapp_templates_multilang` — normalize that so the panel can join the
+ * provider state (plain copy + technical detail) onto its item row.
+ */
+export function providerItemId(p: ReadinessProviderId): string {
+  const suffix = p === "whatsapp_templates_multilang" ? "templates_multilang" : p;
+  return `provider.${suffix}`;
+}
+
 export function providerDisplayName(p: ReadinessProviderId): string {
   switch (p) {
     case "email": return "Email sending";
@@ -168,6 +179,67 @@ export function providerPlainText(p: {
     return statusSentence(p.status, name);
   }
   return detail;
+}
+
+// ── Grouped sections + top summary (issue B — cut the noisy flat wall) ────────
+
+export type GoLiveSection = "setup" | "providers" | "legal" | "safety";
+
+export const SECTION_ORDER: GoLiveSection[] = ["setup", "providers", "legal", "safety"];
+
+export const SECTION_LABEL: Record<GoLiveSection, string> = {
+  setup: "Agency setup",
+  providers: "Providers",
+  legal: "Legal & consent",
+  safety: "Safety / manual checks",
+};
+
+/** Which section a readiness item id belongs to (posture/lifecycle are "safety",
+ *  not "setup", even though the API area letter groups them under A/C). */
+const ITEM_SECTION: Record<string, GoLiveSection> = {
+  "identity.name": "setup",
+  "identity.logo": "setup",
+  "identity.colors": "setup",
+  "identity.phone": "setup",
+  "identity.website": "setup",
+  "identity.areas": "setup",
+  "identity.languages": "setup",
+  "identity.timezone": "setup",
+  "identity.working_hours": "setup",
+  "identity.tone": "setup",
+  "team.owner": "setup",
+  "team.agents": "setup",
+  "provider.email": "providers",
+  "provider.whatsapp": "providers",
+  "provider.templates_multilang": "providers",
+  "provider.calendar": "providers",
+  "provider.property_feed": "providers",
+  "consent.captured": "legal",
+  "posture.approval_first": "safety",
+  "lifecycle.go_live": "safety",
+};
+
+export function sectionForItem(id: string): GoLiveSection {
+  return ITEM_SECTION[id] ?? "setup";
+}
+
+/** Top-of-page verdict. `not_ready`/`ready` are the setup-phase verdicts (based on
+ *  real, self-blocker-filtered readiness); paused/blocked/live reflect the lifecycle. */
+export type GoLiveState = "live" | "paused" | "blocked" | "ready" | "not_ready";
+
+export const GO_LIVE_STATE_LABEL: Record<GoLiveState, string> = {
+  live: "Live",
+  paused: "Paused",
+  blocked: "Blocked",
+  ready: "Ready to progress",
+  not_ready: "Not ready",
+};
+
+export function goLiveState(pilot: PilotStatus | null, blockerCount: number): GoLiveState {
+  if (pilot === "live") return "live";
+  if (pilot === "paused") return "paused";
+  if (pilot === "blocked") return "blocked";
+  return blockerCount === 0 ? "ready" : "not_ready";
 }
 
 /** The lifecycle transitions the control offers (maps 1:1 to PILOT_TARGETS on the API). */

@@ -16,6 +16,15 @@ import type {
   AgencyStatus,
   PlanTier,
 } from "@/lib/api/admin-types";
+import { isTestAgency } from "./test-agencies";
+
+function TestBadge() {
+  return (
+    <span className="inline-flex items-center rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+      Test agency
+    </span>
+  );
+}
 
 function PlanPill({ tier }: { tier: PlanTier }) {
   return (
@@ -72,10 +81,19 @@ export function AgenciesList({
   const [status, setStatus] = useState<string>("all");
   const [plan, setPlan] = useState<string>("all");
   const [search, setSearch] = useState("");
+  // TEMP UI-only: internal test agencies are hidden by default (see ./test-agencies).
+  // No DB/archive/delete — just this view. The real is_test-flag solution is parked.
+  const [showTest, setShowTest] = useState(false);
+
+  const testCount = useMemo(
+    () => initialAgencies.filter((a) => isTestAgency(a.id)).length,
+    [initialAgencies],
+  );
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return initialAgencies.filter((a) => {
+      if (!showTest && isTestAgency(a.id)) return false;
       if (status !== "all" && a.status !== status) return false;
       if (plan !== "all" && a.plan_tier !== plan) return false;
       if (q) {
@@ -86,7 +104,7 @@ export function AgenciesList({
       }
       return true;
     });
-  }, [initialAgencies, status, plan, search]);
+  }, [initialAgencies, status, plan, search, showTest]);
 
   if (loadError) {
     return (
@@ -156,6 +174,17 @@ export function AgenciesList({
           <option value="pro">Pro</option>
           <option value="unlimited">Unlimited</option>
         </Select>
+        {testCount > 0 ? (
+          <label className="flex flex-none cursor-pointer items-center gap-1.5 whitespace-nowrap text-[12.5px] text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={showTest}
+              onChange={(e) => setShowTest(e.target.checked)}
+              className="h-3.5 w-3.5 accent-muted-foreground"
+            />
+            Show test agencies ({testCount})
+          </label>
+        ) : null}
       </div>
 
       {filtered.length === 0 ? (
@@ -189,8 +218,11 @@ export function AgenciesList({
                     className="cursor-pointer border-b border-border/60 transition-colors last:border-0 hover:bg-muted/50"
                   >
                     <td className="px-4 py-3">
-                      <div className="font-medium text-foreground">
-                        {a.trading_name ?? a.slug}
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-foreground">
+                          {a.trading_name ?? a.slug}
+                        </span>
+                        {isTestAgency(a.id) ? <TestBadge /> : null}
                       </div>
                       <div className="font-mono text-[11px] text-muted-foreground">
                         {a.slug}
@@ -233,8 +265,11 @@ export function AgenciesList({
                 className="flex flex-col gap-1.5 px-4 py-3 transition-colors hover:bg-muted/50"
               >
                 <div className="flex items-center justify-between gap-2">
-                  <span className="font-medium text-foreground">
-                    {a.trading_name ?? a.slug}
+                  <span className="flex items-center gap-2">
+                    <span className="font-medium text-foreground">
+                      {a.trading_name ?? a.slug}
+                    </span>
+                    {isTestAgency(a.id) ? <TestBadge /> : null}
                   </span>
                   <PlanPill tier={a.plan_tier} />
                 </div>

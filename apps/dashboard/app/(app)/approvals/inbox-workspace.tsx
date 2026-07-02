@@ -1087,6 +1087,12 @@ function ThreadAndReply({
   const tThread = useTranslations("inbox.thread");
   const tErr = useTranslations("errors");
 
+  // Phone-first: show only the most recent messages by default so the agent
+  // isn't scrolling the whole history to act. "Show older" reveals the rest.
+  // Desktop is unchanged — older messages stay visible via `lg:contents`.
+  const RECENT_MOBILE = 4;
+  const [showOlder, setShowOlder] = useState(false);
+
   const headSubline = `${lead.area ?? "—"} · ${languageLabel(lead.language)}`;
 
   // WhatsApp 24h-window state (null for non-WhatsApp leads or if the lookup
@@ -1111,6 +1117,8 @@ function ThreadAndReply({
     const el = threadBodyRef.current;
     if (el && threadReady) el.scrollTop = el.scrollHeight;
   }, [threadReady, lead.leadId]);
+  // Re-collapse to the recent view whenever a different lead is opened.
+  useEffect(() => setShowOlder(false), [lead.leadId]);
 
   // W11-lite viewing pipeline (v1.14.1): when the task is a detected viewing
   // intent, the operator confirms a time rather than (only) sending a reply.
@@ -1157,15 +1165,38 @@ function ThreadAndReply({
             {tErr("pageLoad")}
           </div>
         ) : threadEntry.data && threadEntry.data.thread.length > 0 ? (
-          dedupeThread(threadEntry.data.thread).map((m) => (
-            <ThreadBubble
-              key={m.id}
-              msg={m}
-              leadLanguage={lead.language}
-              failureReason={failureByMsg.get(m.id) ?? null}
-              t={tThread}
-            />
-          ))
+          (() => {
+            const all = dedupeThread(threadEntry.data.thread);
+            const older = all.length > RECENT_MOBILE ? all.slice(0, all.length - RECENT_MOBILE) : [];
+            const recent = older.length > 0 ? all.slice(all.length - RECENT_MOBILE) : all;
+            const bubble = (m: (typeof all)[number]) => (
+              <ThreadBubble
+                key={m.id}
+                msg={m}
+                leadLanguage={lead.language}
+                failureReason={failureByMsg.get(m.id) ?? null}
+                t={tThread}
+              />
+            );
+            return (
+              <>
+                {/* Mobile-only: reveal older history (desktop always shows it). */}
+                {older.length > 0 && !showOlder ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowOlder(true)}
+                    className="mx-auto mb-1 rounded-full border border-border bg-card px-3 py-1 text-[11.5px] text-muted-foreground hover:bg-muted lg:hidden"
+                  >
+                    Show older messages ({older.length})
+                  </button>
+                ) : null}
+                <div className={cn(showOlder ? "contents" : "hidden lg:contents")}>
+                  {older.map(bubble)}
+                </div>
+                {recent.map(bubble)}
+              </>
+            );
+          })()
         ) : (
           <>
             {threadEntry?.data?.originalMessage ? (

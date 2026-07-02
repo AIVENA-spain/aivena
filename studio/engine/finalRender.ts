@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { abs } from "../src/lib/paths";
 import { renderEditable, loadEditableManifest, renderFilledSource, EditableManifest, Palette } from "./renderEditable";
+import { runVisualQA } from "./visualQA";
 import { composeOne } from "../src/lib/compose";
 
 // FINAL-OUTPUT PROOF: run one REAL property through the closest real/full engine path for every promoted
@@ -123,6 +124,9 @@ async function main() {
     // editability: every slot -> a data-editable <text>; capture the rendered text per slot
     const slotTexts = m.text_slots.map((s) => ({ id: s.id, role: s.role, source: s.source, text: s.text, editable: new RegExp(`data-slot-id="${s.id}"[^>]*data-editable="true"`).test(r.svg) }));
     report.editable_text[id] = { count: r.editableTextCount, slots: slotTexts, all_editable: slotTexts.every((s) => s.editable), photos_filled: r.photosFilled };
+    // visual QA gate (divider/edge clearance, safe zones, meaningful title, clean knockouts, legibility)
+    report.qa = report.qa || {};
+    report.qa[id] = await runVisualQA(m, r);
   }
 
   // ---- #7 extras: original-vs-editable side-by-side + agency-vs-alt recolour ----
@@ -189,7 +193,7 @@ async function main() {
   fs.writeFileSync(path.join(OUT, "final_report.json"), JSON.stringify(report, null, 2) + "\n");
   console.log("== real-property final renders ==");
   for (const id of ["4", "11", "1", "7"]) console.log(`  #${id}: ${report.engine_paths[id]}  -> ${report.renders[id]}`);
-  for (const id of ["11", "1", "7"]) { const e = report.editable_text[id]; console.log(`  #${id} editable: ${e.count} <text>, all_editable=${e.all_editable}, photos=${e.photos_filled}`); }
+  for (const id of ["11", "1", "7"]) { const e = report.editable_text[id]; const q = report.qa[id]; console.log(`  #${id} editable: ${e.count} <text>, all_editable=${e.all_editable}, photos=${e.photos_filled} | visualQA ${q.ok ? "PASS" : "FAIL"}${q.ok ? "" : " — " + q.checks.filter((c: any) => !c.ok).map((c: any) => `${c.slot || ""}:${c.name}`).join("; ")}`); }
   console.log(`  #4 QA: ${JSON.stringify(report.four_qa)}`);
   console.log(`  -> ${path.relative(abs("."), OUT)}/{contact_sheet.png, final_*.png, sevenside_side_by_side.png, seven_recolour.png}`);
 }

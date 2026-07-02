@@ -1,8 +1,22 @@
 import fs from "node:fs";
 import path from "node:path";
 import { z } from "zod";
+import fontkit from "fontkit";
 import { abs } from "../src/lib/paths";
 import { renderTemplatePng, pngToRGBA, RGBA } from "../src/lib/render";
+
+// font-key -> file, for width measurement (auto-fit). Same faces resvg loads from fonts/.
+const FONT_FILES: Record<string, string> = {
+  Poppins: "fonts/Poppins-Regular.ttf", LibreCaslonDisplay: "fonts/LibreCaslonDisplay-Regular.ttf",
+  LibreCaslonText: "fonts/LibreCaslonText-Regular.ttf", Prata: "fonts/Prata-Regular.ttf", Tinos: "fonts/Tinos-Regular.ttf",
+};
+const _fk = new Map<string, any>();
+function fkFont(key: string): any { const rel = FONT_FILES[key] || FONT_FILES.Poppins; if (!_fk.has(rel)) _fk.set(rel, (fontkit as any).openSync(abs(rel))); return _fk.get(rel); }
+// advance width (px) of one line at a given size — used to shrink text so it never overruns its bbox/dividers.
+export function textWidth(fontKey: string, text: string, size: number): number {
+  try { const f = fkFont(fontKey); const run = f.layout(text); let u = 0; for (const g of run.glyphs) u += g.advanceWidth; return (u * size) / f.unitsPerEm; }
+  catch { return text.length * size * 0.55; }
+}
 
 // Generic editable-template renderer (multi-template; simpler than the #4-bespoke composeOne). Renders the
 // tokenized Canva SVG as a background raster (photo filled), then knocks out each text region and draws REAL
@@ -21,6 +35,8 @@ export const EditableSlot = z.object({
   size: z.number().optional(),        // explicit font-size px (overrides the bbox heuristic; enables tight display type)
   line_height: z.number().optional(), // explicit line pitch px (for tight multi-line titles)
   weight: z.string().optional(),      // "bold"/"600"/"700" -> faux-bold (same-colour stroke; vault has no bold face yet)
+  pad: z.number().optional(),         // inner horizontal padding px kept clear of the bbox edges (divider clearance)
+  valign: z.enum(["top", "center", "bottom"]).optional(), // vertical placement of the text block in the bbox (default top)
 });
 export const EditableManifest = z.object({
   template_id: z.string(),
@@ -30,10 +46,13 @@ export const EditableManifest = z.object({
   photo_slots: z.array(z.object({ token: z.string() })).optional(),     // multi-photo templates (hero + thumbnails)
   colour_tokens: z.record(z.string(), z.object({ default: z.string(), locked: z.boolean() })),
   overlay: z.object({ role: z.string(), opacity: z.number() }).optional(), // legibility scrim over the photo
+  knockout_regions: z.array(z.tuple([z.number(), z.number(), z.number(), z.number()])).optional(), // knock out stray baked source art (local-bg fill, no text)
   text_slots: z.array(EditableSlot),
 });
 export type EditableManifest = z.infer<typeof EditableManifest>;
 export type Palette = Record<string, string>;
+// per-slot rendered geometry (returned for the visual-QA pass): effective size + measured width + block extent.
+export type SlotLayout = { id: string; bbox: number[]; size: number; pad: number; avail: number; maxLineWidth: number; blockTop: number; blockBottom: number };
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 function roleHex(m: EditableManifest, palette: Palette, role: string): string {
@@ -77,25 +96,43 @@ export async function renderEditable(m: EditableManifest, palette: Palette = {},
 
   let overlay = "";
   let editableTextCount = 0;
+  const layout: SlotLayout[] = [];
+  // knock out stray baked source artifacts (e.g. a leftover bracket glyph) before drawing text
+  for (const kr of m.knockout_regions ?? []) {
+    overlay += `<rect x="${kr[0]}" y="${kr[1]}" width="${kr[2] - kr[0]}" height="${kr[3] - kr[1]}" fill="${localBg(bgRGBA, kr)}"/>`;
+  }
   for (const s of m.text_slots) {
     const [x0, y0, x1, y1] = s.bbox;
     const lines = s.text.split("\n");
     const bw = x1 - x0, bh = y1 - y0;
-    const fontSize = s.size ?? Math.max(8, (bh / lines.length) * 0.78);
-    const lineH = s.line_height ?? (bh / lines.length);
+    const pad = s.pad ?? 0;
+    let fontSize = s.size ?? Math.max(8, (bh / lines.length) * 0.78);
+    let lineH = s.line_height ?? (bh / lines.length);
+    // AUTO-FIT: shrink so the widest line fits the bbox width minus padding — keeps text off divider lines /
+    // edges and prevents overrun when real property values are longer than the template's placeholder copy.
+    const avail = bw - 2 * pad;
+    const widest = Math.max(...lines.map((l) => textWidth(s.font, l, fontSize)));
+    if (widest > avail && avail > 0) { const r = avail / widest; fontSize = Math.max(8, fontSize * r); lineH = lineH * r; }
+    // vertical auto-fit: if the block is taller than the bbox (e.g. a 3-line title), shrink size + line pitch
+    if (lines.length * lineH > bh && bh > 0) { const rv = bh / (lines.length * lineH); fontSize = Math.max(8, fontSize * rv); lineH = lineH * rv; }
+    // vertical placement of the text block within the bbox (top default; center/bottom balance short blocks)
+    const blockH = lines.length * lineH;
+    const topPad = s.valign === "center" ? Math.max(0, (bh - blockH) / 2) : s.valign === "bottom" ? Math.max(0, bh - blockH) : 0;
     const fill = roleHex(m, palette, s.role);
     const anchor = s.align === "center" ? "middle" : s.align === "right" ? "end" : "start";
-    const tx = s.align === "center" ? x0 + bw / 2 : s.align === "right" ? x1 : x0;
+    const tx = s.align === "center" ? x0 + bw / 2 : s.align === "right" ? x1 - pad : x0 + pad;
     const knockHex = localBg(bgRGBA, [x0, y0, x1, y1]);
     // faux-bold: the vault has no bold face, so a same-colour stroke thickens the regular glyph to match
     // a bold source title/label (flagged needs_seed — this is a visual approximation, not the real face).
     const bold = /bold|[6-9]00/.test(s.weight || "");
     const strokeAttr = bold ? ` stroke="${fill}" stroke-width="${(fontSize * 0.042).toFixed(2)}" paint-order="stroke"` : "";
+    const maxLineWidth = Math.max(...lines.map((l) => textWidth(s.font, l, fontSize)));
+    layout.push({ id: s.id, bbox: [x0, y0, x1, y1], size: +fontSize.toFixed(1), pad, avail: +(bw - 2 * pad).toFixed(1), maxLineWidth: +maxLineWidth.toFixed(1), blockTop: +(y0 + topPad).toFixed(1), blockBottom: +(y0 + topPad + lines.length * lineH).toFixed(1) });
     // knockout the baked (outlined) source text in this region, then draw editable <text> on top
     overlay += `<rect x="${x0}" y="${y0}" width="${bw}" height="${bh}" fill="${knockHex}"/>`;
     lines.forEach((ln, i) => {
-      // when size is explicit, place the first baseline from the ascent so tight display type sits inside the bbox
-      const by = s.size ? (y0 + fontSize * 0.82 + i * lineH) : (y0 + (i + 1) * lineH - lineH * 0.22);
+      // when size/valign is explicit, place the first baseline from the ascent so type sits inside the bbox
+      const by = (s.size || s.valign) ? (y0 + topPad + fontSize * 0.82 + i * lineH) : (y0 + (i + 1) * lineH - lineH * 0.22);
       overlay += `<text data-slot-id="${s.id}" data-editable="true" data-role="${s.role}" x="${tx}" y="${by.toFixed(1)}" text-anchor="${anchor}" font-family="${s.font}" font-size="${fontSize.toFixed(1)}"${strokeAttr} fill="${fill}">${esc(ln)}</text>`;
       editableTextCount++;
     });
@@ -108,7 +145,7 @@ export async function renderEditable(m: EditableManifest, palette: Palette = {},
   const png = await (await import("sharp")).default(bgPng).composite([{ input: overlayPng, top: 0, left: 0 }]).png().toBuffer();
   // svg kept for record + the editability/photo-fill checks (grep for <text data-editable> + the embedded image)
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><image x="0" y="0" width="${W}" height="${H}" xlink:href="${bgUri}"/>${overlay}</svg>`;
-  return { svg, png, editableTextCount, photosFilled };
+  return { svg, png, editableTextCount, photosFilled, layout };
 }
 
 export function loadEditableManifest(p: string): EditableManifest {

@@ -51,6 +51,26 @@ Not "waiting for a navy/gold brand decision" — the work is **role→token mapp
     - **Geometry re-measured from the rendered baked source** (`out/bucket/7.dbg_bg.png`), not the auto-intake draft — every bbox/size derived from actual ink positions. This fixed a **doubling artifact** (overlay text mis-placed above the baked title): its root cause was a **resvg quirk** — text in the SAME svg as a large embedded data-URI `<image>` mis-scales; `renderEditable` now renders the overlay ALONE (transparent) and composites it onto the bg raster with `sharp`.
     - **Per-slot `size` / `line_height` / `weight` (faux-bold)** added to the slot schema for display-type fidelity; the vault has no bold geometric-sans face (needs_seed), so bold is approximated with a same-colour stroke (Poppins-Regular base). Title weight/size now closely matches the original.
     - Proof art (gitignored): `out/engine/7/proof/side_by_side_original_vs_editable.png` (full-size ORIGINAL vs EDITABLE), `recolour_A_vs_B.png`, `editable_A_default.png`. **Awaiting Christian's browser/visual sign-off — not auto-marked SOLID.** Remaining fidelity gap = the true bold title face (needs_seed; Canva source-font confirmation owed).
+
+## Real-property final render + Visual QA (2026-07-02)
+`engine/finalRender.ts` runs ONE real property (IC-28746, agency Mediterráneo Costa Homes; real facts + brand + photos) through the closest real/full engine path per promoted template (#4 → `composeOne`; #11/#1/#7 → `renderEditable`) and emits agency-ready renders + a contact sheet. A first pass surfaced real visual defects; the fixes below are now in the engine + gated by `engine/visualQA.ts`.
+
+**Renderer upgrades (`renderEditable.ts`):**
+- **Auto-fit (width + height):** each slot's text is measured with `fontkit` (`textWidth`) and the font-size + line pitch shrink so the widest line fits `bbox width − 2·pad` AND the block fits the bbox height. Real property values (longer than the Canva placeholders) no longer overrun or touch dividers/edges. `composeOne` already had fit; the generic renderer now does too.
+- **`pad` / `valign`** per slot: inner padding kept clear of edges (divider clearance) + vertical placement (`top`/`center`/`bottom`) so short real titles balance in a box sized for longer placeholder copy (fixed #7 "title too high").
+- **`knockout_regions`** (manifest-level): erase stray baked source artifacts (local-bg fill) — fixed the #11 stray glyph. The cleanest fix is usually to widen the owning text slot's bbox so its own knockout covers the whole baked strip.
+- **`#4` title logic (`compose.ts`):** now a meaningful property title `"{Type} in {City}"` (e.g. "Chalet in San Javier") instead of a vague one-word type ("chalet"). Both parts are property facts → still traces to facts (no-hand-assembly + fact_safe stay clean; engine.test green).
+
+**Visual QA gates (`engine/visualQA.ts`, run on every real render + a standalone regression):**
+1. **no text touching divider lines / edges** — measured width ≤ `bbox − 2·pad`.
+2. **title/body stay in safe zones** — the rendered text block is vertically inside its bbox.
+3. **title copy meaningful with real data** — a title slot must be ≥2 words or ≥10 chars (rejects "chalet").
+4. **no stray baked artifacts** — each declared `knockout_region` renders as a near-uniform patch (low luma stddev).
+5. **contact/info bars not cramped** — same width+padding rule applies to cta/contact slots.
+6. **legibility floor** — auto-fit never shrinks below 12px.
+7. **final agency-ready real-property render, not only technical proof** — enforced by `finalRender.ts` running this QA on the real renders (fails the run on any check).
+
+Outputs (gitignored `out/realprop/IC-28746/`): `final_{4,11,1,7}.png`, `contact_sheet.png`, `#7` side-by-side + recolour, `final_report.json` (per-slot editability + QA). **Not marked SOLID — awaiting Christian visual review.** Remaining cross-template gaps: portal-watermarked scraped photos (data-source, not layout); title fonts still needs_seed placeholders; #7 baked feature icons don't semantically match arbitrary features.
 - First-proof grade for both — fonts default (Poppins / Libre Caslon Display) pending per-template adjudication; geometry from the auto-intake draft; no invented property facts (stats = real bedroom/bathroom; title/labels/contact = template/agency copy). Remaining per-template manual needs: precise geometry measurement, font adjudication, overlay/contrast tuning, and badge-pill styling (badge currently re-rendered as plain text).
 
 ## Font adjudication — titles (2026-06-27)

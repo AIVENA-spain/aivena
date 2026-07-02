@@ -21,9 +21,9 @@
     "cta": { "default": "#ffffff", "locked": false }
   },
   "text_slots": [
-    { "id": "stat_left", "role": "stat.value", "source": "property_fact", "bbox": [90, 118, 330, 182], "font": "Poppins", "align": "center", "text": "1 BEDROOM" },
-    { "id": "stat_center", "role": "stat.label", "source": "template_copy", "bbox": [420, 118, 660, 182], "font": "Poppins", "align": "center", "text": "LIVING ROOM" },
-    { "id": "stat_right", "role": "stat.value", "source": "property_fact", "bbox": [750, 118, 998, 182], "font": "Poppins", "align": "center", "text": "1 BATHROOM" },
+    { "id": "stat_left", "role": "stat.value", "source": "property_fact", "bbox": [90, 118, 356, 182], "size": 32, "pad": 18, "valign": "center", "font": "Poppins", "align": "center", "text": "1 BEDROOM" },
+    { "id": "stat_center", "role": "stat.label", "source": "template_copy", "bbox": [392, 118, 688, 182], "size": 32, "pad": 18, "valign": "center", "font": "Poppins", "align": "center", "text": "LIVING ROOM" },
+    { "id": "stat_right", "role": "stat.value", "source": "property_fact", "bbox": [724, 118, 998, 182], "size": 32, "pad": 18, "valign": "center", "font": "Poppins", "align": "center", "text": "1 BATHROOM" },
     { "id": "title", "role": "title", "source": "template_copy", "bbox": [133, 440, 947, 900], "font": "LibreCaslonDisplay", "align": "center", "text": "OPEN\nHOUSE" },
     { "id": "badge", "role": "badge.text", "source": "template_copy", "bbox": [82, 1224, 312, 1272], "font": "Poppins", "align": "left", "text": "SCHEDULE A CALL" },
     { "id": "contact", "role": "cta", "source": "template_copy", "bbox": [345, 1224, 998, 1272], "font": "Poppins", "align": "left", "text": "123-456-7890   ·   reallygreatsite.com" }

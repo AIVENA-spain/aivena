@@ -26,7 +26,7 @@
   },
   "text_slots": [
     { "id": "brand", "role": "badge.text", "source": "template_copy", "bbox": [721, 44, 910, 98], "size": 24, "line_height": 26, "weight": "bold", "font": "Poppins", "align": "left", "text": "Rimberio\nReal Estate" },
-    { "id": "title", "role": "title", "source": "template_copy", "bbox": [69, 590, 600, 840], "size": 85, "line_height": 87, "weight": "bold", "font": "Poppins", "align": "left", "text": "Discover\nYour Dream\nReal Estate" },
+    { "id": "title", "role": "title", "source": "template_copy", "bbox": [69, 590, 600, 840], "size": 85, "line_height": 87, "valign": "center", "weight": "bold", "font": "Poppins", "align": "left", "text": "Discover\nYour Dream\nReal Estate" },
     { "id": "body", "role": "subtitle/body", "source": "template_copy", "bbox": [70, 898, 590, 974], "size": 30, "line_height": 37, "font": "Poppins", "align": "left", "text": "This ultra-modern luxury home is\ndesigned for the bold and refined." },
     { "id": "features_header", "role": "stat.label", "source": "template_copy", "bbox": [658, 540, 905, 575], "size": 30, "weight": "bold", "font": "Poppins", "align": "left", "text": "Home Features:" },
     { "id": "feat_1", "role": "stat.value", "source": "template_copy", "bbox": [718, 612, 1010, 648], "size": 31, "font": "Poppins", "align": "left", "text": "4 Bedrooms" },

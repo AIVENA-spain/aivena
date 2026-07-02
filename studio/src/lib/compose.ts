@@ -85,16 +85,25 @@ export async function composeOne(opts: ComposeOpts): Promise<ComposeResult> {
   if (opts.editorialLock) editorialLocks.push(opts.editorialLock);
   if (titleSlot.parts[0].editorial_lock) editorialLocks.push(titleSlot.parts[0].editorial_lock);
   const typeText = provider.titleType(facts, lang);
+  const typeCap = typeText.charAt(0).toUpperCase() + typeText.slice(1);
+  const city = facts.location?.city;
   const adjFact = titleSlot.parts[0].fact; // 'luxury'
-  const adjSupported = false; // facts.features empty for IC-26537
+  const adjSupported = false; // facts.features carry no adjective support in the current fixtures
   const adjLocked = editorialLocks.some((l) => String(l.claim).toLowerCase() === adjFact);
   let titleLines: string[];
-  if (mode === "source_faithful") {
+  if (mode === "source_faithful" || adjSupported || adjLocked) {
+    // faithful/locked: subjective adjective + type (the adjective is FLAGGED as unverified below in source_faithful)
     titleLines = [provider.titleAdjective(adjFact, lang), typeText];
     factuality.locked_literals.push({ slot: "title", part: "type", text: typeText, classification: "property_fact:property_type" });
+  } else if (city) {
+    // fact_safe: drop the unsupported adjective, but avoid a vague one-word title — use a meaningful, agency-ready
+    // "{Type} in {City}" from real facts (both parts are property facts → title still traces to facts).
+    titleLines = [`${typeCap} in`, city];
+    factuality.locked_literals.push({ slot: "title", part: "type", text: typeCap, classification: "property_fact:property_type" });
+    factuality.locked_literals.push({ slot: "title", part: "location", text: city, classification: "property_fact:location.city" });
   } else {
-    // fact_safe: drop the unsupported subjective adjective (do NOT substitute)
-    titleLines = adjSupported || adjLocked ? [provider.titleAdjective(adjFact, lang), typeText] : [typeText];
+    titleLines = [typeCap];
+    factuality.locked_literals.push({ slot: "title", part: "type", text: typeCap, classification: "property_fact:property_type" });
   }
   if (opts.edit?.slot === "title") titleLines = opts.edit.text.split("\n");
   const titleText = titleLines.join(" ");

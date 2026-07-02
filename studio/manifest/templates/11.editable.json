@@ -5,6 +5,7 @@
   "canvas": { "width": 1080, "height": 1350 },
   "source_svg": "assets/11/source.tokenized.svg",
   "photo_token": "@@PHOTO0@@",
+  "knockout_regions": [[986, 122, 1016, 156]],
   "colour_tokens": {
     "background": { "default": "#ffffff", "locked": false },
     "overlay": { "default": "#ffffff", "locked": true },
@@ -21,7 +22,7 @@
   },
   "text_slots": [
     { "id": "brand", "role": "badge.text", "source": "template_copy", "bbox": [104, 130, 330, 171], "font": "Poppins", "align": "left", "text": "YOUR AGENCY" },
-    { "id": "eyebrow", "role": "accent", "source": "template_copy", "bbox": [770, 126, 990, 150], "font": "Poppins", "align": "right", "text": "PROPERTY LISTING" },
+    { "id": "eyebrow", "role": "accent", "source": "template_copy", "bbox": [760, 124, 1014, 152], "pad": 36, "font": "Poppins", "align": "right", "text": "PROPERTY LISTING" },
     { "id": "title", "role": "title", "source": "template_copy", "bbox": [100, 263, 945, 470], "font": "Poppins", "align": "left", "text": "STEP INTO YOUR\nDREAM HOME" },
     { "id": "address", "role": "cta", "source": "property_fact", "bbox": [463, 1203, 974, 1233], "font": "Poppins", "align": "left", "text": "Torrevieja, Alicante" }
   ]

@@ -3,6 +3,13 @@
 Source of truth for converting **all** Canva templates in the `studio-templates` Supabase bucket into
 **editable** Studio manifests (editable text mandatory; agency free recolouring via a colour wheel).
 
+## APPROVAL STATUS (2026-07-02, Christian visual review)
+Templates **#4, #1, #11, #7 are APPROVED FOR THIS STAGE** (template-engine proof) — real property facts + agency brand + colour-wheel + editable text + adaptive layout all verified on real listings across property types.
+- **#4** approved for this stage · **#1** approved for this stage · **#11** approved for this stage · **#7** approved for this stage (after the title vertical-balance fix).
+- **NOT production-final / not client-ready final marketing output yet:** the source property photos are **scraped/watermarked** (a **data-source limitation**, not a template/engine defect). Do NOT call this production-final for real clients — client-ready output needs clean/agency-supplied photos.
+- Other open items are non-blocking for stage approval: title fonts are `needs_seed` category-correct placeholders pending the real Canva source fonts.
+- No deploy (Studio is local tooling; not the deployed API/dashboard). Do not start new Studio templates unless the control tower assigns it.
+
 ## Discovery truth (2026-06-27, `engine/bucketInventory.ts`)
 - **13 templates** present: 1, 2, 3, 4, 5, 6, 6b, 7, 8, 10, 11, 14, 15. All **1080×1350 (4:5 portrait) = Instagram/current**. **0 Facebook/later** (FB is the separate, later size family — not in this bucket yet). Missing numbers (9, 12, 13, 16–22) are not uploaded; "ALL 20+" is the eventual target, not the current bucket.
 - Each template has a raw `<n>.svg` (Canva export, up to ~22 MB) + a `<n>.tokenized.svg` (photo-tokenized, ~75–300 KB) + `backups/` and `fix_*` variants.
@@ -93,7 +100,7 @@ Control tower accepted the systemic direction + #4/#1 as near-approved; two rema
 Christian visually approved #4, #1, #11 for this stage. **#7 only**: layout-only refinement of the title's vertical balance (title block felt high/awkward — the title→body gap was 114px vs ~45px outer margins).
 - **#7 title/body repositioned** (manifest-only): title bbox `[69,590,600,840]`→`[69,646,600,846]` (down + shorter), body bbox `[70,898,590,974]`→`[70,876,590,956]` + `valign:center`. Title+details now read as one unit centred in the left column between the hero and the thumbnail strip. Measured gaps hero→title / title→body / body→thumb ≈ **73/65/75** (was 42/114/56). General — valign centres whatever the derived title/body are; consistent across chalet/apartment/bungalow.
 - **Baked-text knockout follows the SOURCE, not the new box:** moving the box exposed the fixed-position outlined baked title/body, so `knockout_regions` gained the baked title `[60,590,606,842]` + baked body `[64,896,592,974]` (erase-at-source; draw repositioned text on top). No engine change, no icons, adaptive-panel logic untouched.
-- **All green:** cross-type QA 9/9, editable proofs 5/5, phase-2 PASS, engine.test PASS, tsc 0. Only `manifest/templates/7.editable.json` changed. **#7 awaiting Christian's re-review of the new #7 sheet; #4/#1/#11 untouched; none SOLID.**
+- **All green:** cross-type QA 9/9, editable proofs 5/5, phase-2 PASS, engine.test PASS, tsc 0. Only `manifest/templates/7.editable.json` changed. **RESULT: #7 APPROVED FOR THIS STAGE (Christian, 2026-07-02) after the title-balance fix — all four (#4/#1/#11/#7) approved for this stage. See the APPROVAL STATUS block at the top (not production-final; watermarked source photos).**
 - First-proof grade for both — fonts default (Poppins / Libre Caslon Display) pending per-template adjudication; geometry from the auto-intake draft; no invented property facts (stats = real bedroom/bathroom; title/labels/contact = template/agency copy). Remaining per-template manual needs: precise geometry measurement, font adjudication, overlay/contrast tuning, and badge-pill styling (badge currently re-rendered as plain text).
 
 ## Font adjudication — titles (2026-06-27)

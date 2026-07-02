@@ -148,6 +148,7 @@ export default async function AppLayout({
           greetingKey={greetingKey}
           dateLabel={dateLabel}
           inboxCount={inboxCount}
+          brandName={brandName}
         />
         <main className="flex-1 overflow-y-auto px-6 py-6">
           <div className="mx-auto w-full max-w-7xl">{children}</div>

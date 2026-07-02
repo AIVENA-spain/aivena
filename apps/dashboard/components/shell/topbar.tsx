@@ -8,6 +8,7 @@ import { Bell, CalendarDays, Search } from "lucide-react";
 import type { UserContext } from "@/lib/auth/context";
 import { PRIMARY_NAV, ADMIN_NAV } from "./nav-config";
 import { ThemeSwitcher } from "./theme-switcher";
+import { MobileNav } from "./mobile-nav";
 
 function activeNavTKey(
   pathname: string,
@@ -30,6 +31,7 @@ export function Topbar({
   greetingKey,
   dateLabel,
   inboxCount,
+  brandName,
 }: {
   ctx: UserContext;
   /** Pre-computed on the server so client hydration matches. */
@@ -42,6 +44,9 @@ export function Topbar({
    * than lying with a fake count or zero state.
    */
   inboxCount: number | null;
+  /** Agency brand name — threaded to the mobile drawer's account chip so it
+   *  matches the desktop sidebar. Null tolerated (chip falls back). */
+  brandName: string | null;
 }) {
   const pathname = usePathname();
   const tNav = useTranslations("nav");
@@ -93,10 +98,13 @@ export function Topbar({
   }
 
   return (
-    <header className="flex h-16 items-center gap-3 border-b border-border bg-card px-6">
+    <header className="flex h-16 items-center gap-3 border-b border-border bg-card px-4 sm:px-6">
+      {/* Mobile nav trigger — hidden from md up (desktop uses the sidebar) */}
+      <MobileNav ctx={ctx} inboxCount={inboxCount} brandName={brandName} />
+
       {/* Title + subtitle */}
       <div className="flex min-w-0 flex-col leading-tight">
-        <h1 className="text-[19px] font-bold tracking-[-0.02em] text-foreground">
+        <h1 className="truncate text-[17px] font-bold tracking-[-0.02em] text-foreground sm:text-[19px]">
           {title}
         </h1>
         <p className="truncate text-[12.5px] text-muted-foreground">

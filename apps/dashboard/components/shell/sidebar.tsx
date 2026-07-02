@@ -37,17 +37,18 @@ const ICONS: Record<NavItem["iconName"], LucideIcon> = {
   admin: Shield,
 };
 
-function isActive(pathname: string, href: string) {
+export function isActive(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-function NavLink({
+export function NavLink({
   item,
   active,
   label,
   badge,
   soonLabel,
+  onNavigate,
 }: {
   item: NavItem;
   active: boolean;
@@ -55,11 +56,15 @@ function NavLink({
   badge?: number | null;
   /** Localized label for the "Soon" pill, only rendered if item.soon is set. */
   soonLabel: string;
+  /** Optional — the mobile drawer passes this to close itself on navigation.
+   *  The desktop sidebar omits it, so its behaviour is unchanged. */
+  onNavigate?: () => void;
 }) {
   const Icon = ICONS[item.iconName];
   return (
     <Link
       href={item.href}
+      onClick={onNavigate}
       className={cn(
         "flex items-center gap-2.5 rounded-[9px] px-3 py-2 text-[13px] font-medium transition-colors",
         active

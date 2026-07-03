@@ -1,14 +1,15 @@
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { Users, MailWarning, Clock, Sparkles, TriangleAlert } from "lucide-react";
+import { Users, MailWarning, Clock, Sparkles, TriangleAlert, ArrowRight } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { PageHeading } from "../../_components/page-heading";
-import { getAgencyAction } from "../../admin-actions";
+import { getAgencyAction, getAgencyReadinessAction } from "../../admin-actions";
 import { AgencyTabs } from "./agency-tabs";
 import { AdminControls } from "./admin-controls";
+import { GoLiveSummary } from "./go-live/go-live-summary";
 import type { AgencyStatus } from "@/lib/api/admin-types";
 
 export const dynamic = "force-dynamic";
@@ -38,7 +39,10 @@ export default async function AgencyDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const res = await getAgencyAction(id);
+  const [res, readinessRes] = await Promise.all([
+    getAgencyAction(id),
+    getAgencyReadinessAction(id),
+  ]);
 
   if (!res.ok) {
     return (
@@ -153,6 +157,21 @@ export default async function AgencyDetailPage({
 
       <AgencyTabs agencyId={agency.id} />
 
+      {/* Pilot-readiness snapshot — the go-live verdict + top gaps at a glance, with a
+          jump to the full Go-Live screen. Read-only; reuses the C4 summary component. */}
+      {readinessRes.ok ? (
+        <div className="flex flex-col gap-1.5">
+          <GoLiveSummary readiness={readinessRes.data} />
+          <Link
+            href={`/admin/agencies/${agency.id}/go-live`}
+            className="inline-flex w-fit items-center gap-1 text-[13px] text-brand underline-offset-4 hover:underline"
+          >
+            Open the Go-Live screen
+            <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+          </Link>
+        </div>
+      ) : null}
+
       <AdminControls
         agencyId={agency.id}
         slug={agency.slug}
@@ -193,15 +212,32 @@ export default async function AgencyDetailPage({
         </Card>
 
         <Card className="gap-3 p-4">
-          <h2 className="text-sm font-semibold text-foreground">Next steps</h2>
-          <p className="font-serif text-[13.5px] italic text-muted-foreground">
-            Settings, branding, team, and the audit trail open up in the next
-            phases.
-          </p>
+          <h2 className="text-sm font-semibold text-foreground">Manage this agency</h2>
           <ul className="flex flex-col gap-1.5 text-[13px] text-muted-foreground">
-            <li>· Set plan quotas, channels, and working hours</li>
-            <li>· Upload a logo and tune brand colours and voice</li>
-            <li>· Invite team members and manage roles</li>
+            <li>
+              ·{" "}
+              <Link
+                href={`/admin/agencies/${agency.id}/go-live`}
+                className="text-brand underline-offset-4 hover:underline"
+              >
+                Go-Live
+              </Link>{" "}
+              — readiness + pilot lifecycle (setup → live)
+            </li>
+            <li>
+              ·{" "}
+              <Link
+                href={`/admin/agencies/${agency.id}/audit`}
+                className="text-brand underline-offset-4 hover:underline"
+              >
+                Audit
+              </Link>{" "}
+              — full staff action history
+            </li>
+            <li>· Archive / restore + mark-as-test — the Admin controls above</li>
+            <li className="text-muted-foreground/70">
+              · Settings, branding, and team editing arrive in a later phase
+            </li>
           </ul>
           {pending_invitation_count > 0 ? (
             <p className="text-[12.5px] text-amber-600 dark:text-amber-400">

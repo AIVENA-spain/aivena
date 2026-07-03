@@ -9,7 +9,7 @@ import { PROPS, ensureImages, renderEditableFor } from "./finalRender";
 // set). Renders #5/#14/#3/#6, demonstrates the production ELIGIBILITY GUARD (#14 Just Sold), and builds review
 // sheets. NEW = the templates built to standard this batch.
 const NEW = ["5", "14", "3", "6"];
-const NAME: Record<string, string> = { "5": "#5 Listing", "14": "#14 Just Sold", "3": "#3 Luxury Villa", "6": "#6 Open House Gallery" };
+const NAME: Record<string, string> = { "5": "#5 Listing", "14": "#14 Just Sold", "3": "#3 Luxury (Canva p3)", "6": "#6 Property Gallery (Canva p6)" };
 
 async function main() {
   const sharp = (await import("sharp")).default;
@@ -50,7 +50,7 @@ async function main() {
   const ch = (await sharp(cells[`${NEW[0]}_${PROPS[0].id}`]).metadata()).height || 375;
   const cols = PROPS.length;
   const W = cols * cw + (cols + 1) * gap, H = 46 + NEW.length * (ch + 28 + gap) + gap + 36;
-  const comps: any[] = [{ input: bar(W, "STUDIO BATCH 2 — #5 Listing · #14 Just Sold · #3 Luxury Villa · #6 Open House Gallery — same engine, across property types", 46, 15), left: 0, top: 0 }];
+  const comps: any[] = [{ input: bar(W, "STUDIO BATCH 2 (replicated to Canva) — #5 Listing · #14 Just Sold · #3 Luxury (Canva p3) · #6 Property Gallery (Canva p6) — across property types", 46, 14), left: 0, top: 0 }];
   for (let ri = 0; ri < NEW.length; ri++) for (let ci = 0; ci < cols; ci++) {
     const p = PROPS[ci]; const x = gap + ci * (cw + gap), y = 46 + gap + ri * (ch + 28 + gap);
     const demo = NEW[ri] === "14" ? "  (DEMO — not a real sold claim)" : "";

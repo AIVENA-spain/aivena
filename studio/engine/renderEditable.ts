@@ -9,6 +9,7 @@ import { renderTemplatePng, pngToRGBA, RGBA } from "../src/lib/render";
 const FONT_FILES: Record<string, string> = {
   Poppins: "fonts/Poppins-Regular.ttf", LibreCaslonDisplay: "fonts/LibreCaslonDisplay-Regular.ttf",
   LibreCaslonText: "fonts/LibreCaslonText-Regular.ttf", Prata: "fonts/Prata-Regular.ttf", Tinos: "fonts/Tinos-Regular.ttf",
+  GreatVibes: "fonts/GreatVibes-Regular.ttf", "Great Vibes": "fonts/GreatVibes-Regular.ttf",
 };
 const _fk = new Map<string, any>();
 function fkFont(key: string): any { const rel = FONT_FILES[key] || FONT_FILES.Poppins; if (!_fk.has(rel)) _fk.set(rel, (fontkit as any).openSync(abs(rel))); return _fk.get(rel); }

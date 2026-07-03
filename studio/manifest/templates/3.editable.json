@@ -1,12 +1,11 @@
 {
   "template_id": "3",
-  "title_font_status": "needs_seed — luxury display serif; Libre Caslon Display used as a category-correct placeholder. The source's script accent on the type word is not reproduced (no script font in the vault). Canva source font confirmation owed.",
-  "_note": "#3 (Luxury Property — PHOTO-DOMINANT). NOTE: this is a generic 'Luxury Property / Luxury Living' template — the title uses the REAL property type ({Type} in {City}), NOT a hardcoded 'Villa'. Property photo fills the canvas under a LIGHT scrim (premium, not buried); a small tracked 'LUXURY' eyebrow sits above an elegant serif title, then a description, then a baked dark bottom bar with the 3-stat row (house/bed/bath icons kept — universally correct) + website. Every text bbox measured from the rendered baked source. Colours are role tokens (agency colour wheel). No invented facts: title type + stats are real; the description is generated from real type/city; website is agency copy. Missing facts hide their slot.",
+  "title_font_status": "LUXURY word = Libre Caslon Display (display serif, category-correct); the type word = Great Vibes (seeded OFL script) to replicate the Canva source's script accent. Exact Canva faces unconfirmed (needs_seed) but the STYLE now matches (serif + script).",
+  "_note": "#3 (Luxury Property = Canva page 3 'LUXURY Villa'). FAITHFUL REPLICATION: the baked source composition (full-dark photo background + baked rounded stat box + icons) is kept; only the dynamic text is knocked out and redrawn EDITABLE at the same positions/style — NOT redesigned. NO manifest overlay (the source already bakes the dark overlay). Title = 'LUXURY' (serif) + {Type} in SCRIPT (Great Vibes, seeded) overlapping to the right, matching the source. Centered uppercase subtitle. 3-stat row inside the baked rounded box (house/bed/bath icons kept — universally correct). Website centered at bottom. Colours are role tokens (agency wheel); default cream to match the source's white monochrome. No invented facts: title type + stats are real; subtitle is template marketing copy with real type/city; website is agency copy. Missing facts hide their slot.",
   "canvas": { "width": 1080, "height": 1350 },
   "source_svg": "assets/3/source.tokenized.svg",
   "photo_token": "@@PHOTO0@@",
-  "scrim": { "role": "overlay", "stops": [{ "offset": 0, "opacity": 0.62 }, { "offset": 0.27, "opacity": 0.36 }, { "offset": 0.44, "opacity": 0.05 }, { "offset": 1, "opacity": 0.05 }] },
-  "knockout_regions": [[80, 56, 996, 384]],
+  "knockout_regions": [[80, 66, 990, 240], [96, 258, 982, 366]],
   "colour_tokens": {
     "background": { "default": "#000000", "locked": false },
     "overlay": { "default": "#000000", "locked": true },
@@ -22,12 +21,12 @@
     "cta": { "default": "#ffffff", "locked": false }
   },
   "text_slots": [
-    { "id": "eyebrow", "role": "accent", "source": "template_copy", "bbox": [88, 70, 640, 112], "size": 30, "tracking": 9, "weight": "600", "valign": "center", "font": "Poppins", "align": "left", "text": "LUXURY" },
-    { "id": "title", "role": "title", "source": "property_fact", "bbox": [84, 118, 992, 272], "size": 80, "line_height": 84, "valign": "top", "font": "LibreCaslonDisplay", "align": "left", "text": "Villa in\nLa Zenia" },
-    { "id": "body", "role": "subtitle/body", "source": "property_fact", "bbox": [88, 292, 992, 372], "size": 31, "line_height": 39, "valign": "center", "font": "Poppins", "align": "left", "text": "A refined home offering comfort and style\nin one of the area's most sought-after spots." },
-    { "id": "stat_area", "role": "subtitle/body", "source": "property_fact", "bbox": [120, 1086, 398, 1124], "size": 25, "pad": 6, "weight": "600", "valign": "center", "font": "Poppins", "align": "center", "text": "500 M²" },
-    { "id": "stat_beds", "role": "subtitle/body", "source": "property_fact", "bbox": [404, 1086, 676, 1124], "size": 25, "pad": 6, "weight": "600", "valign": "center", "font": "Poppins", "align": "center", "text": "3 BEDROOMS" },
-    { "id": "stat_baths", "role": "subtitle/body", "source": "property_fact", "bbox": [682, 1086, 958, 1124], "size": 25, "pad": 6, "weight": "600", "valign": "center", "font": "Poppins", "align": "center", "text": "2 BATHROOMS" },
-    { "id": "cta_web", "role": "accent", "source": "template_copy", "bbox": [116, 1206, 964, 1266], "size": 30, "pad": 12, "weight": "600", "valign": "center", "font": "Poppins", "align": "center", "text": "WWW.REALLYGREATSITE.COM" }
+    { "id": "luxury", "role": "title", "source": "template_copy", "bbox": [88, 79, 718, 238], "size": 175, "font": "LibreCaslonDisplay", "align": "left", "text": "LUXURY" },
+    { "id": "type_script", "role": "accent", "source": "property_fact", "bbox": [720, 88, 1048, 236], "size": 118, "font": "GreatVibes", "align": "left", "text": "Villa" },
+    { "id": "subtitle", "role": "subtitle/body", "source": "template_copy", "bbox": [110, 266, 970, 362], "size": 27, "line_height": 32, "font": "Poppins", "align": "center", "text": "THIS BRAND-NEW LUXURY HOME IS NOW AVAILABLE\nAND OFFERS EVERYTHING YOU NEED FOR A STYLISH,\nCOMFORTABLE, AND CONVENIENT LIFESTYLE." },
+    { "id": "stat_area", "role": "subtitle/body", "source": "property_fact", "bbox": [120, 1082, 398, 1128], "size": 26, "pad": 6, "weight": "600", "valign": "center", "font": "Poppins", "align": "center", "text": "500 M²" },
+    { "id": "stat_beds", "role": "subtitle/body", "source": "property_fact", "bbox": [404, 1082, 676, 1128], "size": 26, "pad": 6, "weight": "600", "valign": "center", "font": "Poppins", "align": "center", "text": "3 BEDROOMS" },
+    { "id": "stat_baths", "role": "subtitle/body", "source": "property_fact", "bbox": [682, 1082, 958, 1128], "size": 26, "pad": 6, "weight": "600", "valign": "center", "font": "Poppins", "align": "center", "text": "2 BATHROOMS" },
+    { "id": "cta_web", "role": "accent", "source": "template_copy", "bbox": [240, 1222, 840, 1260], "size": 26, "pad": 10, "weight": "600", "valign": "center", "font": "Poppins", "align": "center", "text": "WWW.REALLYGREATSITE.COM" }
   ]
 }

@@ -73,6 +73,7 @@ export default async function SettingsPage() {
       ) : (
         <ChecklistSection
           checklist={settings.setup_checklist}
+          emailSendProven={settings.profile.send_proven}
           lanes={lanes}
           channels={settings.channels}
           workingHours={settings.config.working_hours}

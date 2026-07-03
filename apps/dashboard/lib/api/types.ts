@@ -114,7 +114,10 @@ export type SettingsResponse = {
     from_email: string;
     from_name: string;
     reply_to: string;
-    domain_verified: boolean;
+    // J3: the profile emits a REAL proof-of-send signal, never a faked "domain_verified".
+    // send_proven = a genuinely successful Resend send exists for this agency (provider_audit_log).
+    send_proven: boolean;
+    send_proven_at: string | null;
   };
   config: {
     approve_before_sending: boolean;

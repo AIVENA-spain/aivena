@@ -7,18 +7,21 @@ import { hasAutoSend } from "../automation-safety";
 /**
  * Setup status strip — top of the Settings page. Six tiles, each driven by real
  * data and truthful: WhatsApp shows "Replies off" while not live; AI rules show
- * "Review" only if reply_rules still auto-sends; email reflects real domain
- * verification; hours derived from the working_hours config.
+ * "Review" only if reply_rules still auto-sends; email is "Ready" only when a real
+ * send is proven (send_proven — a successful Resend send), NEVER a faked
+ * "domain verified" claim; hours derived from the working_hours config.
  */
 const WH_DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"] as const;
 
 export async function ChecklistSection({
   checklist,
+  emailSendProven,
   lanes,
   channels,
   workingHours,
 }: {
   checklist: SettingsResponse["setup_checklist"];
+  emailSendProven: boolean;
   lanes: ReplyLanes | undefined;
   channels: SettingsResponse["channels"];
   workingHours: WorkingHours;
@@ -34,7 +37,9 @@ export async function ChecklistSection({
 
   const items: Array<{ key: string; label: string; done: boolean; status: string }> = [
     { key: "branding", label: t("stepBranding"), done: checklist.branding_added.completed, status: checklist.branding_added.completed ? t("stReady") : t("stActionNeeded") },
-    { key: "domain", label: t("stepDomain"), done: checklist.domain_verified.completed, status: checklist.domain_verified.completed ? t("stVerified") : t("stActionNeeded") },
+    // Honest: green only when a real send is proven (send_proven), never on the old
+    // "from_email has an @domain" fake. "Ready" — we never claim "domain verified" (J3).
+    { key: "domain", label: t("stepDomain"), done: emailSendProven, status: emailSendProven ? t("stReady") : t("stActionNeeded") },
     { key: "whatsapp", label: t("stepWhatsapp"), done: whatsappLive, status: whatsappLive ? t("stConnected") : t("stRepliesOff") },
     { key: "team", label: t("stepTeam"), done: checklist.team_invited.completed, status: checklist.team_invited.completed ? t("stReady") : t("stInviteAgents") },
     { key: "ai_rules", label: t("stepAiRules"), done: aiReady, status: aiReady ? t("stReady") : t("stReview") },

@@ -1,0 +1,12 @@
+-- Security hardening (approved 2026-07-03): close the pre-existing, unused table-level DELETE
+-- grant on public.agencies for aivena_app. No code path issues DELETE FROM agencies (archive is
+-- soft-delete via the status column through the staff-gated SECURITY DEFINER admin_set_agency_status
+-- RPC), so this is metadata-only, zero rows affected, and removes a latent hard-delete vector —
+-- enforcing "archive = never hard-delete" at the grant layer to match the code layer.
+--
+-- Proven 2026-07-03: has_table_privilege(aivena_app,'agencies','DELETE') TRUE → FALSE; SELECT/INSERT
+-- and the column-level UPDATE grants (status editable, pilot_status not) unchanged; admin
+-- archive/restore still works (soft, via status; audited) after the revoke.
+--
+-- Rollback: GRANT DELETE ON public.agencies TO aivena_app;
+REVOKE DELETE ON public.agencies FROM aivena_app;

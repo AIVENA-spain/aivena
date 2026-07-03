@@ -1,15 +1,16 @@
 {
   "template_id": "6",
-  "title_font_status": "n/a — the 'Open House' title is a baked script+serif post-type mark, LEFT baked (fixed identity; no script face in the vault). Only the handle + property context + booking CTA are editable text.",
-  "_note": "#6 (Open House Gallery — LIGHT: 4-photo grid on cream). The empty right column is now used for REAL property CONTEXT + a stronger booking CTA (filling the space + balancing the baked 'Open House' title). Editable <text>: agency handle, property '{Type} in {City}', price, and a 2-line 'BOOK A VIEWING' + phone (NO invented open-house date — the agency schedules it). The 'Open House' script title + the 4-photo grid positions are BAKED (fixed source composition; cannot be repositioned from the manifest — flagged). No invented facts: photos + type/city/price are real; handle/phone/CTA are agency copy. Active-listing post type (open house) — no status guard needed.",
+  "title_font_status": "needs_seed — elegant display serif; Libre Caslon Display used as a category-correct placeholder (matches the source's serif). Canva source font confirmation owed.",
+  "_note": "#6 = Canva page 6 'Villa in Torrevieja' (bucket 6b — the bucket file numbers do NOT match Canva page numbers; bucket '6' was a different Open House Gallery — corrected). FAITHFUL REPLICATION: baked composition kept (4-photo grid hero+3 thumbnails, stat icons), only dynamic text knocked out + redrawn EDITABLE at the same positions/style. Right column: agency handle (top), serif '{Type} in {City}' title, uppercase subtitle, then the baked stat row (house/bed/bath icons kept — universally correct) with editable labels. No invented facts: photos + type/city + stats are real; subtitle is template marketing copy; handle is agency. Active-listing post type — no status guard.",
   "canvas": { "width": 1080, "height": 1350 },
-  "source_svg": "assets/6/source.tokenized.svg",
+  "source_svg": "assets/6b/source.tokenized.svg",
   "photo_slots": [
     { "token": "@@PHOTO0@@" },
     { "token": "@@PHOTO1@@" },
     { "token": "@@PHOTO2@@" },
     { "token": "@@PHOTO3@@" }
   ],
+  "knockout_regions": [[588, 806, 1016, 1112], [584, 1206, 1038, 1324]],
   "colour_tokens": {
     "background": { "default": "#efe9de", "locked": true },
     "overlay": { "default": "#efe9de", "locked": true },
@@ -25,10 +26,11 @@
     "cta": { "default": "#1a1a1a", "locked": false }
   },
   "text_slots": [
-    { "id": "handle", "role": "badge.text", "source": "template_copy", "bbox": [640, 82, 1010, 128], "size": 30, "pad": 4, "weight": "600", "valign": "center", "font": "Poppins", "align": "right", "text": "@REALLYGREATSITE" },
-    { "id": "info_type", "role": "title", "source": "property_fact", "bbox": [560, 640, 1012, 700], "size": 40, "weight": "bold", "pad": 4, "valign": "center", "font": "Poppins", "align": "right", "text": "Villa in La Zenia" },
-    { "id": "info_price", "role": "accent", "source": "property_fact", "bbox": [560, 704, 1012, 752], "size": 34, "weight": "600", "pad": 4, "valign": "center", "font": "Poppins", "align": "right", "text": "€300,000" },
-    { "id": "cta_book", "role": "subtitle/body", "source": "template_copy", "bbox": [560, 812, 1012, 860], "size": 36, "weight": "bold", "pad": 4, "valign": "center", "font": "Poppins", "align": "right", "text": "BOOK A VIEWING" },
-    { "id": "cta_phone", "role": "subtitle/body", "source": "template_copy", "bbox": [560, 862, 1012, 906], "size": 30, "pad": 4, "valign": "center", "font": "Poppins", "align": "right", "text": "+123-456-7890" }
+    { "id": "handle", "role": "badge.text", "source": "template_copy", "bbox": [660, 90, 1012, 128], "size": 26, "pad": 4, "weight": "600", "valign": "center", "font": "Poppins", "align": "right", "text": "@REALLYGREATSITE" },
+    { "id": "title", "role": "title", "source": "property_fact", "bbox": [596, 652, 978, 794], "size": 74, "line_height": 76, "valign": "center", "font": "LibreCaslonDisplay", "align": "right", "text": "Villa in\nTorrevieja" },
+    { "id": "subtitle", "role": "subtitle/body", "source": "template_copy", "bbox": [596, 808, 1012, 1110], "size": 28, "line_height": 41, "valign": "center", "font": "Poppins", "align": "right", "text": "THIS ULTRA-MODERN\nLUXURY HOME IS\nDESIGNED FOR THE BOLD\nAND REFINED." },
+    { "id": "stat_area", "role": "subtitle/body", "source": "property_fact", "bbox": [588, 1220, 686, 1316], "size": 19, "pad": 4, "weight": "600", "valign": "center", "font": "Poppins", "align": "center", "text": "500 M²" },
+    { "id": "stat_beds", "role": "subtitle/body", "source": "property_fact", "bbox": [692, 1220, 900, 1316], "size": 19, "pad": 4, "weight": "600", "valign": "center", "font": "Poppins", "align": "center", "text": "3 BEDROOMS" },
+    { "id": "stat_baths", "role": "subtitle/body", "source": "property_fact", "bbox": [906, 1220, 1032, 1316], "size": 19, "pad": 4, "weight": "600", "valign": "center", "font": "Poppins", "align": "center", "text": "2 BATHROOMS" }
   ]
 }

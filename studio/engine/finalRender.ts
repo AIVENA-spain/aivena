@@ -80,9 +80,8 @@ function deriveSlots(p: any, agency: any, templateId: string): Record<string, { 
     brand: T(splitTwoLines(agency.name)),
   };
   if (templateId === "3") return {
-    eyebrow: T("LUXURY"),
-    title: T(`${typeCap} in\n${p.city}`),
-    body: T(`A refined home offering comfort and style\nin ${loc}.`),
+    luxury: T("LUXURY"), type_script: T(typeCap),
+    subtitle: T(`This brand-new ${p.type} in ${p.city} is now available\nand offers everything you need for a stylish,\ncomfortable, and convenient lifestyle.`.toUpperCase()),
     stat_area: T(p.size ? `${p.size} M²` : ""),
     stat_beds: T(plural(p.beds, "Bedroom").toUpperCase()),
     stat_baths: T(plural(p.baths, "Bathroom").toUpperCase()),
@@ -90,10 +89,11 @@ function deriveSlots(p: any, agency: any, templateId: string): Record<string, { 
   };
   if (templateId === "6") return {
     handle: T(`@${agency.web.replace(/^www\./, "").replace(/\.[a-z.]+$/, "")}`),
-    info_type: T(`${typeCap} in ${p.city}`),
-    info_price: T(price || ""),
-    // no invented open-house date — the agency schedules it; show an honest, actionable booking CTA + phone
-    cta_book: T("BOOK A VIEWING"), cta_phone: T(agency.phone),
+    title: T(`${typeCap} in\n${p.city}`),
+    // subtitle kept as the template's generic marketing copy (4 lines, matching the source) — editable, not a fact
+    stat_area: T(p.size ? `${p.size} M²` : ""),
+    stat_beds: T(plural(p.beds, "Bedroom").toUpperCase()),
+    stat_baths: T(plural(p.baths, "Bathroom").toUpperCase()),
   };
   return {};
 }

@@ -1,0 +1,32 @@
+{
+  "template_id": "6",
+  "title_font_status": "n/a — the 'Open House' title is a baked script+serif post-type mark and is LEFT baked (fixed identity; the vault has no script face). Only the handle + booking CTA are editable text.",
+  "_note": "#6 (Open House Gallery — LIGHT: 4-photo grid on cream). Editable <text>: the agency social handle (top-right) and a 2-line booking CTA (replacing the placeholder date/time — no invented open-house date; the agency schedules it, so an honest 'BOOK A VIEWING' + phone is shown). The 'Open House' title is a baked script+serif post-type mark and stays baked (fixed identity; no script font in the vault). Photos fill the 4 slots (hero + 3 thumbnails). No invented facts: photos + handle + phone are real; the CTA is agency copy. This is an ACTIVE-listing post type (open house), so no status guard is needed.",
+  "canvas": { "width": 1080, "height": 1350 },
+  "source_svg": "assets/6/source.tokenized.svg",
+  "photo_slots": [
+    { "token": "@@PHOTO0@@" },
+    { "token": "@@PHOTO1@@" },
+    { "token": "@@PHOTO2@@" },
+    { "token": "@@PHOTO3@@" }
+  ],
+  "colour_tokens": {
+    "background": { "default": "#efe9de", "locked": true },
+    "overlay": { "default": "#efe9de", "locked": true },
+    "title": { "default": "#1a1a1a", "locked": false },
+    "subtitle/body": { "default": "#1a1a1a", "locked": false },
+    "accent": { "default": "#1a1a1a", "locked": false },
+    "badge.fill": { "default": "#1a1a1a", "locked": false },
+    "badge.text": { "default": "#1a1a1a", "locked": false },
+    "divider": { "default": "#1a1a1a", "locked": true },
+    "icon": { "default": "#1a1a1a", "locked": true },
+    "stat.label": { "default": "#1a1a1a", "locked": false },
+    "stat.value": { "default": "#1a1a1a", "locked": false },
+    "cta": { "default": "#1a1a1a", "locked": false }
+  },
+  "text_slots": [
+    { "id": "handle", "role": "badge.text", "source": "template_copy", "bbox": [660, 88, 1006, 126], "size": 26, "pad": 4, "weight": "600", "valign": "center", "font": "Poppins", "align": "right", "text": "@REALLYGREATSITE" },
+    { "id": "date", "role": "subtitle/body", "source": "template_copy", "bbox": [640, 660, 1006, 702], "size": 28, "weight": "600", "valign": "center", "font": "Poppins", "align": "right", "text": "07 DECEMBER, 2026" },
+    { "id": "time", "role": "subtitle/body", "source": "template_copy", "bbox": [640, 704, 1006, 744], "size": 28, "valign": "center", "font": "Poppins", "align": "right", "text": "9:00AM-12:00AM" }
+  ]
+}

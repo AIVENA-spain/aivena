@@ -22,12 +22,12 @@
   },
   "text_slots": [
     { "id": "title", "role": "title", "source": "property_fact", "bbox": [150, 78, 930, 486], "size": 150, "line_height": 182, "valign": "center", "font": "LibreCaslonDisplay", "align": "center", "text": "La Zenia\nApartment" },
-    { "id": "price_label", "role": "stat.label", "source": "template_copy", "bbox": [420, 784, 660, 818], "size": 26, "valign": "center", "font": "Poppins", "align": "center", "text": "START FROM:" },
-    { "id": "price_value", "role": "stat.value", "source": "property_fact", "bbox": [410, 820, 670, 862], "size": 32, "valign": "center", "font": "Poppins", "align": "center", "text": "€300 000" },
-    { "id": "stat_area", "role": "subtitle/body", "source": "property_fact", "bbox": [196, 1020, 406, 1066], "size": 26, "pad": 8, "valign": "center", "font": "Poppins", "align": "center", "text": "500 M²" },
-    { "id": "stat_beds", "role": "subtitle/body", "source": "property_fact", "bbox": [414, 1020, 656, 1066], "size": 26, "pad": 8, "valign": "center", "font": "Poppins", "align": "center", "text": "3 BEDROOMS" },
-    { "id": "stat_baths", "role": "subtitle/body", "source": "property_fact", "bbox": [664, 1020, 896, 1066], "size": 26, "pad": 8, "valign": "center", "font": "Poppins", "align": "center", "text": "2 BATHROOMS" },
-    { "id": "cta_label", "role": "stat.label", "source": "template_copy", "bbox": [420, 1120, 660, 1160], "size": 26, "valign": "center", "font": "Poppins", "align": "center", "text": "MORE INFO:" },
-    { "id": "cta_web", "role": "accent", "source": "template_copy", "bbox": [240, 1192, 844, 1236], "size": 28, "pad": 14, "valign": "center", "font": "Poppins", "align": "center", "text": "WWW.REALLYGREATSITE.COM" }
+    { "id": "price_label", "role": "stat.label", "source": "template_copy", "bbox": [410, 780, 670, 816], "size": 30, "weight": "600", "valign": "center", "font": "Poppins", "align": "center", "text": "START FROM:" },
+    { "id": "price_value", "role": "stat.value", "source": "property_fact", "bbox": [400, 818, 680, 866], "size": 44, "weight": "bold", "valign": "center", "font": "Poppins", "align": "center", "text": "€300 000" },
+    { "id": "stat_area", "role": "subtitle/body", "source": "property_fact", "bbox": [190, 1018, 408, 1068], "size": 31, "pad": 6, "weight": "600", "valign": "center", "font": "Poppins", "align": "center", "text": "500 M²" },
+    { "id": "stat_beds", "role": "subtitle/body", "source": "property_fact", "bbox": [412, 1018, 658, 1068], "size": 31, "pad": 6, "weight": "600", "valign": "center", "font": "Poppins", "align": "center", "text": "3 BEDROOMS" },
+    { "id": "stat_baths", "role": "subtitle/body", "source": "property_fact", "bbox": [662, 1018, 898, 1068], "size": 31, "pad": 6, "weight": "600", "valign": "center", "font": "Poppins", "align": "center", "text": "2 BATHROOMS" },
+    { "id": "cta_label", "role": "stat.label", "source": "template_copy", "bbox": [410, 1116, 670, 1158], "size": 30, "weight": "600", "valign": "center", "font": "Poppins", "align": "center", "text": "MORE INFO:" },
+    { "id": "cta_web", "role": "accent", "source": "template_copy", "bbox": [238, 1188, 846, 1240], "size": 40, "pad": 16, "weight": "bold", "valign": "center", "font": "Poppins", "align": "center", "text": "WWW.REALLYGREATSITE.COM" }
   ]
 }

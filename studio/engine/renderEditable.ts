@@ -45,6 +45,10 @@ export const EditableManifest = z.object({
   photo_token: z.string().optional(),                                   // single-photo templates
   photo_slots: z.array(z.object({ token: z.string() })).optional(),     // multi-photo templates (hero + thumbnails)
   colour_tokens: z.record(z.string(), z.object({ default: z.string(), locked: z.boolean() })),
+  // PRODUCTION ELIGIBILITY GUARD: a post whose truth depends on property STATUS (e.g. "Just Sold") must only
+  // render for a matching status or an explicit demo/test render — the engine must never auto-generate it for an
+  // active listing. Enforced by engine/eligibility.ts.
+  eligibility: z.object({ post_type: z.string(), requires_status: z.array(z.string()), note: z.string().optional() }).optional(),
   overlay: z.object({ role: z.string(), opacity: z.number() }).optional(), // legibility scrim over the photo
   knockout_regions: z.array(z.tuple([z.number(), z.number(), z.number(), z.number()])).optional(), // knock out stray baked source art (local-bg fill, no text)
   // ADAPTIVE PANEL: a baked panel (e.g. #7's feature panel) trimmed to its content — everything in `area` below

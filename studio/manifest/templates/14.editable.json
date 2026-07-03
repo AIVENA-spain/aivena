@@ -5,6 +5,7 @@
   "canvas": { "width": 1080, "height": 1350 },
   "source_svg": "assets/14/source.tokenized.svg",
   "photo_token": "@@PHOTO0@@",
+  "eligibility": { "post_type": "just_sold", "requires_status": ["sold"], "note": "Only render Just Sold for a SOLD property (or an explicit demo/test render) — never auto-generate it for an active listing." },
   "knockout_regions": [[840, 1126, 1016, 1306]],
   "colour_tokens": {
     "background": { "default": "#c9c5b9", "locked": true },
@@ -25,9 +26,9 @@
     { "id": "stat_area", "role": "stat.value", "source": "property_fact", "bbox": [288, 390, 452, 426], "size": 21, "pad": 6, "valign": "center", "font": "Poppins", "align": "center", "text": "500 M²" },
     { "id": "stat_beds", "role": "stat.value", "source": "property_fact", "bbox": [456, 390, 624, 426], "size": 21, "pad": 6, "valign": "center", "font": "Poppins", "align": "center", "text": "3 BEDROOMS" },
     { "id": "stat_baths", "role": "stat.value", "source": "property_fact", "bbox": [628, 390, 800, 426], "size": 21, "pad": 6, "valign": "center", "font": "Poppins", "align": "center", "text": "2 BATHROOMS" },
-    { "id": "contact_addr", "role": "subtitle/body", "source": "property_fact", "bbox": [90, 1144, 680, 1188], "size": 34, "valign": "center", "font": "Poppins", "align": "left", "text": "123 Anywhere St., Any City" },
-    { "id": "contact_phone", "role": "subtitle/body", "source": "template_copy", "bbox": [90, 1192, 680, 1240], "size": 34, "valign": "center", "font": "Poppins", "align": "left", "text": "+123-456-7890" },
-    { "id": "contact_web", "role": "cta", "source": "template_copy", "bbox": [90, 1252, 680, 1298], "size": 34, "valign": "center", "font": "Poppins", "align": "left", "text": "www.reallygreatsite.com" },
-    { "id": "brand", "role": "badge.text", "source": "template_copy", "bbox": [842, 1150, 1016, 1290], "size": 24, "line_height": 30, "weight": "600", "valign": "center", "font": "Poppins", "align": "center", "text": "Snag Space" }
+    { "id": "contact_addr", "role": "subtitle/body", "source": "property_fact", "bbox": [90, 1140, 700, 1186], "size": 38, "weight": "600", "valign": "center", "font": "Poppins", "align": "left", "text": "123 Anywhere St., Any City" },
+    { "id": "contact_phone", "role": "subtitle/body", "source": "template_copy", "bbox": [90, 1190, 700, 1240], "size": 37, "valign": "center", "font": "Poppins", "align": "left", "text": "+123-456-7890" },
+    { "id": "contact_web", "role": "cta", "source": "template_copy", "bbox": [90, 1250, 700, 1300], "size": 37, "valign": "center", "font": "Poppins", "align": "left", "text": "www.reallygreatsite.com" },
+    { "id": "brand", "role": "badge.text", "source": "template_copy", "bbox": [828, 1148, 1022, 1292], "size": 29, "line_height": 35, "weight": "bold", "valign": "center", "font": "Poppins", "align": "center", "text": "Snag Space" }
   ]
 }

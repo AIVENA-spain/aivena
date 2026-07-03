@@ -79,6 +79,19 @@ function deriveSlots(p: any, agency: any, templateId: string): Record<string, { 
     contact_addr: T(loc), contact_phone: T(agency.phone), contact_web: T(agency.web),
     brand: T(splitTwoLines(agency.name)),
   };
+  if (templateId === "3") return {
+    title: T(`LUXURY\n${typeCap}`),
+    body: T(`This ${p.type} in ${p.city} offers everything you need\nfor a stylish, comfortable, and convenient lifestyle.`),
+    stat_area: T(p.size ? `${p.size} M²` : ""),
+    stat_beds: T(plural(p.beds, "Bedroom").toUpperCase()),
+    stat_baths: T(plural(p.baths, "Bathroom").toUpperCase()),
+    cta_web: T(agency.web),
+  };
+  if (templateId === "6") return {
+    handle: T(`@${agency.web.replace(/^www\./, "").replace(/\.[a-z.]+$/, "")}`),
+    // no invented open-house date — the agency schedules it; show an honest, actionable booking CTA + phone
+    date: T("BOOK A VIEWING"), time: T(agency.phone),
+  };
   return {};
 }
 

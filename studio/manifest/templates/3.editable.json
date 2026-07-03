@@ -1,0 +1,31 @@
+{
+  "template_id": "3",
+  "title_font_status": "needs_seed — the source pairs a bold sans ('LUXURY') with a script accent (the type word); the vault has no script face, so the whole title is rendered in Libre Caslon Display (a luxury display serif) as a category-correct placeholder. The script flourish is not reproduced. Canva source font confirmation owed.",
+  "_note": "#3 (Luxury Villa — PHOTO-DOMINANT: property photo fills the canvas, white title + description over a legibility scrim, a baked dark bottom bar with the stat row + website). Every text bbox measured from the rendered baked source. Editable <text>: the LUXURY {type} title, the description body, the 3-stat row, and the website. Stat ICONS (house=area, bed=beds, bath=baths) are baked art and stay — universally correct. Colours are role tokens (agency colour wheel). No invented facts: title type + stats are real; the description is generated from real facts (type/city); website is agency copy. Missing facts hide their slot.",
+  "canvas": { "width": 1080, "height": 1350 },
+  "source_svg": "assets/3/source.tokenized.svg",
+  "photo_token": "@@PHOTO0@@",
+  "overlay": { "role": "overlay", "opacity": 0.4 },
+  "colour_tokens": {
+    "background": { "default": "#000000", "locked": false },
+    "overlay": { "default": "#000000", "locked": true },
+    "title": { "default": "#ffffff", "locked": false },
+    "subtitle/body": { "default": "#ffffff", "locked": false },
+    "accent": { "default": "#ffffff", "locked": false },
+    "badge.fill": { "default": "#ffffff", "locked": false },
+    "badge.text": { "default": "#ffffff", "locked": false },
+    "divider": { "default": "#ffffff", "locked": true },
+    "icon": { "default": "#ffffff", "locked": true },
+    "stat.label": { "default": "#ffffff", "locked": false },
+    "stat.value": { "default": "#ffffff", "locked": false },
+    "cta": { "default": "#ffffff", "locked": false }
+  },
+  "text_slots": [
+    { "id": "title", "role": "title", "source": "property_fact", "bbox": [84, 62, 986, 238], "size": 100, "line_height": 108, "valign": "center", "font": "LibreCaslonDisplay", "align": "left", "text": "LUXURY\nVilla" },
+    { "id": "body", "role": "subtitle/body", "source": "property_fact", "bbox": [104, 258, 980, 366], "size": 26, "line_height": 33, "valign": "center", "font": "Poppins", "align": "center", "text": "This brand-new luxury villa offers everything\nyou need for a stylish, comfortable,\nand convenient lifestyle." },
+    { "id": "stat_area", "role": "subtitle/body", "source": "property_fact", "bbox": [120, 1086, 398, 1124], "size": 25, "pad": 6, "weight": "600", "valign": "center", "font": "Poppins", "align": "center", "text": "500 M²" },
+    { "id": "stat_beds", "role": "subtitle/body", "source": "property_fact", "bbox": [404, 1086, 676, 1124], "size": 25, "pad": 6, "weight": "600", "valign": "center", "font": "Poppins", "align": "center", "text": "3 BEDROOMS" },
+    { "id": "stat_baths", "role": "subtitle/body", "source": "property_fact", "bbox": [682, 1086, 958, 1124], "size": 25, "pad": 6, "weight": "600", "valign": "center", "font": "Poppins", "align": "center", "text": "2 BATHROOMS" },
+    { "id": "cta_web", "role": "accent", "source": "template_copy", "bbox": [116, 1206, 964, 1266], "size": 30, "pad": 12, "weight": "600", "valign": "center", "font": "Poppins", "align": "center", "text": "WWW.REALLYGREATSITE.COM" }
+  ]
+}

@@ -37,6 +37,31 @@ export type AgencyAuditEntry = {
   metadata: Record<string, unknown>;
 };
 
+/** Editable core agency fields (Phase 2 — staff-only; slug/id/status/is_test/pilot excluded). */
+export type AgencyDetailsPatch = {
+  legal_name?: string;
+  trading_name?: string;
+  cif_nif?: string;
+  primary_region?: string;
+  primary_owner_email?: string;
+  primary_owner_phone?: string;
+  notes?: string;
+};
+
+/** One invitation row (GET /api/v1/admin/agencies/:id/invitations). */
+export type AgencyInvitation = {
+  id: string;
+  email: string;
+  role: InviteRole;
+  status: string;
+  created_at: string;
+  expires_at: string | null;
+  accepted_at: string | null;
+  revoked_at: string | null;
+  send_attempts: number;
+  last_sent_at: string | null;
+};
+
 export type AdminAgenciesResponse = {
   ok: true;
   agencies: AdminAgencyListItem[];

@@ -347,4 +347,46 @@ route.get('/:id/audit', async (c) => {
   return handleRpc(c, 'audit', rpc);
 });
 
+// ─── POST /api/v1/admin/agencies/:id/details — staff edit core agency fields (Phase 2) ──
+// Staff-only. Whitelisted patch (legal/trading name, CIF, region, owner email/phone, notes) —
+// the RPC CANNOT touch slug/id/status/is_test/pilot_status. Validated + audited server-side.
+const EDITABLE_FIELDS = [
+  'legal_name', 'trading_name', 'cif_nif', 'primary_region',
+  'primary_owner_email', 'primary_owner_phone', 'notes',
+];
+route.post('/:id/details', async (c) => {
+  const id = c.req.param('id');
+  if (!id) return c.json({ ok: false, error: 'That agency could not be found.' }, 404);
+  const body = await readJson(c);
+  // Only forward whitelisted keys — never let an arbitrary column patch through.
+  const patch: Record<string, unknown> = {};
+  for (const k of EDITABLE_FIELDS) if (k in body) patch[k] = body[k];
+  if (Object.keys(patch).length === 0) {
+    return c.json({ ok: false, error: 'No editable fields were provided.' }, 400);
+  }
+  const rpc = await userClient(c).rpc('admin_update_agency', { p_agency_id: id, p_patch: patch });
+  return handleRpc(c, 'update-details', rpc);
+});
+
+// ─── GET /api/v1/admin/agencies/:id/invitations — staff list of the agency's invites ──
+route.get('/:id/invitations', async (c) => {
+  const id = c.req.param('id');
+  if (!id) return c.json({ ok: false, error: 'That agency could not be found.' }, 404);
+  const rpc = await userClient(c).rpc('admin_list_agency_invitations', { p_agency_id: id });
+  return handleRpc(c, 'invitations', rpc);
+});
+
+// ─── POST /api/v1/admin/agencies/:id/invitations/:invitationId/revoke — staff revoke (soft) ──
+// Uses the existing admin_revoke_invitation RPC (marks revoked_at; does NOT delete the row).
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+route.post('/:id/invitations/:invitationId/revoke', async (c) => {
+  const invitationId = c.req.param('invitationId');
+  // The RPC param is uuid — a malformed id would 500 on the cast; return a clean 404 instead.
+  if (!invitationId || !UUID_RE.test(invitationId)) {
+    return c.json({ ok: false, error: 'That invitation could not be found.' }, 404);
+  }
+  const rpc = await userClient(c).rpc('admin_revoke_invitation', { p_invitation_id: invitationId });
+  return handleRpc(c, 'revoke-invitation', rpc);
+});
+
 export default route;

@@ -8,6 +8,8 @@ import type {
   AdminAgencyDetail,
   AdminAgencyListItem,
   AgencyAuditEntry,
+  AgencyDetailsPatch,
+  AgencyInvitation,
   CreateAgencyInput,
   CreateAgencyResult,
   SlugCheckResult,
@@ -257,5 +259,61 @@ export async function getAgencyAuditAction(
     return { ok: true, data: res.entries ?? [] };
   } catch (err) {
     return actionError("getAgencyAudit", err);
+  }
+}
+
+/**
+ * Staff edit of an agency's core details (Phase 2). Only whitelisted fields
+ * (legal/trading name, CIF, region, owner email/phone, notes) — the API + RPC
+ * reject anything else; slug/id/status/is_test/pilot_status can't be touched here.
+ * Validated + audited server-side.
+ */
+export async function updateAgencyDetailsAction(
+  agencyId: string,
+  patch: AgencyDetailsPatch,
+): Promise<ActionResult<{ agency: Record<string, unknown> }>> {
+  try {
+    const res = await apiFetch<{ ok: true; agency: Record<string, unknown> }>(
+      `/api/v1/admin/agencies/${encodeURIComponent(agencyId)}/details`,
+      { method: "POST", body: JSON.stringify(patch) },
+    );
+    revalidatePath(`/admin/agencies/${agencyId}`);
+    revalidatePath(`/admin/agencies/${agencyId}/settings`);
+    return { ok: true, data: { agency: res.agency } };
+  } catch (err) {
+    return actionError("updateAgencyDetails", err);
+  }
+}
+
+/** Staff read of an agency's invitations (Phase 2 Settings panel). Read-only. */
+export async function getAgencyInvitationsAction(
+  agencyId: string,
+): Promise<ActionResult<AgencyInvitation[]>> {
+  try {
+    const res = await apiFetch<{ ok: true; invitations: AgencyInvitation[] }>(
+      `/api/v1/admin/agencies/${encodeURIComponent(agencyId)}/invitations`,
+    );
+    return { ok: true, data: res.invitations ?? [] };
+  } catch (err) {
+    return actionError("getAgencyInvitations", err);
+  }
+}
+
+/** Staff revoke of an invitation (Phase 2) — soft (marks revoked_at; the row is kept). */
+export async function revokeInvitationAction(
+  agencyId: string,
+  invitationId: string,
+): Promise<ActionResult<{ ok: true }>> {
+  try {
+    await apiFetch(
+      `/api/v1/admin/agencies/${encodeURIComponent(agencyId)}/invitations/${encodeURIComponent(
+        invitationId,
+      )}/revoke`,
+      { method: "POST", body: "{}" },
+    );
+    revalidatePath(`/admin/agencies/${agencyId}/settings`);
+    return { ok: true, data: { ok: true } };
+  } catch (err) {
+    return actionError("revokeInvitation", err);
   }
 }

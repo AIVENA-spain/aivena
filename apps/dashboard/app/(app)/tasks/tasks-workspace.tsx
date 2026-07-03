@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { CheckCircle2, ClipboardList, Inbox, MessageSquareOff } from "lucide-react";
+import { CheckCircle2, ClipboardList, Inbox, Link2, MessageSquareOff } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
@@ -157,6 +157,12 @@ function TaskRow({
                 No conversation yet
               </Pill>
             )}
+            {task.type === "whatsapp_handoff" ? (
+              <Pill className="bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">
+                <Link2 className="h-3 w-3" aria-hidden />
+                WhatsApp handoff pending
+              </Pill>
+            ) : null}
           </div>
           <p className="text-[12.5px] leading-snug text-muted-foreground">{whyItMatters(task.type)}</p>
           {age ? <p className="text-[11px] text-muted-foreground">{age}</p> : null}

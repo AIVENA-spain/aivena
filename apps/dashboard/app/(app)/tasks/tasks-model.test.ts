@@ -98,6 +98,9 @@ describe("whyItMatters", () => {
     expect(whyItMatters("suggested_reply")).toMatch(/waiting for your approval/i);
     expect(whyItMatters("super_hot_alert")).toMatch(/engaged/i);
     expect(whyItMatters("viewing_booking_needed")).toMatch(/viewing/i);
+    // Amanda / web-chat task types
+    expect(whyItMatters("missing_contact")).toMatch(/phone or email/i);
+    expect(whyItMatters("whatsapp_handoff")).toMatch(/whatsapp/i);
     expect(whyItMatters("totally_unknown_type")).toMatch(/take a look/i);
   });
 });

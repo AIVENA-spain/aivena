@@ -126,6 +126,9 @@ export const TASK_WHY: Record<string, string> = {
   viewing_booking_needed: "A buyer wants a viewing — a time still needs to be confirmed.",
   scoring_failed: "AIVENA couldn't score this lead automatically — review it manually.",
   manual_follow_up: "A follow-up AIVENA has left for a human to do.",
+  // Amanda / web-chat task types (display-readiness; created by the backend).
+  missing_contact: "This lead hasn't shared a phone or email yet — ask for a contact detail so you can follow up.",
+  whatsapp_handoff: "Amanda flagged this to continue on WhatsApp — it moves there once WhatsApp is connected.",
 };
 
 export function whyItMatters(type: string): string {

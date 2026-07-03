@@ -148,9 +148,11 @@ function ChannelBadge({ channel }: { channel: string | null }) {
     ? "WhatsApp"
     : c === "email"
       ? "Email"
-      : c
-        ? c[0].toUpperCase() + c.slice(1)
-        : "—";
+      : c === "website" || c === "web"
+        ? "Web chat"
+        : c
+          ? c[0].toUpperCase() + c.slice(1)
+          : "—";
   return (
     <span
       className={cn(

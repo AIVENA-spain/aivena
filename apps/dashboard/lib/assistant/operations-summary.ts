@@ -40,6 +40,9 @@ const TASK_EXPLAIN: Record<string, string> = {
   viewing_booking_needed: "A buyer wants a viewing — a time still needs to be confirmed.",
   scoring_failed: "AIVENA couldn't score this lead automatically — review it manually.",
   manual_follow_up: "A follow-up AIVENA has left for a human to do.",
+  // Amanda / web-chat task types.
+  missing_contact: "A web-chat lead hasn't shared a phone or email yet — ask for a contact detail.",
+  whatsapp_handoff: "Amanda flagged this to continue on WhatsApp (moves there once WhatsApp is connected).",
 };
 
 function taskExplain(type: string): string {
@@ -109,6 +112,12 @@ function buildConcerns(d: OperationsResponse): Concern[] {
         break;
       case "viewing_booking_needed":
         out.push({ priority: 3, emoji: "📅", title: `Viewing to book: ${who}`, guidance: "Confirm a time with the buyer.", location: loc, offTab, staleFlag: stale, leadName });
+        break;
+      case "missing_contact":
+        out.push({ priority: 4, emoji: "📇", title: `Get contact details: ${who}`, guidance: "A web-chat lead hasn't shared a phone or email yet — ask so you can follow up.", location: loc, offTab, staleFlag: stale, leadName });
+        break;
+      case "whatsapp_handoff":
+        out.push({ priority: 4, emoji: "🔗", title: `WhatsApp handoff: ${who}`, guidance: "Amanda flagged this to continue on WhatsApp — it moves there once WhatsApp is connected.", location: loc, offTab, staleFlag: stale, leadName });
         break;
       case "human_review_needed":
         out.push({ priority: 5, emoji: "⚠️", title: `Needs your review: ${who}`, guidance: "AIVENA flagged something it wasn't sure about.", location: loc, offTab, staleFlag: stale, leadName });

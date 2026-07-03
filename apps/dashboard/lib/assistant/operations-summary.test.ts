@@ -171,6 +171,36 @@ describe("explainTasks", () => {
   });
 });
 
+describe("Amanda / web-chat task types render with real copy (not the generic fallback)", () => {
+  function withTask(type: string, label: string) {
+    return base({
+      attention: { failedSends: 0, openTasks: 1, atRiskLeads: 0, providerIssues: 0, openActionItems: 1 },
+      actionQueue: {
+        total: 1,
+        byType: [{ type, label, count: 1 }],
+        items: [{ taskId: "t", leadId: "l", leadName: "Web Visitor", type, label, status: "pending", priority: "high", temperature: "warm", title: null, createdAt: "x", ageHours: 2, inInbox: true }],
+        available: true,
+      },
+    });
+  }
+  it("whatsapp_handoff → today plan explains the handoff", () => {
+    const s = buildTodayPlan(withTask("whatsapp_handoff", "Whatsapp handoff"));
+    expect(s).toMatch(/WhatsApp handoff: Web Visitor/);
+    expect(s).toMatch(/moves there once WhatsApp is connected/i);
+  });
+  it("missing_contact → today plan asks for a contact detail", () => {
+    const s = buildTodayPlan(withTask("missing_contact", "Missing contact"));
+    expect(s).toMatch(/contact details?: Web Visitor/i);
+    expect(s).toMatch(/phone or email/i);
+  });
+  it("explainTasks gives the glossary for both", () => {
+    const s1 = explainTasks(withTask("whatsapp_handoff", "Whatsapp handoff"));
+    expect(s1).toMatch(/WhatsApp/);
+    const s2 = explainTasks(withTask("missing_contact", "Missing contact"));
+    expect(s2).toMatch(/phone or email/i);
+  });
+});
+
 describe("explainWhatsApp", () => {
   it("degraded → 'degraded, not down' + what to do", () => {
     const s = explainWhatsApp(demo());

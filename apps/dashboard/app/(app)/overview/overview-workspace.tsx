@@ -197,7 +197,7 @@ function KpiCard({
             // (Instrument Serif italic is reserved for the Performance hero
             // stat per §3.3, not used here.)
             "font-sans font-bold leading-none tracking-[-0.03em]",
-            "text-[32px]",
+            "text-[26px] sm:text-[32px]",
             isSoon ? "text-muted-foreground" : "text-foreground",
           )}
         >

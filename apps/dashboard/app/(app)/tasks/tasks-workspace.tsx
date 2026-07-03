@@ -163,8 +163,9 @@ function TaskRow({
         </div>
 
         {/* Right: action zone (two-step confirm). Resolved rows never reach here —
-            they're filtered out of the list the moment they resolve. */}
-        <div className="flex flex-none items-center gap-2">
+            they're filtered out of the list the moment they resolve. Wraps on
+            narrow phones instead of overflowing. */}
+        <div className="flex flex-wrap items-center justify-end gap-2">
           {state === "saving" ? (
             <span className="text-[12.5px] text-muted-foreground">Resolving…</span>
           ) : state === "confirming" ? (

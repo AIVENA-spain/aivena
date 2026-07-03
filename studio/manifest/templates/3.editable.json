@@ -5,7 +5,7 @@
   "canvas": { "width": 1080, "height": 1350 },
   "source_svg": "assets/3/source.tokenized.svg",
   "photo_token": "@@PHOTO0@@",
-  "knockout_regions": [[78, 64, 992, 236], [96, 258, 980, 368]],
+  "knockout_regions": [[80, 66, 990, 240], [96, 258, 982, 366]],
   "colour_tokens": {
     "background": { "default": "#000000", "locked": false },
     "overlay": { "default": "#000000", "locked": true },
@@ -21,12 +21,12 @@
     "cta": { "default": "#ffffff", "locked": false }
   },
   "text_slots": [
-    { "id": "luxury", "role": "title", "source": "template_copy", "bbox": [84, 88, 700, 232], "size": 182, "valign": "center", "font": "LibreCaslonDisplay", "align": "left", "text": "LUXURY" },
-    { "id": "type_script", "role": "accent", "source": "property_fact", "bbox": [700, 50, 1022, 246], "size": 142, "valign": "center", "font": "GreatVibes", "align": "left", "text": "Villa" },
-    { "id": "subtitle", "role": "subtitle/body", "source": "template_copy", "bbox": [110, 258, 970, 366], "size": 25, "line_height": 31, "valign": "center", "font": "Poppins", "align": "center", "text": "THIS BRAND-NEW LUXURY HOME IS NOW AVAILABLE\nAND OFFERS EVERYTHING YOU NEED FOR A STYLISH,\nCOMFORTABLE, AND CONVENIENT LIFESTYLE." },
-    { "id": "stat_area", "role": "subtitle/body", "source": "property_fact", "bbox": [120, 1086, 398, 1124], "size": 25, "pad": 6, "weight": "600", "valign": "center", "font": "Poppins", "align": "center", "text": "500 M²" },
-    { "id": "stat_beds", "role": "subtitle/body", "source": "property_fact", "bbox": [404, 1086, 676, 1124], "size": 25, "pad": 6, "weight": "600", "valign": "center", "font": "Poppins", "align": "center", "text": "3 BEDROOMS" },
-    { "id": "stat_baths", "role": "subtitle/body", "source": "property_fact", "bbox": [682, 1086, 958, 1124], "size": 25, "pad": 6, "weight": "600", "valign": "center", "font": "Poppins", "align": "center", "text": "2 BATHROOMS" },
-    { "id": "cta_web", "role": "accent", "source": "template_copy", "bbox": [280, 1222, 800, 1262], "size": 26, "pad": 10, "weight": "600", "valign": "center", "font": "Poppins", "align": "center", "text": "WWW.REALLYGREATSITE.COM" }
+    { "id": "luxury", "role": "title", "source": "template_copy", "bbox": [88, 79, 718, 238], "size": 175, "font": "LibreCaslonDisplay", "align": "left", "text": "LUXURY" },
+    { "id": "type_script", "role": "accent", "source": "property_fact", "bbox": [720, 88, 1048, 236], "size": 118, "font": "GreatVibes", "align": "left", "text": "Villa" },
+    { "id": "subtitle", "role": "subtitle/body", "source": "template_copy", "bbox": [110, 266, 970, 362], "size": 27, "line_height": 32, "font": "Poppins", "align": "center", "text": "THIS BRAND-NEW LUXURY HOME IS NOW AVAILABLE\nAND OFFERS EVERYTHING YOU NEED FOR A STYLISH,\nCOMFORTABLE, AND CONVENIENT LIFESTYLE." },
+    { "id": "stat_area", "role": "subtitle/body", "source": "property_fact", "bbox": [120, 1082, 398, 1128], "size": 26, "pad": 6, "weight": "600", "valign": "center", "font": "Poppins", "align": "center", "text": "500 M²" },
+    { "id": "stat_beds", "role": "subtitle/body", "source": "property_fact", "bbox": [404, 1082, 676, 1128], "size": 26, "pad": 6, "weight": "600", "valign": "center", "font": "Poppins", "align": "center", "text": "3 BEDROOMS" },
+    { "id": "stat_baths", "role": "subtitle/body", "source": "property_fact", "bbox": [682, 1082, 958, 1128], "size": 26, "pad": 6, "weight": "600", "valign": "center", "font": "Poppins", "align": "center", "text": "2 BATHROOMS" },
+    { "id": "cta_web", "role": "accent", "source": "template_copy", "bbox": [240, 1222, 840, 1260], "size": 26, "pad": 10, "weight": "600", "valign": "center", "font": "Poppins", "align": "center", "text": "WWW.REALLYGREATSITE.COM" }
   ]
 }

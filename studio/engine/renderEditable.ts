@@ -37,6 +37,7 @@ export const EditableSlot = z.object({
   weight: z.string().optional(),      // "bold"/"600"/"700" -> faux-bold (same-colour stroke; vault has no bold face yet)
   pad: z.number().optional(),         // inner horizontal padding px kept clear of the bbox edges (divider clearance)
   valign: z.enum(["top", "center", "bottom"]).optional(), // vertical placement of the text block in the bbox (default top)
+  tracking: z.number().optional(),    // letter-spacing px (premium uppercase eyebrows / labels)
 });
 export const EditableManifest = z.object({
   template_id: z.string(),
@@ -49,7 +50,10 @@ export const EditableManifest = z.object({
   // render for a matching status or an explicit demo/test render — the engine must never auto-generate it for an
   // active listing. Enforced by engine/eligibility.ts.
   eligibility: z.object({ post_type: z.string(), requires_status: z.array(z.string()), note: z.string().optional() }).optional(),
-  overlay: z.object({ role: z.string(), opacity: z.number() }).optional(), // legibility scrim over the photo
+  overlay: z.object({ role: z.string(), opacity: z.number() }).optional(), // flat legibility scrim over the photo
+  // vertical GRADIENT scrim (premium): dark where text sits (e.g. top), clear over the photo. Baked into the bg
+  // so knockouts blend. stops = [{offset 0..1, opacity 0..1}] in the role colour.
+  scrim: z.object({ role: z.string(), stops: z.array(z.object({ offset: z.number(), opacity: z.number() })) }).optional(),
   knockout_regions: z.array(z.tuple([z.number(), z.number(), z.number(), z.number()])).optional(), // knock out stray baked source art (local-bg fill, no text)
   // ADAPTIVE PANEL: a baked panel (e.g. #7's feature panel) trimmed to its content — everything in `area` below
   // the last non-empty `fit_to` slot (+ pad) is filled with `fill_role` (the page bg), so a 2-row list doesn't
@@ -96,8 +100,14 @@ export async function renderEditable(m: EditableManifest, palette: Palette = {},
   }
   filled = filled.replace(/@@PHOTO\d+@@/g, GREY); // any stray token -> neutral
   const photoUriPng = "data:image/png;base64," + renderTemplatePng(filled, W).toString("base64");
-  const scrim = m.overlay ? `<rect x="0" y="0" width="${W}" height="${H}" fill="${roleHex(m, palette, m.overlay.role)}" fill-opacity="${m.overlay.opacity}"/>` : "";
-  const bgSvg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><image x="0" y="0" width="${W}" height="${H}" xlink:href="${photoUriPng}"/>${scrim}</svg>`;
+  let scrim = m.overlay ? `<rect x="0" y="0" width="${W}" height="${H}" fill="${roleHex(m, palette, m.overlay.role)}" fill-opacity="${m.overlay.opacity}"/>` : "";
+  let scrimDefs = "";
+  if (m.scrim) {
+    const stops = m.scrim.stops.map((s) => `<stop offset="${s.offset}" stop-color="${roleHex(m, palette, m.scrim!.role)}" stop-opacity="${s.opacity}"/>`).join("");
+    scrimDefs = `<defs><linearGradient id="scrim" x1="0" y1="0" x2="0" y2="1">${stops}</linearGradient></defs>`;
+    scrim += `<rect x="0" y="0" width="${W}" height="${H}" fill="url(#scrim)"/>`;
+  }
+  const bgSvg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${scrimDefs}<image x="0" y="0" width="${W}" height="${H}" xlink:href="${photoUriPng}"/>${scrim}</svg>`;
   const bgPng = renderTemplatePng(bgSvg, W);
   const bgUri = "data:image/png;base64," + bgPng.toString("base64");
   const bgRGBA = await pngToRGBA(bgPng, false);
@@ -144,7 +154,8 @@ export async function renderEditable(m: EditableManifest, palette: Palette = {},
     lines.forEach((ln, i) => {
       // when size/valign is explicit, place the first baseline from the ascent so type sits inside the bbox
       const by = (s.size || s.valign) ? (y0 + topPad + fontSize * 0.82 + i * lineH) : (y0 + (i + 1) * lineH - lineH * 0.22);
-      overlay += `<text data-slot-id="${s.id}" data-editable="true" data-role="${s.role}" x="${tx}" y="${by.toFixed(1)}" text-anchor="${anchor}" font-family="${s.font}" font-size="${fontSize.toFixed(1)}"${strokeAttr} fill="${fill}">${esc(ln)}</text>`;
+      const trackAttr = s.tracking ? ` letter-spacing="${s.tracking}"` : "";
+      overlay += `<text data-slot-id="${s.id}" data-editable="true" data-role="${s.role}" x="${tx}" y="${by.toFixed(1)}" text-anchor="${anchor}" font-family="${s.font}" font-size="${fontSize.toFixed(1)}"${trackAttr}${strokeAttr} fill="${fill}">${esc(ln)}</text>`;
       editableTextCount++;
     });
   }

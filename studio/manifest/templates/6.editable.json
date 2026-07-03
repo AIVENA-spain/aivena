@@ -1,7 +1,7 @@
 {
   "template_id": "6",
-  "title_font_status": "n/a — the 'Open House' title is a baked script+serif post-type mark and is LEFT baked (fixed identity; the vault has no script face). Only the handle + booking CTA are editable text.",
-  "_note": "#6 (Open House Gallery — LIGHT: 4-photo grid on cream). Editable <text>: the agency social handle (top-right) and a 2-line booking CTA (replacing the placeholder date/time — no invented open-house date; the agency schedules it, so an honest 'BOOK A VIEWING' + phone is shown). The 'Open House' title is a baked script+serif post-type mark and stays baked (fixed identity; no script font in the vault). Photos fill the 4 slots (hero + 3 thumbnails). No invented facts: photos + handle + phone are real; the CTA is agency copy. This is an ACTIVE-listing post type (open house), so no status guard is needed.",
+  "title_font_status": "n/a — the 'Open House' title is a baked script+serif post-type mark, LEFT baked (fixed identity; no script face in the vault). Only the handle + property context + booking CTA are editable text.",
+  "_note": "#6 (Open House Gallery — LIGHT: 4-photo grid on cream). The empty right column is now used for REAL property CONTEXT + a stronger booking CTA (filling the space + balancing the baked 'Open House' title). Editable <text>: agency handle, property '{Type} in {City}', price, and a 2-line 'BOOK A VIEWING' + phone (NO invented open-house date — the agency schedules it). The 'Open House' script title + the 4-photo grid positions are BAKED (fixed source composition; cannot be repositioned from the manifest — flagged). No invented facts: photos + type/city/price are real; handle/phone/CTA are agency copy. Active-listing post type (open house) — no status guard needed.",
   "canvas": { "width": 1080, "height": 1350 },
   "source_svg": "assets/6/source.tokenized.svg",
   "photo_slots": [
@@ -25,8 +25,10 @@
     "cta": { "default": "#1a1a1a", "locked": false }
   },
   "text_slots": [
-    { "id": "handle", "role": "badge.text", "source": "template_copy", "bbox": [660, 88, 1006, 126], "size": 26, "pad": 4, "weight": "600", "valign": "center", "font": "Poppins", "align": "right", "text": "@REALLYGREATSITE" },
-    { "id": "date", "role": "subtitle/body", "source": "template_copy", "bbox": [640, 660, 1006, 702], "size": 28, "weight": "600", "valign": "center", "font": "Poppins", "align": "right", "text": "07 DECEMBER, 2026" },
-    { "id": "time", "role": "subtitle/body", "source": "template_copy", "bbox": [640, 704, 1006, 744], "size": 28, "valign": "center", "font": "Poppins", "align": "right", "text": "9:00AM-12:00AM" }
+    { "id": "handle", "role": "badge.text", "source": "template_copy", "bbox": [640, 82, 1010, 128], "size": 30, "pad": 4, "weight": "600", "valign": "center", "font": "Poppins", "align": "right", "text": "@REALLYGREATSITE" },
+    { "id": "info_type", "role": "title", "source": "property_fact", "bbox": [560, 640, 1012, 700], "size": 40, "weight": "bold", "pad": 4, "valign": "center", "font": "Poppins", "align": "right", "text": "Villa in La Zenia" },
+    { "id": "info_price", "role": "accent", "source": "property_fact", "bbox": [560, 704, 1012, 752], "size": 34, "weight": "600", "pad": 4, "valign": "center", "font": "Poppins", "align": "right", "text": "€300,000" },
+    { "id": "cta_book", "role": "subtitle/body", "source": "template_copy", "bbox": [560, 812, 1012, 860], "size": 36, "weight": "bold", "pad": 4, "valign": "center", "font": "Poppins", "align": "right", "text": "BOOK A VIEWING" },
+    { "id": "cta_phone", "role": "subtitle/body", "source": "template_copy", "bbox": [560, 862, 1012, 906], "size": 30, "pad": 4, "valign": "center", "font": "Poppins", "align": "right", "text": "+123-456-7890" }
   ]
 }

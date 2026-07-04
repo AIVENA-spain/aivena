@@ -48,12 +48,17 @@ function deriveSlots(p: any, agency: any, templateId: string): Record<string, { 
   const brand2 = splitTwoLines(agency.name);
   const T = (text: string) => ({ text });
   if (templateId === "11") return { brand: T(brand2), title: T(`${typeCap} in\n${p.city}`.toUpperCase()), address: T(loc) };
-  if (templateId === "1") return {
-    stat_left: T(plural(p.beds, "Bedroom").toUpperCase()),
-    stat_center: T(p.size ? `${p.size} M²` : "LIVING ROOM"),
-    stat_right: T(plural(p.baths, "Bathroom").toUpperCase()),
-    contact: T(`${agency.phone}   ·   ${agency.web}`),
-  };
+  if (templateId === "1") {
+    // template style: spelled-out numbers, stacked 2-line caps ("TWO / BEDROOMS")
+    const W = ["ZERO", "ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE", "TEN"];
+    const nw = (n: number) => W[n] ?? String(n);
+    return {
+      stat_left: T(`${nw(p.beds)}\nBEDROOM${p.beds === 1 ? "" : "S"}`),
+      stat_center: T(p.size ? `${p.size} M²` : "LIVING\nROOM"),
+      stat_right: T(`${nw(p.baths)}\nBATHROOM${p.baths === 1 ? "" : "S"}`),
+      cta_phone: T(agency.phone), cta_web: T(agency.web),
+    };
+  }
   if (templateId === "7") {
     const bodyLine2 = [price, p.size ? `${p.size} m² built` : null].filter(Boolean).join("  ·  ");
     const out: Record<string, { text: string }> = {

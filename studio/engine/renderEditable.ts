@@ -39,6 +39,7 @@ export const EditableSlot = z.object({
   pad: z.number().optional(),         // inner horizontal padding px kept clear of the bbox edges (divider clearance)
   valign: z.enum(["top", "center", "bottom"]).optional(), // vertical placement of the text block in the bbox (default top)
   tracking: z.number().optional(),    // letter-spacing px (premium uppercase eyebrows / labels)
+  scale_x: z.number().optional(),     // horizontal condensing (0-1) — matches condensed display faces the vault lacks
   no_knockout: z.boolean().optional(),// per-slot: baked text for THIS slot was stripped from the source -> draw only
   // ADAPTIVE PILL: draw a rounded pill behind the text, sized to the MEASURED text width (+pad) — replaces a
   // baked pill that would otherwise sit half-empty behind shorter real values (e.g. #11's address pill).
@@ -68,13 +69,13 @@ export const EditableManifest = z.object({
   // the last non-empty `fit_to` slot (+ pad) is filled with `fill_role` (the page bg), so a 2-row list doesn't
   // leave a tall empty panel. Fill is drawn LAST (over the baked panel bottom + any empty-row knockouts).
   adaptive_panel: z.object({ area: z.tuple([z.number(), z.number(), z.number(), z.number()]), fit_to: z.array(z.string()), pad: z.number(), fill_role: z.string() }).optional(),
-  // DYNAMIC PANEL (Christian 2026-07-04): the baked panel was STRIPPED from the source; the engine DRAWS it and
-  // positions header+rows inside. Height fits the row count and the panel is BOTTOM-ANCHORED — with fewer real
-  // features the whole box moves DOWN a sensible amount to sit with the rest of the template (final geometry to
-  // be tuned against Christian's coming 3-feature example).
+  // DYNAMIC PANEL (Christian 2026-07-04, tuned to his Canva 3-feature example): the baked panel was STRIPPED
+  // from the source; the engine DRAWS it and positions header+rows inside. Height fits the row count; the panel
+  // TOP starts at top_base (full row count) and moves DOWN by shift_per_missing for each missing row, so a
+  // shorter panel sits with the title/details instead of leaving dead space.
   dynamic_panel: z.object({
-    x0: z.number(), x1: z.number(), bottom: z.number(), fill_role: z.string(),
-    header_slot: z.string(), row_slots: z.array(z.string()),
+    x0: z.number(), x1: z.number(), top_base: z.number(), shift_per_missing: z.number(), max_rows: z.number(),
+    fill_role: z.string(), header_slot: z.string(), row_slots: z.array(z.string()),
     pad_top: z.number(), header_h: z.number(), row_pitch: z.number(), row_h: z.number(), pad_bottom: z.number(),
   }).optional(),
   text_slots: z.array(EditableSlot),
@@ -153,7 +154,9 @@ export async function renderEditable(m: EditableManifest, palette: Palette = {},
     const n = rows.length;
     const rowsBlock = n > 0 ? (n - 1) * dp.row_pitch + dp.row_h : 0;
     const panelH = dp.pad_top + dp.header_h + rowsBlock + dp.pad_bottom;
-    const top = dp.bottom - panelH; // bottom-anchored: fewer rows -> the whole box moves DOWN
+    // top-anchored with shift-down: full row count sits at top_base (the Canva original position); each missing
+    // row moves the whole box DOWN so it stays visually attached to the title/details block (Christian's example).
+    const top = dp.top_base + dp.shift_per_missing * Math.max(0, dp.max_rows - n);
     overlay += `<rect x="${dp.x0}" y="${top.toFixed(1)}" width="${dp.x1 - dp.x0}" height="${panelH.toFixed(1)}" fill="${roleHex(m, palette, dp.fill_role)}"/>`;
     yOverride.set(dp.header_slot, [top + dp.pad_top, top + dp.pad_top + dp.header_h]);
     rows.forEach((id, i) => { const y0 = top + dp.pad_top + dp.header_h + i * dp.row_pitch; yOverride.set(id, [y0, y0 + dp.row_h]); });
@@ -176,7 +179,8 @@ export async function renderEditable(m: EditableManifest, palette: Palette = {},
     // AUTO-FIT: shrink so the widest line fits the bbox width minus padding — keeps text off divider lines /
     // edges and prevents overrun when real property values are longer than the template's placeholder copy.
     const avail = bw - 2 * pad;
-    const widest = Math.max(...lines.map((l) => textWidth(s.font, l, fontSize)));
+    const sx = s.scale_x ?? 1;
+    const widest = Math.max(...lines.map((l) => textWidth(s.font, l, fontSize))) * sx;
     if (widest > avail && avail > 0) { const r = avail / widest; fontSize = Math.max(8, fontSize * r); lineH = lineH * r; }
     // vertical auto-fit: if the block is taller than the bbox (e.g. a 3-line title), shrink size + line pitch
     if (lines.length * lineH > bh && bh > 0) { const rv = bh / (lines.length * lineH); fontSize = Math.max(8, fontSize * rv); lineH = lineH * rv; }
@@ -191,7 +195,7 @@ export async function renderEditable(m: EditableManifest, palette: Palette = {},
     // a bold source title/label (flagged needs_seed — this is a visual approximation, not the real face).
     const bold = /bold|[6-9]00/.test(s.weight || "");
     const strokeAttr = bold ? ` stroke="${fill}" stroke-width="${(fontSize * 0.042).toFixed(2)}" paint-order="stroke"` : "";
-    const maxLineWidth = Math.max(...lines.map((l) => textWidth(s.font, l, fontSize)));
+    const maxLineWidth = Math.max(...lines.map((l) => textWidth(s.font, l, fontSize))) * sx;
     layout.push({ id: s.id, bbox: [x0, y0, x1, y1], size: +fontSize.toFixed(1), pad, avail: +(bw - 2 * pad).toFixed(1), maxLineWidth: +maxLineWidth.toFixed(1), blockTop: +(y0 + topPad).toFixed(1), blockBottom: +(y0 + topPad + lines.length * lineH).toFixed(1) });
     // knockout the baked (outlined) source text in this region, then draw editable <text> on top.
     // strip-plate mode (template-wide or per-slot): baked text already REMOVED -> draw directly, no knockout box.
@@ -208,7 +212,10 @@ export async function renderEditable(m: EditableManifest, palette: Palette = {},
       // when size/valign is explicit, place the first baseline from the ascent so type sits inside the bbox
       const by = (s.size || s.valign) ? (y0 + topPad + fontSize * 0.82 + i * lineH) : (y0 + (i + 1) * lineH - lineH * 0.22);
       const trackAttr = s.tracking ? ` letter-spacing="${s.tracking}"` : "";
-      overlay += `<text data-slot-id="${s.id}" data-editable="true" data-role="${s.role}" x="${tx}" y="${by.toFixed(1)}" text-anchor="${anchor}" font-family="${s.font}" font-size="${fontSize.toFixed(1)}"${trackAttr}${strokeAttr} fill="${fill}">${esc(ln)}</text>`;
+      const posAttr = sx !== 1
+        ? ` transform="translate(${tx},${by.toFixed(1)}) scale(${sx},1)" x="0" y="0"`
+        : ` x="${tx}" y="${by.toFixed(1)}"`;
+      overlay += `<text data-slot-id="${s.id}" data-editable="true" data-role="${s.role}"${posAttr} text-anchor="${anchor}" font-family="${s.font}" font-size="${fontSize.toFixed(1)}"${trackAttr}${strokeAttr} fill="${fill}">${esc(ln)}</text>`;
       editableTextCount++;
     });
   }

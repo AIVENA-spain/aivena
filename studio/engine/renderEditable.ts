@@ -236,7 +236,7 @@ export async function renderEditable(m: EditableManifest, palette: Palette = {},
     const wNum = s.weight ? (/^\d+$/.test(s.weight) ? s.weight : "700") : "";
     const strokeAttr = wNum ? ` font-weight="${wNum}"` : "";
     const maxLineWidth = Math.max(...lines.map((l) => textWidth(s.font, l, fontSize, s.weight))) * sx;
-    blockBottoms.set(s.id, y0 + topPad + lines.length * lineH);
+    blockBottoms.set(s.id, y0 + topPad + (lines.length - 1) * lineH + fontSize * 0.95); // ink bottom (baseline+descender)
     layout.push({ id: s.id, bbox: [x0, y0, x1, y1], size: +fontSize.toFixed(1), pad, avail: +(bw - 2 * pad).toFixed(1), maxLineWidth: +maxLineWidth.toFixed(1), blockTop: +(y0 + topPad).toFixed(1), blockBottom: +(y0 + topPad + lines.length * lineH).toFixed(1) });
     // knockout the baked (outlined) source text in this region, then draw editable <text> on top.
     // strip-plate mode (template-wide or per-slot): baked text already REMOVED -> draw directly, no knockout box.

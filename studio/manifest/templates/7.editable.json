@@ -128,7 +128,7 @@
       ],
       "size": 85,
       "line_height": 87,
-      "valign": "top",
+      "valign": "bottom",
       "weight": "700",
       "font": "Poppins",
       "align": "left",
@@ -152,7 +152,7 @@
       "text": "This ultra-modern luxury home is\ndesigned for the bold and refined.",
       "follow": {
         "slot": "title",
-        "gap": 58
+        "gap": 52
       }
     },
     {

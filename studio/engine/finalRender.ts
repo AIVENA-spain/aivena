@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { abs } from "../src/lib/paths";
-import { renderEditable, loadEditableManifest, renderFilledSource, EditableManifest, Palette } from "./renderEditable";
+import { renderEditable, loadEditableManifest, renderFilledSource, EditableManifest, Palette, textWidth } from "./renderEditable";
 import { runVisualQA, QACheck } from "./visualQA";
 import { composeOne } from "../src/lib/compose";
 
@@ -26,6 +26,28 @@ function splitTwoLines(s: string): string {
   let best = 1, bestDiff = Infinity;
   for (let i = 1; i < w.length; i++) { const a = w.slice(0, i).join(" ").length, b = w.slice(i).join(" ").length; if (Math.abs(a - b) < bestDiff) { bestDiff = Math.abs(a - b); best = i; } }
   return w.slice(0, best).join(" ") + "\n" + w.slice(best).join(" ");
+}
+
+// choose the title line-split (2 or 3 lines) that renders LARGEST in the given zone: fewer lines get a
+// design-scale boost but long lines hit the width cap — pick whichever wins. Balanced word wrapping per count.
+function bestTitleSplit(text: string, font: string, weight: string, zoneW: number, baseSize: number, designLines: number): string {
+  const words = text.trim().split(/\s+/);
+  const wrapTo = (n: number): string[] => {
+    if (n >= words.length) return words.slice();
+    const lines: string[] = []; let start = 0;
+    for (let i = 0; i < n; i++) { const take = Math.round(((i + 1) * words.length) / n) - start; lines.push(words.slice(start, start + take).join(" ")); start += take; }
+    return lines.filter(Boolean);
+  };
+  let best = text, bestSize = 0;
+  for (const n of [2, 3]) {
+    if (n > words.length) continue;
+    const lines = wrapTo(n);
+    const scaled = baseSize * (designLines / lines.length);
+    const widest = Math.max(...lines.map((l) => textWidth(font, l, scaled, weight)));
+    const finalSize = widest > zoneW ? scaled * (zoneW / widest) : scaled;
+    if (finalSize > bestSize) { bestSize = finalSize; best = lines.join("\n"); }
+  }
+  return best;
 }
 
 // GENERAL feature list for #7: beds, baths, then the property's own top real features. Empty rows are hidden
@@ -62,7 +84,7 @@ function deriveSlots(p: any, agency: any, templateId: string): Record<string, { 
   if (templateId === "7") {
     // body stays the template's own marketing copy (editable) — matches the Canva layout exactly
     const out: Record<string, { text: string }> = {
-      brand: T(brand2), title: T(`${typeCap} in\n${p.city}`),
+      brand: T(brand2), title: T(bestTitleSplit(`${typeCap} in ${p.city}`, "Poppins", "700", 531, 85, 3)),
       cta_phone: T(agency.phone), cta_web: T(agency.web),
     };
     featureRows(p).forEach((r, i) => (out[`feat_${i + 1}`] = T(r)));

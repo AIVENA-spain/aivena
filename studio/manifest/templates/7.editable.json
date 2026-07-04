@@ -132,7 +132,8 @@
       "weight": "700",
       "font": "Poppins",
       "align": "left",
-      "text": "Discover\nYour Dream\nReal Estate"
+      "text": "Discover\nYour Dream\nReal Estate",
+      "design_lines": 3
     },
     {
       "id": "body",

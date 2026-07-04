@@ -56,6 +56,9 @@ export const EditableSlot = z.object({
   // FLOW: position this slot's y directly after another slot's rendered text block (title -> body stacking,
   // so a 2-line real title keeps the body tight underneath like the Canva original).
   follow: z.object({ slot: z.string(), gap: z.number() }).optional(),
+  // the source design's line count: when real text has FEWER lines, size/line-height scale UP so the text
+  // still fills the design zone naturally (width auto-fit then caps it) — no empty holes from short titles.
+  design_lines: z.number().optional(),
 });
 export const EditableManifest = z.object({
   template_id: z.string(),
@@ -212,6 +215,7 @@ export async function renderEditable(m: EditableManifest, palette: Palette = {},
     const pad = s.pad ?? 0;
     let fontSize = s.size ?? Math.max(8, (bh / lines.length) * 0.78);
     let lineH = s.line_height ?? (bh / lines.length);
+    if (s.design_lines && lines.length < s.design_lines) { const g = s.design_lines / lines.length; fontSize *= g; lineH *= g; }
     // AUTO-FIT: shrink so the widest line fits the bbox width minus padding — keeps text off divider lines /
     // edges and prevents overrun when real property values are longer than the template's placeholder copy.
     const avail = bw - 2 * pad;

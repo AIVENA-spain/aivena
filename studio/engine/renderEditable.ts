@@ -39,6 +39,10 @@ export const EditableSlot = z.object({
   pad: z.number().optional(),         // inner horizontal padding px kept clear of the bbox edges (divider clearance)
   valign: z.enum(["top", "center", "bottom"]).optional(), // vertical placement of the text block in the bbox (default top)
   tracking: z.number().optional(),    // letter-spacing px (premium uppercase eyebrows / labels)
+  no_knockout: z.boolean().optional(),// per-slot: baked text for THIS slot was stripped from the source -> draw only
+  // ADAPTIVE PILL: draw a rounded pill behind the text, sized to the MEASURED text width (+pad) — replaces a
+  // baked pill that would otherwise sit half-empty behind shorter real values (e.g. #11's address pill).
+  pill: z.object({ role: z.string(), pad_x: z.number(), pad_y: z.number() }).optional(),
 });
 export const EditableManifest = z.object({
   template_id: z.string(),
@@ -139,7 +143,7 @@ export async function renderEditable(m: EditableManifest, palette: Palette = {},
     const [x0, y0, x1, y1] = s.bbox;
     // empty slot → knock out the baked source text but draw nothing, so a data-driven derivation can HIDE a row
     // (e.g. a property with fewer real features than the template has feature rows) without leaking baked copy.
-    if (!s.text.trim()) { if (!m.no_knockouts) overlay += `<rect x="${x0}" y="${y0}" width="${x1 - x0}" height="${y1 - y0}" fill="${localBg(bgRGBA, [x0, y0, x1, y1])}"/>`; continue; }
+    if (!s.text.trim()) { if (!m.no_knockouts && !s.no_knockout) overlay += `<rect x="${x0}" y="${y0}" width="${x1 - x0}" height="${y1 - y0}" fill="${localBg(bgRGBA, [x0, y0, x1, y1])}"/>`; continue; }
     const lines = s.text.split("\n");
     const bw = x1 - x0, bh = y1 - y0;
     const pad = s.pad ?? 0;
@@ -166,8 +170,16 @@ export async function renderEditable(m: EditableManifest, palette: Palette = {},
     const maxLineWidth = Math.max(...lines.map((l) => textWidth(s.font, l, fontSize)));
     layout.push({ id: s.id, bbox: [x0, y0, x1, y1], size: +fontSize.toFixed(1), pad, avail: +(bw - 2 * pad).toFixed(1), maxLineWidth: +maxLineWidth.toFixed(1), blockTop: +(y0 + topPad).toFixed(1), blockBottom: +(y0 + topPad + lines.length * lineH).toFixed(1) });
     // knockout the baked (outlined) source text in this region, then draw editable <text> on top.
-    // strip-plate mode: the baked text is already REMOVED from the source -> draw directly, no knockout box.
-    if (!m.no_knockouts) overlay += `<rect x="${x0}" y="${y0}" width="${bw}" height="${bh}" fill="${knockHex}"/>`;
+    // strip-plate mode (template-wide or per-slot): baked text already REMOVED -> draw directly, no knockout box.
+    if (!m.no_knockouts && !s.no_knockout) overlay += `<rect x="${x0}" y="${y0}" width="${bw}" height="${bh}" fill="${knockHex}"/>`;
+    // adaptive pill sized to the measured text (+padding) — replaces a baked pill that sat half-empty behind
+    // shorter real values. Drawn before the text.
+    if (s.pill) {
+      const pw = maxLineWidth + 2 * s.pill.pad_x, ph = lines.length * lineH + 2 * s.pill.pad_y;
+      const px = s.align === "center" ? x0 + bw / 2 - pw / 2 : s.align === "right" ? x1 - pad - maxLineWidth - s.pill.pad_x : x0 + pad - s.pill.pad_x;
+      const py = y0 + topPad - s.pill.pad_y;
+      overlay += `<rect x="${px.toFixed(1)}" y="${py.toFixed(1)}" width="${pw.toFixed(1)}" height="${ph.toFixed(1)}" rx="${(ph / 2).toFixed(1)}" fill="${roleHex(m, palette, s.pill.role)}"/>`;
+    }
     lines.forEach((ln, i) => {
       // when size/valign is explicit, place the first baseline from the ascent so type sits inside the bbox
       const by = (s.size || s.valign) ? (y0 + topPad + fontSize * 0.82 + i * lineH) : (y0 + (i + 1) * lineH - lineH * 0.22);

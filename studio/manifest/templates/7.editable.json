@@ -37,7 +37,7 @@
     { "id": "feat_4", "role": "stat.value", "source": "property_fact", "bbox": [662, 822, 1010, 858], "size": 31, "font": "Poppins", "align": "left", "text": "Living Room" },
     { "id": "feat_5", "role": "stat.value", "source": "property_fact", "bbox": [662, 892, 1010, 928], "size": 31, "font": "Poppins", "align": "left", "text": "Car Garage" },
     { "id": "cta_label", "role": "cta", "source": "template_copy", "bbox": [71, 1295, 300, 1332], "size": 26, "weight": "bold", "font": "Poppins", "align": "left", "text": "CONTACT US AT" },
-    { "id": "cta_phone", "role": "cta", "source": "template_copy", "bbox": [398, 1295, 600, 1332], "size": 26, "font": "Poppins", "align": "left", "text": "+123-456-7890" },
-    { "id": "cta_web", "role": "cta", "source": "template_copy", "bbox": [692, 1295, 1022, 1332], "size": 26, "font": "Poppins", "align": "left", "text": "www.reallygreatsite.com" }
+    { "id": "cta_phone", "role": "cta", "source": "template_copy", "bbox": [398, 1295, 646, 1332], "size": 26, "pad": 6, "font": "Poppins", "align": "center", "text": "+123-456-7890" },
+    { "id": "cta_web", "role": "cta", "source": "template_copy", "bbox": [692, 1295, 1046, 1332], "size": 26, "pad": 6, "font": "Poppins", "align": "center", "text": "www.reallygreatsite.com" }
   ]
 }

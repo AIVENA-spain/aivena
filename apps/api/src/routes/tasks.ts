@@ -86,6 +86,19 @@ const APPROVE_ERROR_MESSAGES: Record<string, string> = {
   // token). Friendly, code-free per Law-2.
   whatsapp_window_closed:
     "Can't send a free-text reply — you're outside WhatsApp's 24-hour window. Wait for the buyer to message again.",
+  // E4 (Packet 2): the remaining approve_dashboard_task RAISE codes — without
+  // these they threw through to a raw 500 instead of a friendly 422. All
+  // code-free per Law-2.
+  agency_from_address_missing:
+    "Your agency's sending email address isn't set up yet — add it in Settings before sending email replies.",
+  agency_whatsapp_not_configured:
+    "WhatsApp isn't connected for your agency yet, so this reply can't be sent.",
+  lead_missing_phone: "We don't have a phone number for this lead, so WhatsApp can't be sent.",
+  task_channel_unsupported: "This task's channel isn't supported for sending yet.",
+  whatsapp_body_too_long: 'This message is too long for WhatsApp — please shorten it and try again.',
+  // dismiss_dashboard_task RAISE code (shared by the dismiss handler below).
+  invalid_dismissal_reason:
+    "That isn't a valid reason to clear this task — please pick one of the offered reasons.",
 };
 
 function toIso(value: Date | string): string {
@@ -374,7 +387,9 @@ route.post('/:id/dismiss', async (c) => {
     return c.json({ ok: true });
   } catch (err) {
     const pg = asPgError(err);
-    if (pg && pg.code === 'P0001') {
+    // Only map KNOWN raises to friendly copy; an unknown P0001 must throw to the
+    // generic handler, never return its raw token in `error` (E4/Law-2).
+    if (pg && pg.code === 'P0001' && isKnownRaise(pg.message)) {
       return c.json(
         { error: friendlyFor(pg.message), code: pg.message },
         422,

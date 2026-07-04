@@ -110,7 +110,7 @@ BEGIN
     'get_agency_oauth_credential(text,text)',
     'revoke_agency_oauth_credential(text,text,text)'
   ]) LOOP
-    EXECUTE format('REVOKE ALL ON FUNCTION public.%s FROM PUBLIC', sig);
+    EXECUTE format('REVOKE ALL ON FUNCTION public.%s FROM PUBLIC, anon, authenticated', sig);
     EXECUTE format('GRANT EXECUTE ON FUNCTION public.%s TO aivena_app, service_role', sig);
   END LOOP;
 END $grants$;

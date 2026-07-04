@@ -238,7 +238,13 @@ function PropertyCard({
   const specs: string[] = [];
   if (p.bedrooms != null && p.bedrooms > 0) specs.push(`${p.bedrooms} ${t("bedsShort")}`);
   if (p.bathrooms != null && p.bathrooms > 0) specs.push(`${p.bathrooms} ${t("bathsShort")}`);
-  if (p.area_sqm != null && p.area_sqm > 0) specs.push(`${nf.format(p.area_sqm)} ${t("areaUnit")}`);
+  // Built and plot are distinct facts — show each labelled when present; only when
+  // neither is set do we show the neutral legacy area as a bare "m²" (never "built").
+  const hasBuilt = p.area_built_sqm != null && p.area_built_sqm > 0;
+  const hasPlot = p.area_plot_sqm != null && p.area_plot_sqm > 0;
+  if (hasBuilt) specs.push(`${nf.format(p.area_built_sqm as number)} ${t("areaUnit")} ${t("areaBuiltShort")}`);
+  if (hasPlot) specs.push(`${nf.format(p.area_plot_sqm as number)} ${t("areaUnit")} ${t("areaPlotShort")}`);
+  if (!hasBuilt && !hasPlot && p.area_sqm != null && p.area_sqm > 0) specs.push(`${nf.format(p.area_sqm)} ${t("areaUnit")}`);
   const priceNum = p.price == null ? null : Number(p.price);
 
   return (

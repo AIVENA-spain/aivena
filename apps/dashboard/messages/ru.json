@@ -878,7 +878,9 @@
     "closeImport": "Закрыть импорт",
     "bedsShort": "сп.",
     "bathsShort": "сан.",
-    "areaUnit": "м²"
+    "areaUnit": "м²",
+    "areaBuiltShort": "застроено",
+    "areaPlotShort": "участок"
   },
   "gate": {
     "launchPill": "Скоро",

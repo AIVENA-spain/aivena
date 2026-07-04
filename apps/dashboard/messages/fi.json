@@ -878,7 +878,9 @@
     "closeImport": "Sulje tuonti",
     "bedsShort": "mh",
     "bathsShort": "kh",
-    "areaUnit": "m²"
+    "areaUnit": "m²",
+    "areaBuiltShort": "rakennettu",
+    "areaPlotShort": "tontti"
   },
   "gate": {
     "launchPill": "Pian",

@@ -878,7 +878,9 @@
     "closeImport": "Import sluiten",
     "bedsShort": "slk",
     "bathsShort": "bdk",
-    "areaUnit": "m²"
+    "areaUnit": "m²",
+    "areaBuiltShort": "bebouwd",
+    "areaPlotShort": "perceel"
   },
   "gate": {
     "launchPill": "Binnenkort",

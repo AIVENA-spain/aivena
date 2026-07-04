@@ -878,7 +878,9 @@
     "closeImport": "Close import",
     "bedsShort": "bd",
     "bathsShort": "ba",
-    "areaUnit": "m²"
+    "areaUnit": "m²",
+    "areaBuiltShort": "built",
+    "areaPlotShort": "plot"
   },
   "gate": {
     "launchPill": "Soon",

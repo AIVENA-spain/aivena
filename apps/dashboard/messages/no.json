@@ -878,7 +878,9 @@
     "closeImport": "Lukk import",
     "bedsShort": "sov",
     "bathsShort": "bad",
-    "areaUnit": "m²"
+    "areaUnit": "m²",
+    "areaBuiltShort": "bebygd",
+    "areaPlotShort": "tomt"
   },
   "gate": {
     "launchPill": "Snart",

@@ -878,7 +878,9 @@
     "closeImport": "Fermer l’import",
     "bedsShort": "ch",
     "bathsShort": "sdb",
-    "areaUnit": "m²"
+    "areaUnit": "m²",
+    "areaBuiltShort": "construits",
+    "areaPlotShort": "terrain"
   },
   "gate": {
     "launchPill": "Bientôt",

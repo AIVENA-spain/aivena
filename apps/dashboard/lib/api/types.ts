@@ -210,7 +210,12 @@ export type PropertyRow = {
   price_currency: string;
   bedrooms: number | null;
   bathrooms: number | null;
+  /** Neutral/legacy area (generic header, or built fallback) — displayed as a bare "m²", never "built". */
   area_sqm: number | null;
+  /** Built (construida) area — labelled "built" only when this column is set. */
+  area_built_sqm: number | null;
+  /** Plot (parcela) area — a distinct fact; never shown as built. */
+  area_plot_sqm: number | null;
   location_city: string | null;
   location_region: string | null;
   /** jsonb array of image URLs; images[0] is the thumbnail. May be empty. */

@@ -878,7 +878,9 @@
     "closeImport": "Stäng import",
     "bedsShort": "sovr",
     "bathsShort": "badr",
-    "areaUnit": "m²"
+    "areaUnit": "m²",
+    "areaBuiltShort": "byggyta",
+    "areaPlotShort": "tomt"
   },
   "gate": {
     "launchPill": "Snart",

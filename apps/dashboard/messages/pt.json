@@ -878,7 +878,9 @@
     "closeImport": "Fechar importação",
     "bedsShort": "qt",
     "bathsShort": "wc",
-    "areaUnit": "m²"
+    "areaUnit": "m²",
+    "areaBuiltShort": "construídos",
+    "areaPlotShort": "terreno"
   },
   "gate": {
     "launchPill": "Brevemente",

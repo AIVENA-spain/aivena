@@ -878,7 +878,9 @@
     "closeImport": "Zamknij import",
     "bedsShort": "syp.",
     "bathsShort": "łaz.",
-    "areaUnit": "m²"
+    "areaUnit": "m²",
+    "areaBuiltShort": "zabudowa",
+    "areaPlotShort": "działka"
   },
   "gate": {
     "launchPill": "Wkrótce",

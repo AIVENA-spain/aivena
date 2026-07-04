@@ -878,7 +878,9 @@
     "closeImport": "Luk import",
     "bedsShort": "vær.",
     "bathsShort": "bad",
-    "areaUnit": "m²"
+    "areaUnit": "m²",
+    "areaBuiltShort": "bebygget",
+    "areaPlotShort": "grund"
   },
   "gate": {
     "launchPill": "Snart",

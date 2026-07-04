@@ -878,7 +878,9 @@
     "closeImport": "Import schließen",
     "bedsShort": "Zi.",
     "bathsShort": "Bad",
-    "areaUnit": "m²"
+    "areaUnit": "m²",
+    "areaBuiltShort": "bebaut",
+    "areaPlotShort": "Grundstück"
   },
   "gate": {
     "launchPill": "Demnächst",

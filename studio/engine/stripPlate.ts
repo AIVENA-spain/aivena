@@ -16,7 +16,7 @@ import { renderTemplatePng, pngToRGBA } from "../src/lib/render";
 // Usage: npx tsx engine/stripPlate.ts <templateId> [--remap]
 
 const GREY = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYPj/HwAEAQH/7yMK/AAAAABJRU5ErkJggg==";
-const PROBE_W = 1080; // probe at full canvas width so even tiny punctuation glyphs register
+const PROBE_W = Number(process.env.PROBE_W || 1080); // probe width; lower = faster (tiny glyphs still register via n>=1)
 
 type Box = [number, number, number, number] | null;
 
@@ -72,8 +72,15 @@ export async function buildStrippedSource(id: string, remap = false): Promise<{ 
   const drop = new Set<number>();
   paths.forEach((p, i) => {
     const b = boxes[i]; if (!b) return;
+    // guard: never strip full-bleed art (photo scrims / background rects) — their center can fall inside a
+    // text zone but they are structural, not dynamic text.
+    const pathArea = (b[2] - b[0]) * (b[3] - b[1]);
+    if (pathArea >= 0.8 * 1080 * 1350) return;
     const cx = (b[0] + b[2]) / 2, cy = (b[1] + b[3]) / 2;
-    if (zones.some((z) => cx >= z[0] && cx <= z[2] && cy >= z[1] && cy <= z[3])) drop.add(i);
+    // a path much LARGER than the zone that owns its center is structural art behind the text (e.g. the brand
+    // band) — keep it. A path comparable to / smaller than the zone (glyphs, a panel fully inside its zone) strips.
+    const z = zones.find((z) => cx >= z[0] && cx <= z[2] && cy >= z[1] && cy <= z[3]);
+    if (z && pathArea <= 1.5 * (z[2] - z[0]) * (z[3] - z[1])) drop.add(i);
   });
   let out = "";
   let pos = 0;

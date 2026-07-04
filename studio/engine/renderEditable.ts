@@ -68,6 +68,15 @@ export const EditableManifest = z.object({
   // the last non-empty `fit_to` slot (+ pad) is filled with `fill_role` (the page bg), so a 2-row list doesn't
   // leave a tall empty panel. Fill is drawn LAST (over the baked panel bottom + any empty-row knockouts).
   adaptive_panel: z.object({ area: z.tuple([z.number(), z.number(), z.number(), z.number()]), fit_to: z.array(z.string()), pad: z.number(), fill_role: z.string() }).optional(),
+  // DYNAMIC PANEL (Christian 2026-07-04): the baked panel was STRIPPED from the source; the engine DRAWS it and
+  // positions header+rows inside. Height fits the row count and the panel is BOTTOM-ANCHORED — with fewer real
+  // features the whole box moves DOWN a sensible amount to sit with the rest of the template (final geometry to
+  // be tuned against Christian's coming 3-feature example).
+  dynamic_panel: z.object({
+    x0: z.number(), x1: z.number(), bottom: z.number(), fill_role: z.string(),
+    header_slot: z.string(), row_slots: z.array(z.string()),
+    pad_top: z.number(), header_h: z.number(), row_pitch: z.number(), row_h: z.number(), pad_bottom: z.number(),
+  }).optional(),
   text_slots: z.array(EditableSlot),
 });
 export type EditableManifest = z.infer<typeof EditableManifest>;
@@ -135,12 +144,27 @@ export async function renderEditable(m: EditableManifest, palette: Palette = {},
   let overlay = "";
   let editableTextCount = 0;
   const layout: SlotLayout[] = [];
+  // dynamic panel: compute geometry from the number of NON-EMPTY rows, draw the panel, and override the
+  // header/row slot y-positions so they sit inside the drawn panel (x-coords stay from the manifest).
+  const yOverride = new Map<string, [number, number]>();
+  if (m.dynamic_panel) {
+    const dp = m.dynamic_panel;
+    const rows = dp.row_slots.filter((id) => m.text_slots.find((s) => s.id === id)?.text.trim());
+    const n = rows.length;
+    const rowsBlock = n > 0 ? (n - 1) * dp.row_pitch + dp.row_h : 0;
+    const panelH = dp.pad_top + dp.header_h + rowsBlock + dp.pad_bottom;
+    const top = dp.bottom - panelH; // bottom-anchored: fewer rows -> the whole box moves DOWN
+    overlay += `<rect x="${dp.x0}" y="${top.toFixed(1)}" width="${dp.x1 - dp.x0}" height="${panelH.toFixed(1)}" fill="${roleHex(m, palette, dp.fill_role)}"/>`;
+    yOverride.set(dp.header_slot, [top + dp.pad_top, top + dp.pad_top + dp.header_h]);
+    rows.forEach((id, i) => { const y0 = top + dp.pad_top + dp.header_h + i * dp.row_pitch; yOverride.set(id, [y0, y0 + dp.row_h]); });
+  }
   // knock out stray baked source artifacts (e.g. a leftover bracket glyph) before drawing text
   for (const kr of m.knockout_regions ?? []) {
     overlay += `<rect x="${kr[0]}" y="${kr[1]}" width="${kr[2] - kr[0]}" height="${kr[3] - kr[1]}" fill="${localBg(bgRGBA, kr)}"/>`;
   }
   for (const s of m.text_slots) {
-    const [x0, y0, x1, y1] = s.bbox;
+    const ov = yOverride.get(s.id);
+    const [x0, y0, x1, y1] = ov ? [s.bbox[0], ov[0], s.bbox[2], ov[1]] : s.bbox;
     // empty slot → knock out the baked source text but draw nothing, so a data-driven derivation can HIDE a row
     // (e.g. a property with fewer real features than the template has feature rows) without leaking baked copy.
     if (!s.text.trim()) { if (!m.no_knockouts && !s.no_knockout) overlay += `<rect x="${x0}" y="${y0}" width="${x1 - x0}" height="${y1 - y0}" fill="${localBg(bgRGBA, [x0, y0, x1, y1])}"/>`; continue; }

@@ -264,7 +264,7 @@ export function computeReadiness(agencyId: string, s: ReadinessSignals): Readine
     id: 'identity.tone', label: 'Follow-up tone', area: 'A', gate: 'G1', owner: 'agency',
     agencyEditable: false, adminApproved: null,
     status: !st ? 'unavailable' : has(st.tone) ? 'ready' : 'missing',
-    signal: { source: 'agency_settings.tone (read-only in Settings; canonical pending D4 reconciliation)', value: st?.tone ?? '∅' },
+    signal: { source: 'agency_branding.tone (trigger-synced mirror of canonical agency_settings.tone — D4)', value: st?.tone ?? '∅' },
     uiCopy: has(st?.tone ?? null) ? 'Follow-up tone set (read-only during pilot)' : 'Tone not set',
     blockedBy: [],
   });

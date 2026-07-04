@@ -120,17 +120,16 @@
       "source": "template_copy",
       "bbox": [
         130,
-        388,
+        412,
         950,
         912
       ],
-      "size": 330,
+      "size": 302,
       "line_height": 242,
       "valign": "top",
-      "font": "LibreCaslonDisplay",
+      "font": "Italiana",
       "align": "center",
-      "text": "OPEN\nHOUSE",
-      "scale_x": 0.62
+      "text": "OPEN\nHOUSE"
     },
     {
       "id": "badge",

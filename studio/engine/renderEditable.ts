@@ -10,12 +10,21 @@ const FONT_FILES: Record<string, string> = {
   Poppins: "fonts/Poppins-Regular.ttf", LibreCaslonDisplay: "fonts/LibreCaslonDisplay-Regular.ttf",
   LibreCaslonText: "fonts/LibreCaslonText-Regular.ttf", Prata: "fonts/Prata-Regular.ttf", Tinos: "fonts/Tinos-Regular.ttf",
   GreatVibes: "fonts/GreatVibes-Regular.ttf", "Great Vibes": "fonts/GreatVibes-Regular.ttf",
+  Italiana: "fonts/Italiana-Regular.ttf",
+};
+// real weight files (identified via engine/fontMatch.ts — no faux-bold strokes)
+const WEIGHT_FILES: Record<string, Record<string, string>> = {
+  Poppins: { "500": "fonts/Poppins-Medium.ttf", "600": "fonts/Poppins-SemiBold.ttf", "700": "fonts/Poppins-Bold.ttf", bold: "fonts/Poppins-Bold.ttf" },
 };
 const _fk = new Map<string, any>();
-function fkFont(key: string): any { const rel = FONT_FILES[key] || FONT_FILES.Poppins; if (!_fk.has(rel)) _fk.set(rel, (fontkit as any).openSync(abs(rel))); return _fk.get(rel); }
-// advance width (px) of one line at a given size — used to shrink text so it never overruns its bbox/dividers.
-export function textWidth(fontKey: string, text: string, size: number): number {
-  try { const f = fkFont(fontKey); const run = f.layout(text); let u = 0; for (const g of run.glyphs) u += g.advanceWidth; return (u * size) / f.unitsPerEm; }
+function fkFile(key: string, weight?: string): string {
+  if (weight && WEIGHT_FILES[key]?.[weight]) return WEIGHT_FILES[key][weight];
+  return FONT_FILES[key] || FONT_FILES.Poppins;
+}
+function fkFont(key: string, weight?: string): any { const rel = fkFile(key, weight); if (!_fk.has(rel)) _fk.set(rel, (fontkit as any).openSync(abs(rel))); return _fk.get(rel); }
+// advance width (px) of one line at a given size — measured with the ACTUAL weight file (bold is wider).
+export function textWidth(fontKey: string, text: string, size: number, weight?: string): number {
+  try { const f = fkFont(fontKey, weight); const run = f.layout(text); let u = 0; for (const g of run.glyphs) u += g.advanceWidth; return (u * size) / f.unitsPerEm; }
   catch { return text.length * size * 0.55; }
 }
 
@@ -44,6 +53,9 @@ export const EditableSlot = z.object({
   // ADAPTIVE PILL: draw a rounded pill behind the text, sized to the MEASURED text width (+pad) — replaces a
   // baked pill that would otherwise sit half-empty behind shorter real values (e.g. #11's address pill).
   pill: z.object({ role: z.string(), pad_x: z.number(), pad_y: z.number() }).optional(),
+  // FLOW: position this slot's y directly after another slot's rendered text block (title -> body stacking,
+  // so a 2-line real title keeps the body tight underneath like the Canva original).
+  follow: z.object({ slot: z.string(), gap: z.number() }).optional(),
 });
 export const EditableManifest = z.object({
   template_id: z.string(),
@@ -77,6 +89,9 @@ export const EditableManifest = z.object({
     x0: z.number(), x1: z.number(), top_base: z.number(), shift_per_missing: z.number(), max_rows: z.number(),
     fill_role: z.string(), header_slot: z.string(), row_slots: z.array(z.string()),
     pad_top: z.number(), header_h: z.number(), row_pitch: z.number(), row_h: z.number(), pad_bottom: z.number(),
+    // row icons: baked icon art extracted from the source (engine/stripPlate probe + extractor). Keyword-matched
+    // per row text; unmatched rows get a neutral check icon in the same style.
+    icons: z.object({ file: z.string(), x: z.number(), dy: z.number() }).optional(),
   }).optional(),
   text_slots: z.array(EditableSlot),
 });
@@ -148,6 +163,7 @@ export async function renderEditable(m: EditableManifest, palette: Palette = {},
   // dynamic panel: compute geometry from the number of NON-EMPTY rows, draw the panel, and override the
   // header/row slot y-positions so they sit inside the drawn panel (x-coords stay from the manifest).
   const yOverride = new Map<string, [number, number]>();
+  const blockBottoms = new Map<string, number>();
   if (m.dynamic_panel) {
     const dp = m.dynamic_panel;
     const rows = dp.row_slots.filter((id) => m.text_slots.find((s) => s.id === id)?.text.trim());
@@ -160,12 +176,32 @@ export async function renderEditable(m: EditableManifest, palette: Palette = {},
     overlay += `<rect x="${dp.x0}" y="${top.toFixed(1)}" width="${dp.x1 - dp.x0}" height="${panelH.toFixed(1)}" fill="${roleHex(m, palette, dp.fill_role)}"/>`;
     yOverride.set(dp.header_slot, [top + dp.pad_top, top + dp.pad_top + dp.header_h]);
     rows.forEach((id, i) => { const y0 = top + dp.pad_top + dp.header_h + i * dp.row_pitch; yOverride.set(id, [y0, y0 + dp.row_h]); });
+    // baked row icons (extracted from the source): keyword-match each row's text; neutral check when unmatched
+    if (dp.icons) {
+      const lib = JSON.parse(fs.readFileSync(abs(dp.icons.file), "utf8"));
+      const kw: Record<string, string[]> = lib._keywords || {};
+      rows.forEach((id, i) => {
+        const txt = (m.text_slots.find((s) => s.id === id)?.text || "").toLowerCase();
+        const name = Object.keys(kw).find((k) => kw[k].some((w) => txt.includes(w)));
+        const y0 = top + dp.pad_top + dp.header_h + i * dp.row_pitch + dp.icons!.dy;
+        if (name && lib[name]) {
+          const ic = lib[name];
+          overlay += `<g transform="translate(${(dp.icons!.x - ic.bbox[0]).toFixed(1)},${(y0 - ic.bbox[1]).toFixed(1)})">${ic.svg}</g>`;
+        } else {
+          overlay += `<g transform="translate(${dp.icons!.x},${y0.toFixed(1)})"><rect x="0" y="0" width="49" height="49" rx="8" fill="#1a1a1a"/><path d="M13 26 L22 34 L36 16" stroke="#ffffff" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g>`;
+        }
+      });
+    }
   }
   // knock out stray baked source artifacts (e.g. a leftover bracket glyph) before drawing text
   for (const kr of m.knockout_regions ?? []) {
     overlay += `<rect x="${kr[0]}" y="${kr[1]}" width="${kr[2] - kr[0]}" height="${kr[3] - kr[1]}" fill="${localBg(bgRGBA, kr)}"/>`;
   }
   for (const s of m.text_slots) {
+    if (s.follow && blockBottoms.has(s.follow.slot)) {
+      const fy = blockBottoms.get(s.follow.slot)! + s.follow.gap;
+      yOverride.set(s.id, [fy, fy + (s.bbox[3] - s.bbox[1])]);
+    }
     const ov = yOverride.get(s.id);
     const [x0, y0, x1, y1] = ov ? [s.bbox[0], ov[0], s.bbox[2], ov[1]] : s.bbox;
     // empty slot → knock out the baked source text but draw nothing, so a data-driven derivation can HIDE a row
@@ -180,7 +216,7 @@ export async function renderEditable(m: EditableManifest, palette: Palette = {},
     // edges and prevents overrun when real property values are longer than the template's placeholder copy.
     const avail = bw - 2 * pad;
     const sx = s.scale_x ?? 1;
-    const widest = Math.max(...lines.map((l) => textWidth(s.font, l, fontSize))) * sx;
+    const widest = Math.max(...lines.map((l) => textWidth(s.font, l, fontSize, s.weight))) * sx;
     if (widest > avail && avail > 0) { const r = avail / widest; fontSize = Math.max(8, fontSize * r); lineH = lineH * r; }
     // vertical auto-fit: if the block is taller than the bbox (e.g. a 3-line title), shrink size + line pitch
     if (lines.length * lineH > bh && bh > 0) { const rv = bh / (lines.length * lineH); fontSize = Math.max(8, fontSize * rv); lineH = lineH * rv; }
@@ -191,11 +227,12 @@ export async function renderEditable(m: EditableManifest, palette: Palette = {},
     const anchor = s.align === "center" ? "middle" : s.align === "right" ? "end" : "start";
     const tx = s.align === "center" ? x0 + bw / 2 : s.align === "right" ? x1 - pad : x0 + pad;
     const knockHex = localBg(bgRGBA, [x0, y0, x1, y1]);
-    // faux-bold: the vault has no bold face, so a same-colour stroke thickens the regular glyph to match
-    // a bold source title/label (flagged needs_seed — this is a visual approximation, not the real face).
-    const bold = /bold|[6-9]00/.test(s.weight || "");
-    const strokeAttr = bold ? ` stroke="${fill}" stroke-width="${(fontSize * 0.042).toFixed(2)}" paint-order="stroke"` : "";
-    const maxLineWidth = Math.max(...lines.map((l) => textWidth(s.font, l, fontSize))) * sx;
+    // REAL weights: emit font-weight and let fontdb select the seeded weight file (Poppins Medium/SemiBold/
+    // Bold are in fonts/). No faux-bold strokes.
+    const wNum = s.weight ? (/^\d+$/.test(s.weight) ? s.weight : "700") : "";
+    const strokeAttr = wNum ? ` font-weight="${wNum}"` : "";
+    const maxLineWidth = Math.max(...lines.map((l) => textWidth(s.font, l, fontSize, s.weight))) * sx;
+    blockBottoms.set(s.id, y0 + topPad + lines.length * lineH);
     layout.push({ id: s.id, bbox: [x0, y0, x1, y1], size: +fontSize.toFixed(1), pad, avail: +(bw - 2 * pad).toFixed(1), maxLineWidth: +maxLineWidth.toFixed(1), blockTop: +(y0 + topPad).toFixed(1), blockBottom: +(y0 + topPad + lines.length * lineH).toFixed(1) });
     // knockout the baked (outlined) source text in this region, then draw editable <text> on top.
     // strip-plate mode (template-wide or per-slot): baked text already REMOVED -> draw directly, no knockout box.

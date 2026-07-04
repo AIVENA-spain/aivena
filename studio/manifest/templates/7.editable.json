@@ -41,7 +41,12 @@
     "header_h": 72,
     "row_pitch": 70,
     "row_h": 36,
-    "pad_bottom": 46
+    "pad_bottom": 46,
+    "icons": {
+      "file": "intake/7/icons.json",
+      "x": 656,
+      "dy": -7
+    }
   },
   "colour_tokens": {
     "background": {
@@ -106,7 +111,7 @@
       ],
       "size": 24,
       "line_height": 26,
-      "weight": "bold",
+      "weight": "600",
       "font": "Poppins",
       "align": "left",
       "text": "Rimberio\nReal Estate"
@@ -117,14 +122,14 @@
       "source": "property_fact",
       "bbox": [
         69,
-        622,
+        594,
         600,
-        796
+        846
       ],
       "size": 85,
       "line_height": 87,
       "valign": "top",
-      "weight": "bold",
+      "weight": "700",
       "font": "Poppins",
       "align": "left",
       "text": "Discover\nYour Dream\nReal Estate"
@@ -132,19 +137,22 @@
     {
       "id": "body",
       "role": "subtitle/body",
-      "source": "property_fact",
+      "source": "template_copy",
       "bbox": [
         70,
-        824,
+        896,
         590,
-        904
+        976
       ],
       "size": 30,
       "line_height": 37,
-      "valign": "center",
       "font": "Poppins",
       "align": "left",
-      "text": "This ultra-modern luxury home is\ndesigned for the bold and refined."
+      "text": "This ultra-modern luxury home is\ndesigned for the bold and refined.",
+      "follow": {
+        "slot": "title",
+        "gap": 58
+      }
     },
     {
       "id": "features_header",
@@ -157,7 +165,7 @@
         0
       ],
       "size": 30,
-      "weight": "bold",
+      "weight": "600",
       "valign": "center",
       "font": "Poppins",
       "align": "left",
@@ -168,9 +176,9 @@
       "role": "stat.value",
       "source": "property_fact",
       "bbox": [
-        662,
+        718,
         0,
-        1000,
+        1008,
         0
       ],
       "size": 31,
@@ -183,9 +191,9 @@
       "role": "stat.value",
       "source": "property_fact",
       "bbox": [
-        662,
+        718,
         0,
-        1000,
+        1008,
         0
       ],
       "size": 31,
@@ -198,9 +206,9 @@
       "role": "stat.value",
       "source": "property_fact",
       "bbox": [
-        662,
+        718,
         0,
-        1000,
+        1008,
         0
       ],
       "size": 31,
@@ -213,9 +221,9 @@
       "role": "stat.value",
       "source": "property_fact",
       "bbox": [
-        662,
+        718,
         0,
-        1000,
+        1008,
         0
       ],
       "size": 31,
@@ -228,9 +236,9 @@
       "role": "stat.value",
       "source": "property_fact",
       "bbox": [
-        662,
+        718,
         0,
-        1000,
+        1008,
         0
       ],
       "size": 31,
@@ -249,7 +257,7 @@
         1332
       ],
       "size": 26,
-      "weight": "bold",
+      "weight": "600",
       "font": "Poppins",
       "align": "left",
       "text": "CONTACT US AT"

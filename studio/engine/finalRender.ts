@@ -60,10 +60,9 @@ function deriveSlots(p: any, agency: any, templateId: string): Record<string, { 
     };
   }
   if (templateId === "7") {
-    const bodyLine2 = [price, p.size ? `${p.size} m² built` : null].filter(Boolean).join("  ·  ");
+    // body stays the template's own marketing copy (editable) — matches the Canva layout exactly
     const out: Record<string, { text: string }> = {
       brand: T(brand2), title: T(`${typeCap} in\n${p.city}`),
-      body: T([loc, bodyLine2].filter(Boolean).join("\n")),
       cta_phone: T(agency.phone), cta_web: T(agency.web),
     };
     featureRows(p).forEach((r, i) => (out[`feat_${i + 1}`] = T(r)));

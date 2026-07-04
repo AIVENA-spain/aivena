@@ -29,6 +29,7 @@ import studioRenderRoute from './routes/studio-render';
 import imagesRoute from './routes/images';
 import studioWizardRoute from './routes/studio-wizard';
 import adminRoute from './routes/admin';
+import chatRoute from './routes/chat';
 
 Sentry.init({
   dsn: env.SENTRY_DSN,
@@ -63,6 +64,15 @@ app.get('/health', (c) => {
 // the kie step later), NOT a user JWT, so the /api/* auth + agency-context
 // middleware must never run on it. POST /studio/render.
 app.route('/studio', studioRenderRoute);
+
+// Amanda web-chat (Amanda Phase A) — mounted OUTSIDE /api/* on purpose: PUBLIC,
+// unauthenticated visitor endpoints (no user JWT, no agency-context middleware).
+// The agency is derived from :agencySlug and every write goes through the
+// SECURITY DEFINER amanda_capture_lead RPC. Gated to is_test agencies (slice 1).
+// NOTE (Phase B / widget): browser calls from agency origins need a per-agency
+// CORS allow-list; the global dashboard-only CORS above still applies here today,
+// so slice 1 is exercised server-side. POST /chat/:agencySlug/contact.
+app.route('/chat', chatRoute);
 
 // Protected API routes — require a verified Supabase access token AND a
 // transaction-scoped agency context for RLS.

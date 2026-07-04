@@ -9,7 +9,7 @@ import { PROPS, ensureImages, renderEditableFor } from "./finalRender";
 // set). Renders #5/#14/#3/#6, demonstrates the production ELIGIBILITY GUARD (#14 Just Sold), and builds review
 // sheets. NEW = the templates built to standard this batch.
 const NEW = ["5", "14", "3", "6"];
-const NAME: Record<string, string> = { "5": "#5 Listing", "14": "#14 Just Sold", "3": "#3 Luxury (Canva p3)", "6": "#6 Property Gallery (Canva p6)" };
+const NAME: Record<string, string> = { "5": "#5 Listing", "14": "#14 Just Sold", "3": "#3 Luxury (Canva p3, strip-plate v2)", "6": "#6 (Canva p6 via 6b) — PENDING strip-plate REBUILD" };
 
 async function main() {
   const sharp = (await import("sharp")).default;

@@ -56,6 +56,10 @@ export const EditableManifest = z.object({
   // so knockouts blend. stops = [{offset 0..1, opacity 0..1}] in the role colour.
   scrim: z.object({ role: z.string(), stops: z.array(z.object({ offset: z.number(), opacity: z.number() })) }).optional(),
   knockout_regions: z.array(z.tuple([z.number(), z.number(), z.number(), z.number()])).optional(), // knock out stray baked source art (local-bg fill, no text)
+  // STRIP-PLATE mode: the source_svg already had its dynamic text paths REMOVED (engine/stripPlate.ts), so the
+  // photo/art background is intact — editable text draws directly on it with NO knockout rectangles (knockouts
+  // over a photo always show as boxes; this mode is what makes photo-background templates replicate exactly).
+  no_knockouts: z.boolean().optional(),
   // ADAPTIVE PANEL: a baked panel (e.g. #7's feature panel) trimmed to its content — everything in `area` below
   // the last non-empty `fit_to` slot (+ pad) is filled with `fill_role` (the page bg), so a 2-row list doesn't
   // leave a tall empty panel. Fill is drawn LAST (over the baked panel bottom + any empty-row knockouts).
@@ -68,6 +72,17 @@ export type Palette = Record<string, string>;
 export type SlotLayout = { id: string; bbox: number[]; size: number; pad: number; avail: number; maxLineWidth: number; blockTop: number; blockBottom: number };
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+// ONE ASPECT RULE (meet-vs-slice reconciliation, Packet 4 task 5): photo-slot <image> tags always crop-to-fill
+// ('xMidYMid slice'), exactly like Canva and the LIVE renderer (apps/api/src/routes/studio-render.ts) — the raw
+// Canva exports say 'meet' (letterboxes mismatched photos). Applied on the SHORT tokens before substitution;
+// baked art (no token) untouched. Keep this regex identical to the live renderer's.
+export function forceSliceOnPhotoSlots(svg: string): string {
+  return svg.replace(/<image\b[^>]*>/g, (tag) => {
+    if (!/@@PHOTO\d+@@/.test(tag)) return tag;
+    return tag.replace(/\s+preserveAspectRatio\s*=\s*"[^"]*"/g, "").replace(/^<image\b/, '<image preserveAspectRatio="xMidYMid slice"');
+  });
+}
 function roleHex(m: EditableManifest, palette: Palette, role: string): string {
   return palette[role] || m.colour_tokens[role]?.default || "#000000";
 }
@@ -89,7 +104,7 @@ function localBg(img: RGBA, b: number[], margin = 10): string {
 
 export async function renderEditable(m: EditableManifest, palette: Palette = {}, photos: string | Record<string, string> = GREY): Promise<{ svg: string; png: Buffer; editableTextCount: number; photosFilled: number }> {
   const [W, H] = [m.canvas.width, m.canvas.height];
-  const src = fs.readFileSync(abs(m.source_svg), "utf8");
+  const src = forceSliceOnPhotoSlots(fs.readFileSync(abs(m.source_svg), "utf8"));
   // background raster = source SVG with EACH photo token filled (hero + thumbnails), then an optional
   // legibility scrim baked in, so the knockout samples the FINAL backdrop tone.
   const tokens = m.photo_slots?.map((p) => p.token) ?? (m.photo_token ? [m.photo_token] : []);
@@ -124,7 +139,7 @@ export async function renderEditable(m: EditableManifest, palette: Palette = {},
     const [x0, y0, x1, y1] = s.bbox;
     // empty slot → knock out the baked source text but draw nothing, so a data-driven derivation can HIDE a row
     // (e.g. a property with fewer real features than the template has feature rows) without leaking baked copy.
-    if (!s.text.trim()) { overlay += `<rect x="${x0}" y="${y0}" width="${x1 - x0}" height="${y1 - y0}" fill="${localBg(bgRGBA, [x0, y0, x1, y1])}"/>`; continue; }
+    if (!s.text.trim()) { if (!m.no_knockouts) overlay += `<rect x="${x0}" y="${y0}" width="${x1 - x0}" height="${y1 - y0}" fill="${localBg(bgRGBA, [x0, y0, x1, y1])}"/>`; continue; }
     const lines = s.text.split("\n");
     const bw = x1 - x0, bh = y1 - y0;
     const pad = s.pad ?? 0;
@@ -150,8 +165,9 @@ export async function renderEditable(m: EditableManifest, palette: Palette = {},
     const strokeAttr = bold ? ` stroke="${fill}" stroke-width="${(fontSize * 0.042).toFixed(2)}" paint-order="stroke"` : "";
     const maxLineWidth = Math.max(...lines.map((l) => textWidth(s.font, l, fontSize)));
     layout.push({ id: s.id, bbox: [x0, y0, x1, y1], size: +fontSize.toFixed(1), pad, avail: +(bw - 2 * pad).toFixed(1), maxLineWidth: +maxLineWidth.toFixed(1), blockTop: +(y0 + topPad).toFixed(1), blockBottom: +(y0 + topPad + lines.length * lineH).toFixed(1) });
-    // knockout the baked (outlined) source text in this region, then draw editable <text> on top
-    overlay += `<rect x="${x0}" y="${y0}" width="${bw}" height="${bh}" fill="${knockHex}"/>`;
+    // knockout the baked (outlined) source text in this region, then draw editable <text> on top.
+    // strip-plate mode: the baked text is already REMOVED from the source -> draw directly, no knockout box.
+    if (!m.no_knockouts) overlay += `<rect x="${x0}" y="${y0}" width="${bw}" height="${bh}" fill="${knockHex}"/>`;
     lines.forEach((ln, i) => {
       // when size/valign is explicit, place the first baseline from the ascent so type sits inside the bbox
       const by = (s.size || s.valign) ? (y0 + topPad + fontSize * 0.82 + i * lineH) : (y0 + (i + 1) * lineH - lineH * 0.22);
@@ -186,7 +202,7 @@ export function loadEditableManifest(p: string): EditableManifest {
 // the ORIGINAL template look: source SVG with every photo token filled, NO editable overlay. Used as the
 // reference side of the side-by-side visual comparison.
 export function renderFilledSource(m: EditableManifest, photos: string | Record<string, string> = GREY): Buffer {
-  const src = fs.readFileSync(abs(m.source_svg), "utf8");
+  const src = forceSliceOnPhotoSlots(fs.readFileSync(abs(m.source_svg), "utf8"));
   const tokens = m.photo_slots?.map((p) => p.token) ?? (m.photo_token ? [m.photo_token] : []);
   let filled = src;
   for (const tok of tokens) filled = filled.split(tok).join(typeof photos === "string" ? photos : (photos[tok] || GREY));

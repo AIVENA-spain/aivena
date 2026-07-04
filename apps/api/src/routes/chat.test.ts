@@ -1,5 +1,29 @@
 import { describe, it, expect } from 'vitest';
-import { validateContact, mapCaptureError, createRateLimiter } from './chat-lib';
+import { validateContact, validateMessage, mapCaptureError, createRateLimiter } from './chat-lib';
+
+describe('validateMessage — slice 2 (/message) request validation', () => {
+  it('requires a session token', () => {
+    expect(validateMessage({ message: 'hi' })).toEqual({ ok: false, error: expect.stringMatching(/session/i) });
+    expect(validateMessage({ sessionToken: '   ', message: 'hi' })).toEqual({ ok: false, error: expect.stringMatching(/session/i) });
+  });
+  it('requires a non-empty message', () => {
+    expect(validateMessage({ sessionToken: 't1' })).toEqual({ ok: false, error: expect.stringMatching(/type a message/i) });
+    expect(validateMessage({ sessionToken: 't1', message: '   ' })).toEqual({ ok: false, error: expect.stringMatching(/type a message/i) });
+  });
+  it('accepts a valid turn; consent defaults false; message is length-capped', () => {
+    const r = validateMessage({ sessionToken: 't1', message: 'looking in Denia', language: 'es' });
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.input).toMatchObject({ sessionToken: 't1', message: 'looking in Denia', consent: false, language: 'es' });
+    }
+    const long = validateMessage({ sessionToken: 't1', message: 'x'.repeat(5000) });
+    if (long.ok) expect(long.input.message.length).toBeLessThanOrEqual(2000);
+  });
+  it('only literal true enables consent', () => {
+    const r = validateMessage({ sessionToken: 't1', message: 'hi', consent: 'yes' });
+    if (r.ok) expect(r.input.consent).toBe(false);
+  });
+});
 
 describe('validateContact — consent + validation + normalisation', () => {
   it('rejects a missing/false consent', () => {

@@ -45,6 +45,32 @@ export type CaptureInput = {
   pageUrl: string | null; referrer: string | null;
 };
 
+// ── Slice 2 (/message) — a single conversational turn ────────────────────────
+export type MessageInput = {
+  sessionToken: string; message: string; consent: boolean; language: string | null;
+};
+
+/** Pure validation for POST /:agencySlug/message. The widget owns the
+ *  sessionToken (one per visitor session); a message is required; consent is
+ *  optional here (only enforced at the capture hand-off). */
+export function validateMessage(
+  body: Record<string, unknown>,
+): { ok: true; input: MessageInput } | { ok: false; error: string } {
+  const sessionToken = str(body.sessionToken, CAP.short);
+  if (!sessionToken) return { ok: false, error: 'Missing chat session.' };
+  const message = str(body.message, CAP.text);
+  if (!message) return { ok: false, error: 'Please type a message.' };
+  return {
+    ok: true,
+    input: {
+      sessionToken,
+      message,
+      consent: body.consent === true,
+      language: str(body.language, 8),
+    },
+  };
+}
+
 /** Pure validation + normalisation of the request body. */
 export function validateContact(body: Record<string, unknown>): { ok: true; input: CaptureInput } | { ok: false; error: string } {
   if (body.consent !== true) return { ok: false, error: 'Consent is required to send your details.' };

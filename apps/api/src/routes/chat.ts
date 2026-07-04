@@ -2,7 +2,8 @@ import { Hono } from 'hono';
 import { sql } from 'drizzle-orm';
 import { createHash } from 'node:crypto';
 import { db } from '../../../../packages/db/client';
-import { validateContact, mapCaptureError, createRateLimiter } from './chat-lib';
+import { validateContact, validateMessage, mapCaptureError, createRateLimiter } from './chat-lib';
+import { parseMessage, replyForCollected, type Collected } from './amanda-flow';
 
 /**
  * Amanda web-chat — PUBLIC (unauthenticated) capture endpoints. Mounted at /chat
@@ -93,6 +94,74 @@ route.post('/:agencySlug/contact', async (c) => {
     }
     // Never leak SQL/table/code; log only the slug + generic detail.
     console.error('[chat/contact] capture failed for slug:', slug, pg ? pg.code : 'non-pg-error');
+    return c.json({ ok: false, error: 'Something went wrong — please try again.' }, 500);
+  }
+});
+
+// POST /chat/:agencySlug/message — Slice 2: one rules-based conversational turn
+// (NO LLM). Appends the visitor's message + merges parsed qualification, returns a
+// deterministic next prompt, and — only when contact is present AND consent is
+// given — hands off to the existing amanda_capture_lead to materialise the lead.
+// is_test-gated; no provider/send; no automation.
+route.post('/:agencySlug/message', async (c) => {
+  const slug = c.req.param('agencySlug');
+  if (!slug || slug.length > 100) return c.json({ ok: false, error: 'This chat is not available.' }, 404);
+
+  const ipHash = ipHashOf(c);
+  if (!allowRequest(`${ipHash}:${slug}`, Date.now())) {
+    return c.json({ ok: false, error: 'Too many requests — please wait a moment and try again.' }, 429);
+  }
+
+  const parsed = validateMessage(await readBody(c));
+  if (!parsed.ok) return c.json({ ok: false, error: parsed.error }, 400);
+  const v = parsed.input;
+
+  try {
+    // 1) Parse light facts; append the visitor's inbound message + merge the patch.
+    const patch = parseMessage(v.message);
+    const inbound = await db.execute(sql`
+      SELECT * FROM public.amanda_append_message(
+        ${slug}, ${v.sessionToken}, ${'inbound'}, ${v.message},
+        ${JSON.stringify(patch)}::jsonb, ${REQUIRE_TEST_AGENCY}
+      )
+    `);
+    const collected = ((inbound as unknown as Array<{ collected: Record<string, unknown> }>)[0]?.collected ?? {}) as Collected;
+
+    // 2) Deterministic reply (no LLM) from the server-merged state.
+    const addedNothing = Object.keys(patch).length === 0;
+    const { reply, readyToCapture } = replyForCollected(collected, addedNothing, v.language ?? undefined);
+
+    // 3) Append Amanda's outbound reply.
+    await db.execute(sql`
+      SELECT * FROM public.amanda_append_message(
+        ${slug}, ${v.sessionToken}, ${'outbound'}, ${reply}, ${'{}'}::jsonb, ${REQUIRE_TEST_AGENCY}
+      )
+    `);
+
+    // 4) Hand off to capture ONLY when contact is ready AND the visitor consented.
+    let captured = false;
+    if (readyToCapture && v.consent) {
+      await db.execute(sql`
+        SELECT * FROM public.amanda_capture_lead(
+          ${slug}, ${v.sessionToken}, ${collected.name ?? null}, ${collected.email ?? null}, ${collected.phone ?? null}, ${true},
+          ${v.language}, ${collected.intent ?? null}, ${null}, ${collected.budgetMax ?? null},
+          ${collected.location ?? null}, ${collected.bedroomsMin ?? null}, ${collected.propertyType ?? null},
+          ${null}::jsonb, ${null}, ${null}, ${ipHash}, ${REQUIRE_TEST_AGENCY}
+        )
+      `);
+      captured = true;
+    }
+
+    // Return the deterministic next prompt + the visitor's own collected facts
+    // (no internal ids). `captured` tells the widget the lead was materialised.
+    return c.json({ ok: true, reply, collected, captured });
+  } catch (err) {
+    const pg = asPgError(err);
+    if (pg && pg.code === 'P0001') {
+      const m = mapCaptureError(pg.message.trim());
+      return c.json({ ok: false, error: m.msg }, m.status);
+    }
+    console.error('[chat/message] failed for slug:', slug, pg ? pg.code : 'non-pg-error');
     return c.json({ ok: false, error: 'Something went wrong — please try again.' }, 500);
   }
 });

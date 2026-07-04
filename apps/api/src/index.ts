@@ -30,6 +30,7 @@ import imagesRoute from './routes/images';
 import studioWizardRoute from './routes/studio-wizard';
 import adminRoute from './routes/admin';
 import chatRoute from './routes/chat';
+import { apiCalendarRoute, publicCalendarRoute } from './routes/calendar';
 
 Sentry.init({
   dsn: env.SENTRY_DSN,
@@ -74,6 +75,12 @@ app.route('/studio', studioRenderRoute);
 // so slice 1 is exercised server-side. POST /chat/:agencySlug/contact.
 app.route('/chat', chatRoute);
 
+// Google Calendar OAuth callback (Packet 2 · L1) — PUBLIC, OUTSIDE /api/* on
+// purpose: Google redirects the browser here; it is authenticated by the
+// HMAC-signed `state` (which carries the agency id), NOT a user JWT. Inert (503)
+// until the Google secrets exist. GET /calendar/google/callback.
+app.route('/calendar', publicCalendarRoute);
+
 // Protected API routes — require a verified Supabase access token AND a
 // transaction-scoped agency context for RLS.
 app.use('/api/*', authMiddleware);
@@ -95,6 +102,10 @@ app.route('/api/v1/invitations', invitationsRoute);
 app.route('/api/v1/agencies', propertiesRoute);
 // Bookings / viewings read surface (W11-lite).
 app.route('/api/v1/bookings', bookingsRoute);
+// Google Calendar connect / status / disconnect (Packet 2 · L1) — authed agency
+// owner. Inert (503) until the Google secrets are set; no live Google call is made
+// until an agency connects. Manual-task fallback (L3) stays until then.
+app.route('/api/v1/calendar', apiCalendarRoute);
 // Content library read surface (Studio Library tab).
 app.route('/api/v1/content', contentRoute);
 // Lead notes — direct SELECT read + SECURITY DEFINER write RPCs.

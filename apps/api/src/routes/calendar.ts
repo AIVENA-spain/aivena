@@ -61,7 +61,7 @@ apiCalendarRoute.get('/status', async (c) => {
   const r = (rows as unknown as Array<{ status: string; external_account_email: string | null; expires_at: string | null }>)[0];
   return c.json({
     ok: true,
-    connected: Boolean(r && r.status === 'connected'),
+    connected: Boolean(r && r.status === 'active'),   // 'active' is the CHECK-valid connected status
     status: r?.status ?? 'not_connected',
     accountEmail: r?.external_account_email ?? null,
     expiresAt: r?.expires_at ?? null,

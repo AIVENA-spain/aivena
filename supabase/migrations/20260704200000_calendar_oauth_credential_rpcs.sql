@@ -38,7 +38,7 @@ BEGIN
     consecutive_failures, last_error, last_error_at, revoked_at, revoked_reason
   ) VALUES (
     p_agency_id, p_provider, p_access_token, p_refresh_token, coalesce(p_token_type,'Bearer'),
-    p_expires_at, p_scopes, p_account_email, p_account_id, 'connected', now(), now(),
+    p_expires_at, p_scopes, p_account_email, p_account_id, 'active', now(), now(),
     0, NULL, NULL, NULL, NULL
   )
   ON CONFLICT (agency_id, provider) DO UPDATE SET
@@ -49,7 +49,7 @@ BEGIN
     scopes                = EXCLUDED.scopes,
     external_account_email= coalesce(EXCLUDED.external_account_email, c.external_account_email),
     external_account_id   = coalesce(EXCLUDED.external_account_id, c.external_account_id),
-    status                = 'connected',
+    status                = 'active',
     last_refreshed_at     = now(),
     consecutive_failures  = 0,
     last_error = NULL, last_error_at = NULL, revoked_at = NULL, revoked_reason = NULL,
@@ -95,7 +95,7 @@ AS $function$
 BEGIN
   UPDATE public.agency_oauth_credentials c
      SET status = 'revoked', revoked_at = now(), revoked_reason = coalesce(p_reason,'user_disconnect'),
-         access_token = NULL, refresh_token = NULL, updated_at = now()
+         access_token = '', refresh_token = NULL, updated_at = now()
    WHERE c.agency_id = p_agency_id AND c.provider = p_provider AND c.status <> 'revoked';
   revoked := FOUND;
 END;

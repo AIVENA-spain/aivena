@@ -71,7 +71,7 @@ async function getFreshAccessToken(agencyId: string, clientId: string, clientSec
     SELECT * FROM public.get_agency_oauth_credential(${agencyId}, ${PROVIDER})
   `)) as unknown as Array<{ access_token: string | null; refresh_token: string | null; expires_at: string | null; status: string | null }>;
   const cred = rows[0];
-  if (!cred || cred.status !== 'connected' || !cred.access_token) return null;
+  if (!cred || cred.status !== 'active' || !cred.access_token) return null;  // 'active' = CHECK-valid connected
 
   const expMs = cred.expires_at ? new Date(cred.expires_at).getTime() : 0;
   if (!isExpiring(expMs, Date.now())) return cred.access_token;

@@ -38,10 +38,28 @@ const COLUMN_ALIASES: Record<string, string[]> = {
   location_city: ['city', 'ciudad', 'town', 'poblacion', 'municipio', 'location_city', 'localidad'],
   location_region: ['region', 'provincia', 'location_region', 'comunidad'],
   status: ['status', 'estado', 'situacion'],
-  images: ['photos_url', 'photo', 'image', 'imagen', 'foto', 'url', 'photo_url', 'imagen_principal'],
+  images: ['photos_url', 'photos', 'photo', 'image', 'images', 'imagen', 'imagenes', 'foto', 'fotos', 'url', 'photo_url', 'imagen_principal'],
 };
 
 const PROPERTY_STATUS = new Set(['active', 'reserved', 'sold']);
+
+// Spanish CRM exports use localized status words — map them to our canonical set
+// so a "vendido" listing isn't silently flattened to "active".
+const STATUS_ALIASES: Record<string, string> = {
+  disponible: 'active', activo: 'active', activa: 'active', 'en venta': 'active', enventa: 'active', libre: 'active',
+  reservado: 'reserved', reservada: 'reserved',
+  vendido: 'sold', vendida: 'sold',
+};
+
+// Import guards — Pilot-1 catalogs are small; reject runaway/pasted files early so a
+// giant upload can't time out the serial staging loop.
+const MAX_IMPORT_BYTES = 8 * 1024 * 1024; // 8 MB
+const MAX_IMPORT_ROWS = 5000;             // data rows below the header
+
+/** Strip a leading UTF-8 BOM so the first header alias still matches (Excel/es-ES exports add one). */
+export function stripBom(s: string): string {
+  return s.charCodeAt(0) === 0xfeff ? s.slice(1) : s;
+}
 
 /**
  * GET /:id/properties — the agency's promoted catalog, newest first. Read as
@@ -89,7 +107,11 @@ route.post('/:id/property-imports', async (c) => {
       return c.json({ error: 'Attach a CSV file to import.' }, 400);
     }
     filename = file.name ?? null;
-    csvText = await file.text();
+    const size = typeof (file as { size?: number }).size === 'number' ? (file as { size: number }).size : null;
+    if (size != null && size > MAX_IMPORT_BYTES) {
+      return c.json({ error: `That file is too large (over ${Math.round(MAX_IMPORT_BYTES / 1024 / 1024)} MB). Split it into smaller imports.` }, 413);
+    }
+    csvText = stripBom(await file.text());
   } catch (err) {
     console.error('[/property-imports] form parse failed:', err);
     return c.json({ error: 'Couldn\'t read that upload — please try again.' }, 400);
@@ -103,6 +125,9 @@ route.post('/:id/property-imports', async (c) => {
   const parsed = parseCsv(csvText, delimiter);
   if (parsed.rows.length === 0) {
     return c.json({ error: 'No data rows found below the header.' }, 400);
+  }
+  if (parsed.rows.length > MAX_IMPORT_ROWS) {
+    return c.json({ error: `That file has ${parsed.rows.length} rows; the import limit is ${MAX_IMPORT_ROWS}. Split it into smaller files.` }, 413);
   }
 
   const { matched, unmatched } = resolveColumns(parsed.header);
@@ -159,6 +184,7 @@ route.post('/:id/property-imports', async (c) => {
       batchId,
       totalRows: parsed.rows.length,
       validRows: validCount,
+      failedRows: parsed.rows.length - validCount,
       matchedColumns: matched,
       unmatchedColumns: unmatched,
       sampleRows,
@@ -258,16 +284,28 @@ route.post('/:id/property-imports/:batchId/confirm', async (c) => {
 
 // ---------- CSV helpers ----------
 
-function detectDelimiter(text: string): string {
-  const firstLine = text.split(/\r?\n/, 1)[0] ?? '';
-  const counts: Record<string, number> = {
-    ',': (firstLine.match(/,/g) ?? []).length,
-    ';': (firstLine.match(/;/g) ?? []).length,
-    '\t': (firstLine.match(/\t/g) ?? []).length,
-  };
+/** Count a delimiter's occurrences in a line, ignoring those inside quoted fields. */
+function countOutsideQuotes(line: string, delim: string): number {
+  let n = 0;
+  let inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQ && line[i + 1] === '"') i++; // escaped quote
+      else inQ = !inQ;
+    } else if (ch === delim && !inQ) n++;
+  }
+  return n;
+}
+
+export function detectDelimiter(text: string): string {
+  // Header line only, BOM-stripped, quote-aware — so a header like Ref;Title;"Precio, €"
+  // isn't mis-detected as comma-separated because of the comma inside a quoted cell.
+  const firstLine = stripBom(text).split(/\r?\n/, 1)[0] ?? '';
   let best = ',';
   let bestN = -1;
-  for (const [d, n] of Object.entries(counts)) {
+  for (const d of [',', ';', '\t']) {
+    const n = countOutsideQuotes(firstLine, d);
     if (n > bestN) { best = d; bestN = n; }
   }
   return best;
@@ -278,7 +316,7 @@ function detectDelimiter(text: string): string {
  * (""), and the chosen delimiter. Good enough for agency exports; not a full
  * streaming parser (Pilot 1 catalogs are small).
  */
-function parseCsv(text: string, delimiter: string): { header: string[]; rows: string[][] } {
+export function parseCsv(text: string, delimiter: string): { header: string[]; rows: string[][] } {
   const records: string[][] = [];
   let field = '';
   let record: string[] = [];
@@ -320,7 +358,7 @@ function normaliseHeader(h: string): string {
     .replace(/[\s_-]+/g, '_');
 }
 
-function resolveColumns(header: string[]): {
+export function resolveColumns(header: string[]): {
   matched: Record<string, string>;
   unmatched: string[];
 } {
@@ -368,7 +406,7 @@ function resolveRow(
   return out;
 }
 
-function validateRow(resolved: Record<string, string>): string[] {
+export function validateRow(resolved: Record<string, string>): string[] {
   const errors: string[] = [];
   if (!resolved.external_id) errors.push('Missing a property reference.');
   if (!resolved.title) errors.push('Missing a title.');
@@ -385,17 +423,24 @@ function asTextOrNull(v: unknown): string | null {
   const t = v.trim();
   return t.length ? t : null;
 }
-function asNumberOrNull(v: unknown): number | null {
+export function asNumberOrNull(v: unknown): number | null {
   if (typeof v !== 'string') return null;
-  // tolerate "€485.000", "485000,50", "1.250.000 €"
+  // es-ES first: '.' is the thousands separator, ',' is the decimal.
+  // Tolerates "€485.000" (=485000), "485000,50", "1.250.000,50 €", "90,5".
   const cleaned = v.replace(/[^\d,.-]/g, '');
   if (!cleaned) return null;
-  // if both separators present, assume '.' thousands + ',' decimal (es-ES)
+  const hasDot = cleaned.includes('.');
+  const hasComma = cleaned.includes(',');
   let norm = cleaned;
-  if (cleaned.includes('.') && cleaned.includes(',')) {
-    norm = cleaned.replace(/\./g, '').replace(',', '.');
-  } else if (cleaned.includes(',')) {
-    norm = cleaned.replace(',', '.');
+  if (hasDot && hasComma) {
+    norm = cleaned.replace(/\./g, '').replace(',', '.'); // dots=thousands, comma=decimal
+  } else if (hasComma) {
+    norm = cleaned.replace(',', '.'); // lone comma = decimal
+  } else if (hasDot) {
+    // lone dot(s): es-ES thousands when it looks like grouping (multiple dots, or a single
+    // dot followed by exactly 3 digits, e.g. "485.000"); otherwise a genuine decimal ("90.5").
+    const dotCount = (cleaned.match(/\./g) ?? []).length;
+    if (dotCount > 1 || /\.\d{3}(?!\d)/.test(cleaned)) norm = cleaned.replace(/\./g, '');
   }
   const n = Number(norm);
   return Number.isFinite(n) ? n : null;
@@ -404,14 +449,20 @@ function asIntOrNull(v: unknown): number | null {
   const n = asNumberOrNull(v);
   return n === null ? null : Math.trunc(n);
 }
-function normaliseStatus(v: unknown): string {
+export function normaliseStatus(v: unknown): string {
   const t = typeof v === 'string' ? v.trim().toLowerCase() : '';
-  return PROPERTY_STATUS.has(t) ? t : 'active';
+  if (PROPERTY_STATUS.has(t)) return t;
+  return STATUS_ALIASES[t] ?? 'active';
 }
-function imagesArray(v: unknown): string[] {
+export function imagesArray(v: unknown): string[] {
   if (typeof v !== 'string') return [];
-  const t = v.trim();
-  return t.length ? [t] : [];
+  // A single CSV cell often holds MULTIPLE photo URLs. Split on ; | tab / newline, or on
+  // whitespace that precedes an http(s) URL (space-separated lists). Comma is the CSV
+  // delimiter so it never reaches here. Keeps single-URL cells as a one-element array.
+  return v
+    .split(/[;|\t\n\r]+|\s+(?=https?:\/\/)/)
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
 }
 
 export default route;

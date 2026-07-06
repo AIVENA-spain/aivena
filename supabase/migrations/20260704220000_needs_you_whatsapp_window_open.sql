@@ -51,8 +51,12 @@ BEGIN
 END;
 $function$;
 
--- Restore grants (DROP removes them). Match the prior grant set for this read RPC.
-REVOKE ALL ON FUNCTION public.dashboard_needs_you(integer) FROM PUBLIC;
+-- Restore grants (DROP removes them). Match the prior grant set EXACTLY for this read
+-- RPC: aivena_app, authenticated, service_role (+ postgres owner). Explicitly revoke
+-- anon/authenticated first because Supabase ALTER DEFAULT PRIVILEGES auto-grants EXECUTE
+-- to anon+authenticated on every newly-created public function — REVOKE FROM PUBLIC alone
+-- would leave a stray anon grant the prior function never had.
+REVOKE ALL ON FUNCTION public.dashboard_needs_you(integer) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.dashboard_needs_you(integer) TO aivena_app, authenticated, service_role;
 
 -- Rollback: DROP FUNCTION public.dashboard_needs_you(integer); then re-CREATE the

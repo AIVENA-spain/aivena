@@ -86,6 +86,21 @@ export async function buildStrippedSource(id: string, remap = false): Promise<{ 
   let pos = 0;
   paths.forEach((p, i) => { if (drop.has(i)) { out += raw.slice(pos, p.idx); pos = p.idx + p.el.length; } });
   out += raw.slice(pos);
+  // optional POSTPROCESS (intake/<id>/postprocess.json): structural surgery the zone mechanism can't express.
+  // delete_group_clips: remove whole <g clip-path="url(#id)">...</g> subtrees (e.g. #14's mirrored feather-band
+  // apparatus that ate ~2/3 of the photo window — Christian 2026-07-06: more image, hard-ish edges).
+  const ppFile = abs(`intake/${id}/postprocess.json`);
+  if (fs.existsSync(ppFile)) {
+    const pp = JSON.parse(fs.readFileSync(ppFile, "utf8"));
+    for (const cid of pp.delete_group_clips || []) {
+      const m = new RegExp(`<g clip-path="url\\(#${cid}\\)">`).exec(out);
+      if (!m) continue;
+      let depth = 0, end = -1;
+      const it = out.slice(m.index).matchAll(/<g\b[^>]*>|<\/g>/g);
+      for (const t of it) { depth += t[0].startsWith("<g") ? 1 : -1; if (depth === 0) { end = m.index + t.index! + t[0].length; break; } }
+      if (end > 0) out = out.slice(0, m.index) + out.slice(end);
+    }
+  }
   fs.writeFileSync(abs(`assets/${id}/source.stripped.svg`), out);
   return { removed: drop.size, kept: paths.length - drop.size };
 }

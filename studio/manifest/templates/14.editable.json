@@ -1,7 +1,7 @@
 {
   "template_id": "14",
   "title_font_status": "IDENTIFIED + SEEDED (whole-word position-exact IoU vs the baked glyphs, 2026-07-04, upgraded after adversarial review): 'JUST' = Questrial 400 (0.648 whole-word, clear gap over Didact 0.577/Poppins 0.548; J-descender + wide geometric caps confirmed by eye). 'SOLD!' = Red Hat Display Black Italic 900 (real italic file; replaced Jost 900i after a 14-face re-search — position-exact slot IoU 0.815 vs Jost 0.742; RHD's large oval O/D counters match the original where Jost's were visibly smaller; rendered ink [495,132,878,229] vs baked [495,132,877,229]). Stat labels = Glacial Indifference 500 (fonts/GlacialIndifference-Medium.ttf, SYNTHESIZED from the seeded Regular by outline-offsetting every glyph +13 units via skia-pathops stroke+union — a real outline face, not render-time faux bold — because Canva's outlined GI paths are ~12% fatter than the OFL release; dark-pixel deficit vs baked now 0.2%, was 11.8%). Footer contact lines = Glacial Indifference 400 (already at/above baked ink weight; flat-top 3, flagged 1, single-storey a all match; converted from the OFL OTF release to TTF, superscript-two synthesized). No render-time faux effects anywhere.",
-  "_note": "#14 (Just Sold — LIGHT). STRIP-PLATE REPLICATION (2026-07-04, replaces the rejected knockout method): assets/14/source.stripped.svg = the Canva source with ONLY the dynamic text paths + the 'Snag Space' placeholder logo block removed (engine/stripPlate.ts, intake/14/strip_zones.json — 123 paths dropped, verified 0 leftover glyph ink in all 8 zones and 0 px changed in the icon/divider band). KEPT baked art: cream background, the 3 stat icons (house/bed/bath at ink boxes x329-383/511-567/692-755, y319-379), the 2 thin dividers (x453/x625), the feather-masked photo window (y~410-1123, fades into the cream). NO hairline exists above the footer (earlier note was wrong — rows 1080-1150 carry zero baked ink outside the photo feather). Editable text draws directly on the intact plate (no_knockouts — no cover-up boxes possible; the old footer knockout seam cannot recur). SEAM FIX (2026-07-04 adversarial review): the baked bottom feather plateaus at ~93-97% opacity and the photo bitmap ends hard at row y=1123 — the scrim below is a background-colour gradient that COMPLETES the feather (opacity 0 at y1117.5 -> 1 at y1123 -> back to 0 by y1128), so the photo's last row fades to exact #cac6ba with no hard edge; rows >=1129 untouched (plate is empty there). ORPHAN-ICON FIX (same review): adaptive_panel neutralizes the baked area icon with exact background ONLY when stat_area is empty (size unknown -> no icon, no label; degrade honestly, no dangling art); when size exists the panel draws nothing and the baked icon stays. The headline is TWO slots at measured positions: light-geometric JUST + heavy-italic SOLD!, replicating the original two-face treatment. Slot geometry from measured baselines: JUST cap 134->baseline 228; SOLD! cap ~136->229; stat labels cap 399->414 centered under their icons (357/540/723.5); contact baselines 1173/1230/1282 at x=93; brand = 2-line agency text replacing the stripped placeholder logo (centered on the old logo axis x~930). No invented facts: stats/address are property facts (missing -> hidden), phone/web/brand are agency data, JUST SOLD! is template copy. Eligibility guard kept: just_sold renders only for sold status or an explicit demo. DEGRADE (2026-07-04): each stat slot declares its baked companion art (icon + its divider) via companion_art — a missing fact hides label AND art together, no orphaned icon/divider (replaces the adaptive_panel workaround).",
+  "_note": "#14 (Just Sold — LIGHT). STRIP-PLATE REPLICATION (2026-07-04, replaces the rejected knockout method): assets/14/source.stripped.svg = the Canva source with ONLY the dynamic text paths + the 'Snag Space' placeholder logo block removed (engine/stripPlate.ts, intake/14/strip_zones.json — 123 paths dropped, verified 0 leftover glyph ink in all 8 zones and 0 px changed in the icon/divider band). KEPT baked art: cream background, the 3 stat icons (house/bed/bath at ink boxes x329-383/511-567/692-755, y319-379), the 2 thin dividers (x453/x625), the feather-masked photo window (y~410-1123, fades into the cream). NO hairline exists above the footer (earlier note was wrong — rows 1080-1150 carry zero baked ink outside the photo feather). Editable text draws directly on the intact plate (no_knockouts — no cover-up boxes possible; the old footer knockout seam cannot recur). SEAM FIX (2026-07-04 adversarial review): the baked bottom feather plateaus at ~93-97% opacity and the photo bitmap ends hard at row y=1123 — the scrim below is a background-colour gradient that COMPLETES the feather (opacity 0 at y1117.5 -> 1 at y1123 -> back to 0 by y1128), so the photo's last row fades to exact #cac6ba with no hard edge; rows >=1129 untouched (plate is empty there). ORPHAN-ICON FIX (same review): adaptive_panel neutralizes the baked area icon with exact background ONLY when stat_area is empty (size unknown -> no icon, no label; degrade honestly, no dangling art); when size exists the panel draws nothing and the baked icon stays. The headline is TWO slots at measured positions: light-geometric JUST + heavy-italic SOLD!, replicating the original two-face treatment. Slot geometry from measured baselines: JUST cap 134->baseline 228; SOLD! cap ~136->229; stat labels cap 399->414 centered under their icons (357/540/723.5); contact baselines 1173/1230/1282 at x=93; brand = 2-line agency text replacing the stripped placeholder logo (centered on the old logo axis x~930). No invented facts: stats/address are property facts (missing -> hidden), phone/web/brand are agency data, JUST SOLD! is template copy. Eligibility guard kept: just_sold renders only for sold status or an explicit demo. DEGRADE (2026-07-04): each stat slot declares its baked companion art (icon + its divider) via companion_art — a missing fact hides label AND art together, no orphaned icon/divider (replaces the adaptive_panel workaround). MORE-IMAGE (Christian 2026-07-06): the source's four mirrored feather-band groups (masks 8dfbf53aaf/d642f2cf8c/d12d9cf75b/8ea378135c) ate ~2/3 of the photo window; intake/14/postprocess.json deletes them (reproducible via stripPlate), leaving the FULL hard window y405-1124. The manifest scrim now draws only short 30px cream fades at the window's top (under the stat labels) and bottom (into the footer) — under_art keeps baked art crisp. Replaces the old seam-completion scrim.",
   "canvas": {
     "width": 1080,
     "height": 1350
@@ -12,30 +12,31 @@
   "no_knockouts": true,
   "scrim": {
     "role": "background",
+    "under_art": true,
     "stops": [
       {
         "offset": 0,
-        "opacity": 0
-      },
-      {
-        "offset": 0.8278,
-        "opacity": 0
-      },
-      {
-        "offset": 0.8319,
         "opacity": 1
       },
       {
-        "offset": 0.8337,
+        "offset": 0.2955,
         "opacity": 1
       },
       {
-        "offset": 0.8356,
+        "offset": 0.318,
         "opacity": 0
+      },
+      {
+        "offset": 0.81,
+        "opacity": 0
+      },
+      {
+        "offset": 0.8326,
+        "opacity": 1
       },
       {
         "offset": 1,
-        "opacity": 0
+        "opacity": 1
       }
     ]
   },

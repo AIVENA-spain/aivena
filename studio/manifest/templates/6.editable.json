@@ -1,12 +1,12 @@
 {
   "template_id": "6",
   "title_font_status": "IDENTIFIED 2026-07-06 (isolated-glyph IoU + letterform anatomy, adversarially verified): Belgan Aesthetic 400 (Handpik — a Canva-library face). Signature glyphs coincide in pixel overlays: crossing-swash single-story 'a', ball-terminal 'j', droopy teardrop 'r' flags, droopy T-bar, hairline V. Replaces the Italiana+stroke_px stopgap. LICENSE: free for personal use; commercial desktop license sold via Creative Fabrica — purchase before production use (business call for Christian).",
-  "_note": "#6 = Canva p6 \"Villa in Torrevieja\" (bucket 6b). STRIP-PLATE v3 (2026-07-04): honest primitives only — plate_rects rebuild the cream crop margins the ONE-ASPECT force-slice floods (no dummy-slot panel hacks); the title is TWO per-line slots (the source sets line 1 at 154 and line 2 at 107 with different baselines) so each line keeps its design size/baseline and long real values auto-fit independently; title face = Italiana + stroke_px 2 replicating the SOURCE's baked stroke effect (constant ~2px stem delta across both title sizes = stroke, not a bolder face) + word_spacing -25 matching the source's near-fused word gaps; handle/stat follow the source's caps + plain-digit M2 conventions via deriveSlots (no remapped fonts); stat icons/dividers stay baked and are companion_art of their stat slots.",
+  "_note": "#6 = Canva p6 \"Villa in Torrevieja\" (CANONICAL Drive source 'aivena docs/studio templates/6.svg' -> assets/6c; replaces bucket 6b whose layout variant lacked the full-height left image. Big left photo = PHOTO0 full-height half-width; 3 small framed photos across the top; NO plate_rects — canonical frames are exact rects). STRIP-PLATE v3 (2026-07-04): honest primitives only — plate_rects rebuild the cream crop margins the ONE-ASPECT force-slice floods (no dummy-slot panel hacks); the title is TWO per-line slots (the source sets line 1 at 154 and line 2 at 107 with different baselines) so each line keeps its design size/baseline and long real values auto-fit independently; title face = Italiana + stroke_px 2 replicating the SOURCE's baked stroke effect (constant ~2px stem delta across both title sizes = stroke, not a bolder face) + word_spacing -25 matching the source's near-fused word gaps; handle/stat follow the source's caps + plain-digit M2 conventions via deriveSlots (no remapped fonts); stat icons/dividers stay baked and are companion_art of their stat slots.",
   "canvas": {
     "width": 1080,
     "height": 1350
   },
-  "source_svg": "assets/6b/source.stripped.svg",
+  "source_svg": "assets/6c/source.stripped.svg",
   "photo_fit": "attention",
   "photo_slots": [
     {
@@ -234,35 +234,6 @@
           ]
         }
       ]
-    }
-  ],
-  "plate_rects": [
-    {
-      "bbox": [
-        0,
-        0,
-        1080,
-        200
-      ],
-      "fill_role": "background"
-    },
-    {
-      "bbox": [
-        0,
-        199,
-        79,
-        315
-      ],
-      "fill_role": "background"
-    },
-    {
-      "bbox": [
-        368,
-        199,
-        395,
-        315
-      ],
-      "fill_role": "background"
     }
   ]
 }

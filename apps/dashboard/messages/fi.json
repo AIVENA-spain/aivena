@@ -63,7 +63,8 @@
       "columnStatus": "Tila",
       "columnReply": "Tekoälyn ehdottama vastaus",
       "leadTypeDefault": "Ostaja",
-      "aiTag": "Tekoäly"
+      "aiTag": "Tekoäly",
+      "windowClosed": "Ikkuna suljettu"
     },
     "panel": {
       "selectALead": "Valitse liidi nähdäksesi tiedot.",
@@ -84,7 +85,10 @@
       "send": "Lähetä",
       "copy": "Kopioi",
       "copied": "Kopioitu",
-      "openInInbox": "Avaa saapuneissa"
+      "openInInbox": "Avaa saapuneissa",
+      "windowClosedNotice": "24 tunnin WhatsApp-ikkuna on sulkeutunut, joten tätä luonnosta ei voi lähettää nyt. Jatka keskustelua hyväksytyllä seurantaviestillä saapuneista.",
+      "previousSuggestion": "Aiempi ehdotus (ikkuna suljettu)",
+      "reengage": "Jatka keskustelua saapuneissa"
     },
     "activity": {
       "title": "Viimeisin toiminta",

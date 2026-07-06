@@ -63,7 +63,8 @@
       "columnStatus": "Status",
       "columnReply": "Sugerowana odpowiedź AI",
       "leadTypeDefault": "Kupujący",
-      "aiTag": "AI"
+      "aiTag": "AI",
+      "windowClosed": "Okno zamknięte"
     },
     "panel": {
       "selectALead": "Wybierz kontakt, aby zobaczyć szczegóły.",
@@ -84,7 +85,10 @@
       "send": "Wyślij",
       "copy": "Kopiuj",
       "copied": "Skopiowano",
-      "openInInbox": "Otwórz w skrzynce"
+      "openInInbox": "Otwórz w skrzynce",
+      "windowClosedNotice": "24-godzinne okno WhatsApp zostało zamknięte, więc tego szkicu nie można teraz wysłać. Ponów kontakt zatwierdzoną wiadomością sprawdzającą ze skrzynki odbiorczej.",
+      "previousSuggestion": "Poprzednia sugestia (okno zamknięte)",
+      "reengage": "Ponów kontakt w skrzynce"
     },
     "activity": {
       "title": "Ostatnia aktywność",

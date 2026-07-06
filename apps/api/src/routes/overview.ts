@@ -44,6 +44,8 @@ type NeedsYouRow = {
   ai_reply_body: string | null;
   priority: string;
   task_created_at: Date | string;
+  whatsapp_window_open: boolean | null;
+  last_inbound_whatsapp_at: Date | string | null;
 };
 
 type ActivityRow = {
@@ -126,6 +128,8 @@ route.get('/needs-you', async (c) => {
         aiReplyBody: r.ai_reply_body,
         priority: r.priority,
         taskCreatedAt: toIso(r.task_created_at) ?? '',
+        whatsappWindowOpen: r.whatsapp_window_open,
+        lastInboundWhatsappAt: toIso(r.last_inbound_whatsapp_at),
       })),
     });
   } catch (err) {

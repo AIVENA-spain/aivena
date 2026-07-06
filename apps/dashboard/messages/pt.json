@@ -63,7 +63,8 @@
       "columnStatus": "Estado",
       "columnReply": "Resposta sugerida pela IA",
       "leadTypeDefault": "Comprador",
-      "aiTag": "IA"
+      "aiTag": "IA",
+      "windowClosed": "Janela fechada"
     },
     "panel": {
       "selectALead": "Selecione um lead para ver os detalhes.",
@@ -84,7 +85,10 @@
       "send": "Enviar",
       "copy": "Copiar",
       "copied": "Copiado",
-      "openInInbox": "Abrir na caixa de entrada"
+      "openInInbox": "Abrir na caixa de entrada",
+      "windowClosedNotice": "A janela de 24 horas do WhatsApp foi fechada, portanto este rascunho não pode ser enviado agora. Reengaje com uma mensagem de acompanhamento aprovada na caixa de entrada.",
+      "previousSuggestion": "Sugestão anterior (janela fechada)",
+      "reengage": "Reengajar na caixa de entrada"
     },
     "activity": {
       "title": "Atividade recente",

@@ -63,7 +63,8 @@
       "columnStatus": "Status",
       "columnReply": "KI-Antwortvorschlag",
       "leadTypeDefault": "Interessent",
-      "aiTag": "KI"
+      "aiTag": "KI",
+      "windowClosed": "Fenster geschlossen"
     },
     "panel": {
       "selectALead": "Wählen Sie einen Lead aus, um Details zu sehen.",
@@ -84,7 +85,10 @@
       "send": "Senden",
       "copy": "Kopieren",
       "copied": "Kopiert",
-      "openInInbox": "Im Posteingang öffnen"
+      "openInInbox": "Im Posteingang öffnen",
+      "windowClosedNotice": "Das 24-Stunden-WhatsApp-Fenster ist geschlossen, daher kann dieser Entwurf jetzt nicht gesendet werden. Reaktivieren Sie mit einer freigegebenen Check-in-Nachricht aus dem Posteingang.",
+      "previousSuggestion": "Vorheriger Vorschlag (Fenster geschlossen)",
+      "reengage": "Im Posteingang reaktivieren"
     },
     "activity": {
       "title": "Letzte Aktivitäten",

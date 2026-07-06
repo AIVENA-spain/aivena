@@ -161,6 +161,25 @@ export async function gatherReadinessSignals(tx: Tx): Promise<ReadinessSignals> 
     null,
   );
 
+  // Gap-C signal-backing: a REAL accepted DPA row (agency_agreements). RLS-scoped to this agency.
+  // Read failure or no row → dpaAccepted=false → the manual dpa_consent_live attestation stays required.
+  const agreements = await safe<{ dpaAccepted: boolean; dpaVersion: string | null; dpaAcceptedAt: string | null } | null>(
+    tx,
+    async (sp) => {
+      const r = await sp.execute(sql`
+        SELECT version, accepted_at
+        FROM public.agency_agreements
+        WHERE agency_id = ${AGENCY_GUC} AND agreement_type = 'dpa'
+        ORDER BY accepted_at DESC LIMIT 1
+      `);
+      const row = rows<{ version: string; accepted_at: string }>(r)[0];
+      return row
+        ? { dpaAccepted: true, dpaVersion: row.version, dpaAcceptedAt: row.accepted_at }
+        : { dpaAccepted: false, dpaVersion: null, dpaAcceptedAt: null };
+    },
+    null,
+  );
+
   const calendar = await safe<{ oauthCount: number } | null>(
     tx,
     async (sp) => {
@@ -242,6 +261,7 @@ export async function gatherReadinessSignals(tx: Tx): Promise<ReadinessSignals> 
     templates,
     properties,
     consent,
+    agreements,
     calendar,
     whatsapp: waParsed,
     pilotStatus,

@@ -59,6 +59,7 @@ function demoSignals(over: Partial<ReadinessSignals> = {}): ReadinessSignals {
       with_hotlinked_images: 81, area_ambiguous: 133, thin_description: 10, no_image: 0,
     },
     consent: { count: 1 },
+    agreements: { dpaAccepted: false, dpaVersion: null, dpaAcceptedAt: null }, // no recorded DPA → manual attestation required
     calendar: { oauthCount: 0 },
     whatsapp: null,
     pilotStatus: 'setup',
@@ -68,7 +69,7 @@ function demoSignals(over: Partial<ReadinessSignals> = {}): ReadinessSignals {
 
 const nullSignals: ReadinessSignals = {
   agency: null, branding: null, settings: null, email: null, team: null,
-  templates: null, properties: null, consent: null, calendar: null, whatsapp: null, pilotStatus: null,
+  templates: null, properties: null, consent: null, agreements: null, calendar: null, whatsapp: null, pilotStatus: null,
 };
 
 const byId = (items: ReadinessItem[]) => Object.fromEntries(items.map((i) => [i.id, i]));
@@ -352,5 +353,49 @@ describe('O5 — catalog-quality gate', () => {
     const ok = { goLive: { blockedBy: [], catalogHardBlock: false, catalogDetail: 'ok' } } as unknown as ReadinessResponse;
     expect(evaluateGoLive('ready_for_pilot', ok, {}, false).allowed).toBe(true);
     expect(evaluateGoLive('setup', ok, {}, false).allowed).toBe(true);
+  });
+});
+
+describe('Gap-C — dpa_consent_live signal-backing', () => {
+  const other3: GoLiveAttestations = { autonomo_corrected: true, legal_pages_published: true, test_data_cleaned: true };
+  const mkGoLive = (dpaAccepted: boolean): ReadinessResponse =>
+    ({ goLive: { blockedBy: [], catalogHardBlock: false, catalogDetail: 'ok', dpaAccepted } } as unknown as ReadinessResponse);
+
+  it('no recorded DPA → legal.dpa "manual_fallback", goLive.dpaAccepted false', () => {
+    const res = computeReadiness('demo', demoSignals());
+    expect(byId(res.items)['legal.dpa'].status).toBe('manual_fallback');
+    expect(res.goLive.dpaAccepted).toBe(false);
+  });
+
+  it('a recorded DPA row → legal.dpa "ready", goLive.dpaAccepted true, detail carries the version', () => {
+    const res = computeReadiness('demo', demoSignals({ agreements: { dpaAccepted: true, dpaVersion: '1.0-pilot', dpaAcceptedAt: '2026-07-04T00:00:00Z' } }));
+    expect(byId(res.items)['legal.dpa'].status).toBe('ready');
+    expect(byId(res.items)['legal.dpa'].signal.value).toContain('1.0-pilot');
+    expect(res.goLive.dpaAccepted).toBe(true);
+  });
+
+  it('agreements read failed (null) → legal.dpa "unavailable", not accepted', () => {
+    const res = computeReadiness('demo', demoSignals({ agreements: null }));
+    expect(byId(res.items)['legal.dpa'].status).toBe('unavailable');
+    expect(res.goLive.dpaAccepted).toBe(false);
+  });
+
+  it('go-live: a real DPA row auto-satisfies dpa_consent_live (no manual tick needed)', () => {
+    const d = evaluateGoLive('live', mkGoLive(true), other3, false); // dpa NOT in attestations
+    expect(d.allowed).toBe(true);
+    expect(d.missingAttestations).not.toContain('dpa_consent_live');
+  });
+
+  it('go-live: NO real DPA row → dpa_consent_live stays required (no fake success)', () => {
+    const d = evaluateGoLive('live', mkGoLive(false), other3, false);
+    expect(d.allowed).toBe(false);
+    expect(d.missingAttestations).toContain('dpa_consent_live');
+  });
+
+  it('signal-backing is DPA-only — the other 3 attestations stay manual even with a DPA row', () => {
+    const d = evaluateGoLive('live', mkGoLive(true), {}, false); // no attestations at all
+    expect(d.allowed).toBe(false);
+    expect(d.missingAttestations).toEqual(expect.arrayContaining(['autonomo_corrected', 'legal_pages_published', 'test_data_cleaned']));
+    expect(d.missingAttestations).not.toContain('dpa_consent_live');
   });
 });

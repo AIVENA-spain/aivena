@@ -80,6 +80,8 @@ export type ReadinessResponse = {
     /** O5: catalog is a HARD, non-overridable go-live blocker (B1) — true only when enforcing AND the catalog fails a correctness check. */
     catalogHardBlock: boolean;
     catalogDetail: string;
+    /** Gap-C: a real accepted DPA row exists → the dpa_consent_live attestation is signal-backed (auto-satisfied). */
+    dpaAccepted: boolean;
     note: string;
   };
 };
@@ -131,6 +133,8 @@ export type ReadinessSignals = {
     with_hotlinked_images: number; area_ambiguous: number; thin_description: number; no_image: number;
   } | null;
   consent: { count: number } | null;
+  /** Gap-C: a real accepted DPA row (agency_agreements). null = read failed → treated as not-accepted. */
+  agreements: { dpaAccepted: boolean; dpaVersion: string | null; dpaAcceptedAt: string | null } | null;
   calendar: { oauthCount: number } | null;
   /** null = the WhatsApp readiness RPC could not be consumed (not deployed / failed). */
   whatsapp: WhatsAppSignal | null;
@@ -349,6 +353,19 @@ export function computeReadiness(
     blockedBy: [],
   });
 
+  // Gap-C — DPA acceptance surfaced from a REAL agency_agreements row (never a transient checkbox, per S4).
+  // Display-only (manual_fallback is SATISFIED → never a config blocker); the go-live enforcement is the
+  // dpa_consent_live attestation, which evaluateGoLive auto-satisfies ONLY when this real row exists.
+  const dpaSig = s.agreements;
+  push({
+    id: 'legal.dpa', label: 'DPA accepted', area: 'S', gate: 'G1', owner: 'aivena',
+    agencyEditable: false, adminApproved: null,
+    status: dpaSig === null ? 'unavailable' : dpaSig.dpaAccepted ? 'ready' : 'manual_fallback',
+    signal: { source: 'agency_agreements (agreement_type=dpa)', value: dpaSig === null ? 'unavailable' : dpaSig.dpaAccepted ? `accepted v${dpaSig.dpaVersion} @ ${dpaSig.dpaAcceptedAt}` : 'no accepted DPA row' },
+    uiCopy: dpaSig?.dpaAccepted ? 'DPA accepted (recorded) — the go-live DPA gate is satisfied by this real record' : 'No recorded DPA acceptance yet — the go-live DPA confirmation stays required (manual)',
+    blockedBy: [],
+  });
+
   // Lifecycle / admin go-live — reflects the REAL agencies.pilot_status (C2).
   // Read-only here; the admin WRITE path (flip to live) is C3. Never auto-flips.
   const ps = s.pilotStatus;
@@ -523,6 +540,8 @@ export function computeReadiness(
     blockedBy: goLiveBlockers,
     catalogHardBlock,
     catalogDetail: catalog.detail,
+    /** Gap-C: a real accepted DPA row exists → evaluateGoLive auto-satisfies the dpa_consent_live attestation. */
+    dpaAccepted: dpaSig?.dpaAccepted ?? false,
     note: `Pilot lifecycle = agencies.pilot_status='${s.pilotStatus ?? 'unavailable'}' (read-only here). Eligibility stays false until the C3 admin gate exists; manual gates (autónomo, legal pages, test-data cleanup) have no DB signal and show blocked/awaiting-AIVENA — never passed.${catalogHardBlock ? ` O5 catalog gate ENFORCING + blocking: ${catalog.detail}.` : catalog.hardFail ? ` O5 catalog gate WARN-only (not enforcing): ${catalog.detail}.` : ''}`,
   };
 
@@ -601,7 +620,12 @@ export function evaluateGoLive(
   }
 
   if (target === 'live') {
-    const missingAttestations = REQUIRED_ATTESTATIONS.filter((k) => attestations[k] !== true);
+    const missingAttestations = REQUIRED_ATTESTATIONS.filter((k) => {
+      // Gap-C: dpa_consent_live is signal-backed — a real accepted DPA row (agency_agreements)
+      // satisfies it without a manual tick. No row → the manual attestation stays required (no fake success).
+      if (k === 'dpa_consent_live' && readiness.goLive.dpaAccepted) return false;
+      return attestations[k] !== true;
+    });
     if (missingAttestations.length > 0) {
       return {
         allowed: false,

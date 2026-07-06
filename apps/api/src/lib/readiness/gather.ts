@@ -116,13 +116,36 @@ export async function gatherReadinessSignals(tx: Tx): Promise<ReadinessSignals> 
     null,
   );
 
-  const properties = await safe<{ count: number } | null>(
+  // O5 — catalog-quality signals (read-derived; savepoint-isolated so a read failure degrades, not blocks).
+  // real_source = the agency's own data (feed/CSV); the demo montinmo scrape does NOT count.
+  // hotlinked = any image URL not served from owned storage (the O3 signal).
+  const properties = await safe<{
+    total_active: number; real_source_active: number; with_embedding: number;
+    with_hotlinked_images: number; area_ambiguous: number; thin_description: number; no_image: number;
+  } | null>(
     tx,
     async (sp) => {
-      const r = await sp.execute(
-        sql`SELECT count(*)::int AS n FROM public.properties WHERE agency_id = ${AGENCY_GUC}`,
-      );
-      return { count: rows<{ n: number }>(r)[0]?.n ?? 0 };
+      const r = await sp.execute(sql`
+        SELECT
+          count(*) FILTER (WHERE status='active')::int AS total_active,
+          count(*) FILTER (WHERE status='active' AND coalesce(raw_payload->>'import_source','') <> 'montinmo')::int AS real_source_active,
+          count(*) FILTER (WHERE status='active' AND embedding IS NOT NULL)::int AS with_embedding,
+          count(*) FILTER (WHERE status='active' AND EXISTS (
+            SELECT 1 FROM jsonb_array_elements_text(coalesce(images,'[]'::jsonb)) img
+            WHERE img NOT LIKE '%/storage/v1/object/public/property-images/%'))::int AS with_hotlinked_images,
+          count(*) FILTER (WHERE status='active' AND area_sqm IS NOT NULL AND area_built_sqm IS NULL AND area_plot_sqm IS NULL)::int AS area_ambiguous,
+          count(*) FILTER (WHERE status='active' AND (description IS NULL OR length(description) < 15))::int AS thin_description,
+          count(*) FILTER (WHERE status='active' AND (images IS NULL OR jsonb_array_length(coalesce(images,'[]'::jsonb)) = 0))::int AS no_image
+        FROM public.properties WHERE agency_id = ${AGENCY_GUC}
+      `);
+      const row = rows<{
+        total_active: number; real_source_active: number; with_embedding: number;
+        with_hotlinked_images: number; area_ambiguous: number; thin_description: number; no_image: number;
+      }>(r)[0];
+      return row ?? {
+        total_active: 0, real_source_active: 0, with_embedding: 0,
+        with_hotlinked_images: 0, area_ambiguous: 0, thin_description: 0, no_image: 0,
+      };
     },
     null,
   );

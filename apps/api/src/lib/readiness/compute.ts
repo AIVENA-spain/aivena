@@ -77,6 +77,9 @@ export type ReadinessResponse = {
     eligible: boolean;
     scope: string;
     blockedBy: string[];
+    /** O5: catalog is a HARD, non-overridable go-live blocker (B1) — true only when enforcing AND the catalog fails a correctness check. */
+    catalogHardBlock: boolean;
+    catalogDetail: string;
     note: string;
   };
 };
@@ -123,7 +126,10 @@ export type ReadinessSignals = {
   email: { from_email: string | null; send_proven: boolean | null; send_proven_at: string | null } | null;
   team: { owners: number; agents: number } | null;
   templates: { enApproved: number; nonEnApproved: number } | null;
-  properties: { count: number } | null;
+  properties: {
+    total_active: number; real_source_active: number; with_embedding: number;
+    with_hotlinked_images: number; area_ambiguous: number; thin_description: number; no_image: number;
+  } | null;
   consent: { count: number } | null;
   calendar: { oauthCount: number } | null;
   /** null = the WhatsApp readiness RPC could not be consumed (not deployed / failed). */
@@ -159,7 +165,41 @@ function defaultLane(reply_rules: Record<string, unknown> | null): string | null
 
 // --- the compute -------------------------------------------------------------
 
-export function computeReadiness(agencyId: string, s: ReadinessSignals): ReadinessResponse {
+// O5 — minimum active properties for a real catalog (tunable). Below this = "no real catalog".
+const MIN_ACTIVE_CATALOG = 10;
+
+/**
+ * O5 — assess catalog quality from the gathered signals. `hardFail` = a correctness/honesty
+ * failure (the B1 hard blocker): no real catalog / demo-only / mixed / below-min / hotlinked images.
+ * Everything else (enrichment gaps, sub-90% embeddings, unlabelled area while built-vs-plot is
+ * pending) is WARN-only and never blocks. A null signal degrades to unavailable (never blocks).
+ */
+function assessCatalog(p: ReadinessSignals['properties']): { status: ReadinessStatus; hardFail: boolean; detail: string } {
+  if (p === null) return { status: 'unavailable', hardFail: false, detail: 'catalog read unavailable' };
+  const hard: string[] = [];
+  const warn: string[] = [];
+  if (p.total_active === 0) hard.push('no properties');
+  else {
+    if (p.real_source_active === 0) hard.push('only demo/seed data (no real source)');
+    else if (p.real_source_active < p.total_active) hard.push('mixed demo + real data');
+    if (p.total_active < MIN_ACTIVE_CATALOG) hard.push(`only ${p.total_active} properties (min ${MIN_ACTIVE_CATALOG})`);
+    if (p.with_hotlinked_images > 0) hard.push(`${p.with_hotlinked_images} with hotlinked images (needs O3)`);
+  }
+  if (p.area_ambiguous > 0) warn.push(`${p.area_ambiguous} unlabelled area (built-vs-plot pending)`);
+  if (p.total_active > 0 && p.with_embedding < Math.ceil(p.total_active * 0.9)) warn.push(`${p.with_embedding}/${p.total_active} matching-ready`);
+  if (p.thin_description > 0) warn.push(`${p.thin_description} thin descriptions`);
+  if (p.no_image > 0) warn.push(`${p.no_image} without photos`);
+  const hardFail = hard.length > 0;
+  const status: ReadinessStatus = hardFail ? 'missing' : warn.length ? 'manual_fallback' : 'ready';
+  const detail = hardFail ? hard.join('; ') : warn.length ? warn.join('; ') : 'catalog quality OK';
+  return { status, hardFail, detail };
+}
+
+export function computeReadiness(
+  agencyId: string,
+  s: ReadinessSignals,
+  opts: { catalogEnforce?: boolean } = {},
+): ReadinessResponse {
   const items: ReadinessItem[] = [];
   const push = (i: ReadinessItem) => items.push(i);
 
@@ -432,21 +472,35 @@ export function computeReadiness(agencyId: string, s: ReadinessSignals): Readine
   });
 
   // Property feed / catalog.
-  const propCount = s.properties?.count ?? null;
-  const feedStatus: ReadinessStatus = propCount === null ? 'unavailable' : propCount > 0 ? 'manual_fallback' : 'missing';
+  const catalog = assessCatalog(s.properties);
+  const cp = s.properties;
+  const catalogPresence: ReadinessStatus = cp === null ? 'unavailable' : cp.total_active > 0 ? 'manual_fallback' : 'missing';
   push({
     id: 'provider.property_feed', label: 'Property catalog / feed', area: 'O', gate: 'G8', owner: 'agency',
     agencyEditable: false, adminApproved: true,
-    status: feedStatus,
-    signal: { source: 'properties (count; production feed vs scraper/import not distinguishable in Phase 1)', value: propCount === null ? 'unavailable' : `properties=${propCount}` },
-    uiCopy: feedStatus === 'manual_fallback' ? 'Catalog present — production feed + AIVENA quality check pending' : 'No properties imported yet',
+    status: catalogPresence,
+    signal: { source: 'properties (count; real source = agency feed/CSV, not the demo scrape)', value: cp === null ? 'unavailable' : `active=${cp.total_active} real_source=${cp.real_source_active}` },
+    uiCopy: catalogPresence === 'manual_fallback' ? 'Catalog present — quality checked by the catalog gate' : 'No properties imported yet',
     blockedBy: [],
   });
   providers.push({
     provider: 'property_feed',
-    status: feedStatus,
-    detail: propCount === null ? 'unavailable' : propCount > 0 ? `${propCount} properties present (source verification pending)` : 'No catalog',
+    status: catalogPresence,
+    detail: cp === null ? 'unavailable' : cp.total_active > 0 ? `${cp.total_active} active (${cp.real_source_active} from a real source)` : 'No catalog',
     source: 'properties',
+  });
+  // O5 — catalog QUALITY gate (distinct from mere presence). Its hardFail feeds the non-overridable
+  // go-live block (B1). Display-only here (gate G8, not G1) — enforcement is via goLive.catalogHardBlock.
+  push({
+    id: 'catalog.quality', label: 'Catalog quality', area: 'O', gate: 'G8', owner: 'agency',
+    agencyEditable: false, adminApproved: true,
+    status: catalog.status,
+    signal: { source: 'properties (real-source count, owned images, area labelling, embeddings)', value: catalog.detail },
+    uiCopy: catalog.status === 'ready' ? 'Catalog meets the real-pilot quality bar'
+      : catalog.status === 'missing' ? `Catalog not real-pilot-ready: ${catalog.detail}`
+      : catalog.status === 'unavailable' ? 'Catalog quality unavailable'
+      : `Catalog usable — quality lifts pending: ${catalog.detail}`,
+    blockedBy: [],
   });
 
   // ---- Gates rollup ----------------------------------------------------------
@@ -459,11 +513,17 @@ export function computeReadiness(agencyId: string, s: ReadinessSignals): Readine
   // ---- Go-live (Phase 1: eligibility signals only; the write is Phase 3) -----
   const g1 = gates.find((x) => x.gate === 'G1')!;
   const goLiveBlockers = Array.from(new Set([...g1.blockedBy]));
+  // O5 — catalog is a HARD, non-overridable go-live blocker (B1), but ONLY when enforcing.
+  // Default (flag unset) = WARN: catalogHardBlock stays false, so nothing is blocked yet; the
+  // catalog.quality item still reports honestly. Flip enforcement on once O3 + built-vs-plot land.
+  const catalogHardBlock = (opts.catalogEnforce ?? false) && catalog.hardFail;
   const goLive = {
     eligible: false, // never true until the C3 admin go-live gate exists; go-live is flipped admin-only, never auto on computed eligibility
     scope: 'agency-config readiness only (the admin go-live gate + manual-gate attestations land in C3)',
     blockedBy: goLiveBlockers,
-    note: `Pilot lifecycle = agencies.pilot_status='${s.pilotStatus ?? 'unavailable'}' (read-only here). Eligibility stays false until the C3 admin gate exists; manual gates (autónomo, legal pages, test-data cleanup) have no DB signal and show blocked/awaiting-AIVENA — never passed.`,
+    catalogHardBlock,
+    catalogDetail: catalog.detail,
+    note: `Pilot lifecycle = agencies.pilot_status='${s.pilotStatus ?? 'unavailable'}' (read-only here). Eligibility stays false until the C3 admin gate exists; manual gates (autónomo, legal pages, test-data cleanup) have no DB signal and show blocked/awaiting-AIVENA — never passed.${catalogHardBlock ? ` O5 catalog gate ENFORCING + blocking: ${catalog.detail}.` : catalog.hardFail ? ` O5 catalog gate WARN-only (not enforcing): ${catalog.detail}.` : ''}`,
   };
 
   return { agencyId, pilotStatus: s.pilotStatus, items, providers, gates, goLive };
@@ -516,6 +576,18 @@ export function evaluateGoLive(
 
   if (target === 'setup' || target === 'paused' || target === 'blocked') {
     return { allowed: true, reason: `Set to ${target}.`, configBlockers: [], missingAttestations: [], overrideUsed: false };
+  }
+
+  // O5 — catalog quality is a HARD blocker for ready_for_pilot/live (B1): a real catalog is required,
+  // and this CANNOT be bypassed by override (like the attestations). Only fires when enforcing (else false).
+  if (readiness.goLive.catalogHardBlock) {
+    return {
+      allowed: false,
+      reason: `Catalog not real-pilot-ready (${readiness.goLive.catalogDetail}) — this cannot be overridden.`,
+      configBlockers,
+      missingAttestations: [],
+      overrideUsed: false,
+    };
   }
 
   if (configBlockers.length > 0 && !override) {

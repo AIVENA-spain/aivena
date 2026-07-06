@@ -52,7 +52,12 @@ function demoSignals(over: Partial<ReadinessSignals> = {}): ReadinessSignals {
     email: { from_email: 'costahomes@send.aivena.es', send_proven: true, send_proven_at: '2026-06-15T12:24:20.988Z' },
     team: { owners: 2, agents: 0 },
     templates: { enApproved: 8, nonEnApproved: 0 },
-    properties: { count: 141 },
+    // 141 active, ALL from the demo montinmo scrape → real_source_active=0 (no real catalog);
+    // ~81 still hotlinked (pre-O3), ~133 unlabelled area (pre built-vs-plot).
+    properties: {
+      total_active: 141, real_source_active: 0, with_embedding: 141,
+      with_hotlinked_images: 81, area_ambiguous: 133, thin_description: 10, no_image: 0,
+    },
     consent: { count: 1 },
     calendar: { oauthCount: 0 },
     whatsapp: null,
@@ -295,5 +300,57 @@ describe('evaluateGoLive — staff pilot transition (never trust the browser)', 
     const d = evaluateGoLive('ready_for_pilot', mkReadiness([]), {}, true);
     expect(d.allowed).toBe(true);
     expect(d.overrideUsed).toBe(false);
+  });
+});
+
+describe('O5 — catalog-quality gate', () => {
+  const goodCatalog = {
+    total_active: 25, real_source_active: 25, with_embedding: 25,
+    with_hotlinked_images: 0, area_ambiguous: 0, thin_description: 0, no_image: 0,
+  };
+
+  it('demo (all montinmo scrape) → catalog.quality "missing" (no real catalog); presence card still shows present', () => {
+    const items = byId(computeReadiness('demo', demoSignals()).items);
+    expect(items['catalog.quality'].status).toBe('missing');
+    expect(items['catalog.quality'].signal.value).toMatch(/demo\/seed|no real source/i);
+    expect(items['provider.property_feed'].status).toBe('manual_fallback');
+  });
+
+  it('WARN by default — catalogHardBlock false even though the demo catalog fails (not enforcing)', () => {
+    const res = computeReadiness('demo', demoSignals()); // no opts → WARN
+    expect(res.goLive.catalogHardBlock).toBe(false);
+    expect(res.goLive.catalogDetail).toMatch(/demo\/seed|no real source/i);
+  });
+
+  it('ENFORCING — catalogHardBlock true for a failing catalog', () => {
+    expect(computeReadiness('demo', demoSignals(), { catalogEnforce: true }).goLive.catalogHardBlock).toBe(true);
+  });
+
+  it('a real, quality catalog is "ready" and never hard-blocks (even when enforcing)', () => {
+    const res = computeReadiness('agency', demoSignals({ properties: goodCatalog }), { catalogEnforce: true });
+    expect(byId(res.items)['catalog.quality'].status).toBe('ready');
+    expect(res.goLive.catalogHardBlock).toBe(false);
+  });
+
+  it('null catalog read → "unavailable", never blocks', () => {
+    const res = computeReadiness('agency', demoSignals({ properties: null }), { catalogEnforce: true });
+    expect(byId(res.items)['catalog.quality'].status).toBe('unavailable');
+    expect(res.goLive.catalogHardBlock).toBe(false);
+  });
+
+  it('catalog hard block is NON-overridable for ready_for_pilot AND live', () => {
+    const blocked = { goLive: { blockedBy: [], catalogHardBlock: true, catalogDetail: 'only demo/seed data' } } as unknown as ReadinessResponse;
+    const allAttest: GoLiveAttestations = { autonomo_corrected: true, legal_pages_published: true, dpa_consent_live: true, test_data_cleaned: true };
+    for (const target of ['ready_for_pilot', 'live'] as const) {
+      const d = evaluateGoLive(target, blocked, allAttest, true); // override=true
+      expect(d.allowed).toBe(false);
+      expect(d.reason).toMatch(/cannot be overridden|not real-pilot-ready/i);
+    }
+  });
+
+  it('a passing catalog does not interfere with normal go-live', () => {
+    const ok = { goLive: { blockedBy: [], catalogHardBlock: false, catalogDetail: 'ok' } } as unknown as ReadinessResponse;
+    expect(evaluateGoLive('ready_for_pilot', ok, {}, false).allowed).toBe(true);
+    expect(evaluateGoLive('setup', ok, {}, false).allowed).toBe(true);
   });
 });

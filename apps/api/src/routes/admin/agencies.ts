@@ -212,7 +212,7 @@ async function recomputeReadinessForAgency(id: string) {
                  set_config('app.current_user_role', 'aivena_staff', true)`,
     );
     const signals = await gatherReadinessSignals(tx);
-    return computeReadiness(id, signals);
+    return computeReadiness(id, signals, { catalogEnforce: process.env.O5_CATALOG_GATE_ENFORCE === 'block' });
   });
 }
 

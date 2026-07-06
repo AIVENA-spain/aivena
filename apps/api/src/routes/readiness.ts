@@ -35,7 +35,7 @@ route.use('*', async (c, next) => {
  */
 route.get('/', async (c) => {
   const signals = await gatherReadinessSignals(c.get('tx'));
-  const result = computeReadiness(c.get('agencyId'), signals);
+  const result = computeReadiness(c.get('agencyId'), signals, { catalogEnforce: process.env.O5_CATALOG_GATE_ENFORCE === 'block' });
   return c.json({ computedAt: new Date().toISOString(), ...result });
 });
 

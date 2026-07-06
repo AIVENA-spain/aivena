@@ -61,7 +61,7 @@
       "columnSource": "Lähde",
       "columnChannel": "Kanava",
       "columnStatus": "Tila",
-      "columnReply": "Tekoälyn ehdottama vastaus",
+      "columnReply": "Suositeltu toimenpide",
       "leadTypeDefault": "Ostaja",
       "aiTag": "Tekoäly",
       "windowClosed": "Ikkuna suljettu"
@@ -86,9 +86,12 @@
       "copy": "Kopioi",
       "copied": "Kopioitu",
       "openInInbox": "Avaa saapuneissa",
-      "windowClosedNotice": "24 tunnin WhatsApp-ikkuna on sulkeutunut, joten tätä luonnosta ei voi lähettää nyt. Jatka keskustelua hyväksytyllä seurantaviestillä saapuneista.",
+      "windowClosedNotice": "WhatsApp-vastausikkuna on suljettu. Avaa saapuneet lähettääksesi hyväksytyn seurantaviestin.",
       "previousSuggestion": "Aiempi ehdotus (ikkuna suljettu)",
-      "reengage": "Jatka keskustelua saapuneissa"
+      "reengage": "Avaa saapuneet seurantaa varten",
+      "previousDraft": "Aiempi WhatsApp-luonnos",
+      "leadScore": "Liidin pisteet",
+      "leadTypeDefault": "Ostaja"
     },
     "activity": {
       "title": "Viimeisin toiminta",

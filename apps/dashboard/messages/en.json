@@ -61,7 +61,7 @@
       "columnSource": "Source",
       "columnChannel": "Channel",
       "columnStatus": "Status",
-      "columnReply": "AI suggested reply",
+      "columnReply": "Recommended action",
       "leadTypeDefault": "Buyer",
       "aiTag": "AI",
       "windowClosed": "Window closed"
@@ -86,9 +86,12 @@
       "copy": "Copy",
       "copied": "Copied",
       "openInInbox": "Open in Inbox",
-      "windowClosedNotice": "The 24-hour WhatsApp window has closed, so this draft can't be sent now. Re-engage with an approved check-in from the Inbox.",
+      "windowClosedNotice": "The WhatsApp reply window is closed. Open Inbox to send an approved check-in message.",
       "previousSuggestion": "Previous suggestion (window closed)",
-      "reengage": "Re-engage in Inbox"
+      "reengage": "Open Inbox to send check-in",
+      "previousDraft": "Previous WhatsApp draft",
+      "leadScore": "Lead score",
+      "leadTypeDefault": "Buyer"
     },
     "activity": {
       "title": "Recent Activity",

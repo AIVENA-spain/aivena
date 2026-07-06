@@ -61,7 +61,7 @@
       "columnSource": "Bron",
       "columnChannel": "Kanaal",
       "columnStatus": "Status",
-      "columnReply": "Door AI voorgesteld antwoord",
+      "columnReply": "Aanbevolen actie",
       "leadTypeDefault": "Koper",
       "aiTag": "AI",
       "windowClosed": "Venster gesloten"
@@ -86,9 +86,12 @@
       "copy": "Kopiëren",
       "copied": "Gekopieerd",
       "openInInbox": "Openen in inbox",
-      "windowClosedNotice": "Het WhatsApp-venster van 24 uur is gesloten, dus dit concept kan nu niet worden verzonden. Benader opnieuw met een goedgekeurd check-inbericht vanuit de Inbox.",
+      "windowClosedNotice": "Het WhatsApp-antwoordvenster is gesloten. Open de inbox om een goedgekeurd check-inbericht te sturen.",
       "previousSuggestion": "Vorige suggestie (venster gesloten)",
-      "reengage": "Opnieuw benaderen in Inbox"
+      "reengage": "Open inbox voor check-in",
+      "previousDraft": "Vorig WhatsApp-concept",
+      "leadScore": "Leadscore",
+      "leadTypeDefault": "Koper"
     },
     "activity": {
       "title": "Recente activiteit",

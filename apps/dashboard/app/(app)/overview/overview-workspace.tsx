@@ -37,6 +37,13 @@ import { Button } from "@/components/ui/button";
 import { RelativeTime } from "@/components/ui/relative-time";
 import { approveTaskAction } from "@/app/(app)/approvals/[taskId]/actions";
 import { replyWindowState } from "@/app/(app)/overview/overview-window-model";
+import {
+  formatChannel,
+  formatLanguage,
+  formatLeadType,
+  formatSource,
+  formatTemperatureScore,
+} from "@/app/(app)/overview/overview-format";
 import type {
   ActivityRow,
   NeedsYouRow,
@@ -452,7 +459,7 @@ function NeedsYouCard({
                         </div>
                       </td>
                       <td className="px-2 py-3 align-middle text-muted-foreground">
-                        {r.leadType ?? t("leadTypeDefault")}
+                        {formatLeadType(r.leadType) ?? t("leadTypeDefault")}
                       </td>
                       <td className="truncate px-2 py-3 align-middle text-muted-foreground">
                         {r.area ?? "—"}
@@ -550,27 +557,34 @@ function SelectedLeadPanel({ lead }: { lead: NeedsYouRow | null }) {
               </span>
               <StatusPill status={lead.leadStatus} />
             </div>
-            {lead.temperature || typeof lead.score === "number" ? (
+            {formatTemperatureScore(
+              lead.temperature,
+              lead.score,
+              t("leadScore"),
+            ) ? (
               <div className="mt-0.5 font-mono text-[11px] text-muted-foreground">
-                {lead.temperature ? lead.temperature.replace("_", " ") : ""}
-                {lead.temperature && typeof lead.score === "number"
-                  ? " · "
-                  : ""}
-                {typeof lead.score === "number" ? `score ${lead.score}` : ""}
+                {formatTemperatureScore(
+                  lead.temperature,
+                  lead.score,
+                  t("leadScore"),
+                )}
               </div>
             ) : null}
           </div>
         </div>
 
         <dl className="grid grid-cols-2 gap-x-3 gap-y-2 border-t border-border pt-3 text-[12.5px]">
-          <PanelRow label={f.type} value={lead.leadType ?? "Buyer"} />
+          <PanelRow
+            label={f.type}
+            value={formatLeadType(lead.leadType) ?? t("leadTypeDefault")}
+          />
           <PanelRow label={f.area} value={lead.area ?? "—"} />
-          <PanelRow label={f.source} value={lead.source ?? "—"} />
+          <PanelRow label={f.source} value={formatSource(lead.source) ?? "—"} />
           <PanelRow
             label={f.language}
-            value={lead.language ? lead.language.toUpperCase() : "—"}
+            value={formatLanguage(lead.language) ?? "—"}
           />
-          <PanelRow label={f.channel} value={lead.channel ?? "—"} />
+          <PanelRow label={f.channel} value={formatChannel(lead.channel) ?? "—"} />
         </dl>
 
         {win.windowClosed ? (
@@ -605,13 +619,15 @@ function SelectedLeadPanel({ lead }: { lead: NeedsYouRow | null }) {
             />
             {win.windowClosed ? t("previousSuggestion") : t("aiSuggested")}
           </div>
-          <div className="text-[11.5px] font-semibold text-foreground">
-            {lead.aiReplySubject ?? (
-              <span className="italic text-muted-foreground">
-                {t("noSubject")}
-              </span>
-            )}
-          </div>
+          {win.windowClosed ? (
+            <div className="text-[11.5px] font-semibold text-foreground">
+              {lead.aiReplySubject ?? t("previousDraft")}
+            </div>
+          ) : lead.aiReplySubject ? (
+            <div className="text-[11.5px] font-semibold text-foreground">
+              {lead.aiReplySubject}
+            </div>
+          ) : null}
           <p className="mt-1 whitespace-pre-wrap text-[12.5px] leading-[1.5] text-foreground">
             {lead.aiReplyBody ?? ""}
           </p>

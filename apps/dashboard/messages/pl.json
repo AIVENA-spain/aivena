@@ -61,7 +61,7 @@
       "columnSource": "Źródło",
       "columnChannel": "Kanał",
       "columnStatus": "Status",
-      "columnReply": "Sugerowana odpowiedź AI",
+      "columnReply": "Zalecane działanie",
       "leadTypeDefault": "Kupujący",
       "aiTag": "AI",
       "windowClosed": "Okno zamknięte"
@@ -86,9 +86,12 @@
       "copy": "Kopiuj",
       "copied": "Skopiowano",
       "openInInbox": "Otwórz w skrzynce",
-      "windowClosedNotice": "24-godzinne okno WhatsApp zostało zamknięte, więc tego szkicu nie można teraz wysłać. Ponów kontakt zatwierdzoną wiadomością sprawdzającą ze skrzynki odbiorczej.",
+      "windowClosedNotice": "Okno odpowiedzi WhatsApp jest zamknięte. Otwórz skrzynkę, aby wysłać zatwierdzoną wiadomość sprawdzającą.",
       "previousSuggestion": "Poprzednia sugestia (okno zamknięte)",
-      "reengage": "Ponów kontakt w skrzynce"
+      "reengage": "Otwórz skrzynkę, aby wysłać kontakt",
+      "previousDraft": "Poprzednia wersja robocza WhatsApp",
+      "leadScore": "Wynik leada",
+      "leadTypeDefault": "Kupujący"
     },
     "activity": {
       "title": "Ostatnia aktywność",

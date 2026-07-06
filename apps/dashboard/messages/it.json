@@ -63,7 +63,8 @@
       "columnStatus": "Stato",
       "columnReply": "Risposta suggerita dall'AI",
       "leadTypeDefault": "Acquirente",
-      "aiTag": "AI"
+      "aiTag": "AI",
+      "windowClosed": "Finestra chiusa"
     },
     "panel": {
       "selectALead": "Seleziona un lead per vederne i dettagli.",
@@ -84,7 +85,10 @@
       "send": "Invia",
       "copy": "Copia",
       "copied": "Copiato",
-      "openInInbox": "Apri nella posta"
+      "openInInbox": "Apri nella posta",
+      "windowClosedNotice": "La finestra WhatsApp di 24 ore è chiusa, quindi questa bozza non può essere inviata ora. Riattiva con un messaggio di ricontatto approvato dalla posta in arrivo.",
+      "previousSuggestion": "Suggerimento precedente (finestra chiusa)",
+      "reengage": "Riattiva nella posta in arrivo"
     },
     "activity": {
       "title": "Attività recente",

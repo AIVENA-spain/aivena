@@ -11,6 +11,7 @@ import {
   Bell,
   Check,
   CheckCircle2,
+  Clock,
   Copy,
   ExternalLink,
   Flame,
@@ -35,6 +36,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { RelativeTime } from "@/components/ui/relative-time";
 import { approveTaskAction } from "@/app/(app)/approvals/[taskId]/actions";
+import { replyWindowState } from "@/app/(app)/overview/overview-window-model";
 import type {
   ActivityRow,
   NeedsYouRow,
@@ -464,12 +466,20 @@ function NeedsYouCard({
                         <StatusPill status={r.leadStatus} />
                       </td>
                       <td className="px-4 py-3 align-middle">
-                        <div className="truncate text-foreground">
-                          <span className="mr-1.5 font-mono text-[9px] font-bold text-brand">
-                            {t("aiTag")}
+                        {replyWindowState(r.channel, r.whatsappWindowOpen)
+                          .windowClosed ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[10.5px] font-semibold text-amber-700 dark:text-amber-300">
+                            <Clock className="h-3 w-3" aria-hidden />
+                            {t("windowClosed")}
                           </span>
-                          {r.aiReplyBody ?? "—"}
-                        </div>
+                        ) : (
+                          <div className="truncate text-foreground">
+                            <span className="mr-1.5 font-mono text-[9px] font-bold text-brand">
+                              {t("aiTag")}
+                            </span>
+                            {r.aiReplyBody ?? "—"}
+                          </div>
+                        )}
                       </td>
                     </tr>
                   );
@@ -517,6 +527,9 @@ function SelectedLeadPanel({ lead }: { lead: NeedsYouRow | null }) {
   }
 
   const f = t.raw("fields") as Record<string, string>;
+  // WhatsApp 24h window: outside it the free-text draft is NOT sendable — mirror the
+  // Inbox by routing to an approved check-in / re-engage instead of the stale draft.
+  const win = replyWindowState(lead.channel, lead.whatsappWindowOpen);
 
   return (
     <Card size="sm">
@@ -560,10 +573,37 @@ function SelectedLeadPanel({ lead }: { lead: NeedsYouRow | null }) {
           <PanelRow label={f.channel} value={lead.channel ?? "—"} />
         </dl>
 
-        <div className="rounded-[11px] border border-brand/20 bg-brand-soft px-3.5 py-3">
-          <div className="mb-1.5 flex items-center gap-1.5 font-mono text-[9.5px] font-bold uppercase tracking-[0.05em] text-brand">
-            <span className="h-1.5 w-1.5 rounded-full bg-brand" />
-            {t("aiSuggested")}
+        {win.windowClosed ? (
+          <div
+            role="note"
+            className="flex items-start gap-2 rounded-[11px] border border-amber-500/30 bg-amber-500/10 px-3.5 py-3 text-[12px] leading-[1.5] text-amber-800 dark:text-amber-200"
+          >
+            <Clock className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+            <span>{t("windowClosedNotice")}</span>
+          </div>
+        ) : null}
+
+        <div
+          className={cn(
+            "rounded-[11px] border px-3.5 py-3",
+            win.windowClosed
+              ? "border-border bg-muted/40"
+              : "border-brand/20 bg-brand-soft",
+          )}
+        >
+          <div
+            className={cn(
+              "mb-1.5 flex items-center gap-1.5 font-mono text-[9.5px] font-bold uppercase tracking-[0.05em]",
+              win.windowClosed ? "text-muted-foreground" : "text-brand",
+            )}
+          >
+            <span
+              className={cn(
+                "h-1.5 w-1.5 rounded-full",
+                win.windowClosed ? "bg-muted-foreground" : "bg-brand",
+              )}
+            />
+            {win.windowClosed ? t("previousSuggestion") : t("aiSuggested")}
           </div>
           <div className="text-[11.5px] font-semibold text-foreground">
             {lead.aiReplySubject ?? (
@@ -586,51 +626,67 @@ function SelectedLeadPanel({ lead }: { lead: NeedsYouRow | null }) {
           </div>
         ) : null}
 
-        <div className="flex flex-wrap items-center gap-2">
-          <form action={sendAction} className="flex-1">
-            <input type="hidden" name="taskId" value={lead.taskId} />
-            <input
-              type="hidden"
-              name="subject"
-              value={lead.aiReplySubject ?? ""}
-            />
-            <input
-              type="hidden"
-              name="body"
-              value={lead.aiReplyBody ?? ""}
-            />
-            <Button
-              type="submit"
-              className="w-full gap-1.5"
-              disabled={sending || !lead.aiReplyBody}
+        {win.windowClosed ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href={`/approvals?lead=${lead.taskId}`}
+              className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-md bg-brand px-3 py-2 text-[12.5px] font-semibold text-brand-fg transition-colors hover:bg-brand/90"
             >
-              <span className="h-1.5 w-1.5 rounded-full bg-brand" aria-hidden />
-              {t("send")}
+              <Send className="h-3.5 w-3.5" aria-hidden />
+              {t("reengage")}
+              <ExternalLink className="h-3 w-3 opacity-70" aria-hidden />
+            </Link>
+          </div>
+        ) : (
+          <div className="flex flex-wrap items-center gap-2">
+            <form action={sendAction} className="flex-1">
+              <input type="hidden" name="taskId" value={lead.taskId} />
+              <input
+                type="hidden"
+                name="subject"
+                value={lead.aiReplySubject ?? ""}
+              />
+              <input
+                type="hidden"
+                name="body"
+                value={lead.aiReplyBody ?? ""}
+              />
+              <Button
+                type="submit"
+                className="w-full gap-1.5"
+                disabled={sending || !lead.aiReplyBody}
+              >
+                <span
+                  className="h-1.5 w-1.5 rounded-full bg-brand"
+                  aria-hidden
+                />
+                {t("send")}
+              </Button>
+            </form>
+            <Button
+              type="button"
+              variant="outline"
+              className="gap-1.5"
+              onClick={handleCopy}
+              disabled={!lead.aiReplyBody}
+            >
+              {copied ? (
+                <Check className="h-3.5 w-3.5" aria-hidden />
+              ) : (
+                <Copy className="h-3.5 w-3.5" aria-hidden />
+              )}
+              {copied ? t("copied") : t("copy")}
             </Button>
-          </form>
-          <Button
-            type="button"
-            variant="outline"
-            className="gap-1.5"
-            onClick={handleCopy}
-            disabled={!lead.aiReplyBody}
-          >
-            {copied ? (
-              <Check className="h-3.5 w-3.5" aria-hidden />
-            ) : (
-              <Copy className="h-3.5 w-3.5" aria-hidden />
-            )}
-            {copied ? t("copied") : t("copy")}
-          </Button>
-          <Link
-            href={`/approvals?lead=${lead.taskId}`}
-            className="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-[12.5px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          >
-            <Pencil className="h-3.5 w-3.5" aria-hidden />
-            {t("openInInbox")}
-            <ExternalLink className="h-3 w-3 opacity-60" aria-hidden />
-          </Link>
-        </div>
+            <Link
+              href={`/approvals?lead=${lead.taskId}`}
+              className="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-[12.5px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <Pencil className="h-3.5 w-3.5" aria-hidden />
+              {t("openInInbox")}
+              <ExternalLink className="h-3 w-3 opacity-60" aria-hidden />
+            </Link>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

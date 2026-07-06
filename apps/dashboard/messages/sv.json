@@ -63,7 +63,8 @@
       "columnStatus": "Status",
       "columnReply": "AI-föreslaget svar",
       "leadTypeDefault": "Köpare",
-      "aiTag": "AI"
+      "aiTag": "AI",
+      "windowClosed": "Fönstret stängt"
     },
     "panel": {
       "selectALead": "Välj ett lead för att se detaljer.",
@@ -84,7 +85,10 @@
       "send": "Skicka",
       "copy": "Kopiera",
       "copied": "Kopierat",
-      "openInInbox": "Öppna i inkorgen"
+      "openInInbox": "Öppna i inkorgen",
+      "windowClosedNotice": "WhatsApp-fönstret på 24 timmar är stängt, så det här utkastet kan inte skickas nu. Återuppta med ett godkänt uppföljningsmeddelande från inkorgen.",
+      "previousSuggestion": "Tidigare förslag (fönstret stängt)",
+      "reengage": "Återuppta i inkorgen"
     },
     "activity": {
       "title": "Senaste aktivitet",

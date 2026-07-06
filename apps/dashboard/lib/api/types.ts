@@ -485,6 +485,9 @@ export type NeedsYouRow = {
   aiReplyBody: string | null;
   priority: string;
   taskCreatedAt: string;
+  /** WhatsApp 24h send-window state (null for non-WhatsApp / no history). */
+  whatsappWindowOpen: boolean | null;
+  lastInboundWhatsappAt: string | null;
 };
 
 export type NeedsYouResponse = { rows: NeedsYouRow[] };

@@ -63,7 +63,8 @@
       "columnStatus": "Status",
       "columnReply": "AI-foreslået svar",
       "leadTypeDefault": "Køber",
-      "aiTag": "AI"
+      "aiTag": "AI",
+      "windowClosed": "Vindue lukket"
     },
     "panel": {
       "selectALead": "Vælg et lead for at se detaljer.",
@@ -84,7 +85,10 @@
       "send": "Send",
       "copy": "Kopiér",
       "copied": "Kopieret",
-      "openInInbox": "Åbn i indbakke"
+      "openInInbox": "Åbn i indbakke",
+      "windowClosedNotice": "WhatsApp-vinduet på 24 timer er lukket, så dette udkast kan ikke sendes nu. Genoptag med en godkendt opfølgningsbesked fra indbakken.",
+      "previousSuggestion": "Tidligere forslag (vindue lukket)",
+      "reengage": "Genoptag i indbakken"
     },
     "activity": {
       "title": "Seneste aktivitet",

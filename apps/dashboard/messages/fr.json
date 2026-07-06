@@ -63,7 +63,8 @@
       "columnStatus": "Statut",
       "columnReply": "Réponse suggérée par l'IA",
       "leadTypeDefault": "Acheteur",
-      "aiTag": "IA"
+      "aiTag": "IA",
+      "windowClosed": "Fenêtre fermée"
     },
     "panel": {
       "selectALead": "Sélectionnez un prospect pour voir les détails.",
@@ -84,7 +85,10 @@
       "send": "Envoyer",
       "copy": "Copier",
       "copied": "Copié",
-      "openInInbox": "Ouvrir dans les messages"
+      "openInInbox": "Ouvrir dans les messages",
+      "windowClosedNotice": "La fenêtre WhatsApp de 24 heures est fermée, ce brouillon ne peut donc pas être envoyé maintenant. Relancez avec un message de suivi approuvé depuis la boîte de réception.",
+      "previousSuggestion": "Suggestion précédente (fenêtre fermée)",
+      "reengage": "Relancer dans la boîte de réception"
     },
     "activity": {
       "title": "Activité récente",

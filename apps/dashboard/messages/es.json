@@ -63,7 +63,8 @@
       "columnStatus": "Estado",
       "columnReply": "Respuesta sugerida por la IA",
       "leadTypeDefault": "Comprador",
-      "aiTag": "IA"
+      "aiTag": "IA",
+      "windowClosed": "Ventana cerrada"
     },
     "panel": {
       "selectALead": "Selecciona un lead para ver los detalles.",
@@ -84,7 +85,10 @@
       "send": "Enviar",
       "copy": "Copiar",
       "copied": "Copiado",
-      "openInInbox": "Abrir en la bandeja"
+      "openInInbox": "Abrir en la bandeja",
+      "windowClosedNotice": "La ventana de 24 horas de WhatsApp se ha cerrado, así que este borrador no se puede enviar ahora. Reactiva con un mensaje de seguimiento aprobado desde la bandeja.",
+      "previousSuggestion": "Sugerencia anterior (ventana cerrada)",
+      "reengage": "Reactivar en la bandeja"
     },
     "activity": {
       "title": "Actividad reciente",

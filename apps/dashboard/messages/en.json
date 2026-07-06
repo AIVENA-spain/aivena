@@ -63,7 +63,8 @@
       "columnStatus": "Status",
       "columnReply": "AI suggested reply",
       "leadTypeDefault": "Buyer",
-      "aiTag": "AI"
+      "aiTag": "AI",
+      "windowClosed": "Window closed"
     },
     "panel": {
       "selectALead": "Select a lead to see details.",
@@ -84,7 +85,10 @@
       "send": "Send",
       "copy": "Copy",
       "copied": "Copied",
-      "openInInbox": "Open in Inbox"
+      "openInInbox": "Open in Inbox",
+      "windowClosedNotice": "The 24-hour WhatsApp window has closed, so this draft can't be sent now. Re-engage with an approved check-in from the Inbox.",
+      "previousSuggestion": "Previous suggestion (window closed)",
+      "reengage": "Re-engage in Inbox"
     },
     "activity": {
       "title": "Recent Activity",

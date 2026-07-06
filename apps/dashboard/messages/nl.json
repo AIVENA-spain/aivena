@@ -63,7 +63,8 @@
       "columnStatus": "Status",
       "columnReply": "Door AI voorgesteld antwoord",
       "leadTypeDefault": "Koper",
-      "aiTag": "AI"
+      "aiTag": "AI",
+      "windowClosed": "Venster gesloten"
     },
     "panel": {
       "selectALead": "Selecteer een lead om de details te zien.",
@@ -84,7 +85,10 @@
       "send": "Versturen",
       "copy": "Kopiëren",
       "copied": "Gekopieerd",
-      "openInInbox": "Openen in inbox"
+      "openInInbox": "Openen in inbox",
+      "windowClosedNotice": "Het WhatsApp-venster van 24 uur is gesloten, dus dit concept kan nu niet worden verzonden. Benader opnieuw met een goedgekeurd check-inbericht vanuit de Inbox.",
+      "previousSuggestion": "Vorige suggestie (venster gesloten)",
+      "reengage": "Opnieuw benaderen in Inbox"
     },
     "activity": {
       "title": "Recente activiteit",

@@ -112,6 +112,9 @@ export const EditableManifest = z.object({
   // render for a matching status or an explicit demo/test render — the engine must never auto-generate it for an
   // active listing. Enforced by engine/eligibility.ts.
   eligibility: z.object({ post_type: z.string(), requires_status: z.array(z.string()), note: z.string().optional() }).optional(),
+  // photo aspect mode for the WHOLE template (see forceAspectOnPhotoSlots): "slice" crop-to-fill (default,
+  // full-bleed backgrounds, accepted-set behavior) | "meet" fit-whole-photo (framed gallery designs).
+  photo_fit: z.enum(["slice", "meet"]).optional(),
   overlay: z.object({ role: z.string(), opacity: z.number() }).optional(), // flat legibility scrim over the photo
   // vertical GRADIENT scrim (premium): dark where text sits (e.g. top), clear over the photo. Baked into the bg
   // so knockouts blend. stops = [{offset 0..1, opacity 0..1}] in the role colour.
@@ -153,16 +156,19 @@ export type SlotLayout = { id: string; bbox: number[]; size: number; pad: number
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-// ONE ASPECT RULE (meet-vs-slice reconciliation, Packet 4 task 5): photo-slot <image> tags always crop-to-fill
-// ('xMidYMid slice'), exactly like Canva and the LIVE renderer (apps/api/src/routes/studio-render.ts) — the raw
-// Canva exports say 'meet' (letterboxes mismatched photos). Applied on the SHORT tokens before substitution;
-// baked art (no token) untouched. Keep this regex identical to the live renderer's.
-export function forceSliceOnPhotoSlots(svg: string): string {
+// ONE ASPECT RULE per template (Christian 2026-07-06, supersedes always-slice): a template's photos are either
+// 'slice' (crop-to-fill — full-bleed photo BACKGROUNDS, and the default: matches the accepted #1/#7/#11 renders
+// and the LIVE renderer apps/api/src/routes/studio-render.ts) or 'meet' (fit-whole-photo — framed GALLERY
+// designs, like Canva fits a placed photo; the mismatch space stays design background). manifest.photo_fit
+// picks ONE mode for the whole template — never mixed ad-hoc. Applied on the SHORT tokens before substitution;
+// baked art (no token) untouched.
+export function forceAspectOnPhotoSlots(svg: string, mode: "slice" | "meet" = "slice"): string {
   return svg.replace(/<image\b[^>]*>/g, (tag) => {
     if (!/@@PHOTO\d+@@/.test(tag)) return tag;
-    return tag.replace(/\s+preserveAspectRatio\s*=\s*"[^"]*"/g, "").replace(/^<image\b/, '<image preserveAspectRatio="xMidYMid slice"');
+    return tag.replace(/\s+preserveAspectRatio\s*=\s*"[^"]*"/g, "").replace(/^<image\b/, `<image preserveAspectRatio="xMidYMid ${mode}"`);
   });
 }
+export const forceSliceOnPhotoSlots = (svg: string) => forceAspectOnPhotoSlots(svg, "slice");
 function roleHex(m: EditableManifest, palette: Palette, role: string): string {
   return palette[role] || m.colour_tokens[role]?.default || "#000000";
 }
@@ -185,7 +191,7 @@ function localBg(img: RGBA, b: number[], margin = 10): string {
 
 export async function renderEditable(m: EditableManifest, palette: Palette = {}, photos: string | Record<string, string> = GREY): Promise<{ svg: string; png: Buffer; editableTextCount: number; photosFilled: number }> {
   const [W, H] = [m.canvas.width, m.canvas.height];
-  const src = forceSliceOnPhotoSlots(fs.readFileSync(abs(m.source_svg), "utf8"));
+  const src = forceAspectOnPhotoSlots(fs.readFileSync(abs(m.source_svg), "utf8"), m.photo_fit ?? "slice");
   // background raster = source SVG with EACH photo token filled (hero + thumbnails), then an optional
   // legibility scrim baked in, so the knockout samples the FINAL backdrop tone.
   const tokens = m.photo_slots?.map((p) => p.token) ?? (m.photo_token ? [m.photo_token] : []);
@@ -375,7 +381,7 @@ export function loadEditableManifest(p: string): EditableManifest {
 // the ORIGINAL template look: source SVG with every photo token filled, NO editable overlay. Used as the
 // reference side of the side-by-side visual comparison.
 export function renderFilledSource(m: EditableManifest, photos: string | Record<string, string> = GREY): Buffer {
-  const src = forceSliceOnPhotoSlots(fs.readFileSync(abs(m.source_svg), "utf8"));
+  const src = forceAspectOnPhotoSlots(fs.readFileSync(abs(m.source_svg), "utf8"), m.photo_fit ?? "slice");
   const tokens = m.photo_slots?.map((p) => p.token) ?? (m.photo_token ? [m.photo_token] : []);
   let filled = src;
   for (const tok of tokens) filled = filled.split(tok).join(typeof photos === "string" ? photos : (photos[tok] || GREY));

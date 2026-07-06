@@ -14,6 +14,8 @@ import { useFormatter, useNow, useTranslations } from "next-intl";
 import {
   AlertTriangle,
   ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
   Building2,
   CalendarClock,
   Clock,
@@ -846,6 +848,27 @@ function BuyersConvoView({
   // Mobile-only: the client/property Details sheet (below lg it slides over the
   // thread; on desktop it's always the third grid column). No effect on desktop.
   const [detailsOpen, setDetailsOpen] = useState(false);
+  // Desktop-only: collapse the Client-Intelligence third column to give the
+  // conversation more width. Persisted in localStorage; the panel stays MOUNTED
+  // (data preserved) — collapsing just hides it behind a thin expand rail.
+  const [ciCollapsed, setCiCollapsed] = useState(false);
+  useEffect(() => {
+    try {
+      setCiCollapsed(localStorage.getItem("aivena.ci-collapsed") === "1");
+    } catch {
+      /* localStorage unavailable — default to expanded */
+    }
+  }, []);
+  const toggleCi = () =>
+    setCiCollapsed((v) => {
+      const next = !v;
+      try {
+        localStorage.setItem("aivena.ci-collapsed", next ? "1" : "0");
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
   const handleBack = () => {
     setDetailsOpen(false);
     onBack?.();
@@ -880,7 +903,14 @@ function BuyersConvoView({
     : -1;
 
   return (
-    <div className="grid grid-cols-1 overflow-hidden rounded-xl border border-border bg-card shadow-elevated lg:h-[calc(100dvh-11.5rem)] lg:min-h-[560px] lg:max-h-[940px] lg:grid-rows-1 lg:grid-cols-[230px_minmax(0,1fr)_minmax(0,1.5fr)]">
+    <div
+      className={cn(
+        "grid grid-cols-1 overflow-hidden rounded-xl border border-border bg-card shadow-elevated lg:h-[calc(100dvh-11.5rem)] lg:min-h-[560px] lg:max-h-[940px] lg:grid-rows-1",
+        ciCollapsed
+          ? "lg:grid-cols-[230px_minmax(0,1fr)_2.75rem]"
+          : "lg:grid-cols-[230px_minmax(0,1fr)_minmax(0,1.5fr)]",
+      )}
+    >
       {/* Left: convo list. Mobile: shown until a lead is picked, then swapped
           for the thread (drill-down). Desktop: always the first column. */}
       <div
@@ -1038,7 +1068,8 @@ function BuyersConvoView({
       ) : null}
       <div
         className={cn(
-          "min-h-0 flex-col overflow-y-auto bg-muted/20 lg:flex lg:border-l lg:border-border lg:p-5",
+          "min-h-0 flex-col overflow-y-auto bg-muted/20 lg:flex lg:border-l lg:border-border",
+          ciCollapsed ? "lg:p-1" : "lg:p-5",
           detailsOpen && selected
             ? "fixed inset-x-0 bottom-0 top-16 z-50 flex rounded-t-2xl border border-border bg-card p-5 shadow-2xl lg:static lg:inset-auto lg:z-auto lg:rounded-none lg:border-0 lg:border-l lg:bg-muted/20 lg:shadow-none"
             : "hidden",
@@ -1058,12 +1089,49 @@ function BuyersConvoView({
                 <X className="h-4 w-4" aria-hidden />
               </button>
             </div>
-            <ClientIntelligence
-              key={selected.leadId}
-              lead={selected}
-              authors={authors}
-              onSuggested={onSuggested}
-            />
+
+            {/* Desktop-only: collapse toggle (top-right when the panel is open). */}
+            {!ciCollapsed ? (
+              <div className="mb-1 hidden shrink-0 items-center justify-end lg:flex">
+                <button
+                  type="button"
+                  onClick={toggleCi}
+                  aria-label="Collapse client intelligence"
+                  aria-expanded={true}
+                  title="Collapse"
+                  className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                >
+                  <ChevronRight className="h-4 w-4" aria-hidden />
+                </button>
+              </div>
+            ) : null}
+
+            {/* Desktop-only collapsed rail: expand button + vertical label. */}
+            {ciCollapsed ? (
+              <button
+                type="button"
+                onClick={toggleCi}
+                aria-label="Expand client intelligence"
+                aria-expanded={false}
+                title="Expand"
+                className="hidden min-h-0 flex-1 flex-col items-center gap-3 rounded-md py-2 text-muted-foreground hover:bg-muted hover:text-foreground lg:flex"
+              >
+                <ChevronLeft className="h-4 w-4 shrink-0" aria-hidden />
+                <span className="text-[11px] font-medium uppercase tracking-wide [writing-mode:vertical-rl]">
+                  Client Intelligence
+                </span>
+              </button>
+            ) : null}
+
+            {/* Panel stays MOUNTED (data preserved); hidden on desktop when collapsed. */}
+            <div className={cn("min-h-0 lg:flex-1", ciCollapsed && "lg:hidden")}>
+              <ClientIntelligence
+                key={selected.leadId}
+                lead={selected}
+                authors={authors}
+                onSuggested={onSuggested}
+              />
+            </div>
           </>
         ) : null}
       </div>

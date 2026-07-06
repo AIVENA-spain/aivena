@@ -18,6 +18,7 @@ import { langLabel, typeLabel } from "@/app/(app)/matches/_shared";
 import { LeadNotes } from "./lead-notes";
 import { MatchedProperties } from "@/app/(app)/matches/matched-properties";
 import { getLeadIntelAction, getLeadWhatsappStateAction } from "./lead-intel-actions";
+import { nextActionBullets } from "./client-intelligence-lib";
 
 /**
  * Client Intelligence — the right third column of /approvals (Day-2). A wide,
@@ -241,20 +242,8 @@ function friendlyChannel(slug: string | null): string | null {
     .join(" ");
 }
 
-/**
- * Split a reasoning_summary into short bullets — verbatim clauses, meaning
- * unchanged. Comma/semicolon split only (the summaries are clause lists); each
- * clause is trimmed, trailing period removed, first letter capitalised. We never
- * paraphrase (so the real "no budget info" stays as written, not "no issue").
- */
-function reasonBullets(summary: string | null): string[] {
-  if (!summary) return [];
-  return summary
-    .split(/[;,]/)
-    .map((s) => s.trim().replace(/\.$/, ""))
-    .filter(Boolean)
-    .map((s) => s.charAt(0).toUpperCase() + s.slice(1));
-}
+// reasonBullets + the budget-contradiction guard now live in
+// ./client-intelligence-lib (pure + unit-tested) — see nextActionBullets.
 
 // ── 1. Buyer Profile (2-col label/value rows) ────────────────────────────────
 
@@ -312,7 +301,9 @@ function NextBestAction({
   t: Tr;
 }) {
   const channel = friendlyChannel(data?.recommended_channel ?? null);
-  const bullets = reasonBullets(data?.reasoning_summary ?? null);
+  // Bug 2: drop stale "no budget info" clauses when the lead's budget IS known,
+  // so Next-best-action can't contradict the Budget row shown above.
+  const bullets = nextActionBullets(data?.reasoning_summary ?? null, data?.budget_extracted ?? null);
   const hasAny = !!channel || bullets.length > 0 || !!data?.next_action;
 
   return (

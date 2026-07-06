@@ -1,13 +1,13 @@
 {
   "template_id": "5",
   "title_font_status": "RE-ADJUDICATED 2026-07-06 (60+ candidates, per-single-letter IoU on exact glyph bboxes + natural-metrics shootout, adversarially verified): Instrument Serif 400 at NATURAL width decisively beats the previous Libre Caslon Text 500 + scale_x 0.659 hack (natural IoU 0.672 vs 0.56; glyph aspect error 0.080 vs 0.300 — skeleton, terminals, t-flag, x-height all match). Baked original is slightly bolder, compensated with stroke_px 1.5 at the 224px title size. Exact Canva face (likely a licensed cut, e.g. Recife Display) confirmation owed — same status as accepted #1.",
-  "_note": "#5 (La Zenia — DARK listing). STRIP-PLATE v3 (2026-07-04): assets/5/source.stripped.svg strips the dynamic text glyphs ONLY — the 3 stat icons, both stat dividers, the website pill OUTLINE and the full-bleed grey-to-black gradient art stay BAKED. Missing-fact degrade: each stat slot declares its icon (+its divider) as companion_art, so a missing fact hides label AND art together — no orphaned icons, no off-canvas slot tricks. TOP BLOCK: the original's near-black top is the demo photo's 'meet' letterbox; the engine force-slices photos full-bleed (ONE ASPECT RULE), so the manifest scrim rebuilds BOTH dark blocks — top (hard reveal edge at y~500 just below the title ink) AND bottom (photo fades to solid black y750->782, protecting price/stats/CTA on ANY photo brightness; the baked gradient alone only worked on dark demo photos — a per-property accident, not a general rule). Photo reveal band = y~502-750, matching the original composition. Title = Instrument Serif 400 + stroke_px 1.5 (closest real-face replication of the source's condensed high-contrast serif; exact Canva face confirmation owed — see title_font_status). Baselines/sizes measured from the baked render (title baselines 248/431). No invented facts: title/price/stats real (missing -> hidden); labels + website are template/agency copy.",
+  "_note": "#5 (La Zenia — DARK listing). STRIP-PLATE v3 (2026-07-04): assets/5/source.stripped.svg strips the dynamic text glyphs ONLY — the 3 stat icons, both stat dividers, the website pill OUTLINE and the full-bleed grey-to-black gradient art stay BAKED. Missing-fact degrade: each stat slot declares its icon (+its divider) as companion_art, so a missing fact hides label AND art together — no orphaned icons, no off-canvas slot tricks. FULL-BLEED TRUTH (Christian's Canva p5 screenshot 2026-07-06): the original is ONE photo covering the WHOLE canvas under a dark gradient scrim — photo visible everywhere, darkest at the title top and the price/stats/CTA bottom. The manifest scrim replicates that gradient (under_art: pill/icons/baked gradient stay above it); photo_fit=attention pre-crops the photo to the frame aspect around its subject. No opaque blocks, no reveal band. Title = Instrument Serif 400 + stroke_px 1.5 (closest real-face replication of the source's condensed high-contrast serif; exact Canva face confirmation owed — see title_font_status). Baselines/sizes measured from the baked render (title baselines 248/431). No invented facts: title/price/stats real (missing -> hidden); labels + website are template/agency copy.",
   "canvas": {
     "width": 1080,
     "height": 1350
   },
   "source_svg": "assets/5/source.stripped.svg",
-  "photo_fit": "meet",
+  "photo_fit": "attention",
   "photo_token": "@@PHOTO0@@",
   "no_knockouts": true,
   "scrim": {
@@ -16,27 +16,27 @@
     "stops": [
       {
         "offset": 0,
-        "opacity": 1
+        "opacity": 0.88
       },
       {
-        "offset": 0.3704,
-        "opacity": 1
+        "offset": 0.3,
+        "opacity": 0.72
       },
       {
-        "offset": 0.3719,
-        "opacity": 0
+        "offset": 0.45,
+        "opacity": 0.5
       },
       {
-        "offset": 0.5556,
-        "opacity": 0
+        "offset": 0.58,
+        "opacity": 0.62
       },
       {
-        "offset": 0.5793,
-        "opacity": 1
+        "offset": 0.75,
+        "opacity": 0.8
       },
       {
         "offset": 1,
-        "opacity": 1
+        "opacity": 0.88
       }
     ]
   },

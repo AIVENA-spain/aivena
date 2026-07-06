@@ -7,7 +7,7 @@
     "height": 1350
   },
   "source_svg": "assets/6b/source.stripped.svg",
-  "photo_fit": "meet",
+  "photo_fit": "attention",
   "photo_slots": [
     {
       "token": "@@PHOTO0@@"

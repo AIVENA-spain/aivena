@@ -112,9 +112,13 @@ export const EditableManifest = z.object({
   // render for a matching status or an explicit demo/test render — the engine must never auto-generate it for an
   // active listing. Enforced by engine/eligibility.ts.
   eligibility: z.object({ post_type: z.string(), requires_status: z.array(z.string()), note: z.string().optional() }).optional(),
-  // photo aspect mode for the WHOLE template (see forceAspectOnPhotoSlots): "slice" crop-to-fill (default,
-  // full-bleed backgrounds, accepted-set behavior) | "meet" fit-whole-photo (framed gallery designs).
-  photo_fit: z.enum(["slice", "meet"]).optional(),
+  // photo aspect mode for the WHOLE template (see forceAspectOnPhotoSlots): "slice" crop-to-fill dead-center
+  // (default — the accepted #1/#7/#11 renders, matches the live renderer) | "attention" crop-to-fill with
+  // attention framing (Christian 2026-07-06, Canva-original truth: photos FILL their frames edge to edge and
+  // cropping is expected; each photo is pre-cropped to its frame's aspect around the most interesting region
+  // via fitPhotosToFrames, so a landscape shot in a tall frame frames the subject instead of a dead-center
+  // zoom) | "meet" fit-whole-photo (kept for completeness; no current template).
+  photo_fit: z.enum(["slice", "attention", "meet"]).optional(),
   overlay: z.object({ role: z.string(), opacity: z.number() }).optional(), // flat legibility scrim over the photo
   // vertical GRADIENT scrim (premium): dark where text sits (e.g. top), clear over the photo. Baked into the bg
   // so knockouts blend. stops = [{offset 0..1, opacity 0..1}] in the role colour.
@@ -162,13 +166,40 @@ const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replac
 // designs, like Canva fits a placed photo; the mismatch space stays design background). manifest.photo_fit
 // picks ONE mode for the whole template — never mixed ad-hoc. Applied on the SHORT tokens before substitution;
 // baked art (no token) untouched.
-export function forceAspectOnPhotoSlots(svg: string, mode: "slice" | "meet" = "slice"): string {
+export function forceAspectOnPhotoSlots(svg: string, mode: "slice" | "attention" | "meet" = "slice"): string {
+  const par = mode === "meet" ? "meet" : "slice"; // "attention" = slice geometry over pre-cropped bitmaps
   return svg.replace(/<image\b[^>]*>/g, (tag) => {
     if (!/@@PHOTO\d+@@/.test(tag)) return tag;
-    return tag.replace(/\s+preserveAspectRatio\s*=\s*"[^"]*"/g, "").replace(/^<image\b/, `<image preserveAspectRatio="xMidYMid ${mode}"`);
+    return tag.replace(/\s+preserveAspectRatio\s*=\s*"[^"]*"/g, "").replace(/^<image\b/, `<image preserveAspectRatio="xMidYMid ${par}"`);
   });
 }
 export const forceSliceOnPhotoSlots = (svg: string) => forceAspectOnPhotoSlots(svg, "slice");
+
+// ATTENTION FIT (photo_fit "attention"): pre-crop each property photo to its frame's exact aspect around the
+// most interesting region (sharp attention strategy) so the slice fill shows a sensibly framed crop instead of
+// a dead-center zoom. Frame aspects come from the source's <image> width/height attrs — Canva exports bake the
+// demo bitmap at frame size, so the attrs ARE the frame shape. Photos keep the existing index->token order
+// (PHOTO0 = the design's hero frame).
+export async function fitPhotosToFrames(m: z.infer<typeof EditableManifest>, imgPaths: string[]): Promise<Record<string, string>> {
+  const sharp = (await import("sharp")).default;
+  const src = fs.readFileSync(abs(m.source_svg), "utf8");
+  const tokens = m.photo_slots?.map((p) => p.token) ?? (m.photo_token ? [m.photo_token] : []);
+  const out: Record<string, string> = {};
+  for (let i = 0; i < tokens.length; i++) {
+    const tag = src.match(new RegExp(`<image\\b[^>]*${tokens[i].replace(/@/g, "\\@")}[^>]*>`))?.[0] || "";
+    const fw = Number(/\bwidth="([\d.]+)"/.exec(tag)?.[1] || 0), fh = Number(/\bheight="([\d.]+)"/.exec(tag)?.[1] || 0);
+    const img = imgPaths[i % imgPaths.length];
+    if (!fw || !fh) { out[tokens[i]] = "data:image/jpeg;base64," + fs.readFileSync(img).toString("base64"); continue; }
+    // render at up to ~1400px on the long side — plenty for a 1080-canvas frame
+    const s = Math.min(1, 1400 / Math.max(fw, fh));
+    const buf = await sharp(img)
+      .resize({ width: Math.round(fw * s), height: Math.round(fh * s), fit: "cover", position: sharp.strategy.attention })
+      .jpeg({ quality: 88 })
+      .toBuffer();
+    out[tokens[i]] = "data:image/jpeg;base64," + buf.toString("base64");
+  }
+  return out;
+}
 function roleHex(m: EditableManifest, palette: Palette, role: string): string {
   return palette[role] || m.colour_tokens[role]?.default || "#000000";
 }

@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { abs } from "../src/lib/paths";
-import { renderEditable, loadEditableManifest, renderFilledSource, EditableManifest, Palette, textWidth } from "./renderEditable";
+import { renderEditable, loadEditableManifest, renderFilledSource, fitPhotosToFrames, EditableManifest, Palette, textWidth } from "./renderEditable";
 import { runVisualQA, QACheck } from "./visualQA";
 import { composeOne } from "../src/lib/compose";
 
@@ -16,6 +16,10 @@ export const PROPS: any[] = FIX.properties;
 const SUPA = "https://atminvhrybxegpdtnnpl.supabase.co/storage/v1/object/public";
 
 const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+// Spanish place-name casing: feed data arrives naively title-cased ("Guardamar Del Segura") — particles are
+// lowercase mid-name in correct Spanish ("Guardamar del Segura"). First word always keeps its capital.
+const ES_PARTICLES = new Set(["de", "del", "la", "las", "los", "el", "y", "e", "da", "do", "das", "dos"]);
+const esPlace = (s: string) => s ? s.trim().split(/\s+/).map((w, i) => (i > 0 && ES_PARTICLES.has(w.toLowerCase()) ? w.toLowerCase() : w)).join(" ") : s;
 const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? "" : "s"}`;
 const priceStr = (p: number | null) => (p != null ? "€" + Number(p).toLocaleString("en-US") : null);
 const lumaHex = (hex: string) => { const h = hex.replace("#", ""); const [r, g, b] = [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16)); return 0.299 * r + 0.587 * g + 0.114 * b; };
@@ -65,11 +69,12 @@ function featureRows(p: any): string[] {
 // template slots, consistently for every property. No per-property strings.
 function deriveSlots(p: any, agency: any, templateId: string): Record<string, { text: string }> {
   const typeCap = cap(p.type);
-  const loc = [p.city, p.region].filter(Boolean).join(", ");
+  const city = esPlace(p.city);
+  const loc = [city, p.region].filter(Boolean).join(", ");
   const price = priceStr(p.price);
   const brand2 = splitTwoLines(agency.name);
   const T = (text: string) => ({ text });
-  if (templateId === "11") return { brand: T(brand2), title: T(`${typeCap} in\n${p.city}`.toUpperCase()), address: T(loc) };
+  if (templateId === "11") return { brand: T(brand2), title: T(`${typeCap} in\n${city}`.toUpperCase()), address: T(loc) };
   if (templateId === "1") {
     // template style: spelled-out numbers, stacked 2-line caps ("TWO / BEDROOMS")
     const W = ["ZERO", "ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE", "TEN"];
@@ -84,42 +89,46 @@ function deriveSlots(p: any, agency: any, templateId: string): Record<string, { 
   if (templateId === "7") {
     // body stays the template's own marketing copy (editable) — matches the Canva layout exactly
     const out: Record<string, { text: string }> = {
-      brand: T(brand2), title: T(bestTitleSplit(`${typeCap} in ${p.city}`, "Poppins", "700", 531, 85, 3)),
+      brand: T(brand2), title: T(bestTitleSplit(`${typeCap} in ${city}`, "Poppins", "700", 531, 85, 3)),
       cta_phone: T(agency.phone), cta_web: T(agency.web),
     };
     featureRows(p).forEach((r, i) => (out[`feat_${i + 1}`] = T(r)));
     return out;
   }
+  // #5/#14/#6 replicate their sources' typographic conventions: plain-digit "M2" (baked style), uppercase site.
   if (templateId === "5") return {
-    title: T(`${typeCap} in\n${p.city}`),
+    title: T(`${typeCap} in\n${city}`),
     price_label: T(price ? "PRICE:" : ""), price_value: T(price || ""),
-    stat_area: T(p.size ? `${p.size} M²` : ""),
-    stat_beds: T(plural(p.beds, "Bedroom").toUpperCase()),
-    stat_baths: T(plural(p.baths, "Bathroom").toUpperCase()),
-    cta_web: T(agency.web),
+    stat_area: T(p.size ? `${p.size} M2` : ""),
+    stat_beds: T(p.beds != null ? plural(p.beds, "Bedroom").toUpperCase() : ""),
+    stat_baths: T(p.baths != null ? plural(p.baths, "Bathroom").toUpperCase() : ""),
+    cta_web: T(agency.web.toUpperCase()),
   };
   if (templateId === "14") return {
-    stat_area: T(p.size ? `${p.size} M²` : ""),
-    stat_beds: T(plural(p.beds, "Bedroom").toUpperCase()),
-    stat_baths: T(plural(p.baths, "Bathroom").toUpperCase()),
+    stat_area: T(p.size ? `${p.size} M2` : ""),
+    stat_beds: T(p.beds != null ? plural(p.beds, "Bedroom").toUpperCase() : ""),
+    stat_baths: T(p.baths != null ? plural(p.baths, "Bathroom").toUpperCase() : ""),
     contact_addr: T(loc), contact_phone: T(agency.phone), contact_web: T(agency.web),
     brand: T(splitTwoLines(agency.name)),
   };
   if (templateId === "3") return {
     luxury: T("LUXURY"), type_script: T(typeCap),
-    subtitle: T(`This brand-new ${p.type} in ${p.city} is now available\nand offers everything you need for a stylish,\ncomfortable, and convenient lifestyle.`.toUpperCase()),
+    subtitle: T(`This brand-new ${p.type} in ${city} is now available\nand offers everything you need for a stylish,\ncomfortable, and convenient lifestyle.`.toUpperCase()),
     stat_area: T(p.size ? `${p.size} M²` : ""),
-    stat_beds: T(plural(p.beds, "Bedroom").toUpperCase()),
-    stat_baths: T(plural(p.baths, "Bathroom").toUpperCase()),
+    stat_beds: T(p.beds != null ? plural(p.beds, "Bedroom").toUpperCase() : ""),
+    stat_baths: T(p.baths != null ? plural(p.baths, "Bathroom").toUpperCase() : ""),
     cta_web: T(agency.web),
   };
   if (templateId === "6") return {
-    handle: T(`@${agency.web.replace(/^www\./, "").replace(/\.[a-z.]+$/, "")}`),
-    title: T(`${typeCap} in\n${p.city}`),
+    // handle follows the source's caps convention; title = TWO real slots (the source sets its two title lines
+    // at different sizes — per-line slots keep each line's design size/baseline and decouple their auto-fits)
+    handle: T(`@${agency.web.replace(/^www\./, "").replace(/\.[a-z.]+$/, "")}`.toUpperCase()),
+    title_line1: T(`${typeCap} in`),
+    title_line2: T(city),
     // subtitle kept as the template's generic marketing copy (4 lines, matching the source) — editable, not a fact
-    stat_area: T(p.size ? `${p.size} M²` : ""),
-    stat_beds: T(plural(p.beds, "Bedroom").toUpperCase()),
-    stat_baths: T(plural(p.baths, "Bathroom").toUpperCase()),
+    stat_area: T(p.size ? `${p.size} M2` : ""),
+    stat_beds: T(p.beds != null ? plural(p.beds, "Bedroom").toUpperCase() : ""),
+    stat_baths: T(p.baths != null ? plural(p.baths, "Bathroom").toUpperCase() : ""),
   };
   return {};
 }
@@ -153,7 +162,8 @@ export async function ensureImages(p: any): Promise<string[]> {
 export async function renderEditableFor(p: any, templateId: string, imgs: string[]) {
   const m = applyDerived(loadEditableManifest(`manifest/templates/${templateId}.editable.json`), deriveSlots(p, AGENCY, templateId));
   let photos: string | Record<string, string>;
-  if (m.photo_slots && m.photo_slots.length > 1) { const map: Record<string, string> = {}; m.photo_slots.forEach((s, i) => (map[s.token] = jpgUri(imgs[i % imgs.length]))); photos = map; }
+  if (m.photo_fit === "attention") photos = await fitPhotosToFrames(m, imgs);
+  else if (m.photo_slots && m.photo_slots.length > 1) { const map: Record<string, string> = {}; m.photo_slots.forEach((s, i) => (map[s.token] = jpgUri(imgs[i % imgs.length]))); photos = map; }
   else photos = jpgUri(imgs[templateId === "1" ? Math.min(1, imgs.length - 1) : 0]);
   const r = await renderEditable(m, agencyPalette(m), photos);
   const qa = await runVisualQA(m, r);

@@ -1,36 +1,267 @@
 {
   "template_id": "6",
-  "title_font_status": "needs_seed — elegant display serif; Libre Caslon Display used as a category-correct placeholder (matches the source's serif). Canva source font confirmation owed.",
-  "_note": "#6 = Canva page 6 'Villa in Torrevieja' (bucket 6b — the bucket file numbers do NOT match Canva page numbers; bucket '6' was a different Open House Gallery — corrected). FAITHFUL REPLICATION: baked composition kept (4-photo grid hero+3 thumbnails, stat icons), only dynamic text knocked out + redrawn EDITABLE at the same positions/style. Right column: agency handle (top), serif '{Type} in {City}' title, uppercase subtitle, then the baked stat row (house/bed/bath icons kept — universally correct) with editable labels. No invented facts: photos + type/city + stats are real; subtitle is template marketing copy; handle is agency. Active-listing post type — no status guard.",
-  "canvas": { "width": 1080, "height": 1350 },
-  "source_svg": "assets/6b/source.tokenized.svg",
+  "title_font_status": "IDENTIFIED 2026-07-06 (isolated-glyph IoU + letterform anatomy, adversarially verified): Belgan Aesthetic 400 (Handpik — a Canva-library face). Signature glyphs coincide in pixel overlays: crossing-swash single-story 'a', ball-terminal 'j', droopy teardrop 'r' flags, droopy T-bar, hairline V. Replaces the Italiana+stroke_px stopgap. LICENSE: free for personal use; commercial desktop license sold via Creative Fabrica — purchase before production use (business call for Christian).",
+  "_note": "#6 = Canva p6 \"Villa in Torrevieja\" (bucket 6b). STRIP-PLATE v3 (2026-07-04): honest primitives only — plate_rects rebuild the cream crop margins the ONE-ASPECT force-slice floods (no dummy-slot panel hacks); the title is TWO per-line slots (the source sets line 1 at 154 and line 2 at 107 with different baselines) so each line keeps its design size/baseline and long real values auto-fit independently; title face = Italiana + stroke_px 2 replicating the SOURCE's baked stroke effect (constant ~2px stem delta across both title sizes = stroke, not a bolder face) + word_spacing -25 matching the source's near-fused word gaps; handle/stat follow the source's caps + plain-digit M2 conventions via deriveSlots (no remapped fonts); stat icons/dividers stay baked and are companion_art of their stat slots.",
+  "canvas": {
+    "width": 1080,
+    "height": 1350
+  },
+  "source_svg": "assets/6b/source.stripped.svg",
   "photo_slots": [
-    { "token": "@@PHOTO0@@" },
-    { "token": "@@PHOTO1@@" },
-    { "token": "@@PHOTO2@@" },
-    { "token": "@@PHOTO3@@" }
+    {
+      "token": "@@PHOTO0@@"
+    },
+    {
+      "token": "@@PHOTO1@@"
+    },
+    {
+      "token": "@@PHOTO2@@"
+    },
+    {
+      "token": "@@PHOTO3@@"
+    }
   ],
-  "knockout_regions": [[588, 806, 1016, 1112], [584, 1206, 1038, 1324]],
+  "no_knockouts": true,
   "colour_tokens": {
-    "background": { "default": "#efe9de", "locked": true },
-    "overlay": { "default": "#efe9de", "locked": true },
-    "title": { "default": "#1a1a1a", "locked": false },
-    "subtitle/body": { "default": "#1a1a1a", "locked": false },
-    "accent": { "default": "#1a1a1a", "locked": false },
-    "badge.fill": { "default": "#1a1a1a", "locked": false },
-    "badge.text": { "default": "#1a1a1a", "locked": false },
-    "divider": { "default": "#1a1a1a", "locked": true },
-    "icon": { "default": "#1a1a1a", "locked": true },
-    "stat.label": { "default": "#1a1a1a", "locked": false },
-    "stat.value": { "default": "#1a1a1a", "locked": false },
-    "cta": { "default": "#1a1a1a", "locked": false }
+    "background": {
+      "default": "#f8f7f2",
+      "locked": true
+    },
+    "overlay": {
+      "default": "#f8f7f2",
+      "locked": true
+    },
+    "title": {
+      "default": "#000000",
+      "locked": false
+    },
+    "subtitle/body": {
+      "default": "#000000",
+      "locked": false
+    },
+    "accent": {
+      "default": "#000000",
+      "locked": false
+    },
+    "badge.fill": {
+      "default": "#f8f7f2",
+      "locked": false
+    },
+    "badge.text": {
+      "default": "#000000",
+      "locked": false
+    },
+    "divider": {
+      "default": "#000000",
+      "locked": true
+    },
+    "icon": {
+      "default": "#000000",
+      "locked": true
+    },
+    "stat.label": {
+      "default": "#000000",
+      "locked": false
+    },
+    "stat.value": {
+      "default": "#000000",
+      "locked": false
+    },
+    "cta": {
+      "default": "#000000",
+      "locked": false
+    }
   },
   "text_slots": [
-    { "id": "handle", "role": "badge.text", "source": "template_copy", "bbox": [660, 90, 1012, 128], "size": 26, "pad": 4, "weight": "600", "valign": "center", "font": "Poppins", "align": "right", "text": "@REALLYGREATSITE" },
-    { "id": "title", "role": "title", "source": "property_fact", "bbox": [596, 652, 978, 794], "size": 74, "line_height": 76, "valign": "center", "font": "LibreCaslonDisplay", "align": "right", "text": "Villa in\nTorrevieja" },
-    { "id": "subtitle", "role": "subtitle/body", "source": "template_copy", "bbox": [596, 808, 1012, 1110], "size": 28, "line_height": 41, "valign": "center", "font": "Poppins", "align": "right", "text": "THIS ULTRA-MODERN\nLUXURY HOME IS\nDESIGNED FOR THE BOLD\nAND REFINED." },
-    { "id": "stat_area", "role": "subtitle/body", "source": "property_fact", "bbox": [588, 1220, 686, 1316], "size": 19, "pad": 4, "weight": "600", "valign": "center", "font": "Poppins", "align": "center", "text": "500 M²" },
-    { "id": "stat_beds", "role": "subtitle/body", "source": "property_fact", "bbox": [692, 1220, 900, 1316], "size": 19, "pad": 4, "weight": "600", "valign": "center", "font": "Poppins", "align": "center", "text": "3 BEDROOMS" },
-    { "id": "stat_baths", "role": "subtitle/body", "source": "property_fact", "bbox": [906, 1220, 1032, 1316], "size": 19, "pad": 4, "weight": "600", "valign": "center", "font": "Poppins", "align": "center", "text": "2 BATHROOMS" }
+    {
+      "id": "handle",
+      "role": "badge.text",
+      "source": "template_copy",
+      "bbox": [
+        640,
+        91,
+        1000,
+        132
+      ],
+      "size": 34.4,
+      "font": "Poppins",
+      "align": "right",
+      "text": "@REALLYGREATSITE"
+    },
+    {
+      "id": "title_line1",
+      "role": "title",
+      "source": "property_fact",
+      "bbox": [
+        596,
+        660,
+        1000,
+        803
+      ],
+      "size": 154,
+      "line_height": 143,
+      "valign": "bottom",
+      "font": "Belgan Aesthetic",
+      "align": "left",
+      "tracking": -10,
+      "scale_x": 0.96,
+      "text": "Villa in"
+    },
+    {
+      "id": "title_line2",
+      "role": "title",
+      "source": "property_fact",
+      "bbox": [
+        596,
+        804,
+        1000,
+        910
+      ],
+      "size": 107,
+      "line_height": 106,
+      "valign": "bottom",
+      "font": "Belgan Aesthetic",
+      "align": "left",
+      "tracking": -4,
+      "scale_x": 0.92,
+      "text": "Torrevieja"
+    },
+    {
+      "id": "subtitle",
+      "role": "subtitle/body",
+      "source": "template_copy",
+      "bbox": [
+        596,
+        962,
+        1001,
+        1116
+      ],
+      "size": 34.4,
+      "line_height": 38,
+      "tracking": -1.3,
+      "font": "Poppins",
+      "align": "right",
+      "text": "THIS ULTRA-MODERN\nLUXURY HOME IS\nDESIGNED FOR THE BOLD\nAND REFINED."
+    },
+    {
+      "id": "stat_area",
+      "role": "stat.value",
+      "source": "property_fact",
+      "bbox": [
+        560,
+        1301,
+        692,
+        1329
+      ],
+      "size": 20.1,
+      "font": "Poppins",
+      "align": "center",
+      "text": "500 M2",
+      "companion_art": [
+        {
+          "bbox": [
+            594,
+            1220,
+            657,
+            1287
+          ]
+        },
+        {
+          "bbox": [
+            718,
+            1224,
+            728,
+            1308
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stat_beds",
+      "role": "stat.value",
+      "source": "property_fact",
+      "bbox": [
+        734,
+        1301,
+        884,
+        1329
+      ],
+      "size": 20.1,
+      "font": "Poppins",
+      "align": "center",
+      "text": "3 BEDROOMS",
+      "companion_art": [
+        {
+          "bbox": [
+            777,
+            1228,
+            841,
+            1278
+          ]
+        },
+        {
+          "bbox": [
+            890,
+            1224,
+            900,
+            1308
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stat_baths",
+      "role": "stat.value",
+      "source": "property_fact",
+      "bbox": [
+        906,
+        1301,
+        1079,
+        1329
+      ],
+      "size": 20.1,
+      "font": "Poppins",
+      "align": "center",
+      "text": "BATHROOMS",
+      "companion_art": [
+        {
+          "bbox": [
+            957,
+            1219,
+            1028,
+            1286
+          ]
+        }
+      ]
+    }
+  ],
+  "plate_rects": [
+    {
+      "bbox": [
+        0,
+        0,
+        1080,
+        200
+      ],
+      "fill_role": "background"
+    },
+    {
+      "bbox": [
+        0,
+        199,
+        79,
+        315
+      ],
+      "fill_role": "background"
+    },
+    {
+      "bbox": [
+        368,
+        199,
+        395,
+        315
+      ],
+      "fill_role": "background"
+    }
   ]
 }

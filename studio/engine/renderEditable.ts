@@ -16,15 +16,46 @@ const FONT_FILES: Record<string, string> = {
 const WEIGHT_FILES: Record<string, Record<string, string>> = {
   Poppins: { "500": "fonts/Poppins-Medium.ttf", "600": "fonts/Poppins-SemiBold.ttf", "700": "fonts/Poppins-Bold.ttf", bold: "fonts/Poppins-Bold.ttf" },
 };
+// SELF-REGISTERING vault: every fonts/*.ttf is scanned once (typographic family + usWeightClass + italic flag)
+// so a newly seeded face is addressable by family name immediately — mirrors how resvg's fontDir registers the
+// same files. Static maps above stay as overrides/aliases (e.g. "GreatVibes" without the space).
+type VaultFace = { file: string; weight: number; italic: boolean };
+let _vault: Map<string, VaultFace[]> | null = null;
+function vault(): Map<string, VaultFace[]> {
+  if (_vault) return _vault;
+  _vault = new Map();
+  for (const f of fs.readdirSync(abs("fonts"))) {
+    if (!f.endsWith(".ttf") || f.startsWith("__cand_")) continue;
+    try {
+      const fk = (fontkit as any).openSync(abs(path.join("fonts", f)));
+      const fam = fk.name?.records?.preferredFamily?.en || fk.familyName;
+      const face: VaultFace = {
+        file: path.join("fonts", f),
+        weight: fk["OS/2"]?.usWeightClass || 400,
+        italic: (fk.italicAngle || 0) !== 0 || ((fk["OS/2"]?.fsSelection || 0) & 1) !== 0,
+      };
+      if (fam) { if (!_vault.has(fam)) _vault.set(fam, []); _vault.get(fam)!.push(face); }
+    } catch { /* unreadable face — skip */ }
+  }
+  return _vault;
+}
 const _fk = new Map<string, any>();
-function fkFile(key: string, weight?: string): string {
-  if (weight && WEIGHT_FILES[key]?.[weight]) return WEIGHT_FILES[key][weight];
+function fkFile(key: string, weight?: string, italic?: boolean): string {
+  if (!italic && weight && WEIGHT_FILES[key]?.[weight]) return WEIGHT_FILES[key][weight];
+  const faces = vault().get(key);
+  if (faces?.length) {
+    const want = weight && /^\d+$/.test(weight) ? +weight : weight ? 700 : 400;
+    // prefer the requested italic style; within it, the nearest registered weight
+    const pool = faces.filter((c) => c.italic === !!italic);
+    const pick = (pool.length ? pool : faces).reduce((a, b) => (Math.abs(b.weight - want) < Math.abs(a.weight - want) ? b : a));
+    return pick.file;
+  }
   return FONT_FILES[key] || FONT_FILES.Poppins;
 }
-function fkFont(key: string, weight?: string): any { const rel = fkFile(key, weight); if (!_fk.has(rel)) _fk.set(rel, (fontkit as any).openSync(abs(rel))); return _fk.get(rel); }
-// advance width (px) of one line at a given size — measured with the ACTUAL weight file (bold is wider).
-export function textWidth(fontKey: string, text: string, size: number, weight?: string): number {
-  try { const f = fkFont(fontKey, weight); const run = f.layout(text); let u = 0; for (const g of run.glyphs) u += g.advanceWidth; return (u * size) / f.unitsPerEm; }
+function fkFont(key: string, weight?: string, italic?: boolean): any { const rel = fkFile(key, weight, italic); if (!_fk.has(rel)) _fk.set(rel, (fontkit as any).openSync(abs(rel))); return _fk.get(rel); }
+// advance width (px) of one line at a given size — measured with the ACTUAL face file (bold/italic differ).
+export function textWidth(fontKey: string, text: string, size: number, weight?: string, italic?: boolean): number {
+  try { const f = fkFont(fontKey, weight, italic); const run = f.layout(text); let u = 0; for (const g of run.glyphs) u += g.advanceWidth; return (u * size) / f.unitsPerEm; }
   catch { return text.length * size * 0.55; }
 }
 
@@ -44,10 +75,16 @@ export const EditableSlot = z.object({
   text: z.string(),               // may contain \n for multiple lines
   size: z.number().optional(),        // explicit font-size px (overrides the bbox heuristic; enables tight display type)
   line_height: z.number().optional(), // explicit line pitch px (for tight multi-line titles)
-  weight: z.string().optional(),      // "bold"/"600"/"700" -> faux-bold (same-colour stroke; vault has no bold face yet)
+  weight: z.string().optional(),      // real weight ("500"/"600"/"700"/"800"/"900") -> seeded weight face via the vault
+  italic: z.boolean().optional(),     // real italic face via the vault (emits font-style="italic"; measured with the italic file)
   pad: z.number().optional(),         // inner horizontal padding px kept clear of the bbox edges (divider clearance)
   valign: z.enum(["top", "center", "bottom"]).optional(), // vertical placement of the text block in the bbox (default top)
   tracking: z.number().optional(),    // letter-spacing px (premium uppercase eyebrows / labels)
+  word_spacing: z.number().optional(),// extra px between words (replicates sources set tighter/looser than the face's space glyph)
+  // REPLICATED stroke effect: the SOURCE design bakes a same-colour stroke on the text (constant px stems across
+  // different sizes = stroke, not a bolder face). This is replication of baked art — NOT the banned faux-bold
+  // used to fake a missing weight file.
+  stroke_px: z.number().optional(),
   scale_x: z.number().optional(),     // horizontal condensing (0-1) — matches condensed display faces the vault lacks
   no_knockout: z.boolean().optional(),// per-slot: baked text for THIS slot was stripped from the source -> draw only
   // ADAPTIVE PILL: draw a rounded pill behind the text, sized to the MEASURED text width (+pad) — replaces a
@@ -59,6 +96,10 @@ export const EditableSlot = z.object({
   // the source design's line count: when real text has FEWER lines, size/line-height scale UP so the text
   // still fills the design zone naturally (width auto-fit then caps it) — no empty holes from short titles.
   design_lines: z.number().optional(),
+  // BAKED art that belongs to this slot's fact (its icon, its divider): when the fact is missing (empty text),
+  // each region is covered with fill_role (else the sampled local background) so no orphaned icon/divider floats
+  // beside a hidden value. When the text renders, nothing is drawn — the original baked art shows untouched.
+  companion_art: z.array(z.object({ bbox: z.tuple([z.number(), z.number(), z.number(), z.number()]), fill_role: z.string().optional() })).optional(),
 });
 export const EditableManifest = z.object({
   template_id: z.string(),
@@ -74,7 +115,14 @@ export const EditableManifest = z.object({
   overlay: z.object({ role: z.string(), opacity: z.number() }).optional(), // flat legibility scrim over the photo
   // vertical GRADIENT scrim (premium): dark where text sits (e.g. top), clear over the photo. Baked into the bg
   // so knockouts blend. stops = [{offset 0..1, opacity 0..1}] in the role colour.
-  scrim: z.object({ role: z.string(), stops: z.array(z.object({ offset: z.number(), opacity: z.number() })) }).optional(),
+  // under_art: inject the gradient INTO the source SVG right after the photo element — it darkens the photo at
+  // the photo's own position in the stacking order, so baked art painted later (pill outlines, icons, dividers)
+  // stays on top. Without it the scrim composites over the finished plate and would bury that art.
+  scrim: z.object({ role: z.string(), stops: z.array(z.object({ offset: z.number(), opacity: z.number() })), under_art: z.boolean().optional() }).optional(),
+  // STATIC plate rectangles drawn over the photo raster before any text: rebuild source margins that the
+  // ONE-ASPECT force-slice floods (e.g. a crop window whose cream border existed only via the original photo's
+  // aspect). First-class — never abuse panels/scrims with dummy slot names to fake static rects.
+  plate_rects: z.array(z.object({ bbox: z.tuple([z.number(), z.number(), z.number(), z.number()]), fill_role: z.string() })).optional(),
   knockout_regions: z.array(z.tuple([z.number(), z.number(), z.number(), z.number()])).optional(), // knock out stray baked source art (local-bg fill, no text)
   // STRIP-PLATE mode: the source_svg already had its dynamic text paths REMOVED (engine/stripPlate.ts), so the
   // photo/art background is intact — editable text draws directly on it with NO knockout rectangles (knockouts
@@ -121,6 +169,7 @@ function roleHex(m: EditableManifest, palette: Palette, role: string): string {
 
 // 1x1 mid-grey stand-in photo (no real property photo embedded in a proof; real renders pass a data URI).
 const GREY = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYPj/HwAEAQH/7yMK/AAAAABJRU5ErkJggg==";
+const TRANSPARENT = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAADUlEQVR4nGNgYGBgAAAABQABpfZFQAAAAABJRU5ErkJggg==";
 
 // median colour of a thin ring just outside the bbox = the local background to knock out with (blends the
 // knockout into the surrounding design instead of a flat white box).
@@ -141,6 +190,24 @@ export async function renderEditable(m: EditableManifest, palette: Palette = {},
   // legibility scrim baked in, so the knockout samples the FINAL backdrop tone.
   const tokens = m.photo_slots?.map((p) => p.token) ?? (m.photo_token ? [m.photo_token] : []);
   let filled = src, photosFilled = 0;
+  // under_art scrim: the scrim rect stays in exact canvas space (over the photo raster), and the baked art that
+  // the source paints AFTER the photo (its own gradient, pill outlines, icons, dividers) is re-composited on top
+  // via a second art-only render: photo tokens -> transparent, pre-photo background paths dropped by paint order.
+  let artOverUri = "";
+  if (m.scrim?.under_art && tokens.length) {
+    const imgPos = src.search(new RegExp(`<image\\b[^>]*${tokens[0].replace(/@/g, "\\@")}[^>]*/>`));
+    let art = src;
+    if (imgPos >= 0) {
+      // paths inside <defs> are clip/mask DEFINITIONS, not painted art — deleting them breaks url(#) references
+      const defs: [number, number][] = [];
+      for (const d of art.matchAll(/<defs>[\s\S]*?<\/defs>/g)) defs.push([d.index!, d.index! + d[0].length]);
+      const inDefs = (i: number) => defs.some(([a, b]) => i >= a && i < b);
+      const pre = [...art.matchAll(/<path\b[^>]*?\/>/g)].filter((p) => p.index! < imgPos && !inDefs(p.index!));
+      for (let i = pre.length - 1; i >= 0; i--) art = art.slice(0, pre[i].index!) + art.slice(pre[i].index! + pre[i][0].length);
+    }
+    art = art.replace(/@@PHOTO\d+@@/g, TRANSPARENT);
+    artOverUri = "data:image/png;base64," + renderTemplatePng(art, W).toString("base64");
+  }
   for (const tok of tokens) {
     const uri = typeof photos === "string" ? photos : (photos[tok] || GREY);
     if (filled.includes(tok)) photosFilled++;
@@ -155,12 +222,18 @@ export async function renderEditable(m: EditableManifest, palette: Palette = {},
     scrimDefs = `<defs><linearGradient id="scrim" x1="0" y1="0" x2="0" y2="1">${stops}</linearGradient></defs>`;
     scrim += `<rect x="0" y="0" width="${W}" height="${H}" fill="url(#scrim)"/>`;
   }
-  const bgSvg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${scrimDefs}<image x="0" y="0" width="${W}" height="${H}" xlink:href="${photoUriPng}"/>${scrim}</svg>`;
+  const artOver = artOverUri ? `<image x="0" y="0" width="${W}" height="${H}" xlink:href="${artOverUri}"/>` : "";
+  const bgSvg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${scrimDefs}<image x="0" y="0" width="${W}" height="${H}" xlink:href="${photoUriPng}"/>${scrim}${artOver}</svg>`;
   const bgPng = renderTemplatePng(bgSvg, W);
   const bgUri = "data:image/png;base64," + bgPng.toString("base64");
   const bgRGBA = await pngToRGBA(bgPng, false);
 
   let overlay = "";
+  // static plate rectangles first — they are part of the plate, everything else draws on top
+  for (const pr of m.plate_rects || []) {
+    const [rx0, ry0, rx1, ry1] = pr.bbox;
+    overlay += `<rect x="${rx0}" y="${ry0}" width="${rx1 - rx0}" height="${ry1 - ry0}" fill="${roleHex(m, palette, pr.fill_role)}"/>`;
+  }
   let editableTextCount = 0;
   const layout: SlotLayout[] = [];
   // dynamic panel: compute geometry from the number of NON-EMPTY rows, draw the panel, and override the
@@ -209,7 +282,16 @@ export async function renderEditable(m: EditableManifest, palette: Palette = {},
     const [x0, y0, x1, y1] = ov ? [s.bbox[0], ov[0], s.bbox[2], ov[1]] : s.bbox;
     // empty slot → knock out the baked source text but draw nothing, so a data-driven derivation can HIDE a row
     // (e.g. a property with fewer real features than the template has feature rows) without leaking baked copy.
-    if (!s.text.trim()) { if (!m.no_knockouts && !s.no_knockout) overlay += `<rect x="${x0}" y="${y0}" width="${x1 - x0}" height="${y1 - y0}" fill="${localBg(bgRGBA, [x0, y0, x1, y1])}"/>`; continue; }
+    if (!s.text.trim()) {
+      if (!m.no_knockouts && !s.no_knockout) overlay += `<rect x="${x0}" y="${y0}" width="${x1 - x0}" height="${y1 - y0}" fill="${localBg(bgRGBA, [x0, y0, x1, y1])}"/>`;
+      // the fact is missing → also cover the slot's baked companion art (icon/divider) so nothing floats orphaned
+      for (const ca of s.companion_art || []) {
+        const [ax0, ay0, ax1, ay1] = ca.bbox;
+        const fill = ca.fill_role ? roleHex(m, palette, ca.fill_role) : localBg(bgRGBA, [ax0, ay0, ax1, ay1]);
+        overlay += `<rect x="${ax0}" y="${ay0}" width="${ax1 - ax0}" height="${ay1 - ay0}" fill="${fill}"/>`;
+      }
+      continue;
+    }
     const lines = s.text.split("\n");
     const bw = x1 - x0, bh = y1 - y0;
     const pad = s.pad ?? 0;
@@ -220,7 +302,13 @@ export async function renderEditable(m: EditableManifest, palette: Palette = {},
     // edges and prevents overrun when real property values are longer than the template's placeholder copy.
     const avail = bw - 2 * pad;
     const sx = s.scale_x ?? 1;
-    const widest = Math.max(...lines.map((l) => textWidth(s.font, l, fontSize, s.weight))) * sx;
+    // word_spacing is defined at the slot's DESIGN size and scales with auto-fit (a fixed -25px gap that
+    // replicates the source at 154px would fuse words once a long real title shrinks the type) — so the
+    // rendered gap stays proportional. designSize captures the pre-fit size for that ratio.
+    const designSize = fontSize;
+    const wsAt = (fs: number) => (s.word_spacing ? s.word_spacing * (fs / designSize) : 0);
+    const wsExtra = (l: string, fs: number) => (l.split(" ").length - 1) * wsAt(fs);
+    const widest = Math.max(...lines.map((l) => textWidth(s.font, l, fontSize, s.weight, s.italic) + wsExtra(l, fontSize))) * sx;
     if (widest > avail && avail > 0) { const r = avail / widest; fontSize = Math.max(8, fontSize * r); lineH = lineH * r; }
     // vertical auto-fit: if the block is taller than the bbox (e.g. a 3-line title), shrink size + line pitch
     if (lines.length * lineH > bh && bh > 0) { const rv = bh / (lines.length * lineH); fontSize = Math.max(8, fontSize * rv); lineH = lineH * rv; }
@@ -234,8 +322,9 @@ export async function renderEditable(m: EditableManifest, palette: Palette = {},
     // REAL weights: emit font-weight and let fontdb select the seeded weight file (Poppins Medium/SemiBold/
     // Bold are in fonts/). No faux-bold strokes.
     const wNum = s.weight ? (/^\d+$/.test(s.weight) ? s.weight : "700") : "";
-    const strokeAttr = wNum ? ` font-weight="${wNum}"` : "";
-    const maxLineWidth = Math.max(...lines.map((l) => textWidth(s.font, l, fontSize, s.weight))) * sx;
+    const strokeAttr = (wNum ? ` font-weight="${wNum}"` : "") + (s.italic ? ` font-style="italic"` : "")
+      + (s.stroke_px ? ` stroke="${fill}" stroke-width="${s.stroke_px}"` : "") + (s.word_spacing ? ` word-spacing="${wsAt(fontSize).toFixed(1)}"` : "");
+    const maxLineWidth = Math.max(...lines.map((l) => textWidth(s.font, l, fontSize, s.weight, s.italic) + wsExtra(l, fontSize))) * sx;
     blockBottoms.set(s.id, y0 + topPad + (lines.length - 1) * lineH + fontSize * 0.95); // ink bottom (baseline+descender)
     layout.push({ id: s.id, bbox: [x0, y0, x1, y1], size: +fontSize.toFixed(1), pad, avail: +(bw - 2 * pad).toFixed(1), maxLineWidth: +maxLineWidth.toFixed(1), blockTop: +(y0 + topPad).toFixed(1), blockBottom: +(y0 + topPad + lines.length * lineH).toFixed(1) });
     // knockout the baked (outlined) source text in this region, then draw editable <text> on top.

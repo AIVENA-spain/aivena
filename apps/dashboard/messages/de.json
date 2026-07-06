@@ -61,7 +61,7 @@
       "columnSource": "Quelle",
       "columnChannel": "Kanal",
       "columnStatus": "Status",
-      "columnReply": "KI-Antwortvorschlag",
+      "columnReply": "Empfohlene Aktion",
       "leadTypeDefault": "Interessent",
       "aiTag": "KI",
       "windowClosed": "Fenster geschlossen"
@@ -86,9 +86,12 @@
       "copy": "Kopieren",
       "copied": "Kopiert",
       "openInInbox": "Im Posteingang öffnen",
-      "windowClosedNotice": "Das 24-Stunden-WhatsApp-Fenster ist geschlossen, daher kann dieser Entwurf jetzt nicht gesendet werden. Reaktivieren Sie mit einer freigegebenen Check-in-Nachricht aus dem Posteingang.",
+      "windowClosedNotice": "Das WhatsApp-Antwortfenster ist geschlossen. Öffnen Sie den Posteingang, um eine freigegebene Check-in-Nachricht zu senden.",
       "previousSuggestion": "Vorheriger Vorschlag (Fenster geschlossen)",
-      "reengage": "Im Posteingang reaktivieren"
+      "reengage": "Posteingang öffnen für Check-in",
+      "previousDraft": "Vorheriger WhatsApp-Entwurf",
+      "leadScore": "Lead-Score",
+      "leadTypeDefault": "Interessent"
     },
     "activity": {
       "title": "Letzte Aktivitäten",

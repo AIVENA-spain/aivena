@@ -61,7 +61,7 @@
       "columnSource": "Kilde",
       "columnChannel": "Kanal",
       "columnStatus": "Status",
-      "columnReply": "AI-foreslått svar",
+      "columnReply": "Anbefalt handling",
       "leadTypeDefault": "Kjøper",
       "aiTag": "AI",
       "windowClosed": "Vindu lukket"
@@ -86,9 +86,12 @@
       "copy": "Kopier",
       "copied": "Kopiert",
       "openInInbox": "Åpne i innboks",
-      "windowClosedNotice": "WhatsApp-vinduet på 24 timer er lukket, så dette utkastet kan ikke sendes nå. Ta opp igjen med en godkjent oppfølgingsmelding fra innboksen.",
+      "windowClosedNotice": "WhatsApp-svarvinduet er lukket. Åpne innboksen for å sende en godkjent oppfølgingsmelding.",
       "previousSuggestion": "Forrige forslag (vindu lukket)",
-      "reengage": "Ta opp igjen i innboksen"
+      "reengage": "Åpne innboks for oppfølging",
+      "previousDraft": "Forrige WhatsApp-utkast",
+      "leadScore": "Lead-score",
+      "leadTypeDefault": "Kjøper"
     },
     "activity": {
       "title": "Nylig aktivitet",

@@ -61,7 +61,7 @@
       "columnSource": "Origine",
       "columnChannel": "Canale",
       "columnStatus": "Stato",
-      "columnReply": "Risposta suggerita dall'AI",
+      "columnReply": "Azione consigliata",
       "leadTypeDefault": "Acquirente",
       "aiTag": "AI",
       "windowClosed": "Finestra chiusa"
@@ -86,9 +86,12 @@
       "copy": "Copia",
       "copied": "Copiato",
       "openInInbox": "Apri nella posta",
-      "windowClosedNotice": "La finestra WhatsApp di 24 ore è chiusa, quindi questa bozza non può essere inviata ora. Riattiva con un messaggio di ricontatto approvato dalla posta in arrivo.",
+      "windowClosedNotice": "La finestra di risposta di WhatsApp è chiusa. Apri la posta in arrivo per inviare un messaggio di ricontatto approvato.",
       "previousSuggestion": "Suggerimento precedente (finestra chiusa)",
-      "reengage": "Riattiva nella posta in arrivo"
+      "reengage": "Apri posta per il ricontatto",
+      "previousDraft": "Bozza WhatsApp precedente",
+      "leadScore": "Punteggio lead",
+      "leadTypeDefault": "Acquirente"
     },
     "activity": {
       "title": "Attività recente",

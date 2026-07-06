@@ -61,7 +61,7 @@
       "columnSource": "Källa",
       "columnChannel": "Kanal",
       "columnStatus": "Status",
-      "columnReply": "AI-föreslaget svar",
+      "columnReply": "Rekommenderad åtgärd",
       "leadTypeDefault": "Köpare",
       "aiTag": "AI",
       "windowClosed": "Fönstret stängt"
@@ -86,9 +86,12 @@
       "copy": "Kopiera",
       "copied": "Kopierat",
       "openInInbox": "Öppna i inkorgen",
-      "windowClosedNotice": "WhatsApp-fönstret på 24 timmar är stängt, så det här utkastet kan inte skickas nu. Återuppta med ett godkänt uppföljningsmeddelande från inkorgen.",
+      "windowClosedNotice": "WhatsApp-svarsfönstret är stängt. Öppna inkorgen för att skicka ett godkänt uppföljningsmeddelande.",
       "previousSuggestion": "Tidigare förslag (fönstret stängt)",
-      "reengage": "Återuppta i inkorgen"
+      "reengage": "Öppna inkorgen för uppföljning",
+      "previousDraft": "Tidigare WhatsApp-utkast",
+      "leadScore": "Lead-poäng",
+      "leadTypeDefault": "Köpare"
     },
     "activity": {
       "title": "Senaste aktivitet",

@@ -119,6 +119,9 @@ export const EditableManifest = z.object({
   // via fitPhotosToFrames, so a landscape shot in a tall frame frames the subject instead of a dead-center
   // zoom) | "meet" fit-whole-photo (kept for completeness; no current template).
   photo_fit: z.enum(["slice", "attention", "meet"]).optional(),
+  // colour-locked template (e.g. #10): the design's own palette IS the identity — the agency colour wheel must
+  // NOT recolour it. Renderers pass an empty palette so every role keeps its colour_tokens default.
+  palette_locked: z.boolean().optional(),
   overlay: z.object({ role: z.string(), opacity: z.number() }).optional(), // flat legibility scrim over the photo
   // vertical GRADIENT scrim (premium): dark where text sits (e.g. top), clear over the photo. Baked into the bg
   // so knockouts blend. stops = [{offset 0..1, opacity 0..1}] in the role colour.

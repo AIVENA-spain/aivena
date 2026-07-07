@@ -1,0 +1,125 @@
+{
+  "template_id": "10",
+  "title_font_status": "No editable title — the NEW / LISTING identity type and the SALE badge stay BAKED by Christian's decision (2026-07-07): keep the title baked in, lock the colours; only photos + small text change.",
+  "_note": "#10 (NEW LISTING — teal identity). Christian 2026-07-07: keep title + colours BAKED and LOCKED; photos changeable; small text editable. STRIP-PLATE: assets/10/source.stripped.svg strips ONLY the price text (band kept baked) and the 3-line description; NEW, LISTING, the SALE circle badge, the teal price band and all colours stay original. palette_locked = the agency colour wheel does NOT recolour this template. Description = derived from real facts (beds + property type; marketing tail is template copy); missing price hides the text AND its band via companion_art.",
+  "canvas": {
+    "width": 1080,
+    "height": 1350
+  },
+  "source_svg": "assets/10/source.stripped.svg",
+  "photo_fit": "attention",
+  "palette_locked": true,
+  "photo_slots": [
+    {
+      "token": "@@PHOTO0@@"
+    },
+    {
+      "token": "@@PHOTO1@@"
+    },
+    {
+      "token": "@@PHOTO2@@"
+    },
+    {
+      "token": "@@PHOTO3@@"
+    }
+  ],
+  "no_knockouts": true,
+  "colour_tokens": {
+    "background": {
+      "default": "#f4ede3",
+      "locked": true
+    },
+    "overlay": {
+      "default": "#f4ede3",
+      "locked": true
+    },
+    "title": {
+      "default": "#7fa8ab",
+      "locked": true
+    },
+    "subtitle/body": {
+      "default": "#1f1f1f",
+      "locked": true
+    },
+    "accent": {
+      "default": "#7fa8ab",
+      "locked": true
+    },
+    "badge.fill": {
+      "default": "#7fa8ab",
+      "locked": true
+    },
+    "badge.text": {
+      "default": "#f4ede3",
+      "locked": true
+    },
+    "divider": {
+      "default": "#1f1f1f",
+      "locked": true
+    },
+    "icon": {
+      "default": "#1f1f1f",
+      "locked": true
+    },
+    "stat.label": {
+      "default": "#1f1f1f",
+      "locked": true
+    },
+    "stat.value": {
+      "default": "#fdfdfb",
+      "locked": true
+    },
+    "cta": {
+      "default": "#fdfdfb",
+      "locked": true
+    }
+  },
+  "text_slots": [
+    {
+      "id": "price_value",
+      "role": "stat.value",
+      "source": "property_fact",
+      "bbox": [
+        635,
+        983,
+        1000,
+        1032
+      ],
+      "size": 36,
+      "valign": "center",
+      "weight": "600",
+      "tracking": 3,
+      "font": "Poppins",
+      "align": "left",
+      "text": "€399 000",
+      "companion_art": [
+        {
+          "bbox": [
+            550,
+            970,
+            1017,
+            1048
+          ]
+        }
+      ]
+    },
+    {
+      "id": "description",
+      "role": "subtitle/body",
+      "source": "property_fact",
+      "bbox": [
+        46,
+        1140,
+        430,
+        1266
+      ],
+      "size": 31,
+      "line_height": 43.5,
+      "weight": "500",
+      "font": "Poppins",
+      "align": "left",
+      "valign": "top",
+      "text": "A modern 2-bedroom\nhouse with designer\nfurniture"
+    }
+  ]
+}

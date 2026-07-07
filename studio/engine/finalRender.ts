@@ -119,6 +119,15 @@ function deriveSlots(p: any, agency: any, templateId: string): Record<string, { 
     stat_baths: T(p.baths != null ? plural(p.baths, "Bathroom").toUpperCase() : ""),
     cta_web: T(agency.web),
   };
+  if (templateId === "10") {
+    // description = real facts (beds + type) in the template's sentence frame; beds missing -> degrade honestly.
+    const sentence = p.beds != null ? `A modern ${p.beds}-bedroom ${p.type} with designer furniture` : `A modern ${p.type} with designer furniture`;
+    const words = sentence.split(" ");
+    const lines: string[] = []; let cur = "";
+    for (const w of words) { const t = cur ? cur + " " + w : w; if (textWidth("Poppins", t, 31, "500") > 360 && cur) { lines.push(cur); cur = w; } else cur = t; }
+    if (cur) lines.push(cur);
+    return { price_value: T(price || ""), description: T(lines.join("\n")) };
+  }
   if (templateId === "6") return {
     // handle follows the source's caps convention; title = TWO real slots (the source sets its two title lines
     // at different sizes — per-line slots keep each line's design size/baseline and decouple their auto-fits)
@@ -165,7 +174,7 @@ export async function renderEditableFor(p: any, templateId: string, imgs: string
   if (m.photo_fit === "attention") photos = await fitPhotosToFrames(m, imgs);
   else if (m.photo_slots && m.photo_slots.length > 1) { const map: Record<string, string> = {}; m.photo_slots.forEach((s, i) => (map[s.token] = jpgUri(imgs[i % imgs.length]))); photos = map; }
   else photos = jpgUri(imgs[templateId === "1" ? Math.min(1, imgs.length - 1) : 0]);
-  const r = await renderEditable(m, agencyPalette(m), photos);
+  const r = await renderEditable(m, m.palette_locked ? {} : agencyPalette(m), photos);
   const qa = await runVisualQA(m, r);
   return { png: r.png, m, r, qa };
 }

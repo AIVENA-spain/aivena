@@ -23,12 +23,44 @@
         "opacity": 1
       },
       {
-        "offset": 0.354,
+        "offset": 0.313,
+        "opacity": 0.88
+      },
+      {
+        "offset": 0.335,
+        "opacity": 0.55
+      },
+      {
+        "offset": 0.36,
+        "opacity": 0.2
+      },
+      {
+        "offset": 0.385,
+        "opacity": 0.05
+      },
+      {
+        "offset": 0.405,
         "opacity": 0
       },
       {
-        "offset": 0.763,
+        "offset": 0.741,
         "opacity": 0
+      },
+      {
+        "offset": 0.762,
+        "opacity": 0.05
+      },
+      {
+        "offset": 0.785,
+        "opacity": 0.2
+      },
+      {
+        "offset": 0.808,
+        "opacity": 0.55
+      },
+      {
+        "offset": 0.826,
+        "opacity": 0.88
       },
       {
         "offset": 0.8326,

@@ -1,3 +1,14 @@
 {
-  "delete_group_clips": ["f763e52569", "1c9cd0e8d7", "e72ac2cffe", "acf50d1406"]
+  "delete_group_clips": [
+    "f763e52569",
+    "1c9cd0e8d7",
+    "e72ac2cffe",
+    "acf50d1406"
+  ],
+  "replace": [
+    {
+      "find": "<g transform=\"matrix(1, 0, 0, 1, 239, 239)\">",
+      "replace": "<g transform=\"matrix(1, 0, 0, 1, 239, 212)\">"
+    }
+  ]
 }

@@ -92,6 +92,12 @@ export async function buildStrippedSource(id: string, remap = false): Promise<{ 
   const ppFile = abs(`intake/${id}/postprocess.json`);
   if (fs.existsSync(ppFile)) {
     const pp = JSON.parse(fs.readFileSync(ppFile, "utf8"));
+    // literal string replaces (e.g. nudging a baked block's translate) — each find must be UNIQUE in the source
+    for (const r of pp.replace || []) {
+      const n = out.split(r.find).length - 1;
+      if (n !== 1) { console.warn(`postprocess replace: "${r.find.slice(0, 60)}..." matched ${n}x (want 1) — skipped`); continue; }
+      out = out.replace(r.find, r.replace);
+    }
     for (const cid of pp.delete_group_clips || []) {
       const m = new RegExp(`<g clip-path="url\\(#${cid}\\)">`).exec(out);
       if (!m) continue;

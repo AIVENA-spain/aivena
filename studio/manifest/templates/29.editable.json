@@ -25,7 +25,7 @@
     },
     "title": {
       "default": "#ffffff",
-      "locked": false
+      "locked": true
     },
     "subtitle/body": {
       "default": "#5f6430",
@@ -61,7 +61,7 @@
     },
     "cta": {
       "default": "#ffffff",
-      "locked": false
+      "locked": true
     }
   },
   "text_slots": [
@@ -242,15 +242,15 @@
     "stops": [
       {
         "offset": 0,
-        "opacity": 0.8
+        "opacity": 0.62
       },
       {
         "offset": 0.16,
-        "opacity": 0.68
+        "opacity": 0.5
       },
       {
         "offset": 0.26,
-        "opacity": 0.55
+        "opacity": 0.38
       },
       {
         "offset": 0.42,

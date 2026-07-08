@@ -1,0 +1,127 @@
+{
+  "template_id": "26",
+  "title_font_status": "Script headline = Damion 400 (seeded; IoU weak on brush scripts, visual adjudication + verifier confirm). Body serif = Aleo 400; contact sans = Figtree 400 (both seeded).",
+  "_note": "#26 (Open House — script over waves, hero + 3 gallery cards). STRIP-PLATE from canonical source; wave art + card frames baked (first strip attempt ate the wave paths — fixed with dodged zones). Title/body/date = template copy (open-house campaign text, editable); contact line shows the agency website (a real agency fact — the demo email placeholder would be an invented address).",
+  "canvas": {
+    "width": 1080,
+    "height": 1350
+  },
+  "source_svg": "assets/26/source.stripped.svg",
+  "photo_fit": "attention",
+  "photo_slots": [
+    {
+      "token": "@@PHOTO0@@"
+    },
+    {
+      "token": "@@PHOTO1@@"
+    },
+    {
+      "token": "@@PHOTO2@@"
+    },
+    {
+      "token": "@@PHOTO3@@"
+    }
+  ],
+  "no_knockouts": true,
+  "colour_tokens": {
+    "background": {
+      "default": "#ffffff",
+      "locked": false
+    },
+    "overlay": {
+      "default": "#ffffff",
+      "locked": true
+    },
+    "title": {
+      "default": "#1a1a1a",
+      "locked": false
+    },
+    "subtitle/body": {
+      "default": "#3d2e28",
+      "locked": false
+    },
+    "accent": {
+      "default": "#d9c1a3",
+      "locked": false
+    },
+    "badge.fill": {
+      "default": "#d9c1a3",
+      "locked": false
+    },
+    "badge.text": {
+      "default": "#1a1a1a",
+      "locked": false
+    },
+    "divider": {
+      "default": "#3d2e28",
+      "locked": true
+    },
+    "icon": {
+      "default": "#3d2e28",
+      "locked": true
+    },
+    "stat.label": {
+      "default": "#3d2e28",
+      "locked": false
+    },
+    "stat.value": {
+      "default": "#1a1a1a",
+      "locked": false
+    },
+    "cta": {
+      "default": "#2b2b33",
+      "locked": false
+    }
+  },
+  "text_slots": [
+    {
+      "id": "title",
+      "role": "title",
+      "source": "template_copy",
+      "bbox": [
+        100,
+        505,
+        980,
+        750
+      ],
+      "font": "Damion",
+      "size": 220,
+      "align": "center",
+      "text": "Open House",
+      "valign": "top"
+    },
+    {
+      "id": "body",
+      "role": "subtitle/body",
+      "source": "template_copy",
+      "bbox": [
+        92,
+        754,
+        989,
+        824
+      ],
+      "font": "Aleo",
+      "size": 29,
+      "align": "center",
+      "text": "Join us for our Open House — a special day to explore, connect,\nand imagine the possibilities of a new home.",
+      "line_height": 32,
+      "tracking": 0.5
+    },
+    {
+      "id": "cta_email",
+      "role": "cta",
+      "source": "template_copy",
+      "bbox": [
+        300,
+        1240,
+        780,
+        1280
+      ],
+      "font": "Figtree",
+      "size": 26,
+      "align": "center",
+      "text": "hello@reallygreatsite.com",
+      "tracking": 2
+    }
+  ]
+}

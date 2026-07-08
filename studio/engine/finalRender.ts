@@ -119,6 +119,47 @@ function deriveSlots(p: any, agency: any, templateId: string): Record<string, { 
     stat_baths: T(p.baths != null ? plural(p.baths, "Bathroom").toUpperCase() : ""),
     cta_web: T(agency.web),
   };
+  // batch-3 (Christian 2026-07-07): #24-#29 — all text editable; facts real, missing facts hide their slot+art.
+  const hasFeat = (kw: string) => (p.features || []).some((f: string) => f.toLowerCase().includes(kw));
+  if (templateId === "24") return {
+    stat_line: T([
+      p.beds != null ? plural(p.beds, "bedroom").toLowerCase() : "",
+      p.baths != null ? plural(p.baths, "bathroom").toLowerCase() : "",
+      ((p.features || [])[0] || "").toString(),
+    ].filter(Boolean).join(" | ")),
+    address: T(loc),
+  };
+  if (templateId === "25") return {
+    stat_beds: T(p.beds != null ? plural(p.beds, "Bedroom").toUpperCase() : ""),
+    stat_baths: T(p.baths != null ? plural(p.baths, "Bathroom").toUpperCase() : ""),
+    address: T(loc.toUpperCase()),
+  };
+  if (templateId === "26") return { cta_email: T(agency.web) };
+  if (templateId === "27") {
+    const f = (p.features || []).slice(0, 3);
+    return {
+      feature_1: T(f[0] || ""), feature_2: T(f[1] || ""), feature_3: T(f[2] || ""),
+      cta_web_url: T("www." + agency.web.replace(/^www\./, "")),
+    };
+  }
+  if (templateId === "28") return {
+    title: T(`MODERN\n${p.type.toUpperCase()}`),
+    stat_pool: T(hasFeat("pool") ? "1" : ""),
+    stat_beds: T(p.beds != null ? String(p.beds) : ""),
+    stat_baths: T(p.baths != null ? String(p.baths) : ""),
+    stat_garage: T(hasFeat("garage") || hasFeat("parking") ? "1" : ""),
+    stat_kitchen: T(hasFeat("kitchen") ? "1" : ""),
+    cta_mail: T(agency.email || ""), cta_phone: T(agency.phone),
+    cta_web: T("www." + agency.web.replace(/^www\./, "")),
+  };
+  if (templateId === "29") return {
+    title: T(`${typeCap} in ${city}`.toUpperCase()),
+    stat_baths: T(p.baths != null ? String(p.baths) : ""),
+    stat_beds: T(p.beds != null ? String(p.beds) : ""),
+    stat_garage: T(hasFeat("garage") || hasFeat("parking") ? "1" : ""),
+    stat_area: T(p.size ? `${p.size} sqm` : ""),
+    address: T(loc),
+  };
   if (templateId === "10") {
     // description = real facts (beds + type) in the template's sentence frame; beds missing -> degrade honestly.
     const sentence = p.beds != null ? `A modern ${p.beds}-bedroom ${p.type} with designer furniture` : `A modern ${p.type} with designer furniture`;

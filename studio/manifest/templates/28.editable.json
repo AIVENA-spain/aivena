@@ -1,0 +1,313 @@
+{
+  "template_id": "28",
+  "title_font_status": "Lato 700 (0.97 — decisive) + Lato 400 (seeded).",
+  "_note": "#28 (MODERN HOUSE — brown sidebar). STRIP-PLATE from canonical source: hero + 3 white-framed gallery photos, facility icon row, handle pill, footer pill all baked. Title = MODERN + property type (line 2 real fact). Facility counts from real facts: beds/baths counts; pool/garage/kitchen only when the feature list proves them (missing hides digit + its icon via companion_art — never invent counts).",
+  "canvas": {
+    "width": 1080,
+    "height": 1350
+  },
+  "source_svg": "assets/28/source.stripped.svg",
+  "photo_fit": "attention",
+  "photo_slots": [
+    {
+      "token": "@@PHOTO0@@"
+    },
+    {
+      "token": "@@PHOTO1@@"
+    },
+    {
+      "token": "@@PHOTO2@@"
+    },
+    {
+      "token": "@@PHOTO3@@"
+    }
+  ],
+  "no_knockouts": true,
+  "colour_tokens": {
+    "background": {
+      "default": "#6b4f3a",
+      "locked": false
+    },
+    "overlay": {
+      "default": "#6b4f3a",
+      "locked": true
+    },
+    "title": {
+      "default": "#ffffff",
+      "locked": false
+    },
+    "subtitle/body": {
+      "default": "#f3e9df",
+      "locked": false
+    },
+    "accent": {
+      "default": "#c8a24b",
+      "locked": false
+    },
+    "badge.fill": {
+      "default": "#c8a24b",
+      "locked": false
+    },
+    "badge.text": {
+      "default": "#ffffff",
+      "locked": false
+    },
+    "divider": {
+      "default": "#f3e9df",
+      "locked": true
+    },
+    "icon": {
+      "default": "#f3e9df",
+      "locked": true
+    },
+    "stat.label": {
+      "default": "#ffffff",
+      "locked": false
+    },
+    "stat.value": {
+      "default": "#f3e9df",
+      "locked": false
+    },
+    "cta": {
+      "default": "#3a2a1c",
+      "locked": false
+    }
+  },
+  "text_slots": [
+    {
+      "id": "handle",
+      "role": "badge.text",
+      "source": "template_copy",
+      "bbox": [
+        810,
+        95,
+        1002,
+        126
+      ],
+      "font": "Lato",
+      "size": 20,
+      "align": "center",
+      "text": "@reallygreatsite"
+    },
+    {
+      "id": "title",
+      "role": "title",
+      "source": "property_fact",
+      "bbox": [
+        50,
+        690,
+        630,
+        950
+      ],
+      "font": "Lato",
+      "size": 133,
+      "align": "left",
+      "text": "MODERN\nHOUSE",
+      "weight": "700",
+      "line_height": 143,
+      "valign": "top"
+    },
+    {
+      "id": "body",
+      "role": "subtitle/body",
+      "source": "template_copy",
+      "bbox": [
+        40,
+        985,
+        510,
+        1064
+      ],
+      "font": "Lato",
+      "size": 16,
+      "align": "left",
+      "text": "Discover a thoughtfully designed modern home with clean lines,\nopen spaces and abundant natural light in a sought-after\nneighbourhood close to everything.",
+      "line_height": 23.5
+    },
+    {
+      "id": "facilities_label",
+      "role": "stat.label",
+      "source": "template_copy",
+      "bbox": [
+        46,
+        1083,
+        240,
+        1110
+      ],
+      "font": "Lato",
+      "size": 22,
+      "align": "left",
+      "text": "Facilities:",
+      "weight": "700"
+    },
+    {
+      "id": "stat_pool",
+      "role": "stat.value",
+      "source": "property_fact",
+      "bbox": [
+        38,
+        1165,
+        86,
+        1192
+      ],
+      "font": "Lato",
+      "size": 20,
+      "align": "center",
+      "text": "1",
+      "companion_art": [
+        {
+          "bbox": [
+            40,
+            1120,
+            84,
+            1162
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stat_beds",
+      "role": "stat.value",
+      "source": "property_fact",
+      "bbox": [
+        106,
+        1165,
+        154,
+        1192
+      ],
+      "font": "Lato",
+      "size": 20,
+      "align": "center",
+      "text": "4",
+      "companion_art": [
+        {
+          "bbox": [
+            107,
+            1120,
+            152,
+            1162
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stat_baths",
+      "role": "stat.value",
+      "source": "property_fact",
+      "bbox": [
+        172,
+        1165,
+        220,
+        1192
+      ],
+      "font": "Lato",
+      "size": 20,
+      "align": "center",
+      "text": "2",
+      "companion_art": [
+        {
+          "bbox": [
+            174,
+            1120,
+            218,
+            1162
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stat_garage",
+      "role": "stat.value",
+      "source": "property_fact",
+      "bbox": [
+        239,
+        1165,
+        287,
+        1192
+      ],
+      "font": "Lato",
+      "size": 20,
+      "align": "center",
+      "text": "1",
+      "companion_art": [
+        {
+          "bbox": [
+            240,
+            1120,
+            285,
+            1162
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stat_kitchen",
+      "role": "stat.value",
+      "source": "property_fact",
+      "bbox": [
+        306,
+        1165,
+        354,
+        1192
+      ],
+      "font": "Lato",
+      "size": 20,
+      "align": "center",
+      "text": "2",
+      "companion_art": [
+        {
+          "bbox": [
+            308,
+            1120,
+            353,
+            1162
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cta_mail",
+      "role": "cta",
+      "source": "template_copy",
+      "bbox": [
+        49,
+        1284,
+        240,
+        1310
+      ],
+      "font": "Lato",
+      "size": 16,
+      "align": "left",
+      "text": "mail@reallygreatsite.com"
+    },
+    {
+      "id": "cta_phone",
+      "role": "cta",
+      "source": "template_copy",
+      "bbox": [
+        255,
+        1284,
+        400,
+        1310
+      ],
+      "font": "Lato",
+      "size": 17,
+      "align": "left",
+      "text": "+123-456-789"
+    },
+    {
+      "id": "cta_web",
+      "role": "badge.text",
+      "source": "template_copy",
+      "bbox": [
+        770,
+        1282,
+        1042,
+        1310
+      ],
+      "font": "Lato",
+      "size": 20,
+      "align": "center",
+      "text": "www.reallygreatsite.com"
+    }
+  ]
+}

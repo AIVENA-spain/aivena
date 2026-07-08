@@ -65,7 +65,7 @@ export async function scoreCandidates(targetPng: string, box: [number, number, n
   // candidates must live in fonts/ for resvg's fontDir — copy transiently
   const out: { name: string; family: string; score: number }[] = [];
   for (const f of files) {
-    const tmp = abs(`fonts/__cand_${f}`);
+    const tmp = abs(`fonts/__cand_${process.pid}_${f}`);
     fs.copyFileSync(abs(path.join(candDir, f)), tmp);
     try {
       const fk = (fontkit as any).openSync(tmp);

@@ -1,0 +1,121 @@
+{
+  "template_id": "24",
+  "title_font_status": "Belgan Aesthetic 400 (vault) — closest match to the Canva-library flare serif (visual adjudication; hairline faces defeat IoU). Body = Inter 400 (0.77, strong), seeded.",
+  "_note": "#24 (Now Available — navy, organic photo lobes). STRIP-PLATE from canonical Drive source: full-bleed photo behind a multi-lobe clip mask + navy plate stay baked; title + two ROTATED right-edge columns editable (rotate:90, read top-to-bottom). stat_line composes beds | baths | top feature from real facts, dropping missing segments with their separators. All text editable per Christian 2026-07-07.",
+  "canvas": {
+    "width": 1080,
+    "height": 1350
+  },
+  "source_svg": "assets/24/source.stripped.svg",
+  "photo_fit": "attention",
+  "photo_slots": [
+    {
+      "token": "@@PHOTO0@@"
+    }
+  ],
+  "no_knockouts": true,
+  "colour_tokens": {
+    "background": {
+      "default": "#242838",
+      "locked": false
+    },
+    "overlay": {
+      "default": "#242838",
+      "locked": true
+    },
+    "title": {
+      "default": "#fffcfc",
+      "locked": false
+    },
+    "subtitle/body": {
+      "default": "#ffffff",
+      "locked": false
+    },
+    "accent": {
+      "default": "#7fa8ab",
+      "locked": false
+    },
+    "badge.fill": {
+      "default": "#7fa8ab",
+      "locked": false
+    },
+    "badge.text": {
+      "default": "#fffcfc",
+      "locked": false
+    },
+    "divider": {
+      "default": "#ffffff",
+      "locked": true
+    },
+    "icon": {
+      "default": "#ffffff",
+      "locked": true
+    },
+    "stat.label": {
+      "default": "#ffffff",
+      "locked": false
+    },
+    "stat.value": {
+      "default": "#ffffff",
+      "locked": false
+    },
+    "cta": {
+      "default": "#ffffff",
+      "locked": false
+    }
+  },
+  "text_slots": [
+    {
+      "id": "title",
+      "role": "title",
+      "source": "template_copy",
+      "bbox": [
+        52,
+        60,
+        800,
+        415
+      ],
+      "font": "Belgan Aesthetic",
+      "size": 205,
+      "align": "left",
+      "text": "Now\nAvailable",
+      "line_height": 193,
+      "valign": "top",
+      "tracking": 6
+    },
+    {
+      "id": "stat_line",
+      "role": "stat.value",
+      "source": "property_fact",
+      "bbox": [
+        972,
+        95,
+        1012,
+        1290
+      ],
+      "font": "Inter",
+      "size": 32,
+      "align": "left",
+      "text": "2 bedrooms | 2 bathrooms | Private garden",
+      "rotate": 90,
+      "tracking": 1
+    },
+    {
+      "id": "address",
+      "role": "subtitle/body",
+      "source": "property_fact",
+      "bbox": [
+        927,
+        95,
+        965,
+        1290
+      ],
+      "font": "Inter",
+      "size": 32,
+      "align": "left",
+      "text": "123 Anywhere St., Any City",
+      "rotate": 90,
+      "tracking": 1
+    }
+  ]
+}

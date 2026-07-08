@@ -90,6 +90,14 @@ export const EditableSlot = z.object({
   // ADAPTIVE PILL: draw a rounded pill behind the text, sized to the MEASURED text width (+pad) — replaces a
   // baked pill that would otherwise sit half-empty behind shorter real values (e.g. #11's address pill).
   pill: z.object({ role: z.string(), pad_x: z.number(), pad_y: z.number() }).optional(),
+  // ROTATED column (90 = clockwise reads top-to-bottom, -90 = counter-clockwise reads bottom-to-top; #24/#25
+  // right-edge address/stat columns). bbox stays in canvas coords (a narrow vertical strip); layout happens in
+  // a virtual horizontal frame whose width = the strip's vertical run, then the emitted text is wrapped in
+  // translate+rotate. Strip-plate slots only (no knockout/pill support in rotated frames).
+  rotate: z.union([z.literal(90), z.literal(-90)]).optional(),
+  // synthetic oblique (degrees, e.g. -11): skewX applied with the text transform — ONLY for faces with no real
+  // italic file (e.g. Glacial Indifference); prefer italic:true with a real italic face when one exists.
+  skew_x: z.number().optional(),
   // FLOW: position this slot's y directly after another slot's rendered text block (title -> body stacking,
   // so a 2-line real title keeps the body tight underneath like the Canva original).
   follow: z.object({ slot: z.string(), gap: z.number() }).optional(),
@@ -204,7 +212,9 @@ export async function fitPhotosToFrames(m: z.infer<typeof EditableManifest>, img
   return out;
 }
 function roleHex(m: EditableManifest, palette: Palette, role: string): string {
-  return palette[role] || m.colour_tokens[role]?.default || "#000000";
+  const tok = m.colour_tokens[role];
+  if (tok?.locked) return tok.default; // locked = part of the design's identity — the agency palette never overrides it
+  return palette[role] || tok?.default || "#000000";
 }
 
 // 1x1 mid-grey stand-in photo (no real property photo embedded in a proof; real renders pass a data URI).
@@ -255,16 +265,35 @@ export async function renderEditable(m: EditableManifest, palette: Palette = {},
   }
   filled = filled.replace(/@@PHOTO\d+@@/g, GREY); // any stray token -> neutral
   const photoUriPng = "data:image/png;base64," + renderTemplatePng(filled, W).toString("base64");
-  let scrim = m.overlay ? `<rect x="0" y="0" width="${W}" height="${H}" fill="${roleHex(m, palette, m.overlay.role)}" fill-opacity="${m.overlay.opacity}"/>` : "";
-  let scrimDefs = "";
+  const sharpMod = (await import("sharp")).default;
+  // SCRIM = a sharp-generated per-row alpha gradient PNG (exact pixels — SVG gradient stop-opacity proved
+  // unreliable in this resvg for some documents). Composited: photo layer -> scrim -> (under_art) baked art.
+  let scrimBuf: Buffer | null = null;
   if (m.scrim) {
-    const stops = m.scrim.stops.map((s) => `<stop offset="${s.offset}" stop-color="${roleHex(m, palette, m.scrim!.role)}" stop-opacity="${s.opacity}"/>`).join("");
-    scrimDefs = `<defs><linearGradient id="scrim" x1="0" y1="0" x2="0" y2="1">${stops}</linearGradient></defs>`;
-    scrim += `<rect x="0" y="0" width="${W}" height="${H}" fill="url(#scrim)"/>`;
+    const hex = roleHex(m, palette, m.scrim.role);
+    const [cr, cg, cb] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+    const stops = [...m.scrim.stops].sort((a, b) => a.offset - b.offset);
+    const raw = Buffer.alloc(W * H * 4);
+    for (let y = 0; y < H; y++) {
+      const t = y / (H - 1);
+      let o = stops[0].opacity;
+      for (let i = 0; i < stops.length - 1; i++) {
+        const a = stops[i], c = stops[i + 1];
+        if (t >= a.offset && t <= c.offset) { o = c.offset === a.offset ? c.opacity : a.opacity + (c.opacity - a.opacity) * ((t - a.offset) / (c.offset - a.offset)); break; }
+        if (t > c.offset) o = c.opacity;
+      }
+      const al = Math.round(Math.max(0, Math.min(1, o)) * 255);
+      for (let x = 0; x < W; x++) { const k = (y * W + x) * 4; raw[k] = cr; raw[k + 1] = cg; raw[k + 2] = cb; raw[k + 3] = al; }
+    }
+    scrimBuf = await sharpMod(raw, { raw: { width: W, height: H, channels: 4 } }).png().toBuffer();
   }
-  const artOver = artOverUri ? `<image x="0" y="0" width="${W}" height="${H}" xlink:href="${artOverUri}"/>` : "";
-  const bgSvg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${scrimDefs}<image x="0" y="0" width="${W}" height="${H}" xlink:href="${photoUriPng}"/>${scrim}${artOver}</svg>`;
-  const bgPng = renderTemplatePng(bgSvg, W);
+  const flat = m.overlay ? `<rect x="0" y="0" width="${W}" height="${H}" fill="${roleHex(m, palette, m.overlay.role)}" fill-opacity="${m.overlay.opacity}"/>` : "";
+  const baseSvg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><image x="0" y="0" width="${W}" height="${H}" xlink:href="${photoUriPng}"/>${flat}</svg>`;
+  const basePng = renderTemplatePng(baseSvg, W);
+  const comps: { input: Buffer; top: number; left: number }[] = [];
+  if (scrimBuf) comps.push({ input: scrimBuf, top: 0, left: 0 });
+  if (artOverUri && m.scrim?.under_art) comps.push({ input: Buffer.from(artOverUri.split(",")[1], "base64"), top: 0, left: 0 });
+  const bgPng = comps.length ? await sharpMod(basePng).composite(comps).png().toBuffer() : basePng;
   const bgUri = "data:image/png;base64," + bgPng.toString("base64");
   const bgRGBA = await pngToRGBA(bgPng, false);
 
@@ -319,7 +348,10 @@ export async function renderEditable(m: EditableManifest, palette: Palette = {},
       yOverride.set(s.id, [fy, fy + (s.bbox[3] - s.bbox[1])]);
     }
     const ov = yOverride.get(s.id);
-    const [x0, y0, x1, y1] = ov ? [s.bbox[0], ov[0], s.bbox[2], ov[1]] : s.bbox;
+    const realBox = (ov ? [s.bbox[0], ov[0], s.bbox[2], ov[1]] : s.bbox) as [number, number, number, number];
+    // rotated column: lay out in a virtual horizontal frame (width = vertical run), wrap the markup after
+    const [x0, y0, x1, y1] = s.rotate ? [0, 0, realBox[3] - realBox[1], realBox[2] - realBox[0]] : realBox;
+    const overlayMark = overlay.length;
     // empty slot → knock out the baked source text but draw nothing, so a data-driven derivation can HIDE a row
     // (e.g. a property with fewer real features than the template has feature rows) without leaking baked copy.
     if (!s.text.trim()) {
@@ -348,7 +380,8 @@ export async function renderEditable(m: EditableManifest, palette: Palette = {},
     const designSize = fontSize;
     const wsAt = (fs: number) => (s.word_spacing ? s.word_spacing * (fs / designSize) : 0);
     const wsExtra = (l: string, fs: number) => (l.split(" ").length - 1) * wsAt(fs);
-    const widest = Math.max(...lines.map((l) => textWidth(s.font, l, fontSize, s.weight, s.italic) + wsExtra(l, fontSize))) * sx;
+    const trackExtra = (l: string, fs: number) => (s.tracking ? s.tracking * Math.max(0, l.length - 1) * (fs / designSize) : 0);
+    const widest = Math.max(...lines.map((l) => textWidth(s.font, l, fontSize, s.weight, s.italic) + wsExtra(l, fontSize) + trackExtra(l, fontSize))) * sx;
     if (widest > avail && avail > 0) { const r = avail / widest; fontSize = Math.max(8, fontSize * r); lineH = lineH * r; }
     // vertical auto-fit: if the block is taller than the bbox (e.g. a 3-line title), shrink size + line pitch
     if (lines.length * lineH > bh && bh > 0) { const rv = bh / (lines.length * lineH); fontSize = Math.max(8, fontSize * rv); lineH = lineH * rv; }
@@ -364,9 +397,13 @@ export async function renderEditable(m: EditableManifest, palette: Palette = {},
     const wNum = s.weight ? (/^\d+$/.test(s.weight) ? s.weight : "700") : "";
     const strokeAttr = (wNum ? ` font-weight="${wNum}"` : "") + (s.italic ? ` font-style="italic"` : "")
       + (s.stroke_px ? ` stroke="${fill}" stroke-width="${s.stroke_px}"` : "") + (s.word_spacing ? ` word-spacing="${wsAt(fontSize).toFixed(1)}"` : "");
-    const maxLineWidth = Math.max(...lines.map((l) => textWidth(s.font, l, fontSize, s.weight, s.italic) + wsExtra(l, fontSize))) * sx;
+    const maxLineWidth = Math.max(...lines.map((l) => textWidth(s.font, l, fontSize, s.weight, s.italic) + wsExtra(l, fontSize) + trackExtra(l, fontSize))) * sx;
     blockBottoms.set(s.id, y0 + topPad + (lines.length - 1) * lineH + fontSize * 0.95); // ink bottom (baseline+descender)
-    layout.push({ id: s.id, bbox: [x0, y0, x1, y1], size: +fontSize.toFixed(1), pad, avail: +(bw - 2 * pad).toFixed(1), maxLineWidth: +maxLineWidth.toFixed(1), blockTop: +(y0 + topPad).toFixed(1), blockBottom: +(y0 + topPad + lines.length * lineH).toFixed(1) });
+    // rotated slots: containment along the run is enforced by the WIDTH check (maxLineWidth vs avail); the
+    // vertical-zone numbers are reported in real canvas space (the strip itself) so the QA gate stays coherent.
+    layout.push(s.rotate
+      ? { id: s.id, bbox: realBox, size: +fontSize.toFixed(1), pad, avail: +(bw - 2 * pad).toFixed(1), maxLineWidth: +maxLineWidth.toFixed(1), blockTop: realBox[1], blockBottom: realBox[3] }
+      : { id: s.id, bbox: [x0, y0, x1, y1], size: +fontSize.toFixed(1), pad, avail: +(bw - 2 * pad).toFixed(1), maxLineWidth: +maxLineWidth.toFixed(1), blockTop: +(y0 + topPad).toFixed(1), blockBottom: +(y0 + topPad + lines.length * lineH).toFixed(1) });
     // knockout the baked (outlined) source text in this region, then draw editable <text> on top.
     // strip-plate mode (template-wide or per-slot): baked text already REMOVED -> draw directly, no knockout box.
     if (!m.no_knockouts && !s.no_knockout) overlay += `<rect x="${x0}" y="${y0}" width="${bw}" height="${bh}" fill="${knockHex}"/>`;
@@ -381,13 +418,20 @@ export async function renderEditable(m: EditableManifest, palette: Palette = {},
     lines.forEach((ln, i) => {
       // when size/valign is explicit, place the first baseline from the ascent so type sits inside the bbox
       const by = (s.size || s.valign) ? (y0 + topPad + fontSize * 0.82 + i * lineH) : (y0 + (i + 1) * lineH - lineH * 0.22);
-      const trackAttr = s.tracking ? ` letter-spacing="${s.tracking}"` : "";
-      const posAttr = sx !== 1
-        ? ` transform="translate(${tx},${by.toFixed(1)}) scale(${sx},1)" x="0" y="0"`
+      const trackAttr = s.tracking ? ` letter-spacing="${(s.tracking * (fontSize / designSize)).toFixed(2)}"` : "";
+      const posAttr = sx !== 1 || s.skew_x
+        ? ` transform="translate(${tx},${by.toFixed(1)})${sx !== 1 ? ` scale(${sx},1)` : ""}${s.skew_x ? ` skewX(${s.skew_x})` : ""}" x="0" y="0"`
         : ` x="${tx}" y="${by.toFixed(1)}"`;
       overlay += `<text data-slot-id="${s.id}" data-editable="true" data-role="${s.role}"${posAttr} text-anchor="${anchor}" font-family="${s.font}" font-size="${fontSize.toFixed(1)}"${trackAttr}${strokeAttr} fill="${fill}">${esc(ln)}</text>`;
       editableTextCount++;
     });
+    if (s.rotate === 90) {
+      const chunk = overlay.slice(overlayMark);
+      overlay = overlay.slice(0, overlayMark) + `<g transform="translate(${realBox[2]},${realBox[1]}) rotate(90)">${chunk}</g>`;
+    } else if (s.rotate === -90) {
+      const chunk = overlay.slice(overlayMark);
+      overlay = overlay.slice(0, overlayMark) + `<g transform="translate(${realBox[0]},${realBox[3]}) rotate(-90)">${chunk}</g>`;
+    }
   }
   // adaptive panel: trim the baked panel to its rendered content (fill everything below the last non-empty
   // fit_to slot with the page bg). Drawn LAST so it covers the baked panel's bottom + any empty-row knockouts.

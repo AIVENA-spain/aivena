@@ -40,6 +40,8 @@ import { cn } from "@/lib/utils";
 import { GatedActionButton, GateNote } from "@/components/shell/launch-gate";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Badge } from "@/components/ui/badge";
+import { conversationStateTone } from "@/lib/ui-tone";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RelativeTime } from "@/components/ui/relative-time";
@@ -97,10 +99,11 @@ function avatarTone(seed: string | null | undefined): string {
 }
 
 function temperatureDot(temp: string | null): string {
+  // Redesign: semantic scale — hot = high-intent (brand green), warm = worth
+  // attention (amber), cold/unknown = neutral. No rose/sky rainbow.
   const t = (temp ?? "").toLowerCase();
-  if (t === "super_hot" || t === "hot") return "bg-rose-600";
+  if (t === "super_hot" || t === "hot" || t === "very_hot") return "bg-brand";
   if (t === "warm") return "bg-amber-500";
-  if (t === "cold") return "bg-sky-500";
   return "bg-muted-foreground/40";
 }
 
@@ -160,7 +163,7 @@ function ChannelBadge({ channel }: { channel: string | null }) {
       className={cn(
         "inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.04em]",
         isWa
-          ? "bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300"
+          ? "bg-brand-soft text-brand"
           : "bg-muted text-muted-foreground",
       )}
     >
@@ -791,23 +794,18 @@ function ViewToggleOpt({
 
 function StateBadge({ state }: { state: ConvoState }) {
   const t = useTranslations("inbox.state");
-  // Signal green (brand) is reserved for the one state that needs the operator;
-  // the handled states stay neutral/muted so green stays a signal, not decor.
-  const tone: Record<ConvoState, string> = {
-    needsYou: "bg-brand-soft text-brand",
-    replied: "bg-muted text-foreground",
-    autoHandled: "bg-muted text-muted-foreground",
-    waiting: "bg-muted text-muted-foreground",
-  };
+  // Redesign: shared Badge + semantic tone. Per the colour rules "needs you" is
+  // action-needed (amber), "replied" is done (green), "auto-handled" is
+  // informational (slate) — so green stays a done/positive signal.
   return (
-    <span
-      className={cn(
-        "shrink-0 rounded-full px-1.5 py-[1px] font-mono text-[9px] font-medium uppercase tracking-[0.03em]",
-        tone[state],
-      )}
+    <Badge
+      tone={conversationStateTone(state)}
+      size="sm"
+      uppercase
+      className="shrink-0"
     >
       {t(state)}
-    </span>
+    </Badge>
   );
 }
 
@@ -987,7 +985,7 @@ function BuyersConvoView({
                     className={cn(
                       "flex shrink-0 items-center",
                       isWhatsappChannel(r.channel) &&
-                        "text-emerald-600 dark:text-emerald-400",
+                        "text-brand",
                     )}
                     title={r.channel ?? undefined}
                   >

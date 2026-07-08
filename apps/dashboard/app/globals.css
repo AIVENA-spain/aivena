@@ -60,59 +60,60 @@
 }
 
 /*
- * Light palette — cream canvas + white cards + ink text, matching the
- * approved landing-page mockup's embedded dashboard (#FAF8F3 canvas,
- * #FFFFFF panels, #10131A ink, #ECE8DE borders).
+ * Light palette — clean white-based B2B SaaS surface (2026 redesign).
+ * A near-white cool-gray canvas (#F8FAFC) lets pure-white cards lift with a
+ * hairline border + soft shadow (the premium "cards pop" look), replacing the
+ * old warm cream canvas that read as beige/prototype. Neutrals are cooled from
+ * warm greige to cool slate-grey; text/primary is a truer navy (#0F172A).
  *
- * `--primary` is kept neutral (ink) so the existing black-on-cream button
- * look — used on auth pages and elsewhere — is unchanged. Brand green is a
- * SEPARATE token (`--brand`) wired only to signal surfaces: active sidebar
- * nav, AI-reply chip, KPI up-deltas, the brand-mark, and primary CTAs that
- * specifically want the dark/ink+green dot look.
+ * Semantic colours are UNCHANGED and single-purpose: `--foreground`/`--primary`
+ * = serious navy (text + primary actions), `--brand` = green (success / active
+ * / positive), `--destructive` = red (blockers/errors). Amber (warnings) is
+ * owned by the shared Badge/StatusPill tones, not a global token. No new palette.
  */
 :root {
-  --background: #FBFAF7;      /* warm off-white / cream canvas */
-  --foreground: #111827;      /* deep charcoal/navy ink */
+  --background: #F8FAFC;      /* near-white cool-gray canvas — cards pop off it */
+  --foreground: #0F172A;      /* slate-900 — serious navy ink */
   --card: #FFFFFF;
-  --card-foreground: #111827;
+  --card-foreground: #0F172A;
   --popover: #FFFFFF;
-  --popover-foreground: #111827;
-  --primary: #111827;
+  --popover-foreground: #0F172A;
+  --primary: #0F172A;         /* navy — serious primary action/text */
   --primary-foreground: #FFFFFF;
-  --secondary: #F4F1EA;
-  --secondary-foreground: #111827;
-  --muted: #F5F2EC;          /* warm cream-grey surface */
-  --muted-foreground: #6B7280;
-  --accent: #F4F1EA;
-  --accent-foreground: #111827;
+  --secondary: #F1F5F9;       /* slate-100 cool surface */
+  --secondary-foreground: #0F172A;
+  --muted: #F1F5F9;          /* slate-100 cool surface (chips, hover, fills) */
+  --muted-foreground: #64748B; /* slate-500 — calm secondary text */
+  --accent: #F1F5F9;
+  --accent-foreground: #0F172A;
   --destructive: oklch(0.577 0.245 27.325);
-  --border: #E8E5DE;         /* soft warm-grey border */
-  --input: #E8E5DE;
-  --ring: #969BA3;
-  --brand: #0B7A3A;          /* calm emerald — usable as text on cream */
-  --brand-soft: #EAF7EF;     /* very soft green tint — active-nav, AI tag bg */
+  --border: #E4E8EE;         /* cool light-gray hairline border */
+  --input: #DDE3EA;          /* slightly deeper than border for field outlines */
+  --ring: #94A3B8;           /* slate-400 focus ring */
+  --brand: #0B7A3A;          /* calm emerald — success / active / positive */
+  --brand-soft: #E7F6EE;     /* soft green tint — active-nav, AI tag bg */
   --brand-fg: #FFFFFF;       /* foreground on a brand-coloured fill */
-  --chart-1: #1FE874;
-  --chart-2: #5CEFA0;
-  --chart-3: #0B7C3A;
-  --chart-4: #969BA3;
-  --chart-5: #5C636C;
-  --radius: 0.8125rem;       /* 13px — matches the mockup's card radius */
+  --chart-1: #0B7A3A;
+  --chart-2: #34D399;
+  --chart-3: #0EA5E9;
+  --chart-4: #94A3B8;
+  --chart-5: #64748B;
+  --radius: 0.75rem;         /* 12px — crisp SaaS card radius */
   --sidebar: #FFFFFF;
-  --sidebar-foreground: #10131A;
-  --sidebar-primary: #10131A;
+  --sidebar-foreground: #0F172A;
+  --sidebar-primary: #0F172A;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #F4F1EA;
-  --sidebar-accent-foreground: #10131A;
-  --sidebar-border: #ECE8DE;
-  --sidebar-ring: #969BA3;
+  --sidebar-accent: #F1F5F9;
+  --sidebar-accent-foreground: #0F172A;
+  --sidebar-border: #E4E8EE;
+  --sidebar-ring: #94A3B8;
   --shadow-elevated:
-    0 1px 2px rgba(16, 19, 26, 0.04),
-    0 4px 12px rgba(16, 19, 26, 0.06),
-    0 12px 28px rgba(16, 19, 26, 0.05);
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 2px 6px rgba(15, 23, 42, 0.05),
+    0 8px 20px rgba(15, 23, 42, 0.04);
   --shadow-soft:
-    0 1px 2px rgba(16, 19, 26, 0.05),
-    0 2px 6px rgba(16, 19, 26, 0.05);
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 1px 3px rgba(15, 23, 42, 0.05);
 }
 
 /*

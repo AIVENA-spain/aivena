@@ -1180,6 +1180,10 @@
     "errNeedLead": "Please pick a lead for the viewing.",
     "errNeedTime": "Please pick a date and time.",
     "errLeadName": "Please enter the lead's name.",
-    "errLeadContact": "Add an email or phone number so the lead can be reached."
+    "errLeadContact": "Add an email or phone number so the lead can be reached.",
+    "title": "Viewings",
+    "cardUpcoming": "Upcoming viewings",
+    "cardTotal": "Total scheduled",
+    "cardManual": "Manually scheduled"
   }
 }

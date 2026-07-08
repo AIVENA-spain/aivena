@@ -1180,6 +1180,10 @@
     "errNeedLead": "Veuillez sélectionner un contact pour la visite.",
     "errNeedTime": "Veuillez choisir une date et une heure.",
     "errLeadName": "Veuillez saisir le nom du contact.",
-    "errLeadContact": "Ajoutez un e-mail ou un numéro de téléphone pour pouvoir joindre le contact."
+    "errLeadContact": "Ajoutez un e-mail ou un numéro de téléphone pour pouvoir joindre le contact.",
+    "title": "Visites",
+    "cardUpcoming": "Visites à venir",
+    "cardTotal": "Total programmées",
+    "cardManual": "Programmées manuellement"
   }
 }

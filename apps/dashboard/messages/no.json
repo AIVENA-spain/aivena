@@ -1180,6 +1180,10 @@
     "errNeedLead": "Velg en lead for visningen.",
     "errNeedTime": "Velg en dato og et tidspunkt.",
     "errLeadName": "Skriv inn navnet på leaden.",
-    "errLeadContact": "Legg til en e-postadresse eller et telefonnummer så leaden kan kontaktes."
+    "errLeadContact": "Legg til en e-postadresse eller et telefonnummer så leaden kan kontaktes.",
+    "title": "Visninger",
+    "cardUpcoming": "Kommende visninger",
+    "cardTotal": "Totalt planlagt",
+    "cardManual": "Manuelt planlagt"
   }
 }

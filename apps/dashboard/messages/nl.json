@@ -1180,6 +1180,10 @@
     "errNeedLead": "Kies een lead voor de bezichtiging.",
     "errNeedTime": "Kies een datum en tijd.",
     "errLeadName": "Vul de naam van de lead in.",
-    "errLeadContact": "Voeg een e-mailadres of telefoonnummer toe zodat je de lead kunt bereiken."
+    "errLeadContact": "Voeg een e-mailadres of telefoonnummer toe zodat je de lead kunt bereiken.",
+    "title": "Bezichtigingen",
+    "cardUpcoming": "Aankomende bezichtigingen",
+    "cardTotal": "Totaal gepland",
+    "cardManual": "Handmatig gepland"
   }
 }

@@ -1180,6 +1180,10 @@
     "errNeedLead": "Valitse esittelylle liidi.",
     "errNeedTime": "Valitse päivä ja aika.",
     "errLeadName": "Anna liidin nimi.",
-    "errLeadContact": "Lisää sähköposti tai puhelinnumero, jotta liidi voidaan tavoittaa."
+    "errLeadContact": "Lisää sähköposti tai puhelinnumero, jotta liidi voidaan tavoittaa.",
+    "title": "Esittelyt",
+    "cardUpcoming": "Tulevat esittelyt",
+    "cardTotal": "Ajastettu yhteensä",
+    "cardManual": "Ajastettu manuaalisesti"
   }
 }

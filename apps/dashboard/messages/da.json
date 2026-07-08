@@ -1180,6 +1180,10 @@
     "errNeedLead": "Vælg et lead til fremvisningen.",
     "errNeedTime": "Vælg en dato og et tidspunkt.",
     "errLeadName": "Indtast leadets navn.",
-    "errLeadContact": "Tilføj en e-mail eller et telefonnummer, så leadet kan kontaktes."
+    "errLeadContact": "Tilføj en e-mail eller et telefonnummer, så leadet kan kontaktes.",
+    "title": "Fremvisninger",
+    "cardUpcoming": "Kommende fremvisninger",
+    "cardTotal": "Planlagt i alt",
+    "cardManual": "Manuelt planlagt"
   }
 }

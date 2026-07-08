@@ -1180,6 +1180,10 @@
     "errNeedLead": "Bitte wählen Sie einen Interessenten für die Besichtigung aus.",
     "errNeedTime": "Bitte wählen Sie Datum und Uhrzeit aus.",
     "errLeadName": "Bitte geben Sie den Namen des Interessenten ein.",
-    "errLeadContact": "Fügen Sie eine E-Mail-Adresse oder Telefonnummer hinzu, damit der Interessent erreichbar ist."
+    "errLeadContact": "Fügen Sie eine E-Mail-Adresse oder Telefonnummer hinzu, damit der Interessent erreichbar ist.",
+    "title": "Besichtigungen",
+    "cardUpcoming": "Anstehende Besichtigungen",
+    "cardTotal": "Insgesamt geplant",
+    "cardManual": "Manuell geplant"
   }
 }

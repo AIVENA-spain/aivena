@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import {
+  CalendarCheck,
   CalendarClock,
   CalendarDays,
   ChevronLeft,
@@ -23,6 +24,9 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PageHeader } from "@/components/ui/page-header";
+import { MetricCard } from "@/components/ui/metric-card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { intlLocaleFor } from "@/lib/i18n/date-locale";
 import type { BookingRow, LeadPickerRow, PropertyRow } from "@/lib/api/types";
 import {
@@ -89,46 +93,75 @@ export function ViewingsWorkspace({
     [router],
   );
 
+  // Honest, data-driven summary — useful even with little data (0-states read as
+  // intentional). Upcoming uses the server-computed is_upcoming flag.
+  const upcomingCount = bookings.filter((b) => b.is_upcoming).length;
+  const totalCount = bookings.length;
+  const manualCount = bookings.filter(
+    (b) => (b.booking_type ?? "").toLowerCase() === "manual",
+  ).length;
+
   return (
     <div className="flex flex-col gap-5">
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
-        <div className="flex items-center gap-2">
-          <div className="inline-flex rounded-lg border border-border bg-card p-0.5">
-            {(
-              [
-                { key: "month", label: t("monthView"), icon: CalendarDays },
-                { key: "list", label: t("listView"), icon: List },
-              ] as const
-            ).map(({ key, label, icon: Icon }) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => setView(key)}
-                aria-pressed={view === key}
-                className={cn(
-                  "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[12.5px] font-medium transition-colors",
-                  view === key
-                    ? "bg-foreground text-background"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                )}
-              >
-                <Icon className="h-3.5 w-3.5" aria-hidden />
-                {label}
-              </button>
-            ))}
-          </div>
-          <Button
-            type="button"
-            size="sm"
-            className="gap-1.5"
-            onClick={() => setModal({ kind: "create" })}
-          >
-            <Plus className="h-3.5 w-3.5" aria-hidden />
-            {t("newViewing")}
-          </Button>
-        </div>
+      <PageHeader
+        title={t("title")}
+        description={t("subtitle")}
+        actions={
+          <>
+            <div className="inline-flex rounded-lg border border-border bg-card p-0.5">
+              {(
+                [
+                  { key: "month", label: t("monthView"), icon: CalendarDays },
+                  { key: "list", label: t("listView"), icon: List },
+                ] as const
+              ).map(({ key, label, icon: Icon }) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setView(key)}
+                  aria-pressed={view === key}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[12.5px] font-medium transition-colors",
+                    view === key
+                      ? "bg-foreground text-background"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                  )}
+                >
+                  <Icon className="h-3.5 w-3.5" aria-hidden />
+                  {label}
+                </button>
+              ))}
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => setModal({ kind: "create" })}
+            >
+              <Plus className="h-3.5 w-3.5" aria-hidden />
+              {t("newViewing")}
+            </Button>
+          </>
+        }
+      />
+
+      {/* Summary — honest data-driven counts */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <MetricCard
+          icon={CalendarClock}
+          label={t("cardUpcoming")}
+          value={upcomingCount}
+        />
+        <MetricCard
+          icon={CalendarCheck}
+          label={t("cardTotal")}
+          value={totalCount}
+        />
+        <MetricCard
+          icon={UserPlus}
+          label={t("cardManual")}
+          value={manualCount}
+        />
       </div>
 
       {view === "month" ? (
@@ -362,12 +395,12 @@ function ListView({
 
   if (bookings.length === 0) {
     return (
-      <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border bg-card px-6 py-16 text-center">
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-muted text-muted-foreground">
-          <CalendarClock className="h-6 w-6" aria-hidden strokeWidth={1.7} />
-        </div>
-        <p className="text-sm font-medium text-foreground">{t("emptyTitle")}</p>
-        <p className="max-w-md text-sm text-muted-foreground">{t("emptyBody")}</p>
+      <div className="rounded-xl border border-dashed border-border bg-card">
+        <EmptyState
+          icon={CalendarClock}
+          title={t("emptyTitle")}
+          description={t("emptyBody")}
+        />
       </div>
     );
   }

@@ -1180,6 +1180,10 @@
     "errNeedLead": "Wybierz kontakt do oględzin.",
     "errNeedTime": "Wybierz datę i godzinę.",
     "errLeadName": "Podaj imię i nazwisko kontaktu.",
-    "errLeadContact": "Dodaj e-mail lub numer telefonu, aby można było skontaktować się z osobą."
+    "errLeadContact": "Dodaj e-mail lub numer telefonu, aby można było skontaktować się z osobą.",
+    "title": "Oglądania",
+    "cardUpcoming": "Nadchodzące oglądania",
+    "cardTotal": "Łącznie zaplanowane",
+    "cardManual": "Zaplanowane ręcznie"
   }
 }

@@ -1180,6 +1180,10 @@
     "errNeedLead": "Välj en lead för visningen.",
     "errNeedTime": "Välj datum och tid.",
     "errLeadName": "Ange leadens namn.",
-    "errLeadContact": "Lägg till en e-postadress eller ett telefonnummer så att leaden kan nås."
+    "errLeadContact": "Lägg till en e-postadress eller ett telefonnummer så att leaden kan nås.",
+    "title": "Visningar",
+    "cardUpcoming": "Kommande visningar",
+    "cardTotal": "Totalt schemalagda",
+    "cardManual": "Manuellt schemalagda"
   }
 }

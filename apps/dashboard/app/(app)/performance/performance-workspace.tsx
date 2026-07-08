@@ -112,8 +112,8 @@ function AreaChart({
       >
         <defs>
           <linearGradient id="perf-area" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#1FE874" stopOpacity="0.28" />
-            <stop offset="100%" stopColor="#1FE874" stopOpacity="0.02" />
+            <stop offset="0%" stopColor="var(--brand)" stopOpacity="0.28" />
+            <stop offset="100%" stopColor="var(--brand)" stopOpacity="0.02" />
           </linearGradient>
         </defs>
         {grid.map((yy) => (
@@ -127,13 +127,13 @@ function AreaChart({
           />
         ))}
         <path d={area} fill="url(#perf-area)" />
-        <path d={line} fill="none" stroke="#1FE874" strokeWidth={2.5} />
+        <path d={line} fill="none" stroke="var(--brand)" strokeWidth={2.5} />
         {peakIdx >= 0 ? (
           <circle
             cx={x(peakIdx)}
             cy={y(max)}
             r={4.5}
-            fill="#1FE874"
+            fill="var(--brand)"
             strokeWidth={2}
             style={{ stroke: "var(--card)" }}
           />
@@ -198,14 +198,14 @@ function LineChart({
           />
         ))}
         {segs.map((d, i) => (
-          <path key={i} d={d} fill="none" stroke="#1FE874" strokeWidth={2.5} />
+          <path key={i} d={d} fill="none" stroke="var(--brand)" strokeWidth={2.5} />
         ))}
         {latestIdx >= 0 ? (
           <circle
             cx={x(latestIdx)}
             cy={y(points[latestIdx].value as number)}
             r={4.5}
-            fill="#1FE874"
+            fill="var(--brand)"
             strokeWidth={2}
             style={{ stroke: "var(--card)" }}
           />
@@ -285,7 +285,7 @@ export async function PerformanceWorkspace({
 
   const takeEm = {
     em: (chunks: React.ReactNode) => (
-      <em className="font-serif text-[14px] italic text-foreground">{chunks}</em>
+      <span className="font-medium text-foreground">{chunks}</span>
     ),
   };
 
@@ -372,7 +372,7 @@ export async function PerformanceWorkspace({
                     className="flex-1 rounded-t-[2px]"
                     style={{
                       height: `${h}%`,
-                      background: "#1FE874",
+                      background: "var(--brand)",
                       opacity: isZero ? 0.18 : 0.85,
                     }}
                   />
@@ -539,7 +539,7 @@ export async function PerformanceWorkspace({
                         className="block h-full rounded-full"
                         style={{
                           width: `${langMax > 0 ? (l.count / langMax) * 100 : 0}%`,
-                          background: "#1FE874",
+                          background: "var(--brand)",
                         }}
                       />
                     </span>

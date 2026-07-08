@@ -33,6 +33,8 @@ import {
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Badge } from "@/components/ui/badge";
+import { leadStatusTone } from "@/lib/ui-tone";
 import { Button } from "@/components/ui/button";
 import { RelativeTime } from "@/components/ui/relative-time";
 import { approveTaskAction } from "@/app/(app)/approvals/[taskId]/actions";
@@ -120,40 +122,30 @@ function EventIcon({
 // ---------- status pill ----------
 
 function StatusPill({ status }: { status: string | null }) {
-  const s = (status ?? "").toLowerCase();
-  const tone =
-    s === "hot" || s === "super_hot"
-      ? "bg-rose-500/15 text-rose-700 dark:text-rose-300 ring-rose-500/30"
-      : s === "warm"
-        ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 ring-amber-500/30"
-        : s === "active" || s === "new"
-          ? "bg-brand-soft text-brand ring-brand/30"
-          : s === "auto" || s === "auto_handled"
-            ? "bg-violet-500/15 text-violet-700 dark:text-violet-300 ring-violet-500/30"
-            : "bg-muted text-muted-foreground ring-border";
-  const label = status ? status.replace(/_/g, " ") : "—";
+  if (!status) return <span className="text-muted-foreground">—</span>;
+  // Redesign: delegate to the shared Badge + semantic tone (green=active,
+  // amber=needs-attention, slate=auto-handled) — no more rose/violet rainbow.
   return (
-    <span
-      className={cn(
-        "inline-block whitespace-nowrap rounded-full px-2 py-[2px] text-[10.5px] font-semibold uppercase tracking-wide ring-1 ring-inset",
-        tone,
-      )}
-    >
-      {label}
-    </span>
+    <Badge tone={leadStatusTone(status)} size="sm" uppercase>
+      {status.replace(/_/g, " ")}
+    </Badge>
   );
 }
 
 // ---------- KPI card ----------
 
+// Redesign: KPI icon chips are monochrome (premium SaaS look) — no rainbow tones.
+// The `tone` prop is retained on the call sites but all resolve to the calm
+// neutral chip; only deltas carry colour (green up / red down).
 type KpiTone = "blue" | "amber" | "rose" | "violet" | "muted";
 
+const NEUTRAL_CHIP = "bg-muted text-muted-foreground";
 const KPI_TONE: Record<KpiTone, string> = {
-  blue: "bg-blue-500/15 text-blue-600 dark:text-blue-300",
-  amber: "bg-amber-500/15 text-amber-600 dark:text-amber-300",
-  rose: "bg-rose-500/15 text-rose-600 dark:text-rose-300",
-  violet: "bg-violet-500/15 text-violet-600 dark:text-violet-300",
-  muted: "bg-muted text-muted-foreground",
+  blue: NEUTRAL_CHIP,
+  amber: NEUTRAL_CHIP,
+  rose: NEUTRAL_CHIP,
+  violet: NEUTRAL_CHIP,
+  muted: NEUTRAL_CHIP,
 };
 
 function KpiCard({

@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import type {
   AdminAgencyListItem,
@@ -42,19 +43,12 @@ function PlanPill({ tier }: { tier: PlanTier }) {
 }
 
 function StatusPill({ status }: { status: AgencyStatus }) {
+  const tone =
+    status === "active" ? "success" : status === "paused" ? "warning" : "neutral";
   return (
-    <span
-      className={cn(
-        "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium capitalize",
-        status === "active"
-          ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300"
-          : status === "paused"
-            ? "bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300"
-            : "bg-muted text-muted-foreground",
-      )}
-    >
+    <Badge tone={tone} className="capitalize">
       {status}
-    </span>
+    </Badge>
   );
 }
 

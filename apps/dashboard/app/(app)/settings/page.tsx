@@ -1,5 +1,5 @@
 import { getTranslations } from "next-intl/server";
-import { Image as ImageIcon, SlidersHorizontal, Mail, Globe, Users, CreditCard } from "lucide-react";
+import { Image as ImageIcon, SlidersHorizontal, Mail, Globe, Users, CreditCard, Building2 } from "lucide-react";
 
 import { apiFetch, ApiError } from "@/lib/api/client";
 import { PageLoadError } from "@/components/shell/page-error";
@@ -16,6 +16,8 @@ import { ChannelsSection } from "./sections/channels-section";
 import { LanguagesSection } from "./sections/languages-section";
 import { TeamSection } from "./sections/team-section";
 import { PlanPrefsSection } from "./sections/plan-prefs-section";
+import { CatalogueSection } from "./sections/catalogue-section";
+import { isDone } from "./sections/readiness-display";
 
 export const dynamic = "force-dynamic";
 
@@ -64,6 +66,16 @@ export default async function SettingsPage() {
   const signedInEmail =
     settings.team.members.find((m) => m.user_id === currentUserId)?.email ?? "";
 
+  // Property-catalogue readiness rows (O5 catalog.* signals) for group 3 —
+  // read-only display; empty array renders the honest "unavailable" line.
+  const catalogItems = readiness
+    ? readiness.items.filter(
+        (it) => it.id.startsWith("catalog") || it.area === "catalog",
+      )
+    : [];
+  const catalogAllGood =
+    catalogItems.length > 0 && catalogItems.every((it) => isDone(it.status));
+
   return (
     <div className="mx-auto flex w-full max-w-[920px] flex-col gap-3">
       {/* Setup status strip — readiness-driven (D2) when available, else the
@@ -91,7 +103,10 @@ export default async function SettingsPage() {
         <BrandingSection branding={settings.branding} />
       </AccordionSection>
 
-      {/* 2. AI behaviour & approvals */}
+      {/* 2. Client communication — AI behaviour, channels, languages */}
+      <div className="px-1 pt-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+        {ta("groupCommunication")}
+      </div>
       <AccordionSection
         icon={<SlidersHorizontal className="h-[18px] w-[18px]" />}
         title={ta("aiTitle")}
@@ -132,7 +147,24 @@ export default async function SettingsPage() {
         />
       </AccordionSection>
 
-      {/* 5. Team & access */}
+      {/* 3. Property catalogue — read-only readiness view (O5 signals); the
+          import/management itself lives on the Properties page. */}
+      <AccordionSection
+        icon={<Building2 className="h-[18px] w-[18px]" />}
+        title={ta("catalogueTitle")}
+        subtitle={ta("catalogueSubtitle")}
+        status={
+          catalogAllGood ? (
+            <StatusDot />
+          ) : (
+            <StatusTag tone="warn">{ta("statusInProgress")}</StatusTag>
+          )
+        }
+      >
+        <CatalogueSection items={catalogItems} />
+      </AccordionSection>
+
+      {/* 4. Team & access */}
       <AccordionSection
         icon={<Users className="h-[18px] w-[18px]" />}
         title={ta("teamTitle")}

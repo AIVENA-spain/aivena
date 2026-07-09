@@ -362,7 +362,12 @@
         "multilang": "Szablony wielojęzyczne",
         "calendar": "Kalendarz",
         "feed": "Katalog nieruchomości"
-      }
+      },
+      "healthTitle": "Stan konfiguracji",
+      "healthComplete": "Ukończono",
+      "healthGood": "Dobry postęp",
+      "healthInProgress": "W toku",
+      "viewTechnical": "Zobacz szczegóły techniczne"
     },
     "title": "Ustawienia",
     "subtitle": "How your agency works, sends, and shows up to your clients",
@@ -717,7 +722,7 @@
       "importAnother": "Zaimportuj kolejny plik"
     },
     "accordion": {
-      "brandingTitle": "Agency profile & branding",
+      "brandingTitle": "Profil agencji",
       "brandingSubtitle": "How your agency appears to clients",
       "aiTitle": "AI behaviour & approvals",
       "aiSubtitle": "Approval-first — your team reviews before sending",
@@ -727,11 +732,17 @@
       "languagesSubtitle": "{count} languages",
       "teamTitle": "Team & access",
       "teamSubtitle": "{count} members",
-      "planTitle": "Plan & preferences",
+      "planTitle": "Plan i pilotaż",
       "planSubtitle": "{tier}",
       "statusReview": "Review",
       "statusRepliesOff": "Replies off",
-      "statusInviteAgents": "Invite agents"
+      "statusInviteAgents": "Invite agents",
+      "groupCommunication": "Komunikacja z klientami",
+      "catalogueTitle": "Katalog nieruchomości",
+      "catalogueSubtitle": "Twoje oferty i źródła nieruchomości.",
+      "catalogueUnavailable": "Status katalogu jest obecnie niedostępny.",
+      "catalogueOpenProperties": "Otwórz Nieruchomości",
+      "statusInProgress": "W toku"
     }
   },
   "performance": {

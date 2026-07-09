@@ -362,7 +362,12 @@
         "multilang": "Modelos multilingues",
         "calendar": "Calendário",
         "feed": "Catálogo de imóveis"
-      }
+      },
+      "healthTitle": "Estado da configuração",
+      "healthComplete": "Concluído",
+      "healthGood": "Bom progresso",
+      "healthInProgress": "Em curso",
+      "viewTechnical": "Ver detalhes técnicos"
     },
     "title": "Definições",
     "subtitle": "How your agency works, sends, and shows up to your clients",
@@ -717,7 +722,7 @@
       "importAnother": "Importar outro ficheiro"
     },
     "accordion": {
-      "brandingTitle": "Agency profile & branding",
+      "brandingTitle": "Perfil da agência",
       "brandingSubtitle": "How your agency appears to clients",
       "aiTitle": "AI behaviour & approvals",
       "aiSubtitle": "Approval-first — your team reviews before sending",
@@ -727,11 +732,17 @@
       "languagesSubtitle": "{count} languages",
       "teamTitle": "Team & access",
       "teamSubtitle": "{count} members",
-      "planTitle": "Plan & preferences",
+      "planTitle": "Plano e piloto",
       "planSubtitle": "{tier}",
       "statusReview": "Review",
       "statusRepliesOff": "Replies off",
-      "statusInviteAgents": "Invite agents"
+      "statusInviteAgents": "Invite agents",
+      "groupCommunication": "Comunicação com clientes",
+      "catalogueTitle": "Catálogo de imóveis",
+      "catalogueSubtitle": "Os seus anúncios e fontes de imóveis.",
+      "catalogueUnavailable": "O estado do catálogo não está disponível neste momento.",
+      "catalogueOpenProperties": "Abrir Imóveis",
+      "statusInProgress": "Em curso"
     }
   },
   "performance": {

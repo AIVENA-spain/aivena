@@ -362,7 +362,12 @@
         "multilang": "Monikieliset mallit",
         "calendar": "Kalenteri",
         "feed": "Kiinteistöluettelo"
-      }
+      },
+      "healthTitle": "Asennuksen tila",
+      "healthComplete": "Valmis",
+      "healthGood": "Hyvä edistyminen",
+      "healthInProgress": "Kesken",
+      "viewTechnical": "Näytä tekniset tiedot"
     },
     "title": "Asetukset",
     "subtitle": "How your agency works, sends, and shows up to your clients",
@@ -717,7 +722,7 @@
       "importAnother": "Tuo toinen tiedosto"
     },
     "accordion": {
-      "brandingTitle": "Agency profile & branding",
+      "brandingTitle": "Toimiston profiili",
       "brandingSubtitle": "How your agency appears to clients",
       "aiTitle": "AI behaviour & approvals",
       "aiSubtitle": "Approval-first — your team reviews before sending",
@@ -727,11 +732,17 @@
       "languagesSubtitle": "{count} languages",
       "teamTitle": "Team & access",
       "teamSubtitle": "{count} members",
-      "planTitle": "Plan & preferences",
+      "planTitle": "Sopimus ja pilotti",
       "planSubtitle": "{tier}",
       "statusReview": "Review",
       "statusRepliesOff": "Replies off",
-      "statusInviteAgents": "Invite agents"
+      "statusInviteAgents": "Invite agents",
+      "groupCommunication": "Asiakasviestintä",
+      "catalogueTitle": "Kohdeluettelo",
+      "catalogueSubtitle": "Ilmoituksesi ja kohdelähteesi.",
+      "catalogueUnavailable": "Luettelon tila ei ole juuri nyt saatavilla.",
+      "catalogueOpenProperties": "Avaa Kohteet",
+      "statusInProgress": "Kesken"
     }
   },
   "performance": {

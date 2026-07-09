@@ -362,7 +362,12 @@
         "multilang": "Meertalige sjablonen",
         "calendar": "Agenda",
         "feed": "Vastgoedcatalogus"
-      }
+      },
+      "healthTitle": "Installatiestatus",
+      "healthComplete": "Voltooid",
+      "healthGood": "Goede voortgang",
+      "healthInProgress": "Bezig",
+      "viewTechnical": "Technische details bekijken"
     },
     "title": "Instellingen",
     "subtitle": "How your agency works, sends, and shows up to your clients",
@@ -717,7 +722,7 @@
       "importAnother": "Nog een bestand importeren"
     },
     "accordion": {
-      "brandingTitle": "Agency profile & branding",
+      "brandingTitle": "Kantoorprofiel",
       "brandingSubtitle": "How your agency appears to clients",
       "aiTitle": "AI behaviour & approvals",
       "aiSubtitle": "Approval-first — your team reviews before sending",
@@ -727,11 +732,17 @@
       "languagesSubtitle": "{count} languages",
       "teamTitle": "Team & access",
       "teamSubtitle": "{count} members",
-      "planTitle": "Plan & preferences",
+      "planTitle": "Plan & pilot",
       "planSubtitle": "{tier}",
       "statusReview": "Review",
       "statusRepliesOff": "Replies off",
-      "statusInviteAgents": "Invite agents"
+      "statusInviteAgents": "Invite agents",
+      "groupCommunication": "Klantcommunicatie",
+      "catalogueTitle": "Woningcatalogus",
+      "catalogueSubtitle": "Je aanbod en woningbronnen.",
+      "catalogueUnavailable": "De catalogusstatus is momenteel niet beschikbaar.",
+      "catalogueOpenProperties": "Woningen openen",
+      "statusInProgress": "Bezig"
     }
   },
   "performance": {

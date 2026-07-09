@@ -362,7 +362,12 @@
         "multilang": "Многоязычные шаблоны",
         "calendar": "Календарь",
         "feed": "Каталог объектов"
-      }
+      },
+      "healthTitle": "Состояние настройки",
+      "healthComplete": "Завершено",
+      "healthGood": "Хороший прогресс",
+      "healthInProgress": "В процессе",
+      "viewTechnical": "Показать технические детали"
     },
     "title": "Настройки",
     "subtitle": "How your agency works, sends, and shows up to your clients",
@@ -717,7 +722,7 @@
       "importAnother": "Импортировать другой файл"
     },
     "accordion": {
-      "brandingTitle": "Agency profile & branding",
+      "brandingTitle": "Профиль агентства",
       "brandingSubtitle": "How your agency appears to clients",
       "aiTitle": "AI behaviour & approvals",
       "aiSubtitle": "Approval-first — your team reviews before sending",
@@ -727,11 +732,17 @@
       "languagesSubtitle": "{count} languages",
       "teamTitle": "Team & access",
       "teamSubtitle": "{count} members",
-      "planTitle": "Plan & preferences",
+      "planTitle": "План и пилот",
       "planSubtitle": "{tier}",
       "statusReview": "Review",
       "statusRepliesOff": "Replies off",
-      "statusInviteAgents": "Invite agents"
+      "statusInviteAgents": "Invite agents",
+      "groupCommunication": "Общение с клиентами",
+      "catalogueTitle": "Каталог объектов",
+      "catalogueSubtitle": "Ваши объявления и источники объектов.",
+      "catalogueUnavailable": "Статус каталога сейчас недоступен.",
+      "catalogueOpenProperties": "Открыть объекты",
+      "statusInProgress": "В процессе"
     }
   },
   "performance": {

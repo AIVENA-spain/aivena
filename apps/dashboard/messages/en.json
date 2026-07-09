@@ -362,7 +362,12 @@
         "multilang": "Multilingual templates",
         "calendar": "Calendar",
         "feed": "Property catalog"
-      }
+      },
+      "healthTitle": "Setup health",
+      "healthComplete": "Complete",
+      "healthGood": "Great progress",
+      "healthInProgress": "In progress",
+      "viewTechnical": "View technical details"
     },
     "title": "Settings",
     "subtitle": "How your agency works, sends, and shows up to your clients",
@@ -717,7 +722,7 @@
       "importAnother": "Import another file"
     },
     "accordion": {
-      "brandingTitle": "Agency profile & branding",
+      "brandingTitle": "Agency profile",
       "brandingSubtitle": "How your agency appears to clients",
       "aiTitle": "AI behaviour & approvals",
       "aiSubtitle": "Approval-first — your team reviews before sending",
@@ -727,11 +732,17 @@
       "languagesSubtitle": "{count} languages",
       "teamTitle": "Team & access",
       "teamSubtitle": "{count} members",
-      "planTitle": "Plan & preferences",
+      "planTitle": "Plan & pilot",
       "planSubtitle": "{tier}",
       "statusReview": "Review",
       "statusRepliesOff": "Replies off",
-      "statusInviteAgents": "Invite agents"
+      "statusInviteAgents": "Invite agents",
+      "groupCommunication": "Client communication",
+      "catalogueTitle": "Property catalogue",
+      "catalogueSubtitle": "Your listings and property sources.",
+      "catalogueUnavailable": "Catalogue status isn't available right now.",
+      "catalogueOpenProperties": "Open Properties",
+      "statusInProgress": "In progress"
     }
   },
   "performance": {

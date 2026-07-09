@@ -362,7 +362,12 @@
         "multilang": "Flerspråklige maler",
         "calendar": "Kalender",
         "feed": "Eiendomskatalog"
-      }
+      },
+      "healthTitle": "Oppsettstatus",
+      "healthComplete": "Fullført",
+      "healthGood": "God fremgang",
+      "healthInProgress": "Pågår",
+      "viewTechnical": "Vis tekniske detaljer"
     },
     "title": "Innstillinger",
     "subtitle": "How your agency works, sends, and shows up to your clients",
@@ -717,7 +722,7 @@
       "importAnother": "Importer en ny fil"
     },
     "accordion": {
-      "brandingTitle": "Agency profile & branding",
+      "brandingTitle": "Byråprofil",
       "brandingSubtitle": "How your agency appears to clients",
       "aiTitle": "AI behaviour & approvals",
       "aiSubtitle": "Approval-first — your team reviews before sending",
@@ -727,11 +732,17 @@
       "languagesSubtitle": "{count} languages",
       "teamTitle": "Team & access",
       "teamSubtitle": "{count} members",
-      "planTitle": "Plan & preferences",
+      "planTitle": "Plan & pilot",
       "planSubtitle": "{tier}",
       "statusReview": "Review",
       "statusRepliesOff": "Replies off",
-      "statusInviteAgents": "Invite agents"
+      "statusInviteAgents": "Invite agents",
+      "groupCommunication": "Kundekommunikasjon",
+      "catalogueTitle": "Eiendomskatalog",
+      "catalogueSubtitle": "Dine annonser og eiendomskilder.",
+      "catalogueUnavailable": "Katalogstatusen er ikke tilgjengelig akkurat nå.",
+      "catalogueOpenProperties": "Åpne Eiendommer",
+      "statusInProgress": "Pågår"
     }
   },
   "performance": {

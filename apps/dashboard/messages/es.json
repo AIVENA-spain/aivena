@@ -362,7 +362,12 @@
         "multilang": "Plantillas multilingües",
         "calendar": "Calendario",
         "feed": "Catálogo de propiedades"
-      }
+      },
+      "healthTitle": "Estado de configuración",
+      "healthComplete": "Completado",
+      "healthGood": "Buen progreso",
+      "healthInProgress": "En curso",
+      "viewTechnical": "Ver detalles técnicos"
     },
     "title": "Ajustes",
     "subtitle": "How your agency works, sends, and shows up to your clients",
@@ -717,7 +722,7 @@
       "importAnother": "Importar otro archivo"
     },
     "accordion": {
-      "brandingTitle": "Agency profile & branding",
+      "brandingTitle": "Perfil de la agencia",
       "brandingSubtitle": "How your agency appears to clients",
       "aiTitle": "AI behaviour & approvals",
       "aiSubtitle": "Approval-first — your team reviews before sending",
@@ -727,11 +732,17 @@
       "languagesSubtitle": "{count} languages",
       "teamTitle": "Team & access",
       "teamSubtitle": "{count} members",
-      "planTitle": "Plan & preferences",
+      "planTitle": "Plan y piloto",
       "planSubtitle": "{tier}",
       "statusReview": "Review",
       "statusRepliesOff": "Replies off",
-      "statusInviteAgents": "Invite agents"
+      "statusInviteAgents": "Invite agents",
+      "groupCommunication": "Comunicación con clientes",
+      "catalogueTitle": "Catálogo de propiedades",
+      "catalogueSubtitle": "Tus anuncios y fuentes de propiedades.",
+      "catalogueUnavailable": "El estado del catálogo no está disponible ahora mismo.",
+      "catalogueOpenProperties": "Abrir Propiedades",
+      "statusInProgress": "En curso"
     }
   },
   "performance": {

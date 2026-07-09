@@ -362,7 +362,12 @@
         "multilang": "Modèles multilingues",
         "calendar": "Calendrier",
         "feed": "Catalogue de biens"
-      }
+      },
+      "healthTitle": "État de la configuration",
+      "healthComplete": "Terminé",
+      "healthGood": "Bonne progression",
+      "healthInProgress": "En cours",
+      "viewTechnical": "Voir les détails techniques"
     },
     "title": "Paramètres",
     "subtitle": "How your agency works, sends, and shows up to your clients",
@@ -717,7 +722,7 @@
       "importAnother": "Importer un autre fichier"
     },
     "accordion": {
-      "brandingTitle": "Agency profile & branding",
+      "brandingTitle": "Profil de l'agence",
       "brandingSubtitle": "How your agency appears to clients",
       "aiTitle": "AI behaviour & approvals",
       "aiSubtitle": "Approval-first — your team reviews before sending",
@@ -727,11 +732,17 @@
       "languagesSubtitle": "{count} languages",
       "teamTitle": "Team & access",
       "teamSubtitle": "{count} members",
-      "planTitle": "Plan & preferences",
+      "planTitle": "Offre & pilote",
       "planSubtitle": "{tier}",
       "statusReview": "Review",
       "statusRepliesOff": "Replies off",
-      "statusInviteAgents": "Invite agents"
+      "statusInviteAgents": "Invite agents",
+      "groupCommunication": "Communication client",
+      "catalogueTitle": "Catalogue de biens",
+      "catalogueSubtitle": "Vos annonces et sources de biens.",
+      "catalogueUnavailable": "L'état du catalogue n'est pas disponible pour le moment.",
+      "catalogueOpenProperties": "Ouvrir les biens",
+      "statusInProgress": "En cours"
     }
   },
   "performance": {

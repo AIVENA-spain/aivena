@@ -362,7 +362,12 @@
         "multilang": "Flerspråkiga mallar",
         "calendar": "Kalender",
         "feed": "Fastighetskatalog"
-      }
+      },
+      "healthTitle": "Installationsstatus",
+      "healthComplete": "Klart",
+      "healthGood": "Bra framsteg",
+      "healthInProgress": "Pågår",
+      "viewTechnical": "Visa tekniska detaljer"
     },
     "title": "Inställningar",
     "subtitle": "How your agency works, sends, and shows up to your clients",
@@ -717,7 +722,7 @@
       "importAnother": "Importera en annan fil"
     },
     "accordion": {
-      "brandingTitle": "Agency profile & branding",
+      "brandingTitle": "Byråprofil",
       "brandingSubtitle": "How your agency appears to clients",
       "aiTitle": "AI behaviour & approvals",
       "aiSubtitle": "Approval-first — your team reviews before sending",
@@ -727,11 +732,17 @@
       "languagesSubtitle": "{count} languages",
       "teamTitle": "Team & access",
       "teamSubtitle": "{count} members",
-      "planTitle": "Plan & preferences",
+      "planTitle": "Plan & pilot",
       "planSubtitle": "{tier}",
       "statusReview": "Review",
       "statusRepliesOff": "Replies off",
-      "statusInviteAgents": "Invite agents"
+      "statusInviteAgents": "Invite agents",
+      "groupCommunication": "Kundkommunikation",
+      "catalogueTitle": "Fastighetskatalog",
+      "catalogueSubtitle": "Dina annonser och fastighetskällor.",
+      "catalogueUnavailable": "Katalogstatus är inte tillgänglig just nu.",
+      "catalogueOpenProperties": "Öppna Fastigheter",
+      "statusInProgress": "Pågår"
     }
   },
   "performance": {

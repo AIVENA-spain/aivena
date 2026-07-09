@@ -2,7 +2,16 @@
 
 import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Building2, Plus, Search, X } from "lucide-react";
+import {
+  Bath,
+  BedDouble,
+  Building2,
+  MapPin,
+  Plus,
+  Ruler,
+  Search,
+  X,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -29,6 +38,10 @@ export function PropertiesView({ properties }: { properties: PropertyRow[] }) {
   const [typeFilter, setTypeFilter] = useState("all");
   const [bedsFilter, setBedsFilter] = useState("any");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [areaFilter, setAreaFilter] = useState("all");
+  const [sortBy, setSortBy] = useState<"newest" | "price_desc" | "price_asc">(
+    "newest",
+  );
 
   const distinct = (get: (p: PropertyRow) => string | null) => {
     const set = new Set<string>();
@@ -40,14 +53,19 @@ export function PropertiesView({ properties }: { properties: PropertyRow[] }) {
   };
   const types = useMemo(() => distinct((p) => p.property_type), [properties]);
   const statuses = useMemo(() => distinct((p) => p.status), [properties]);
+  const areas = useMemo(() => distinct((p) => p.location_city), [properties]);
 
   const filtersActive =
-    typeFilter !== "all" || bedsFilter !== "any" || statusFilter !== "all";
+    typeFilter !== "all" ||
+    bedsFilter !== "any" ||
+    statusFilter !== "all" ||
+    areaFilter !== "all";
   const resetAll = () => {
     setQuery("");
     setTypeFilter("all");
     setBedsFilter("any");
     setStatusFilter("all");
+    setAreaFilter("all");
   };
 
   const terms = useMemo(() => expandSearchTerms(query), [query]);
@@ -62,9 +80,26 @@ export function PropertiesView({ properties }: { properties: PropertyRow[] }) {
       if (typeFilter !== "all" && (p.property_type ?? "").toLowerCase() !== typeFilter) return false;
       if (bedsFilter !== "any" && (p.bedrooms ?? 0) < Number(bedsFilter)) return false;
       if (statusFilter !== "all" && (p.status ?? "").toLowerCase() !== statusFilter) return false;
+      if (areaFilter !== "all" && (p.location_city ?? "").toLowerCase() !== areaFilter) return false;
       return true;
     });
-  }, [properties, terms, typeFilter, bedsFilter, statusFilter]);
+  }, [properties, terms, typeFilter, bedsFilter, statusFilter, areaFilter]);
+
+  // Sort AFTER filtering — all on real fields (updated_at / price), no fakes.
+  const sorted = useMemo(() => {
+    const copy = [...filtered];
+    if (sortBy === "price_desc") {
+      copy.sort((a, b) => (Number(b.price) || 0) - (Number(a.price) || 0));
+    } else if (sortBy === "price_asc") {
+      copy.sort(
+        (a, b) =>
+          (Number(a.price) || Infinity) - (Number(b.price) || Infinity),
+      );
+    } else {
+      copy.sort((a, b) => (b.updated_at ?? "").localeCompare(a.updated_at ?? ""));
+    }
+    return copy;
+  }, [filtered, sortBy]);
 
   const selectCls =
     "h-9 rounded-lg border border-border bg-background px-2.5 text-[12.5px] text-foreground outline-none transition-colors focus:border-ring focus:ring-2 focus:ring-ring/30";
@@ -149,6 +184,33 @@ export function PropertiesView({ properties }: { properties: PropertyRow[] }) {
                 ))}
               </select>
             ) : null}
+            {areas.length > 1 ? (
+              <select
+                value={areaFilter}
+                onChange={(e) => setAreaFilter(e.target.value)}
+                aria-label="Filter by area"
+                className={selectCls}
+              >
+                <option value="all">All areas</option>
+                {areas.map((a) => (
+                  <option key={a} value={a}>
+                    {a.charAt(0).toUpperCase() + a.slice(1)}
+                  </option>
+                ))}
+              </select>
+            ) : null}
+            <select
+              value={sortBy}
+              onChange={(e) =>
+                setSortBy(e.target.value as "newest" | "price_desc" | "price_asc")
+              }
+              aria-label="Sort properties"
+              className={selectCls}
+            >
+              <option value="newest">Sort: Newest</option>
+              <option value="price_desc">Price: high to low</option>
+              <option value="price_asc">Price: low to high</option>
+            </select>
             {query.trim() || filtersActive ? (
               <button
                 type="button"
@@ -212,7 +274,7 @@ export function PropertiesView({ properties }: { properties: PropertyRow[] }) {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((p) => (
+          {sorted.map((p) => (
             <PropertyCard key={p.id} p={p} t={t} />
           ))}
         </div>
@@ -236,39 +298,55 @@ function PropertyCard({
 }) {
   const thumb = Array.isArray(p.images) && p.images.length > 0 ? p.images[0] : null;
   const location = [p.location_city, p.location_region].filter(Boolean).join(", ");
-  const specs: string[] = [];
-  if (p.bedrooms != null && p.bedrooms > 0) specs.push(`${p.bedrooms} ${t("bedsShort")}`);
-  if (p.bathrooms != null && p.bathrooms > 0) specs.push(`${p.bathrooms} ${t("bathsShort")}`);
-  if (p.area_sqm != null && p.area_sqm > 0) specs.push(formatArea(p.area_sqm));
+  // Icon spec pairs (mock layout) — zero/null specs hidden entirely.
+  const specs: { icon: typeof BedDouble; text: string }[] = [];
+  if (p.bedrooms != null && p.bedrooms > 0)
+    specs.push({ icon: BedDouble, text: `${p.bedrooms} ${t("bedsShort")}` });
+  if (p.bathrooms != null && p.bathrooms > 0)
+    specs.push({ icon: Bath, text: `${p.bathrooms} ${t("bathsShort")}` });
+  if (p.area_sqm != null && p.area_sqm > 0)
+    specs.push({ icon: Ruler, text: formatArea(p.area_sqm) });
 
+  // Card layout per the approved mockups: image (status pill top-left) →
+  // title → location with pin → icon specs → bottom row price (bold) + REF.
   return (
     <article className="group flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-soft transition-shadow hover:shadow-elevated">
       {/* Thumbnail */}
       <div className="relative aspect-[4/3] w-full bg-muted">
         <Thumb src={thumb} alt={p.title} />
-        <div className="absolute right-2 top-2">
+        <div className="absolute left-2 top-2">
           <PropertyStatus status={p.status} t={t} />
         </div>
       </div>
 
       {/* Body */}
       <div className="flex flex-1 flex-col gap-1.5 p-4">
-        <div className="text-[17px] font-bold tracking-[-0.01em] text-foreground tabular-nums">
-          {formatPrice(p.price, p.price_currency)}
-        </div>
-        <h3 className="line-clamp-2 text-[13.5px] font-medium leading-snug text-foreground">
+        <h3 className="line-clamp-2 text-[14.5px] font-semibold leading-snug tracking-[-0.01em] text-foreground">
           {p.title}
         </h3>
         {location ? (
-          <div className="text-[12.5px] text-muted-foreground">{location}</div>
-        ) : null}
-        {specs.length > 0 ? (
-          <div className="mt-auto flex flex-wrap gap-x-2 gap-y-0.5 pt-1.5 text-[11.5px] font-medium text-muted-foreground tabular-nums">
-            {specs.join("  ·  ")}
+          <div className="flex items-center gap-1 text-[12.5px] text-muted-foreground">
+            <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden strokeWidth={1.8} />
+            <span className="truncate">{location}</span>
           </div>
         ) : null}
-        <div className="pt-1 font-mono text-[10px] uppercase tracking-[0.04em] text-muted-foreground/60">
-          {p.external_id}
+        {specs.length > 0 ? (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-0.5 text-[12px] text-muted-foreground tabular-nums">
+            {specs.map(({ icon: Icon, text }) => (
+              <span key={text} className="inline-flex items-center gap-1">
+                <Icon className="h-3.5 w-3.5" aria-hidden strokeWidth={1.8} />
+                {text}
+              </span>
+            ))}
+          </div>
+        ) : null}
+        <div className="mt-auto flex items-end justify-between gap-2 pt-2">
+          <span className="text-[17px] font-bold tracking-[-0.01em] text-foreground tabular-nums">
+            {formatPrice(p.price, p.price_currency)}
+          </span>
+          <span className="pb-0.5 font-mono text-[10px] uppercase tracking-[0.04em] text-muted-foreground/70">
+            {t("colRef")} {p.external_id}
+          </span>
         </div>
       </div>
     </article>

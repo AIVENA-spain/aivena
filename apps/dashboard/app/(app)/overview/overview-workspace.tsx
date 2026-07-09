@@ -134,18 +134,17 @@ function StatusPill({ status }: { status: string | null }) {
 
 // ---------- KPI card ----------
 
-// Redesign: KPI icon chips are monochrome (premium SaaS look) — no rainbow tones.
-// The `tone` prop is retained on the call sites but all resolve to the calm
-// neutral chip; only deltas carry colour (green up / red down).
-type KpiTone = "blue" | "amber" | "rose" | "violet" | "muted";
+// Per Christian's approved mockups (2026-07-09): each KPI carries a soft
+// colored icon chip (blue/amber/rose/violet/green) on a white card.
+type KpiTone = "blue" | "amber" | "rose" | "violet" | "green" | "muted";
 
-const NEUTRAL_CHIP = "bg-muted text-muted-foreground";
 const KPI_TONE: Record<KpiTone, string> = {
-  blue: NEUTRAL_CHIP,
-  amber: NEUTRAL_CHIP,
-  rose: NEUTRAL_CHIP,
-  violet: NEUTRAL_CHIP,
-  muted: NEUTRAL_CHIP,
+  blue: "bg-blue-500/12 text-blue-600 dark:text-blue-300",
+  amber: "bg-amber-500/12 text-amber-600 dark:text-amber-300",
+  rose: "bg-rose-500/12 text-rose-600 dark:text-rose-300",
+  violet: "bg-violet-500/12 text-violet-600 dark:text-violet-300",
+  green: "bg-brand-soft text-brand",
+  muted: "bg-muted text-muted-foreground",
 };
 
 function KpiCard({

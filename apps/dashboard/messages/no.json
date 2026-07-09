@@ -64,7 +64,9 @@
       "columnReply": "Anbefalt handling",
       "leadTypeDefault": "Kjøper",
       "aiTag": "AI",
-      "windowClosed": "Vindu lukket"
+      "windowClosed": "Vindu lukket",
+      "columnScore": "Score",
+      "columnActivity": "Siste aktivitet"
     },
     "panel": {
       "selectALead": "Velg en lead for å se detaljer.",
@@ -91,7 +93,8 @@
       "reengage": "Åpne innboks for oppfølging",
       "previousDraft": "Forrige WhatsApp-utkast",
       "leadScore": "Lead-score",
-      "leadTypeDefault": "Kjøper"
+      "leadTypeDefault": "Kjøper",
+      "recommendedAction": "Anbefalt handling"
     },
     "activity": {
       "title": "Nylig aktivitet",

@@ -64,7 +64,9 @@
       "columnReply": "Azione consigliata",
       "leadTypeDefault": "Acquirente",
       "aiTag": "AI",
-      "windowClosed": "Finestra chiusa"
+      "windowClosed": "Finestra chiusa",
+      "columnScore": "Punteggio",
+      "columnActivity": "Ultima attività"
     },
     "panel": {
       "selectALead": "Seleziona un lead per vederne i dettagli.",
@@ -91,7 +93,8 @@
       "reengage": "Apri posta per il ricontatto",
       "previousDraft": "Bozza WhatsApp precedente",
       "leadScore": "Punteggio lead",
-      "leadTypeDefault": "Acquirente"
+      "leadTypeDefault": "Acquirente",
+      "recommendedAction": "Azione consigliata"
     },
     "activity": {
       "title": "Attività recente",

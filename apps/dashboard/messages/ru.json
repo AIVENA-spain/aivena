@@ -64,7 +64,9 @@
       "columnReply": "Рекомендуемое действие",
       "leadTypeDefault": "Покупатель",
       "aiTag": "ИИ",
-      "windowClosed": "Окно закрыто"
+      "windowClosed": "Окно закрыто",
+      "columnScore": "Оценка",
+      "columnActivity": "Последняя активность"
     },
     "panel": {
       "selectALead": "Выберите лид, чтобы увидеть подробности.",
@@ -91,7 +93,8 @@
       "reengage": "Открыть «Входящие» для напоминания",
       "previousDraft": "Предыдущий черновик WhatsApp",
       "leadScore": "Оценка лида",
-      "leadTypeDefault": "Покупатель"
+      "leadTypeDefault": "Покупатель",
+      "recommendedAction": "Рекомендуемое действие"
     },
     "activity": {
       "title": "Недавняя активность",

@@ -64,7 +64,9 @@
       "columnReply": "Ação recomendada",
       "leadTypeDefault": "Comprador",
       "aiTag": "IA",
-      "windowClosed": "Janela fechada"
+      "windowClosed": "Janela fechada",
+      "columnScore": "Pontuação",
+      "columnActivity": "Última atividade"
     },
     "panel": {
       "selectALead": "Selecione um lead para ver os detalhes.",
@@ -91,7 +93,8 @@
       "reengage": "Abrir caixa para acompanhamento",
       "previousDraft": "Rascunho anterior do WhatsApp",
       "leadScore": "Pontuação do lead",
-      "leadTypeDefault": "Comprador"
+      "leadTypeDefault": "Comprador",
+      "recommendedAction": "Ação recomendada"
     },
     "activity": {
       "title": "Atividade recente",

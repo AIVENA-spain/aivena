@@ -64,7 +64,9 @@
       "columnReply": "Zalecane działanie",
       "leadTypeDefault": "Kupujący",
       "aiTag": "AI",
-      "windowClosed": "Okno zamknięte"
+      "windowClosed": "Okno zamknięte",
+      "columnScore": "Wynik",
+      "columnActivity": "Ostatnia aktywność"
     },
     "panel": {
       "selectALead": "Wybierz kontakt, aby zobaczyć szczegóły.",
@@ -91,7 +93,8 @@
       "reengage": "Otwórz skrzynkę, aby wysłać kontakt",
       "previousDraft": "Poprzednia wersja robocza WhatsApp",
       "leadScore": "Wynik leada",
-      "leadTypeDefault": "Kupujący"
+      "leadTypeDefault": "Kupujący",
+      "recommendedAction": "Zalecane działanie"
     },
     "activity": {
       "title": "Ostatnia aktywność",

@@ -64,7 +64,9 @@
       "columnReply": "Empfohlene Aktion",
       "leadTypeDefault": "Interessent",
       "aiTag": "KI",
-      "windowClosed": "Fenster geschlossen"
+      "windowClosed": "Fenster geschlossen",
+      "columnScore": "Score",
+      "columnActivity": "Letzte Aktivität"
     },
     "panel": {
       "selectALead": "Wählen Sie einen Lead aus, um Details zu sehen.",
@@ -91,7 +93,8 @@
       "reengage": "Posteingang öffnen für Check-in",
       "previousDraft": "Vorheriger WhatsApp-Entwurf",
       "leadScore": "Lead-Score",
-      "leadTypeDefault": "Interessent"
+      "leadTypeDefault": "Interessent",
+      "recommendedAction": "Empfohlene Aktion"
     },
     "activity": {
       "title": "Letzte Aktivitäten",

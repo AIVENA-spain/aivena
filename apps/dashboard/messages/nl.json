@@ -64,7 +64,9 @@
       "columnReply": "Aanbevolen actie",
       "leadTypeDefault": "Koper",
       "aiTag": "AI",
-      "windowClosed": "Venster gesloten"
+      "windowClosed": "Venster gesloten",
+      "columnScore": "Score",
+      "columnActivity": "Laatste activiteit"
     },
     "panel": {
       "selectALead": "Selecteer een lead om de details te zien.",
@@ -91,7 +93,8 @@
       "reengage": "Open inbox voor check-in",
       "previousDraft": "Vorig WhatsApp-concept",
       "leadScore": "Leadscore",
-      "leadTypeDefault": "Koper"
+      "leadTypeDefault": "Koper",
+      "recommendedAction": "Aanbevolen actie"
     },
     "activity": {
       "title": "Recente activiteit",

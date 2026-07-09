@@ -64,7 +64,9 @@
       "columnReply": "Recommended action",
       "leadTypeDefault": "Buyer",
       "aiTag": "AI",
-      "windowClosed": "Window closed"
+      "windowClosed": "Window closed",
+      "columnScore": "Score",
+      "columnActivity": "Last activity"
     },
     "panel": {
       "selectALead": "Select a lead to see details.",
@@ -91,7 +93,8 @@
       "reengage": "Open Inbox to send check-in",
       "previousDraft": "Previous WhatsApp draft",
       "leadScore": "Lead score",
-      "leadTypeDefault": "Buyer"
+      "leadTypeDefault": "Buyer",
+      "recommendedAction": "Recommended action"
     },
     "activity": {
       "title": "Recent Activity",

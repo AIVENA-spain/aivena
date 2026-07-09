@@ -64,7 +64,9 @@
       "columnReply": "Rekommenderad åtgärd",
       "leadTypeDefault": "Köpare",
       "aiTag": "AI",
-      "windowClosed": "Fönstret stängt"
+      "windowClosed": "Fönstret stängt",
+      "columnScore": "Poäng",
+      "columnActivity": "Senaste aktivitet"
     },
     "panel": {
       "selectALead": "Välj ett lead för att se detaljer.",
@@ -91,7 +93,8 @@
       "reengage": "Öppna inkorgen för uppföljning",
       "previousDraft": "Tidigare WhatsApp-utkast",
       "leadScore": "Lead-poäng",
-      "leadTypeDefault": "Köpare"
+      "leadTypeDefault": "Köpare",
+      "recommendedAction": "Rekommenderad åtgärd"
     },
     "activity": {
       "title": "Senaste aktivitet",

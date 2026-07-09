@@ -64,7 +64,9 @@
       "columnReply": "Suositeltu toimenpide",
       "leadTypeDefault": "Ostaja",
       "aiTag": "Tekoäly",
-      "windowClosed": "Ikkuna suljettu"
+      "windowClosed": "Ikkuna suljettu",
+      "columnScore": "Pisteet",
+      "columnActivity": "Viimeisin tapahtuma"
     },
     "panel": {
       "selectALead": "Valitse liidi nähdäksesi tiedot.",
@@ -91,7 +93,8 @@
       "reengage": "Avaa saapuneet seurantaa varten",
       "previousDraft": "Aiempi WhatsApp-luonnos",
       "leadScore": "Liidin pisteet",
-      "leadTypeDefault": "Ostaja"
+      "leadTypeDefault": "Ostaja",
+      "recommendedAction": "Suositeltu toimenpide"
     },
     "activity": {
       "title": "Viimeisin toiminta",

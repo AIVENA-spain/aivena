@@ -152,14 +152,6 @@ function deriveSlots(p: any, agency: any, templateId: string): Record<string, { 
     cta_mail: T(agency.email || ""), cta_phone: T(agency.phone),
     cta_web: T("www." + agency.web.replace(/^www\./, "")),
   };
-  if (templateId === "29") return {
-    title: T(`${typeCap} in ${city}`.toUpperCase()),
-    stat_baths: T(p.baths != null ? String(p.baths) : ""),
-    stat_beds: T(p.beds != null ? String(p.beds) : ""),
-    stat_garage: T(hasFeat("garage") || hasFeat("parking") ? "1" : ""),
-    stat_area: T(p.size ? `${p.size} sqm` : ""),
-    address: T(loc),
-  };
   if (templateId === "10") {
     // description = real facts (beds + type) in the template's sentence frame; beds missing -> degrade honestly.
     const sentence = p.beds != null ? `A modern ${p.beds}-bedroom ${p.type} with designer furniture` : `A modern ${p.type} with designer furniture`;

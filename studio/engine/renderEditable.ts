@@ -95,6 +95,9 @@ export const EditableSlot = z.object({
   // a virtual horizontal frame whose width = the strip's vertical run, then the emitted text is wrapped in
   // translate+rotate. Strip-plate slots only (no knockout/pill support in rotated frames).
   rotate: z.union([z.literal(90), z.literal(-90)]).optional(),
+  // DESIGNED overlap (e.g. #2's script 'open' slashing through HOUSE): exempts this slot from the QA
+  // slot-bbox collision gate. Use ONLY for overlaps that exist in the original design.
+  overlap_ok: z.boolean().optional(),
   // synthetic oblique (degrees, e.g. -11): skewX applied with the text transform — ONLY for faces with no real
   // italic file (e.g. Glacial Indifference); prefer italic:true with a real italic face when one exists.
   skew_x: z.number().optional(),

@@ -37,7 +37,6 @@ function lumaStdExcl(img: RGBA, b: number[], exclude: number[][]): { std: number
 export async function runVisualQA(m: EditableManifest, r: { png: Buffer; layout: SlotLayout[] }): Promise<{ ok: boolean; checks: QACheck[] }> {
   const checks: QACheck[] = [];
   const add = (name: string, ok: boolean, detail = "", slot?: string) => checks.push({ slot, name, ok, detail });
-  const byId: Record<string, any> = Object.fromEntries(m.text_slots.map((s) => [s.id, s]));
 
   for (const L of r.layout) {
     // 1. width clearance — text fits inside bbox minus padding, so it never touches dividers / panel edges
@@ -46,11 +45,13 @@ export async function runVisualQA(m: EditableManifest, r: { png: Buffer; layout:
     add("text block within vertical safe zone", L.blockTop >= L.bbox[1] - 1 && L.blockBottom <= L.bbox[3] + 2, `[${L.blockTop},${L.blockBottom}]⊂[${L.bbox[1]},${L.bbox[3]}]`, L.id);
     // 3. legibility floor after auto-fit
     add("size ≥ 12px (legible after auto-fit)", L.size >= 12, `${L.size}px`, L.id);
-    // 4. meaningful title copy (not a vague one-word type like "chalet")
-    if (/title/.test(L.id)) {
-      const t = (byId[L.id]?.text || "").replace(/\n/g, " ").trim();
-      add("title copy meaningful (≥2 words or ≥10 chars)", t.split(/\s+/).length >= 2 || t.length >= 10, `"${t}"`, L.id);
-    }
+  }
+  // 4. meaningful title copy (not a vague one-word type like "chalet") — evaluated on the COMBINED text of all
+  //    title slots, so per-line title architectures (#6: title_line1 + title_line2) judge the full title.
+  const titleSlots = m.text_slots.filter((s) => /title/.test(s.id) && s.text.trim());
+  if (titleSlots.length) {
+    const t = titleSlots.map((s) => s.text.replace(/\n/g, " ").trim()).join(" ");
+    add("title copy meaningful (≥2 words or ≥10 chars)", t.split(/\s+/).length >= 2 || t.length >= 10, `"${t}"`, titleSlots.map((s) => s.id).join("+"));
   }
   // 5. no stray baked artifacts (incl. CTA-bar marks + neutralized icon columns) — each declared knockout
   //    region must render as a near-uniform patch
@@ -77,6 +78,7 @@ export async function runVisualQA(m: EditableManifest, r: { png: Buffer; layout:
   const S = m.text_slots;
   const collisions: string[] = [];
   for (let i = 0; i < S.length; i++) for (let j = i + 1; j < S.length; j++) {
+    if ((S[i] as any).overlap_ok || (S[j] as any).overlap_ok) continue; // designed overlap (original does it)
     const a = S[i].bbox, b = S[j].bbox;
     const xov = Math.min(a[2], b[2]) - Math.max(a[0], b[0]), yov = Math.min(a[3], b[3]) - Math.max(a[1], b[1]);
     if (xov > 2 && yov > 2) collisions.push(`${S[i].id}×${S[j].id}(${xov.toFixed(0)}×${yov.toFixed(0)})`);

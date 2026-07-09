@@ -121,6 +121,22 @@ function deriveSlots(p: any, agency: any, templateId: string): Record<string, { 
   };
   // batch-3 (Christian 2026-07-07): #24-#29 — all text editable; facts real, missing facts hide their slot+art.
   const hasFeat = (kw: string) => (p.features || []).some((f: string) => f.toLowerCase().includes(kw));
+  const handleLower = "@" + agency.web.replace(/^www\./, "").replace(/\.[a-z.]+$/, "").toLowerCase();
+  // batch-4 (Christian 2026-07-08): #2/#8/#21/#22 from the canonical Drive sources.
+  if (templateId === "2") return {
+    cta_phone: T(agency.phone), cta_email: T(agency.email || ""),
+  };
+  if (templateId === "8") return {}; // single editable label stays template copy
+  if (templateId === "21") return {
+    agent_name: T(String(agency.agent || agency.name).toUpperCase()),
+    handle: T(handleLower), address: T(loc), cta_phone: T(agency.phone),
+  };
+  if (templateId === "22") return {
+    stat_size: T(p.size ? `${p.size} M2` : ""),
+    stat_beds: T(p.beds != null ? plural(p.beds, "Bedroom").toUpperCase() : ""),
+    stat_baths: T(p.baths != null ? plural(p.baths, "Bathroom").toUpperCase() : ""),
+    handle: T(handleLower), address: T(loc), cta_phone: T(agency.phone),
+  };
   if (templateId === "24") return {
     stat_line: T([
       p.beds != null ? plural(p.beds, "bedroom").toLowerCase() : "",

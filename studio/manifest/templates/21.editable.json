@@ -1,0 +1,168 @@
+{
+  "template_id": "21",
+  "title_font_status": "JUST SOLD = Anton 400 (0.99 — decisive; OFL, seeded). Agent name = Special Elite 400 (typewriter slab; OFL, seeded). Small text = Glacial Indifference 400 (vault; verifier-corrected from 500 in the repair round).",
+  "_note": "#21 (JUST SOLD poster). STRIP-PLATE from canonical Drive source. PAPER TEXTURE background re-embedded as BAKED art in the tokenized source (it is design artwork, never a listing photo). Hero photo unmasked via intake/21/postprocess.json (the source masked it through a luminance copy of the demo photo — self-masking would turn dark photo regions translucent on arbitrary listings; the hard clip edge at the divider is the general-safe look). agent_name derives from the agency (agent or agency name); agent_title stays editable copy. ELIGIBILITY: just_sold — sold status or explicit demo only.",
+  "canvas": {
+    "width": 1080,
+    "height": 1350
+  },
+  "source_svg": "assets/21/source.stripped.svg",
+  "photo_fit": "attention",
+  "photo_slots": [
+    {
+      "token": "@@PHOTO2@@"
+    }
+  ],
+  "no_knockouts": true,
+  "eligibility": {
+    "post_type": "just_sold",
+    "requires_status": [
+      "sold"
+    ],
+    "note": "Only render Just Sold for a SOLD property (or an explicit demo/test render)."
+  },
+  "colour_tokens": {
+    "background": {
+      "default": "#efe9dd",
+      "locked": false
+    },
+    "overlay": {
+      "default": "#000000",
+      "locked": true
+    },
+    "title": {
+      "default": "#1a1a1a",
+      "locked": false
+    },
+    "subtitle/body": {
+      "default": "#1a1a1a",
+      "locked": false
+    },
+    "accent": {
+      "default": "#c8a24b",
+      "locked": false
+    },
+    "badge.fill": {
+      "default": "#c8a24b",
+      "locked": false
+    },
+    "badge.text": {
+      "default": "#1a1a1a",
+      "locked": false
+    },
+    "divider": {
+      "default": "#1a1a1a",
+      "locked": true
+    },
+    "icon": {
+      "default": "#1a1a1a",
+      "locked": true
+    },
+    "stat.label": {
+      "default": "#1a1a1a",
+      "locked": false
+    },
+    "stat.value": {
+      "default": "#1a1a1a",
+      "locked": false
+    },
+    "cta": {
+      "default": "#1a1a1a",
+      "locked": false
+    }
+  },
+  "text_slots": [
+    {
+      "id": "title",
+      "role": "title",
+      "source": "template_copy",
+      "bbox": [
+        51,
+        100,
+        1025,
+        362
+      ],
+      "font": "Anton",
+      "size": 322,
+      "align": "center",
+      "text": "JUST SOLD",
+      "valign": "top"
+    },
+    {
+      "id": "agent_name",
+      "role": "stat.label",
+      "source": "property_fact",
+      "bbox": [
+        240,
+        438,
+        840,
+        492
+      ],
+      "font": "Special Elite",
+      "size": 60,
+      "align": "center",
+      "text": "OLIVIA WILSON",
+      "tracking": 13
+    },
+    {
+      "id": "agent_title",
+      "role": "subtitle/body",
+      "source": "template_copy",
+      "bbox": [
+        449,
+        508,
+        632,
+        542
+      ],
+      "font": "Glacial Indifference",
+      "size": 24,
+      "align": "center",
+      "text": "Real Estate Agent"
+    },
+    {
+      "id": "handle",
+      "role": "subtitle/body",
+      "source": "template_copy",
+      "bbox": [
+        94,
+        618,
+        300,
+        654
+      ],
+      "font": "Glacial Indifference",
+      "size": 28,
+      "align": "left",
+      "text": "@reallygreatsite"
+    },
+    {
+      "id": "address",
+      "role": "subtitle/body",
+      "source": "property_fact",
+      "bbox": [
+        340,
+        618,
+        740,
+        654
+      ],
+      "font": "Glacial Indifference",
+      "size": 28,
+      "align": "center",
+      "text": "123 Anywhere St. Any City"
+    },
+    {
+      "id": "cta_phone",
+      "role": "subtitle/body",
+      "source": "template_copy",
+      "bbox": [
+        770,
+        618,
+        986,
+        654
+      ],
+      "font": "Glacial Indifference",
+      "size": 28,
+      "align": "right",
+      "text": "+123-456-7890"
+    }
+  ]
+}

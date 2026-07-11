@@ -367,10 +367,10 @@
       "healthComplete": "Valmis",
       "healthGood": "Hyvä edistyminen",
       "healthInProgress": "Kesken",
-      "viewTechnical": "Näytä tekniset tiedot"
+      "viewTechnical": "Näytä asennuslista"
     },
     "title": "Asetukset",
-    "subtitle": "How your agency works, sends, and shows up to your clients",
+    "subtitle": "Hallitse toimiston profiilia, viestintää, luetteloa, tiimiä ja pilottiasetuksia.",
     "personal": "Henkilökohtaiset",
     "personalDescription": "Tilisi asetukset — nämä vaikuttavat vain sinuun.",
     "dashboardLanguageLabel": "Hallintapaneelin kieli",
@@ -771,7 +771,17 @@
       "dashLangLabel": "Hallintapaneelin kieli",
       "appearanceLabel": "Ulkoasu",
       "phoneLabel": "Puhelin",
-      "websiteLabel": "Verkkosivusto"
+      "websiteLabel": "Verkkosivusto",
+      "actionNeeded": "Vaatii toimia",
+      "activeProperties": "{count} aktiivista kohdetta",
+      "needsCatalogueReview": "Luettelo vaatii tarkistusta",
+      "catalogueGood": "Luettelo on kunnossa",
+      "reviewCatalogue": "Tarkista luettelo",
+      "editProfile": "Muokkaa profiilia",
+      "editCommunication": "Muokkaa viestintää",
+      "manageTeam": "Hallinnoi tiimiä",
+      "viewPlan": "Näytä tilaus",
+      "colourLabel": "Brändiväri"
     }
   },
   "performance": {

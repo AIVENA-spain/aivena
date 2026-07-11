@@ -367,10 +367,10 @@
       "healthComplete": "Completato",
       "healthGood": "Ottimi progressi",
       "healthInProgress": "In corso",
-      "viewTechnical": "Vedi dettagli tecnici"
+      "viewTechnical": "Vedi checklist di configurazione"
     },
     "title": "Impostazioni",
-    "subtitle": "How your agency works, sends, and shows up to your clients",
+    "subtitle": "Gestisci il profilo dell'agenzia, la comunicazione, il catalogo, il team e il pilota.",
     "personal": "Personali",
     "personalDescription": "Preferenze del tuo account — riguardano solo te.",
     "dashboardLanguageLabel": "Lingua della dashboard",
@@ -771,7 +771,17 @@
       "dashLangLabel": "Lingua della dashboard",
       "appearanceLabel": "Aspetto",
       "phoneLabel": "Telefono",
-      "websiteLabel": "Sito web"
+      "websiteLabel": "Sito web",
+      "actionNeeded": "Azione richiesta",
+      "activeProperties": "{count} immobili attivi",
+      "needsCatalogueReview": "Il catalogo richiede una revisione",
+      "catalogueGood": "Il catalogo è in buono stato",
+      "reviewCatalogue": "Rivedi catalogo",
+      "editProfile": "Modifica profilo",
+      "editCommunication": "Modifica comunicazione",
+      "manageTeam": "Gestisci team",
+      "viewPlan": "Vedi piano",
+      "colourLabel": "Colore del brand"
     }
   },
   "performance": {

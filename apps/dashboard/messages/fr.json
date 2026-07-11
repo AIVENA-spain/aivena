@@ -367,10 +367,10 @@
       "healthComplete": "Terminé",
       "healthGood": "Bonne progression",
       "healthInProgress": "En cours",
-      "viewTechnical": "Voir les détails techniques"
+      "viewTechnical": "Voir la liste de configuration"
     },
     "title": "Paramètres",
-    "subtitle": "How your agency works, sends, and shows up to your clients",
+    "subtitle": "Gérez le profil de votre agence, la communication, le catalogue, l'équipe et le pilote.",
     "personal": "Personnel",
     "personalDescription": "Préférences pour votre compte — elles ne concernent que vous.",
     "dashboardLanguageLabel": "Langue du tableau de bord",
@@ -771,7 +771,17 @@
       "dashLangLabel": "Langue du tableau de bord",
       "appearanceLabel": "Apparence",
       "phoneLabel": "Téléphone",
-      "websiteLabel": "Site web"
+      "websiteLabel": "Site web",
+      "actionNeeded": "Action requise",
+      "activeProperties": "{count} biens actifs",
+      "needsCatalogueReview": "Le catalogue doit être revu",
+      "catalogueGood": "Le catalogue est en bon état",
+      "reviewCatalogue": "Revoir le catalogue",
+      "editProfile": "Modifier le profil",
+      "editCommunication": "Modifier la communication",
+      "manageTeam": "Gérer l'équipe",
+      "viewPlan": "Voir l'offre",
+      "colourLabel": "Couleur de marque"
     }
   },
   "performance": {

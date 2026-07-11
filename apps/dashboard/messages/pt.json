@@ -367,10 +367,10 @@
       "healthComplete": "Concluído",
       "healthGood": "Bom progresso",
       "healthInProgress": "Em curso",
-      "viewTechnical": "Ver detalhes técnicos"
+      "viewTechnical": "Ver lista de configuração"
     },
     "title": "Definições",
-    "subtitle": "How your agency works, sends, and shows up to your clients",
+    "subtitle": "Gira o perfil da agência, a comunicação, o catálogo, a equipa e o piloto.",
     "personal": "Pessoal",
     "personalDescription": "Preferências da sua conta — afetam apenas você.",
     "dashboardLanguageLabel": "Idioma do painel",
@@ -771,7 +771,17 @@
       "dashLangLabel": "Idioma do painel",
       "appearanceLabel": "Aparência",
       "phoneLabel": "Telefone",
-      "websiteLabel": "Website"
+      "websiteLabel": "Website",
+      "actionNeeded": "Ação necessária",
+      "activeProperties": "{count} imóveis ativos",
+      "needsCatalogueReview": "O catálogo precisa de revisão",
+      "catalogueGood": "O catálogo está em bom estado",
+      "reviewCatalogue": "Rever catálogo",
+      "editProfile": "Editar perfil",
+      "editCommunication": "Editar comunicação",
+      "manageTeam": "Gerir equipa",
+      "viewPlan": "Ver plano",
+      "colourLabel": "Cor da marca"
     }
   },
   "performance": {

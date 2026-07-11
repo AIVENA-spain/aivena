@@ -20,6 +20,7 @@ import {
 import type {
   SettingsResponse,
   ReadinessResponse,
+  PropertiesResponse,
   WorkingHours,
 } from "@/lib/api/types";
 
@@ -97,6 +98,21 @@ export default async function SettingsPage() {
   const catalogDone = catalogItems.filter((it) => isDone(it.status)).length;
   const catalogAllGood = catalogItems.length > 0 && catalogDone === catalogItems.length;
 
+  // Owner-useful catalogue fact: the real active-listing count (same endpoint
+  // the Properties page reads; RLS-scoped). Soft-fail to null — never block
+  // Settings on it.
+  let activePropertyCount: number | null = null;
+  try {
+    const props = await apiFetch<PropertiesResponse>(
+      `/api/v1/agencies/${encodeURIComponent(settings.profile.agency_id)}/properties`,
+    );
+    activePropertyCount = props.properties.filter(
+      (p) => (p.status ?? "").toLowerCase() === "active",
+    ).length;
+  } catch (err) {
+    logFailure("properties-count", err);
+  }
+
   const branding = settings.branding;
   const hoursCompact = formatHoursCompact(settings.config.working_hours, locale);
   const websiteCompact = branding.website_url
@@ -132,18 +148,21 @@ export default async function SettingsPage() {
             <span className="min-w-0 truncate text-[13.5px] font-semibold text-foreground">
               {branding.brand_name || settings.profile.name}
             </span>
-            <span
-              aria-hidden
-              className="ml-auto h-4 w-4 shrink-0 rounded-full border border-border"
-              style={{ backgroundColor: branding.primary_color }}
-              title={branding.primary_color}
-            />
+            <span className="ml-auto flex shrink-0 items-center gap-1.5 text-[11px] text-muted-foreground">
+              {tc("colourLabel")}
+              <span
+                aria-hidden
+                className="h-4 w-4 rounded-full border border-border"
+                style={{ backgroundColor: branding.primary_color }}
+                title={branding.primary_color}
+              />
+            </span>
           </div>
           <FactRow label={tc("phoneLabel")} value={branding.phone ?? "—"} />
           <FactRow label={tc("websiteLabel")} value={websiteCompact ?? "—"} />
         </div>
       ),
-      expandLabel: tc("edit"),
+      expandLabel: tc("editProfile"),
       closeLabel: tc("close"),
       children: <BrandingSection branding={branding} />,
     },
@@ -154,14 +173,16 @@ export default async function SettingsPage() {
       id: "communication",
       icon: <Mail className="h-4 w-4" />,
       title: ta("groupCommunication"),
-      status:
-        aiSafe && whatsappLive ? (
-          <StatusDot />
-        ) : (
-          <StatusTag tone="warn">
-            {whatsappLive ? ta("statusReview") : ta("statusRepliesOff")}
-          </StatusTag>
-        ),
+      // Positive framing: the badge states the safety MODE (approval-first);
+      // channel states live in the rows below (no "replies off" repetition).
+      // Only a real auto-send config flips it to the amber "Action needed".
+      status: aiSafe ? (
+        <span className="rounded-full bg-brand-soft px-2.5 py-1 text-[11px] font-semibold text-brand">
+          {tc("approvalFirst")}
+        </span>
+      ) : (
+        <StatusTag tone="warn">{tc("actionNeeded")}</StatusTag>
+      ),
       facts: (
         <div className="flex flex-col">
           <FactRow
@@ -186,7 +207,7 @@ export default async function SettingsPage() {
           <FactRow label={tc("hoursLabel")} value={hoursCompact ?? "—"} />
         </div>
       ),
-      expandLabel: tc("edit"),
+      expandLabel: tc("editCommunication"),
       closeLabel: tc("close"),
       children: (
         <div className="flex flex-col gap-6">
@@ -224,24 +245,30 @@ export default async function SettingsPage() {
         <StatusTag tone="warn">{ta("statusInProgress")}</StatusTag>
       ),
       facts: (
-        <div className="flex flex-col">
+        <div className="flex flex-col gap-0.5">
+          {activePropertyCount !== null ? (
+            <span className="font-medium text-foreground">
+              {tc("activeProperties", { count: activePropertyCount })}
+            </span>
+          ) : null}
           {catalogItems.length > 0 ? (
-            <FactRow
-              label={ta("catalogueSubtitle")}
-              value={tc("checksComplete", {
-                done: catalogDone,
-                total: catalogItems.length,
-              })}
-              tone={catalogAllGood ? "good" : "warn"}
-            />
-          ) : (
-            <p className="py-[3px] text-muted-foreground">
+            <span
+              className={
+                catalogAllGood
+                  ? "text-brand"
+                  : "text-amber-700 dark:text-amber-300"
+              }
+            >
+              {catalogAllGood ? tc("catalogueGood") : tc("needsCatalogueReview")}
+            </span>
+          ) : activePropertyCount === null ? (
+            <span className="text-muted-foreground">
               {ta("catalogueUnavailable")}
-            </p>
-          )}
+            </span>
+          ) : null}
         </div>
       ),
-      expandLabel: tc("viewDetails"),
+      expandLabel: tc("reviewCatalogue"),
       closeLabel: tc("close"),
       extraAction: (
         <Link
@@ -274,7 +301,7 @@ export default async function SettingsPage() {
           <span className="text-muted-foreground">{tc("pilotInvites")}</span>
         </div>
       ),
-      expandLabel: tc("manage"),
+      expandLabel: tc("manageTeam"),
       closeLabel: tc("close"),
       children: <TeamSection team={settings.team} currentUserId={currentUserId} />,
     },
@@ -289,28 +316,33 @@ export default async function SettingsPage() {
           {settings.plan_tier}
         </span>
       ),
+      wide: true,
+      // Horizontal strip (full-width bottom row) — five compact label/value
+      // stacks instead of tall rows, so the grid closes cleanly.
       facts: (
-        <div className="flex flex-col">
-          <FactRow
-            label={tc("planLabel")}
-            value={humanizeToken(settings.plan_tier) ?? "—"}
-          />
-          <FactRow
-            label={tc("regionLabel")}
-            value={humanizeToken(settings.profile.region) ?? "—"}
-          />
-          <FactRow label={tc("billingLabel")} value={tc("billingManaged")} />
-          <FactRow
-            label={tc("dashLangLabel")}
-            value={formatLanguage(settings.dashboard_display_language) ?? "English"}
-          />
-          <FactRow
-            label={tc("appearanceLabel")}
-            value={humanizeToken(preferences.theme) ?? "System"}
-          />
+        <div className="flex flex-wrap items-start gap-x-8 gap-y-2">
+          {[
+            [tc("planLabel"), humanizeToken(settings.plan_tier) ?? "—"],
+            [tc("regionLabel"), humanizeToken(settings.profile.region) ?? "—"],
+            [tc("billingLabel"), tc("billingManaged")],
+            [
+              tc("dashLangLabel"),
+              formatLanguage(settings.dashboard_display_language) ?? "English",
+            ],
+            [tc("appearanceLabel"), humanizeToken(preferences.theme) ?? "System"],
+          ].map(([label, value]) => (
+            <div key={label as string} className="flex min-w-0 flex-col">
+              <span className="text-[10.5px] font-medium uppercase tracking-[0.05em] text-muted-foreground">
+                {label}
+              </span>
+              <span className="truncate text-[12.5px] font-medium text-foreground">
+                {value}
+              </span>
+            </div>
+          ))}
         </div>
       ),
-      expandLabel: tc("edit"),
+      expandLabel: tc("viewPlan"),
       closeLabel: tc("close"),
       children: (
         <PlanPrefsSection

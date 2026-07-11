@@ -367,10 +367,10 @@
       "healthComplete": "Ukończono",
       "healthGood": "Dobry postęp",
       "healthInProgress": "W toku",
-      "viewTechnical": "Zobacz szczegóły techniczne"
+      "viewTechnical": "Zobacz listę konfiguracji"
     },
     "title": "Ustawienia",
-    "subtitle": "How your agency works, sends, and shows up to your clients",
+    "subtitle": "Zarządzaj profilem agencji, komunikacją, katalogiem, zespołem i pilotażem.",
     "personal": "Osobiste",
     "personalDescription": "Preferencje Twojego konta — dotyczą tylko Ciebie.",
     "dashboardLanguageLabel": "Język panelu",
@@ -771,7 +771,17 @@
       "dashLangLabel": "Język panelu",
       "appearanceLabel": "Wygląd",
       "phoneLabel": "Telefon",
-      "websiteLabel": "Strona WWW"
+      "websiteLabel": "Strona WWW",
+      "actionNeeded": "Wymagane działanie",
+      "activeProperties": "{count} aktywnych nieruchomości",
+      "needsCatalogueReview": "Katalog wymaga przeglądu",
+      "catalogueGood": "Katalog wygląda dobrze",
+      "reviewCatalogue": "Przejrzyj katalog",
+      "editProfile": "Edytuj profil",
+      "editCommunication": "Edytuj komunikację",
+      "manageTeam": "Zarządzaj zespołem",
+      "viewPlan": "Zobacz plan",
+      "colourLabel": "Kolor marki"
     }
   },
   "performance": {

@@ -367,10 +367,10 @@
       "healthComplete": "Завершено",
       "healthGood": "Хороший прогресс",
       "healthInProgress": "В процессе",
-      "viewTechnical": "Показать технические детали"
+      "viewTechnical": "Открыть чек-лист настройки"
     },
     "title": "Настройки",
-    "subtitle": "How your agency works, sends, and shows up to your clients",
+    "subtitle": "Управляйте профилем агентства, коммуникацией, каталогом, командой и пилотом.",
     "personal": "Личные",
     "personalDescription": "Настройки вашей учётной записи — они касаются только вас.",
     "dashboardLanguageLabel": "Язык интерфейса",
@@ -771,7 +771,17 @@
       "dashLangLabel": "Язык панели",
       "appearanceLabel": "Оформление",
       "phoneLabel": "Телефон",
-      "websiteLabel": "Сайт"
+      "websiteLabel": "Сайт",
+      "actionNeeded": "Требуется действие",
+      "activeProperties": "{count} активных объектов",
+      "needsCatalogueReview": "Каталог требует проверки",
+      "catalogueGood": "Каталог в порядке",
+      "reviewCatalogue": "Проверить каталог",
+      "editProfile": "Редактировать профиль",
+      "editCommunication": "Настроить коммуникацию",
+      "manageTeam": "Управлять командой",
+      "viewPlan": "Посмотреть тариф",
+      "colourLabel": "Цвет бренда"
     }
   },
   "performance": {

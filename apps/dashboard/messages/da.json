@@ -367,10 +367,10 @@
       "healthComplete": "Fuldført",
       "healthGood": "God fremgang",
       "healthInProgress": "I gang",
-      "viewTechnical": "Se tekniske detaljer"
+      "viewTechnical": "Se opsætningstjekliste"
     },
     "title": "Indstillinger",
-    "subtitle": "How your agency works, sends, and shows up to your clients",
+    "subtitle": "Administrer bureauprofil, kommunikation, katalog, team og pilotindstillinger.",
     "personal": "Personligt",
     "personalDescription": "Indstillinger for din konto — de påvirker kun dig.",
     "dashboardLanguageLabel": "Dashboardsprog",
@@ -771,7 +771,17 @@
       "dashLangLabel": "Dashboardsprog",
       "appearanceLabel": "Udseende",
       "phoneLabel": "Telefon",
-      "websiteLabel": "Websted"
+      "websiteLabel": "Websted",
+      "actionNeeded": "Handling påkrævet",
+      "activeProperties": "{count} aktive ejendomme",
+      "needsCatalogueReview": "Kataloget skal gennemgås",
+      "catalogueGood": "Kataloget ser godt ud",
+      "reviewCatalogue": "Gennemgå katalog",
+      "editProfile": "Rediger profil",
+      "editCommunication": "Rediger kommunikation",
+      "manageTeam": "Administrer team",
+      "viewPlan": "Se plan",
+      "colourLabel": "Brandfarve"
     }
   },
   "performance": {

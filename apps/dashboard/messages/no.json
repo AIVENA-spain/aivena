@@ -367,10 +367,10 @@
       "healthComplete": "Fullført",
       "healthGood": "God fremgang",
       "healthInProgress": "Pågår",
-      "viewTechnical": "Vis tekniske detaljer"
+      "viewTechnical": "Se oppsettssjekkliste"
     },
     "title": "Innstillinger",
-    "subtitle": "How your agency works, sends, and shows up to your clients",
+    "subtitle": "Administrer byråprofil, kommunikasjon, katalog, team og pilotinnstillinger.",
     "personal": "Personlig",
     "personalDescription": "Innstillinger for kontoen din – disse gjelder kun deg.",
     "dashboardLanguageLabel": "Språk i dashbordet",
@@ -771,7 +771,17 @@
       "dashLangLabel": "Dashbordspråk",
       "appearanceLabel": "Utseende",
       "phoneLabel": "Telefon",
-      "websiteLabel": "Nettsted"
+      "websiteLabel": "Nettsted",
+      "actionNeeded": "Handling kreves",
+      "activeProperties": "{count} aktive eiendommer",
+      "needsCatalogueReview": "Katalogen må gjennomgås",
+      "catalogueGood": "Katalogen ser bra ut",
+      "reviewCatalogue": "Gjennomgå katalog",
+      "editProfile": "Rediger profil",
+      "editCommunication": "Rediger kommunikasjon",
+      "manageTeam": "Administrer team",
+      "viewPlan": "Se plan",
+      "colourLabel": "Merkevarefarge"
     }
   },
   "performance": {

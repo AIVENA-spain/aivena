@@ -367,10 +367,10 @@
       "healthComplete": "Complete",
       "healthGood": "Great progress",
       "healthInProgress": "In progress",
-      "viewTechnical": "View technical details"
+      "viewTechnical": "View setup checklist"
     },
     "title": "Settings",
-    "subtitle": "How your agency works, sends, and shows up to your clients",
+    "subtitle": "Manage your agency profile, communication, catalogue, team and pilot settings.",
     "personal": "Personal",
     "personalDescription": "Preferences for your account — these affect only you.",
     "dashboardLanguageLabel": "Dashboard language",
@@ -771,7 +771,17 @@
       "dashLangLabel": "Dashboard language",
       "appearanceLabel": "Appearance",
       "phoneLabel": "Phone",
-      "websiteLabel": "Website"
+      "websiteLabel": "Website",
+      "actionNeeded": "Action needed",
+      "activeProperties": "{count} active properties",
+      "needsCatalogueReview": "Needs catalogue review",
+      "catalogueGood": "Catalogue looks good",
+      "reviewCatalogue": "Review catalogue",
+      "editProfile": "Edit profile",
+      "editCommunication": "Edit communication",
+      "manageTeam": "Manage team",
+      "viewPlan": "View plan",
+      "colourLabel": "Brand colour"
     }
   },
   "performance": {

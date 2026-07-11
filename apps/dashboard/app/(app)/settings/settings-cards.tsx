@@ -29,6 +29,8 @@ export type SettingsCardDef = {
   extraAction?: ReactNode;
   /** Full section content (the existing form), mounted when expanded. */
   children: ReactNode;
+  /** Full-width card (used for the bottom Plan & pilot strip). */
+  wide?: boolean;
 };
 
 export function SettingsCards({ cards }: { cards: SettingsCardDef[] }) {
@@ -43,7 +45,8 @@ export function SettingsCards({ cards }: { cards: SettingsCardDef[] }) {
             key={c.id}
             className={cn(
               "flex flex-col rounded-xl border border-border bg-card shadow-soft transition-shadow",
-              open && "sm:col-span-2 shadow-elevated",
+              (open || c.wide) && "sm:col-span-2",
+              open && "shadow-elevated",
             )}
           >
             {/* Header */}

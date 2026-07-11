@@ -367,10 +367,10 @@
       "healthComplete": "Klart",
       "healthGood": "Bra framsteg",
       "healthInProgress": "Pågår",
-      "viewTechnical": "Visa tekniska detaljer"
+      "viewTechnical": "Visa installationschecklista"
     },
     "title": "Inställningar",
-    "subtitle": "How your agency works, sends, and shows up to your clients",
+    "subtitle": "Hantera byråprofil, kommunikation, katalog, team och pilotinställningar.",
     "personal": "Personligt",
     "personalDescription": "Inställningar för ditt konto — dessa påverkar bara dig.",
     "dashboardLanguageLabel": "Språk för dashboard",
@@ -771,7 +771,17 @@
       "dashLangLabel": "Instrumentpanelens språk",
       "appearanceLabel": "Utseende",
       "phoneLabel": "Telefon",
-      "websiteLabel": "Webbplats"
+      "websiteLabel": "Webbplats",
+      "actionNeeded": "Åtgärd krävs",
+      "activeProperties": "{count} aktiva fastigheter",
+      "needsCatalogueReview": "Katalogen behöver ses över",
+      "catalogueGood": "Katalogen ser bra ut",
+      "reviewCatalogue": "Granska katalog",
+      "editProfile": "Redigera profil",
+      "editCommunication": "Redigera kommunikation",
+      "manageTeam": "Hantera team",
+      "viewPlan": "Visa plan",
+      "colourLabel": "Varumärkesfärg"
     }
   },
   "performance": {

@@ -1,7 +1,7 @@
 {
   "template_id": "2",
-  "title_font_status": "HOUSE = Italiana 400 (vault; re-adjudicated 2026-07-08 after Christian rejected Belgan — the original is a high-contrast Didone display serif, NOT Belgan's decorative caps; Italiana matches the extreme hairline contrast, flat unbracketed serifs, asymmetric U stem and open S exactly). Script 'open' = Parisienne 400 (OFL, seeded; re-adjudicated 2026-07-08 — Whisper was too narrow/slanted; Parisienne matches the wide thin nearly-upright flow, long straight p-descender, and long flat n-exit swash). Small text = Archivo 400 (OFL).",
-  "_note": "#2 (open HOUSE — dark full-bleed). STRIP-PLATE from canonical Drive source. The source's self-multiply photo effect (a masked duplicate of the photo multiplying its own luminance) is neutralized via intake/2/postprocess.json (display:none on the masked overlay — it would GHOST with any photo whose crop differs between the two frames) and replaced by the manifest pixel-scrim, which darkens predictably on ANY photo. Contact bar: baked band + phone/envelope icon circles kept; missing agency email hides the email text AND its envelope icon (companion_art).",
+  "title_font_status": "HEADLINE 'open HOUSE' KEPT BAKED (Christian 2026-07-08): it is fixed OPEN-HOUSE post-type identity, not property content — same principle as #10's locked NEW LISTING. The script is a Canva-exclusive signature font baked to vector outlines (no open font matches it exactly), so the original artwork is preserved verbatim = pixel-perfect match. Only the photo + agency contact are dynamic; subtitle = editable Archivo 400 marketing copy.",
+  "_note": "#2 (open HOUSE — dark full-bleed). STRIP-PLATE from canonical Drive source. The 'open HOUSE' headline stays ORIGINAL BAKED ART (fixed post-type identity, exact Canva match — the script is a Canva-exclusive font that no open face reproduces). Stripped only: subtitle + the 3-part contact row. Self-multiply photo overlay neutralized via intake/2/postprocess.json (ghosts on differing crops) + replaced by the manifest pixel-scrim which darkens the lower half so the white baked headline stays legible on ANY photo. Contact: baked band + phone/envelope icon circles kept; missing agency email hides the email text + its envelope icon (companion_art).",
   "canvas": {
     "width": 1080,
     "height": 1350
@@ -37,7 +37,8 @@
         "offset": 1,
         "opacity": 0.58
       }
-    ]
+    ],
+    "under_art": true
   },
   "colour_tokens": {
     "background": {
@@ -90,40 +91,6 @@
     }
   },
   "text_slots": [
-    {
-      "id": "title",
-      "role": "title",
-      "source": "template_copy",
-      "bbox": [
-        84,
-        873,
-        945,
-        1048
-      ],
-      "font": "Italiana",
-      "size": 250,
-      "align": "center",
-      "text": "HOUSE",
-      "valign": "top",
-      "tracking": 8
-    },
-    {
-      "id": "title_script",
-      "role": "title",
-      "source": "template_copy",
-      "bbox": [
-        180,
-        778,
-        770,
-        1030
-      ],
-      "font": "Parisienne",
-      "size": 165,
-      "align": "center",
-      "text": "open",
-      "valign": "top",
-      "overlap_ok": true
-    },
     {
       "id": "subtitle",
       "role": "subtitle/body",

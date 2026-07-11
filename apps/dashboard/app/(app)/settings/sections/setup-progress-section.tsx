@@ -45,9 +45,9 @@ export async function SetupProgressSection({ readiness }: { readiness: Readiness
 
   return (
     <section className="rounded-xl bg-card text-card-foreground shadow-elevated ring-1 ring-foreground/10">
-      <div className="flex flex-col gap-3.5 px-5 py-4">
+      <div className="flex flex-col gap-2.5 px-4 py-3.5">
         <div className="flex flex-wrap items-center gap-2.5">
-          <span className="text-[15px] font-semibold text-foreground">{t("healthTitle")}</span>
+          <span className="text-[14px] font-semibold text-foreground">{t("healthTitle")}</span>
           <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${healthCls}`}>
             {t(healthKey)}
           </span>

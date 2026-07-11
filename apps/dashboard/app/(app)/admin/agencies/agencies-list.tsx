@@ -3,7 +3,15 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Building2, Plus, Search, TriangleAlert } from "lucide-react";
+import {
+  Building2,
+  CalendarPlus,
+  Mail,
+  PauseCircle,
+  Plus,
+  Search,
+  TriangleAlert,
+} from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -11,6 +19,7 @@ import { Select } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Badge } from "@/components/ui/badge";
+import { MetricCard } from "@/components/ui/metric-card";
 import { buttonVariants } from "@/components/ui/button";
 import type {
   AdminAgencyListItem,
@@ -82,6 +91,26 @@ export function AgenciesList({
     [initialAgencies],
   );
 
+  // Operational overview (approved mockups) — computed from the REAL list
+  // payload only (test agencies excluded, matching the default view). No
+  // readiness/provider claims here: that data isn't in this payload.
+  const kpis = useMemo(() => {
+    const real = initialAgencies.filter((a) => !a.is_test);
+    const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    return {
+      active: real.filter((a) => a.status === "active").length,
+      paused: real.filter((a) => a.status === "paused").length,
+      pendingInvites: real.reduce(
+        (sum, a) => sum + (a.pending_invitation_count ?? 0),
+        0,
+      ),
+      newLast30d: real.filter((a) => {
+        const t = new Date(a.created_at).getTime();
+        return Number.isFinite(t) && t >= cutoff;
+      }).length,
+    };
+  }, [initialAgencies]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return initialAgencies.filter((a) => {
@@ -129,6 +158,14 @@ export function AgenciesList({
 
   return (
     <div className="flex flex-col gap-3">
+      {/* Operational overview — real list data only */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <MetricCard icon={Building2} label="Active agencies" value={kpis.active} />
+        <MetricCard icon={PauseCircle} label="Paused" value={kpis.paused} />
+        <MetricCard icon={Mail} label="Pending invitations" value={kpis.pendingInvites} />
+        <MetricCard icon={CalendarPlus} label="New (30 days)" value={kpis.newLast30d} />
+      </div>
+
       {/* Filters */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <div className="relative flex-1">

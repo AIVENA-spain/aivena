@@ -30,8 +30,8 @@ import {
  */
 
 const TONE_CLS: Record<ChipTone, string> = {
-  good: "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300",
-  info: "bg-sky-50 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300",
+  good: "bg-brand-soft text-brand",
+  info: "bg-slate-500/10 text-slate-600 dark:text-slate-300",
   warn: "bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300",
   muted: "bg-muted text-muted-foreground",
 };

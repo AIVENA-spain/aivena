@@ -7,6 +7,7 @@ import { getAgencyAction, getAgencyReadinessAction } from "../../../admin-action
 import { AgencyTabs } from "../agency-tabs";
 import { GoLiveSummary } from "./go-live-summary";
 import { ReadinessPanel } from "./readiness-panel";
+import { ReadinessRail } from "./readiness-rail";
 import { GoLiveControl } from "./go-live-control";
 
 export const dynamic = "force-dynamic";
@@ -64,13 +65,19 @@ export default async function AgencyGoLivePage({
       <AgencyTabs agencyId={agency.id} />
 
       {readiness.ok ? (
-        <>
-          {/* Answer first (summary), then the actions + the 4 confirmations, then the
-              grouped per-check detail — so the verdict + gates are high on the page. */}
-          <GoLiveSummary readiness={readiness.data} />
-          <GoLiveControl agencyId={agency.id} currentPilot={currentPilot} itemLabels={itemLabels} />
-          <ReadinessPanel readiness={readiness.data} />
-        </>
+        /* Two-column layout (approved mockups): the verdict → control → grouped
+           checks flow stays in the main column; the right rail carries the
+           at-a-glance readiness summary ring. Same data, zero behavior change. */
+        <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
+          <div className="flex min-w-0 flex-col gap-5">
+            <GoLiveSummary readiness={readiness.data} />
+            <GoLiveControl agencyId={agency.id} currentPilot={currentPilot} itemLabels={itemLabels} />
+            <ReadinessPanel readiness={readiness.data} />
+          </div>
+          <div className="lg:sticky lg:top-4">
+            <ReadinessRail readiness={readiness.data} />
+          </div>
+        </div>
       ) : (
         <>
           <Card>

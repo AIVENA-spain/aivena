@@ -26,13 +26,13 @@ const STATE_STYLE: Record<
   { card: string; iconWrap: string; Icon: typeof AlertTriangle }
 > = {
   live: {
-    card: "border-emerald-300 bg-emerald-50/60 dark:border-emerald-500/30 dark:bg-emerald-500/10",
-    iconWrap: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300",
+    card: "border-brand/30 bg-brand-soft/60",
+    iconWrap: "bg-brand-soft text-brand",
     Icon: Rocket,
   },
   ready: {
-    card: "border-sky-300 bg-sky-50/60 dark:border-sky-500/30 dark:bg-sky-500/10",
-    iconWrap: "bg-sky-100 text-sky-700 dark:bg-sky-500/20 dark:text-sky-300",
+    card: "border-brand/25 bg-brand-soft/40",
+    iconWrap: "bg-brand-soft text-brand",
     Icon: CheckCircle2,
   },
   not_ready: {

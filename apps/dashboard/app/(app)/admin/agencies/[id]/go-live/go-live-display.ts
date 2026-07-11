@@ -189,9 +189,9 @@ export const SECTION_ORDER: GoLiveSection[] = ["setup", "providers", "legal", "s
 
 export const SECTION_LABEL: Record<GoLiveSection, string> = {
   setup: "Agency setup",
-  providers: "Providers",
+  providers: "Provider status",
   legal: "Legal & consent",
-  safety: "Safety / manual checks",
+  safety: "Manual confirmations",
 };
 
 /** Which section a readiness item id belongs to (posture/lifecycle are "safety",

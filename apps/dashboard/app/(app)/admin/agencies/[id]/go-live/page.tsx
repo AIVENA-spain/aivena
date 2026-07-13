@@ -6,7 +6,7 @@ import { PageHeading } from "../../../_components/page-heading";
 import { getAgencyAction, getAgencyReadinessAction } from "../../../admin-actions";
 import { AgencyTabs } from "../agency-tabs";
 import { GoLiveSummary } from "./go-live-summary";
-import { ReadinessPanel } from "./readiness-panel";
+import { GoLiveTasks } from "./go-live-tasks";
 import { ReadinessRail } from "./readiness-rail";
 import { GoLiveControl } from "./go-live-control";
 
@@ -72,7 +72,11 @@ export default async function AgencyGoLivePage({
           <div className="flex min-w-0 flex-col gap-5">
             <GoLiveSummary readiness={readiness.data} />
             <GoLiveControl agencyId={agency.id} currentPilot={currentPilot} itemLabels={itemLabels} />
-            <ReadinessPanel readiness={readiness.data} />
+            <GoLiveTasks
+              agencyId={agency.id}
+              items={readiness.data.items}
+              providers={readiness.data.providers}
+            />
           </div>
           <div className="lg:sticky lg:top-4">
             <ReadinessRail readiness={readiness.data} />

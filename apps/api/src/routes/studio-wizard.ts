@@ -395,18 +395,26 @@ route.get('/library', async (c) => {
   }
 });
 
-// ── GET /api/studio/properties — picker list ───────────────────────────────
+// ── GET /api/studio/properties?q= — picker list, optional area/title search ──
 route.get('/properties', async (c) => {
   const tx = c.get('tx');
   const agencyId = c.get('agencyId');
+  const q = (c.req.query('q') || '').trim();
   try {
-    const result = await tx.execute(sql`
-      SELECT id, title, location_city, location_region, price, bedrooms, bathrooms, images
-      FROM properties
-      WHERE agency_id = ${agencyId}
-      ORDER BY created_at DESC
-      LIMIT 100
-    `);
+    // area/title search (Christian's flow: "search for the property using area like torrevieja").
+    const like = `%${q.replace(/[%_]/g, (m) => '\\' + m)}%`;
+    const result = q
+      ? await tx.execute(sql`
+          SELECT id, title, location_city, location_region, price, bedrooms, bathrooms, images
+          FROM properties
+          WHERE agency_id = ${agencyId}
+            AND (location_city ILIKE ${like} OR location_region ILIKE ${like} OR title ILIKE ${like})
+          ORDER BY created_at DESC LIMIT 100`)
+      : await tx.execute(sql`
+          SELECT id, title, location_city, location_region, price, bedrooms, bathrooms, images
+          FROM properties
+          WHERE agency_id = ${agencyId}
+          ORDER BY created_at DESC LIMIT 100`);
     const rows = result as unknown as Array<{
       id: string; title: string; location_city: string | null;
       location_region: string | null; price: string | number | null;

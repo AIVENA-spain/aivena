@@ -1,6 +1,6 @@
 import { apiFetch } from "@/lib/api/client";
 
-import { StudioWizard } from "./studio-wizard";
+import { StudioHome } from "./studio-home";
 
 export const dynamic = "force-dynamic";
 
@@ -34,5 +34,5 @@ export default async function StudioPage() {
     // refetches after each generation.
   }
 
-  return <StudioWizard initialLibrary={library} />;
+  return <StudioHome initialLibrary={library} />;
 }

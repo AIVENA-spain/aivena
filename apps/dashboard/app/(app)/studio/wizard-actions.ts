@@ -98,10 +98,35 @@ export async function libraryAction(): Promise<Envelope> {
   return call("/api/studio/library");
 }
 
-export async function propertiesAction(): Promise<Envelope> {
-  return call("/api/studio/properties");
+export async function propertiesAction(q?: string): Promise<Envelope> {
+  const suffix = q && q.trim() ? `?q=${encodeURIComponent(q.trim())}` : "";
+  return call(`/api/studio/properties${suffix}`);
 }
 
 export async function propertyPhotosAction(id: string): Promise<Envelope> {
   return call(`/api/studio/properties/${encodeURIComponent(id)}/photos`);
+}
+
+// ── editable-template engine (the 18 accepted strip-plate templates) ──────────
+export async function editableTemplatesAction(): Promise<Envelope> {
+  return call("/api/studio/editable-templates");
+}
+
+export async function editableDefaultsAction(templateId: string, propertyId: string): Promise<Envelope> {
+  return call(
+    `/api/studio/editable-defaults?template_id=${encodeURIComponent(templateId)}&property_id=${encodeURIComponent(propertyId)}`,
+  );
+}
+
+export type EditablePreviewInput = {
+  template_id: string;
+  property_id: string;
+  photos?: string[];
+  text_overrides?: Record<string, string>;
+  manual_colours?: Record<string, string>; // manual mode: per-layer wheel
+  brand?: { navy: string; gold: string; cream: string; text: string }; // auto mode: a tapped scheme
+  colour_overrides?: Record<string, string>;
+};
+export async function editablePreviewAction(input: EditablePreviewInput): Promise<Envelope> {
+  return call("/api/studio/editable-preview", { method: "POST", body: input });
 }

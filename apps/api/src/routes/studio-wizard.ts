@@ -10,6 +10,8 @@ import {
   mapPropertyRow,
   mapBranding,
   isKnownTemplate,
+  isBrandColours,
+  COLOUR_SCHEMES,
 } from '../lib/studio-editable';
 
 /**
@@ -469,8 +471,24 @@ route.get('/properties/:id/photos', async (c) => {
 // Metadata per template: photo_count (drives the image-count filter), editable
 // text slots, and colour layers. Thumbnails are added by a follow-up.
 route.get('/editable-templates', async (c) => {
+  const tx = c.get('tx');
+  const agencyId = c.get('agencyId');
   try {
-    return c.json({ ok: true, templates: editableCatalogue() });
+    // colour schemes: the agency's OWN brand first ("Your brand"), then the curated presets.
+    let schemes = COLOUR_SCHEMES;
+    try {
+      const bRes = await tx.execute(sql`
+        SELECT brand_name, primary_color, accent_color, background_color, text_color,
+               phone, whatsapp_number, website_url, sender_email, email_signature_name
+        FROM agency_branding WHERE agency_id = ${agencyId} LIMIT 1
+      `);
+      const bRows = bRes as unknown as any[];
+      if (bRows[0]) {
+        const { brand } = mapBranding(bRows[0]);
+        schemes = [{ id: 'your_brand', name: 'Your brand', brand }, ...COLOUR_SCHEMES];
+      }
+    } catch { /* branding read failed → just the presets */ }
+    return c.json({ ok: true, templates: editableCatalogue(), colour_schemes: schemes });
   } catch (err) {
     console.error('[studio/editable-templates] failed:', err);
     return c.json({ ok: false, error: 'catalogue_failed', message: GENERIC }, 500);
@@ -552,8 +570,10 @@ route.post('/editable-preview', async (c) => {
     for (const ref of refs) { const buf = await loadPhotoBuffer(ref); if (buf) buffers.push(buf); }
     if (buffers.length === 0) return c.json({ ok: false, error: 'photo_fetch_failed', message: "The selected photos couldn't be loaded." }, 422);
 
+    // a tapped colour scheme overrides the agency's own brand for this render (validated hex quad).
+    const brand = isBrandColours(b.brand) ? b.brand : loaded.brand;
     const stored = await renderAndStore({
-      templateId, property: loaded.property, agency: loaded.agency, brand: loaded.brand, photoBuffers: buffers,
+      templateId, property: loaded.property, agency: loaded.agency, brand, photoBuffers: buffers,
       textOverrides: (b.text_overrides && typeof b.text_overrides === 'object' ? b.text_overrides : undefined) as Record<string, string> | undefined,
       colourOverrides: (b.colour_overrides && typeof b.colour_overrides === 'object' ? b.colour_overrides : undefined) as Record<string, string> | undefined,
     });

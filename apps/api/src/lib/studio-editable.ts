@@ -24,6 +24,24 @@ import {
 
 export const EDITABLE_TEMPLATE_IDS = ['1', '2', '3', '5', '6', '7', '8', '10', '11', '14', '21', '22', '24', '25', '26', '27', '28'];
 
+// Pre-made colour SCHEMES (Christian 2026-07-13) — curated coordinated palettes the agency taps to apply to the
+// whole template, instead of fiddling per-layer. Each maps to the four brand slots agencyPalette consumes:
+// navy = the strong dark (title-on-light + badges), gold = accent, cream = the light (title-on-dark), text = body.
+// The agency's OWN brand is offered first (built at runtime from agency_branding); these are the alternatives.
+export interface ColourScheme { id: string; name: string; brand: BrandColours; }
+export const COLOUR_SCHEMES: ColourScheme[] = [
+  { id: 'navy_gold', name: 'Navy & Gold', brand: { navy: '#0B2545', gold: '#C9A45C', cream: '#F8F5EF', text: '#1F2933' } },
+  { id: 'charcoal_sand', name: 'Charcoal & Sand', brand: { navy: '#2B2B2B', gold: '#B08D57', cream: '#F2EEE6', text: '#2B2B2B' } },
+  { id: 'coastal', name: 'Coastal', brand: { navy: '#14213D', gold: '#E9C46A', cream: '#F1FAEE', text: '#1D3557' } },
+  { id: 'terracotta', name: 'Terracotta', brand: { navy: '#3D405B', gold: '#E07A5F', cream: '#F4F1DE', text: '#3D405B' } },
+  { id: 'forest_blush', name: 'Forest & Blush', brand: { navy: '#2F4739', gold: '#C98B7A', cream: '#F6F1EC', text: '#2F4739' } },
+  { id: 'monochrome', name: 'Monochrome', brand: { navy: '#1A1A1A', gold: '#7A7A7A', cream: '#F5F5F5', text: '#1A1A1A' } },
+];
+const HEX = /^#[0-9a-fA-F]{6}$/;
+export function isBrandColours(v: any): v is BrandColours {
+  return v && typeof v === 'object' && ['navy', 'gold', 'cream', 'text'].every((k) => HEX.test(v[k]));
+}
+
 function manifestPathOf(id: string): string {
   return `${STUDIO_ROOT}/manifest/templates/${id}.editable.json`;
 }

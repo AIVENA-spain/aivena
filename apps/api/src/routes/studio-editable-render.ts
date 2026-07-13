@@ -1,15 +1,7 @@
 import { Hono } from 'hono';
-import { randomUUID } from 'node:crypto';
-import fs from 'node:fs';
-import { supabaseAdmin } from '../lib/supabase-admin';
 import { internalSecret, constantTimeEqual, loadPhotoBuffer, isStr } from '../lib/studio-internal';
-import { STUDIO_ROOT } from '../lib/studio-data-root';
-import {
-  renderEditable,
-  loadEditableManifest,
-  pickPhotos,
-} from '../../../../studio/engine/renderEditable';
-import { deriveSlots, agencyPalette, applyDerived, DeriveProperty, DeriveAgency, BrandColours } from '../../../../studio/engine/derive';
+import { isKnownTemplate, renderAndStore } from '../lib/studio-editable';
+import { DeriveProperty, DeriveAgency, BrandColours } from '../../../../studio/engine/derive';
 
 /**
  * Studio EDITABLE-template render (Engine Proof B) — the deterministic template engine (the 18 accepted
@@ -29,8 +21,6 @@ import { deriveSlots, agencyPalette, applyDerived, DeriveProperty, DeriveAgency,
  */
 
 const route = new Hono();
-const OUT_BUCKET = 'generated-images';
-const SIGNED_TTL = 60 * 60 * 24 * 365; // 1 year
 const TEMPLATE_ID = /^[A-Za-z0-9_]+$/;
 // contrast-safe fallback brand (only used if the caller omits `brand` on a non-locked template).
 const DEFAULT_BRAND: BrandColours = { navy: '#1a2b4a', gold: '#c8a24b', cream: '#f4f1ea', text: '#333333' };
@@ -58,8 +48,7 @@ route.all('/editable-render', async (c) => {
     if (!templateId || !TEMPLATE_ID.test(templateId)) {
       return c.json({ ok: false, error: 'invalid_template', message: 'A valid template_id is required.' }, 400);
     }
-    const manifestPath = `manifest/templates/${templateId}.editable.json`;
-    if (!fs.existsSync(`${STUDIO_ROOT}/${manifestPath}`)) {
+    if (!isKnownTemplate(templateId)) {
       return c.json({ ok: false, error: 'template_not_found', message: "That template couldn't be found." }, 404);
     }
 
@@ -84,34 +73,14 @@ route.all('/editable-render', async (c) => {
       return c.json({ ok: false, error: 'photo_fetch_failed', message: "The selected photos couldn't be loaded." }, 422);
     }
 
-    // Derive slot text from real facts (never invented), render with the same engine as the proofs.
-    const m = applyDerived(loadEditableManifest(manifestPath), deriveSlots(property, agency, templateId));
-    const photos = await pickPhotos(m, buffers, templateId);
-    const palette = m.palette_locked ? {} : agencyPalette(m, brand);
-    const r = await renderEditable(m, palette, photos);
-
-    // Upload the PNG and return a signed URL.
-    const key = `editable/${randomUUID()}.png`;
-    const up = await supabaseAdmin.storage.from(OUT_BUCKET).upload(key, r.png, { contentType: 'image/png', upsert: false });
-    if (up.error) {
-      console.error('[studio-editable-render] upload failed:', up.error.message);
-      return c.json({ ok: false, error: 'render_failed', message: 'The image could not be saved.' }, 500);
-    }
-    const signed = await supabaseAdmin.storage.from(OUT_BUCKET).createSignedUrl(key, SIGNED_TTL);
-    if (signed.error || !signed.data?.signedUrl) {
-      console.error('[studio-editable-render] sign failed:', signed.error?.message);
-      return c.json({ ok: false, error: 'render_failed', message: 'The image URL could not be created.' }, 500);
-    }
-
-    return c.json({
-      ok: true,
-      template_id: templateId,
-      image_url: signed.data.signedUrl,
-      storage_path: key,
-      width: 1080,
-      editable_text_count: r.editableTextCount,
-      photos_filled: r.photosFilled,
+    // Render via the shared engine (deriveSlots draws all facts; overrides supported for the wizard proxy).
+    const stored = await renderAndStore({
+      templateId, property, agency, brand, photoBuffers: buffers,
+      textOverrides: (body.text_overrides ?? undefined) as Record<string, string> | undefined,
+      colourOverrides: (body.colour_overrides ?? undefined) as Record<string, string> | undefined,
     });
+
+    return c.json({ ok: true, template_id: templateId, image_url: stored.image_url, storage_path: stored.storage_path, width: 1080 });
   } catch (err) {
     console.error('[studio-editable-render] render threw:', err);
     return c.json({ ok: false, error: 'render_failed', message: "The image couldn't be generated." }, 500);

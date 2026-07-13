@@ -2,6 +2,15 @@ import { Hono } from 'hono';
 import { sql } from 'drizzle-orm';
 import { env } from '../../../../packages/config/env';
 import { supabaseAdmin } from '../lib/supabase-admin';
+import { loadPhotoBuffer } from '../lib/studio-internal';
+import {
+  catalogue as editableCatalogue,
+  editableDefaults,
+  renderAndStore,
+  mapPropertyRow,
+  mapBranding,
+  isKnownTemplate,
+} from '../lib/studio-editable';
 
 /**
  * Studio wizard proxy (W13 v0.6) — the browser's ONLY door to Vega's image
@@ -446,6 +455,112 @@ route.get('/properties/:id/photos', async (c) => {
   } catch (err) {
     console.error('[studio/properties/photos] failed:', err);
     return c.json({ ok: false, error: 'photos_failed', message: GENERIC }, 500);
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// EDITABLE-TEMPLATE ENGINE (the 18 accepted strip-plate templates) — Phase 2.
+// The browser's door to the deterministic renderer (deriveSlots draws all facts,
+// never invents; palette_locked templates keep their colours). This proxy looks
+// up the property + agency branding server-side and calls the shared renderer.
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ── GET /api/studio/editable-templates — the catalogue for the picker ──────────
+// Metadata per template: photo_count (drives the image-count filter), editable
+// text slots, and colour layers. Thumbnails are added by a follow-up.
+route.get('/editable-templates', async (c) => {
+  try {
+    return c.json({ ok: true, templates: editableCatalogue() });
+  } catch (err) {
+    console.error('[studio/editable-templates] failed:', err);
+    return c.json({ ok: false, error: 'catalogue_failed', message: GENERIC }, 500);
+  }
+});
+
+// helper: load a property (facts) + the agency branding for the session's agency.
+async function loadPropertyAndBrand(tx: any, agencyId: string, propertyId: string) {
+  const pRes = await tx.execute(sql`
+    SELECT property_type, location_city, location_region, price, area_sqm, area_built_sqm,
+           bedrooms, bathrooms, features, images
+    FROM properties WHERE id = ${propertyId}::uuid AND agency_id = ${agencyId} LIMIT 1
+  `);
+  const pRows = pRes as unknown as any[];
+  if (pRows.length === 0) return null;
+  const bRes = await tx.execute(sql`
+    SELECT brand_name, primary_color, accent_color, background_color, text_color,
+           phone, whatsapp_number, website_url, sender_email, email_signature_name
+    FROM agency_branding WHERE agency_id = ${agencyId} LIMIT 1
+  `);
+  const bRows = bRes as unknown as any[];
+  const { agency, brand } = mapBranding(bRows[0] || {});
+  return {
+    property: mapPropertyRow(pRows[0]),
+    agency, brand,
+    images: (Array.isArray(pRows[0].images) ? pRows[0].images : []).filter((u: unknown) => typeof u === 'string'),
+  };
+}
+
+// ── GET /api/studio/editable-defaults?template_id&property_id ─────────────────
+// Pre-fill for the editing form: derived default text per slot + effective colour
+// per layer (from the agency brand) + the property's photos.
+route.get('/editable-defaults', async (c) => {
+  const tx = c.get('tx');
+  const agencyId = c.get('agencyId');
+  const templateId = (c.req.query('template_id') || '').trim();
+  const propertyId = (c.req.query('property_id') || '').trim();
+  if (!isKnownTemplate(templateId)) {
+    return c.json({ ok: false, error: 'invalid_template', message: 'Unknown template.' }, 400);
+  }
+  try {
+    const loaded = await loadPropertyAndBrand(tx, agencyId, propertyId);
+    if (!loaded) return c.json({ ok: false, error: 'not_found', message: 'That property could not be found.' }, 404);
+    const defaults = editableDefaults(templateId, loaded.property, loaded.agency, loaded.brand);
+    return c.json({ ok: true, ...defaults, photos: loaded.images });
+  } catch (err) {
+    console.error('[studio/editable-defaults] failed:', err);
+    return c.json({ ok: false, error: 'defaults_failed', message: GENERIC }, 500);
+  }
+});
+
+// ── POST /api/studio/editable-preview — render with the user's edits ──────────
+// Body: { template_id, property_id, photos: string[] (chosen refs), text_overrides?,
+// colour_overrides? }. Free (no quota) — same contract as /preview. Returns a
+// signed image URL.
+route.post('/editable-preview', async (c) => {
+  const tx = c.get('tx');
+  const agencyId = c.get('agencyId');
+  let b: Record<string, unknown>;
+  try {
+    const raw = await c.req.json();
+    b = raw && typeof raw === 'object' && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};
+  } catch {
+    return c.json({ ok: false, error: 'invalid_json', message: 'Request body must be valid JSON.' }, 400);
+  }
+  const templateId = typeof b.template_id === 'string' ? b.template_id.trim() : '';
+  const propertyId = typeof b.property_id === 'string' ? b.property_id.trim() : '';
+  if (!isKnownTemplate(templateId)) {
+    return c.json({ ok: false, error: 'invalid_template', message: 'Unknown template.' }, 400);
+  }
+  try {
+    const loaded = await loadPropertyAndBrand(tx, agencyId, propertyId);
+    if (!loaded) return c.json({ ok: false, error: 'not_found', message: 'That property could not be found.' }, 404);
+    // chosen photos: the refs the wizard selected (must be from this property's own images) — else all of them.
+    const chosen = Array.isArray(b.photos) ? (b.photos as unknown[]).filter((u): u is string => typeof u === 'string' && loaded.images.includes(u)) : [];
+    const refs = chosen.length ? chosen : loaded.images;
+    if (refs.length === 0) return c.json({ ok: false, error: 'no_photos', message: 'This property has no photos to use.' }, 422);
+    const buffers: Buffer[] = [];
+    for (const ref of refs) { const buf = await loadPhotoBuffer(ref); if (buf) buffers.push(buf); }
+    if (buffers.length === 0) return c.json({ ok: false, error: 'photo_fetch_failed', message: "The selected photos couldn't be loaded." }, 422);
+
+    const stored = await renderAndStore({
+      templateId, property: loaded.property, agency: loaded.agency, brand: loaded.brand, photoBuffers: buffers,
+      textOverrides: (b.text_overrides && typeof b.text_overrides === 'object' ? b.text_overrides : undefined) as Record<string, string> | undefined,
+      colourOverrides: (b.colour_overrides && typeof b.colour_overrides === 'object' ? b.colour_overrides : undefined) as Record<string, string> | undefined,
+    });
+    return c.json({ ok: true, template_id: templateId, image_url: stored.image_url, storage_path: stored.storage_path });
+  } catch (err) {
+    console.error('[studio/editable-preview] failed:', err);
+    return c.json({ ok: false, error: 'preview_failed', message: GENERIC }, 500);
   }
 });
 

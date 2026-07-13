@@ -1,43 +1,299 @@
 {
   "template_id": "7",
-  "title_font_status": "needs_seed (bold geometric sans not in vault) — Poppins-Regular + faux-bold stroke as a category-correct placeholder (lighter/approximate vs the original); Canva source font confirmation owed.",
-  "_note": "#7 (Discover Your Dream — MULTI-PHOTO) rebuilt against the actual Canva layout. Every text bbox/size measured from the rendered baked source. ALL visible text is a real editable <text> slot: brand, title, body, Home-Features header, 5 feature rows, 3 CTA pieces. The baked feature ICONS (x655-704, bed/bath/kitchen/sofa/garage) are KNOCKED OUT: their fixed meanings can't track arbitrary real features across properties, so per the general rule they're neutralized (no icon) rather than cherry-picking text to fit them; feature rows are a clean left-aligned text list shifted into the freed space. A stray baked page-mark at the CTA bar's right end is also knocked out. Colours are role tokens (agency colour wheel). Feature rows are DATA-DRIVEN (property_fact) — derived generally from facts (beds, baths, top real features); empty rows are hidden. Real photos fill all 4 slots.",
-  "canvas": { "width": 1080, "height": 1350 },
-  "source_svg": "assets/7/source.tokenized.svg",
+  "title_font_status": "needs_seed (bold geometric sans not in vault) — Poppins-Regular + faux-bold stroke as a category-correct placeholder. Canva source font confirmation owed.",
+  "_note": "#7 (Discover Your Dream — MULTI-PHOTO). STRIP-PLATE (2026-07-04): assets/7/source.stripped.svg = the Canva source with ALL dynamic text + the beige feature panel REMOVED (engine/stripPlate.ts, intake/7/strip_zones.json); the photo frames, brand band, CTA bar and its phone/pin icons remain original baked artwork. Editable text draws directly on the intact background (no_knockouts — no cover-up boxes possible). The feature panel is DRAWN by the engine (dynamic_panel): height fits the real row count and the box is bottom-anchored, so with fewer features the whole box moves DOWN to sit with the details/photos (geometry to be fine-tuned against Christian's 3-feature example). Feature rows = beds + baths + top real features (no icons). No invented facts; missing facts hide their row.",
+  "canvas": {
+    "width": 1080,
+    "height": 1350
+  },
+  "source_svg": "assets/7/source.stripped.svg",
   "photo_slots": [
-    { "token": "@@PHOTO0@@" },
-    { "token": "@@PHOTO1@@" },
-    { "token": "@@PHOTO2@@" },
-    { "token": "@@PHOTO3@@" }
+    {
+      "token": "@@PHOTO0@@"
+    },
+    {
+      "token": "@@PHOTO1@@"
+    },
+    {
+      "token": "@@PHOTO2@@"
+    },
+    {
+      "token": "@@PHOTO3@@"
+    }
   ],
-  "knockout_regions": [[648, 598, 712, 940], [60, 590, 606, 842], [64, 896, 592, 974]],
-  "adaptive_panel": { "area": [611, 497, 1012, 978], "fit_to": ["feat_1", "feat_2", "feat_3", "feat_4", "feat_5"], "pad": 30, "fill_role": "background" },
+  "no_knockouts": true,
+  "dynamic_panel": {
+    "x0": 616,
+    "x1": 1009,
+    "top_base": 499,
+    "shift_per_missing": 45,
+    "max_rows": 5,
+    "fill_role": "accent",
+    "header_slot": "features_header",
+    "row_slots": [
+      "feat_1",
+      "feat_2",
+      "feat_3",
+      "feat_4",
+      "feat_5"
+    ],
+    "pad_top": 41,
+    "header_h": 72,
+    "row_pitch": 70,
+    "row_h": 36,
+    "pad_bottom": 46,
+    "icons": {
+      "file": "intake/7/icons.json",
+      "x": 656,
+      "dy": -7
+    }
+  },
   "colour_tokens": {
-    "background": { "default": "#ffffff", "locked": false },
-    "overlay": { "default": "#000000", "locked": true },
-    "title": { "default": "#1a1a1a", "locked": false },
-    "subtitle/body": { "default": "#333333", "locked": false },
-    "accent": { "default": "#ccbbaa", "locked": false },
-    "badge.fill": { "default": "#ffffff", "locked": false },
-    "badge.text": { "default": "#1a1a1a", "locked": false },
-    "divider": { "default": "#1a1a1a", "locked": false },
-    "icon": { "default": "#1a1a1a", "locked": true },
-    "stat.label": { "default": "#1a1a1a", "locked": false },
-    "stat.value": { "default": "#222222", "locked": false },
-    "cta": { "default": "#ffffff", "locked": false }
+    "background": {
+      "default": "#ffffff",
+      "locked": false
+    },
+    "overlay": {
+      "default": "#000000",
+      "locked": true
+    },
+    "title": {
+      "default": "#1a1a1a",
+      "locked": false
+    },
+    "subtitle/body": {
+      "default": "#333333",
+      "locked": false
+    },
+    "accent": {
+      "default": "#ccbbaa",
+      "locked": false
+    },
+    "badge.fill": {
+      "default": "#ffffff",
+      "locked": false
+    },
+    "badge.text": {
+      "default": "#1a1a1a",
+      "locked": false
+    },
+    "divider": {
+      "default": "#1a1a1a",
+      "locked": true
+    },
+    "icon": {
+      "default": "#1a1a1a",
+      "locked": true
+    },
+    "stat.label": {
+      "default": "#1a1a1a",
+      "locked": false
+    },
+    "stat.value": {
+      "default": "#222222",
+      "locked": false
+    },
+    "cta": {
+      "default": "#ffffff",
+      "locked": false
+    }
   },
   "text_slots": [
-    { "id": "brand", "role": "badge.text", "source": "template_copy", "bbox": [721, 44, 910, 98], "size": 24, "line_height": 26, "weight": "bold", "font": "Poppins", "align": "left", "text": "Rimberio\nReal Estate" },
-    { "id": "title", "role": "title", "source": "template_copy", "bbox": [69, 646, 600, 846], "size": 85, "line_height": 87, "valign": "center", "weight": "bold", "font": "Poppins", "align": "left", "text": "Discover\nYour Dream\nReal Estate" },
-    { "id": "body", "role": "subtitle/body", "source": "template_copy", "bbox": [70, 876, 590, 956], "size": 30, "line_height": 37, "valign": "center", "font": "Poppins", "align": "left", "text": "This ultra-modern luxury home is\ndesigned for the bold and refined." },
-    { "id": "features_header", "role": "stat.label", "source": "template_copy", "bbox": [658, 540, 905, 575], "size": 30, "weight": "bold", "font": "Poppins", "align": "left", "text": "Home Features:" },
-    { "id": "feat_1", "role": "stat.value", "source": "property_fact", "bbox": [662, 612, 1010, 648], "size": 31, "font": "Poppins", "align": "left", "text": "4 Bedrooms" },
-    { "id": "feat_2", "role": "stat.value", "source": "property_fact", "bbox": [662, 682, 1010, 718], "size": 31, "font": "Poppins", "align": "left", "text": "3 Bathrooms" },
-    { "id": "feat_3", "role": "stat.value", "source": "property_fact", "bbox": [662, 752, 1010, 788], "size": 31, "font": "Poppins", "align": "left", "text": "Modern Kitchen" },
-    { "id": "feat_4", "role": "stat.value", "source": "property_fact", "bbox": [662, 822, 1010, 858], "size": 31, "font": "Poppins", "align": "left", "text": "Living Room" },
-    { "id": "feat_5", "role": "stat.value", "source": "property_fact", "bbox": [662, 892, 1010, 928], "size": 31, "font": "Poppins", "align": "left", "text": "Car Garage" },
-    { "id": "cta_label", "role": "cta", "source": "template_copy", "bbox": [71, 1295, 300, 1332], "size": 26, "weight": "bold", "font": "Poppins", "align": "left", "text": "CONTACT US AT" },
-    { "id": "cta_phone", "role": "cta", "source": "template_copy", "bbox": [398, 1295, 600, 1332], "size": 26, "font": "Poppins", "align": "left", "text": "+123-456-7890" },
-    { "id": "cta_web", "role": "cta", "source": "template_copy", "bbox": [692, 1295, 1022, 1332], "size": 26, "font": "Poppins", "align": "left", "text": "www.reallygreatsite.com" }
+    {
+      "id": "brand",
+      "role": "badge.text",
+      "source": "template_copy",
+      "bbox": [
+        721,
+        44,
+        910,
+        98
+      ],
+      "size": 24,
+      "line_height": 26,
+      "weight": "600",
+      "font": "Poppins",
+      "align": "left",
+      "text": "Rimberio\nReal Estate"
+    },
+    {
+      "id": "title",
+      "role": "title",
+      "source": "property_fact",
+      "bbox": [
+        69,
+        594,
+        600,
+        846
+      ],
+      "size": 85,
+      "line_height": 87,
+      "valign": "bottom",
+      "weight": "700",
+      "font": "Poppins",
+      "align": "left",
+      "text": "Discover\nYour Dream\nReal Estate",
+      "design_lines": 3
+    },
+    {
+      "id": "body",
+      "role": "subtitle/body",
+      "source": "template_copy",
+      "bbox": [
+        70,
+        896,
+        590,
+        976
+      ],
+      "size": 30,
+      "line_height": 37,
+      "font": "Poppins",
+      "align": "left",
+      "text": "This ultra-modern luxury home is\ndesigned for the bold and refined.",
+      "follow": {
+        "slot": "title",
+        "gap": 52
+      }
+    },
+    {
+      "id": "features_header",
+      "role": "stat.label",
+      "source": "template_copy",
+      "bbox": [
+        658,
+        0,
+        905,
+        0
+      ],
+      "size": 30,
+      "weight": "600",
+      "valign": "center",
+      "font": "Poppins",
+      "align": "left",
+      "text": "Home Features:"
+    },
+    {
+      "id": "feat_1",
+      "role": "stat.value",
+      "source": "property_fact",
+      "bbox": [
+        718,
+        0,
+        1008,
+        0
+      ],
+      "size": 31,
+      "font": "Poppins",
+      "align": "left",
+      "text": "4 Bedrooms"
+    },
+    {
+      "id": "feat_2",
+      "role": "stat.value",
+      "source": "property_fact",
+      "bbox": [
+        718,
+        0,
+        1008,
+        0
+      ],
+      "size": 31,
+      "font": "Poppins",
+      "align": "left",
+      "text": "3 Bathrooms"
+    },
+    {
+      "id": "feat_3",
+      "role": "stat.value",
+      "source": "property_fact",
+      "bbox": [
+        718,
+        0,
+        1008,
+        0
+      ],
+      "size": 31,
+      "font": "Poppins",
+      "align": "left",
+      "text": "Modern Kitchen"
+    },
+    {
+      "id": "feat_4",
+      "role": "stat.value",
+      "source": "property_fact",
+      "bbox": [
+        718,
+        0,
+        1008,
+        0
+      ],
+      "size": 31,
+      "font": "Poppins",
+      "align": "left",
+      "text": "Living Room"
+    },
+    {
+      "id": "feat_5",
+      "role": "stat.value",
+      "source": "property_fact",
+      "bbox": [
+        718,
+        0,
+        1008,
+        0
+      ],
+      "size": 31,
+      "font": "Poppins",
+      "align": "left",
+      "text": "Car Garage"
+    },
+    {
+      "id": "cta_label",
+      "role": "cta",
+      "source": "template_copy",
+      "bbox": [
+        71,
+        1295,
+        300,
+        1332
+      ],
+      "size": 26,
+      "weight": "600",
+      "font": "Poppins",
+      "align": "left",
+      "text": "CONTACT US AT"
+    },
+    {
+      "id": "cta_phone",
+      "role": "cta",
+      "source": "template_copy",
+      "bbox": [
+        398,
+        1295,
+        646,
+        1332
+      ],
+      "size": 26,
+      "pad": 6,
+      "font": "Poppins",
+      "align": "center",
+      "text": "+123-456-7890"
+    },
+    {
+      "id": "cta_web",
+      "role": "cta",
+      "source": "template_copy",
+      "bbox": [
+        692,
+        1295,
+        1046,
+        1332
+      ],
+      "size": 26,
+      "pad": 6,
+      "font": "Poppins",
+      "align": "center",
+      "text": "www.reallygreatsite.com"
+    }
   ]
 }

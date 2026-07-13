@@ -26,6 +26,7 @@ import readinessRoute from './routes/readiness';
 import operationsRoute from './routes/operations';
 import studioRoute from './routes/studio';
 import studioRenderRoute from './routes/studio-render';
+import studioEditableRenderRoute from './routes/studio-editable-render';
 import imagesRoute from './routes/images';
 import studioWizardRoute from './routes/studio-wizard';
 import adminRoute from './routes/admin';
@@ -65,6 +66,9 @@ app.get('/health', (c) => {
 // the kie step later), NOT a user JWT, so the /api/* auth + agency-context
 // middleware must never run on it. POST /studio/render.
 app.route('/studio', studioRenderRoute);
+// Studio EDITABLE-template render (Engine Proof B) — the 18 accepted strip-plate templates rendered with real
+// property data; same x-internal-secret auth, mounted OUTSIDE /api/*. POST /studio/editable-render.
+app.route('/studio', studioEditableRenderRoute);
 
 // Amanda web-chat (Amanda Phase A) — mounted OUTSIDE /api/* on purpose: PUBLIC,
 // unauthenticated visitor endpoints (no user JWT, no agency-context middleware).

@@ -1,33 +1,275 @@
 {
   "template_id": "5",
-  "title_font_status": "needs_seed — high-contrast display serif (Didone-like) not in vault; Libre Caslon Display kept as a category-correct placeholder (like #1). Canva source font confirmation owed.",
-  "_note": "#5 (Listing — DARK: photo background + dark overlay + white text). Every text bbox measured from the rendered baked source. ALL visible text is a real editable <text> slot: 2-line serif title, price label + value, the 3-stat row, the MORE-INFO label, and the website pill text. The stat ICONS (house=area, bed=beds, bath=baths) are baked art and stay — their meanings are UNIVERSAL (area/beds/baths), so unlike #7 they always match. Colours are role tokens (agency colour wheel). No invented property facts: title/stats/price = real facts; labels + website = agency/template copy. Missing facts (e.g. no size/price) hide their slot.",
-  "canvas": { "width": 1080, "height": 1350 },
-  "source_svg": "assets/5/source.tokenized.svg",
+  "title_font_status": "RE-ADJUDICATED 2026-07-06 (60+ candidates, per-single-letter IoU on exact glyph bboxes + natural-metrics shootout, adversarially verified): Instrument Serif 400 at NATURAL width decisively beats the previous Libre Caslon Text 500 + scale_x 0.659 hack (natural IoU 0.672 vs 0.56; glyph aspect error 0.080 vs 0.300 — skeleton, terminals, t-flag, x-height all match). Baked original is slightly bolder, compensated with stroke_px 1.5 at the 224px title size. Exact Canva face (likely a licensed cut, e.g. Recife Display) confirmation owed — same status as accepted #1.",
+  "_note": "#5 (La Zenia — DARK listing). STRIP-PLATE v3 (2026-07-04): assets/5/source.stripped.svg strips the dynamic text glyphs ONLY — the 3 stat icons, both stat dividers, the website pill OUTLINE and the full-bleed grey-to-black gradient art stay BAKED. Missing-fact degrade: each stat slot declares its icon (+its divider) as companion_art, so a missing fact hides label AND art together — no orphaned icons, no off-canvas slot tricks. FULL-BLEED TRUTH (Christian's Canva p5 screenshot 2026-07-06): the original is ONE photo covering the WHOLE canvas under a dark gradient scrim — photo visible everywhere, darkest at the title top and the price/stats/CTA bottom. The manifest scrim replicates that gradient (under_art: pill/icons/baked gradient stay above it); photo_fit=attention pre-crops the photo to the frame aspect around its subject. No opaque blocks, no reveal band. Title = Instrument Serif 400 + stroke_px 1.5 (closest real-face replication of the source's condensed high-contrast serif; exact Canva face confirmation owed — see title_font_status). Baselines/sizes measured from the baked render (title baselines 248/431). No invented facts: title/price/stats real (missing -> hidden); labels + website are template/agency copy.",
+  "canvas": {
+    "width": 1080,
+    "height": 1350
+  },
+  "source_svg": "assets/5/source.stripped.svg",
+  "photo_fit": "attention",
   "photo_token": "@@PHOTO0@@",
-  "overlay": { "role": "overlay", "opacity": 0.52 },
+  "no_knockouts": true,
+  "scrim": {
+    "role": "overlay",
+    "under_art": true,
+    "stops": [
+      {
+        "offset": 0,
+        "opacity": 0.42
+      },
+      {
+        "offset": 0.3,
+        "opacity": 0.22
+      },
+      {
+        "offset": 0.45,
+        "opacity": 0.04
+      },
+      {
+        "offset": 0.58,
+        "opacity": 0.1
+      },
+      {
+        "offset": 0.75,
+        "opacity": 0.24
+      },
+      {
+        "offset": 1,
+        "opacity": 0.42
+      }
+    ]
+  },
   "colour_tokens": {
-    "background": { "default": "#000000", "locked": false },
-    "overlay": { "default": "#000000", "locked": true },
-    "title": { "default": "#ffffff", "locked": false },
-    "subtitle/body": { "default": "#ffffff", "locked": false },
-    "accent": { "default": "#ffffff", "locked": false },
-    "badge.fill": { "default": "#ffffff", "locked": false },
-    "badge.text": { "default": "#ffffff", "locked": false },
-    "divider": { "default": "#ffffff", "locked": true },
-    "icon": { "default": "#ffffff", "locked": true },
-    "stat.label": { "default": "#ffffff", "locked": false },
-    "stat.value": { "default": "#ffffff", "locked": false },
-    "cta": { "default": "#ffffff", "locked": false }
+    "background": {
+      "default": "#000000",
+      "locked": false
+    },
+    "overlay": {
+      "default": "#000000",
+      "locked": true
+    },
+    "title": {
+      "default": "#ffffff",
+      "locked": false
+    },
+    "subtitle/body": {
+      "default": "#ffffff",
+      "locked": false
+    },
+    "accent": {
+      "default": "#ffffff",
+      "locked": false
+    },
+    "badge.fill": {
+      "default": "#ffffff",
+      "locked": false
+    },
+    "badge.text": {
+      "default": "#ffffff",
+      "locked": false
+    },
+    "divider": {
+      "default": "#ffffff",
+      "locked": true
+    },
+    "icon": {
+      "default": "#ffffff",
+      "locked": true
+    },
+    "stat.label": {
+      "default": "#ffffff",
+      "locked": false
+    },
+    "stat.value": {
+      "default": "#ffffff",
+      "locked": false
+    },
+    "cta": {
+      "default": "#ffffff",
+      "locked": false
+    }
   },
   "text_slots": [
-    { "id": "title", "role": "title", "source": "property_fact", "bbox": [150, 78, 930, 486], "size": 150, "line_height": 182, "valign": "center", "font": "LibreCaslonDisplay", "align": "center", "text": "La Zenia\nApartment" },
-    { "id": "price_label", "role": "stat.label", "source": "template_copy", "bbox": [410, 780, 670, 816], "size": 30, "weight": "600", "valign": "center", "font": "Poppins", "align": "center", "text": "START FROM:" },
-    { "id": "price_value", "role": "stat.value", "source": "property_fact", "bbox": [400, 818, 680, 866], "size": 44, "weight": "bold", "valign": "center", "font": "Poppins", "align": "center", "text": "€300 000" },
-    { "id": "stat_area", "role": "subtitle/body", "source": "property_fact", "bbox": [190, 1018, 408, 1068], "size": 31, "pad": 6, "weight": "600", "valign": "center", "font": "Poppins", "align": "center", "text": "500 M²" },
-    { "id": "stat_beds", "role": "subtitle/body", "source": "property_fact", "bbox": [412, 1018, 658, 1068], "size": 31, "pad": 6, "weight": "600", "valign": "center", "font": "Poppins", "align": "center", "text": "3 BEDROOMS" },
-    { "id": "stat_baths", "role": "subtitle/body", "source": "property_fact", "bbox": [662, 1018, 898, 1068], "size": 31, "pad": 6, "weight": "600", "valign": "center", "font": "Poppins", "align": "center", "text": "2 BATHROOMS" },
-    { "id": "cta_label", "role": "stat.label", "source": "template_copy", "bbox": [410, 1116, 670, 1158], "size": 30, "weight": "600", "valign": "center", "font": "Poppins", "align": "center", "text": "MORE INFO:" },
-    { "id": "cta_web", "role": "accent", "source": "template_copy", "bbox": [238, 1188, 846, 1240], "size": 40, "pad": 16, "weight": "bold", "valign": "center", "font": "Poppins", "align": "center", "text": "WWW.REALLYGREATSITE.COM" }
+    {
+      "id": "title",
+      "role": "title",
+      "source": "property_fact",
+      "bbox": [
+        150,
+        72,
+        930,
+        440
+      ],
+      "size": 224,
+      "line_height": 178,
+      "valign": "top",
+      "stroke_px": 1.5,
+      "font": "Instrument Serif",
+      "align": "center",
+      "text": "La Zenia\nApartment"
+    },
+    {
+      "id": "price_label",
+      "role": "stat.label",
+      "source": "template_copy",
+      "bbox": [
+        420,
+        786,
+        660,
+        821
+      ],
+      "size": 34,
+      "valign": "top",
+      "font": "Poppins",
+      "align": "center",
+      "text": "START FROM:"
+    },
+    {
+      "id": "price_value",
+      "role": "stat.value",
+      "source": "property_fact",
+      "bbox": [
+        400,
+        823,
+        680,
+        862
+      ],
+      "size": 34,
+      "valign": "top",
+      "font": "Poppins",
+      "align": "center",
+      "text": "€300 000"
+    },
+    {
+      "id": "stat_area",
+      "role": "subtitle/body",
+      "source": "property_fact",
+      "bbox": [
+        140,
+        1030,
+        402,
+        1065
+      ],
+      "size": 30,
+      "pad": 6,
+      "valign": "top",
+      "font": "Poppins",
+      "align": "center",
+      "text": "500 M2",
+      "companion_art": [
+        {
+          "bbox": [
+            225,
+            912,
+            318,
+            1010
+          ]
+        },
+        {
+          "bbox": [
+            405,
+            918,
+            420,
+            1042
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stat_beds",
+      "role": "subtitle/body",
+      "source": "property_fact",
+      "bbox": [
+        424,
+        1030,
+        647,
+        1065
+      ],
+      "size": 30,
+      "pad": 6,
+      "valign": "top",
+      "font": "Poppins",
+      "align": "center",
+      "text": "3 BEDROOMS",
+      "companion_art": [
+        {
+          "bbox": [
+            488,
+            925,
+            584,
+            999
+          ]
+        },
+        {
+          "bbox": [
+            653,
+            918,
+            668,
+            1042
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stat_baths",
+      "role": "subtitle/body",
+      "source": "property_fact",
+      "bbox": [
+        668,
+        1030,
+        935,
+        1065
+      ],
+      "size": 30,
+      "pad": 6,
+      "valign": "top",
+      "font": "Poppins",
+      "align": "center",
+      "text": "BATHROOMS",
+      "companion_art": [
+        {
+          "bbox": [
+            750,
+            912,
+            852,
+            1008
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cta_label",
+      "role": "stat.label",
+      "source": "template_copy",
+      "bbox": [
+        420,
+        1123,
+        660,
+        1158
+      ],
+      "size": 34,
+      "valign": "top",
+      "font": "Poppins",
+      "align": "center",
+      "text": "MORE INFO:"
+    },
+    {
+      "id": "cta_web",
+      "role": "accent",
+      "source": "template_copy",
+      "bbox": [
+        290,
+        1195,
+        790,
+        1231
+      ],
+      "size": 34.7,
+      "pad": 4,
+      "valign": "top",
+      "font": "Poppins",
+      "align": "center",
+      "text": "WWW.REALLYGREATSITE.COM"
+    }
   ]
 }

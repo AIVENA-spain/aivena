@@ -1,0 +1,12 @@
+{
+  "replace": [
+    {
+      "find": "<g mask=\"url(#777790a786)\">",
+      "replace": "<g>"
+    },
+    {
+      "find": "<image x=\"0\" y=\"0\" width=\"3872\" xlink:href=\"@@PHOTO0@@\" height=\"2582\" preserveAspectRatio=\"xMidYMid meet\"/>",
+      "replace": ""
+    }
+  ]
+}

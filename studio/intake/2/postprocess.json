@@ -1,0 +1,8 @@
+{
+  "replace": [
+    {
+      "find": "<g mask=\"url(#b59fe1c419)\">",
+      "replace": "<g display=\"none\">"
+    }
+  ]
+}

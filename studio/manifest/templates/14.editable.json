@@ -1,34 +1,339 @@
 {
   "template_id": "14",
-  "title_font_status": "needs_seed — bold geometric sans (with an italic accent on 'SOLD!') not in vault; Poppins-Regular + faux-bold as a category-correct placeholder. Canva source font confirmation owed.",
-  "_note": "#14 (Just Sold — LIGHT). Every text bbox measured from the rendered baked source. Editable <text> slots: the JUST SOLD! headline (post-type copy), the 3-stat row, the 3 contact lines, and the agency-name block that REPLACES the baked 'Snag Space' placeholder logo (knocked out — a real agency-logo image slot is a future enhancement; the agency name is rendered as text so no wrong agency is shown). The stat ICONS (house=area, bed=beds, bath=baths) are baked art and stay — universally correct. Colours are role tokens (agency colour wheel). No invented facts: stats + the sold-location line are real; phone/web/agency-name are agency data; JUST SOLD! + labels are template copy. Missing facts hide their slot.",
-  "canvas": { "width": 1080, "height": 1350 },
-  "source_svg": "assets/14/source.tokenized.svg",
+  "title_font_status": "IDENTIFIED + SEEDED (whole-word position-exact IoU vs the baked glyphs, 2026-07-04, upgraded after adversarial review): 'JUST' = Questrial 400 (0.648 whole-word, clear gap over Didact 0.577/Poppins 0.548; J-descender + wide geometric caps confirmed by eye). 'SOLD!' = Red Hat Display Black Italic 900 (real italic file; replaced Jost 900i after a 14-face re-search — position-exact slot IoU 0.815 vs Jost 0.742; RHD's large oval O/D counters match the original where Jost's were visibly smaller; rendered ink [495,132,878,229] vs baked [495,132,877,229]). Stat labels = Glacial Indifference 500 (fonts/GlacialIndifference-Medium.ttf, SYNTHESIZED from the seeded Regular by outline-offsetting every glyph +13 units via skia-pathops stroke+union — a real outline face, not render-time faux bold — because Canva's outlined GI paths are ~12% fatter than the OFL release; dark-pixel deficit vs baked now 0.2%, was 11.8%). Footer contact lines = Glacial Indifference 400 (already at/above baked ink weight; flat-top 3, flagged 1, single-storey a all match; converted from the OFL OTF release to TTF, superscript-two synthesized). No render-time faux effects anywhere.",
+  "_note": "#14 (Just Sold — LIGHT). STRIP-PLATE REPLICATION (2026-07-04, replaces the rejected knockout method): assets/14/source.stripped.svg = the Canva source with ONLY the dynamic text paths + the 'Snag Space' placeholder logo block removed (engine/stripPlate.ts, intake/14/strip_zones.json — 123 paths dropped, verified 0 leftover glyph ink in all 8 zones and 0 px changed in the icon/divider band). KEPT baked art: cream background, the 3 stat icons (house/bed/bath at ink boxes x329-383/511-567/692-755, y319-379), the 2 thin dividers (x453/x625), the feather-masked photo window (y~410-1123, fades into the cream). NO hairline exists above the footer (earlier note was wrong — rows 1080-1150 carry zero baked ink outside the photo feather). Editable text draws directly on the intact plate (no_knockouts — no cover-up boxes possible; the old footer knockout seam cannot recur). SEAM FIX (2026-07-04 adversarial review): the baked bottom feather plateaus at ~93-97% opacity and the photo bitmap ends hard at row y=1123 — the scrim below is a background-colour gradient that COMPLETES the feather (opacity 0 at y1117.5 -> 1 at y1123 -> back to 0 by y1128), so the photo's last row fades to exact #cac6ba with no hard edge; rows >=1129 untouched (plate is empty there). ORPHAN-ICON FIX (same review): adaptive_panel neutralizes the baked area icon with exact background ONLY when stat_area is empty (size unknown -> no icon, no label; degrade honestly, no dangling art); when size exists the panel draws nothing and the baked icon stays. The headline is TWO slots at measured positions: light-geometric JUST + heavy-italic SOLD!, replicating the original two-face treatment. Slot geometry from measured baselines: JUST cap 134->baseline 228; SOLD! cap ~136->229; stat labels cap 399->414 centered under their icons (357/540/723.5); contact baselines 1173/1230/1282 at x=93; brand = 2-line agency text replacing the stripped placeholder logo (centered on the old logo axis x~930). No invented facts: stats/address are property facts (missing -> hidden), phone/web/brand are agency data, JUST SOLD! is template copy. Eligibility guard kept: just_sold renders only for sold status or an explicit demo. DEGRADE (2026-07-04): each stat slot declares its baked companion art (icon + its divider) via companion_art — a missing fact hides label AND art together, no orphaned icon/divider (replaces the adaptive_panel workaround). MORE-IMAGE (Christian 2026-07-06): the source's four mirrored feather-band groups (masks 8dfbf53aaf/d642f2cf8c/d12d9cf75b/8ea378135c) ate ~2/3 of the photo window; intake/14/postprocess.json deletes them (reproducible via stripPlate), leaving the FULL hard window y405-1124. The manifest scrim now draws only short 30px cream fades at the window's top (under the stat labels) and bottom (into the footer) — under_art keeps baked art crisp. Replaces the old seam-completion scrim.",
+  "canvas": {
+    "width": 1080,
+    "height": 1350
+  },
+  "source_svg": "assets/14/source.stripped.svg",
+  "photo_fit": "attention",
   "photo_token": "@@PHOTO0@@",
-  "eligibility": { "post_type": "just_sold", "requires_status": ["sold"], "note": "Only render Just Sold for a SOLD property (or an explicit demo/test render) — never auto-generate it for an active listing." },
-  "knockout_regions": [[840, 1126, 1016, 1306]],
+  "no_knockouts": true,
+  "scrim": {
+    "role": "background",
+    "under_art": true,
+    "stops": [
+      {
+        "offset": 0,
+        "opacity": 1
+      },
+      {
+        "offset": 0.2955,
+        "opacity": 1
+      },
+      {
+        "offset": 0.313,
+        "opacity": 0.88
+      },
+      {
+        "offset": 0.335,
+        "opacity": 0.55
+      },
+      {
+        "offset": 0.36,
+        "opacity": 0.2
+      },
+      {
+        "offset": 0.385,
+        "opacity": 0.05
+      },
+      {
+        "offset": 0.405,
+        "opacity": 0
+      },
+      {
+        "offset": 0.741,
+        "opacity": 0
+      },
+      {
+        "offset": 0.762,
+        "opacity": 0.05
+      },
+      {
+        "offset": 0.785,
+        "opacity": 0.2
+      },
+      {
+        "offset": 0.808,
+        "opacity": 0.55
+      },
+      {
+        "offset": 0.826,
+        "opacity": 0.88
+      },
+      {
+        "offset": 0.8326,
+        "opacity": 1
+      },
+      {
+        "offset": 1,
+        "opacity": 1
+      }
+    ]
+  },
+  "eligibility": {
+    "post_type": "just_sold",
+    "requires_status": [
+      "sold"
+    ],
+    "note": "Only render Just Sold for a SOLD property (or an explicit demo/test render) — never auto-generate it for an active listing."
+  },
   "colour_tokens": {
-    "background": { "default": "#c9c5b9", "locked": true },
-    "overlay": { "default": "#c9c5b9", "locked": true },
-    "title": { "default": "#1a1a1a", "locked": false },
-    "subtitle/body": { "default": "#1a1a1a", "locked": false },
-    "accent": { "default": "#1a1a1a", "locked": false },
-    "badge.fill": { "default": "#1a1a1a", "locked": false },
-    "badge.text": { "default": "#1a1a1a", "locked": false },
-    "divider": { "default": "#1a1a1a", "locked": true },
-    "icon": { "default": "#1a1a1a", "locked": true },
-    "stat.label": { "default": "#1a1a1a", "locked": false },
-    "stat.value": { "default": "#1a1a1a", "locked": false },
-    "cta": { "default": "#1a1a1a", "locked": false }
+    "background": {
+      "default": "#cac6ba",
+      "locked": true
+    },
+    "overlay": {
+      "default": "#cac6ba",
+      "locked": true
+    },
+    "title": {
+      "default": "#343434",
+      "locked": false
+    },
+    "subtitle/body": {
+      "default": "#343434",
+      "locked": false
+    },
+    "accent": {
+      "default": "#343434",
+      "locked": false
+    },
+    "badge.fill": {
+      "default": "#343434",
+      "locked": false
+    },
+    "badge.text": {
+      "default": "#343434",
+      "locked": false
+    },
+    "divider": {
+      "default": "#343434",
+      "locked": true
+    },
+    "icon": {
+      "default": "#343434",
+      "locked": true
+    },
+    "stat.label": {
+      "default": "#343434",
+      "locked": false
+    },
+    "stat.value": {
+      "default": "#343434",
+      "locked": false
+    },
+    "cta": {
+      "default": "#343434",
+      "locked": false
+    }
   },
   "text_slots": [
-    { "id": "title", "role": "title", "source": "template_copy", "bbox": [180, 122, 888, 244], "size": 96, "valign": "center", "weight": "bold", "font": "Poppins", "align": "center", "text": "JUST SOLD!" },
-    { "id": "stat_area", "role": "stat.value", "source": "property_fact", "bbox": [288, 390, 452, 426], "size": 21, "pad": 6, "valign": "center", "font": "Poppins", "align": "center", "text": "500 M²" },
-    { "id": "stat_beds", "role": "stat.value", "source": "property_fact", "bbox": [456, 390, 624, 426], "size": 21, "pad": 6, "valign": "center", "font": "Poppins", "align": "center", "text": "3 BEDROOMS" },
-    { "id": "stat_baths", "role": "stat.value", "source": "property_fact", "bbox": [628, 390, 800, 426], "size": 21, "pad": 6, "valign": "center", "font": "Poppins", "align": "center", "text": "2 BATHROOMS" },
-    { "id": "contact_addr", "role": "subtitle/body", "source": "property_fact", "bbox": [90, 1140, 700, 1186], "size": 38, "weight": "600", "valign": "center", "font": "Poppins", "align": "left", "text": "123 Anywhere St., Any City" },
-    { "id": "contact_phone", "role": "subtitle/body", "source": "template_copy", "bbox": [90, 1190, 700, 1240], "size": 37, "valign": "center", "font": "Poppins", "align": "left", "text": "+123-456-7890" },
-    { "id": "contact_web", "role": "cta", "source": "template_copy", "bbox": [90, 1250, 700, 1300], "size": 37, "valign": "center", "font": "Poppins", "align": "left", "text": "www.reallygreatsite.com" },
-    { "id": "brand", "role": "badge.text", "source": "template_copy", "bbox": [828, 1148, 1022, 1292], "size": 29, "line_height": 35, "weight": "bold", "valign": "center", "font": "Poppins", "align": "center", "text": "Snag Space" }
+    {
+      "id": "headline_just",
+      "role": "title",
+      "source": "template_copy",
+      "bbox": [
+        115,
+        82,
+        485,
+        220
+      ],
+      "size": 142,
+      "valign": "top",
+      "font": "Questrial",
+      "align": "right",
+      "text": "JUST",
+      "tracking": -13.33
+    },
+    {
+      "id": "headline_sold",
+      "role": "title",
+      "source": "template_copy",
+      "bbox": [
+        497,
+        87,
+        925,
+        221
+      ],
+      "size": 136.2,
+      "valign": "top",
+      "weight": "900",
+      "italic": true,
+      "font": "Red Hat Display",
+      "align": "left",
+      "text": "SOLD!",
+      "tracking": -9
+    },
+    {
+      "id": "stat_area",
+      "role": "stat.value",
+      "source": "property_fact",
+      "bbox": [
+        277,
+        360,
+        437,
+        394
+      ],
+      "size": 22,
+      "pad": 4,
+      "valign": "top",
+      "font": "Glacial Indifference",
+      "align": "center",
+      "text": "500 M2",
+      "weight": "500",
+      "companion_art": [
+        {
+          "bbox": [
+            325,
+            280,
+            388,
+            348
+          ]
+        },
+        {
+          "bbox": [
+            449,
+            284,
+            459,
+            368
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stat_beds",
+      "role": "stat.value",
+      "source": "property_fact",
+      "bbox": [
+        460,
+        360,
+        620,
+        394
+      ],
+      "size": 22,
+      "pad": 4,
+      "valign": "top",
+      "font": "Glacial Indifference",
+      "align": "center",
+      "text": "3 BEDROOMS",
+      "weight": "500",
+      "companion_art": [
+        {
+          "bbox": [
+            508,
+            289,
+            572,
+            339
+          ]
+        },
+        {
+          "bbox": [
+            621,
+            284,
+            631,
+            368
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stat_baths",
+      "role": "stat.value",
+      "source": "property_fact",
+      "bbox": [
+        643,
+        360,
+        803,
+        394
+      ],
+      "size": 22,
+      "pad": 4,
+      "valign": "top",
+      "font": "Glacial Indifference",
+      "align": "center",
+      "text": "BATHROOMS",
+      "weight": "500",
+      "companion_art": [
+        {
+          "bbox": [
+            688,
+            280,
+            759,
+            346
+          ]
+        }
+      ]
+    },
+    {
+      "id": "contact_addr",
+      "role": "subtitle/body",
+      "source": "property_fact",
+      "bbox": [
+        91,
+        1143,
+        700,
+        1192
+      ],
+      "size": 37,
+      "valign": "top",
+      "font": "Glacial Indifference",
+      "align": "left",
+      "text": "123 Anywhere St., Any City, ST 12345",
+      "tracking": -0.45
+    },
+    {
+      "id": "contact_phone",
+      "role": "subtitle/body",
+      "source": "template_copy",
+      "bbox": [
+        91,
+        1200,
+        700,
+        1245
+      ],
+      "size": 37,
+      "valign": "top",
+      "font": "Glacial Indifference",
+      "align": "left",
+      "text": "+123-456-7890",
+      "tracking": -0.45
+    },
+    {
+      "id": "contact_web",
+      "role": "cta",
+      "source": "template_copy",
+      "bbox": [
+        91,
+        1252,
+        700,
+        1300
+      ],
+      "size": 37,
+      "valign": "top",
+      "font": "Glacial Indifference",
+      "align": "left",
+      "text": "www.reallygreatsite.com",
+      "tracking": -0.5
+    },
+    {
+      "id": "brand",
+      "role": "badge.text",
+      "source": "template_copy",
+      "bbox": [
+        828,
+        1150,
+        1032,
+        1290
+      ],
+      "size": 30,
+      "line_height": 36,
+      "weight": "600",
+      "valign": "center",
+      "font": "Poppins",
+      "align": "center",
+      "text": "Snag Space\nReal Estate Group"
+    }
   ]
 }

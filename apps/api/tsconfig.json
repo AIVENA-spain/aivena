@@ -7,7 +7,11 @@
   },
   "include": [
     "src/**/*",
-    "../../packages/**/*"
+    "../../packages/**/*",
+    "../../studio/engine/renderEditable.ts",
+    "../../studio/engine/derive.ts",
+    "../../studio/src/lib/paths.ts",
+    "../../studio/src/lib/render.ts"
   ],
   "exclude": [
     "node_modules",

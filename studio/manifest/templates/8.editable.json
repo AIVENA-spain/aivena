@@ -1,0 +1,95 @@
+{
+  "template_id": "8",
+  "title_font_status": "Label = Inter 400 (0.73 composite on M/O/R single-glyph probes; heavy +0.23em tracking defeats whole-word IoU).",
+  "_note": "#8 (Minimalist Interior — 4-tile photo collage). STRIP-PLATE from canonical Drive source; the collage frames/gutters are baked structure. Exactly ONE text element (the header label) — editable template copy. Photos = interior showcase, attention-fitted per tile.",
+  "canvas": {
+    "width": 1080,
+    "height": 1350
+  },
+  "source_svg": "assets/8/source.stripped.svg",
+  "photo_fit": "attention",
+  "photo_slots": [
+    {
+      "token": "@@PHOTO0@@"
+    },
+    {
+      "token": "@@PHOTO1@@"
+    },
+    {
+      "token": "@@PHOTO2@@"
+    },
+    {
+      "token": "@@PHOTO3@@"
+    }
+  ],
+  "no_knockouts": true,
+  "colour_tokens": {
+    "background": {
+      "default": "#ffffff",
+      "locked": false
+    },
+    "overlay": {
+      "default": "#000000",
+      "locked": true
+    },
+    "title": {
+      "default": "#342722",
+      "locked": false
+    },
+    "subtitle/body": {
+      "default": "#342722",
+      "locked": false
+    },
+    "accent": {
+      "default": "#d9c1a3",
+      "locked": false
+    },
+    "badge.fill": {
+      "default": "#d9c1a3",
+      "locked": false
+    },
+    "badge.text": {
+      "default": "#342722",
+      "locked": false
+    },
+    "divider": {
+      "default": "#342722",
+      "locked": true
+    },
+    "icon": {
+      "default": "#342722",
+      "locked": true
+    },
+    "stat.label": {
+      "default": "#342722",
+      "locked": false
+    },
+    "stat.value": {
+      "default": "#342722",
+      "locked": false
+    },
+    "cta": {
+      "default": "#342722",
+      "locked": false
+    }
+  },
+  "text_slots": [
+    {
+      "id": "label",
+      "role": "title",
+      "source": "template_copy",
+      "bbox": [
+        548,
+        18,
+        1068,
+        58
+      ],
+      "font": "Inter",
+      "size": 34,
+      "align": "center",
+      "text": "MINIMALIST INTERIOR",
+      "valign": "center",
+      "tracking": 7.8
+    }
+  ]
+}

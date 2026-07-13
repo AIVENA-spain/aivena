@@ -1,0 +1,14 @@
+{
+ "replace": [
+  {
+   "find": "<g mask=\"url(#9cbcb94d17)\">",
+   "replace": "<g>",
+   "why": "Neutralize house-silhouette luminance mask: demo-only cutout of the demo house's skyline (white house / black sky, so paper texture showed through the sky). Any real property photo would be silhouette-clipped by the demo house shape; a true luminance mask would also self-mask dark photo areas. Hero must render full-bleed rectangular within clip 4473d9129e."
+  },
+  {
+   "find": "<mask id=\"9cbcb94d17\"><g filter=\"url(#e529832d6b)\"><g filter=\"url(#619821b9d5)\" transform=\"matrix(0.212382, 0, 0, 0.212521, -6.32257, 463.570107)\"><image x=\"0\" y=\"0\" width=\"3872\" xlink:href=\"@@PHOTO0@@\" height=\"2582\" preserveAspectRatio=\"xMidYMid meet\"/></g></g></mask>",
+   "replace": "",
+   "why": "Remove the orphaned mask def and its @@PHOTO0@@ grayscale silhouette image so compose never has to feed PHOTO0 anything."
+  }
+ ]
+}

@@ -1,9 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
 import { abs } from "../src/lib/paths";
-import { renderEditable, loadEditableManifest, renderFilledSource, EditableManifest, Palette } from "./renderEditable";
+import { renderEditable, loadEditableManifest, renderFilledSource, pickPhotos, EditableManifest, Palette, textWidth } from "./renderEditable";
 import { runVisualQA, QACheck } from "./visualQA";
 import { composeOne } from "../src/lib/compose";
+import { deriveSlots, agencyPalette, applyDerived } from "./derive";
 
 // FINAL-OUTPUT PROOF: run REAL properties through the closest real/full engine path per promoted template
 // (#4 → composeOne; #11/#1/#7 → renderEditable). ALL slot content is DERIVED GENERALLY from facts + agency
@@ -14,103 +15,6 @@ const FIX = JSON.parse(fs.readFileSync(abs("facts/studio_demo_properties.json"),
 export const AGENCY = FIX.agency;
 export const PROPS: any[] = FIX.properties;
 const SUPA = "https://atminvhrybxegpdtnnpl.supabase.co/storage/v1/object/public";
-
-const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
-const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? "" : "s"}`;
-const priceStr = (p: number | null) => (p != null ? "€" + Number(p).toLocaleString("en-US") : null);
-const lumaHex = (hex: string) => { const h = hex.replace("#", ""); const [r, g, b] = [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16)); return 0.299 * r + 0.587 * g + 0.114 * b; };
-// split a multi-word name into two BALANCED lines (pick the word break that most evens the two line lengths) —
-// e.g. "Mediterráneo Costa Homes" -> "Mediterráneo" / "Costa Homes", not "Mediterráneo Costa" / "Homes".
-function splitTwoLines(s: string): string {
-  const w = s.trim().split(/\s+/); if (w.length < 2) return s;
-  let best = 1, bestDiff = Infinity;
-  for (let i = 1; i < w.length; i++) { const a = w.slice(0, i).join(" ").length, b = w.slice(i).join(" ").length; if (Math.abs(a - b) < bestDiff) { bestDiff = Math.abs(a - b); best = i; } }
-  return w.slice(0, best).join(" ") + "\n" + w.slice(best).join(" ");
-}
-
-// GENERAL feature list for #7: beds, baths, then the property's own top real features. Empty rows are hidden
-// (a 0-feature property shows only beds+baths). Works for any property_type / feature set — no cherry-picking.
-function featureRows(p: any): string[] {
-  const rows: string[] = [];
-  if (p.beds != null) rows.push(plural(p.beds, "Bedroom"));
-  if (p.baths != null) rows.push(plural(p.baths, "Bathroom"));
-  for (const f of p.features || []) { if (rows.length >= 5) break; rows.push(String(f)); }
-  while (rows.length < 5) rows.push("");
-  return rows.slice(0, 5);
-}
-
-// GENERAL slot derivation: pure function of (property facts, agency) — the single place property data maps to
-// template slots, consistently for every property. No per-property strings.
-function deriveSlots(p: any, agency: any, templateId: string): Record<string, { text: string }> {
-  const typeCap = cap(p.type);
-  const loc = [p.city, p.region].filter(Boolean).join(", ");
-  const price = priceStr(p.price);
-  const brand2 = splitTwoLines(agency.name);
-  const T = (text: string) => ({ text });
-  if (templateId === "11") return { brand: T(brand2), title: T(`${typeCap} in\n${p.city}`.toUpperCase()), address: T(loc) };
-  if (templateId === "1") return {
-    stat_left: T(plural(p.beds, "Bedroom").toUpperCase()),
-    stat_center: T(p.size ? `${p.size} M²` : "LIVING ROOM"),
-    stat_right: T(plural(p.baths, "Bathroom").toUpperCase()),
-    contact: T(`${agency.phone}   ·   ${agency.web}`),
-  };
-  if (templateId === "7") {
-    const bodyLine2 = [price, p.size ? `${p.size} m² built` : null].filter(Boolean).join("  ·  ");
-    const out: Record<string, { text: string }> = {
-      brand: T(brand2), title: T(`${typeCap} in\n${p.city}`),
-      body: T([loc, bodyLine2].filter(Boolean).join("\n")),
-      cta_phone: T(agency.phone), cta_web: T(agency.web),
-    };
-    featureRows(p).forEach((r, i) => (out[`feat_${i + 1}`] = T(r)));
-    return out;
-  }
-  if (templateId === "5") return {
-    title: T(`${typeCap} in\n${p.city}`),
-    price_label: T(price ? "PRICE:" : ""), price_value: T(price || ""),
-    stat_area: T(p.size ? `${p.size} M²` : ""),
-    stat_beds: T(plural(p.beds, "Bedroom").toUpperCase()),
-    stat_baths: T(plural(p.baths, "Bathroom").toUpperCase()),
-    cta_web: T(agency.web),
-  };
-  if (templateId === "14") return {
-    stat_area: T(p.size ? `${p.size} M²` : ""),
-    stat_beds: T(plural(p.beds, "Bedroom").toUpperCase()),
-    stat_baths: T(plural(p.baths, "Bathroom").toUpperCase()),
-    contact_addr: T(loc), contact_phone: T(agency.phone), contact_web: T(agency.web),
-    brand: T(splitTwoLines(agency.name)),
-  };
-  if (templateId === "3") return {
-    luxury: T("LUXURY"), type_script: T(typeCap),
-    subtitle: T(`This brand-new ${p.type} in ${p.city} is now available\nand offers everything you need for a stylish,\ncomfortable, and convenient lifestyle.`.toUpperCase()),
-    stat_area: T(p.size ? `${p.size} M²` : ""),
-    stat_beds: T(plural(p.beds, "Bedroom").toUpperCase()),
-    stat_baths: T(plural(p.baths, "Bathroom").toUpperCase()),
-    cta_web: T(agency.web),
-  };
-  if (templateId === "6") return {
-    handle: T(`@${agency.web.replace(/^www\./, "").replace(/\.[a-z.]+$/, "")}`),
-    title: T(`${typeCap} in\n${p.city}`),
-    // subtitle kept as the template's generic marketing copy (4 lines, matching the source) — editable, not a fact
-    stat_area: T(p.size ? `${p.size} M²` : ""),
-    stat_beds: T(plural(p.beds, "Bedroom").toUpperCase()),
-    stat_baths: T(plural(p.baths, "Bathroom").toUpperCase()),
-  };
-  return {};
-}
-
-// contrast-aware agency brand palette (navy on light, cream/gold on dark). Structural roles keep template defaults.
-function agencyPalette(m: EditableManifest): Palette {
-  const dark = lumaHex(m.colour_tokens["background"]?.default || "#ffffff") < 128;
-  return dark
-    ? { title: AGENCY.cream, "subtitle/body": AGENCY.cream, accent: AGENCY.gold, "stat.value": AGENCY.gold, "stat.label": AGENCY.cream, "badge.text": AGENCY.gold }
-    : { title: AGENCY.navy, "subtitle/body": AGENCY.text, accent: AGENCY.gold, "badge.text": AGENCY.navy, "stat.label": AGENCY.navy, "stat.value": AGENCY.text };
-}
-
-function applyDerived(m: EditableManifest, derived: Record<string, { text: string }>): EditableManifest {
-  const c: EditableManifest = JSON.parse(JSON.stringify(m));
-  for (const s of c.text_slots) { const o = derived[s.id]; if (o) s.text = o.text; }
-  return c;
-}
 
 const jpgUri = (f: string) => "data:image/jpeg;base64," + fs.readFileSync(f).toString("base64");
 export async function ensureImages(p: any): Promise<string[]> {
@@ -126,10 +30,8 @@ export async function ensureImages(p: any): Promise<string[]> {
 
 export async function renderEditableFor(p: any, templateId: string, imgs: string[]) {
   const m = applyDerived(loadEditableManifest(`manifest/templates/${templateId}.editable.json`), deriveSlots(p, AGENCY, templateId));
-  let photos: string | Record<string, string>;
-  if (m.photo_slots && m.photo_slots.length > 1) { const map: Record<string, string> = {}; m.photo_slots.forEach((s, i) => (map[s.token] = jpgUri(imgs[i % imgs.length]))); photos = map; }
-  else photos = jpgUri(imgs[templateId === "1" ? Math.min(1, imgs.length - 1) : 0]);
-  const r = await renderEditable(m, agencyPalette(m), photos);
+  const photos = await pickPhotos(m, imgs, templateId);
+  const r = await renderEditable(m, m.palette_locked ? {} : agencyPalette(m, AGENCY), photos);
   const qa = await runVisualQA(m, r);
   return { png: r.png, m, r, qa };
 }
@@ -214,7 +116,7 @@ async function main() {
   {
     const m = applyDerived(loadEditableManifest(`manifest/templates/7.editable.json`), deriveSlots(primary, AGENCY, "7"));
     const photoMap: Record<string, string> = {}; m.photo_slots!.forEach((s, i) => (photoMap[s.token] = jpgUri(imgsByProp[primary.id][i % imgsByProp[primary.id].length])));
-    const A = await renderEditable(m, agencyPalette(m), photoMap);
+    const A = await renderEditable(m, agencyPalette(m, AGENCY), photoMap);
     const ref = renderFilledSource(m, photoMap);
     const side = async (l: Buffer, r: Buffer, h: number, ll: string, rl: string, out: string) => {
       const la = await sharp(l).resize({ height: h }).png().toBuffer(), lb = await sharp(r).resize({ height: h }).png().toBuffer();

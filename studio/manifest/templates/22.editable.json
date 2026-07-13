@@ -1,0 +1,222 @@
+{
+  "template_id": "22",
+  "title_font_status": "JUST LISTED = Anton 400 (0.75; OFL). Stats + contact = Jost 400 (OFL, seeded).",
+  "_note": "#22 (JUST LISTED poster). STRIP-PLATE from canonical Drive source. PAPER TEXTURE re-embedded as BAKED art (design artwork, not a photo slot). Hero unmasked + skyline-silhouette mask source dropped via intake/22/postprocess.json (agent-authored, verifier-confirmed: the mask was a distinct grayscale skyline cutout — self-masking hazard on arbitrary photos). Stats derive from real facts (count prepended to BATHROOMS per the verifier note); missing fact hides value + icon + its divider. Title tracking ~-0.02em per the verifier's corrected measurement (auto-fit enforces the span).",
+  "canvas": {
+    "width": 1080,
+    "height": 1350
+  },
+  "source_svg": "assets/22/source.stripped.svg",
+  "photo_fit": "attention",
+  "photo_slots": [
+    {
+      "token": "@@PHOTO2@@"
+    }
+  ],
+  "no_knockouts": true,
+  "colour_tokens": {
+    "background": {
+      "default": "#efe9dd",
+      "locked": false
+    },
+    "overlay": {
+      "default": "#000000",
+      "locked": true
+    },
+    "title": {
+      "default": "#1a1a1a",
+      "locked": false
+    },
+    "subtitle/body": {
+      "default": "#1a1a1a",
+      "locked": false
+    },
+    "accent": {
+      "default": "#c8a24b",
+      "locked": false
+    },
+    "badge.fill": {
+      "default": "#c8a24b",
+      "locked": false
+    },
+    "badge.text": {
+      "default": "#1a1a1a",
+      "locked": false
+    },
+    "divider": {
+      "default": "#1a1a1a",
+      "locked": true
+    },
+    "icon": {
+      "default": "#1a1a1a",
+      "locked": true
+    },
+    "stat.label": {
+      "default": "#1a1a1a",
+      "locked": false
+    },
+    "stat.value": {
+      "default": "#1a1a1a",
+      "locked": false
+    },
+    "cta": {
+      "default": "#1a1a1a",
+      "locked": false
+    }
+  },
+  "text_slots": [
+    {
+      "id": "title",
+      "role": "title",
+      "source": "template_copy",
+      "bbox": [
+        21,
+        118,
+        1056,
+        366
+      ],
+      "font": "Anton",
+      "size": 300,
+      "align": "center",
+      "text": "JUST LISTED",
+      "valign": "top",
+      "tracking": -6
+    },
+    {
+      "id": "stat_size",
+      "role": "stat.value",
+      "source": "property_fact",
+      "bbox": [
+        300,
+        508,
+        413,
+        537
+      ],
+      "font": "Jost",
+      "size": 22,
+      "align": "center",
+      "text": "500 M2",
+      "companion_art": [
+        {
+          "bbox": [
+            325,
+            432,
+            388,
+            498
+          ]
+        },
+        {
+          "bbox": [
+            449,
+            432,
+            459,
+            533
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stat_beds",
+      "role": "stat.value",
+      "source": "property_fact",
+      "bbox": [
+        455,
+        508,
+        625,
+        537
+      ],
+      "font": "Jost",
+      "size": 22,
+      "align": "center",
+      "text": "3 BEDROOMS",
+      "companion_art": [
+        {
+          "bbox": [
+            508,
+            432,
+            572,
+            498
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stat_baths",
+      "role": "stat.value",
+      "source": "property_fact",
+      "bbox": [
+        640,
+        508,
+        810,
+        537
+      ],
+      "font": "Jost",
+      "size": 22,
+      "align": "center",
+      "text": "BATHROOMS",
+      "companion_art": [
+        {
+          "bbox": [
+            688,
+            432,
+            759,
+            498
+          ]
+        },
+        {
+          "bbox": [
+            620,
+            432,
+            631,
+            533
+          ]
+        }
+      ]
+    },
+    {
+      "id": "handle",
+      "role": "subtitle/body",
+      "source": "template_copy",
+      "bbox": [
+        89,
+        618,
+        300,
+        654
+      ],
+      "font": "Jost",
+      "size": 27,
+      "align": "left",
+      "text": "@reallygreatsite"
+    },
+    {
+      "id": "address",
+      "role": "subtitle/body",
+      "source": "property_fact",
+      "bbox": [
+        340,
+        618,
+        740,
+        654
+      ],
+      "font": "Jost",
+      "size": 27,
+      "align": "center",
+      "text": "123 Anywhere St. Any City"
+    },
+    {
+      "id": "cta_phone",
+      "role": "subtitle/body",
+      "source": "template_copy",
+      "bbox": [
+        770,
+        618,
+        986,
+        654
+      ],
+      "font": "Jost",
+      "size": 27,
+      "align": "right",
+      "text": "+123-456-7890"
+    }
+  ]
+}

@@ -18,10 +18,12 @@
     "dotenv": "^17.4.2",
     "drizzle-kit": "^0.31.10",
     "drizzle-orm": "^0.45.2",
+    "fontkit": "^2.0.4",
     "hono": "^4.12.18",
     "ioredis": "^5.10.1",
     "jose": "^6.2.3",
     "postgres": "^3.4.9",
+    "sharp": "^0.34.5",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^6.0.3",
     "winston": "^3.19.0",
@@ -39,5 +41,8 @@
     "test": "vitest run",
     "dev:api": "PORT=4000 tsx watch --env-file=.env apps/api/src/index.ts",
     "dev:dashboard": "npm run dev -w dashboard"
+  },
+  "allowScripts": {
+    "sharp@0.34.5": true
   }
 }

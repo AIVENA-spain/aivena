@@ -1,0 +1,282 @@
+{
+  "template_id": "27",
+  "title_font_status": "Script = Great Vibes (vault). Serif display = Playfair Display 500 (0.77, seeded). Sans = Inter 400/700 (seeded).",
+  "_note": "#27 (Real Estate OPEN HOUSE — dark green, checklist). STRIP-PLATE from canonical source (repair round verified): hero feather-mask, 3 checkbox icons, white CONTACT US button plate, footer divider + globe icon all baked. Features 1-3 = the property's real features (missing feature hides row + its checkbox via companion_art). date/time = open-house CAMPAIGN copy (editable placeholders — not listing facts; wizard supplies real values at send time).",
+  "canvas": {
+    "width": 1080,
+    "height": 1350
+  },
+  "source_svg": "assets/27/source.stripped.svg",
+  "photo_fit": "attention",
+  "photo_slots": [
+    {
+      "token": "@@PHOTO0@@"
+    },
+    {
+      "token": "@@PHOTO1@@"
+    },
+    {
+      "token": "@@PHOTO2@@"
+    },
+    {
+      "token": "@@PHOTO3@@"
+    }
+  ],
+  "no_knockouts": true,
+  "colour_tokens": {
+    "background": {
+      "default": "#2e3d33",
+      "locked": false
+    },
+    "overlay": {
+      "default": "#2e3d33",
+      "locked": true
+    },
+    "title": {
+      "default": "#ffffff",
+      "locked": false
+    },
+    "subtitle/body": {
+      "default": "#3a3a3a",
+      "locked": true
+    },
+    "accent": {
+      "default": "#c8a24b",
+      "locked": false
+    },
+    "badge.fill": {
+      "default": "#c8a24b",
+      "locked": false
+    },
+    "badge.text": {
+      "default": "#ffffff",
+      "locked": false
+    },
+    "divider": {
+      "default": "#ffffff",
+      "locked": true
+    },
+    "icon": {
+      "default": "#ffffff",
+      "locked": true
+    },
+    "stat.label": {
+      "default": "#ffffff",
+      "locked": false
+    },
+    "stat.value": {
+      "default": "#1f1f1f",
+      "locked": true
+    },
+    "cta": {
+      "default": "#1a1a1a",
+      "locked": true
+    }
+  },
+  "text_slots": [
+    {
+      "id": "script_accent",
+      "role": "accent",
+      "source": "template_copy",
+      "bbox": [
+        108,
+        398,
+        560,
+        512
+      ],
+      "font": "Great Vibes",
+      "size": 100,
+      "align": "left",
+      "text": "Real Estate"
+    },
+    {
+      "id": "title",
+      "role": "title",
+      "source": "template_copy",
+      "bbox": [
+        112,
+        512,
+        970,
+        640
+      ],
+      "font": "Playfair Display",
+      "size": 150,
+      "align": "center",
+      "text": "OPEN HOUSE",
+      "weight": "500",
+      "tracking": 10
+    },
+    {
+      "id": "date_line",
+      "role": "stat.label",
+      "source": "template_copy",
+      "bbox": [
+        646,
+        410,
+        968,
+        447
+      ],
+      "font": "Inter",
+      "size": 29,
+      "align": "left",
+      "text": "SUNDAY, 20 OCTOBER",
+      "weight": "700",
+      "tracking": 2
+    },
+    {
+      "id": "time_line",
+      "role": "stat.label",
+      "source": "template_copy",
+      "bbox": [
+        646,
+        447,
+        968,
+        478
+      ],
+      "font": "Inter",
+      "size": 29,
+      "align": "left",
+      "text": "START AT 09 AM - 8 PM",
+      "tracking": 2
+    },
+    {
+      "id": "body",
+      "role": "subtitle/body",
+      "source": "template_copy",
+      "bbox": [
+        110,
+        742,
+        470,
+        900
+      ],
+      "font": "Inter",
+      "size": 26,
+      "align": "left",
+      "text": "Looking for the perfect place to\ncall home? Don't miss this\nopportunity to explore a\nstunning property in a prime\nlocation!",
+      "line_height": 30
+    },
+    {
+      "id": "feature_1",
+      "role": "stat.value",
+      "source": "property_fact",
+      "bbox": [
+        160,
+        936,
+        470,
+        972
+      ],
+      "font": "Inter",
+      "size": 30,
+      "align": "left",
+      "text": "Spacious Layouts",
+      "companion_art": [
+        {
+          "bbox": [
+            104,
+            936,
+            146,
+            972
+          ]
+        }
+      ]
+    },
+    {
+      "id": "feature_2",
+      "role": "stat.value",
+      "source": "property_fact",
+      "bbox": [
+        160,
+        997,
+        470,
+        1033
+      ],
+      "font": "Inter",
+      "size": 30,
+      "align": "left",
+      "text": "Outdoor Spaces",
+      "companion_art": [
+        {
+          "bbox": [
+            104,
+            997,
+            146,
+            1033
+          ]
+        }
+      ]
+    },
+    {
+      "id": "feature_3",
+      "role": "stat.value",
+      "source": "property_fact",
+      "bbox": [
+        160,
+        1057,
+        470,
+        1093
+      ],
+      "font": "Inter",
+      "size": 30,
+      "align": "left",
+      "text": "Gourmet Kitchen",
+      "companion_art": [
+        {
+          "bbox": [
+            104,
+            1057,
+            146,
+            1093
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cta_label",
+      "role": "cta",
+      "source": "template_copy",
+      "bbox": [
+        130,
+        1235,
+        392,
+        1274
+      ],
+      "font": "Inter",
+      "size": 37,
+      "align": "center",
+      "text": "CONTACT US",
+      "weight": "700",
+      "tracking": 3
+    },
+    {
+      "id": "cta_web_label",
+      "role": "stat.label",
+      "source": "template_copy",
+      "bbox": [
+        672,
+        1228,
+        880,
+        1256
+      ],
+      "font": "Inter",
+      "size": 24,
+      "align": "left",
+      "text": "visit our website:"
+    },
+    {
+      "id": "cta_web_url",
+      "role": "stat.label",
+      "source": "template_copy",
+      "bbox": [
+        672,
+        1256,
+        975,
+        1290
+      ],
+      "font": "Inter",
+      "size": 25,
+      "align": "left",
+      "text": "www.reallygreatsite.com",
+      "weight": "700"
+    }
+  ]
+}

@@ -570,12 +570,14 @@ route.post('/editable-preview', async (c) => {
     for (const ref of refs) { const buf = await loadPhotoBuffer(ref); if (buf) buffers.push(buf); }
     if (buffers.length === 0) return c.json({ ok: false, error: 'photo_fetch_failed', message: "The selected photos couldn't be loaded." }, 422);
 
-    // a tapped colour scheme overrides the agency's own brand for this render (validated hex quad).
+    // AUTO: a tapped scheme overrides the agency's own brand (validated hex quad). MANUAL: per-layer wheel picks.
     const brand = isBrandColours(b.brand) ? b.brand : loaded.brand;
+    const obj = (v: unknown) => (v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, string>) : undefined);
     const stored = await renderAndStore({
       templateId, property: loaded.property, agency: loaded.agency, brand, photoBuffers: buffers,
-      textOverrides: (b.text_overrides && typeof b.text_overrides === 'object' ? b.text_overrides : undefined) as Record<string, string> | undefined,
-      colourOverrides: (b.colour_overrides && typeof b.colour_overrides === 'object' ? b.colour_overrides : undefined) as Record<string, string> | undefined,
+      textOverrides: obj(b.text_overrides),
+      colourOverrides: obj(b.colour_overrides),
+      manualColours: obj(b.manual_colours),
     });
     return c.json({ ok: true, template_id: templateId, image_url: stored.image_url, storage_path: stored.storage_path });
   } catch (err) {

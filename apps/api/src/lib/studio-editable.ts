@@ -93,10 +93,23 @@ export function templateMeta(id: string): TemplateMeta {
     editable_slots: m.text_slots.map((s: any) => ({
       id: s.id, label: labelSlot(s.id), role: s.role, source: s.source, default_text: s.text,
     })),
+    // MANUAL mode (Christian 2026-07-13) exposes EVERY colour layer — background, text, all of it — each with a
+    // wheel. The `locked` flag is informational (auto/brand-palette respects it; a manual pick bypasses it).
     colour_layers: Object.entries(m.colour_tokens)
-      .filter(([, v]: any) => !v.locked)
       .map(([role, v]: any) => ({ role, label: ROLE_LABELS[role] || labelSlot(role), default: v.default, locked: !!v.locked })),
   };
+}
+
+// The colour each role currently renders in: a locked token keeps its design default; an unlocked token takes
+// the agency/brand palette if it sets that role, else its default. Used to pre-fill the manual wheels AND as
+// the manual base (so a layer the agency doesn't touch keeps its correct colour).
+function effectiveColours(m: any, brand: BrandColours): Record<string, string> {
+  const pal = m.palette_locked ? {} : agencyPalette(m, brand);
+  const out: Record<string, string> = {};
+  for (const [role, v] of Object.entries<any>(m.colour_tokens)) {
+    out[role] = v.locked ? v.default : ((pal as any)[role] ?? v.default);
+  }
+  return out;
 }
 
 export function catalogue(): TemplateMeta[] {
@@ -145,7 +158,11 @@ export interface RenderOpts {
   brand: BrandColours;
   photoBuffers: Buffer[];
   textOverrides?: Record<string, string>;   // slotId -> text (the user's edits win over the derived defaults)
-  colourOverrides?: Record<string, string>; // role -> hex (the colour wheel; ignored on palette_locked templates)
+  // AUTO mode: optional per-role fine-tune on top of the brand/scheme palette; respects per-token locks.
+  colourOverrides?: Record<string, string>;
+  // MANUAL mode (Christian 2026-07-13): the user sets EVERY layer's colour with a wheel — bypasses per-token
+  // locks. Unset layers keep their correct current colour. Ignored on palette_locked templates (#10).
+  manualColours?: Record<string, string>;
 }
 
 /** Render a finished PNG for an editable template — deriveSlots defaults, then the user's text/colour edits. */
@@ -157,10 +174,21 @@ export async function renderEditableTemplate(opts: RenderOpts): Promise<Buffer> 
   for (const [id, text] of Object.entries(opts.textOverrides || {})) {
     if (typeof text === 'string') overrides[id] = { text };
   }
-  const m = applyDerived(m0, { ...derived, ...overrides });
-  const palette = m.palette_locked
-    ? {}
-    : { ...agencyPalette(m, opts.brand), ...(opts.colourOverrides || {}) };
+  const m: any = applyDerived(m0, { ...derived, ...overrides });
+
+  let palette: Record<string, string>;
+  if (m.palette_locked) {
+    palette = {}; // #10 — identity colours are baked/locked, no colour input applies
+  } else if (opts.manualColours && Object.keys(opts.manualColours).length) {
+    // MANUAL: base = each layer's current effective colour, then the user's wheel picks; unlock every token so
+    // the picks apply even to normally-locked layers (background/divider/icon/overlay/…).
+    const base = effectiveColours(m, opts.brand);
+    for (const v of Object.values<any>(m.colour_tokens)) v.locked = false;
+    palette = { ...base, ...opts.manualColours };
+  } else {
+    // AUTO / scheme (+ optional per-role fine-tune) — respects per-token locks via roleHex.
+    palette = { ...agencyPalette(m, opts.brand), ...(opts.colourOverrides || {}) };
+  }
   const photos = await pickPhotos(m, opts.photoBuffers, opts.templateId);
   const r = await renderEditable(m, palette, photos);
   return r.png;
@@ -185,7 +213,7 @@ export function editableDefaults(templateId: string, property: DeriveProperty, a
   const meta = templateMeta(templateId);
   const derived = deriveSlots(property, agency, templateId);
   const m = loadEditableManifest(manifestPathOf(templateId));
-  const pal = meta.palette_locked ? {} : agencyPalette(m as any, brand);
+  const eff = effectiveColours(m as any, brand); // correct current colour per layer (respects locks)
   return {
     ...meta,
     editable_slots: meta.editable_slots.map((s) => ({
@@ -195,8 +223,8 @@ export function editableDefaults(templateId: string, property: DeriveProperty, a
     })),
     colour_layers: meta.colour_layers.map((cl) => ({
       ...cl,
-      // the effective colour the layer currently renders in (agency palette if it sets this role, else default)
-      value: (pal as any)[cl.role] ?? cl.default,
+      // the colour the wheel starts on = what the layer currently renders in
+      value: eff[cl.role] ?? cl.default,
     })),
   };
 }

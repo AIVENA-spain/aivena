@@ -12,6 +12,14 @@ type LibraryItem = {
   created_at: string;
 };
 
+type Quota = {
+  used?: number;
+  quota?: number | null;
+  remaining?: number | null;
+  plan_tier?: string;
+  unlimited?: boolean;
+} | null;
+
 /**
  * Studio (W13 v0.6) — the agent-facing image generator. A Smart/Wizard fork →
  * content type → subject → look-by-sight → live fine-tune → generate → free
@@ -24,15 +32,27 @@ type LibraryItem = {
  */
 export default async function StudioPage() {
   let library: LibraryItem[] = [];
-  try {
-    const res = await apiFetch<{ ok: boolean; items?: LibraryItem[] }>(
-      "/api/studio/library",
-    );
-    if (res.ok && Array.isArray(res.items)) library = res.items;
-  } catch {
-    // Library is non-critical for first paint — the wizard still works; it
-    // refetches after each generation.
+  let quota: Quota = null;
+
+  // Library + quota both fetched for first paint; either failing is non-fatal
+  // (the wizard still works and refetches after each generation).
+  const [libRes, quotaRes] = await Promise.allSettled([
+    apiFetch<{ ok: boolean; items?: LibraryItem[] }>("/api/studio/library"),
+    apiFetch<{ ok: boolean; quota?: Quota }>(
+      "/api/v1/images/quota?type=social_post",
+    ),
+  ]);
+
+  if (
+    libRes.status === "fulfilled" &&
+    libRes.value.ok &&
+    Array.isArray(libRes.value.items)
+  ) {
+    library = libRes.value.items;
+  }
+  if (quotaRes.status === "fulfilled" && quotaRes.value.ok) {
+    quota = quotaRes.value.quota ?? null;
   }
 
-  return <StudioHome initialLibrary={library} />;
+  return <StudioHome initialLibrary={library} quota={quota} />;
 }

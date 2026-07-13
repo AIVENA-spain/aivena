@@ -174,7 +174,14 @@ type Screen = "fork" | "content" | "property" | "photo" | "renovation" | "look" 
 
 /* ── top-level wizard ────────────────────────────────────────────────────── */
 
-export function StudioWizard({ initialLibrary }: { initialLibrary: LibraryItem[] }) {
+export function StudioWizard({
+  initialLibrary,
+  initialFork,
+}: {
+  initialLibrary: LibraryItem[];
+  /** When set, skip the fork screen and enter that mode directly (landing routes here). */
+  initialFork?: "wizard" | "smart" | null;
+}) {
   const locale = useLocale();
   const language = efLanguage(locale);
 
@@ -289,6 +296,17 @@ export function StudioWizard({ initialLibrary }: { initialLibrary: LibraryItem[]
     setIsRenovationResult(false); setError(null);
   }
 
+  // When the Studio landing routes straight into a mode, consume it once on mount
+  // via the exact same handlers the fork buttons use (no new flow logic).
+  const forkConsumed = useRef(false);
+  useEffect(() => {
+    if (forkConsumed.current || !initialFork) return;
+    forkConsumed.current = true;
+    if (initialFork === "wizard") setScreen("content");
+    else if (initialFork === "smart") startFlow("listing", true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialFork]);
+
   const pollRef = useRef<number | null>(null);
   function pollUntilDone(id: string) {
     setGenStatus("processing");
@@ -373,7 +391,7 @@ export function StudioWizard({ initialLibrary }: { initialLibrary: LibraryItem[]
         libraryActive={screen === "library"}
       />
 
-      {screen === "fork" && (
+      {screen === "fork" && !initialFork && (
         <ForkStep onWizard={() => setScreen("content")} onSmart={() => startFlow("listing", true)} />
       )}
 

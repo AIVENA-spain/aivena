@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { env } from '../../../../packages/config/env';
 import { supabaseAdmin } from './supabase-admin';
 import './studio-data-root';
-import { renderFreeform, DesignSpec } from '../../../../studio/engine/renderFreeform';
+import { renderFreeform, normaliseSpec, DesignSpec } from '../../../../studio/engine/renderFreeform';
 import { vaultFamilies } from '../../../../studio/engine/renderEditable';
 import { DeriveProperty, DeriveAgency, BrandColours } from '../../../../studio/engine/derive';
 
@@ -97,7 +97,7 @@ function designBrief(opts: {
 
 CANVAS: ${opts.canvas.width}x${opts.canvas.height}px. All bbox coordinates are [x0,y0,x1,y1] in these pixels.
 
-THE ${opts.photoCount} PHOTOS shown above are the listing's real photos, in order (photo index 0..${opts.photoCount - 1}). Use ALL of them — each in its own frame. Photos render BELOW every rect/scrim/text.
+THE ${opts.photoCount} PHOTOS shown above are the listing's real photos, in order (photo index 0..${opts.photoCount - 1}). Use ALL of them — each in its own frame. Photos render BELOW every rect/scrim/text. A photo element's optional zoom (1-4) and x/y (FRACTIONS 0-1 of the source, 0.5/0.5 = centre) fine-tune the crop — omit all three for automatic framing.
 
 FACTS (the only real-world text allowed — reference by key, never retype):
 ${factList}
@@ -153,7 +153,8 @@ export async function designWithClaude(opts: {
     }
     const data = (await res.json()) as { content?: { type: string; input?: unknown }[] };
     const tool = data.content?.find((c) => c.type === 'tool_use');
-    const parsed = DesignSpec.safeParse(tool?.input);
+    // normalise before validating — don't fail a good design over syntax (colour vs fill, pixel x/y, nulls…)
+    const parsed = DesignSpec.safeParse(normaliseSpec(tool?.input));
     if (parsed.success) return parsed.data;
     lastErr = parsed.error.issues.slice(0, 5).map((i) => `${i.path.join('.')}: ${i.message}`).join('; ');
   }

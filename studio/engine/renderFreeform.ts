@@ -38,7 +38,8 @@ export const FreeformElement = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("text"),
     bbox: Bbox,
-    content: z.string().max(300),      // literal copy; ignored when `fact` is set (server substitutes)
+    // literal copy; fact elements may omit it entirely (the server substitutes the canonical string)
+    content: z.string().max(300).default(""),
     fact: z.string().optional(),       // fact key — the SERVER substitutes the canonical string
     font: z.string(),
     size: z.number().min(14).max(400),
@@ -58,6 +59,54 @@ export const DesignSpec = z.object({
   elements: z.array(FreeformElement).min(1).max(40),
 });
 export type DesignSpec = z.infer<typeof DesignSpec>;
+
+// ── normaliser: be liberal in what we accept ──────────────────────────────────
+// The first live Smart run failed on validation, not on design: the model omits `content` on fact elements
+// (as the brief itself instructs), writes `colour` on rects, gives photo crop positions in pixels, emits null
+// for optionals, 3-digit hex, numeric weights. All of that is unambiguous — normalise it BEFORE zod instead of
+// failing a perfectly good design over syntax.
+function normHex(v: unknown): unknown {
+  if (typeof v !== "string") return v;
+  let s = v.trim().toLowerCase();
+  if (/^[0-9a-f]{6}$/.test(s)) s = "#" + s;
+  if (/^#[0-9a-f]{3}$/.test(s)) s = "#" + s[1] + s[1] + s[2] + s[2] + s[3] + s[3];
+  if (/^#[0-9a-f]{8}$/.test(s)) s = s.slice(0, 7); // strip alpha
+  return s;
+}
+export function normaliseSpec(raw: unknown): unknown {
+  if (!raw || typeof raw !== "object") return raw;
+  const spec = { ...(raw as Record<string, unknown>) };
+  spec.background = normHex(spec.background);
+  if (!Array.isArray(spec.elements)) return spec;
+  spec.elements = (spec.elements as unknown[])
+    .map((e) => {
+      if (!e || typeof e !== "object") return null;
+      const el: Record<string, unknown> = { ...(e as Record<string, unknown>) };
+      for (const k of Object.keys(el)) if (el[k] === null || el[k] === undefined) delete el[k];
+      if (el.type === "rect") {
+        if (el.fill === undefined && el.colour !== undefined) el.fill = el.colour;
+        el.fill = normHex(el.fill);
+        if (typeof el.fill !== "string") return null; // a rect with no colour at all is meaningless
+      } else if (el.type === "scrim") {
+        if (el.colour === undefined && el.fill !== undefined) el.colour = el.fill;
+        el.colour = normHex(el.colour);
+        if (typeof el.colour !== "string") return null;
+      } else if (el.type === "photo") {
+        if (typeof el.zoom === "number") el.zoom = Math.min(6, Math.max(1, el.zoom));
+        // x/y are 0..1 crop positions; a value outside that range means the model meant pixels —
+        // intent is unknowable, so drop the manual framing and let the automatic crop take over.
+        if (typeof el.x !== "number" || el.x < 0 || el.x > 1) delete el.x;
+        if (typeof el.y !== "number" || el.y < 0 || el.y > 1) delete el.y;
+      } else if (el.type === "text") {
+        if (typeof el.content !== "string") delete el.content; // fact elements may omit it (zod defaults "")
+        if (typeof el.weight === "number") el.weight = String(el.weight);
+        el.colour = normHex(el.colour);
+      }
+      return el;
+    })
+    .filter((e) => e !== null);
+  return spec;
+}
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 

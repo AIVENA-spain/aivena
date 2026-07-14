@@ -1,0 +1,198 @@
+import { z } from "zod";
+import { textWidth } from "./renderEditable";
+import { renderTemplatePng } from "../src/lib/render";
+
+// FREEFORM renderer (Smart v2, Christian 2026-07-14): the AI designs, the engine draws.
+// Claude (vision) returns a DesignSpec — a blueprint of photo frames, panels, scrims and text blocks — and this
+// renderer draws it deterministically: real photos cropped pixel-for-pixel into the frames, text drawn with the
+// real font vault. The AI never touches pixels or types a digit, so photos stay photos and facts stay facts.
+// (Born from the seedream test where 3 photos were BLENDED into one fake scene with two different prices.)
+
+const Bbox = z.tuple([z.number(), z.number(), z.number(), z.number()]);
+const HEX = /^#[0-9a-fA-F]{6}$/;
+const Colour = z.string().regex(HEX);
+
+export const FreeformElement = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("photo"),
+    photo: z.number().int().min(0).max(9), // index into the chosen photos
+    bbox: Bbox,
+    // optional manual framing (same semantics as the template editor's move/crop)
+    zoom: z.number().min(1).max(6).optional(),
+    x: z.number().min(0).max(1).optional(),
+    y: z.number().min(0).max(1).optional(),
+  }),
+  z.object({
+    type: z.literal("rect"),
+    bbox: Bbox,
+    fill: Colour,
+    radius: z.number().min(0).max(400).optional(),
+    opacity: z.number().min(0).max(1).optional(),
+  }),
+  z.object({
+    type: z.literal("scrim"), // legibility gradient over a photo (transparent → colour)
+    bbox: Bbox,
+    colour: Colour,
+    direction: z.enum(["up", "down"]).default("up"), // up = darkest at the bottom edge
+  }),
+  z.object({
+    type: z.literal("text"),
+    bbox: Bbox,
+    content: z.string().max(300),      // literal copy; ignored when `fact` is set (server substitutes)
+    fact: z.string().optional(),       // fact key — the SERVER substitutes the canonical string
+    font: z.string(),
+    size: z.number().min(14).max(400),
+    colour: Colour,
+    align: z.enum(["left", "center", "right"]).default("left"),
+    weight: z.string().optional(),     // "500" | "600" | "700" | "bold"
+    italic: z.boolean().optional(),
+    tracking: z.number().min(0).max(40).optional(),
+    uppercase: z.boolean().optional(),
+    line_height: z.number().optional(),
+  }),
+]);
+export type FreeformElement = z.infer<typeof FreeformElement>;
+
+export const DesignSpec = z.object({
+  background: Colour,
+  elements: z.array(FreeformElement).min(1).max(40),
+});
+export type DesignSpec = z.infer<typeof DesignSpec>;
+
+const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+function clampBox(b: [number, number, number, number], W: number, H: number): [number, number, number, number] {
+  const x0 = Math.max(0, Math.min(W, Math.min(b[0], b[2])));
+  const y0 = Math.max(0, Math.min(H, Math.min(b[1], b[3])));
+  const x1 = Math.max(0, Math.min(W, Math.max(b[0], b[2])));
+  const y1 = Math.max(0, Math.min(H, Math.max(b[1], b[3])));
+  return [x0, y0, x1, y1];
+}
+const boxW = (b: number[]) => b[2] - b[0];
+const boxH = (b: number[]) => b[3] - b[1];
+function overlap(a: number[], b: number[]): number {
+  const w = Math.min(a[2], b[2]) - Math.max(a[0], b[0]);
+  const h = Math.min(a[3], b[3]) - Math.max(a[1], b[1]);
+  return w > 0 && h > 0 ? w * h : 0;
+}
+
+/** Render an AI design spec to a PNG. Photos sit under all graphics/text (painter's order for the rest). */
+export async function renderFreeform(
+  spec: DesignSpec,
+  canvas: { width: number; height: number },
+  photos: Buffer[],
+): Promise<Buffer> {
+  const sharp = (await import("sharp")).default;
+  const W = Math.round(canvas.width), H = Math.round(canvas.height);
+
+  // ── photos: crop each into its frame (cover; manual zoom/x/y honoured) ──────
+  const composites: { input: Buffer; left: number; top: number }[] = [];
+  for (const el of spec.elements) {
+    if (el.type !== "photo") continue;
+    const src = photos[el.photo];
+    if (!src) continue;
+    const b = clampBox(el.bbox, W, H);
+    const fw = Math.round(boxW(b)), fh = Math.round(boxH(b));
+    if (fw < 8 || fh < 8) continue;
+    const meta = await sharp(src).metadata();
+    const sw = meta.width ?? 0, sh = meta.height ?? 0;
+    if (!sw || !sh) continue;
+    let buf: Buffer;
+    if (el.zoom !== undefined || el.x !== undefined || el.y !== undefined) {
+      const zoom = Math.min(6, Math.max(1, el.zoom ?? 1));
+      const ar = fw / fh;
+      let cw = sw, ch = sw / ar;
+      if (ch > sh) { ch = sh; cw = sh * ar; }
+      cw = Math.max(16, Math.min(sw, cw / zoom));
+      ch = Math.max(16, Math.min(sh, ch / zoom));
+      const px = Math.min(1, Math.max(0, el.x ?? 0.5)), py = Math.min(1, Math.max(0, el.y ?? 0.5));
+      buf = await sharp(src)
+        .extract({
+          left: Math.round(Math.min(Math.max(0, (sw - cw) * px), sw - cw)),
+          top: Math.round(Math.min(Math.max(0, (sh - ch) * py), sh - ch)),
+          width: Math.round(cw), height: Math.round(ch),
+        })
+        .resize({ width: fw, height: fh, fit: "fill" }).jpeg({ quality: 90 }).toBuffer();
+    } else {
+      buf = await sharp(src)
+        .resize({ width: fw, height: fh, fit: "cover", position: sharp.strategy.attention })
+        .jpeg({ quality: 90 }).toBuffer();
+    }
+    composites.push({ input: buf, left: Math.round(b[0]), top: Math.round(b[1]) });
+  }
+
+  // ── overlay SVG: rects / scrims / text in element order ─────────────────────
+  const photoBoxes = spec.elements.filter((e) => e.type === "photo").map((e) => clampBox(e.bbox, W, H));
+  let defs = "";
+  let overlaySvg = "";
+  let gradId = 0;
+
+  // legibility floor: text over a photo with no rect/scrim covering it gets a soft plate injected under it —
+  // the AI is told to add scrims itself; this is the guarantee, not the style.
+  const coverage = (textBox: number[], idx: number): number => {
+    let covered = 0;
+    spec.elements.slice(0, idx).forEach((e) => {
+      if (e.type === "rect" || e.type === "scrim") covered = Math.max(covered, overlap(clampBox(e.bbox, W, H), textBox));
+    });
+    return covered / Math.max(1, boxW(textBox) * boxH(textBox));
+  };
+
+  spec.elements.forEach((el, idx) => {
+    if (el.type === "rect") {
+      const b = clampBox(el.bbox, W, H);
+      overlaySvg += `<rect x="${b[0]}" y="${b[1]}" width="${boxW(b)}" height="${boxH(b)}"` +
+        (el.radius ? ` rx="${el.radius}"` : "") + ` fill="${el.fill}"` +
+        (el.opacity !== undefined ? ` fill-opacity="${el.opacity}"` : "") + `/>`;
+    } else if (el.type === "scrim") {
+      const b = clampBox(el.bbox, W, H);
+      const id = `g${gradId++}`;
+      const [o0, o1] = el.direction === "up" ? [0, 0.92] : [0.92, 0];
+      defs += `<linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1">` +
+        `<stop offset="0" stop-color="${el.colour}" stop-opacity="${o0}"/>` +
+        `<stop offset="1" stop-color="${el.colour}" stop-opacity="${o1}"/></linearGradient>`;
+      overlaySvg += `<rect x="${b[0]}" y="${b[1]}" width="${boxW(b)}" height="${boxH(b)}" fill="url(#${id})"/>`;
+    } else if (el.type === "text") {
+      const b = clampBox(el.bbox, W, H);
+      const raw = (el.content ?? "").trim();
+      if (!raw || boxW(b) < 8 || boxH(b) < 8) return;
+      const textStr = el.uppercase ? raw.toUpperCase() : raw;
+      const lines = textStr.split("\n").map((l) => l.trim()).filter(Boolean);
+      if (!lines.length) return;
+
+      const onPhoto = photoBoxes.some((pb) => overlap(pb, b) > 0.35 * boxW(b) * boxH(b));
+      if (onPhoto && coverage(b, idx) < 0.5) {
+        const pad = Math.round(el.size * 0.45);
+        overlaySvg += `<rect x="${Math.max(0, b[0] - pad)}" y="${Math.max(0, b[1] - pad)}" width="${Math.min(W, boxW(b) + 2 * pad)}" height="${Math.min(H, boxH(b) + 2 * pad)}" rx="14" fill="#0B0F14" fill-opacity="0.38"/>`;
+      }
+
+      // auto-fit: shrink so the widest line fits the box width
+      let size = el.size;
+      const track = (l: string, s: number) => (el.tracking ? el.tracking * Math.max(0, l.length - 1) * (s / el.size) : 0);
+      const widest = (s: number) => Math.max(...lines.map((l) => textWidth(el.font, l, s, el.weight, el.italic) + track(l, s)));
+      if (widest(size) > boxW(b) && boxW(b) > 0) size = Math.max(12, size * (boxW(b) / widest(size)));
+      let lineH = (el.line_height ?? el.size * 1.16) * (size / el.size);
+      if (lines.length * lineH > boxH(b) && boxH(b) > 0) {
+        const r = boxH(b) / (lines.length * lineH);
+        size = Math.max(12, size * r); lineH = lineH * r;
+      }
+
+      const anchor = el.align === "center" ? "middle" : el.align === "right" ? "end" : "start";
+      const tx = el.align === "center" ? b[0] + boxW(b) / 2 : el.align === "right" ? b[2] : b[0];
+      const wNum = el.weight ? (/^\d+$/.test(el.weight) ? el.weight : "700") : "";
+      const attrs = (wNum ? ` font-weight="${wNum}"` : "") + (el.italic ? ` font-style="italic"` : "") +
+        (el.tracking ? ` letter-spacing="${(el.tracking * (size / el.size)).toFixed(2)}"` : "");
+      lines.forEach((ln, i) => {
+        const by = b[1] + size * 0.82 + i * lineH;
+        overlaySvg += `<text x="${tx.toFixed(1)}" y="${by.toFixed(1)}" text-anchor="${anchor}" font-family="${esc(el.font)}" font-size="${size.toFixed(1)}"${attrs} fill="${el.colour}">${esc(ln)}</text>`;
+      });
+    }
+  });
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><defs>${defs}</defs>${overlaySvg}</svg>`;
+  const overlayPng = renderTemplatePng(svg, W);
+
+  return await sharp({ create: { width: W, height: H, channels: 4, background: spec.background } })
+    .composite([...composites, { input: overlayPng, left: 0, top: 0 }])
+    .png()
+    .toBuffer();
+}

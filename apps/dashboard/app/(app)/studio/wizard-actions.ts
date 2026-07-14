@@ -176,6 +176,19 @@ export async function translateSlotsAction(
   return call("/api/studio/translate-slots", { method: "POST", body: { texts, target_lang: targetLang } });
 }
 
+// ── SMART v2: Claude designs the layout, the engine draws it (photos stay photos, facts stay facts) ──
+export async function smartDesignAction(input: {
+  property_id: string; photos: string[]; size: string; brief?: string;
+}): Promise<Envelope> {
+  return call("/api/studio/smart-design", { method: "POST", body: input });
+}
+export async function smartReviseAction(generationId: string, editNote: string): Promise<Envelope> {
+  return call("/api/studio/smart-design/revise", {
+    method: "POST",
+    body: { generation_id: generationId, edit_note: editNote },
+  });
+}
+
 // ── Library sections (the agency's own buckets) + filing an existing creation ───
 export async function editableSectionsAction(): Promise<Envelope> {
   return call("/api/studio/editable-sections");

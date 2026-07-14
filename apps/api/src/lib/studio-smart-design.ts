@@ -1,0 +1,198 @@
+import { randomUUID } from 'node:crypto';
+import { env } from '../../../../packages/config/env';
+import { supabaseAdmin } from './supabase-admin';
+import './studio-data-root';
+import { renderFreeform, DesignSpec } from '../../../../studio/engine/renderFreeform';
+import { vaultFamilies } from '../../../../studio/engine/renderEditable';
+import { DeriveProperty, DeriveAgency, BrandColours } from '../../../../studio/engine/derive';
+
+// SMART v2 (Christian 2026-07-14): "AI art-director, deterministic hands."
+// Claude LOOKS at the chosen photos and DESIGNS a layout (a DesignSpec blueprint); the freeform engine draws
+// it. The AI never renders pixels and never types a fact — fact texts are substituted server-side from the
+// database, so the price can never be wrong and the agency can never be misspelled. Born from the seedream
+// design-mode test: 3 photos blended into a fake scene, TWO different prices, "Maditerrâneo", "Agarty".
+
+// The 9 size options the UI offers (same keys the old KIE enum used, now honest pixel sizes).
+export const SMART_CANVAS: Record<string, { width: number; height: number }> = {
+  square:          { width: 1080, height: 1080 },
+  square_hd:       { width: 1080, height: 1080 },
+  portrait_4_3:    { width: 1080, height: 1350 },  // 4:5 — the real Instagram portrait
+  portrait_3_2:    { width: 1080, height: 1620 },
+  portrait_16_9:   { width: 1080, height: 1920 },  // Story / Reel
+  landscape_4_3:   { width: 1440, height: 1080 },
+  landscape_3_2:   { width: 1620, height: 1080 },
+  landscape_16_9:  { width: 1920, height: 1080 },
+  landscape_21_9:  { width: 2520, height: 1080 },
+};
+
+function fmtPrice(n: number | null | undefined): string | null {
+  if (n == null || !isFinite(n) || n <= 0) return null;
+  return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' €';
+}
+
+/** The canonical fact strings — the ONLY numbers/names allowed on the design. Absent facts stay absent. */
+export function buildFacts(property: DeriveProperty & { title?: string | null }, agency: DeriveAgency): Record<string, string> {
+  const f: Record<string, string> = {};
+  if (property.title) f.title = String(property.title);
+  const price = fmtPrice(property.price);
+  if (price) f.price = price;
+  if (property.beds != null) f.beds = `${property.beds} bed`;
+  if (property.baths != null) f.baths = `${property.baths} bath`;
+  if (property.size != null) f.area = `${property.size} m²`;
+  const specs = [f.beds, f.baths, f.area].filter(Boolean).join(' · ');
+  if (specs) f.specs = specs;
+  const loc = [property.city, property.region].filter(Boolean).join(', ');
+  if (loc) f.location = loc;
+  if (agency.name) f.agency = agency.name;
+  if (agency.web) f.website = agency.web;
+  if (agency.phone) f.phone = agency.phone;
+  (property.features ?? []).slice(0, 6).forEach((feat, i) => { f[`feature_${i + 1}`] = feat; });
+  return f;
+}
+
+// JSON Schema for the forced tool call (mirrors the zod DesignSpec; kept permissive — zod is the real gate).
+const DESIGN_TOOL = {
+  name: 'submit_design',
+  description: 'Submit the final design blueprint for the social media post.',
+  input_schema: {
+    type: 'object',
+    required: ['background', 'elements'],
+    properties: {
+      background: { type: 'string', description: 'page background as #rrggbb' },
+      elements: {
+        type: 'array', maxItems: 40,
+        items: {
+          type: 'object',
+          required: ['type'],
+          properties: {
+            type: { type: 'string', enum: ['photo', 'rect', 'scrim', 'text'] },
+            bbox: { type: 'array', items: { type: 'number' }, minItems: 4, maxItems: 4 },
+            photo: { type: 'integer' },
+            zoom: { type: 'number' }, x: { type: 'number' }, y: { type: 'number' },
+            fill: { type: 'string' }, radius: { type: 'number' }, opacity: { type: 'number' },
+            colour: { type: 'string' }, direction: { type: 'string', enum: ['up', 'down'] },
+            content: { type: 'string' }, fact: { type: 'string' }, font: { type: 'string' },
+            size: { type: 'number' }, align: { type: 'string', enum: ['left', 'center', 'right'] },
+            weight: { type: 'string' }, italic: { type: 'boolean' }, tracking: { type: 'number' },
+            uppercase: { type: 'boolean' }, line_height: { type: 'number' },
+          },
+        },
+      },
+    },
+  },
+} as const;
+
+function designBrief(opts: {
+  canvas: { width: number; height: number };
+  facts: Record<string, string>;
+  brand: BrandColours;
+  photoCount: number;
+  brief: string | null;
+  priorSpec?: unknown;
+  editNote?: string;
+}): string {
+  const fonts = vaultFamilies().map((f) => f.family + (f.weights.some((w) => w >= 600) ? ' (has bold)' : '')).join(', ');
+  const factList = Object.entries(opts.facts).map(([k, v]) => `  ${k}: "${v}"`).join('\n');
+  const base = `You are the art director of a premium Spanish real-estate brand, designing ONE social media post.
+
+CANVAS: ${opts.canvas.width}x${opts.canvas.height}px. All bbox coordinates are [x0,y0,x1,y1] in these pixels.
+
+THE ${opts.photoCount} PHOTOS shown above are the listing's real photos, in order (photo index 0..${opts.photoCount - 1}). Use ALL of them — each in its own frame. Photos render BELOW every rect/scrim/text.
+
+FACTS (the only real-world text allowed — reference by key, never retype):
+${factList}
+
+RULES — these are hard:
+- A text element that shows a fact MUST use {"fact": "<key>"} — its content is substituted server-side. NEVER put prices, numbers, phone numbers, area, or the agency name in literal content.
+- Literal "content" text is ONLY for short generic marketing copy (e.g. "Your Mediterranean escape awaits") — it must contain NO digits and NO factual claims beyond the facts list.
+- Fonts: choose ONLY from: ${fonts}. Use at most 2 families (one display + one supporting).
+- Every text over a photo needs a scrim or rect under it for legibility.
+- Keep ~48px min margins for text unless the design is deliberately full-bleed. Min text size 22px (small labels), headline 60-140px.
+- Colours: design around the brand (navy ${opts.brand.navy}, accent ${opts.brand.gold}, light ${opts.brand.cream}, text ${opts.brand.text}) OR a tasteful neutral palette with one accent. 6-digit hex only.
+- Layout craft: strong hierarchy (one dominant element), aligned edges, generous whitespace, deliberate asymmetry beats centering everything. Vary your approach — hero full-bleed with panel, split, framed gallery, magazine cover, big-type poster are all valid.
+- 8-20 elements total is the sweet spot.`;
+
+  const direction = opts.brief ? `\n\nTHE AGENT'S DIRECTION (follow it): ${opts.brief}` : '';
+  const revision = opts.priorSpec
+    ? `\n\nThis is a REVISION. Here is your previous design:\n${JSON.stringify(opts.priorSpec)}\n\nApply ONLY this change, keeping everything else as close as possible to the previous design: ${opts.editNote}`
+    : '';
+  return base + direction + revision + '\n\nSubmit the design with the submit_design tool.';
+}
+
+/** Call Claude (vision) to design the post; returns a validated DesignSpec. One retry on invalid output. */
+export async function designWithClaude(opts: {
+  photoUrls: string[];
+  canvas: { width: number; height: number };
+  facts: Record<string, string>;
+  brand: BrandColours;
+  brief: string | null;
+  priorSpec?: unknown;
+  editNote?: string;
+}): Promise<DesignSpec> {
+  const content: unknown[] = opts.photoUrls.slice(0, 6).map((u) => ({ type: 'image', source: { type: 'url', url: u } }));
+  content.push({ type: 'text', text: designBrief({ ...opts, photoCount: Math.min(6, opts.photoUrls.length) }) });
+
+  let lastErr = '';
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const body = {
+      model: 'claude-sonnet-5',
+      max_tokens: 6000,
+      tools: [DESIGN_TOOL],
+      tool_choice: { type: 'tool', name: 'submit_design' },
+      messages: [{ role: 'user', content: attempt === 0 ? content : [...content, { type: 'text', text: `Your previous design was invalid: ${lastErr}. Fix it and resubmit.` }] }],
+    };
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      lastErr = `api_${res.status}`;
+      if (res.status >= 500 || res.status === 429) continue;
+      throw new Error(`design call failed: ${res.status} ${(await res.text()).slice(0, 300)}`);
+    }
+    const data = (await res.json()) as { content?: { type: string; input?: unknown }[] };
+    const tool = data.content?.find((c) => c.type === 'tool_use');
+    const parsed = DesignSpec.safeParse(tool?.input);
+    if (parsed.success) return parsed.data;
+    lastErr = parsed.error.issues.slice(0, 5).map((i) => `${i.path.join('.')}: ${i.message}`).join('; ');
+  }
+  throw new Error(`design spec invalid after retry: ${lastErr}`);
+}
+
+/** Enforce the fact guarantees on a spec: substitute canonical strings, drop digit-carrying free copy. */
+export function enforceFacts(spec: DesignSpec, facts: Record<string, string>): DesignSpec {
+  const fonts = new Set(vaultFamilies().map((f) => f.family));
+  const elements = spec.elements
+    .map((el) => {
+      if (el.type !== 'text') return el;
+      const font = fonts.has(el.font) ? el.font : 'Poppins';
+      if (el.fact) {
+        const canonical = facts[el.fact];
+        if (!canonical) return null;                    // a fact we don't have → the element disappears (data honesty)
+        return { ...el, font, content: canonical };     // the AI cannot type a fact — we do
+      }
+      if (/\d/.test(el.content)) return null;           // free copy may not carry digits (no invented numbers)
+      return { ...el, font };
+    })
+    .filter((el): el is NonNullable<typeof el> => el !== null);
+  return { ...spec, elements };
+}
+
+const OUT_BUCKET = 'generated-images';
+
+/** Render the (enforced) spec and store it; returns the signed URL + path. */
+export async function renderAndStoreFreeform(
+  spec: DesignSpec,
+  canvas: { width: number; height: number },
+  photos: Buffer[],
+  agencyId: string,
+): Promise<{ image_url: string; storage_path: string }> {
+  const png = await renderFreeform(spec, canvas, photos);
+  const key = `smart/${agencyId}/${randomUUID()}.png`;
+  const up = await supabaseAdmin.storage.from(OUT_BUCKET).upload(key, png, { contentType: 'image/png', upsert: false });
+  if (up.error) throw new Error(`smart upload: ${up.error.message}`);
+  const signed = await supabaseAdmin.storage.from(OUT_BUCKET).createSignedUrl(key, 60 * 60 * 24 * 365);
+  if (signed.error || !signed.data?.signedUrl) throw new Error(`smart sign: ${signed.error?.message}`);
+  return { image_url: signed.data.signedUrl, storage_path: key };
+}

@@ -9,6 +9,7 @@
     "src/**/*",
     "../../packages/**/*",
     "../../studio/engine/renderEditable.ts",
+    "../../studio/engine/renderFreeform.ts",
     "../../studio/engine/derive.ts",
     "../../studio/src/lib/paths.ts",
     "../../studio/src/lib/render.ts"

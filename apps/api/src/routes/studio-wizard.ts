@@ -16,6 +16,13 @@ import {
   galleryAccent,
   galleryAccentOverrides,
 } from '../lib/studio-editable';
+import {
+  SMART_CANVAS,
+  buildFacts,
+  designWithClaude,
+  enforceFacts,
+  renderAndStoreFreeform,
+} from '../lib/studio-smart-design';
 
 /**
  * Studio wizard proxy (W13 v0.6) — the browser's ONLY door to Vega's image
@@ -543,7 +550,7 @@ function usablePhotos(images: unknown): string[] {
 // helper: load a property (facts) + the agency branding for the session's agency.
 async function loadPropertyAndBrand(tx: any, agencyId: string, propertyId: string) {
   const pRes = await tx.execute(sql`
-    SELECT property_type, location_city, location_region, price, area_sqm, area_built_sqm,
+    SELECT title, property_type, location_city, location_region, price, area_sqm, area_built_sqm,
            bedrooms, bathrooms, features, images
     FROM properties WHERE id = ${propertyId}::uuid AND agency_id = ${agencyId} LIMIT 1
   `);
@@ -558,6 +565,7 @@ async function loadPropertyAndBrand(tx: any, agencyId: string, propertyId: strin
   const { agency, brand } = mapBranding(bRows[0] || {});
   return {
     property: mapPropertyRow(pRows[0]),
+    title: (pRows[0].title as string | null) ?? null,
     agency, brand,
     images: usablePhotos(pRows[0].images),
   };
@@ -973,6 +981,176 @@ route.post('/editable-finish', async (c) => {
   } catch (err) {
     console.error('[studio/editable-finish] failed:', err);
     return c.json({ ok: false, error: 'finish_failed', message: GENERIC }, 500);
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SMART v2 (Christian 2026-07-14): "AI art-director, deterministic hands." Claude designs a layout blueprint
+// from the REAL photos + facts; the freeform engine draws it. Replaces the seedream design mode, whose test
+// output blended 3 photos into a fake scene with TWO different prices and a misspelled agency name.
+// Flow is async-in-process: the route inserts a 'processing' row and answers immediately; a background task
+// does design→render→upload→complete; the browser polls the existing GET /status/:id.
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function smartPhotoBuffers(refs: string[]): Promise<Buffer[]> {
+  const out: Buffer[] = [];
+  for (const ref of refs) { const b = await loadPhotoBuffer(ref); if (b) out.push(b); }
+  return out;
+}
+
+async function runSmartDesign(opts: {
+  genId: string; agencyId: string;
+  property: ReturnType<typeof mapPropertyRow> & { title?: string | null };
+  agency: { name: string; phone: string; web: string };
+  brand: { navy: string; gold: string; cream: string; text: string };
+  refs: string[]; size: string; brief: string | null;
+  priorSpec?: unknown; editNote?: string; isRevision: boolean; revisionNumber?: number;
+}): Promise<void> {
+  const { genId, agencyId } = opts;
+  try {
+    const canvas = SMART_CANVAS[opts.size] ?? SMART_CANVAS.square_hd;
+    const facts = buildFacts(opts.property, opts.agency);
+    // Claude fetches the photos itself — public catalog URLs pass through; owned storage paths get signed.
+    const photoUrls: string[] = [];
+    for (const ref of opts.refs) { const u = await kieFetchableUrl(ref); if (u) photoUrls.push(u); }
+    if (!photoUrls.length) throw new Error('no fetchable photos');
+
+    const rawSpec = await designWithClaude({
+      photoUrls, canvas, facts, brand: opts.brand, brief: opts.brief,
+      priorSpec: opts.priorSpec, editNote: opts.editNote,
+    });
+    const spec = enforceFacts(rawSpec, facts);
+    const buffers = await smartPhotoBuffers(opts.refs);
+    if (!buffers.length) throw new Error('no photo buffers');
+    const stored = await renderAndStoreFreeform(spec, canvas, buffers, agencyId);
+
+    const started = opts.isRevision ? (opts.revisionNumber ?? 1) : 0;
+    const { error } = await supabaseAdmin.from('image_generations').update({
+      status: 'completed',
+      result_image_url: stored.image_url,
+      result_image_storage_path: stored.storage_path,
+      completed_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      result_metadata: {
+        engine: 'smart_design', composed: true,
+        revisions_started: started,
+        revisions_remaining: Math.max(0, 2 - started),
+      },
+      // the spec is the revision seed: "make the price bigger" edits THIS design, not a restart
+      raw_request: {
+        engine: 'smart_design', content_type: 'listing',
+        size: opts.size, brief: opts.brief, photos: opts.refs, design_spec: spec,
+      },
+    }).eq('id', genId).eq('agency_id', agencyId);
+    if (error) throw new Error(error.message);
+
+    if (!opts.isRevision) {
+      const { error: qErr } = await supabaseAdmin.rpc('image_gen_increment_usage', {
+        p_agency_id: agencyId, p_generation_type: 'social_post',
+      });
+      if (qErr) console.error('[smart-design] usage increment failed:', qErr.message);
+    }
+  } catch (err) {
+    console.error('[smart-design] failed:', err);
+    await supabaseAdmin.from('image_generations').update({
+      status: 'failed',
+      failure_reason: String((err as Error).message ?? 'smart_design_failed').slice(0, 300),
+      updated_at: new Date().toISOString(),
+    }).eq('id', genId).eq('agency_id', agencyId);
+  }
+}
+
+// ── POST /api/studio/smart-design — AI designs the post; engine renders it ────
+route.post('/smart-design', async (c) => {
+  const tx = c.get('tx');
+  const agencyId = c.get('agencyId');
+  const user = c.get('user');
+  const b = await readJson(c);
+  const propertyId = typeof b.property_id === 'string' ? b.property_id.trim() : '';
+  const size = typeof b.size === 'string' && SMART_CANVAS[b.size] ? b.size : 'square_hd';
+  const brief = typeof b.brief === 'string' && b.brief.trim() ? b.brief.trim().slice(0, 2000) : null;
+  try {
+    const loaded = await loadPropertyAndBrand(tx, agencyId, propertyId);
+    if (!loaded) return c.json({ ok: false, error: 'not_found', message: 'That property could not be found.' }, 404);
+    const chosen = Array.isArray(b.photos) ? (b.photos as unknown[]).filter((u): u is string => typeof u === 'string' && loaded.images.includes(u)) : [];
+    const refs = (chosen.length ? chosen : loaded.images).slice(0, 6);
+    if (!refs.length) return c.json({ ok: false, error: 'no_photos', message: 'This property has no usable photos.' }, 422);
+
+    // quota: same pool as the other AI generations; charged only on success (in the background task).
+    const qRes = await tx.execute(sql`SELECT image_gen_check_quota(${agencyId}::text, 'social_post'::text) AS q`);
+    const q = (qRes as unknown as Array<{ q: { ok?: boolean } | null }>)[0]?.q;
+    if (!q?.ok) return c.json({ ok: false, error: 'quota_unavailable', message: "You've reached your plan's limit for this. Upgrade or wait for the next cycle." }, 409);
+
+    const ins = await tx.execute(sql`
+      INSERT INTO image_generations
+        (agency_id, generation_type, status, prompt, source_property_id, requested_by, raw_request)
+      VALUES
+        (${agencyId}, 'social_post', 'processing', ${brief ?? 'Smart design'}, ${propertyId}::uuid, ${user?.sub ?? null}::uuid,
+         ${JSON.stringify({ engine: 'smart_design', content_type: 'listing', size, brief, photos: refs })}::jsonb)
+      RETURNING id
+    `);
+    const genId = (ins as unknown as Array<{ id: string }>)[0]?.id;
+    if (!genId) return c.json({ ok: false, error: 'create_failed', message: GENERIC }, 500);
+
+    // fire-and-forget: Railway is a long-lived process; the browser polls /status/:id.
+    void runSmartDesign({
+      genId, agencyId,
+      property: { ...loaded.property, title: loaded.title },
+      agency: loaded.agency, brand: loaded.brand,
+      refs, size, brief, isRevision: false,
+    });
+    return c.json({ ok: true, generation_id: genId, status: 'processing' });
+  } catch (err) {
+    console.error('[studio/smart-design] failed:', err);
+    return c.json({ ok: false, error: 'smart_design_failed', message: GENERIC }, 500);
+  }
+});
+
+// ── POST /api/studio/smart-design/revise — Claude edits its own previous design ──
+route.post('/smart-design/revise', async (c) => {
+  const tx = c.get('tx');
+  const agencyId = c.get('agencyId');
+  const b = await readJson(c);
+  const genId = typeof b.generation_id === 'string' ? b.generation_id.trim() : '';
+  const editNote = typeof b.edit_note === 'string' ? b.edit_note.trim().slice(0, 1000) : '';
+  if (!genId || !editNote) return c.json(INVALID, 400);
+  try {
+    // atomic revision reservation: one UPDATE guards status + the 2-change cap.
+    const upd = await tx.execute(sql`
+      UPDATE image_generations
+         SET status = 'processing',
+             result_metadata = jsonb_set(COALESCE(result_metadata, '{}'::jsonb), '{revisions_started}',
+               to_jsonb(COALESCE((result_metadata->>'revisions_started')::int, 0) + 1), true),
+             updated_at = now()
+       WHERE id = ${genId}::uuid AND agency_id = ${agencyId}
+         AND status = 'completed'
+         AND raw_request->>'engine' = 'smart_design'
+         AND COALESCE((result_metadata->>'revisions_started')::int, 0) < 2
+       RETURNING source_property_id, raw_request,
+                 (result_metadata->>'revisions_started')::int AS revision_number
+    `);
+    const rows = upd as unknown as Array<{ source_property_id: string; raw_request: Record<string, unknown>; revision_number: number }>;
+    if (!rows.length) return c.json({ ok: false, error: 'not_revisable', message: "That design can't be changed any further." }, 409);
+    const rr = rows[0].raw_request ?? {};
+
+    const loaded = await loadPropertyAndBrand(tx, agencyId, rows[0].source_property_id);
+    if (!loaded) return c.json({ ok: false, error: 'not_found', message: 'That property could not be found.' }, 404);
+    const refs = Array.isArray(rr.photos) ? (rr.photos as string[]).filter((u) => typeof u === 'string') : loaded.images.slice(0, 6);
+
+    const task = {
+      genId, agencyId,
+      property: { ...loaded.property, title: loaded.title },
+      agency: loaded.agency, brand: loaded.brand,
+      refs, size: typeof rr.size === 'string' ? rr.size : 'square_hd',
+      brief: typeof rr.brief === 'string' ? rr.brief : null,
+      priorSpec: rr.design_spec, editNote, isRevision: true,
+      revisionNumber: rows[0].revision_number,
+    } as Parameters<typeof runSmartDesign>[0];
+    void runSmartDesign(task);
+    return c.json({ ok: true, generation_id: genId, status: 'processing', revisions_remaining: Math.max(0, 2 - rows[0].revision_number) });
+  } catch (err) {
+    console.error('[studio/smart-design/revise] failed:', err);
+    return c.json({ ok: false, error: 'revise_failed', message: GENERIC }, 500);
   }
 });
 

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Check, Download, Loader2, Save, Sparkles } from "lucide-react";
 import { PropertyPicker, downloadImage, type PickerProperty } from "./property-picker";
 import {
-  generateAction, statusAction, reviseAction, editableSectionsAction, setSectionAction,
+  smartDesignAction, smartReviseAction, statusAction, editableSectionsAction, setSectionAction,
 } from "./wizard-actions";
 
 /**
@@ -88,16 +88,12 @@ export function SmartStudio() {
   async function generate() {
     if (!property || photos.length === 0) return;
     setPhase("working"); setErr(null); setSaved(false);
-    setBusyMsg(`AIVENA is designing your post from ${photos.length} photo${photos.length === 1 ? "" : "s"}…`);
-    const res = await generateAction({
-      generation_type: "social_post",
-      content_type: "listing",
-      composition: "full_bleed", // ignored — design_mode hands the whole canvas to KIE
-      design_mode: true,
-      image_size: size,
-      source_property_id: property.id,
-      image_urls: photos,            // ALL of them
-      prompt: brief.trim() || undefined,
+    setBusyMsg(`AIVENA is designing your post around your ${photos.length} photo${photos.length === 1 ? "" : "s"}…`);
+    const res = await smartDesignAction({
+      property_id: property.id,
+      photos,                        // ALL of them — each gets its own frame in the design
+      size,
+      brief: brief.trim() || undefined,
     });
     if (!res.ok || !res.generation_id) {
       setErr((res.message as string) ?? "Couldn't start that. Please try again.");
@@ -111,7 +107,7 @@ export function SmartStudio() {
     if (!genId || !editNote.trim()) return;
     setPhase("working"); setErr(null);
     setBusyMsg("Applying your change…");
-    const res = await reviseAction(genId, editNote.trim());
+    const res = await smartReviseAction(genId, editNote.trim());
     if (!res.ok) {
       setErr((res.message as string) ?? "Couldn't apply that change.");
       setBusyMsg(null); setPhase("result"); return;
@@ -172,7 +168,7 @@ export function SmartStudio() {
             placeholder="e.g. bold luxury feel, lead with the sea view, mention the private pool"
             className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-900" />
           <p className="mt-1 text-[11px] text-neutral-400">
-            AIVENA designs the layout and writes the text itself here, using this property&apos;s real price, rooms and location.
+            AIVENA designs a brand-new layout around your photos. The price, rooms and location come straight from your listing — they can never be wrong.
           </p>
 
           <label className="mb-1.5 mt-5 block text-xs font-semibold uppercase tracking-wide text-neutral-500">Post size</label>
@@ -192,7 +188,7 @@ export function SmartStudio() {
             className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg bg-neutral-900 px-4 py-3 text-sm font-semibold text-white disabled:opacity-40">
             <Sparkles className="h-4 w-4" /> Design my post
           </button>
-          <p className="mt-2 text-center text-[11px] text-neutral-400">Uses one credit · takes about a minute · you get 2 free changes after</p>
+          <p className="mt-2 text-center text-[11px] text-neutral-400">Uses one credit · takes ~20 seconds · you get 2 free changes after</p>
         </div>
       )}
 
@@ -201,7 +197,7 @@ export function SmartStudio() {
         <div className="flex flex-col items-center justify-center gap-3 py-24 text-center">
           <Loader2 className="h-7 w-7 animate-spin text-neutral-400" />
           <p className="text-sm font-medium text-neutral-700">{busyMsg}</p>
-          <p className="text-xs text-neutral-400">You can leave this open — it takes about a minute.</p>
+          <p className="text-xs text-neutral-400">Designing the layout and placing your photos — about 20 seconds.</p>
         </div>
       )}
 

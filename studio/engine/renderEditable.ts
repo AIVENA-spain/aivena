@@ -39,6 +39,15 @@ function vault(): Map<string, VaultFace[]> {
   }
   return _vault;
 }
+/** Every font family the vault can draw, with its available weights — the palette offered to the AI designer. */
+export function vaultFamilies(): { family: string; weights: number[]; italic: boolean }[] {
+  return [...vault().entries()].map(([family, faces]) => ({
+    family,
+    weights: [...new Set(faces.map((f) => f.weight))].sort((a, b) => a - b),
+    italic: faces.some((f) => f.italic),
+  })).sort((a, b) => a.family.localeCompare(b.family));
+}
+
 const _fk = new Map<string, any>();
 function fkFile(key: string, weight?: string, italic?: boolean): string {
   if (!italic && weight && WEIGHT_FILES[key]?.[weight]) return WEIGHT_FILES[key][weight];

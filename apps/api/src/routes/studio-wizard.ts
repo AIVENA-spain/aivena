@@ -374,6 +374,8 @@ route.get('/library', async (c) => {
       FROM image_generations
       WHERE agency_id = ${agencyId}
         AND status = 'completed' AND result_image_url IS NOT NULL
+        -- cleaned-up source photos are intermediates of a finished post, not creations in their own right
+        AND COALESCE(raw_request->>'intermediate', 'false') <> 'true'
         ${before ? sql`AND created_at < ${before}` : sql``}
       ORDER BY created_at DESC
       LIMIT ${limit}
@@ -430,7 +432,7 @@ route.get('/properties', async (c) => {
     return c.json({
       ok: true,
       items: rows.map((r) => {
-        const imgs = Array.isArray(r.images) ? r.images : [];
+        const imgs = usablePhotos(r.images); // dead portal hotlinks never reach the picker
         return {
           id: r.id,
           title: r.title,
@@ -467,9 +469,7 @@ route.get('/properties/:id/photos', async (c) => {
     if (rows.length === 0) {
       return c.json({ ok: false, error: 'not_found', message: 'That property could not be found.' }, 404);
     }
-    const photos = (Array.isArray(rows[0].images) ? rows[0].images : []).filter(
-      (u) => typeof u === 'string',
-    );
+    const photos = usablePhotos(rows[0].images);
     return c.json({ ok: true, property_id: rows[0].id, title: rows[0].title, photos });
   } catch (err) {
     console.error('[studio/properties/photos] failed:', err);
@@ -512,6 +512,19 @@ route.get('/editable-templates', async (c) => {
   }
 });
 
+// ── dead-photo filter ─────────────────────────────────────────────────────────
+// montinmo.es (the old portal source) is GONE: DNS resolves but every connection is refused, from our servers
+// and from a normal browser (confirmed 2026-07-14). ~57% of the demo catalog (81/141 properties, 1130 images)
+// hotlinks it, so those photos can never load — that was the entire cause of "preview failed" in the templates
+// gallery. Filter them out everywhere so the Studio never shows or renders a broken photo. Re-sourcing those
+// listings' images is a catalog problem, not a Studio one.
+const DEAD_IMAGE_HOST = /^https?:\/\/(www\.)?montinmo\.es\//i;
+function usablePhotos(images: unknown): string[] {
+  return (Array.isArray(images) ? images : []).filter(
+    (u: unknown): u is string => typeof u === 'string' && u.trim().length > 0 && !DEAD_IMAGE_HOST.test(u),
+  );
+}
+
 // helper: load a property (facts) + the agency branding for the session's agency.
 async function loadPropertyAndBrand(tx: any, agencyId: string, propertyId: string) {
   const pRes = await tx.execute(sql`
@@ -531,7 +544,7 @@ async function loadPropertyAndBrand(tx: any, agencyId: string, propertyId: strin
   return {
     property: mapPropertyRow(pRows[0]),
     agency, brand,
-    images: (Array.isArray(pRows[0].images) ? pRows[0].images : []).filter((u: unknown) => typeof u === 'string'),
+    images: usablePhotos(pRows[0].images),
   };
 }
 
@@ -644,20 +657,21 @@ route.get('/editable-gallery', async (c) => {
   try {
     // top listings by price. price IS NOT NULL — else Postgres sorts NULLs first on DESC and the "top" would be
     // null-price rows.
+    // Pull a wider candidate set by price, then keep the 4 most expensive that actually have USABLE photos.
+    // (Most of the catalog hotlinks the dead montinmo.es host — those listings can never render, so they must
+    // never be picked for the showcase, or the grid fills with "preview failed".)
     const pRes = await tx.execute(sql`
       SELECT id, title, images
       FROM properties
       WHERE agency_id = ${agencyId} AND price IS NOT NULL
       ORDER BY price DESC
-      LIMIT 4
+      LIMIT 40
     `);
     const pRows = pRes as unknown as Array<{ id: string; title: string | null; images: string[] | null }>;
     const listings = pRows
-      .map((r) => ({
-        id: r.id, title: r.title,
-        photos: (Array.isArray(r.images) ? r.images : []).filter((u): u is string => typeof u === 'string'),
-      }))
-      .filter((l) => l.photos.length > 0);
+      .map((r) => ({ id: r.id, title: r.title, photos: usablePhotos(r.images) }))
+      .filter((l) => l.photos.length > 0)
+      .slice(0, 4);
 
     if (listings.length === 0) {
       return c.json({ ok: true, has_listings: false, templates: [] });
@@ -896,12 +910,26 @@ route.post('/editable-finish', async (c) => {
             source_image_url: url,
             source_property_id: propertyId,
             requested_by: user?.sub ?? null,
-            ...(note ? { prompt: note } : {}), // extra asks ride as creative direction; watermark removal is always applied
+            // clean_only = remove watermarks and change NOTHING else (no relight, no colour-grade, no declutter).
+            // Christian: "if its left empty it should just remove watermark, not change lightning or anything
+            // else unless it has been specified." A note is applied as the ONLY extra change.
+            clean_only: true,
+            ...(note ? { prompt: note } : {}),
           }),
         });
         const j = (await res.json().catch(() => null)) as { ok?: boolean; generation_id?: string; message?: string } | null;
-        if (res.ok && j?.ok && j.generation_id) jobs.push({ photo: ref, generation_id: j.generation_id, error: null });
-        else jobs.push({ photo: ref, generation_id: null, error: j?.message ?? "That photo couldn't be cleaned up." });
+        if (res.ok && j?.ok && j.generation_id) {
+          // A cleaned photo is an INTERMEDIATE, not a creation — mark it so the library shows only the finished
+          // post (Christian: "just the 4 images showed up in library, not the actual post that was made").
+          try {
+            await tx.execute(sql`
+              UPDATE image_generations
+                 SET raw_request = jsonb_set(COALESCE(raw_request, '{}'::jsonb), '{intermediate}', 'true'::jsonb, true)
+               WHERE id = ${j.generation_id}::uuid AND agency_id = ${agencyId}
+            `);
+          } catch { /* marking is best-effort; never fail the clean-up over it */ }
+          jobs.push({ photo: ref, generation_id: j.generation_id, error: null });
+        } else jobs.push({ photo: ref, generation_id: null, error: j?.message ?? "That photo couldn't be cleaned up." });
       } catch {
         jobs.push({ photo: ref, generation_id: null, error: "That photo couldn't be cleaned up." });
       }

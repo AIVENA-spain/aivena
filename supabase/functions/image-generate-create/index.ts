@@ -83,6 +83,17 @@ const ENHANCE_BASE =
   "Relight and color-grade like a top architectural photographer: warm, natural, inviting light with golden-hour warmth where it fits, rich but realistic colors, crisp detail, blue sky if outdoors. Tidy and declutter loose objects; subtly improve styling. " +
   "Not allowed: adding or removing rooms, walls, windows, pools or views; repairing visible damage; changing what the property fundamentally is; adding any text, words, letters, logos or watermarks. " +
   "Photorealistic, magazine-grade property marketing quality.";
+// CLEAN-ONLY (Christian 2026-07-14): the template finishing pass hands KIE a photo purely to strip the portal
+// watermark. An empty request box must NOT relight, colour-grade or declutter — ENHANCE_BASE does all three, so
+// it is the wrong prompt for this job. Anything the agent explicitly asks for is appended as the ONLY extra change.
+const CLEAN_ONLY_BASE =
+  "Remove any watermark text, logos, phone numbers or website overlays printed on this property photo. " +
+  "Change absolutely nothing else. Keep the exact same lighting, exposure, brightness, contrast, colours, " +
+  "white balance, framing, composition, furniture, decor, clutter and every structural element precisely as in " +
+  "the original photo. Do not relight. Do not colour-grade. Do not declutter, tidy or restyle. Do not sharpen or " +
+  "beautify. Do not add or remove anything. Reconstruct only the small areas the removed overlay covered, " +
+  "matching the surrounding pixels exactly. The output must be indistinguishable from the original except that " +
+  "the overlay is gone. No text, letters, logos or watermarks in the image.";
 const NEGSPACE_HINT =
   " Compose with generous clean empty space (clear sky, plain wall or floor) on one side or the lower third where marketing text can later be placed; keep that area free of clutter and detail.";
 const RENOVATION_GUARD =
@@ -180,6 +191,8 @@ Deno.serve(async (req) => {
   const mood: string | null = typeof body?.mood === "string" ? body.mood : null;
   const agentNote: string | null = typeof prompt === "string" && prompt.trim() ? prompt.trim() : null;
   const previewOnly: boolean = body?.preview_only === true;
+  // clean_only: watermark removal ONLY — no relight/grade/declutter. Used by the template finishing pass.
+  const cleanOnly: boolean = body?.clean_only === true;
 
   if (!agency_id || typeof agency_id !== "string") return j(400, { ok: false, error: "missing_agency_id", message: "Something went wrong. Please try again." });
   if (!VALID_TYPES.includes(generation_type))       return j(400, { ok: false, error: "invalid_generation_type", message: "Unknown generation type." });
@@ -254,6 +267,10 @@ Deno.serve(async (req) => {
   let finalPrompt = directive;
   if (generation_type === "renovation") {
     finalPrompt = (agentNote ?? "") + RENOVATION_GUARD;
+  } else if (source_image_url && cleanOnly) {
+    // Watermark removal only. An agent note is the ONLY additional change allowed — never the mood directive.
+    model = MODEL_ENHANCE;
+    finalPrompt = CLEAN_ONLY_BASE + (agentNote ? " Additionally, apply ONLY this specific requested change, and nothing more: " + agentNote : "");
   } else if (source_image_url) {
     model = MODEL_ENHANCE;
     finalPrompt = ENHANCE_BASE + (textTreatment === "negative_space" ? NEGSPACE_HINT : "") + " Creative direction: " + directive;

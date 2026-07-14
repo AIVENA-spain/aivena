@@ -1,0 +1,85 @@
+{
+  "?xml": {
+    "@_version": "1.0",
+    "@_encoding": "UTF-8",
+    "@_standalone": "yes"
+  },
+  "root": {
+    "kyero": {
+      "feed_version": "2_1"
+    },
+    "agent": {
+      "id": "123",
+      "name": "company name",
+      "custom": [
+        {
+          "title": {
+            "en": "first custom value for the agent"
+          },
+          "@_id": "1"
+        },
+        {
+          "title": {
+            "en": "second custom value for the agent"
+          },
+          "@_id": "2"
+        },
+        {
+          "title": {
+            "en": "third custom value for the agent"
+          },
+          "@_id": "3"
+        }
+      ]
+    },
+    "property": [
+      {
+        "id": "234",
+        "custom": [
+          {
+            "#text": "1",
+            "@_id": "1"
+          },
+          {
+            "#text": "0",
+            "@_id": "2"
+          },
+          {
+            "#text": "0",
+            "@_id": "3"
+          }
+        ]
+      },
+      {
+        "id": "235",
+        "currency": "AUD",
+        "price_freq": "new_build",
+        "type": {
+          "es": "casa",
+          "de": "haus",
+          "en": "house"
+        },
+        "url": "http://english.website.com/property/123456.htm"
+      },
+      {
+        "id": "236",
+        "currency": "QAR",
+        "price_freq": "sale",
+        "type": {
+          "en": "house"
+        },
+        "url": "http://english.website.com/property/123457.htm"
+      },
+      {
+        "id": "237",
+        "currency": "EUR",
+        "price_freq": "month",
+        "type": {
+          "de": "haus",
+          "es": "casa"
+        },
+        "url": ""
+      }
+    ]
+  }
+}

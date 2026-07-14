@@ -21,6 +21,11 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { XMLParser } from "npm:fast-xml-parser@4";
+// The normaliser lives in ./kyero.ts — pure, dependency-free and unit-tested against real Kyero v3
+// fixtures (kyero.test.ts). It previously lived inline in this file, which is precisely why it went
+// unproven: nothing here can be unit-tested (it needs Deno + the network + the DB). Keep the split —
+// parsing/normalising belongs there, I/O belongs here.
+import { normalizeFeed, type NormProp } from "./kyero.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -30,101 +35,10 @@ function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 }
 
-function asArray<T>(v: T | T[] | undefined | null): T[] {
-  if (v === undefined || v === null) return [];
-  return Array.isArray(v) ? v : [v];
-}
-// Coerce a value (string, number, or a language/{#text} object) to trimmed text or null.
-function txt(v: unknown): string | null {
-  if (v === undefined || v === null) return null;
-  if (typeof v === "object") {
-    const o = v as Record<string, unknown>;
-    if ("#text" in o) { const s = String(o["#text"]).trim(); return s || null; }
-    const pref = o["en"] ?? o["es"] ?? Object.values(o)[0];
-    if (pref == null) return null;
-    const s = String(pref).trim();
-    return s || null;
-  }
-  const s = String(v).trim();
-  return s.length ? s : null;
-}
-function num(v: unknown): number | null {
-  const s = txt(v);
-  if (s === null) return null;
-  const n = Number(s.replace(/[^0-9.\-]/g, ""));
-  return Number.isFinite(n) ? n : null;
-}
-function intOrNull(v: unknown): number | null {
-  const n = num(v);
-  return n === null ? null : Math.round(n);
-}
-function titleCase(s: string): string {
-  return s.replace(/\w\S*/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
-}
-
-interface NormProp {
-  external_id: string; title: string; description: string | null; property_type: string | null;
-  price: number | null; price_currency: string; bedrooms: number | null; bathrooms: number | null;
-  area_sqm: number | null; location_city: string | null; location_region: string | null;
-  location_country: string | null; lat: number | null; lng: number | null;
-  images: string[]; features: string[]; source_url: string | null; raw: unknown;
-}
-
-function normalizeKyero(p: Record<string, unknown>): NormProp | null {
-  const external_id = txt(p["id"]) ?? txt(p["ref"]);
-  if (!external_id) return null; // cannot key a row without a stable id
-
-  const type = txt(p["type"]);
-  const town = txt(p["town"]);
-  // Kyero has no explicit title; derive a stable, human one (title column is NOT NULL).
-  let title = (type || town)
-    ? [type ? titleCase(type) : null, town ? `in ${town}` : null].filter(Boolean).join(" ")
-    : null;
-  if (!title) title = txt(p["ref"]) ?? `Property ${external_id}`;
-
-  const loc = (p["location"] ?? {}) as Record<string, unknown>;
-  const surf = (p["surface_area"] ?? {}) as Record<string, unknown>;
-
-  const imgsNode = (p["images"] ?? {}) as Record<string, unknown>;
-  const images = asArray<Record<string, unknown>>(imgsNode["image"] as never)
-    .map((im) => txt((im as Record<string, unknown>)?.["url"] ?? im))
-    .filter((u): u is string => !!u);
-
-  const featNode = (p["features"] ?? {}) as Record<string, unknown>;
-  const features = asArray<unknown>(featNode["feature"] as never)
-    .map((f) => txt(f)).filter((f): f is string => !!f);
-
-  return {
-    external_id,
-    title,
-    description: txt(p["desc"]),
-    property_type: type,
-    price: num(p["price"]),
-    price_currency: (txt(p["currency"]) ?? "EUR").toUpperCase().slice(0, 3),
-    bedrooms: intOrNull(p["beds"]),
-    bathrooms: intOrNull(p["baths"]),
-    area_sqm: num(surf["built"]) ?? num(surf["plot"]),
-    location_city: town,
-    location_region: txt(p["province"]),
-    location_country: txt(p["country"]) ?? "Spain",
-    lat: num(loc["latitude"]),
-    lng: num(loc["longitude"]),
-    images,
-    features,
-    source_url: txt(p["url"]),
-    raw: p,
-  };
-}
-
 function parseFeed(xml: string, format: string): NormProp[] {
   if (format !== "kyero") throw new Error(`unsupported_format:${format}`);
   const parser = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: "@_", trimValues: true, parseTagValue: false });
-  const doc = parser.parse(xml);
-  const root = doc?.root ?? doc;
-  const props = asArray<Record<string, unknown>>(root?.property);
-  const out: NormProp[] = [];
-  for (const p of props) { const n = normalizeKyero(p); if (n) out.push(n); }
-  return out;
+  return normalizeFeed(parser.parse(xml));
 }
 
 Deno.serve(async (req: Request) => {
@@ -178,10 +92,15 @@ Deno.serve(async (req: Request) => {
       agency_id, external_id: n.external_id, title: n.title, description: n.description,
       property_type: n.property_type, status: "active", price: n.price,
       price_currency: n.price_currency || "EUR", bedrooms: n.bedrooms, bathrooms: n.bathrooms,
-      area_sqm: n.area_sqm, location_city: n.location_city, location_region: n.location_region,
+      // Built and plot are written to their own columns; area_sqm carries the BUILT size only.
+      // A plot size must never reach area_sqm — the Studio renders that as "N m² built".
+      area_sqm: n.area_sqm, area_built_sqm: n.area_built_sqm, area_plot_sqm: n.area_plot_sqm,
+      location_city: n.location_city, location_region: n.location_region,
       location_country: n.location_country, lat: n.lat, lng: n.lng, images: n.images, features: n.features,
       source_url: n.source_url, scraped_at: nowIso,
-      raw_payload: { import_source: "property-sync", format, synced_at: nowIso, feed: n.raw },
+      // descriptions keeps every language the feed supplied (13 in Kyero's own sample, 33 in the
+      // OpenEstate fixture); `description` above is only the preferred one. Nothing is discarded.
+      raw_payload: { import_source: "property-sync", format, synced_at: nowIso, descriptions: n.descriptions, feed: n.raw },
       updated_at: nowIso,
     }));
 

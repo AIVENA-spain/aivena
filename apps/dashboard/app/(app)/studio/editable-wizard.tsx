@@ -16,7 +16,7 @@ import {
   statusAction,
   type FinishJob,
 } from "./wizard-actions";
-import { PropertyPicker, type PickerProperty } from "./property-picker";
+import { PropertyPicker, downloadImage, type PickerProperty } from "./property-picker";
 
 // ── types mirroring the /api/studio/editable-* envelopes ──────────────────────
 type PropertyCard = PickerProperty;
@@ -67,16 +67,9 @@ async function runLimited<T>(items: T[], n: number, fn: (t: T, i: number) => Pro
   await Promise.all(workers);
 }
 
-/**
- * `smart` = Christian's Smart mode, rebuilt on THIS engine (2026-07-14). It used to call the old kie
- * fixed-layout designs and enhance only the first photo — "it used the old templates and even though i
- * selected 4 images it just used one of them". Now Smart is: pick a property + photos → we auto-pick one of
- * the 18 accepted templates that uses EVERY photo you chose → straight into the editor. Same deterministic
- * render, same facts, same KIE-photos-only rule.
- */
-export function EditableWizard({ smart = false }: { smart?: boolean } = {}) {
-  const [step, setStep] = useState<"gallery" | "property" | "template" | "edit">(smart ? "property" : "gallery");
-  const [editFrom, setEditFrom] = useState<"gallery" | "template">(smart ? "template" : "gallery");
+export function EditableWizard() {
+  const [step, setStep] = useState<"gallery" | "property" | "template" | "edit">("gallery");
+  const [editFrom, setEditFrom] = useState<"gallery" | "template">("gallery");
 
   // gallery step
   const [gallery, setGallery] = useState<GalleryItem[]>([]);
@@ -112,6 +105,8 @@ export function EditableWizard({ smart = false }: { smart?: boolean } = {}) {
 
   // KIE finishing pass — cleaned photos go back into the template (KIE never touches text/layout)
   const [cleanedIds, setCleanedIds] = useState<string[]>([]);
+  // move/crop each photo inside its frame: { [photoIndex]: { zoom, x, y } }
+  const [photoTr, setPhotoTr] = useState<Record<number, { zoom: number; x: number; y: number }>>({});
   const [finishNote, setFinishNote] = useState("");
   const [finishing, setFinishing] = useState(false);
   const [finishMsg, setFinishMsg] = useState<string | null>(null);
@@ -127,8 +122,8 @@ export function EditableWizard({ smart = false }: { smart?: boolean } = {}) {
   const [dispW, setDispW] = useState(0);
   const [guide, setGuide] = useState<{ v: number | null; h: number | null }>({ v: null, h: null });
   const imgRef = useRef<HTMLImageElement | null>(null);
-  const editStateRef = useRef({ text, colours, positions, sizes, cleanedIds });
-  editStateRef.current = { text, colours, positions, sizes, cleanedIds };
+  const editStateRef = useRef({ text, colours, positions, sizes, cleanedIds, photoTr });
+  editStateRef.current = { text, colours, positions, sizes, cleanedIds, photoTr };
 
   // ── gallery: fetch the plan, render each tile (cached, concurrency-limited) ────
   useEffect(() => {
@@ -175,22 +170,6 @@ export function EditableWizard({ smart = false }: { smart?: boolean } = {}) {
     // every eligible template uses EXACTLY the photos you chose (photo_count === chosen.length)
     const eligible = cat.filter((t) => t.photo_count === chosen.length);
 
-    // SMART: we pick the template for you and go straight to the editor (you can still tap "Templates" to change it).
-    if (smart && eligible.length > 0) {
-      const pick = eligible[0];
-      setEditFrom("template"); setTemplateId(pick.id); setStep("edit");
-      setPreview(null); setErr(null); setSaved(false); setSection("");
-      setRendering(true);
-      const d = await loadEdit(pick.id, p.id);
-      if (!d) { setRendering(false); return; }
-      const t0 = Object.fromEntries(d.editable_slots.map((s) => [s.id, s.value]));
-      const c0 = Object.fromEntries(d.colour_layers.map((c) => [c.role, c.value]));
-      const pr = await editablePreviewAction({ template_id: pick.id, property_id: p.id, photos: chosen, text_overrides: t0, manual_colours: c0 });
-      setPreview(pr.ok ? (pr.image_url as string) : null);
-      if (!pr.ok) setErr(pr.message as string);
-      setRendering(false);
-      return;
-    }
 
     setThumbs(Object.fromEntries(eligible.map((t) => [t.id, undefined as unknown as string])));
     eligible.forEach(async (t) => {
@@ -213,7 +192,7 @@ export function EditableWizard({ smart = false }: { smart?: boolean } = {}) {
     setText(Object.fromEntries(d.editable_slots.map((s) => [s.id, s.value])));
     setColours(Object.fromEntries(d.colour_layers.map((c) => [c.role, c.value])));
     setPositions({}); setSizes({}); setSelected(null); setRegionSel(null); setHoverRole(null);
-    setCleanedIds([]); setFinishMsg(null); setFinishNote("");
+    setCleanedIds([]); setFinishMsg(null); setFinishNote(""); setPhotoTr({});
     return d;
   }
 
@@ -258,6 +237,7 @@ export function EditableWizard({ smart = false }: { smart?: boolean } = {}) {
       position_overrides: Object.keys(s.positions).length ? s.positions : undefined,
       size_overrides: Object.keys(s.sizes).length ? s.sizes : undefined,
       cleaned_generation_ids: s.cleanedIds.length ? s.cleanedIds : undefined,
+      photo_transforms: Object.keys(s.photoTr).length ? s.photoTr : undefined,
     });
     if (seq !== renderSeq.current) return; // a newer edit superseded this render
     if (res.ok) { setPreview(res.image_url as string); setErr(null); }
@@ -305,6 +285,18 @@ export function EditableWizard({ smart = false }: { smart?: boolean } = {}) {
     if (s.size) return s.size;
     const lines = Math.max(1, (text[s.id] ?? s.default_text ?? "").split("\n").length);
     return Math.round(Math.max(8, ((s.bbox[3] - s.bbox[1]) / lines) * 0.78));
+  }
+  // move/crop a photo inside its frame — nudge pans, zoom crops in
+  function framePhoto(i: number, patch: Partial<{ zoom: number; x: number; y: number }>) {
+    setPhotoTr((t) => {
+      const cur = t[i] ?? { zoom: 1, x: 0.5, y: 0.5 };
+      const next = { ...cur, ...patch };
+      next.zoom = Math.min(4, Math.max(1, next.zoom));
+      next.x = Math.min(1, Math.max(0, next.x));
+      next.y = Math.min(1, Math.max(0, next.y));
+      return { ...t, [i]: next };
+    });
+    setSaved(false); scheduleRender();
   }
   function resizeSel(delta: number) {
     if (!selectedSlot) return;
@@ -397,6 +389,7 @@ export function EditableWizard({ smart = false }: { smart?: boolean } = {}) {
       position_overrides: Object.keys(positions).length ? positions : undefined,
       size_overrides: Object.keys(sizes).length ? sizes : undefined,
       cleaned_generation_ids: cleanedIds.length ? cleanedIds : undefined,
+      photo_transforms: Object.keys(photoTr).length ? photoTr : undefined,
       section: section.trim() || null,
     });
     setSaving(false);
@@ -415,7 +408,7 @@ export function EditableWizard({ smart = false }: { smart?: boolean } = {}) {
     setDefaults(null); setText({}); setColours({}); setPreview(null); setThumbs({});
     setSection(""); setSaved(false); setErr(null);
     setPositions({}); setSizes({}); setSelected(null); setRegionSel(null); setHoverRole(null);
-    setCleanedIds([]); setFinishMsg(null); setFinishNote("");
+    setCleanedIds([]); setFinishMsg(null); setFinishNote(""); setPhotoTr({});
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -686,6 +679,46 @@ export function EditableWizard({ smart = false }: { smart?: boolean } = {}) {
                 )}
               </div>
 
+              {/* move / crop each photo inside its frame */}
+              {photos.length > 0 && (
+                <div>
+                  <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">Photos</div>
+                  <p className="mb-2 text-[11px] text-neutral-400">Not framed how you want it? Move it or zoom in.</p>
+                  <div className="space-y-2">
+                    {photos.map((u, i) => {
+                      const t = photoTr[i] ?? { zoom: 1, x: 0.5, y: 0.5 };
+                      const moved = !!photoTr[i];
+                      return (
+                        <div key={u} className="flex items-center gap-2 rounded-lg border border-neutral-200 p-2">
+                          <img src={u} alt="" referrerPolicy="no-referrer" className="h-11 w-11 shrink-0 rounded object-cover" />
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1">
+                              <span className="w-8 shrink-0 text-[10px] font-medium uppercase text-neutral-400">Zoom</span>
+                              <input type="range" min={1} max={4} step={0.1} value={t.zoom}
+                                onChange={(e) => framePhoto(i, { zoom: Number(e.target.value) })}
+                                className="h-1 w-full cursor-pointer accent-neutral-900" />
+                            </div>
+                            <div className="mt-1 flex items-center gap-1">
+                              <span className="w-8 shrink-0 text-[10px] font-medium uppercase text-neutral-400">Move</span>
+                              <div className="flex gap-1">
+                                <button onClick={() => framePhoto(i, { x: t.x - 0.08 })} className="rounded border border-neutral-200 px-1.5 text-xs text-neutral-600 hover:bg-neutral-50" title="Left">←</button>
+                                <button onClick={() => framePhoto(i, { x: t.x + 0.08 })} className="rounded border border-neutral-200 px-1.5 text-xs text-neutral-600 hover:bg-neutral-50" title="Right">→</button>
+                                <button onClick={() => framePhoto(i, { y: t.y - 0.08 })} className="rounded border border-neutral-200 px-1.5 text-xs text-neutral-600 hover:bg-neutral-50" title="Up">↑</button>
+                                <button onClick={() => framePhoto(i, { y: t.y + 0.08 })} className="rounded border border-neutral-200 px-1.5 text-xs text-neutral-600 hover:bg-neutral-50" title="Down">↓</button>
+                                {moved && (
+                                  <button onClick={() => { setPhotoTr((p) => { const n = { ...p }; delete n[i]; return n; }); setSaved(false); scheduleRender(); }}
+                                    className="ml-1 text-[10px] text-neutral-400 underline hover:text-neutral-700">reset</button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {/* KIE finishing pass — photos only; the template + text never change */}
               <div className="space-y-2 rounded-xl border border-neutral-200 p-3">
                 <div className="flex items-center justify-between">
@@ -722,10 +755,11 @@ export function EditableWizard({ smart = false }: { smart?: boolean } = {}) {
               </div>
 
               {/* download */}
-              <a href={preview ?? undefined} download={`${property?.title || "post"}-${templateId}.png`}
-                className={`flex items-center justify-center gap-2 rounded-lg border border-neutral-300 px-4 py-2.5 text-sm font-medium text-neutral-700 ${preview ? "hover:bg-neutral-50" : "pointer-events-none opacity-40"}`}>
+              <button type="button" disabled={!preview}
+                onClick={() => preview && void downloadImage(preview, `${property?.title || "post"}-${templateId}.png`)}
+                className={`flex w-full items-center justify-center gap-2 rounded-lg border border-neutral-300 px-4 py-2.5 text-sm font-medium text-neutral-700 ${preview ? "hover:bg-neutral-50" : "opacity-40"}`}>
                 <Download className="h-4 w-4" /> Download image
-              </a>
+              </button>
               <button onClick={reset} className="w-full text-center text-xs text-neutral-400 hover:text-neutral-600">Start over</button>
             </div>
           </div>

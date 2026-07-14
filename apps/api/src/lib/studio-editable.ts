@@ -238,6 +238,8 @@ export interface RenderOpts {
   // (size = canvas-px font size). Passed to the engine and folded into the cache hash.
   positionOverrides?: Record<string, { x: number; y: number }>;
   sizeOverrides?: Record<string, number>;
+  // per-photo framing: { [photoIndex]: { zoom, x, y } } — move/crop a photo inside its frame
+  photoTransforms?: Record<number, { zoom?: number; x?: number; y?: number }>;
 }
 
 /** Render a finished PNG for an editable template — deriveSlots defaults, then the user's text/colour edits. */
@@ -264,7 +266,7 @@ export async function renderEditableTemplate(opts: RenderOpts): Promise<Buffer> 
     // AUTO / scheme (+ optional per-role fine-tune) — respects per-token locks via roleHex.
     palette = { ...agencyPalette(m, opts.brand), ...(opts.colourOverrides || {}) };
   }
-  const photos = await pickPhotos(m, opts.photoBuffers, opts.templateId);
+  const photos = await pickPhotos(m, opts.photoBuffers, opts.templateId, opts.photoTransforms);
   const r = await renderEditable(m, palette, photos, { pos: opts.positionOverrides, size: opts.sizeOverrides });
   return r.png;
 }
@@ -284,6 +286,7 @@ function renderInputsHash(opts: RenderOpts): string {
     t: opts.templateId, p: opts.property, a: opts.agency, b: opts.brand,
     tx: sortRec(opts.textOverrides), co: sortRec(opts.colourOverrides), mc: sortRec(opts.manualColours),
     ph: opts.photoRefs ?? [], po: sortRec(opts.positionOverrides), so: sortRec(opts.sizeOverrides),
+    pt: sortRec(opts.photoTransforms as unknown as Record<string, unknown> | undefined),
   });
   return createHash('sha256').update(canon).digest('hex').slice(0, 32);
 }

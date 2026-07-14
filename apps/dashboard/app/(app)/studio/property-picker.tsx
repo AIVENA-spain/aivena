@@ -15,6 +15,27 @@ import { propertiesAction, propertyPhotosAction } from "./wizard-actions";
  * opens its photos in a modal right where you are — never a jump to the bottom of the page.
  */
 
+/**
+ * Download without navigating away. The render lives on a cross-origin signed URL, so the <a download>
+ * attribute is ignored and the browser NAVIGATES to the image — then Back drops you at the start of the flow
+ * and your edits are gone (Christian: "if i go back it sends me back to the start"). Fetching the blob and
+ * clicking an object-URL keeps you exactly where you are, with your work intact.
+ */
+export async function downloadImage(url: string, filename: string) {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("fetch failed");
+    const blob = await res.blob();
+    const obj = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = obj; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(obj);
+  } catch {
+    window.open(url, "_blank", "noopener"); // last resort: a new tab, never this one
+  }
+}
+
 export type PickerProperty = {
   id: string; title: string; location_city: string | null;
   price: number | null; bedrooms: number | null; bathrooms: number | null;

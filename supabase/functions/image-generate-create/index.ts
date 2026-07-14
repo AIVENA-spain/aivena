@@ -94,6 +94,47 @@ const CLEAN_ONLY_BASE =
   "beautify. Do not add or remove anything. Reconstruct only the small areas the removed overlay covered, " +
   "matching the surrounding pixels exactly. The output must be indistinguishable from the original except that " +
   "the overlay is gone. No text, letters, logos or watermarks in the image.";
+// SMART DESIGN MODE (Christian 2026-07-14) — the ONE place KIE is allowed to render text and invent a layout:
+// "i want it to make its own template, just whatever he thinks looks best... in this smart section kie needs to
+// be the one to handle text and everything, but he has creative freedom." Every other path keeps the
+// deterministic rule (KIE = photos only, the engine draws the facts).
+// The facts are handed over VERBATIM so creative freedom never becomes invented data — the model is told to
+// reproduce them exactly and add nothing else.
+const VALID_IMAGE_SIZES = [
+  "square", "square_hd", "portrait_4_3", "portrait_3_2", "portrait_16_9",
+  "landscape_4_3", "landscape_3_2", "landscape_16_9", "landscape_21_9",
+];
+function buildDesignBrief(opts: {
+  property: any; agencyName: string | null; language: string; agentNote: string | null; contentType: string;
+}): string {
+  const p = opts.property;
+  const facts: string[] = [];
+  if (p?.title) facts.push(`Headline: ${p.title}`);
+  const price = formatPriceEUR(p?.price);
+  if (price) facts.push(`Price: ${price}`);
+  const specs: string[] = [];
+  if (p?.bedrooms) specs.push(`${p.bedrooms} ${t(STR_BEDROOMS, opts.language)}`);
+  if (p?.bathrooms) specs.push(`${p.bathrooms} ${t(STR_BATHROOMS, opts.language)}`);
+  if (p?.area_sqm) specs.push(`${p.area_sqm} m2`);
+  if (specs.length) facts.push(`Details: ${specs.join(" · ")}`);
+  const loc = [p?.location_city, p?.location_region].filter(Boolean).join(", ");
+  if (loc) facts.push(`Location: ${loc}`);
+  if (opts.agencyName) facts.push(`Agency: ${opts.agencyName}`);
+
+  return [
+    "Design a premium real-estate social media marketing post using the supplied photo(s) of this property.",
+    "You have full creative freedom over the layout, composition, typography, colour and styling — make it look",
+    "like the work of a high-end property brand's art director. Use the supplied photos as the imagery.",
+    facts.length
+      ? "Render EXACTLY these facts, word for word and digit for digit — never invent, alter, round or add to them:\n- " + facts.join("\n- ")
+      : "Do not put any factual claims, prices or numbers on the image.",
+    "Spell every word correctly. Do NOT add any other text, prices, phone numbers, dates, ratings or claims that are not listed above.",
+    "Do not change the property itself: no adding or removing rooms, walls, pools or views. Remove any watermark, logo or website overlay already printed on the photos.",
+    `All text must be written in this language: ${opts.language}.`,
+    opts.agentNote ? `The agent specifically asks for: ${opts.agentNote}` : "",
+    "Photorealistic photography, magazine-grade marketing quality.",
+  ].filter(Boolean).join(" ");
+}
 const NEGSPACE_HINT =
   " Compose with generous clean empty space (clear sky, plain wall or floor) on one side or the lower third where marketing text can later be placed; keep that area free of clutter and detail.";
 const RENOVATION_GUARD =
@@ -193,6 +234,9 @@ Deno.serve(async (req) => {
   const previewOnly: boolean = body?.preview_only === true;
   // clean_only: watermark removal ONLY — no relight/grade/declutter. Used by the template finishing pass.
   const cleanOnly: boolean = body?.clean_only === true;
+  // design_mode: SMART only — KIE composes the whole post (layout + text) from ALL the chosen photos.
+  const designMode: boolean = body?.design_mode === true;
+  const imageSize: string | null = typeof body?.image_size === "string" && VALID_IMAGE_SIZES.includes(body.image_size) ? body.image_size : null;
 
   if (!agency_id || typeof agency_id !== "string") return j(400, { ok: false, error: "missing_agency_id", message: "Something went wrong. Please try again." });
   if (!VALID_TYPES.includes(generation_type))       return j(400, { ok: false, error: "invalid_generation_type", message: "Unknown generation type." });
@@ -267,6 +311,10 @@ Deno.serve(async (req) => {
   let finalPrompt = directive;
   if (generation_type === "renovation") {
     finalPrompt = (agentNote ?? "") + RENOVATION_GUARD;
+  } else if (source_image_url && designMode) {
+    // SMART: full creative freedom — KIE lays out the post AND renders the text, from every chosen photo.
+    model = MODEL_ENHANCE; // seedream-v4-edit: many reference images in, one composed design out
+    finalPrompt = buildDesignBrief({ property, agencyName, language, agentNote, contentType });
   } else if (source_image_url && cleanOnly) {
     // Watermark removal only. An agent note is the ONLY additional change allowed — never the mood directive.
     model = MODEL_ENHANCE;
@@ -437,7 +485,16 @@ Deno.serve(async (req) => {
   let input: Record<string, unknown>;
   if (model === MODEL_ENHANCE) {
     input = { prompt: finalPrompt, image_resolution: KIE_IMAGE_RESOLUTION, nsfw_checker: true };
-    if (source_image_url) input.image_urls = [source_image_url];
+    if (source_image_url) {
+      // SMART design uses EVERY selected photo (seedream accepts up to 10 reference images) — the old code
+      // sent only image_urls[0], which is why "i selected 4 images it just used one of them". The clean-up and
+      // renovation paths stay strictly single-photo: one photo in, that same photo out.
+      input.image_urls = designMode
+        ? [source_image_url, ...imageUrls.filter((u) => u !== source_image_url)].slice(0, 10)
+        : [source_image_url];
+    }
+    // aspect ratio is only meaningful when KIE is composing the design; the clean-up must keep the source ratio.
+    if (designMode && imageSize) input.image_size = imageSize;
   } else {
     input = { prompt: finalPrompt, output_format: "png" };
     if (source_image_url) input.image_urls = [source_image_url];

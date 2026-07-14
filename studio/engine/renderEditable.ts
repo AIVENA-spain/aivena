@@ -193,9 +193,10 @@ export const forceSliceOnPhotoSlots = (svg: string) => forceAspectOnPhotoSlots(s
 // (file paths OR downloaded Buffers), exactly as the harness proof does — so the production render route
 // produces byte-identical output to the accepted proofs. attention -> subject-aware per-frame crop;
 // multi-slot -> one image per token; single-slot -> the hero (template "1" prefers the 2nd photo).
-export async function pickPhotos(m: z.infer<typeof EditableManifest>, imgs: (string | Buffer)[], templateId: string): Promise<string | Record<string, string>> {
+export async function pickPhotos(m: z.infer<typeof EditableManifest>, imgs: (string | Buffer)[], templateId: string, transforms?: Record<number, PhotoTransform>): Promise<string | Record<string, string>> {
   const toUri = (x: string | Buffer) => "data:image/jpeg;base64," + (typeof x === "string" ? fs.readFileSync(x) : x).toString("base64");
-  if (m.photo_fit === "attention") return fitPhotosToFrames(m, imgs);
+  // Manual framing needs the crop path even on "slice" templates, so honour transforms either way.
+  if (m.photo_fit === "attention" || (transforms && Object.keys(transforms).length)) return fitPhotosToFrames(m, imgs, transforms);
   if (m.photo_slots && m.photo_slots.length > 1) {
     const map: Record<string, string> = {};
     m.photo_slots.forEach((s, i) => (map[s.token] = toUri(imgs[i % imgs.length])));
@@ -209,7 +210,11 @@ export async function pickPhotos(m: z.infer<typeof EditableManifest>, imgs: (str
 // a dead-center zoom. Frame aspects come from the source's <image> width/height attrs — Canva exports bake the
 // demo bitmap at frame size, so the attrs ARE the frame shape. Photos keep the existing index->token order
 // (PHOTO0 = the design's hero frame).
-export async function fitPhotosToFrames(m: z.infer<typeof EditableManifest>, imgPaths: (string | Buffer)[]): Promise<Record<string, string>> {
+export async function fitPhotosToFrames(
+  m: z.infer<typeof EditableManifest>,
+  imgPaths: (string | Buffer)[],
+  transforms?: Record<number, PhotoTransform>,
+): Promise<Record<string, string>> {
   const sharp = (await import("sharp")).default;
   const src = fs.readFileSync(abs(m.source_svg), "utf8");
   const tokens = m.photo_slots?.map((p) => p.token) ?? (m.photo_token ? [m.photo_token] : []);
@@ -221,10 +226,39 @@ export async function fitPhotosToFrames(m: z.infer<typeof EditableManifest>, img
     if (!fw || !fh) { out[tokens[i]] = "data:image/jpeg;base64," + (typeof img === "string" ? fs.readFileSync(img) : img).toString("base64"); continue; }
     // render at up to ~1400px on the long side — plenty for a 1080-canvas frame
     const s = Math.min(1, 1400 / Math.max(fw, fh));
-    const buf = await sharp(img)
-      .resize({ width: Math.round(fw * s), height: Math.round(fh * s), fit: "cover", position: sharp.strategy.attention })
-      .jpeg({ quality: 88 })
-      .toBuffer();
+    const outW = Math.round(fw * s), outH = Math.round(fh * s);
+    const tr = transforms?.[i];
+    let buf: Buffer;
+    if (tr && (tr.zoom !== undefined || tr.x !== undefined || tr.y !== undefined)) {
+      // MANUAL framing: take an explicit crop window of the frame's aspect, positioned by x/y, sized by zoom.
+      const meta = await sharp(img).metadata();
+      const sw = meta.width ?? 0, sh = meta.height ?? 0;
+      if (!sw || !sh) {
+        buf = await sharp(img).resize({ width: outW, height: outH, fit: "cover", position: sharp.strategy.attention }).jpeg({ quality: 88 }).toBuffer();
+      } else {
+        const zoom = Math.min(6, Math.max(1, tr.zoom ?? 1));
+        const ar = fw / fh;
+        // largest window of the frame's aspect that fits the source, then divided by the zoom
+        let cw = sw, ch = sw / ar;
+        if (ch > sh) { ch = sh; cw = sh * ar; }
+        cw = Math.max(16, Math.min(sw, cw / zoom));
+        ch = Math.max(16, Math.min(sh, ch / zoom));
+        const px = Math.min(1, Math.max(0, tr.x ?? 0.5));
+        const py = Math.min(1, Math.max(0, tr.y ?? 0.5));
+        const left = Math.round(Math.min(Math.max(0, (sw - cw) * px), sw - cw));
+        const top = Math.round(Math.min(Math.max(0, (sh - ch) * py), sh - ch));
+        buf = await sharp(img)
+          .extract({ left, top, width: Math.round(cw), height: Math.round(ch) })
+          .resize({ width: outW, height: outH, fit: "fill" })
+          .jpeg({ quality: 88 })
+          .toBuffer();
+      }
+    } else {
+      buf = await sharp(img)
+        .resize({ width: outW, height: outH, fit: "cover", position: sharp.strategy.attention })
+        .jpeg({ quality: 88 })
+        .toBuffer();
+    }
     out[tokens[i]] = "data:image/jpeg;base64," + buf.toString("base64");
   }
   return out;
@@ -253,7 +287,15 @@ function localBg(img: RGBA, b: number[], margin = 10): string {
 
 // Interactive-editor overrides: the user drags a text block to a new top-left (pos, canvas px) and/or resizes it
 // (size, canvas px font size). Absent → the deterministic auto-layout is unchanged.
-export type EditOverrides = { pos?: Record<string, { x: number; y: number }>; size?: Record<string, number> };
+// PHOTO FRAMING (Christian 2026-07-14): "in case the image isnt perfectly placed i would like it to be possible
+// to move or crop the image as well." Per photo INDEX: zoom (1 = fill the frame, >1 = crop in) and x/y (0..1 =
+// where the crop window sits in the source; 0.5/0.5 = centre). Absent → the existing automatic framing.
+export type PhotoTransform = { zoom?: number; x?: number; y?: number };
+export type EditOverrides = {
+  pos?: Record<string, { x: number; y: number }>;
+  size?: Record<string, number>;
+  photos?: Record<number, PhotoTransform>;
+};
 export async function renderEditable(m: EditableManifest, palette: Palette = {}, photos: string | Record<string, string> = GREY, edits: EditOverrides = {}): Promise<{ svg: string; png: Buffer; editableTextCount: number; photosFilled: number; layout: SlotLayout[]; width: number; height: number }> {
   const [W, H] = [m.canvas.width, m.canvas.height];
   const src = forceAspectOnPhotoSlots(fs.readFileSync(abs(m.source_svg), "utf8"), m.photo_fit ?? "slice");

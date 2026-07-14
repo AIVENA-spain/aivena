@@ -124,6 +124,11 @@ const COMPOSITIONS = new Set([
   'launch_hero',
 ]);
 const TEXT_TREATMENTS = new Set(['on_photo', 'scrim', 'negative_space']);
+// KIE's aspect-ratio enum (seedream-v4-edit accepts exactly these; no custom width/height).
+const IMAGE_SIZES = new Set([
+  'square', 'square_hd', 'portrait_4_3', 'portrait_3_2', 'portrait_16_9',
+  'landscape_4_3', 'landscape_3_2', 'landscape_16_9', 'landscape_21_9',
+]);
 const FONT_SETS = new Set(['serif', 'sans', 'mixed']);
 const COLOR_TREATMENTS = new Set(['photo_only', 'accent_line', 'color_block']);
 const MOODS = new Set(['sunny_bright', 'golden_hour', 'cozy_evening', 'clean_neutral']);
@@ -173,6 +178,16 @@ function buildDesignBody(b: Record<string, unknown>): Record<string, unknown> | 
   if (Number.isInteger(b.height)) out.height = b.height;
 
   if (str(b.language)) out.language = b.language;
+
+  // SMART design mode (Christian 2026-07-14): KIE composes the whole post — layout AND text — from every
+  // selected photo, at the chosen aspect. Only Smart passes this; every other path keeps the deterministic
+  // engine (KIE = photos only). `prompt` carries the agent's creative direction.
+  if (b.design_mode === true) {
+    out.design_mode = true;
+    out.template = 'none'; // KIE owns the whole image — no studio-compose overlay on top
+  }
+  if (enumOr(b.image_size, IMAGE_SIZES)) out.image_size = b.image_size;
+  if (typeof b.prompt === 'string' && b.prompt.trim()) out.prompt = b.prompt.trim().slice(0, 3000);
 
   // Copy overrides — pass through verbatim (including empty string = hide).
   // price_text is a display-ready string the renderer draws as-is (sold/launch).
@@ -560,6 +575,21 @@ function parsePositions(v: unknown): Record<string, { x: number; y: number }> | 
   }
   return Object.keys(out).length ? out : undefined;
 }
+function parsePhotoTransforms(v: unknown): Record<number, { zoom?: number; x?: number; y?: number }> | undefined {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return undefined;
+  const out: Record<number, { zoom?: number; x?: number; y?: number }> = {};
+  for (const [k, val] of Object.entries(v as Record<string, unknown>)) {
+    const i = Number(k);
+    const o = val as { zoom?: unknown; x?: unknown; y?: unknown };
+    if (!Number.isInteger(i) || i < 0 || i > 20 || !o || typeof o !== 'object') continue;
+    const t: { zoom?: number; x?: number; y?: number } = {};
+    if (typeof o.zoom === 'number' && Number.isFinite(o.zoom)) t.zoom = Math.min(6, Math.max(1, o.zoom));
+    if (typeof o.x === 'number' && Number.isFinite(o.x)) t.x = Math.min(1, Math.max(0, o.x));
+    if (typeof o.y === 'number' && Number.isFinite(o.y)) t.y = Math.min(1, Math.max(0, o.y));
+    if (Object.keys(t).length) out[i] = t;
+  }
+  return Object.keys(out).length ? out : undefined;
+}
 function parseSizes(v: unknown): Record<string, number> | undefined {
   if (!v || typeof v !== 'object' || Array.isArray(v)) return undefined;
   const out: Record<string, number> = {};
@@ -637,6 +667,7 @@ route.post('/editable-preview', async (c) => {
       manualColours: obj(b.manual_colours),
       positionOverrides: parsePositions(b.position_overrides),
       sizeOverrides: parseSizes(b.size_overrides),
+      photoTransforms: parsePhotoTransforms(b.photo_transforms),
       agencyId, propertyId, photoRefs: cleanedIds.length ? cleanedIds : refs, // deterministic cache key → reuse identical renders, no churn
     });
     return c.json({ ok: true, template_id: templateId, image_url: stored.image_url, storage_path: stored.storage_path });
@@ -802,6 +833,7 @@ route.post('/editable-generate', async (c) => {
       manualColours: obj(b.manual_colours),
       positionOverrides: parsePositions(b.position_overrides),
       sizeOverrides: parseSizes(b.size_overrides),
+      photoTransforms: parsePhotoTransforms(b.photo_transforms),
       agencyId, propertyId, photoRefs: cleanedIds.length ? cleanedIds : refs,
     });
 

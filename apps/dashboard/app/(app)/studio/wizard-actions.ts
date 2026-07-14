@@ -70,6 +70,10 @@ export type DesignChoices = {
   prompt?: string;
   /** "none" for renovation — tells the EF to skip the marketing overlay. */
   template?: string;
+  /** SMART only: KIE composes the whole post (layout + text) from every selected photo. */
+  design_mode?: boolean;
+  /** KIE aspect enum (square_hd | portrait_4_3 | portrait_16_9 | landscape_16_9 | …). Smart only. */
+  image_size?: string;
 };
 
 export async function previewAction(choices: DesignChoices): Promise<Envelope> {
@@ -131,6 +135,8 @@ export type EditablePreviewInput = {
   size_overrides?: Record<string, number>;
   // KIE finishing pass: render the template with the CLEANED photos instead of the raw listing ones
   cleaned_generation_ids?: string[];
+  // move/crop a photo inside its frame: { [photoIndex]: { zoom, x, y } }
+  photo_transforms?: Record<number, { zoom?: number; x?: number; y?: number }>;
 };
 
 // ── KIE finishing pass: hand each chosen photo to KIE (watermark removal + the asked-for aesthetic

@@ -97,6 +97,13 @@ export function normaliseSpec(raw: unknown): unknown {
         // intent is unknowable, so drop the manual framing and let the automatic crop take over.
         if (typeof el.x !== "number" || el.x < 0 || el.x > 1) delete el.x;
         if (typeof el.y !== "number" || el.y < 0 || el.y > 1) delete el.y;
+        // x:0,y:0 is the model saying "default position", not "anchor the crop to the top-left corner"
+        // (the first live run cropped every photo to its corner this way) → treat as centre.
+        if (el.x === 0 && el.y === 0) { el.x = 0.5; el.y = 0.5; }
+        // zoom 1 with no meaningful offset = no manual framing at all → automatic subject-aware crop.
+        if ((el.zoom === undefined || el.zoom === 1) && (el.x === undefined || el.x === 0.5) && (el.y === undefined || el.y === 0.5)) {
+          delete el.zoom; delete el.x; delete el.y;
+        }
       } else if (el.type === "text") {
         if (typeof el.content !== "string") delete el.content; // fact elements may omit it (zod defaults "")
         if (typeof el.weight === "number") el.weight = String(el.weight);
@@ -125,7 +132,11 @@ function overlap(a: number[], b: number[]): number {
   return w > 0 && h > 0 ? w * h : 0;
 }
 
-/** Render an AI design spec to a PNG. Photos sit under all graphics/text (painter's order for the rest). */
+/**
+ * Render an AI design spec to a PNG in TRUE painter's order — a rect placed before a photo renders UNDER it
+ * (the first live run broke exactly here: a white card drawn after two photos in the spec was painted over
+ * them, hiding both). SVG runs between photos are rasterised as interleaved layers.
+ */
 export async function renderFreeform(
   spec: DesignSpec,
   canvas: { width: number; height: number },
@@ -134,50 +145,8 @@ export async function renderFreeform(
   const sharp = (await import("sharp")).default;
   const W = Math.round(canvas.width), H = Math.round(canvas.height);
 
-  // ── photos: crop each into its frame (cover; manual zoom/x/y honoured) ──────
-  const composites: { input: Buffer; left: number; top: number }[] = [];
-  for (const el of spec.elements) {
-    if (el.type !== "photo") continue;
-    const src = photos[el.photo];
-    if (!src) continue;
-    const b = clampBox(el.bbox, W, H);
-    const fw = Math.round(boxW(b)), fh = Math.round(boxH(b));
-    if (fw < 8 || fh < 8) continue;
-    const meta = await sharp(src).metadata();
-    const sw = meta.width ?? 0, sh = meta.height ?? 0;
-    if (!sw || !sh) continue;
-    let buf: Buffer;
-    if (el.zoom !== undefined || el.x !== undefined || el.y !== undefined) {
-      const zoom = Math.min(6, Math.max(1, el.zoom ?? 1));
-      const ar = fw / fh;
-      let cw = sw, ch = sw / ar;
-      if (ch > sh) { ch = sh; cw = sh * ar; }
-      cw = Math.max(16, Math.min(sw, cw / zoom));
-      ch = Math.max(16, Math.min(sh, ch / zoom));
-      const px = Math.min(1, Math.max(0, el.x ?? 0.5)), py = Math.min(1, Math.max(0, el.y ?? 0.5));
-      buf = await sharp(src)
-        .extract({
-          left: Math.round(Math.min(Math.max(0, (sw - cw) * px), sw - cw)),
-          top: Math.round(Math.min(Math.max(0, (sh - ch) * py), sh - ch)),
-          width: Math.round(cw), height: Math.round(ch),
-        })
-        .resize({ width: fw, height: fh, fit: "fill" }).jpeg({ quality: 90 }).toBuffer();
-    } else {
-      buf = await sharp(src)
-        .resize({ width: fw, height: fh, fit: "cover", position: sharp.strategy.attention })
-        .jpeg({ quality: 90 }).toBuffer();
-    }
-    composites.push({ input: buf, left: Math.round(b[0]), top: Math.round(b[1]) });
-  }
-
-  // ── overlay SVG: rects / scrims / text in element order ─────────────────────
   const photoBoxes = spec.elements.filter((e) => e.type === "photo").map((e) => clampBox(e.bbox, W, H));
-  let defs = "";
-  let overlaySvg = "";
-  let gradId = 0;
-
-  // legibility floor: text over a photo with no rect/scrim covering it gets a soft plate injected under it —
-  // the AI is told to add scrims itself; this is the guarantee, not the style.
+  // legibility coverage: does anything EARLIER in the order shade this text box?
   const coverage = (textBox: number[], idx: number): number => {
     let covered = 0;
     spec.elements.slice(0, idx).forEach((e) => {
@@ -186,32 +155,85 @@ export async function renderFreeform(
     return covered / Math.max(1, boxW(textBox) * boxH(textBox));
   };
 
-  spec.elements.forEach((el, idx) => {
-    if (el.type === "rect") {
+  const layers: { input: Buffer; left: number; top: number }[] = [];
+  let defs = "";
+  let overlaySvg = "";
+  let gradId = 0;
+  const flushSvg = () => {
+    if (!overlaySvg) return;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><defs>${defs}</defs>${overlaySvg}</svg>`;
+    layers.push({ input: renderTemplatePng(svg, W), left: 0, top: 0 });
+    defs = ""; overlaySvg = "";
+  };
+  const gradient = (colour: string, direction: "up" | "down", peak: number): string => {
+    const id = `g${gradId++}`;
+    const [o0, o1] = direction === "up" ? [0, peak] : [peak, 0];
+    defs += `<linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1">` +
+      `<stop offset="0" stop-color="${colour}" stop-opacity="${o0}"/>` +
+      `<stop offset="1" stop-color="${colour}" stop-opacity="${o1}"/></linearGradient>`;
+    return id;
+  };
+
+  for (let idx = 0; idx < spec.elements.length; idx++) {
+    const el = spec.elements[idx];
+
+    if (el.type === "photo") {
+      flushSvg(); // everything drawn so far sits UNDER this photo — as designed
+      const src = photos[el.photo];
+      if (!src) throw new Error(`design references photo ${el.photo} but only ${photos.length} were loaded`);
+      const b = clampBox(el.bbox, W, H);
+      const fw = Math.round(boxW(b)), fh = Math.round(boxH(b));
+      if (fw < 8 || fh < 8) continue;
+      const meta = await sharp(src).metadata();
+      const sw = meta.width ?? 0, sh = meta.height ?? 0;
+      if (!sw || !sh) throw new Error(`photo ${el.photo} is unreadable`);
+      let buf: Buffer;
+      if (el.zoom !== undefined || el.x !== undefined || el.y !== undefined) {
+        const zoom = Math.min(6, Math.max(1, el.zoom ?? 1));
+        const ar = fw / fh;
+        let cw = sw, ch = sw / ar;
+        if (ch > sh) { ch = sh; cw = sh * ar; }
+        cw = Math.max(16, Math.min(sw, cw / zoom));
+        ch = Math.max(16, Math.min(sh, ch / zoom));
+        const px = Math.min(1, Math.max(0, el.x ?? 0.5)), py = Math.min(1, Math.max(0, el.y ?? 0.5));
+        buf = await sharp(src)
+          .extract({
+            left: Math.round(Math.min(Math.max(0, (sw - cw) * px), sw - cw)),
+            top: Math.round(Math.min(Math.max(0, (sh - ch) * py), sh - ch)),
+            width: Math.round(cw), height: Math.round(ch),
+          })
+          .resize({ width: fw, height: fh, fit: "fill" }).jpeg({ quality: 90 }).toBuffer();
+      } else {
+        buf = await sharp(src)
+          .resize({ width: fw, height: fh, fit: "cover", position: sharp.strategy.attention })
+          .jpeg({ quality: 90 }).toBuffer();
+      }
+      layers.push({ input: buf, left: Math.round(b[0]), top: Math.round(b[1]) });
+
+    } else if (el.type === "rect") {
       const b = clampBox(el.bbox, W, H);
       overlaySvg += `<rect x="${b[0]}" y="${b[1]}" width="${boxW(b)}" height="${boxH(b)}"` +
         (el.radius ? ` rx="${el.radius}"` : "") + ` fill="${el.fill}"` +
         (el.opacity !== undefined ? ` fill-opacity="${el.opacity}"` : "") + `/>`;
+
     } else if (el.type === "scrim") {
       const b = clampBox(el.bbox, W, H);
-      const id = `g${gradId++}`;
-      const [o0, o1] = el.direction === "up" ? [0, 0.92] : [0.92, 0];
-      defs += `<linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1">` +
-        `<stop offset="0" stop-color="${el.colour}" stop-opacity="${o0}"/>` +
-        `<stop offset="1" stop-color="${el.colour}" stop-opacity="${o1}"/></linearGradient>`;
-      overlaySvg += `<rect x="${b[0]}" y="${b[1]}" width="${boxW(b)}" height="${boxH(b)}" fill="url(#${id})"/>`;
+      overlaySvg += `<rect x="${b[0]}" y="${b[1]}" width="${boxW(b)}" height="${boxH(b)}" fill="url(#${gradient(el.colour, el.direction, 0.92)})"/>`;
+
     } else if (el.type === "text") {
       const b = clampBox(el.bbox, W, H);
       const raw = (el.content ?? "").trim();
-      if (!raw || boxW(b) < 8 || boxH(b) < 8) return;
+      if (!raw || boxW(b) < 8 || boxH(b) < 8) continue;
       const textStr = el.uppercase ? raw.toUpperCase() : raw;
       const lines = textStr.split("\n").map((l) => l.trim()).filter(Boolean);
-      if (!lines.length) return;
+      if (!lines.length) continue;
 
+      // legibility floor — a SOFT gradient, never a box (the first run's grey plates looked like wireframes).
       const onPhoto = photoBoxes.some((pb) => overlap(pb, b) > 0.35 * boxW(b) * boxH(b));
       if (onPhoto && coverage(b, idx) < 0.5) {
-        const pad = Math.round(el.size * 0.45);
-        overlaySvg += `<rect x="${Math.max(0, b[0] - pad)}" y="${Math.max(0, b[1] - pad)}" width="${Math.min(W, boxW(b) + 2 * pad)}" height="${Math.min(H, boxH(b) + 2 * pad)}" rx="14" fill="#0B0F14" fill-opacity="0.38"/>`;
+        const padX = Math.round(el.size * 1.2), padY = Math.round(el.size * 1.1);
+        const gb = clampBox([b[0] - padX, b[1] - padY, b[2] + padX, b[3] + padY * 0.6], W, H);
+        overlaySvg += `<rect x="${gb[0]}" y="${gb[1]}" width="${boxW(gb)}" height="${boxH(gb)}" fill="url(#${gradient("#0B0F14", "up", 0.55)})"/>`;
       }
 
       // auto-fit: shrink so the widest line fits the box width
@@ -235,13 +257,11 @@ export async function renderFreeform(
         overlaySvg += `<text x="${tx.toFixed(1)}" y="${by.toFixed(1)}" text-anchor="${anchor}" font-family="${esc(el.font)}" font-size="${size.toFixed(1)}"${attrs} fill="${el.colour}">${esc(ln)}</text>`;
       });
     }
-  });
-
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><defs>${defs}</defs>${overlaySvg}</svg>`;
-  const overlayPng = renderTemplatePng(svg, W);
+  }
+  flushSvg();
 
   return await sharp({ create: { width: W, height: H, channels: 4, background: spec.background } })
-    .composite([...composites, { input: overlayPng, left: 0, top: 0 }])
+    .composite(layers)
     .png()
     .toBuffer();
 }

@@ -41,6 +41,7 @@ export function SmartStudio() {
   const [photos, setPhotos] = useState<string[]>([]);
   const [brief, setBrief] = useState("");
   const [size, setSize] = useState("square_hd");
+  const [cleanFirst, setCleanFirst] = useState(true);
 
   const [genId, setGenId] = useState<string | null>(null);
   const [image, setImage] = useState<string | null>(null);
@@ -88,12 +89,15 @@ export function SmartStudio() {
   async function generate() {
     if (!property || photos.length === 0) return;
     setPhase("working"); setErr(null); setSaved(false);
-    setBusyMsg(`AIVENA is designing your post around your ${photos.length} photo${photos.length === 1 ? "" : "s"}…`);
+    setBusyMsg(cleanFirst
+      ? `Removing watermarks from your ${photos.length} photo${photos.length === 1 ? "" : "s"}, then designing your post…`
+      : `AIVENA is designing your post around your ${photos.length} photo${photos.length === 1 ? "" : "s"}…`);
     const res = await smartDesignAction({
       property_id: property.id,
       photos,                        // ALL of them — each gets its own frame in the design
       size,
       brief: brief.trim() || undefined,
+      clean_photos: cleanFirst,
     });
     if (!res.ok || !res.generation_id) {
       setErr((res.message as string) ?? "Couldn't start that. Please try again.");
@@ -171,6 +175,15 @@ export function SmartStudio() {
             AIVENA designs a brand-new layout around your photos. The price, rooms and location come straight from your listing — they can never be wrong.
           </p>
 
+          <label className="mt-5 flex cursor-pointer items-start gap-2.5 rounded-lg border border-neutral-200 p-3">
+            <input type="checkbox" checked={cleanFirst} onChange={(e) => setCleanFirst(e.target.checked)}
+              className="mt-0.5 h-4 w-4 accent-neutral-900" />
+            <span className="text-sm text-neutral-700">
+              <span className="font-medium">Remove watermarks from the photos first</span> (recommended)
+              <span className="block text-[11px] text-neutral-400">Uses a credit per photo the first time — already-cleaned photos are reused free.</span>
+            </span>
+          </label>
+
           <label className="mb-1.5 mt-5 block text-xs font-semibold uppercase tracking-wide text-neutral-500">Post size</label>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {SIZES.map((s) => (
@@ -188,7 +201,7 @@ export function SmartStudio() {
             className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg bg-neutral-900 px-4 py-3 text-sm font-semibold text-white disabled:opacity-40">
             <Sparkles className="h-4 w-4" /> Design my post
           </button>
-          <p className="mt-2 text-center text-[11px] text-neutral-400">Uses one credit · takes ~20 seconds · you get 2 free changes after</p>
+          <p className="mt-2 text-center text-[11px] text-neutral-400">{cleanFirst ? "Takes 1-3 minutes (photo clean-up + design)" : "Takes ~30 seconds"} · you get 2 free changes after</p>
         </div>
       )}
 
@@ -197,7 +210,7 @@ export function SmartStudio() {
         <div className="flex flex-col items-center justify-center gap-3 py-24 text-center">
           <Loader2 className="h-7 w-7 animate-spin text-neutral-400" />
           <p className="text-sm font-medium text-neutral-700">{busyMsg}</p>
-          <p className="text-xs text-neutral-400">Designing the layout and placing your photos — about 20 seconds.</p>
+          <p className="text-xs text-neutral-400">{cleanFirst ? "Cleaning the photos, then designing — up to a few minutes." : "Designing the layout and placing your photos — under a minute."}</p>
         </div>
       )}
 

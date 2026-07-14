@@ -19,9 +19,7 @@ import {
 import {
   SMART_CANVAS,
   buildFacts,
-  designWithClaude,
-  enforceFacts,
-  renderAndStoreFreeform,
+  designRenderStore,
 } from '../lib/studio-smart-design';
 
 /**
@@ -998,31 +996,134 @@ async function smartPhotoBuffers(refs: string[]): Promise<Buffer[]> {
   return out;
 }
 
+// ── Smart photo clean-up (watermark removal) with a cache ──────────────────────
+// Cleaning the same photo twice is the same pixels twice AND a credit twice — so a completed clean-only job
+// for the exact source ref is reused. Cache key = raw_request.source_ref (the stable catalog ref, not the
+// signed URL, which rotates).
+async function cachedCleanedPhoto(agencyId: string, ref: string): Promise<{ path: string; url: string | null } | null> {
+  const { data } = await supabaseAdmin
+    .from('image_generations')
+    .select('result_image_storage_path, result_image_url')
+    .eq('agency_id', agencyId)
+    .eq('status', 'completed')
+    .eq('raw_request->>source_ref', ref)
+    .eq('raw_request->>clean_only', 'true')
+    .not('result_image_storage_path', 'is', null)
+    .order('created_at', { ascending: false })
+    .limit(1);
+  const r = data?.[0];
+  return r?.result_image_storage_path ? { path: r.result_image_storage_path, url: r.result_image_url ?? null } : null;
+}
+
+async function startCleanJob(agencyId: string, ref: string, propertyId: string | null, userId: string | null): Promise<string | null> {
+  const secret = await internalSecret();
+  if (!secret) return null;
+  const url = await kieFetchableUrl(ref);
+  if (!url) return null;
+  try {
+    const res = await fetch(`${EF_BASE}/image-generate-create`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-internal-secret': secret },
+      body: JSON.stringify({
+        agency_id: agencyId, generation_type: 'social_post', template: 'none',
+        source_image_url: url, source_property_id: propertyId, requested_by: userId, clean_only: true,
+      }),
+    });
+    const j = (await res.json().catch(() => null)) as { ok?: boolean; generation_id?: string } | null;
+    if (!res.ok || !j?.ok || !j.generation_id) return null;
+    // tag the row: an intermediate (hidden from the library) + the cache key
+    const { data: row } = await supabaseAdmin.from('image_generations').select('raw_request').eq('id', j.generation_id).single();
+    await supabaseAdmin.from('image_generations')
+      .update({ raw_request: { ...(row?.raw_request ?? {}), intermediate: true, clean_only: true, source_ref: ref } })
+      .eq('id', j.generation_id).eq('agency_id', agencyId);
+    return j.generation_id;
+  } catch { return null; }
+}
+
+/** Clean the chosen photos via KIE (watermark-only), reusing cached results. Falls back to the original photo
+ *  per-ref on any failure — a stubborn watermark never blocks the post. Returns per-ref buffers + vision URLs. */
+async function cleanedSmartPhotos(
+  agencyId: string, refs: string[], propertyId: string | null, userId: string | null,
+): Promise<{ buffers: Buffer[]; urls: string[] }> {
+  const byRef = new Map<string, { path: string; url: string | null }>();
+  const pending = new Map<string, string>(); // genId -> ref
+
+  for (const ref of refs) {
+    const hit = await cachedCleanedPhoto(agencyId, ref);
+    if (hit) { byRef.set(ref, hit); continue; }
+    const id = await startCleanJob(agencyId, ref, propertyId, userId);
+    if (id) pending.set(id, ref);
+  }
+
+  const deadline = Date.now() + 150 * 1000; // KIE takes ~30-60s/photo; jobs run in parallel
+  while (pending.size > 0 && Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, 6000));
+    const ids = [...pending.keys()];
+    const { data } = await supabaseAdmin
+      .from('image_generations')
+      .select('id, status, result_image_storage_path, result_image_url')
+      .in('id', ids);
+    for (const row of data ?? []) {
+      if (row.status === 'completed' && row.result_image_storage_path) {
+        byRef.set(pending.get(row.id)!, { path: row.result_image_storage_path, url: row.result_image_url ?? null });
+        pending.delete(row.id);
+      } else if (row.status === 'failed') {
+        pending.delete(row.id); // fall back to the original photo
+      }
+    }
+  }
+
+  const buffers: Buffer[] = [];
+  const urls: string[] = [];
+  for (const ref of refs) {
+    const cleaned = byRef.get(ref);
+    if (cleaned) {
+      const dl = await supabaseAdmin.storage.from('generated-images').download(cleaned.path);
+      if (!dl.error && dl.data) {
+        buffers.push(Buffer.from(await dl.data.arrayBuffer()));
+        urls.push(cleaned.url ?? (await kieFetchableUrl(ref)) ?? ref);
+        continue;
+      }
+    }
+    const buf = await loadPhotoBuffer(ref);
+    if (buf) { buffers.push(buf); urls.push((await kieFetchableUrl(ref)) ?? ref); }
+  }
+  return { buffers, urls };
+}
+
 async function runSmartDesign(opts: {
   genId: string; agencyId: string;
   property: ReturnType<typeof mapPropertyRow> & { title?: string | null };
   agency: { name: string; phone: string; web: string };
   brand: { navy: string; gold: string; cream: string; text: string };
-  refs: string[]; size: string; brief: string | null;
+  refs: string[]; size: string; brief: string | null; cleanPhotos: boolean;
+  propertyId: string | null; userId: string | null;
   priorSpec?: unknown; editNote?: string; isRevision: boolean; revisionNumber?: number;
 }): Promise<void> {
   const { genId, agencyId } = opts;
   try {
     const canvas = SMART_CANVAS[opts.size] ?? SMART_CANVAS.square_hd;
     const facts = buildFacts(opts.property, opts.agency);
-    // Claude fetches the photos itself — public catalog URLs pass through; owned storage paths get signed.
-    const photoUrls: string[] = [];
-    for (const ref of opts.refs) { const u = await kieFetchableUrl(ref); if (u) photoUrls.push(u); }
-    if (!photoUrls.length) throw new Error('no fetchable photos');
 
-    const rawSpec = await designWithClaude({
+    // photos: watermark-cleaned via KIE when asked (cached — a photo is only ever cleaned once), else raw.
+    let buffers: Buffer[];
+    let photoUrls: string[];
+    if (opts.cleanPhotos) {
+      const cleaned = await cleanedSmartPhotos(agencyId, opts.refs, opts.propertyId, opts.userId);
+      buffers = cleaned.buffers; photoUrls = cleaned.urls;
+    } else {
+      buffers = await smartPhotoBuffers(opts.refs);
+      photoUrls = [];
+      for (const ref of opts.refs) { const u = await kieFetchableUrl(ref); if (u) photoUrls.push(u); }
+    }
+    if (!buffers.length || !photoUrls.length) throw new Error('no fetchable photos');
+
+    const stored = await designRenderStore({
       photoUrls, canvas, facts, brand: opts.brand, brief: opts.brief,
+      photoBuffers: buffers, agencyId,
       priorSpec: opts.priorSpec, editNote: opts.editNote,
     });
-    const spec = enforceFacts(rawSpec, facts);
-    const buffers = await smartPhotoBuffers(opts.refs);
-    if (!buffers.length) throw new Error('no photo buffers');
-    const stored = await renderAndStoreFreeform(spec, canvas, buffers, agencyId);
+    const spec = stored.spec;
 
     const started = opts.isRevision ? (opts.revisionNumber ?? 1) : 0;
     const { error } = await supabaseAdmin.from('image_generations').update({
@@ -1039,7 +1140,7 @@ async function runSmartDesign(opts: {
       // the spec is the revision seed: "make the price bigger" edits THIS design, not a restart
       raw_request: {
         engine: 'smart_design', content_type: 'listing',
-        size: opts.size, brief: opts.brief, photos: opts.refs, design_spec: spec,
+        size: opts.size, brief: opts.brief, photos: opts.refs, clean_photos: opts.cleanPhotos, design_spec: spec,
       },
     }).eq('id', genId).eq('agency_id', agencyId);
     if (error) throw new Error(error.message);
@@ -1069,6 +1170,7 @@ route.post('/smart-design', async (c) => {
   const propertyId = typeof b.property_id === 'string' ? b.property_id.trim() : '';
   const size = typeof b.size === 'string' && SMART_CANVAS[b.size] ? b.size : 'square_hd';
   const brief = typeof b.brief === 'string' && b.brief.trim() ? b.brief.trim().slice(0, 2000) : null;
+  const cleanPhotos = b.clean_photos !== false; // default ON — KIE removes watermarks before designing
   try {
     const loaded = await loadPropertyAndBrand(tx, agencyId, propertyId);
     if (!loaded) return c.json({ ok: false, error: 'not_found', message: 'That property could not be found.' }, 404);
@@ -1086,7 +1188,7 @@ route.post('/smart-design', async (c) => {
         (agency_id, generation_type, status, prompt, source_property_id, requested_by, raw_request)
       VALUES
         (${agencyId}, 'social_post', 'processing', ${brief ?? 'Smart design'}, ${propertyId}::uuid, ${user?.sub ?? null}::uuid,
-         ${JSON.stringify({ engine: 'smart_design', content_type: 'listing', size, brief, photos: refs })}::jsonb)
+         ${JSON.stringify({ engine: 'smart_design', content_type: 'listing', size, brief, photos: refs, clean_photos: cleanPhotos })}::jsonb)
       RETURNING id
     `);
     const genId = (ins as unknown as Array<{ id: string }>)[0]?.id;
@@ -1097,7 +1199,8 @@ route.post('/smart-design', async (c) => {
       genId, agencyId,
       property: { ...loaded.property, title: loaded.title },
       agency: loaded.agency, brand: loaded.brand,
-      refs, size, brief, isRevision: false,
+      refs, size, brief, cleanPhotos,
+      propertyId, userId: user?.sub ?? null, isRevision: false,
     });
     return c.json({ ok: true, generation_id: genId, status: 'processing' });
   } catch (err) {
@@ -1143,6 +1246,8 @@ route.post('/smart-design/revise', async (c) => {
       agency: loaded.agency, brand: loaded.brand,
       refs, size: typeof rr.size === 'string' ? rr.size : 'square_hd',
       brief: typeof rr.brief === 'string' ? rr.brief : null,
+      cleanPhotos: rr.clean_photos !== false, // cached — revisions reuse the already-cleaned photos for free
+      propertyId: rows[0].source_property_id ?? null, userId: null,
       priorSpec: rr.design_spec, editNote, isRevision: true,
       revisionNumber: rows[0].revision_number,
     } as Parameters<typeof runSmartDesign>[0];

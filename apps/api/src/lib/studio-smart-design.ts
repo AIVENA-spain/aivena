@@ -106,7 +106,7 @@ RULES — these are hard:
 - A text element that shows a fact MUST use {"fact": "<key>"} — its content is substituted server-side. NEVER put prices, numbers, phone numbers, area, or the agency name in literal content.
 - Literal "content" text is ONLY for short generic marketing copy (e.g. "Your Mediterranean escape awaits") — it must contain NO digits and NO factual claims beyond the facts list.
 - Fonts: choose ONLY from: ${fonts}. Use at most 2 families (one display + one supporting).
-- Every text over a photo needs a scrim or rect under it for legibility.
+- LEGIBILITY: text sitting on a photo must be LIGHT (near-white) over a scrim/dark rect placed before it. DARK text belongs ONLY on solid light panels/background — never directly on a photo. Elements render in array order (painter's algorithm): a rect before a photo sits under it, after it sits on top.
 - Keep ~48px min margins for text unless the design is deliberately full-bleed. Min text size 22px (small labels), headline 60-140px.
 - Colours: design around the brand (navy ${opts.brand.navy}, accent ${opts.brand.gold}, light ${opts.brand.cream}, text ${opts.brand.text}) OR a tasteful neutral palette with one accent. 6-digit hex only.
 - Layout craft: strong hierarchy (one dominant element), aligned edges, generous whitespace, deliberate asymmetry beats centering everything. Vary your approach — hero full-bleed with panel, split, framed gallery, magazine cover, big-type poster are all valid.
@@ -161,6 +161,57 @@ export async function designWithClaude(opts: {
   throw new Error(`design spec invalid after retry: ${lastErr}`);
 }
 
+/**
+ * The critique pass — the designer finally SEES its own render. One-shot coordinate design is blind (that's
+ * why one-shot image generators look better); showing the model the rendered PNG lets it catch what blind
+ * design can't: illegible contrast, collisions, dead space, bad crops. Returns a corrected spec, or null to
+ * keep the original (critique is best-effort — a broken critique never breaks the generation).
+ */
+export async function critiqueDesign(opts: {
+  renderedPng: Buffer;
+  spec: DesignSpec;
+  canvas: { width: number; height: number };
+  facts: Record<string, string>;
+  brief: string | null;
+}): Promise<DesignSpec | null> {
+  try {
+    const sharp = (await import('sharp')).default;
+    const jpeg = await sharp(opts.renderedPng).resize({ width: 840 }).jpeg({ quality: 82 }).toBuffer();
+    const prompt =
+      `Above is the RENDER of the design you specified (canvas ${opts.canvas.width}x${opts.canvas.height}). ` +
+      `Review it like a demanding art director and fix every visual problem you can see: illegible text ` +
+      `(dark text on photos, weak contrast), overlapping or colliding elements, awkward empty space, cramped ` +
+      `or uneven margins, badly cropped photos, anything that looks unfinished. Keep the same overall concept, ` +
+      `all the same facts (by key) and all the photos. If it already looks excellent, resubmit it unchanged. ` +
+      `Resubmit the COMPLETE corrected design with the submit_design tool.\n\nYour current design:\n` +
+      JSON.stringify(opts.spec);
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-5',
+        max_tokens: 6000,
+        tools: [DESIGN_TOOL],
+        tool_choice: { type: 'tool', name: 'submit_design' },
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: jpeg.toString('base64') } },
+            { type: 'text', text: prompt },
+          ],
+        }],
+      }),
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { content?: { type: string; input?: unknown }[] };
+    const tool = data.content?.find((c) => c.type === 'tool_use');
+    const parsed = DesignSpec.safeParse(normaliseSpec(tool?.input));
+    return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Enforce the fact guarantees on a spec: substitute canonical strings, drop digit-carrying free copy. */
 export function enforceFacts(spec: DesignSpec, facts: Record<string, string>): DesignSpec {
   const fonts = new Set(vaultFamilies().map((f) => f.family));
@@ -182,18 +233,44 @@ export function enforceFacts(spec: DesignSpec, facts: Record<string, string>): D
 
 const OUT_BUCKET = 'generated-images';
 
-/** Render the (enforced) spec and store it; returns the signed URL + path. */
-export async function renderAndStoreFreeform(
-  spec: DesignSpec,
-  canvas: { width: number; height: number },
-  photos: Buffer[],
-  agencyId: string,
-): Promise<{ image_url: string; storage_path: string }> {
-  const png = await renderFreeform(spec, canvas, photos);
+/** Store a rendered design; returns the signed URL + path. */
+export async function storeFreeformPng(png: Buffer, agencyId: string): Promise<{ image_url: string; storage_path: string }> {
   const key = `smart/${agencyId}/${randomUUID()}.png`;
   const up = await supabaseAdmin.storage.from(OUT_BUCKET).upload(key, png, { contentType: 'image/png', upsert: false });
   if (up.error) throw new Error(`smart upload: ${up.error.message}`);
   const signed = await supabaseAdmin.storage.from(OUT_BUCKET).createSignedUrl(key, 60 * 60 * 24 * 365);
   if (signed.error || !signed.data?.signedUrl) throw new Error(`smart sign: ${signed.error?.message}`);
   return { image_url: signed.data.signedUrl, storage_path: key };
+}
+
+/**
+ * The full design pipeline: design (vision) → render → CRITIQUE (the model sees its own render and corrects
+ * it) → final render → store. Returns the stored image + the final spec (the revision seed).
+ */
+export async function designRenderStore(opts: {
+  photoUrls: string[];
+  canvas: { width: number; height: number };
+  facts: Record<string, string>;
+  brand: BrandColours;
+  brief: string | null;
+  photoBuffers: Buffer[];
+  agencyId: string;
+  priorSpec?: unknown;
+  editNote?: string;
+}): Promise<{ image_url: string; storage_path: string; spec: DesignSpec }> {
+  const raw = await designWithClaude(opts);
+  let spec = enforceFacts(raw, opts.facts);
+  let png = await renderFreeform(spec, opts.canvas, opts.photoBuffers);
+
+  const critiqued = await critiqueDesign({ renderedPng: png, spec, canvas: opts.canvas, facts: opts.facts, brief: opts.brief });
+  if (critiqued) {
+    const spec2 = enforceFacts(critiqued, opts.facts);
+    try {
+      png = await renderFreeform(spec2, opts.canvas, opts.photoBuffers);
+      spec = spec2;
+    } catch { /* a broken critique never breaks the generation — keep the first render */ }
+  }
+
+  const stored = await storeFreeformPng(png, opts.agencyId);
+  return { ...stored, spec };
 }

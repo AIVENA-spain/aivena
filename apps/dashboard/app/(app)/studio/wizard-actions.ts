@@ -178,7 +178,7 @@ export async function translateSlotsAction(
 
 // ── SMART v2: Claude designs the layout, the engine draws it (photos stay photos, facts stay facts) ──
 export async function smartDesignAction(input: {
-  property_id: string; photos: string[]; size: string; brief?: string;
+  property_id: string; photos: string[]; size: string; brief?: string; clean_photos?: boolean;
 }): Promise<Envelope> {
   return call("/api/studio/smart-design", { method: "POST", body: input });
 }

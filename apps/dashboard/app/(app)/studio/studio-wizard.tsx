@@ -27,6 +27,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
+import { PropertyPicker } from "./property-picker";
 import { createStudioUploadUrlAction } from "./studio-actions";
 import {
   generateAction,
@@ -680,30 +681,29 @@ function PhotoStep({
         ) : null}
       </div>
 
-      {/* Property grid */}
+      {/* The ONE shared picker: search + bedroom filter, and the photos pop up right here on tap —
+          no scrolling to the bottom of the page (Christian: "it should be like this in EVERY different mode"). */}
       {(usesProperty || showPropertyPicker) ? (
-        props === null ? (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Loading properties…
-          </div>
-        ) : props.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-border bg-card px-6 py-8 text-center text-sm text-muted-foreground">
-            No properties yet — import your catalog in Settings → Properties, or upload a photo above.
-          </div>
-        ) : (
-          <PropertyGrid props={props} openId={openId} onOpen={openProperty} />
-        )
+        <PropertyPicker onConfirm={(p, chosen) => {
+          if (usesProperty) onProperty(p.id, p.title);
+          setPhotos(chosen);
+        }} />
       ) : null}
 
-      {/* Photo gallery for the chosen property */}
-      {openId ? (
-        <PhotoGallery
-          title={usesProperty ? propertyTitle : null}
-          photos={photos}
-          gallery={gallery}
-          loading={loadingGallery}
-          onToggle={togglePhoto}
-        />
+      {/* what you picked */}
+      {photos.length > 0 ? (
+        <div className="flex flex-col gap-2 rounded-xl border border-border bg-card p-3">
+          <span className="text-[12px] font-semibold text-foreground">
+            {photos.length} photo{photos.length === 1 ? "" : "s"} selected{usesProperty && propertyTitle ? ` · ${propertyTitle}` : ""}
+          </span>
+          <div className="flex flex-wrap gap-2">
+            {photos.map((u) => (
+              <span key={u} className="relative block h-16 w-16 overflow-hidden rounded-lg border border-border">
+                <Thumb src={u} alt="" />
+              </span>
+            ))}
+          </div>
+        </div>
       ) : null}
 
       <div>
@@ -867,18 +867,9 @@ function RenovationStep({
         </div>
       ) : null}
 
+      {/* same shared picker — single-photo mode: tapping a room photo picks it immediately */}
       {showProps ? (
-        props === null ? (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Loading…</div>
-        ) : (
-          <>
-            <PropertyGrid props={props} openId={openId} onOpen={openProperty} />
-            {openId ? (
-              <PhotoGallery title={null} photos={photo ? [photo] : []} gallery={gallery} loading={loadingGallery}
-                onToggle={(u) => setPhotos([u])} />
-            ) : null}
-          </>
-        )
+        <PropertyPicker multi={false} onConfirm={(_p, chosen) => { if (chosen[0]) setPhotos([chosen[0]]); }} />
       ) : null}
 
       {/* guided controls: style · furniture · lighting · colours */}

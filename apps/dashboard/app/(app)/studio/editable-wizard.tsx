@@ -16,13 +16,10 @@ import {
   statusAction,
   type FinishJob,
 } from "./wizard-actions";
+import { PropertyPicker, type PickerProperty } from "./property-picker";
 
 // ── types mirroring the /api/studio/editable-* envelopes ──────────────────────
-type PropertyCard = {
-  id: string; title: string; location_city: string | null;
-  price: number | null; bedrooms: number | null; bathrooms: number | null;
-  area: number | null; photo_count: number; thumb_url: string | null;
-};
+type PropertyCard = PickerProperty;
 type Brand = { navy: string; gold: string; cream: string; text: string };
 type ColourScheme = { id: string; name: string; brand: Brand };
 type EditSlot = {
@@ -70,24 +67,22 @@ async function runLimited<T>(items: T[], n: number, fn: (t: T, i: number) => Pro
   await Promise.all(workers);
 }
 
-export function EditableWizard() {
-  const [step, setStep] = useState<"gallery" | "property" | "template" | "edit">("gallery");
-  const [editFrom, setEditFrom] = useState<"gallery" | "template">("gallery");
+/**
+ * `smart` = Christian's Smart mode, rebuilt on THIS engine (2026-07-14). It used to call the old kie
+ * fixed-layout designs and enhance only the first photo — "it used the old templates and even though i
+ * selected 4 images it just used one of them". Now Smart is: pick a property + photos → we auto-pick one of
+ * the 18 accepted templates that uses EVERY photo you chose → straight into the editor. Same deterministic
+ * render, same facts, same KIE-photos-only rule.
+ */
+export function EditableWizard({ smart = false }: { smart?: boolean } = {}) {
+  const [step, setStep] = useState<"gallery" | "property" | "template" | "edit">(smart ? "property" : "gallery");
+  const [editFrom, setEditFrom] = useState<"gallery" | "template">(smart ? "template" : "gallery");
 
   // gallery step
   const [gallery, setGallery] = useState<GalleryItem[]>([]);
   const [galleryThumbs, setGalleryThumbs] = useState<Record<string, string | null | undefined>>({});
   const [galleryLoading, setGalleryLoading] = useState(true);
   const [hasListings, setHasListings] = useState(true);
-
-  // property step
-  const [query, setQuery] = useState("");
-  const [properties, setProperties] = useState<PropertyCard[]>([]);
-  const [loadingProps, setLoadingProps] = useState(true);
-  const [modalProp, setModalProp] = useState<PropertyCard | null>(null);
-  const [modalPhotos, setModalPhotos] = useState<string[]>([]);
-  const [modalChosen, setModalChosen] = useState<string[]>([]);
-  const [loadingPhotos, setLoadingPhotos] = useState(false);
 
   // chosen
   const [property, setProperty] = useState<PropertyCard | null>(null);
@@ -167,35 +162,6 @@ export function EditableWizard() {
     })();
   }, []);
 
-  // ── property list (search) ──────────────────────────────────────────────────
-  const runSearch = useCallback(async (q: string) => {
-    setLoadingProps(true);
-    const res = await propertiesAction(q);
-    setProperties(res.ok && Array.isArray(res.items) ? (res.items as PropertyCard[]) : []);
-    setLoadingProps(false);
-  }, []);
-  useEffect(() => { void runSearch(""); }, [runSearch]);
-  useEffect(() => {
-    const t = setTimeout(() => void runSearch(query), 300);
-    return () => clearTimeout(t);
-  }, [query, runSearch]);
-
-  // ── open a property → photo modal ─────────────────────────────────────────────
-  async function openProperty(p: PropertyCard) {
-    setModalProp(p); setModalChosen([]); setModalPhotos([]); setLoadingPhotos(true);
-    const res = await propertyPhotosAction(p.id);
-    setModalPhotos(res.ok && Array.isArray(res.photos) ? (res.photos as string[]) : []);
-    setLoadingPhotos(false);
-  }
-  function toggleChosen(url: string) {
-    setModalChosen((c) => (c.includes(url) ? c.filter((u) => u !== url) : [...c, url]));
-  }
-  function confirmPhotos() {
-    if (!modalProp || modalChosen.length === 0) return;
-    setProperty(modalProp); setPhotos(modalChosen); setModalProp(null);
-    void enterTemplateStep(modalProp, modalChosen);
-  }
-
   // ── template step: load catalogue, render live thumbnails of THIS listing ──────
   async function enterTemplateStep(p: PropertyCard, chosen: string[]) {
     setStep("template");
@@ -206,7 +172,26 @@ export function EditableWizard() {
       setCatalogue(cat);
       setSchemes(res.ok && Array.isArray(res.colour_schemes) ? (res.colour_schemes as ColourScheme[]) : []);
     }
+    // every eligible template uses EXACTLY the photos you chose (photo_count === chosen.length)
     const eligible = cat.filter((t) => t.photo_count === chosen.length);
+
+    // SMART: we pick the template for you and go straight to the editor (you can still tap "Templates" to change it).
+    if (smart && eligible.length > 0) {
+      const pick = eligible[0];
+      setEditFrom("template"); setTemplateId(pick.id); setStep("edit");
+      setPreview(null); setErr(null); setSaved(false); setSection("");
+      setRendering(true);
+      const d = await loadEdit(pick.id, p.id);
+      if (!d) { setRendering(false); return; }
+      const t0 = Object.fromEntries(d.editable_slots.map((s) => [s.id, s.value]));
+      const c0 = Object.fromEntries(d.colour_layers.map((c) => [c.role, c.value]));
+      const pr = await editablePreviewAction({ template_id: pick.id, property_id: p.id, photos: chosen, text_overrides: t0, manual_colours: c0 });
+      setPreview(pr.ok ? (pr.image_url as string) : null);
+      if (!pr.ok) setErr(pr.message as string);
+      setRendering(false);
+      return;
+    }
+
     setThumbs(Object.fromEntries(eligible.map((t) => [t.id, undefined as unknown as string])));
     eligible.forEach(async (t) => {
       const res = await editablePreviewAction({ template_id: t.id, property_id: p.id, photos: chosen });
@@ -505,85 +490,14 @@ export function EditableWizard() {
         </div>
       )}
 
-      {/* ── STEP 1: PROPERTY ─────────────────────────────────────────────────── */}
+      {/* ── STEP 1: PROPERTY (the one shared picker — search/filter + photos in place) ── */}
       {step === "property" && (
         <div>
           <button onClick={() => setStep("gallery")} className="mb-4 flex items-center gap-1.5 text-sm text-neutral-500 hover:text-neutral-900"><ArrowLeft className="h-4 w-4" /> Templates</button>
-          <div className="relative mb-4 max-w-md">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
-            <input
-              value={query} onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search a property or area (e.g. Torrevieja)"
-              className="w-full rounded-lg border border-neutral-300 bg-white py-2.5 pl-9 pr-3 text-sm outline-none focus:border-neutral-900"
-            />
-          </div>
-          {loadingProps ? (
-            <div className="flex items-center gap-2 py-16 text-neutral-500"><Loader2 className="h-4 w-4 animate-spin" /> Loading properties…</div>
-          ) : properties.length === 0 ? (
-            <div className="py-16 text-center text-neutral-500">No properties found{query ? ` for “${query}”` : ""}.</div>
-          ) : (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-              {properties.map((p) => (
-                <button key={p.id} onClick={() => openProperty(p)}
-                  className="group overflow-hidden rounded-xl border border-neutral-200 bg-white text-left transition hover:border-neutral-900 hover:shadow-md">
-                  <div className="aspect-[4/3] bg-neutral-100">
-                    {p.thumb_url ? <img src={p.thumb_url} alt="" className="h-full w-full object-cover" /> : null}
-                  </div>
-                  <div className="p-2.5">
-                    <div className="truncate text-sm font-medium text-neutral-900">{p.title || "Untitled"}</div>
-                    <div className="mt-0.5 flex items-center justify-between gap-2 text-xs text-neutral-500">
-                      <span className="truncate">{p.location_city || "—"}</span>
-                      <span className="shrink-0 font-medium text-neutral-700">{money(p.price)}</span>
-                    </div>
-                    {specsOf(p) && <div className="mt-1 truncate text-[11px] font-medium text-neutral-600">{specsOf(p)}</div>}
-                    <div className="mt-0.5 text-[11px] text-neutral-400">{p.photo_count} photo{p.photo_count === 1 ? "" : "s"}</div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ── PHOTO MODAL ──────────────────────────────────────────────────────── */}
-      {modalProp && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setModalProp(null)}>
-          <div className="max-h-[85vh] w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between border-b border-neutral-200 px-5 py-3">
-              <div>
-                <div className="text-sm font-semibold text-neutral-900">{modalProp.title || "Property"}</div>
-                <div className="text-xs text-neutral-500">Choose one or more photos</div>
-              </div>
-              <button onClick={() => setModalProp(null)} className="rounded-full p-1.5 text-neutral-400 hover:bg-neutral-100"><X className="h-5 w-5" /></button>
-            </div>
-            <div className="max-h-[60vh] overflow-y-auto p-4">
-              {loadingPhotos ? (
-                <div className="flex items-center gap-2 py-12 text-neutral-500"><Loader2 className="h-4 w-4 animate-spin" /> Loading photos…</div>
-              ) : modalPhotos.length === 0 ? (
-                <div className="py-12 text-center text-neutral-500">This property has no photos.</div>
-              ) : (
-                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-                  {modalPhotos.map((u) => {
-                    const on = modalChosen.includes(u);
-                    return (
-                      <button key={u} onClick={() => toggleChosen(u)}
-                        className={`relative aspect-square overflow-hidden rounded-lg border-2 ${on ? "border-neutral-900" : "border-transparent"}`}>
-                        <img src={u} alt="" className="h-full w-full object-cover" />
-                        {on && <span className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-neutral-900 text-white"><Check className="h-3 w-3" /></span>}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-            <div className="flex items-center justify-between border-t border-neutral-200 px-5 py-3">
-              <span className="text-xs text-neutral-500">{modalChosen.length} selected</span>
-              <button disabled={modalChosen.length === 0} onClick={confirmPhotos}
-                className="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-40">
-                Use {modalChosen.length || ""} photo{modalChosen.length === 1 ? "" : "s"} →
-              </button>
-            </div>
-          </div>
+          <PropertyPicker onConfirm={(p, chosen) => {
+            setProperty(p); setPhotos(chosen);
+            void enterTemplateStep(p, chosen);
+          }} />
         </div>
       )}
 

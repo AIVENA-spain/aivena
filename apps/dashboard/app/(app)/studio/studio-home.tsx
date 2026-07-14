@@ -95,23 +95,24 @@ export function StudioHome({ initialLibrary, quota }: { initialLibrary: LibraryI
 
   const renovations = useMemo(() => initialLibrary.filter((i) => i.generation_type === "renovation").slice(0, 3), [initialLibrary]);
 
-  if (view === "templates") {
+  // Templates + Smart both run on the 18-template engine (Smart just auto-picks the template for you).
+  if (view === "templates" || view === "smart") {
     return (
       <div>
         <div className="mx-auto max-w-6xl px-4 pt-6">
           <button onClick={() => setView("home")} className="flex items-center gap-1.5 text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100"><ArrowLeft className="h-4 w-4" /> Studio home</button>
         </div>
-        <EditableWizard />
+        <EditableWizard smart={view === "smart"} />
       </div>
     );
   }
-  if (view === "smart" || view === "renovation") {
+  if (view === "renovation") {
     return (
       <div>
         <div className="mx-auto max-w-6xl px-4 pt-6">
           <button onClick={() => setView("home")} className="flex items-center gap-1.5 text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100"><ArrowLeft className="h-4 w-4" /> Studio home</button>
         </div>
-        <StudioWizard initialLibrary={initialLibrary} initialFork={view} />
+        <StudioWizard initialLibrary={initialLibrary} initialFork="renovation" />
       </div>
     );
   }
@@ -133,7 +134,7 @@ export function StudioHome({ initialLibrary, quota }: { initialLibrary: LibraryI
           desc="Start from a proven template and edit the text, colours and layout yourself." onClick={() => setView("templates")} />
         <EntryCard tint="bg-violet-100 text-violet-600 dark:bg-violet-900/40 dark:text-violet-300"
           icon={<Sparkles className="h-6 w-6" />} title="Smart"
-          desc="Pick a property and photos — AIVENA designs the post for you." onClick={() => setView("smart")} />
+          desc="Pick a property and photos — AIVENA picks the template and builds the post." onClick={() => setView("smart")} />
         <EntryCard tint="bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-300"
           icon={<HomeIcon className="h-6 w-6" />} title="Renovation"
           desc="Upload or pick a room, choose the style — AIVENA redesigns the space." onClick={() => setView("renovation")} />

@@ -50,6 +50,16 @@ export const FreeformElement = z.discriminatedUnion("type", [
     tracking: z.number().min(0).max(40).optional(),
     uppercase: z.boolean().optional(),
     line_height: z.number().optional(),
+    // vertical placement of the text block within its bbox (default top; buttons/labels want center)
+    valign: z.enum(["top", "center", "bottom"]).optional(),
+    // MEASURED button/badge: the renderer draws this pill sized to the text + padding and centers the text in
+    // it perfectly — ONE element, so a "CTA cut off / not centered in its box" can never happen by coordinates.
+    pill: z.object({
+      fill: Colour,
+      radius: z.number().min(0).max(200).optional(),
+      pad_x: z.number().min(0).max(200).default(28),
+      pad_y: z.number().min(0).max(120).default(16),
+    }).optional(),
   }),
 ]);
 export type FreeformElement = z.infer<typeof FreeformElement>;
@@ -108,6 +118,12 @@ export function normaliseSpec(raw: unknown): unknown {
         if (typeof el.content !== "string") delete el.content; // fact elements may omit it (zod defaults "")
         if (typeof el.weight === "number") el.weight = String(el.weight);
         el.colour = normHex(el.colour);
+        const pill = el.pill as Record<string, unknown> | undefined;
+        if (pill && typeof pill === "object") {
+          if (pill.fill === undefined && pill.colour !== undefined) pill.fill = pill.colour;
+          pill.fill = normHex(pill.fill);
+          if (typeof pill.fill !== "string") delete el.pill;
+        }
       }
       return el;
     })
@@ -236,24 +252,43 @@ export async function renderFreeform(
         overlaySvg += `<rect x="${gb[0]}" y="${gb[1]}" width="${boxW(gb)}" height="${boxH(gb)}" fill="url(#${gradient("#0B0F14", "up", 0.55)})"/>`;
       }
 
-      // auto-fit: shrink so the widest line fits the box width
+      // auto-fit: shrink so the widest line fits the box width (minus pill padding when present)
       let size = el.size;
+      const availW = boxW(b) - (el.pill ? 2 * el.pill.pad_x : 0);
       const track = (l: string, s: number) => (el.tracking ? el.tracking * Math.max(0, l.length - 1) * (s / el.size) : 0);
       const widest = (s: number) => Math.max(...lines.map((l) => textWidth(el.font, l, s, el.weight, el.italic) + track(l, s)));
-      if (widest(size) > boxW(b) && boxW(b) > 0) size = Math.max(12, size * (boxW(b) / widest(size)));
+      if (widest(size) > availW && availW > 0) size = Math.max(12, size * (availW / widest(size)));
       let lineH = (el.line_height ?? el.size * 1.16) * (size / el.size);
       if (lines.length * lineH > boxH(b) && boxH(b) > 0) {
         const r = boxH(b) / (lines.length * lineH);
         size = Math.max(12, size * r); lineH = lineH * r;
       }
 
+      // vertical placement: the text BLOCK sits top/center/bottom inside the bbox — a centered single-line
+      // label keeps ascender + descender headroom, so nothing is ever clipped against its panel edge.
+      const blockH = lines.length * lineH;
+      const topPad = el.valign === "center" ? Math.max(0, (boxH(b) - blockH) / 2)
+        : el.valign === "bottom" ? Math.max(0, boxH(b) - blockH) : 0;
+
       const anchor = el.align === "center" ? "middle" : el.align === "right" ? "end" : "start";
       const tx = el.align === "center" ? b[0] + boxW(b) / 2 : el.align === "right" ? b[2] : b[0];
       const wNum = el.weight ? (/^\d+$/.test(el.weight) ? el.weight : "700") : "";
       const attrs = (wNum ? ` font-weight="${wNum}"` : "") + (el.italic ? ` font-style="italic"` : "") +
         (el.tracking ? ` letter-spacing="${(el.tracking * (size / el.size)).toFixed(2)}"` : "");
+
+      // measured pill: sized to the text, centered on it — the button IS the text element
+      if (el.pill) {
+        const mw = widest(size);
+        const pw = mw + 2 * el.pill.pad_x;
+        const ph = blockH + 2 * el.pill.pad_y;
+        const px = el.align === "center" ? b[0] + boxW(b) / 2 - pw / 2 : el.align === "right" ? b[2] - pw : b[0];
+        const py = b[1] + topPad - el.pill.pad_y;
+        const rx = el.pill.radius ?? Math.round(ph / 2);
+        overlaySvg += `<rect x="${px.toFixed(1)}" y="${py.toFixed(1)}" width="${pw.toFixed(1)}" height="${ph.toFixed(1)}" rx="${rx}" fill="${el.pill.fill}"/>`;
+      }
+
       lines.forEach((ln, i) => {
-        const by = b[1] + size * 0.82 + i * lineH;
+        const by = b[1] + topPad + size * 0.82 + i * lineH;
         overlaySvg += `<text x="${tx.toFixed(1)}" y="${by.toFixed(1)}" text-anchor="${anchor}" font-family="${esc(el.font)}" font-size="${size.toFixed(1)}"${attrs} fill="${el.colour}">${esc(ln)}</text>`;
       });
     }

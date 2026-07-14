@@ -75,6 +75,15 @@ const DESIGN_TOOL = {
             size: { type: 'number' }, align: { type: 'string', enum: ['left', 'center', 'right'] },
             weight: { type: 'string' }, italic: { type: 'boolean' }, tracking: { type: 'number' },
             uppercase: { type: 'boolean' }, line_height: { type: 'number' },
+            valign: { type: 'string', enum: ['top', 'center', 'bottom'] },
+            pill: {
+              type: 'object',
+              description: 'measured button/badge drawn around this text, perfectly centered by the renderer',
+              properties: {
+                fill: { type: 'string' }, radius: { type: 'number' },
+                pad_x: { type: 'number' }, pad_y: { type: 'number' },
+              },
+            },
           },
         },
       },
@@ -107,6 +116,7 @@ RULES — these are hard:
 - Literal "content" text is ONLY for short generic marketing copy (e.g. "Your Mediterranean escape awaits") — it must contain NO digits and NO factual claims beyond the facts list.
 - Fonts: choose ONLY from: ${fonts}. Use at most 2 families (one display + one supporting).
 - LEGIBILITY: text sitting on a photo must be LIGHT (near-white) over a scrim/dark rect placed before it. DARK text belongs ONLY on solid light panels/background — never directly on a photo. Elements render in array order (painter's algorithm): a rect before a photo sits under it, after it sits on top.
+- BUTTONS/BADGES/PRICE TAGS: use ONE text element with a "pill" ({fill, pad_x, pad_y, radius?}) — NEVER a separate rect with text placed on top of it. The renderer sizes the pill to the measured text and centers it perfectly, so it can never be misaligned or cut off. Single-line labels inside panels should use valign "center".
 - Keep ~48px min margins for text unless the design is deliberately full-bleed. Min text size 22px (small labels), headline 60-140px.
 - Colours: design around the brand (navy ${opts.brand.navy}, accent ${opts.brand.gold}, light ${opts.brand.cream}, text ${opts.brand.text}) OR a tasteful neutral palette with one accent. 6-digit hex only.
 - Layout craft: strong hierarchy (one dominant element), aligned edges, generous whitespace, deliberate asymmetry beats centering everything. Vary your approach — hero full-bleed with panel, split, framed gallery, magazine cover, big-type poster are all valid.
@@ -180,8 +190,9 @@ export async function critiqueDesign(opts: {
     const prompt =
       `Above is the RENDER of the design you specified (canvas ${opts.canvas.width}x${opts.canvas.height}). ` +
       `Review it like a demanding art director and fix every visual problem you can see: illegible text ` +
-      `(dark text on photos, weak contrast), overlapping or colliding elements, awkward empty space, cramped ` +
-      `or uneven margins, badly cropped photos, anything that looks unfinished. Keep the same overall concept, ` +
+      `(dark text on photos, weak contrast), overlapping or colliding elements, text touching or clipped by ` +
+      `the edge of its button/panel or not centered in it (convert any rect+text button into ONE text element ` +
+      `with a pill), awkward empty space, cramped or uneven margins, badly cropped photos, anything unfinished. Keep the same overall concept, ` +
       `all the same facts (by key) and all the photos. If it already looks excellent, resubmit it unchanged. ` +
       `Resubmit the COMPLETE corrected design with the submit_design tool.\n\nYour current design:\n` +
       JSON.stringify(opts.spec);

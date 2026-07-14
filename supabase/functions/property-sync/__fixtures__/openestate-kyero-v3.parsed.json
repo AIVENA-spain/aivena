@@ -1,0 +1,144 @@
+{
+  "?xml": {
+    "@_version": "1.0",
+    "@_encoding": "UTF-8",
+    "@_standalone": "yes"
+  },
+  "root": {
+    "kyero": {
+      "feed_version": "3"
+    },
+    "property": {
+      "id": "12367",
+      "date": "2013-09-27 12:00:10",
+      "ref": "V3TEST",
+      "price": "250000",
+      "currency": "EUR",
+      "price_freq": "sale",
+      "part_ownership": "0",
+      "leasehold": "0",
+      "new_build": "0",
+      "type": "villa",
+      "town": "almunecar",
+      "province": "granada",
+      "location": {
+        "latitude": "36.728807",
+        "longitude": "-3.693466"
+      },
+      "location_detail": "Urb Tropicana",
+      "beds": "3",
+      "baths": "2",
+      "pool": "1",
+      "surface_area": {
+        "built": "150",
+        "plot": "500"
+      },
+      "energy_rating": {
+        "consumption": "D",
+        "emissions": "C"
+      },
+      "url": {
+        "bg": "http://bulgarian.website.com/property/123456.htm",
+        "ca": "http://catalan.website.com/property/123456.htm",
+        "cs": "http://czech.website.com/property/123456.htm",
+        "de": "http://german.website.com/property/123456.htm",
+        "da": "http://danish.website.com/property/123456.htm",
+        "el": "http://greek.website.com/property/123456.htm",
+        "en": "http://english.website.com/property/123456.htm",
+        "es": "http://spanish.website.com/property/123456.htm",
+        "et": "http://estonian.website.com/property/123456.htm",
+        "fi": "http://finnish.website.com/property/123456.htm",
+        "fr": "http://french.website.com/property/123456.htm",
+        "hi": "http://hindi.website.com/property/123456.htm",
+        "hu": "http://hungarian.website.com/property/123456.htm",
+        "id": "http://indonesian.website.com/property/123456.htm",
+        "it": "http://italian.website.com/property/123456.htm",
+        "ja": "http://japanese.website.com/property/123456.htm",
+        "ko": "http://korean.website.com/property/123456.htm",
+        "lt": "http://lithunain.website.com/property/123456.htm",
+        "lv": "http://latvian.website.com/property/123456.htm",
+        "nl": "http://dutch.website.com/property/123456.htm",
+        "no": "http://norwegian.website.com/property/123456.htm",
+        "pl": "http://polish.website.com/property/123456.htm",
+        "pt": "http://portuguese.website.com/property/123456.htm",
+        "ro": "http://romanian.website.com/property/123456.htm",
+        "ru": "http://russian.website.com/property/123456.htm",
+        "sk": "http://slovak.website.com/property/123456.htm",
+        "sl": "http://slovenian.website.com/property/123456.htm",
+        "sv": "http://swedish.website.com/property/123456.htm",
+        "th": "http://thai.website.com/property/123456.htm",
+        "tr": "http://turkish.website.com/property/123456.htm",
+        "uk": "http://ukranian.website.com/property/123456.htm",
+        "vi": "http://vietnamese.website.com/property/123456.htm",
+        "zh": "http://chinese_simplified.website.com/property/123456.htm"
+      },
+      "desc": {
+        "bg": "Bulgarian property description",
+        "ca": "Catalan property description",
+        "cs": "Czech property description",
+        "de": "German property description",
+        "da": "Danish property description",
+        "el": "Greek property description",
+        "en": "English property description",
+        "es": "Spanish property description",
+        "et": "Estonian property description",
+        "fi": "Finnish property description",
+        "fr": "French property description",
+        "hi": "Hindi property description",
+        "hu": "Hungarian property description",
+        "id": "Indonesian property description",
+        "it": "Italian property description",
+        "ja": "Japanese property description",
+        "ko": "Korean property description",
+        "lt": "Lithuanian property description",
+        "lv": "Latvian property description",
+        "nl": "Dutch property description",
+        "no": "Norwegian property description",
+        "pl": "Polish property description",
+        "pt": "Portuguese property description",
+        "ro": "Romainan property description",
+        "ru": "Russian property description",
+        "sk": "Slovak property description",
+        "sl": "Slovenian property description",
+        "sv": "Swedish property description",
+        "th": "Thai property description",
+        "tr": "Turkish property description",
+        "uk": "Ukranian property description",
+        "vi": "Vietnamese property description",
+        "zh": "Simplified Chinese property description"
+      },
+      "features": {
+        "feature": [
+          "good rental potential",
+          "near beach",
+          "water possible"
+        ]
+      },
+      "notes": "Private property notes",
+      "images": {
+        "image": [
+          {
+            "url": "http://images.kyero.com/12811577_large.jpg",
+            "@_id": "1"
+          },
+          {
+            "url": "http://images.kyero.com/12811578_large.jpg",
+            "@_id": "2"
+          },
+          {
+            "url": "http://images.kyero.com/12811579_large.jpg",
+            "@_id": "3"
+          },
+          {
+            "url": "http://images.kyero.com/12811581_large.jpg",
+            "@_id": "4"
+          },
+          {
+            "url": "http://images.kyero.com/12811582_large.jpg",
+            "@_id": "5"
+          }
+        ]
+      }
+    }
+  }
+}

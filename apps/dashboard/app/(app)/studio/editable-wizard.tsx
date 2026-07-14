@@ -29,11 +29,13 @@ type EditSlot = {
   id: string; label: string; role: string; source: string; default_text: string;
   bbox: number[]; align: string; valign: string; size: number | null; rotate: number;
 };
+type ColourRegion = { role: string; bbox: number[] };
 type TemplateMeta = {
   id: string; photo_count: number; palette_locked: boolean;
   canvas: { width: number; height: number };
+  colour_regions: ColourRegion[];
   editable_slots: EditSlot[];
-  colour_layers: { role: string; label: string; default: string; locked: boolean }[];
+  colour_layers: { role: string; label: string; default: string; locked: boolean; used: boolean }[];
 };
 type Defaults = Omit<TemplateMeta, "editable_slots" | "colour_layers"> & {
   editable_slots: (TemplateMeta["editable_slots"][number] & { value: string })[];
@@ -123,6 +125,10 @@ export function EditableWizard() {
   const [positions, setPositions] = useState<Record<string, { x: number; y: number }>>({});
   const [sizes, setSizes] = useState<Record<string, number>>({});
   const [selected, setSelected] = useState<string | null>(null);
+  // a tapped non-text colour area (panel / plate / badge / the page background)
+  const [regionSel, setRegionSel] = useState<ColourRegion | null>(null);
+  // hovering a swatch flashes what it changes on the image (the "which colour is what" fix)
+  const [hoverRole, setHoverRole] = useState<string | null>(null);
   const [dispW, setDispW] = useState(0);
   const [guide, setGuide] = useState<{ v: number | null; h: number | null }>({ v: null, h: null });
   const imgRef = useRef<HTMLImageElement | null>(null);
@@ -221,7 +227,7 @@ export function EditableWizard() {
     setDefaults(d);
     setText(Object.fromEntries(d.editable_slots.map((s) => [s.id, s.value])));
     setColours(Object.fromEntries(d.colour_layers.map((c) => [c.role, c.value])));
-    setPositions({}); setSizes({}); setSelected(null);
+    setPositions({}); setSizes({}); setSelected(null); setRegionSel(null); setHoverRole(null);
     setCleanedIds([]); setFinishMsg(null); setFinishNote("");
     return d;
   }
@@ -299,6 +305,11 @@ export function EditableWizard() {
   const canvas = defaults?.canvas ?? { width: 1080, height: 1350 };
   const scale = dispW && canvas.width ? dispW / canvas.width : 0;
   const selectedSlot = selected && defaults ? defaults.editable_slots.find((x) => x.id === selected) ?? null : null;
+  // the colour role currently being targeted — from a tapped text element OR a tapped area OR the background
+  const activeRole = selectedSlot?.role ?? regionSel?.role ?? null;
+  const roleLabel = (role: string) => defaults?.colour_layers.find((c) => c.role === role)?.label ?? role;
+  function selectSlot(id: string) { setSelected(id); setRegionSel(null); }
+  function selectRegion(r: ColourRegion) { setRegionSel(r); setSelected(null); }
   function slotBox(s: EditSlot) {
     const [x0, y0, x1, y1] = s.bbox; const w = x1 - x0, h = y1 - y0;
     const p = positions[s.id];
@@ -334,7 +345,7 @@ export function EditableWizard() {
     function up() {
       window.removeEventListener("pointermove", mv); window.removeEventListener("pointerup", up);
       setGuide({ v: null, h: null });
-      if (!moved) setSelected(s.id); else { setSaved(false); scheduleRender(); }
+      if (!moved) selectSlot(s.id); else { setSaved(false); scheduleRender(); }
     }
     window.addEventListener("pointermove", mv); window.addEventListener("pointerup", up);
   }
@@ -418,7 +429,7 @@ export function EditableWizard() {
     setStep("gallery"); setProperty(null); setPhotos([]); setTemplateId(null);
     setDefaults(null); setText({}); setColours({}); setPreview(null); setThumbs({});
     setSection(""); setSaved(false); setErr(null);
-    setPositions({}); setSizes({}); setSelected(null);
+    setPositions({}); setSizes({}); setSelected(null); setRegionSel(null); setHoverRole(null);
     setCleanedIds([]); setFinishMsg(null); setFinishNote("");
   }
 
@@ -625,12 +636,30 @@ export function EditableWizard() {
                   {/* tap-targets over each text element */}
                   {preview && !defaults.palette_locked && scale > 0 && (
                     <div className="absolute inset-0">
+                      {/* tap empty image = the page background colour */}
+                      <div className="absolute inset-0"
+                        onPointerDown={() => selectRegion({ role: "background", bbox: [0, 0, canvas.width, canvas.height] })} />
+
+                      {/* tappable non-text colour areas (panels, plates, badges) — under the text targets */}
+                      {defaults.colour_regions.map((r, i) => (
+                        <div key={`region-${i}`} title={roleLabel(r.role)}
+                          onPointerDown={(e) => { e.stopPropagation(); selectRegion(r); }}
+                          style={{ left: r.bbox[0] * scale, top: r.bbox[1] * scale, width: (r.bbox[2] - r.bbox[0]) * scale, height: (r.bbox[3] - r.bbox[1]) * scale }}
+                          className={`absolute cursor-pointer rounded-[3px] transition ${
+                            hoverRole === r.role ? "bg-emerald-400/25 outline outline-2 outline-emerald-500"
+                            : regionSel?.role === r.role ? "outline outline-2 outline-emerald-500"
+                            : "hover:outline hover:outline-2 hover:outline-emerald-400/50"}`} />
+                      ))}
+
                       {defaults.editable_slots.filter((s) => (text[s.id] ?? "").trim() && !s.rotate).map((s) => {
                         const b = slotBox(s); const sel = selected === s.id;
                         return (
                           <div key={s.id} title={s.label} onPointerDown={(e) => onSlotDown(e, s)}
                             style={{ left: b.x * scale, top: b.y * scale, width: b.w * scale, height: b.h * scale }}
-                            className={`absolute cursor-grab touch-none rounded-[3px] ${sel ? "outline outline-2 outline-emerald-500" : "hover:outline hover:outline-2 hover:outline-emerald-400/60"}`} />
+                            className={`absolute cursor-grab touch-none rounded-[3px] transition ${
+                              hoverRole === s.role ? "bg-emerald-400/25 outline outline-2 outline-emerald-500"
+                              : sel ? "outline outline-2 outline-emerald-500"
+                              : "hover:outline hover:outline-2 hover:outline-emerald-400/60"}`} />
                         );
                       })}
                       {guide.v != null && <div className="pointer-events-none absolute bottom-0 top-0 w-px bg-rose-500" style={{ left: guide.v * scale }} />}
@@ -656,12 +685,31 @@ export function EditableWizard() {
                     );
                   })()}
 
+                  {/* tapped an AREA (background / panel / badge) → recolour it right there */}
+                  {preview && regionSel && !selectedSlot && !defaults.palette_locked && scale > 0 && (() => {
+                    const b = regionSel.bbox;
+                    return (
+                      <div className="absolute z-20 -translate-x-1/2 -translate-y-1/2"
+                        style={{ left: ((b[0] + b[2]) / 2) * scale, top: ((b[1] + b[3]) / 2) * scale }}>
+                        <label className="relative flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 shadow-lg">
+                          <span className="h-4 w-4 rounded border border-black/15" style={{ background: colours[regionSel.role] ?? "#888888" }} />
+                          <span className="whitespace-nowrap text-xs font-medium text-neutral-700">{roleLabel(regionSel.role)}</span>
+                          <input type="color" value={colours[regionSel.role] ?? "#888888"}
+                            onChange={(e) => editColour(regionSel.role, e.target.value)}
+                            className="absolute inset-0 cursor-pointer opacity-0" />
+                        </label>
+                      </div>
+                    );
+                  })()}
+
                   {rendering && <div className="absolute right-3 top-3 flex items-center gap-1.5 rounded-full bg-white/90 px-2.5 py-1 text-xs text-neutral-600 shadow"><Loader2 className="h-3 w-3 animate-spin" /> updating…</div>}
                 </div>
 
                 <div className="mt-2 flex items-center justify-between gap-3 text-xs text-neutral-500">
                   <span className="min-w-0 truncate">
-                    {selectedSlot ? <>Selected <b className="text-neutral-800">{selectedSlot.label}</b> — drag to move, toolbar to recolour &amp; resize</> : "Tap any text on the image to select it, then drag to move."}
+                    {selectedSlot ? <>Selected <b className="text-neutral-800">{selectedSlot.label}</b> — drag to move, toolbar to recolour &amp; resize</>
+                      : regionSel ? <>Selected <b className="text-neutral-800">{roleLabel(regionSel.role)}</b> — tap the colour chip to change it</>
+                      : "Tap anything on the image — text, a panel, the background — to select and recolour it."}
                   </span>
                   {(Object.keys(positions).length > 0 || Object.keys(sizes).length > 0) && (
                     <button onClick={() => { setPositions({}); setSizes({}); setSelected(null); scheduleRender(); }} className="shrink-0 underline hover:text-neutral-800">Reset layout</button>
@@ -706,16 +754,21 @@ export function EditableWizard() {
               <div>
                 <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">Colours {defaults.palette_locked && <span className="ml-1 font-normal normal-case text-neutral-400">(locked for this template)</span>}</div>
                 {!defaults.palette_locked && (
-                  <div className="grid grid-cols-2 gap-2">
-                    {defaults.colour_layers.map((cl) => (
-                      <label key={cl.role} className={`flex items-center gap-2 rounded-lg border px-2.5 py-2 ${selectedSlot?.role === cl.role ? "border-emerald-500 ring-1 ring-emerald-500" : "border-neutral-200"}`}>
-                        <input type="color" value={colours[cl.role] ?? cl.value}
-                          onChange={(e) => editColour(cl.role, e.target.value)}
-                          className="h-6 w-6 shrink-0 cursor-pointer rounded border-0 bg-transparent p-0" />
-                        <span className="truncate text-xs text-neutral-600">{cl.label}</span>
-                      </label>
-                    ))}
-                  </div>
+                  <>
+                    <p className="mb-2 text-[11px] text-neutral-400">Or tap the thing itself on the image — text, a panel, the background.</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {/* only the layers this template actually renders — a swatch that does nothing is noise */}
+                      {defaults.colour_layers.filter((cl) => cl.used).map((cl) => (
+                        <label key={cl.role} onPointerEnter={() => setHoverRole(cl.role)} onPointerLeave={() => setHoverRole(null)}
+                          className={`flex items-center gap-2 rounded-lg border px-2.5 py-2 ${activeRole === cl.role ? "border-emerald-500 ring-1 ring-emerald-500" : "border-neutral-200"}`}>
+                          <input type="color" value={colours[cl.role] ?? cl.value}
+                            onChange={(e) => editColour(cl.role, e.target.value)}
+                            className="h-6 w-6 shrink-0 cursor-pointer rounded border-0 bg-transparent p-0" />
+                          <span className="truncate text-xs text-neutral-600">{cl.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </>
                 )}
               </div>
 

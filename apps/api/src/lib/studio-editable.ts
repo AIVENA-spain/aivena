@@ -95,29 +95,64 @@ function labelSlot(id: string): string {
   return id.replace(/[._]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+// Every NON-TEXT area that carries a colour role, with its box. Christian 2026-07-14: "i would like to be able
+// to tap on something and then change color like that" — a list of swatch names ("Overlay", "Divider") is
+// undecodable, so the editor needs a tap-target on the thing itself. Text slots already carry bbox+role.
+function colourRegions(m: any): { role: string; bbox: number[] }[] {
+  const out: { role: string; bbox: number[] }[] = [];
+  for (const p of m.plate_rects ?? []) if (p.fill_role) out.push({ role: p.fill_role, bbox: p.bbox });
+  if (m.adaptive_panel?.fill_role) out.push({ role: m.adaptive_panel.fill_role, bbox: m.adaptive_panel.area });
+  if (m.dynamic_panel?.fill_role) {
+    const d = m.dynamic_panel;
+    const h = d.pad_top + d.header_h + d.max_rows * d.row_pitch + d.pad_bottom;
+    out.push({ role: d.fill_role, bbox: [d.x0, d.top_base, d.x1, d.top_base + h] });
+  }
+  for (const s of m.text_slots ?? []) for (const ca of s.companion_art ?? []) if (ca.fill_role) out.push({ role: ca.fill_role, bbox: ca.bbox });
+  return out;
+}
+/** The colour roles this template actually renders — so the editor never shows a swatch that does nothing. */
+function usedRoles(m: any): Set<string> {
+  const s = new Set<string>(['background']); // the page background always applies
+  for (const t of m.text_slots ?? []) {
+    if (t.role) s.add(t.role);
+    if (t.pill?.role) s.add(t.pill.role);
+    for (const ca of t.companion_art ?? []) if (ca.fill_role) s.add(ca.fill_role);
+  }
+  for (const p of m.plate_rects ?? []) if (p.fill_role) s.add(p.fill_role);
+  if (m.adaptive_panel?.fill_role) s.add(m.adaptive_panel.fill_role);
+  if (m.dynamic_panel?.fill_role) s.add(m.dynamic_panel.fill_role);
+  if (m.overlay?.role) s.add(m.overlay.role);
+  if (m.scrim?.role) s.add(m.scrim.role);
+  return s;
+}
+
 export interface TemplateMeta {
   id: string;
   photo_count: number;
   palette_locked: boolean;
   // canvas dimensions (px) — the editor scales the design bboxes below onto the displayed preview.
   canvas: { width: number; height: number };
+  // tappable non-text colour areas (role + box in canvas px)
+  colour_regions: { role: string; bbox: number[] }[];
   editable_slots: {
     id: string; label: string; role: string; source: string; default_text: string;
     // the slot's design box [x0,y0,x1,y1] in canvas px + its anchoring — the editor overlays a tap-target here
     // and lets the user drag it (a position override) / resize it (a size override).
     bbox: number[]; align: string; valign: string; size: number | null; rotate: number;
   }[];
-  colour_layers: { role: string; label: string; default: string; locked: boolean }[];
+  colour_layers: { role: string; label: string; default: string; locked: boolean; used: boolean }[];
 }
 
 export function templateMeta(id: string): TemplateMeta {
   const m = loadEditableManifest(manifestPathOf(id));
   const photo_count = m.photo_slots?.length ?? (m.photo_token ? 1 : 0);
+  const used = usedRoles(m);
   return {
     id,
     photo_count,
     palette_locked: !!m.palette_locked,
     canvas: { width: m.canvas.width, height: m.canvas.height },
+    colour_regions: colourRegions(m),
     editable_slots: m.text_slots.map((s: any) => ({
       id: s.id, label: labelSlot(s.id), role: s.role, source: s.source, default_text: s.text,
       bbox: s.bbox, align: s.align ?? 'left', valign: s.valign ?? 'top', size: s.size ?? null, rotate: s.rotate ?? 0,
@@ -125,7 +160,7 @@ export function templateMeta(id: string): TemplateMeta {
     // MANUAL mode (Christian 2026-07-13) exposes EVERY colour layer — background, text, all of it — each with a
     // wheel. The `locked` flag is informational (auto/brand-palette respects it; a manual pick bypasses it).
     colour_layers: Object.entries(m.colour_tokens)
-      .map(([role, v]: any) => ({ role, label: ROLE_LABELS[role] || labelSlot(role), default: v.default, locked: !!v.locked })),
+      .map(([role, v]: any) => ({ role, label: ROLE_LABELS[role] || labelSlot(role), default: v.default, locked: !!v.locked, used: used.has(role) })),
   };
 }
 

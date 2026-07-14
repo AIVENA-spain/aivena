@@ -38,6 +38,13 @@ const MODEL_ENHANCE = "bytedance/seedream-v4-edit"; // photo-enhance path: off G
 // Max-quality KIE output. seedream-v4-edit accepts "1K" | "2K" | "4K" (verified against docs.kie.ai).
 const KIE_IMAGE_RESOLUTION = "4K";
 
+// Only photos WE host count when deriving photos from a property row — montinmo.es (the source of ~57% of the
+// demo catalog's hotlinks) is permanently gone, and any third-party hotlink dies with its host. Mirrors the
+// shared rule in apps/api/src/lib/property-images.ts (body-provided URLs are the caller's responsibility and
+// may be signed, so they are NOT filtered by this).
+const OWNED_STORAGE_MARKER = "/storage/v1/object/public/property-images/";
+const usableCatalogPhoto = (u: unknown): u is string => typeof u === "string" && u.includes(OWNED_STORAGE_MARKER);
+
 const MODEL_BY_TYPE: Record<string, string> = {
   ad_creative:  MODEL_T2I,
   social_post:  MODEL_T2I,
@@ -296,7 +303,7 @@ Deno.serve(async (req) => {
   if (!previewOnly && !agentPickedPhotos && property && generation_type !== "renovation") {
     let imgs: string[] = [];
     try { imgs = Array.isArray(property.images) ? property.images : JSON.parse(property.images ?? "[]"); } catch { imgs = []; }
-    imgs = imgs.filter((u) => typeof u === "string" && u.startsWith("http"));
+    imgs = imgs.filter(usableCatalogPhoto);
     if (imgs.length > 0) {
       const picked = await selectHeroPhoto(imgs, property.title ?? "property");
       const idx = picked?.index ?? 0;
@@ -392,7 +399,7 @@ Deno.serve(async (req) => {
     else if (property) {
       let imgs: string[] = [];
       try { imgs = Array.isArray(property.images) ? property.images : JSON.parse(property.images ?? "[]"); } catch { imgs = []; }
-      imgs = imgs.filter((u) => typeof u === "string" && u.startsWith("http"));
+      imgs = imgs.filter(usableCatalogPhoto);
       if (imgs.length > 0) previewBody = { image_url: imgs[0] };
     }
     if (!previewBody) return j(400, { ok: false, error: "missing_preview_photo", message: "Please pick a photo to preview." });

@@ -21,6 +21,7 @@ import {
   buildFacts,
   designRenderStore,
 } from '../lib/studio-smart-design';
+import { usablePhotos } from '../lib/property-images';
 
 /**
  * Studio wizard proxy (W13 v0.6) — the browser's ONLY door to Vega's image
@@ -533,17 +534,9 @@ route.get('/editable-templates', async (c) => {
 });
 
 // ── dead-photo filter ─────────────────────────────────────────────────────────
-// montinmo.es (the old portal source) is GONE: DNS resolves but every connection is refused, from our servers
-// and from a normal browser (confirmed 2026-07-14). ~57% of the demo catalog (81/141 properties, 1130 images)
-// hotlinks it, so those photos can never load — that was the entire cause of "preview failed" in the templates
-// gallery. Filter them out everywhere so the Studio never shows or renders a broken photo. Re-sourcing those
-// listings' images is a catalog problem, not a Studio one.
-const DEAD_IMAGE_HOST = /^https?:\/\/(www\.)?montinmo\.es\//i;
-function usablePhotos(images: unknown): string[] {
-  return (Array.isArray(images) ? images : []).filter(
-    (u: unknown): u is string => typeof u === 'string' && u.trim().length > 0 && !DEAD_IMAGE_HOST.test(u),
-  );
-}
+// The single shared rule (Packet 3, apps/api/src/lib/property-images.ts): a photo counts only if WE host it.
+// Replaces the montinmo-specific blocklist — verified identical results across the whole live catalog
+// (same 60 usable / 81 not, zero disagreements) and needs no code change when the next host dies.
 
 // helper: load a property (facts) + the agency branding for the session's agency.
 async function loadPropertyAndBrand(tx: any, agencyId: string, propertyId: string) {

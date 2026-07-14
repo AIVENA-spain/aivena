@@ -251,7 +251,10 @@ function localBg(img: RGBA, b: number[], margin = 10): string {
   return "#" + [med(0), med(1), med(2)].map((v) => v.toString(16).padStart(2, "0")).join("");
 }
 
-export async function renderEditable(m: EditableManifest, palette: Palette = {}, photos: string | Record<string, string> = GREY): Promise<{ svg: string; png: Buffer; editableTextCount: number; photosFilled: number; layout: SlotLayout[] }> {
+// Interactive-editor overrides: the user drags a text block to a new top-left (pos, canvas px) and/or resizes it
+// (size, canvas px font size). Absent → the deterministic auto-layout is unchanged.
+export type EditOverrides = { pos?: Record<string, { x: number; y: number }>; size?: Record<string, number> };
+export async function renderEditable(m: EditableManifest, palette: Palette = {}, photos: string | Record<string, string> = GREY, edits: EditOverrides = {}): Promise<{ svg: string; png: Buffer; editableTextCount: number; photosFilled: number; layout: SlotLayout[]; width: number; height: number }> {
   const [W, H] = [m.canvas.width, m.canvas.height];
   const src = forceAspectOnPhotoSlots(fs.readFileSync(abs(m.source_svg), "utf8"), m.photo_fit ?? "slice");
   // background raster = source SVG with EACH photo token filled (hero + thumbnails), then an optional
@@ -366,7 +369,14 @@ export async function renderEditable(m: EditableManifest, palette: Palette = {},
       yOverride.set(s.id, [fy, fy + (s.bbox[3] - s.bbox[1])]);
     }
     const ov = yOverride.get(s.id);
-    const realBox = (ov ? [s.bbox[0], ov[0], s.bbox[2], ov[1]] : s.bbox) as [number, number, number, number];
+    let realBox = (ov ? [s.bbox[0], ov[0], s.bbox[2], ov[1]] : s.bbox) as [number, number, number, number];
+    // MOVE: an editor position override relocates the slot's box (keeping its width/height). Strip-plate
+    // templates carry no baked text at the original spot, so the move leaves nothing behind.
+    const posOv = edits.pos?.[s.id];
+    if (posOv && Number.isFinite(posOv.x) && Number.isFinite(posOv.y)) {
+      const bwv = realBox[2] - realBox[0], bhv = realBox[3] - realBox[1];
+      realBox = [posOv.x, posOv.y, posOv.x + bwv, posOv.y + bhv];
+    }
     // rotated column: lay out in a virtual horizontal frame (width = vertical run), wrap the markup after
     const [x0, y0, x1, y1] = s.rotate ? [0, 0, realBox[3] - realBox[1], realBox[2] - realBox[0]] : realBox;
     const overlayMark = overlay.length;
@@ -385,9 +395,13 @@ export async function renderEditable(m: EditableManifest, palette: Palette = {},
     const lines = s.text.split("\n");
     const bw = x1 - x0, bh = y1 - y0;
     const pad = s.pad ?? 0;
-    let fontSize = s.size ?? Math.max(8, (bh / lines.length) * 0.78);
-    let lineH = s.line_height ?? (bh / lines.length);
-    if (s.design_lines && lines.length < s.design_lines) { const g = s.design_lines / lines.length; fontSize *= g; lineH *= g; }
+    // RESIZE: an editor size override sets the font size directly and wins over the auto-fit (its clamps below
+    // are skipped), so the user's chosen size renders even if it extends past the design box.
+    const sizeOv = edits.size?.[s.id];
+    const userSized = typeof sizeOv === "number" && sizeOv > 0;
+    let fontSize = userSized ? sizeOv! : (s.size ?? Math.max(8, (bh / lines.length) * 0.78));
+    let lineH = userSized ? sizeOv! * 1.16 : (s.line_height ?? (bh / lines.length));
+    if (!userSized && s.design_lines && lines.length < s.design_lines) { const g = s.design_lines / lines.length; fontSize *= g; lineH *= g; }
     // AUTO-FIT: shrink so the widest line fits the bbox width minus padding — keeps text off divider lines /
     // edges and prevents overrun when real property values are longer than the template's placeholder copy.
     const avail = bw - 2 * pad;
@@ -400,9 +414,9 @@ export async function renderEditable(m: EditableManifest, palette: Palette = {},
     const wsExtra = (l: string, fs: number) => (l.split(" ").length - 1) * wsAt(fs);
     const trackExtra = (l: string, fs: number) => (s.tracking ? s.tracking * Math.max(0, l.length - 1) * (fs / designSize) : 0);
     const widest = Math.max(...lines.map((l) => textWidth(s.font, l, fontSize, s.weight, s.italic) + wsExtra(l, fontSize) + trackExtra(l, fontSize))) * sx;
-    if (widest > avail && avail > 0) { const r = avail / widest; fontSize = Math.max(8, fontSize * r); lineH = lineH * r; }
+    if (!userSized && widest > avail && avail > 0) { const r = avail / widest; fontSize = Math.max(8, fontSize * r); lineH = lineH * r; }
     // vertical auto-fit: if the block is taller than the bbox (e.g. a 3-line title), shrink size + line pitch
-    if (lines.length * lineH > bh && bh > 0) { const rv = bh / (lines.length * lineH); fontSize = Math.max(8, fontSize * rv); lineH = lineH * rv; }
+    if (!userSized && lines.length * lineH > bh && bh > 0) { const rv = bh / (lines.length * lineH); fontSize = Math.max(8, fontSize * rv); lineH = lineH * rv; }
     // vertical placement of the text block within the bbox (top default; center/bottom balance short blocks)
     const blockH = lines.length * lineH;
     const topPad = s.valign === "center" ? Math.max(0, (bh - blockH) / 2) : s.valign === "bottom" ? Math.max(0, bh - blockH) : 0;
@@ -467,7 +481,7 @@ export async function renderEditable(m: EditableManifest, palette: Palette = {},
   const png = await (await import("sharp")).default(bgPng).composite([{ input: overlayPng, top: 0, left: 0 }]).png().toBuffer();
   // svg kept for record + the editability/photo-fill checks (grep for <text data-editable> + the embedded image)
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><image x="0" y="0" width="${W}" height="${H}" xlink:href="${bgUri}"/>${overlay}</svg>`;
-  return { svg, png, editableTextCount, photosFilled, layout };
+  return { svg, png, editableTextCount, photosFilled, layout, width: W, height: H };
 }
 
 export function loadEditableManifest(p: string): EditableManifest {

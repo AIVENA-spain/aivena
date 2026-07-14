@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
 import { supabaseAdmin } from './supabase-admin';
 import { STUDIO_ROOT } from './studio-data-root';
 import {
@@ -42,6 +42,26 @@ export function isBrandColours(v: any): v is BrandColours {
   return v && typeof v === 'object' && ['navy', 'gold', 'cream', 'text'].every((k) => HEX.test(v[k]));
 }
 
+// ── Templates GALLERY palette (Christian 2026-07-13) ──────────────────────────
+// The Templates section shows every template rendered against the agency's most-expensive listings, in a
+// sophisticated NEUTRAL palette with ONE accent that SHIFTS per tile — so the grid always looks designed
+// regardless of an agency's own brand colours. GALLERY_NEUTRAL fills the structural roles (dark title / light
+// bg / body grey); galleryAccent(i) is the shifting pop, fed as brand.gold AND pinned to the accent-carrying
+// roles via colourOverrides so it reads on both dark- and light-background templates.
+export const GALLERY_NEUTRAL: BrandColours = { navy: '#1F2933', gold: '#8A8F98', cream: '#F4F2ED', text: '#4A4E57' };
+// Curated, muted, evenly-varied accents (not a raw HSL wheel — hand-picked to stay tasteful at any tile).
+const GALLERY_ACCENTS = ['#C2653A', '#5C7A5A', '#4F7391', '#B0873C', '#8A5A78', '#3F7A75', '#A24A46', '#5B6BA0'];
+export function galleryAccent(i: number): string {
+  const n = GALLERY_ACCENTS.length;
+  return GALLERY_ACCENTS[((i % n) + n) % n];
+}
+/** The colour_overrides that pin the shifting accent to the roles that actually render on every template. */
+export function galleryAccentOverrides(hex: string): Record<string, string> {
+  // accent = the designated pop role; badge.fill = the pill (a visible pop on light templates whose `accent`
+  // role isn't drawn); badge.text = white so the pill label stays legible on the accent fill.
+  return { accent: hex, 'badge.fill': hex, 'badge.text': '#FFFFFF' };
+}
+
 function manifestPathOf(id: string): string {
   return `${STUDIO_ROOT}/manifest/templates/${id}.editable.json`;
 }
@@ -79,7 +99,14 @@ export interface TemplateMeta {
   id: string;
   photo_count: number;
   palette_locked: boolean;
-  editable_slots: { id: string; label: string; role: string; source: string; default_text: string }[];
+  // canvas dimensions (px) — the editor scales the design bboxes below onto the displayed preview.
+  canvas: { width: number; height: number };
+  editable_slots: {
+    id: string; label: string; role: string; source: string; default_text: string;
+    // the slot's design box [x0,y0,x1,y1] in canvas px + its anchoring — the editor overlays a tap-target here
+    // and lets the user drag it (a position override) / resize it (a size override).
+    bbox: number[]; align: string; valign: string; size: number | null; rotate: number;
+  }[];
   colour_layers: { role: string; label: string; default: string; locked: boolean }[];
 }
 
@@ -90,8 +117,10 @@ export function templateMeta(id: string): TemplateMeta {
     id,
     photo_count,
     palette_locked: !!m.palette_locked,
+    canvas: { width: m.canvas.width, height: m.canvas.height },
     editable_slots: m.text_slots.map((s: any) => ({
       id: s.id, label: labelSlot(s.id), role: s.role, source: s.source, default_text: s.text,
+      bbox: s.bbox, align: s.align ?? 'left', valign: s.valign ?? 'top', size: s.size ?? null, rotate: s.rotate ?? 0,
     })),
     // MANUAL mode (Christian 2026-07-13) exposes EVERY colour layer — background, text, all of it — each with a
     // wheel. The `locked` flag is informational (auto/brand-palette respects it; a manual pick bypasses it).
@@ -163,6 +192,17 @@ export interface RenderOpts {
   // MANUAL mode (Christian 2026-07-13): the user sets EVERY layer's colour with a wheel — bypasses per-token
   // locks. Unset layers keep their correct current colour. Ignored on palette_locked templates (#10).
   manualColours?: Record<string, string>;
+  // ── cache identity (optional) ───────────────────────────────────────────────
+  // When agencyId is set, renderAndStore writes to a DETERMINISTIC, tenant-scoped key and REUSES an existing
+  // object instead of re-rendering. This makes the templates gallery cheap on repeat loads and stops the
+  // live-preview storage churn (identical edits dedupe). Absent → a random key (legacy behaviour).
+  agencyId?: string;
+  propertyId?: string;
+  photoRefs?: string[];  // the ordered photo REFS (URLs/paths) — hashed as the photo identity (not the buffers)
+  // Interactive-editor overrides (per slotId): move a text block (pos = canvas-px top-left) / resize it
+  // (size = canvas-px font size). Passed to the engine and folded into the cache hash.
+  positionOverrides?: Record<string, { x: number; y: number }>;
+  sizeOverrides?: Record<string, number>;
 }
 
 /** Render a finished PNG for an editable template — deriveSlots defaults, then the user's text/colour edits. */
@@ -190,20 +230,59 @@ export async function renderEditableTemplate(opts: RenderOpts): Promise<Buffer> 
     palette = { ...agencyPalette(m, opts.brand), ...(opts.colourOverrides || {}) };
   }
   const photos = await pickPhotos(m, opts.photoBuffers, opts.templateId);
-  const r = await renderEditable(m, palette, photos);
+  const r = await renderEditable(m, palette, photos, { pos: opts.positionOverrides, size: opts.sizeOverrides });
   return r.png;
 }
 
 const OUT_BUCKET = 'generated-images';
 const SIGNED_TTL = 60 * 60 * 24 * 365; // 1 year
 
-/** Render + upload to generated-images + return a signed URL. Throws on storage failure (caller maps to Law-2). */
+// sorted-key JSON so a Record's key order never changes the hash.
+function sortRec<T>(r?: Record<string, T>): Record<string, T> {
+  if (!r) return {};
+  return Object.fromEntries(Object.entries(r).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
+}
+// The render output is a pure function of these inputs — hash them all so ANY change (facts, brand, edits,
+// photos, move/resize) yields a new key, and identical inputs reuse the cached PNG.
+function renderInputsHash(opts: RenderOpts): string {
+  const canon = JSON.stringify({
+    t: opts.templateId, p: opts.property, a: opts.agency, b: opts.brand,
+    tx: sortRec(opts.textOverrides), co: sortRec(opts.colourOverrides), mc: sortRec(opts.manualColours),
+    ph: opts.photoRefs ?? [], po: sortRec(opts.positionOverrides), so: sortRec(opts.sizeOverrides),
+  });
+  return createHash('sha256').update(canon).digest('hex').slice(0, 32);
+}
+function signedFor(key: string) {
+  return supabaseAdmin.storage.from(OUT_BUCKET).createSignedUrl(key, SIGNED_TTL);
+}
+
+/**
+ * Render + upload to generated-images + return a signed URL. With a cache identity (opts.agencyId), the key is
+ * DETERMINISTIC: an existing object is reused (one signed-url round-trip instead of a full render), and a race
+ * that already wrote the key is treated as a hit. Throws on genuine storage failure (caller maps to Law-2).
+ */
 export async function renderAndStore(opts: RenderOpts): Promise<{ image_url: string; storage_path: string }> {
+  const deterministic = !!opts.agencyId;
+  const key = deterministic
+    ? `editable/${opts.agencyId}/${opts.propertyId || 'x'}/${opts.templateId}/${renderInputsHash(opts)}.png`
+    : `editable/${randomUUID()}.png`;
+
+  if (deterministic) {
+    const hit = await signedFor(key);
+    if (!hit.error && hit.data?.signedUrl) return { image_url: hit.data.signedUrl, storage_path: key };
+  }
+
   const png = await renderEditableTemplate(opts);
-  const key = `editable/${randomUUID()}.png`;
   const up = await supabaseAdmin.storage.from(OUT_BUCKET).upload(key, png, { contentType: 'image/png', upsert: false });
-  if (up.error) throw new Error(`studio-editable upload: ${up.error.message}`);
-  const signed = await supabaseAdmin.storage.from(OUT_BUCKET).createSignedUrl(key, SIGNED_TTL);
+  if (up.error) {
+    // A concurrent render already wrote this exact deterministic key → treat as a cache hit, don't fail.
+    if (deterministic) {
+      const exists = await signedFor(key);
+      if (!exists.error && exists.data?.signedUrl) return { image_url: exists.data.signedUrl, storage_path: key };
+    }
+    throw new Error(`studio-editable upload: ${up.error.message}`);
+  }
+  const signed = await signedFor(key);
   if (signed.error || !signed.data?.signedUrl) throw new Error(`studio-editable sign: ${signed.error?.message}`);
   return { image_url: signed.data.signedUrl, storage_path: key };
 }

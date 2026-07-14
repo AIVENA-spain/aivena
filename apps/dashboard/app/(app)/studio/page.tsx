@@ -10,6 +10,7 @@ type LibraryItem = {
   generation_type: string;
   content_type: string | null;
   created_at: string;
+  section?: string | null;
 };
 
 type Quota = {

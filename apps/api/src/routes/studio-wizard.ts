@@ -12,6 +12,9 @@ import {
   isKnownTemplate,
   isBrandColours,
   COLOUR_SCHEMES,
+  GALLERY_NEUTRAL,
+  galleryAccent,
+  galleryAccentOverrides,
 } from '../lib/studio-editable';
 
 /**
@@ -366,7 +369,7 @@ route.get('/library', async (c) => {
   const before = c.req.query('before');
   try {
     const result = await tx.execute(sql`
-      SELECT id, generation_type, result_image_url, result_metadata, created_at,
+      SELECT id, generation_type, result_image_url, result_metadata, created_at, section,
              raw_request->>'content_type' AS content_type
       FROM image_generations
       WHERE agency_id = ${agencyId}
@@ -376,7 +379,7 @@ route.get('/library', async (c) => {
       LIMIT ${limit}
     `);
     const rows = result as unknown as Array<
-      GenRow & { content_type: string | null }
+      GenRow & { content_type: string | null; section: string | null }
     >;
     return c.json({
       ok: true,
@@ -385,6 +388,7 @@ route.get('/library', async (c) => {
         image_url: r.result_image_url,
         generation_type: r.generation_type,
         content_type: r.content_type,
+        section: r.section,
         created_at: r.created_at,
         revisions_used: metaNum(r.result_metadata, 'revisions_used') ?? 0,
       })),
@@ -405,20 +409,23 @@ route.get('/properties', async (c) => {
     const like = `%${q.replace(/[%_]/g, (m) => '\\' + m)}%`;
     const result = q
       ? await tx.execute(sql`
-          SELECT id, title, location_city, location_region, price, bedrooms, bathrooms, images
+          SELECT id, title, location_city, location_region, price, bedrooms, bathrooms,
+                 area_built_sqm, area_sqm, images
           FROM properties
           WHERE agency_id = ${agencyId}
             AND (location_city ILIKE ${like} OR location_region ILIKE ${like} OR title ILIKE ${like})
           ORDER BY created_at DESC LIMIT 100`)
       : await tx.execute(sql`
-          SELECT id, title, location_city, location_region, price, bedrooms, bathrooms, images
+          SELECT id, title, location_city, location_region, price, bedrooms, bathrooms,
+                 area_built_sqm, area_sqm, images
           FROM properties
           WHERE agency_id = ${agencyId}
           ORDER BY created_at DESC LIMIT 100`);
     const rows = result as unknown as Array<{
       id: string; title: string; location_city: string | null;
       location_region: string | null; price: string | number | null;
-      bedrooms: number | null; bathrooms: number | null; images: string[] | null;
+      bedrooms: number | null; bathrooms: number | null;
+      area_built_sqm: number | null; area_sqm: number | null; images: string[] | null;
     }>;
     return c.json({
       ok: true,
@@ -431,6 +438,8 @@ route.get('/properties', async (c) => {
           price: r.price == null ? null : Number(r.price),
           bedrooms: r.bedrooms,
           bathrooms: r.bathrooms,
+          // built area preferred over plot (Christian: every property card shows beds · baths · area)
+          area: r.area_built_sqm ?? r.area_sqm ?? null,
           photo_count: imgs.length,
           thumb_url: imgs[0] ?? null,
         };
@@ -526,6 +535,27 @@ async function loadPropertyAndBrand(tx: any, agencyId: string, propertyId: strin
   };
 }
 
+// Interactive-editor override parsers (defensive — reject anything not the {slotId: {x,y}} / {slotId: number} shape).
+function parsePositions(v: unknown): Record<string, { x: number; y: number }> | undefined {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return undefined;
+  const out: Record<string, { x: number; y: number }> = {};
+  for (const [k, val] of Object.entries(v as Record<string, unknown>)) {
+    const o = val as { x?: unknown; y?: unknown };
+    if (o && typeof o === 'object' && typeof o.x === 'number' && typeof o.y === 'number' && Number.isFinite(o.x) && Number.isFinite(o.y)) {
+      out[k] = { x: o.x, y: o.y };
+    }
+  }
+  return Object.keys(out).length ? out : undefined;
+}
+function parseSizes(v: unknown): Record<string, number> | undefined {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return undefined;
+  const out: Record<string, number> = {};
+  for (const [k, val] of Object.entries(v as Record<string, unknown>)) {
+    if (typeof val === 'number' && Number.isFinite(val) && val >= 6 && val <= 400) out[k] = val;
+  }
+  return Object.keys(out).length ? out : undefined;
+}
+
 // ── GET /api/studio/editable-defaults?template_id&property_id ─────────────────
 // Pre-fill for the editing form: derived default text per slot + effective colour
 // per layer (from the agency brand) + the property's photos.
@@ -574,8 +604,14 @@ route.post('/editable-preview', async (c) => {
     const chosen = Array.isArray(b.photos) ? (b.photos as unknown[]).filter((u): u is string => typeof u === 'string' && loaded.images.includes(u)) : [];
     const refs = chosen.length ? chosen : loaded.images;
     if (refs.length === 0) return c.json({ ok: false, error: 'no_photos', message: 'This property has no photos to use.' }, 422);
-    const buffers: Buffer[] = [];
-    for (const ref of refs) { const buf = await loadPhotoBuffer(ref); if (buf) buffers.push(buf); }
+    // Cleaned photos (post-KIE finishing pass) stand in for the raw listing photos — SAME template, SAME text,
+    // watermark-free images. Handles are generation IDS only (agency-scoped lookup), never client-supplied URLs.
+    const cleanedIds = Array.isArray(b.cleaned_generation_ids)
+      ? (b.cleaned_generation_ids as unknown[]).filter((x): x is string => typeof x === 'string') : [];
+    const buffers: Buffer[] = cleanedIds.length ? await cleanedBuffers(tx, agencyId, cleanedIds) : [];
+    if (!buffers.length) {
+      for (const ref of refs) { const buf = await loadPhotoBuffer(ref); if (buf) buffers.push(buf); }
+    }
     if (buffers.length === 0) return c.json({ ok: false, error: 'photo_fetch_failed', message: "The selected photos couldn't be loaded." }, 422);
 
     // AUTO: a tapped scheme overrides the agency's own brand (validated hex quad). MANUAL: per-layer wheel picks.
@@ -586,12 +622,361 @@ route.post('/editable-preview', async (c) => {
       textOverrides: obj(b.text_overrides),
       colourOverrides: obj(b.colour_overrides),
       manualColours: obj(b.manual_colours),
+      positionOverrides: parsePositions(b.position_overrides),
+      sizeOverrides: parseSizes(b.size_overrides),
+      agencyId, propertyId, photoRefs: cleanedIds.length ? cleanedIds : refs, // deterministic cache key → reuse identical renders, no churn
     });
     return c.json({ ok: true, template_id: templateId, image_url: stored.image_url, storage_path: stored.storage_path });
   } catch (err) {
     console.error('[studio/editable-preview] failed:', err);
     return c.json({ ok: false, error: 'preview_failed', message: GENERIC }, 500);
   }
+});
+
+// ── GET /api/studio/editable-gallery — the Templates gallery render PLAN ────────
+// Christian 2026-07-13: the Templates section shows every template against the agency's most-expensive listings,
+// in a neutral palette with a shifting pop accent, so it always looks great. This returns the PLAN (which listing
+// + which photos + which neutral-brand/accent per template); the browser then renders each via /editable-preview,
+// which caches on a deterministic key so repeat visits are instant.
+route.get('/editable-gallery', async (c) => {
+  const tx = c.get('tx');
+  const agencyId = c.get('agencyId');
+  try {
+    // top listings by price. price IS NOT NULL — else Postgres sorts NULLs first on DESC and the "top" would be
+    // null-price rows.
+    const pRes = await tx.execute(sql`
+      SELECT id, title, images
+      FROM properties
+      WHERE agency_id = ${agencyId} AND price IS NOT NULL
+      ORDER BY price DESC
+      LIMIT 4
+    `);
+    const pRows = pRes as unknown as Array<{ id: string; title: string | null; images: string[] | null }>;
+    const listings = pRows
+      .map((r) => ({
+        id: r.id, title: r.title,
+        photos: (Array.isArray(r.images) ? r.images : []).filter((u): u is string => typeof u === 'string'),
+      }))
+      .filter((l) => l.photos.length > 0);
+
+    if (listings.length === 0) {
+      return c.json({ ok: true, has_listings: false, templates: [] });
+    }
+
+    // assign each template a listing that has enough photos (round-robin from the tile index so the four houses
+    // vary across the grid) + a shifting accent.
+    const items = editableCatalogue()
+      .map((t, i) => {
+        let chosen: { id: string; title: string | null; photos: string[] } | null = null;
+        for (let k = 0; k < listings.length; k++) {
+          const cand = listings[(i + k) % listings.length];
+          if (cand.photos.length >= t.photo_count) { chosen = cand; break; }
+        }
+        if (!chosen) return null; // no listing has enough photos for this template
+        const hex = galleryAccent(i);
+        return {
+          template_id: t.id,
+          property_id: chosen.id,
+          property_title: chosen.title,
+          photos: chosen.photos.slice(0, t.photo_count),
+          palette_locked: t.palette_locked,
+          brand: { ...GALLERY_NEUTRAL, gold: hex },          // neutral base, shifting accent in the gold slot
+          colour_overrides: galleryAccentOverrides(hex),      // pin the accent to roles every template draws
+        };
+      })
+      .filter((x): x is NonNullable<typeof x> => x !== null);
+
+    return c.json({ ok: true, has_listings: true, templates: items });
+  } catch (err) {
+    console.error('[studio/editable-gallery] failed:', err);
+    return c.json({ ok: false, error: 'gallery_failed', message: GENERIC }, 500);
+  }
+});
+
+// ── GET /api/studio/editable-sections — the agency's own library sections ──────
+route.get('/editable-sections', async (c) => {
+  const tx = c.get('tx');
+  const agencyId = c.get('agencyId');
+  try {
+    const res = await tx.execute(sql`
+      SELECT DISTINCT section FROM image_generations
+      WHERE agency_id = ${agencyId} AND section IS NOT NULL AND section <> ''
+      ORDER BY section
+    `);
+    const rows = res as unknown as Array<{ section: string }>;
+    return c.json({ ok: true, sections: rows.map((r) => r.section) });
+  } catch (err) {
+    console.error('[studio/editable-sections] failed:', err);
+    return c.json({ ok: false, error: 'sections_failed', message: GENERIC }, 500);
+  }
+});
+
+// ── POST /api/studio/set-section — file an EXISTING creation under a section ────
+// Used by the AI flow (its image is already a row); pass section='' or null to clear.
+route.post('/set-section', async (c) => {
+  const tx = c.get('tx');
+  const agencyId = c.get('agencyId');
+  let b: Record<string, unknown>;
+  try {
+    const raw = await c.req.json();
+    b = raw && typeof raw === 'object' && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};
+  } catch {
+    return c.json({ ok: false, error: 'invalid_json', message: 'Request body must be valid JSON.' }, 400);
+  }
+  const id = typeof b.generation_id === 'string' ? b.generation_id.trim() : '';
+  const section = typeof b.section === 'string' && b.section.trim() ? b.section.trim().slice(0, 80) : null;
+  if (!id) return c.json({ ok: false, error: 'invalid_id', message: 'Missing creation id.' }, 400);
+  try {
+    const res = await tx.execute(sql`
+      UPDATE image_generations SET section = ${section}
+      WHERE id = ${id}::uuid AND agency_id = ${agencyId}
+      RETURNING id
+    `);
+    const rows = res as unknown as Array<{ id: string }>;
+    if (rows.length === 0) return c.json({ ok: false, error: 'not_found', message: 'That creation could not be found.' }, 404);
+    return c.json({ ok: true, id: rows[0].id, section });
+  } catch (err) {
+    console.error('[studio/set-section] failed:', err);
+    return c.json({ ok: false, error: 'set_section_failed', message: GENERIC }, 500);
+  }
+});
+
+// ── POST /api/studio/editable-generate — render + SAVE TO LIBRARY (+ section) ──
+// The explicit "save" action from the edit step (unlike /editable-preview, which is the free, high-frequency
+// live-preview path and records nothing). Records one image_generations row so the creation shows in Recent
+// creations / Your library, filed under an optional section. Deterministic (does NOT consume AI quota — templates
+// are the free, deterministic path; the counter in agency_settings is untouched).
+route.post('/editable-generate', async (c) => {
+  const tx = c.get('tx');
+  const agencyId = c.get('agencyId');
+  const user = c.get('user');
+  let b: Record<string, unknown>;
+  try {
+    const raw = await c.req.json();
+    b = raw && typeof raw === 'object' && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};
+  } catch {
+    return c.json({ ok: false, error: 'invalid_json', message: 'Request body must be valid JSON.' }, 400);
+  }
+  const templateId = typeof b.template_id === 'string' ? b.template_id.trim() : '';
+  const propertyId = typeof b.property_id === 'string' ? b.property_id.trim() : '';
+  const section = typeof b.section === 'string' && b.section.trim() ? b.section.trim().slice(0, 80) : null;
+  if (!isKnownTemplate(templateId)) {
+    return c.json({ ok: false, error: 'invalid_template', message: 'Unknown template.' }, 400);
+  }
+  try {
+    const loaded = await loadPropertyAndBrand(tx, agencyId, propertyId);
+    if (!loaded) return c.json({ ok: false, error: 'not_found', message: 'That property could not be found.' }, 404);
+    const chosen = Array.isArray(b.photos) ? (b.photos as unknown[]).filter((u): u is string => typeof u === 'string' && loaded.images.includes(u)) : [];
+    const refs = chosen.length ? chosen : loaded.images;
+    if (refs.length === 0) return c.json({ ok: false, error: 'no_photos', message: 'This property has no photos to use.' }, 422);
+    // Cleaned photos (post-KIE finishing pass) stand in for the raw listing photos — SAME template, SAME text,
+    // watermark-free images. Handles are generation IDS only (agency-scoped lookup), never client-supplied URLs.
+    const cleanedIds = Array.isArray(b.cleaned_generation_ids)
+      ? (b.cleaned_generation_ids as unknown[]).filter((x): x is string => typeof x === 'string') : [];
+    const buffers: Buffer[] = cleanedIds.length ? await cleanedBuffers(tx, agencyId, cleanedIds) : [];
+    if (!buffers.length) {
+      for (const ref of refs) { const buf = await loadPhotoBuffer(ref); if (buf) buffers.push(buf); }
+    }
+    if (buffers.length === 0) return c.json({ ok: false, error: 'photo_fetch_failed', message: "The selected photos couldn't be loaded." }, 422);
+
+    const brand = isBrandColours(b.brand) ? b.brand : loaded.brand;
+    const obj = (v: unknown) => (v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, string>) : undefined);
+    const stored = await renderAndStore({
+      templateId, property: loaded.property, agency: loaded.agency, brand, photoBuffers: buffers,
+      textOverrides: obj(b.text_overrides),
+      colourOverrides: obj(b.colour_overrides),
+      manualColours: obj(b.manual_colours),
+      positionOverrides: parsePositions(b.position_overrides),
+      sizeOverrides: parseSizes(b.size_overrides),
+      agencyId, propertyId, photoRefs: cleanedIds.length ? cleanedIds : refs,
+    });
+
+    // Record in the library (RLS-fenced tx). content_type lives inside raw_request (no such column); the library
+    // reads raw_request->>'content_type'. generation_type must satisfy the CHECK (ad_creative|social_post|
+    // renovation) → 'social_post'; the real discriminator is engine:'editable_template'.
+    const inserted = await tx.execute(sql`
+      INSERT INTO image_generations
+        (agency_id, generation_type, status, prompt, source_property_id, requested_by,
+         result_image_url, result_image_storage_path, section, raw_request, result_metadata, completed_at)
+      VALUES
+        (${agencyId}, 'social_post', 'completed', ${`Template ${templateId}`}, ${propertyId}::uuid, ${user?.sub ?? null}::uuid,
+         ${stored.image_url}, ${stored.storage_path}, ${section},
+         ${JSON.stringify({ engine: 'editable_template', template_id: templateId, content_type: 'template' })}::jsonb,
+         ${JSON.stringify({ engine: 'editable_template' })}::jsonb, now())
+      RETURNING id
+    `);
+    const rows = inserted as unknown as Array<{ id: string }>;
+    return c.json({
+      ok: true, id: rows[0]?.id ?? null, template_id: templateId,
+      image_url: stored.image_url, storage_path: stored.storage_path, section,
+    });
+  } catch (err) {
+    console.error('[studio/editable-generate] failed:', err);
+    return c.json({ ok: false, error: 'generate_failed', message: GENERIC }, 500);
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// KIE FINISHING PASS (Christian 2026-07-14). The deterministic template renders the RAW listing photos, which
+// carry portal watermarks. KIE's role is PHOTOS ONLY: hand it each chosen photo, tell it to remove watermarks +
+// make the minor aesthetic/lighting changes asked for, and put the cleaned photo BACK INTO THE TEMPLATE. It
+// never sees or touches the text or the layout — the engine still draws every fact itself.
+// One KIE job per photo (each job returns one cleaned image). `template:'none'` = raw cleaned photo out, no
+// overlay. ENHANCE_BASE (watermark removal + scene lock) is always applied; `prompt` rides as extra direction.
+// ═══════════════════════════════════════════════════════════════════════════
+
+// KIE fetches the source itself, so it must be a PUBLICLY reachable URL. Portal hotlinks already are; an
+// owned photo lives in the private property-images bucket and needs a signed URL.
+async function kieFetchableUrl(ref: string): Promise<string | null> {
+  if (/^https?:\/\//i.test(ref)) return ref;
+  const { data, error } = await supabaseAdmin.storage.from('property-images').createSignedUrl(ref, 60 * 60);
+  if (error || !data?.signedUrl) return null;
+  return data.signedUrl;
+}
+
+/** Resolve cleaned-photo generation ids → image buffers. Agency-scoped + completed-only (a client can never
+ *  point this at someone else's image, and ids are the only accepted handle — never raw URLs). */
+async function cleanedBuffers(tx: any, agencyId: string, ids: string[]): Promise<Buffer[]> {
+  const out: Buffer[] = [];
+  for (const id of ids) {
+    if (!/^[0-9a-fA-F-]{36}$/.test(id)) continue;
+    const res = await tx.execute(sql`
+      SELECT result_image_storage_path FROM image_generations
+      WHERE id = ${id}::uuid AND agency_id = ${agencyId} AND status = 'completed'
+      LIMIT 1
+    `);
+    const rows = res as unknown as Array<{ result_image_storage_path: string | null }>;
+    const path = rows[0]?.result_image_storage_path;
+    if (!path) continue;
+    const dl = await supabaseAdmin.storage.from('generated-images').download(path);
+    if (dl.error || !dl.data) continue;
+    out.push(Buffer.from(await dl.data.arrayBuffer()));
+  }
+  return out;
+}
+
+// ── POST /api/studio/editable-finish — hand each chosen photo to KIE (watermark + aesthetic) ──
+// Body: { property_id, photos?: string[], note?: string }. Returns one job per photo; the browser polls
+// /api/studio/status/:id for each, then re-renders the template with cleaned_generation_ids.
+route.post('/editable-finish', async (c) => {
+  const tx = c.get('tx');
+  const agencyId = c.get('agencyId');
+  const user = c.get('user');
+  let b: Record<string, unknown>;
+  try {
+    const raw = await c.req.json();
+    b = raw && typeof raw === 'object' && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};
+  } catch {
+    return c.json({ ok: false, error: 'invalid_json', message: 'Request body must be valid JSON.' }, 400);
+  }
+  const propertyId = typeof b.property_id === 'string' ? b.property_id.trim() : '';
+  const note = typeof b.note === 'string' ? b.note.trim().slice(0, 900) : '';
+  try {
+    const loaded = await loadPropertyAndBrand(tx, agencyId, propertyId);
+    if (!loaded) return c.json({ ok: false, error: 'not_found', message: 'That property could not be found.' }, 404);
+    const chosen = Array.isArray(b.photos) ? (b.photos as unknown[]).filter((u): u is string => typeof u === 'string' && loaded.images.includes(u)) : [];
+    const refs = chosen.length ? chosen : loaded.images;
+    if (refs.length === 0) return c.json({ ok: false, error: 'no_photos', message: 'This property has no photos to clean up.' }, 422);
+
+    const secret = await internalSecret();
+    if (!secret) return c.json({ ok: false, error: 'unavailable', message: "The photo service isn't available right now. Please try again shortly." }, 503);
+
+    const jobs: { photo: string; generation_id: string | null; error: string | null }[] = [];
+    for (const ref of refs) {
+      const url = await kieFetchableUrl(ref);
+      if (!url) { jobs.push({ photo: ref, generation_id: null, error: "That photo couldn't be opened." }); continue; }
+      try {
+        const res = await fetch(`${EF_BASE}/image-generate-create`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-internal-secret': secret },
+          body: JSON.stringify({
+            agency_id: agencyId,
+            generation_type: 'social_post',
+            template: 'none',          // raw cleaned photo out — no overlay, no text: KIE only touches the image
+            source_image_url: url,
+            source_property_id: propertyId,
+            requested_by: user?.sub ?? null,
+            ...(note ? { prompt: note } : {}), // extra asks ride as creative direction; watermark removal is always applied
+          }),
+        });
+        const j = (await res.json().catch(() => null)) as { ok?: boolean; generation_id?: string; message?: string } | null;
+        if (res.ok && j?.ok && j.generation_id) jobs.push({ photo: ref, generation_id: j.generation_id, error: null });
+        else jobs.push({ photo: ref, generation_id: null, error: j?.message ?? "That photo couldn't be cleaned up." });
+      } catch {
+        jobs.push({ photo: ref, generation_id: null, error: "That photo couldn't be cleaned up." });
+      }
+    }
+    if (!jobs.some((j) => j.generation_id)) {
+      return c.json({ ok: false, error: 'finish_failed', message: "The photo clean-up couldn't be started. Please try again.", jobs }, 502);
+    }
+    return c.json({ ok: true, jobs });
+  } catch (err) {
+    console.error('[studio/editable-finish] failed:', err);
+    return c.json({ ok: false, error: 'finish_failed', message: GENERIC }, 500);
+  }
+});
+
+// ── POST /api/studio/translate-slots — author-language text → the post's output language ──────
+// Christian's flow: type the copy in ANY language, the post renders in the language you picked.
+// DeepL auto-detects the source (translate-text EF, source_lang:'auto'). Only the TYPED slot text is
+// translated — the engine already localises the facts (price/beds/city). A slot whose translation fails
+// keeps its original text (a design never blanks out because DeepL hiccuped).
+const TRANSLATE_LANGS = new Set(['en', 'es', 'de', 'nl', 'fr', 'it', 'pl', 'pt', 'ru', 'sv', 'no', 'nb', 'da', 'fi']);
+let translateSecretCache: Promise<string | null> | null = null;
+async function fetchTranslateSecret(): Promise<string | null> {
+  try {
+    const { data, error } = await supabaseAdmin.rpc('_get_platform_secret', { p_name: 'INTERNAL_TRANSLATE_SECRET' });
+    if (error || !data) {
+      console.error('[studio/translate] secret unavailable:', error?.message);
+      return null;
+    }
+    return String(data);
+  } catch (err) {
+    console.error('[studio/translate] secret threw:', err);
+    return null;
+  }
+}
+function translateSecret(): Promise<string | null> {
+  if (!translateSecretCache) {
+    // a null is transient (vault hiccup) → clear the cache so the next call retries
+    translateSecretCache = fetchTranslateSecret().then((s) => { if (s === null) translateSecretCache = null; return s; });
+  }
+  return translateSecretCache;
+}
+
+route.post('/translate-slots', async (c) => {
+  let b: Record<string, unknown>;
+  try {
+    const raw = await c.req.json();
+    b = raw && typeof raw === 'object' && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};
+  } catch {
+    return c.json({ ok: false, error: 'invalid_json', message: 'Request body must be valid JSON.' }, 400);
+  }
+  const target = typeof b.target_lang === 'string' ? b.target_lang.trim() : '';
+  const texts = b.texts && typeof b.texts === 'object' && !Array.isArray(b.texts) ? (b.texts as Record<string, unknown>) : null;
+  if (!texts) return c.json({ ok: false, error: 'invalid_texts', message: 'There is nothing to translate.' }, 400);
+  if (!TRANSLATE_LANGS.has(target)) return c.json({ ok: false, error: 'invalid_target', message: "That language isn't supported yet." }, 400);
+
+  const secret = await translateSecret();
+  if (!secret) return c.json({ ok: false, error: 'translate_unavailable', message: "Translation isn't available right now. Please try again shortly." }, 503);
+
+  const entries = Object.entries(texts).filter(([, v]) => typeof v === 'string' && (v as string).trim().length > 0) as [string, string][];
+  const out: Record<string, string> = {};
+  await Promise.all(entries.map(async ([id, v]) => {
+    try {
+      const res = await fetch(`${EF_BASE}/translate-text`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-internal-secret': secret },
+        body: JSON.stringify({ text: v, source_lang: 'auto', target_lang: target }),
+      });
+      const j = (await res.json().catch(() => null)) as { ok?: boolean; translated_text?: string | null } | null;
+      // skipped (source === target) returns translated_text:null → keep the original.
+      out[id] = res.ok && j?.ok && typeof j.translated_text === 'string' && j.translated_text ? j.translated_text : v;
+    } catch {
+      out[id] = v; // never blank a slot on a translation failure
+    }
+  }));
+  return c.json({ ok: true, texts: out });
 });
 
 export default route;

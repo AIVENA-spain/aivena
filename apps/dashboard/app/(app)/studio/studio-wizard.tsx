@@ -153,7 +153,43 @@ const COLOR_TREATMENTS = [
 const FONT_SETS = [
   { key: "serif", label: "Serif" }, { key: "sans", label: "Sans" }, { key: "mixed", label: "Mixed" },
 ];
-const RENO_CHIPS = ["Scandinavian minimal", "Warm modern", "Luxury coastal", "Bright & airy"];
+// ── renovation guided controls (Christian 2026-07-13): style · amount of furniture · lighting · colours,
+// plus a free-text box for anything specific. These COMPOSE the prompt sent to the redesign engine, and the
+// composed prompt always ends with the structure lock so the room itself is never altered — only the styling.
+const RENO_STYLES = [
+  "Scandinavian minimal", "Warm modern", "Luxury coastal", "Mediterranean",
+  "Contemporary", "Rustic charm", "Bright & airy", "Industrial",
+];
+const RENO_FURNITURE: { k: string; l: string; p: string }[] = [
+  { k: "minimal", l: "Minimal", p: "sparsely furnished with only a few key pieces" },
+  { k: "moderate", l: "Moderate", p: "comfortably furnished" },
+  { k: "full", l: "Fully furnished", p: "fully furnished and styled" },
+];
+const RENO_LIGHT: { k: string; l: string; p: string }[] = [
+  { k: "daylight", l: "Natural daylight", p: "bright natural daylight" },
+  { k: "warm", l: "Warm evening", p: "warm evening lighting" },
+  { k: "soft", l: "Soft ambient", p: "soft ambient lighting" },
+];
+const RENO_COLOURS: { k: string; l: string; p: string }[] = [
+  { k: "neutral", l: "Neutral", p: "a neutral colour palette" },
+  { k: "warm", l: "Warm earth", p: "warm earthy tones" },
+  { k: "cool", l: "Cool tones", p: "cool, calm tones" },
+  { k: "bold", l: "Bold accents", p: "a neutral base with bold accent colours" },
+  { k: "mono", l: "Monochrome", p: "a monochrome palette" },
+];
+const STRUCTURE_LOCK =
+  " Keep the room's architecture, walls, windows, doors, floor plan and proportions exactly as they are — change only the styling, furniture, decor and lighting.";
+function composeReno(style: string, furn: string, light: string, col: string, details: string): string {
+  if (!style) return "";
+  const bits = [`Restyle this room in a ${style.toLowerCase()} style`];
+  const f = RENO_FURNITURE.find((x) => x.k === furn); if (f) bits.push(f.p);
+  const l = RENO_LIGHT.find((x) => x.k === light); if (l) bits.push(l.p);
+  const c = RENO_COLOURS.find((x) => x.k === col); if (c) bits.push(c.p);
+  let s = bits.join(", ") + ".";
+  const d = details.trim();
+  if (d) s += " " + (/[.!?]$/.test(d) ? d : d + ".");
+  return s + STRUCTURE_LOCK;
+}
 
 const SUPPORTED_LANGS = new Set(["en", "es", "de", "nl", "fr", "it", "pl", "pt", "ru", "sv", "no", "da", "fi"]);
 function efLanguage(locale: string): string {
@@ -164,8 +200,15 @@ function efLanguage(locale: string): string {
 
 type PropertyItem = {
   id: string; title: string; location_city: string | null; price: number | null;
-  bedrooms: number | null; photo_count: number; thumb_url: string | null;
+  bedrooms: number | null; bathrooms: number | null; area: number | null;
+  photo_count: number; thumb_url: string | null;
 };
+// beds · baths · area — a missing fact is hidden, never invented (data-honesty law).
+const propSpecs = (p: PropertyItem) =>
+  [p.bedrooms != null ? `${p.bedrooms} bed` : null,
+   p.bathrooms != null ? `${p.bathrooms} bath` : null,
+   p.area != null ? `${p.area} m²` : null].filter(Boolean).join(" · ");
+const propMoney = (n: number | null) => (n == null ? "" : "€" + n.toLocaleString("es-ES"));
 type LibraryItem = {
   id: string; image_url: string; generation_type: string; content_type: string | null; created_at: string;
 };
@@ -179,8 +222,8 @@ export function StudioWizard({
   initialFork,
 }: {
   initialLibrary: LibraryItem[];
-  /** When set, skip the fork screen and enter that mode directly (landing routes here). */
-  initialFork?: "wizard" | "smart" | null;
+  /** When set, skip the fork screen and enter that mode directly (the Studio home routes here). */
+  initialFork?: "wizard" | "smart" | "renovation" | null;
 }) {
   const locale = useLocale();
   const language = efLanguage(locale);
@@ -304,6 +347,7 @@ export function StudioWizard({
     forkConsumed.current = true;
     if (initialFork === "wizard") setScreen("content");
     else if (initialFork === "smart") startFlow("listing", true);
+    else if (initialFork === "renovation") startFlow("renovation", false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialFork]);
 
@@ -692,6 +736,11 @@ function PropertyGrid({
           <div className="relative aspect-[4/3] w-full bg-muted"><Thumb src={p.thumb_url} alt={p.title} /></div>
           <div className="flex flex-col gap-0.5 p-2.5">
             <span className="line-clamp-1 text-[12.5px] font-medium text-foreground">{p.title}</span>
+            <span className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+              <span className="truncate">{p.location_city || "—"}</span>
+              <span className="shrink-0 font-medium text-foreground">{propMoney(p.price)}</span>
+            </span>
+            {propSpecs(p) ? <span className="truncate text-[11px] font-medium text-foreground/80">{propSpecs(p)}</span> : null}
             <span className="font-mono text-[10px] text-muted-foreground">{p.photo_count} photo{p.photo_count === 1 ? "" : "s"}</span>
           </div>
         </button>
@@ -757,6 +806,15 @@ function RenovationStep({
   const [uploadBusy, setUploadBusy] = useState(false);
   const [showProps, setShowProps] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  // guided controls → they compose the prompt the engine receives
+  const [style, setStyle] = useState("");
+  const [furn, setFurn] = useState("moderate");
+  const [light, setLight] = useState("daylight");
+  const [col, setCol] = useState("neutral");
+  const [details, setDetails] = useState("");
+  useEffect(() => {
+    setPrompt(composeReno(style, furn, light, col, details));
+  }, [style, furn, light, col, details, setPrompt]);
 
   async function onUpload(file: File | null) {
     if (!file) return;
@@ -823,20 +881,56 @@ function RenovationStep({
         )
       ) : null}
 
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="reno-prompt">Describe the new look</Label>
-        <textarea id="reno-prompt" rows={3} value={prompt} maxLength={2000}
-          onChange={(e) => setPrompt(e.target.value)}
-          placeholder="e.g. Warm Mediterranean living room with light wood, linen sofa, plants"
-          className="rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
-        <div className="flex flex-wrap gap-1.5">
-          {RENO_CHIPS.map((chip) => (
-            <button key={chip} type="button" onClick={() => setPrompt(chip)}
-              className="rounded-full border border-border bg-card px-3 py-1 text-[12px] text-muted-foreground hover:border-brand hover:text-brand">
-              {chip}
-            </button>
-          ))}
+      {/* guided controls: style · furniture · lighting · colours */}
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-1.5">
+          <Label>Style</Label>
+          <div className="flex flex-wrap gap-1.5">
+            {RENO_STYLES.map((s) => (
+              <button key={s} type="button" onClick={() => setStyle(s)}
+                className={cn("rounded-full border px-3 py-1 text-[12px] transition",
+                  style === s ? "border-brand bg-brand-soft font-semibold text-brand" : "border-border bg-card text-muted-foreground hover:border-brand hover:text-brand")}>
+                {s}
+              </button>
+            ))}
+          </div>
         </div>
+
+        {([
+          { label: "Amount of furniture", opts: RENO_FURNITURE, val: furn, set: setFurn },
+          { label: "Lighting", opts: RENO_LIGHT, val: light, set: setLight },
+          { label: "Colours", opts: RENO_COLOURS, val: col, set: setCol },
+        ] as const).map((row) => (
+          <div key={row.label} className="flex flex-col gap-1.5">
+            <Label>{row.label}</Label>
+            <div className="flex flex-wrap gap-1.5">
+              {row.opts.map((o) => (
+                <button key={o.k} type="button" onClick={() => row.set(o.k)}
+                  className={cn("rounded-full border px-3 py-1 text-[12px] transition",
+                    row.val === o.k ? "border-brand bg-brand-soft font-semibold text-brand" : "border-border bg-card text-muted-foreground hover:border-brand hover:text-brand")}>
+                  {o.l}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="reno-details">Anything specific? (optional)</Label>
+          <textarea id="reno-details" rows={2} value={details} maxLength={1200}
+            onChange={(e) => setDetails(e.target.value)}
+            placeholder="e.g. add a reading nook by the window, swap the rug for something softer"
+            className="rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+        </div>
+
+        {prompt ? (
+          <div className="rounded-lg border border-border bg-card p-3">
+            <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">What we&apos;ll ask for</p>
+            <p className="text-[12px] leading-relaxed text-muted-foreground">{prompt}</p>
+          </div>
+        ) : (
+          <p className="text-[12px] text-muted-foreground">Pick a style to continue.</p>
+        )}
       </div>
 
       <p className="text-[11px] text-muted-foreground">This is a full generation (uses one credit) — there's no live preview. Takes about a minute.</p>

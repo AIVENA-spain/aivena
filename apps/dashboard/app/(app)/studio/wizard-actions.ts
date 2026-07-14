@@ -126,7 +126,54 @@ export type EditablePreviewInput = {
   manual_colours?: Record<string, string>; // manual mode: per-layer wheel
   brand?: { navy: string; gold: string; cream: string; text: string }; // auto mode: a tapped scheme
   colour_overrides?: Record<string, string>;
+  // interactive editor: move a text block (canvas-px top-left) / resize it (canvas-px font size)
+  position_overrides?: Record<string, { x: number; y: number }>;
+  size_overrides?: Record<string, number>;
+  // KIE finishing pass: render the template with the CLEANED photos instead of the raw listing ones
+  cleaned_generation_ids?: string[];
 };
+
+// ── KIE finishing pass: hand each chosen photo to KIE (watermark removal + the asked-for aesthetic
+// changes). KIE only ever touches the images — the template + text stay deterministic. One job per photo;
+// poll each with statusAction, then re-render with cleaned_generation_ids.
+export type FinishJob = { photo: string; generation_id: string | null; error: string | null };
+export async function editableFinishAction(
+  propertyId: string,
+  photos: string[],
+  note?: string,
+): Promise<Envelope> {
+  return call("/api/studio/editable-finish", {
+    method: "POST",
+    body: { property_id: propertyId, photos, note: note?.trim() || undefined },
+  });
+}
 export async function editablePreviewAction(input: EditablePreviewInput): Promise<Envelope> {
   return call("/api/studio/editable-preview", { method: "POST", body: input });
+}
+
+// ── Templates gallery: the render PLAN (top listings + neutral+accent per template) ──
+export async function editableGalleryAction(): Promise<Envelope> {
+  return call("/api/studio/editable-gallery");
+}
+
+// ── Save a template render to the library (records a row; optional section) ─────
+export type EditableGenerateInput = EditablePreviewInput & { section?: string | null };
+export async function editableGenerateAction(input: EditableGenerateInput): Promise<Envelope> {
+  return call("/api/studio/editable-generate", { method: "POST", body: input });
+}
+
+// ── Translate the typed slot copy into the post's output language (DeepL auto-detects source) ──
+export async function translateSlotsAction(
+  texts: Record<string, string>,
+  targetLang: string,
+): Promise<Envelope> {
+  return call("/api/studio/translate-slots", { method: "POST", body: { texts, target_lang: targetLang } });
+}
+
+// ── Library sections (the agency's own buckets) + filing an existing creation ───
+export async function editableSectionsAction(): Promise<Envelope> {
+  return call("/api/studio/editable-sections");
+}
+export async function setSectionAction(generationId: string, section: string | null): Promise<Envelope> {
+  return call("/api/studio/set-section", { method: "POST", body: { generation_id: generationId, section } });
 }

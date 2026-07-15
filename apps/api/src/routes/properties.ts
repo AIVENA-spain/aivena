@@ -34,7 +34,12 @@ const COLUMN_ALIASES: Record<string, string[]> = {
   price: ['price_eur', 'price', 'precio', 'precio_venta', 'pvp', 'precio_eur', 'importe'],
   bedrooms: ['bedrooms', 'dormitorios', 'habitaciones', 'beds', 'hab', 'dorm'],
   bathrooms: ['bathrooms', 'banos', 'baths', 'aseos'],
-  area_sqm: ['square_meters', 'm2', 'm2_construidos', 'metros', 'superficie', 'area', 'built_area', 'superficie_construida'],
+  // Built m² ≠ plot m² — keep them as SEPARATE labelled columns, never conflate (master-doc hard rule).
+  // Only GENERIC/unlabelled headers land in the legacy neutral `area_sqm` (displayed as a bare "m²",
+  // never asserted as "built"). Explicitly-built headers → area_built_sqm; explicitly-plot → area_plot_sqm.
+  area_sqm: ['square_meters', 'm2', 'metros', 'superficie', 'area'],
+  area_built_sqm: ['m2_construidos', 'built_area', 'superficie_construida', 'metros_construidos', 'sup_construida', 'construida'],
+  area_plot_sqm: ['m2_parcela', 'plot_area', 'superficie_parcela', 'sup_parcela', 'parcela', 'solar', 'terreno', 'plot'],
   location_city: ['city', 'ciudad', 'town', 'poblacion', 'municipio', 'location_city', 'localidad'],
   location_region: ['region', 'provincia', 'location_region', 'comunidad'],
   status: ['status', 'estado', 'situacion'],
@@ -75,7 +80,8 @@ route.get('/:id/properties', async (c) => {
   try {
     const result = await tx.execute(sql`
       SELECT id, external_id, title, property_type, status, price, price_currency,
-             bedrooms, bathrooms, area_sqm, location_city, location_region,
+             bedrooms, bathrooms, area_sqm, area_built_sqm, area_plot_sqm,
+             location_city, location_region,
              images, (embedding IS NOT NULL) AS has_embedding, updated_at
         FROM properties
        WHERE agency_id = current_setting('app.current_agency_id', true)
@@ -219,14 +225,21 @@ route.post('/:id/property-imports/:batchId/confirm', async (c) => {
     let promoted = 0;
     for (const r of rows) {
       const p = r.resolved_payload ?? {};
+      // Built vs plot are distinct facts — store each in its own column and never
+      // conflate (master-doc hard rule). The legacy `area_sqm` (read by matching +
+      // the neutral "m²" display) prefers an explicit GENERIC area, else falls back
+      // to BUILT — never plot (plot as the primary would overstate living space).
+      const areaBuiltSqm = asNumberOrNull(p.area_built_sqm);
+      const areaPlotSqm = asNumberOrNull(p.area_plot_sqm);
+      const legacyAreaSqm = asNumberOrNull(p.area_sqm) ?? areaBuiltSqm;
       // embedding generated asynchronously by Vega's embedding step (OpenAI
       // text-embedding-3-small) — do not call OpenAI here. Upsert on
       // (agency_id, external_id) so a re-import updates rather than duplicates.
       const promotedRow = await tx.execute(sql`
         INSERT INTO properties
           (agency_id, external_id, title, description, property_type, status,
-           price, bedrooms, bathrooms, area_sqm, location_city, location_region,
-           images, raw_payload)
+           price, bedrooms, bathrooms, area_sqm, area_built_sqm, area_plot_sqm,
+           location_city, location_region, images, raw_payload)
         VALUES
           (current_setting('app.current_agency_id', true),
            ${asText(p.external_id)},
@@ -237,7 +250,9 @@ route.post('/:id/property-imports/:batchId/confirm', async (c) => {
            ${asNumberOrNull(p.price)},
            ${asIntOrNull(p.bedrooms)},
            ${asIntOrNull(p.bathrooms)},
-           ${asNumberOrNull(p.area_sqm)},
+           ${legacyAreaSqm},
+           ${areaBuiltSqm},
+           ${areaPlotSqm},
            ${asTextOrNull(p.location_city)},
            ${asTextOrNull(p.location_region)},
            ${JSON.stringify(imagesArray(p.images))}::jsonb,
@@ -251,6 +266,8 @@ route.post('/:id/property-imports/:batchId/confirm', async (c) => {
                bedrooms = EXCLUDED.bedrooms,
                bathrooms = EXCLUDED.bathrooms,
                area_sqm = EXCLUDED.area_sqm,
+               area_built_sqm = EXCLUDED.area_built_sqm,
+               area_plot_sqm = EXCLUDED.area_plot_sqm,
                location_city = EXCLUDED.location_city,
                location_region = EXCLUDED.location_region,
                images = EXCLUDED.images,

@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1080" height="1350" viewBox="0 0 1080 1350">
+  <!-- Template 50 "Cortijo" - CC-authored 3-photo (2026-07-15). The warm-stone professional for three
+       photos: a full-height hero tower left, and a right column sandwich - photo, stone facts block,
+       photo. Zero dead zones. All art colours are live @@COLOUR@@ tokens. -->
+
+  <image x="0" y="64" width="600" height="1286" xlink:href="@@PHOTO0@@" preserveAspectRatio="xMidYMid slice"/>
+  <rect x="16" y="80" width="568" height="1254" fill="none" stroke="@@COLOUR:accent@@" stroke-width="1.5"/>
+
+  <image x="600" y="64" width="480" height="406" xlink:href="@@PHOTO1@@" preserveAspectRatio="xMidYMid slice"/>
+  <image x="600" y="940" width="480" height="410" xlink:href="@@PHOTO2@@" preserveAspectRatio="xMidYMid slice"/>
+  <rect x="616" y="80" width="448" height="374" fill="none" stroke="@@COLOUR:accent@@" stroke-width="1.5"/>
+  <rect x="616" y="956" width="448" height="378" fill="none" stroke="@@COLOUR:accent@@" stroke-width="1.5"/>
+
+  <rect x="0" y="62" width="1080" height="2" fill="@@COLOUR:accent@@"/>
+
+  <rect x="648" y="546" width="56" height="3" fill="@@COLOUR:accent@@"/>
+  <rect x="648" y="884" width="384" height="1.5" fill="@@COLOUR:accent@@" fill-opacity="0.55"/>
+
+  <g stroke="@@COLOUR:icon@@" stroke-width="2.5" fill="none">
+    <path d="M656 750 L656 726 L700 726"/>
+    <path d="M650 754 L706 754 L706 742 A8 8 0 0 0 698 734 L668 734"/>
+    <path d="M652 754 L652 762 M704 754 L704 762"/>
+    <circle cx="661" cy="731" r="4"/>
+  </g>
+  <g stroke="@@COLOUR:icon@@" stroke-width="2.5" fill="none">
+    <path d="M796 740 L840 740 A4 4 0 0 1 844 744 A16 16 0 0 1 828 758 L808 758 A16 16 0 0 1 792 744 A4 4 0 0 1 796 740 Z"/>
+    <path d="M800 740 L800 726 A7 7 0 0 1 814 726"/>
+    <path d="M804 758 L802 764 M832 758 L834 764"/>
+  </g>
+  <g stroke="@@COLOUR:icon@@" stroke-width="2.5" fill="none">
+    <rect x="946" y="726" width="40" height="36" stroke-dasharray="6 4"/>
+    <path d="M954 754 L978 734 M954 742 L954 754 L966 754 M978 746 L978 734 L966 734"/>
+  </g>
+</svg>

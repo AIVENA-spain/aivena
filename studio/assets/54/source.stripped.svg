@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1080" height="1350" viewBox="0 0 1080 1350">
+  <!-- Template 54 "Pregon" - CC-authored 3-photo (2026-07-15). TYPE BOOKENDS: the title huge at the top,
+       the PRICE just as huge at the bottom, three photo columns between them. The post literally reads
+       TITLE -> proof -> PRICE. Zero dead zones. Art colours live tokens. -->
+
+  <image x="0" y="252" width="356" height="768" xlink:href="@@PHOTO0@@" preserveAspectRatio="xMidYMid slice"/>
+  <image x="362" y="252" width="356" height="768" xlink:href="@@PHOTO1@@" preserveAspectRatio="xMidYMid slice"/>
+  <image x="724" y="252" width="356" height="768" xlink:href="@@PHOTO2@@" preserveAspectRatio="xMidYMid slice"/>
+  <rect x="12" y="264" width="332" height="744" fill="none" stroke="@@COLOUR:title@@" stroke-width="1.5"/>
+  <rect x="374" y="264" width="332" height="744" fill="none" stroke="@@COLOUR:title@@" stroke-width="1.5"/>
+  <rect x="736" y="264" width="332" height="744" fill="none" stroke="@@COLOUR:title@@" stroke-width="1.5"/>
+
+  <!-- facts strip rules -->
+  <rect x="64" y="1240" width="952" height="2" fill="@@COLOUR:accent@@"/>
+
+  <!-- per-fact icons -->
+  <g stroke="@@COLOUR:icon@@" stroke-width="2.5" fill="none">
+    <path d="M70 1290 L70 1266 L114 1266"/>
+    <path d="M64 1294 L120 1294 L120 1282 A8 8 0 0 0 112 1274 L82 1274"/>
+    <path d="M66 1294 L66 1302 M118 1294 L118 1302"/>
+    <circle cx="75" cy="1271" r="4"/>
+  </g>
+  <g stroke="@@COLOUR:icon@@" stroke-width="2.5" fill="none">
+    <path d="M240 1280 L284 1280 A4 4 0 0 1 288 1284 A16 16 0 0 1 272 1298 L252 1298 A16 16 0 0 1 236 1284 A4 4 0 0 1 240 1280 Z"/>
+    <path d="M244 1280 L244 1266 A7 7 0 0 1 258 1266"/>
+    <path d="M248 1298 L246 1304 M276 1298 L278 1304"/>
+  </g>
+  <g stroke="@@COLOUR:icon@@" stroke-width="2.5" fill="none">
+    <rect x="404" y="1266" width="40" height="36" stroke-dasharray="6 4"/>
+    <path d="M412 1294 L436 1274 M412 1282 L412 1294 L424 1294 M436 1286 L436 1274 L424 1274"/>
+  </g>
+</svg>

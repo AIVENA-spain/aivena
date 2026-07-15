@@ -42,7 +42,8 @@ import {
 // '49' = Claridad (3-photo professional Nº2, approved 2026-07-15).
 // '50' = Cortijo (3-photo professional Nº3, approved 2026-07-15).
 // '52' = Titular (type-led 3-photo, approved 2026-07-15). '51' Faro built, unregistered (pending).
-export const EDITABLE_TEMPLATE_IDS = ['2', '6', '7', '8', '10', '24', '25', '26', '27', '28', '30', '31', '32', '33', '34', '35', '36', '37', '38', '40', '41', '43', '44', '45', '46', '47', '48', '49', '50', '52'];
+// '54' = Pregón (type bookends, approved 2026-07-15) — 3-photo tier COMPLETE at 8.
+export const EDITABLE_TEMPLATE_IDS = ['2', '6', '7', '8', '10', '24', '25', '26', '27', '28', '30', '31', '32', '33', '34', '35', '36', '37', '38', '40', '41', '43', '44', '45', '46', '47', '48', '49', '50', '52', '54'];
 
 // Pre-made colour SCHEMES (Christian 2026-07-13) — curated coordinated palettes the agency taps to apply to the
 // whole template, instead of fiddling per-layer. Each maps to the four brand slots agencyPalette consumes:

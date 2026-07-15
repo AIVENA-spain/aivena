@@ -137,6 +137,33 @@ export function deriveSlots(p: DeriveProperty, agency: DeriveAgency, templateId:
     ].filter(Boolean).join(" · ");
     const addr = [city, p.region].filter(Boolean).join(" · ").toUpperCase();
     const contact = [agency.web, agency.phone].filter(Boolean).join(" · ");
+    if (templateId === "54") {
+      // Pregón: type bookends — huge single-line title and price, both auto-fitting.
+      return {
+        brand: T(agency.name.toUpperCase()),
+        address: T(addr),
+        title: T(`${typeCap} in ${city}`),
+        price_value: T(price ?? ""),
+        stat_beds: T(p.beds != null ? `${p.beds} BED` : ""),
+        stat_baths: T(p.baths != null ? `${p.baths} BATH` : ""),
+        stat_area: T(p.size != null ? `${p.size} M²` : ""),
+        cta_web: T([agency.web, agency.phone].filter(Boolean).join(" · ")),
+      };
+    }
+    if (templateId === "53") {
+      // Mirador: immersive full-bleed — same fact shape as Vista.
+      return {
+        brand: T(agency.name.toUpperCase()),
+        brand2: T(agency.name.toUpperCase()),
+        address: T(addr),
+        title: T(`${typeCap} in ${city}`),
+        price_value: T(price ?? ""),
+        stat_beds: T(p.beds != null ? `${p.beds} BED` : ""),
+        stat_baths: T(p.baths != null ? `${p.baths} BATH` : ""),
+        stat_area: T(p.size != null ? `${p.size} M²` : ""),
+        cta_web: T([agency.web, agency.phone].filter(Boolean).join(" · ")),
+      };
+    }
     if (templateId === "52") {
       // Titular: the title IS the layout — line 1 = "<Type> in", line 2 = the city, both auto-fitting huge.
       return {

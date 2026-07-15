@@ -1149,7 +1149,17 @@
     "fitStrong": "Strong fit",
     "fitGood": "Good fit",
     "fitFair": "Fair fit",
-    "noPhoto": "No photo available"
+    "noPhoto": "No photo available",
+    "topMatches": "Bästa matchningar",
+    "bestMatch": "Bästa matchning",
+    "kpiBuyers": "Köpare med matchningar",
+    "kpiAvg": "Genomsnittlig matchpoäng",
+    "kpiTop": "Bästa passform",
+    "searchPh": "Sök köpare eller område…",
+    "allLanguages": "Alla språk",
+    "sortBest": "Sortera: Bästa matchning",
+    "sortScore": "Sortera: Lead-poäng",
+    "noMatchFilter": "Inga köpare matchar dessa filter."
   },
   "valuation": {
     "title": "Vad är din bostad värd?",

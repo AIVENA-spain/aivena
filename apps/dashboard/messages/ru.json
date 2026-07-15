@@ -1149,7 +1149,17 @@
     "fitStrong": "Strong fit",
     "fitGood": "Good fit",
     "fitFair": "Fair fit",
-    "noPhoto": "No photo available"
+    "noPhoto": "No photo available",
+    "topMatches": "Лучшие совпадения",
+    "bestMatch": "Лучшее совпадение",
+    "kpiBuyers": "Покупатели с совпадениями",
+    "kpiAvg": "Средний балл совпадения",
+    "kpiTop": "Лучшее соответствие",
+    "searchPh": "Поиск покупателя или района…",
+    "allLanguages": "Все языки",
+    "sortBest": "Сортировка: Лучшее совпадение",
+    "sortScore": "Сортировка: Оценка лида",
+    "noMatchFilter": "Нет покупателей по этим фильтрам."
   },
   "valuation": {
     "title": "Сколько стоит ваша недвижимость?",

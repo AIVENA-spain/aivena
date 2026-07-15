@@ -1149,7 +1149,17 @@
     "fitStrong": "Strong fit",
     "fitGood": "Good fit",
     "fitFair": "Fair fit",
-    "noPhoto": "No photo available"
+    "noPhoto": "No photo available",
+    "topMatches": "Beste treff",
+    "bestMatch": "Beste treff",
+    "kpiBuyers": "Kjøpere med treff",
+    "kpiAvg": "Gj.sn. treffscore",
+    "kpiTop": "Beste match",
+    "searchPh": "Søk kjøper eller område…",
+    "allLanguages": "Alle språk",
+    "sortBest": "Sortér: Beste treff",
+    "sortScore": "Sortér: Lead-score",
+    "noMatchFilter": "Ingen kjøpere matcher disse filtrene."
   },
   "valuation": {
     "title": "Hva er eiendommen din verdt?",

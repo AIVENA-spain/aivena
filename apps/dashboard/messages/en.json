@@ -1149,7 +1149,17 @@
     "fitStrong": "Strong fit",
     "fitGood": "Good fit",
     "fitFair": "Fair fit",
-    "noPhoto": "No photo available"
+    "noPhoto": "No photo available",
+    "topMatches": "Top matches",
+    "bestMatch": "Best match",
+    "kpiBuyers": "Buyers with matches",
+    "kpiAvg": "Avg match score",
+    "kpiTop": "Top fit",
+    "searchPh": "Search buyer or area…",
+    "allLanguages": "All languages",
+    "sortBest": "Sort: Best match",
+    "sortScore": "Sort: Lead score",
+    "noMatchFilter": "No buyers match these filters."
   },
   "valuation": {
     "title": "What’s your property worth?",

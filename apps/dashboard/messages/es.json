@@ -1149,7 +1149,17 @@
     "fitStrong": "Strong fit",
     "fitGood": "Good fit",
     "fitFair": "Fair fit",
-    "noPhoto": "No photo available"
+    "noPhoto": "No photo available",
+    "topMatches": "Mejores coincidencias",
+    "bestMatch": "Mejor coincidencia",
+    "kpiBuyers": "Compradores con coincidencias",
+    "kpiAvg": "Puntuación media",
+    "kpiTop": "Mejor ajuste",
+    "searchPh": "Buscar comprador o zona…",
+    "allLanguages": "Todos los idiomas",
+    "sortBest": "Orden: Mejor coincidencia",
+    "sortScore": "Orden: Puntuación del lead",
+    "noMatchFilter": "Ningún comprador coincide con estos filtros."
   },
   "valuation": {
     "title": "¿Cuánto vale tu propiedad?",

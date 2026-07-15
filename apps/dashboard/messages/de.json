@@ -1149,7 +1149,17 @@
     "fitStrong": "Strong fit",
     "fitGood": "Good fit",
     "fitFair": "Fair fit",
-    "noPhoto": "No photo available"
+    "noPhoto": "No photo available",
+    "topMatches": "Top-Treffer",
+    "bestMatch": "Bester Treffer",
+    "kpiBuyers": "Käufer mit Treffern",
+    "kpiAvg": "Durchschn. Trefferwert",
+    "kpiTop": "Beste Passung",
+    "searchPh": "Käufer oder Gebiet suchen…",
+    "allLanguages": "Alle Sprachen",
+    "sortBest": "Sortierung: Bester Treffer",
+    "sortScore": "Sortierung: Lead-Score",
+    "noMatchFilter": "Keine Käufer passen zu diesen Filtern."
   },
   "valuation": {
     "title": "Was ist Ihre Immobilie wert?",

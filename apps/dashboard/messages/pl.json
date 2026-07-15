@@ -1149,7 +1149,17 @@
     "fitStrong": "Strong fit",
     "fitGood": "Good fit",
     "fitFair": "Fair fit",
-    "noPhoto": "No photo available"
+    "noPhoto": "No photo available",
+    "topMatches": "Najlepsze dopasowania",
+    "bestMatch": "Najlepsze dopasowanie",
+    "kpiBuyers": "Kupujący z dopasowaniami",
+    "kpiAvg": "Śr. wynik dopasowania",
+    "kpiTop": "Najlepsze dopasowanie",
+    "searchPh": "Szukaj kupującego lub obszaru…",
+    "allLanguages": "Wszystkie języki",
+    "sortBest": "Sortuj: Najlepsze dopasowanie",
+    "sortScore": "Sortuj: Wynik leada",
+    "noMatchFilter": "Żaden kupujący nie pasuje do tych filtrów."
   },
   "valuation": {
     "title": "Ile warta jest Twoja nieruchomość?",

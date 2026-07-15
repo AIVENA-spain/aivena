@@ -1149,7 +1149,17 @@
     "fitStrong": "Strong fit",
     "fitGood": "Good fit",
     "fitFair": "Fair fit",
-    "noPhoto": "No photo available"
+    "noPhoto": "No photo available",
+    "topMatches": "Parhaat osumat",
+    "bestMatch": "Paras osuma",
+    "kpiBuyers": "Ostajat, joilla on osumia",
+    "kpiAvg": "Keskim. osumapisteet",
+    "kpiTop": "Paras sopivuus",
+    "searchPh": "Hae ostajaa tai aluetta…",
+    "allLanguages": "Kaikki kielet",
+    "sortBest": "Järjestys: Paras osuma",
+    "sortScore": "Järjestys: Liidin pisteet",
+    "noMatchFilter": "Yksikään ostaja ei vastaa näitä suodattimia."
   },
   "valuation": {
     "title": "Mitä kohteesi on arvoinen?",

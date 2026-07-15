@@ -1149,7 +1149,17 @@
     "fitStrong": "Strong fit",
     "fitGood": "Good fit",
     "fitFair": "Fair fit",
-    "noPhoto": "No photo available"
+    "noPhoto": "No photo available",
+    "topMatches": "Beste matches",
+    "bestMatch": "Beste match",
+    "kpiBuyers": "Kopers met matches",
+    "kpiAvg": "Gem. matchscore",
+    "kpiTop": "Beste match",
+    "searchPh": "Zoek koper of gebied…",
+    "allLanguages": "Alle talen",
+    "sortBest": "Sorteer: Beste match",
+    "sortScore": "Sorteer: Leadscore",
+    "noMatchFilter": "Geen kopers voldoen aan deze filters."
   },
   "valuation": {
     "title": "Wat is je woning waard?",

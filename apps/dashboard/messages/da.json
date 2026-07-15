@@ -1149,7 +1149,17 @@
     "fitStrong": "Strong fit",
     "fitGood": "Good fit",
     "fitFair": "Fair fit",
-    "noPhoto": "No photo available"
+    "noPhoto": "No photo available",
+    "topMatches": "Bedste matches",
+    "bestMatch": "Bedste match",
+    "kpiBuyers": "Købere med matches",
+    "kpiAvg": "Gns. matchscore",
+    "kpiTop": "Bedste match",
+    "searchPh": "Søg køber eller område…",
+    "allLanguages": "Alle sprog",
+    "sortBest": "Sortér: Bedste match",
+    "sortScore": "Sortér: Lead-score",
+    "noMatchFilter": "Ingen købere matcher disse filtre."
   },
   "valuation": {
     "title": "Hvad er din bolig værd?",

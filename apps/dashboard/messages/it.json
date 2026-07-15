@@ -1149,7 +1149,17 @@
     "fitStrong": "Strong fit",
     "fitGood": "Good fit",
     "fitFair": "Fair fit",
-    "noPhoto": "No photo available"
+    "noPhoto": "No photo available",
+    "topMatches": "Migliori corrispondenze",
+    "bestMatch": "Migliore corrispondenza",
+    "kpiBuyers": "Acquirenti con corrispondenze",
+    "kpiAvg": "Punteggio medio",
+    "kpiTop": "Migliore affinità",
+    "searchPh": "Cerca acquirente o zona…",
+    "allLanguages": "Tutte le lingue",
+    "sortBest": "Ordina: Migliore corrispondenza",
+    "sortScore": "Ordina: Punteggio lead",
+    "noMatchFilter": "Nessun acquirente corrisponde a questi filtri."
   },
   "valuation": {
     "title": "Quanto vale il tuo immobile?",

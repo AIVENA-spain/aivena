@@ -1149,7 +1149,17 @@
     "fitStrong": "Strong fit",
     "fitGood": "Good fit",
     "fitFair": "Fair fit",
-    "noPhoto": "No photo available"
+    "noPhoto": "No photo available",
+    "topMatches": "Meilleures correspondances",
+    "bestMatch": "Meilleure correspondance",
+    "kpiBuyers": "Acheteurs avec correspondances",
+    "kpiAvg": "Score moyen",
+    "kpiTop": "Meilleure adéquation",
+    "searchPh": "Rechercher un acheteur ou une zone…",
+    "allLanguages": "Toutes les langues",
+    "sortBest": "Tri : Meilleure correspondance",
+    "sortScore": "Tri : Score du lead",
+    "noMatchFilter": "Aucun acheteur ne correspond à ces filtres."
   },
   "valuation": {
     "title": "Quelle est la valeur de votre bien ?",

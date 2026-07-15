@@ -38,6 +38,17 @@ function jsonResponse(body: unknown, status = 200): Response {
   });
 }
 
+// `leads.budget_extracted` is a NUMERIC column, so PostgREST returns it as a JSON NUMBER — not a
+// string. The interface below used to declare it `string | null`, and because `lead as LeadRow` is an
+// unchecked assertion, TypeScript happily allowed `.trim()` on it. At runtime that threw
+// "budget_extracted.trim is not a function", nothing caught it, and Deno returned a plain-text 500 —
+// so EVERY lead carrying a budget silently failed to embed, and with a null embedding
+// trg_lead_automatch exits early, so that lead got no property matches at all. Demo leads hid it:
+// they were embedded BEFORE their budgets were set, so they hold stale-but-non-null embeddings.
+// Proven by A/B on one committed test lead: budget NULL -> 200 + embedding written; budget 250000 ->
+// 500 text/plain. Every other trimmed field was verified to be genuinely `text` (see asText below).
+type DbText = string | number | null;
+
 interface LeadRow {
   id: string;
   agency_id: string;
@@ -45,18 +56,30 @@ interface LeadRow {
   summary: string | null;
   call_summary: string | null;
   budget_raw: string | null;
-  budget_extracted: string | null;
+  budget_extracted: DbText;   // numeric column -> arrives as a NUMBER
   location_interest_raw: string | null;
   location_interest_extracted: string | null;
   listing_id: string | null;
   language: string | null;
 }
 
+/**
+ * Coerce a DB value that may be text OR numeric (or null/empty) to trimmed text, or null.
+ * Only used for fields whose column type is not guaranteed to be text. Verified 2026-07-15 against
+ * information_schema: of the 7 fields this function trims, `budget_extracted` is the ONLY non-text
+ * one — the rest are genuinely `text` and are deliberately left as-is to keep this fix minimal.
+ */
+function asText(v: DbText | undefined): string | null {
+  if (v === null || v === undefined) return null;
+  const s = String(v).trim();
+  return s.length > 0 ? s : null;
+}
+
 function hasMeaningfulSignal(lead: LeadRow, noteCount: number, propertyTitle: string | null): boolean {
   const sigSummary = !!(lead.summary && lead.summary.trim().length > 5);
   const sigMessage = !!(lead.message && lead.message.trim().length > 5);
   const sigCallSummary = !!(lead.call_summary && lead.call_summary.trim().length > 5);
-  const sigBudget = !!((lead.budget_raw && lead.budget_raw.trim()) || (lead.budget_extracted && lead.budget_extracted.trim()));
+  const sigBudget = !!(asText(lead.budget_raw) || asText(lead.budget_extracted));
   const sigLocation = !!((lead.location_interest_raw && lead.location_interest_raw.trim()) || (lead.location_interest_extracted && lead.location_interest_extracted.trim()));
   const sigListing = !!(lead.listing_id && propertyTitle);
   const sigNotes = noteCount > 0;
@@ -82,8 +105,9 @@ function buildBuyerCriteriaText(
     lines.push(`Voice call summary: ${String(lead.call_summary).trim().slice(0, MESSAGE_MAX_CHARS)}`);
   }
 
-  const budget = (lead.budget_raw && lead.budget_raw.trim()) ? lead.budget_raw.trim()
-    : (lead.budget_extracted && lead.budget_extracted.trim()) ? lead.budget_extracted.trim() : null;
+  // Same numeric hazard as in hasMeaningfulSignal — budget_extracted arrives as a number.
+  // Preference order is unchanged: raw wins, else extracted, else nothing.
+  const budget = asText(lead.budget_raw) ?? asText(lead.budget_extracted);
   const location = (lead.location_interest_raw && lead.location_interest_raw.trim()) ? lead.location_interest_raw.trim()
     : (lead.location_interest_extracted && lead.location_interest_extracted.trim()) ? lead.location_interest_extracted.trim() : null;
 

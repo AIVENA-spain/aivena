@@ -1,0 +1,172 @@
+{
+  "template_id": "32",
+  "canvas": {
+    "width": 1080,
+    "height": 1350
+  },
+  "source_svg": "assets/32/source.stripped.svg",
+  "photo_slots": [
+    {
+      "token": "@@PHOTO0@@"
+    },
+    {
+      "token": "@@PHOTO1@@"
+    }
+  ],
+  "photo_fit": "attention",
+  "no_knockouts": true,
+  "colour_tokens": {
+    "background": {
+      "default": "#f7f5f0",
+      "locked": true
+    },
+    "title": {
+      "default": "#101114",
+      "locked": false
+    },
+    "subtitle/body": {
+      "default": "#5a5e66",
+      "locked": false
+    },
+    "accent": {
+      "default": "#2456c4",
+      "locked": false
+    },
+    "stat.label": {
+      "default": "#5a5e66",
+      "locked": false
+    },
+    "stat.value": {
+      "default": "#101114",
+      "locked": false
+    },
+    "badge.fill": {
+      "default": "#2456c4",
+      "locked": false
+    },
+    "badge.text": {
+      "default": "#ffffff",
+      "locked": false
+    },
+    "cta": {
+      "default": "#2456c4",
+      "locked": false
+    },
+    "divider": {
+      "default": "#2456c4",
+      "locked": false
+    },
+    "icon": {
+      "default": "#2456c4",
+      "locked": true
+    },
+    "overlay": {
+      "default": "#000000",
+      "locked": true
+    }
+  },
+  "plate_rects": [
+    {
+      "bbox": [
+        64,
+        1136,
+        200,
+        1142
+      ],
+      "fill_role": "divider"
+    }
+  ],
+  "text_slots": [
+    {
+      "id": "label",
+      "role": "accent",
+      "source": "template_copy",
+      "bbox": [
+        64,
+        698,
+        340,
+        728
+      ],
+      "size": 20,
+      "line_height": 24,
+      "font": "Inter",
+      "weight": "700",
+      "align": "left",
+      "tracking": 6,
+      "text": "NEW LISTING"
+    },
+    {
+      "id": "price_value",
+      "role": "badge.text",
+      "source": "property_fact",
+      "bbox": [
+        700,
+        616,
+        1040,
+        676
+      ],
+      "size": 46,
+      "line_height": 52,
+      "valign": "center",
+      "font": "Anton",
+      "align": "center",
+      "text": "€695,000",
+      "pill": {
+        "role": "badge.fill",
+        "pad_x": 46,
+        "pad_y": 26
+      }
+    },
+    {
+      "id": "title",
+      "role": "title",
+      "source": "property_fact",
+      "bbox": [
+        64,
+        1158,
+        1016,
+        1272
+      ],
+      "size": 92,
+      "line_height": 100,
+      "font": "Anton",
+      "align": "left",
+      "text": "VILLA IN ALTEA"
+    },
+    {
+      "id": "stat_line",
+      "role": "subtitle/body",
+      "source": "property_fact",
+      "bbox": [
+        64,
+        1290,
+        660,
+        1320
+      ],
+      "size": 21,
+      "line_height": 25,
+      "font": "Jost",
+      "align": "left",
+      "tracking": 3,
+      "text": "ALTEA · 3 BED · 3 BATH"
+    },
+    {
+      "id": "brand",
+      "role": "cta",
+      "source": "template_copy",
+      "bbox": [
+        660,
+        1290,
+        1016,
+        1320
+      ],
+      "size": 20,
+      "line_height": 24,
+      "font": "Inter",
+      "weight": "700",
+      "align": "right",
+      "tracking": 1,
+      "text": "Mediterráneo Costa Homes"
+    }
+  ]
+}

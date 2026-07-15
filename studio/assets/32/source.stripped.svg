@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1080" height="1350" viewBox="0 0 1080 1350">
+  <!-- Template 32 "Riviera" — CC-authored 2-photo design #3 (2026-07-15). Bold modern poster:
+       two full-bleed photos meeting on a diagonal seam, an azure price medallion riding the seam.
+       All text engine-drawn (no_knockouts). -->
+  <defs>
+    <clipPath id="cutTop"><polygon points="0,0 1080,0 1080,520 0,690"/></clipPath>
+    <clipPath id="cutBottom"><polygon points="0,780 1080,610 1080,1120 0,1120"/></clipPath>
+  </defs>
+  <rect x="0" y="0" width="1080" height="1350" fill="#f7f5f0"/>
+  <g clip-path="url(#cutTop)">
+    <image x="0" y="0" width="1080" height="690" xlink:href="@@PHOTO0@@" preserveAspectRatio="xMidYMid slice"/>
+  </g>
+  <g clip-path="url(#cutBottom)">
+    <image x="0" y="610" width="1080" height="510" xlink:href="@@PHOTO1@@" preserveAspectRatio="xMidYMid slice"/>
+  </g>
+</svg>

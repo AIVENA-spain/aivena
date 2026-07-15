@@ -96,6 +96,37 @@ export function deriveSlots(p: DeriveProperty, agency: DeriveAgency, templateId:
       cta_phone: T(agency.phone),
     };
   }
+  if (templateId === "31") {
+    // "La Entrada" (CC-authored 2-photo #2): dark botanical, centred ceremony — every line on the axis.
+    const specs = [
+      p.beds != null ? `${p.beds} BED` : null,
+      p.baths != null ? `${p.baths} BATH` : null,
+      p.size != null ? `${p.size} M²` : null,
+    ].filter(Boolean).join(" · ");
+    return {
+      brand: T(agency.name.toUpperCase()),
+      address: T([city, p.region].filter(Boolean).join(" · ").toUpperCase()),
+      title: T(`${typeCap} in ${city}`),
+      price_value: T(price ?? ""),
+      stat_line: T(specs),
+      cta_web: T([agency.web, agency.phone].filter(Boolean).join(" · ")),
+    };
+  }
+  if (templateId === "32") {
+    // "Riviera" (CC-authored 2-photo #3): poster — shouting title, medallion price, one facts line.
+    const specs = [
+      city.toUpperCase() || null,
+      p.beds != null ? `${p.beds} BED` : null,
+      p.baths != null ? `${p.baths} BATH` : null,
+      p.size != null ? `${p.size} M²` : null,
+    ].filter(Boolean).join(" · ");
+    return {
+      title: T(`${typeCap} in ${city}`.toUpperCase()),
+      price_value: T(price ?? ""),
+      stat_line: T(specs),
+      brand: T(agency.name),
+    };
+  }
   if (templateId === "11") return { brand: T(brand2), title: T(`${typeCap} in\n${city}`.toUpperCase()), address: T(loc) };
   if (templateId === "1") {
     // template style: spelled-out numbers, stacked 2-line caps ("TWO / BEDROOMS")

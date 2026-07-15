@@ -1,0 +1,180 @@
+{
+  "template_id": "36",
+  "canvas": {
+    "width": 1080,
+    "height": 1350
+  },
+  "source_svg": "assets/36/source.stripped.svg",
+  "photo_slots": [
+    {
+      "token": "@@PHOTO0@@"
+    }
+  ],
+  "photo_fit": "attention",
+  "no_knockouts": true,
+  "paint_background": true,
+  "colour_tokens": {
+    "background": {
+      "default": "#f4efe6",
+      "locked": false
+    },
+    "title": {
+      "default": "#2c2a26",
+      "locked": false
+    },
+    "subtitle/body": {
+      "default": "#8a8171",
+      "locked": false
+    },
+    "accent": {
+      "default": "#bf5b3d",
+      "locked": false
+    },
+    "stat.label": {
+      "default": "#8a8171",
+      "locked": false
+    },
+    "stat.value": {
+      "default": "#2c2a26",
+      "locked": false
+    },
+    "badge.fill": {
+      "default": "#ffffff",
+      "locked": true
+    },
+    "badge.text": {
+      "default": "#2c2a26",
+      "locked": false
+    },
+    "cta": {
+      "default": "#5c6b4e",
+      "locked": false
+    },
+    "divider": {
+      "default": "#bf5b3d",
+      "locked": false
+    },
+    "icon": {
+      "default": "#bf5b3d",
+      "locked": true
+    },
+    "overlay": {
+      "default": "#000000",
+      "locked": true
+    }
+  },
+  "plate_rects": [
+    {
+      "bbox": [
+        516,
+        1196,
+        564,
+        1199
+      ],
+      "fill_role": "divider"
+    }
+  ],
+  "text_slots": [
+    {
+      "id": "brand",
+      "role": "title",
+      "source": "template_copy",
+      "bbox": [
+        64,
+        46,
+        1016,
+        88
+      ],
+      "size": 22,
+      "line_height": 28,
+      "valign": "center",
+      "font": "Figtree",
+      "align": "center",
+      "tracking": 6,
+      "text": "MEDITERRÁNEO COSTA HOMES"
+    },
+    {
+      "id": "address",
+      "role": "accent",
+      "source": "property_fact",
+      "bbox": [
+        90,
+        930,
+        990,
+        958
+      ],
+      "size": 20,
+      "line_height": 24,
+      "font": "Figtree",
+      "align": "center",
+      "tracking": 7,
+      "text": "ALTEA · ALICANTE"
+    },
+    {
+      "id": "title",
+      "role": "title",
+      "source": "property_fact",
+      "bbox": [
+        90,
+        966,
+        990,
+        1058
+      ],
+      "size": 76,
+      "line_height": 84,
+      "font": "Prata",
+      "align": "center",
+      "text": "Villa in Altea"
+    },
+    {
+      "id": "price_value",
+      "role": "accent",
+      "source": "property_fact",
+      "bbox": [
+        90,
+        1072,
+        990,
+        1130
+      ],
+      "size": 50,
+      "line_height": 56,
+      "font": "Prata",
+      "align": "center",
+      "text": "€695,000"
+    },
+    {
+      "id": "stat_line",
+      "role": "stat.value",
+      "source": "property_fact",
+      "bbox": [
+        90,
+        1146,
+        990,
+        1176
+      ],
+      "size": 22,
+      "line_height": 26,
+      "font": "Figtree",
+      "align": "center",
+      "tracking": 4,
+      "text": "3 BED · 3 BATH · 214 M²"
+    },
+    {
+      "id": "cta_web",
+      "role": "subtitle/body",
+      "source": "template_copy",
+      "bbox": [
+        90,
+        1218,
+        990,
+        1246
+      ],
+      "size": 19,
+      "line_height": 23,
+      "font": "Figtree",
+      "align": "center",
+      "tracking": 2,
+      "text": "aivena.es · +34 600 999 066"
+    }
+  ]
+}

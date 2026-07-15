@@ -27,7 +27,8 @@ import {
 // CC-authored families (Christian-approved 2026-07-15): 30/31/32 = 2-photo (Collector's Card / La Entrada /
 // Riviera); 33/34/35 = 3-photo (Azulejos / Postal / Sol). #5, #14, #21, #22 RETIRED 2026-07-15 (Christian:
 // "not the biggest fan"), joining #3 (uneditable baked art) and #29.
-export const EDITABLE_TEMPLATE_IDS = ['1', '2', '6', '7', '8', '10', '11', '24', '25', '26', '27', '28', '30', '31', '32', '33', '34', '35'];
+// '36' = La Ventana (1-photo showcase, approved 2026-07-15 'i love that').
+export const EDITABLE_TEMPLATE_IDS = ['1', '2', '6', '7', '8', '10', '11', '24', '25', '26', '27', '28', '30', '31', '32', '33', '34', '35', '36'];
 
 // Pre-made colour SCHEMES (Christian 2026-07-13) — curated coordinated palettes the agency taps to apply to the
 // whole template, instead of fiddling per-layer. Each maps to the four brand slots agencyPalette consumes:

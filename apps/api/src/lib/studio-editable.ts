@@ -36,7 +36,8 @@ import {
 // '43' = Solera (professional 2-photo, approved 2026-07-15). Display numbers re-flow automatically.
 // '44' = Calma (light professional 2-photo, approved 2026-07-15).
 // '45' = Piedra (warm-stone professional 2-photo, approved 2026-07-15).
-export const EDITABLE_TEMPLATE_IDS = ['2', '6', '7', '8', '10', '24', '25', '26', '27', '28', '30', '31', '32', '33', '34', '35', '36', '37', '38', '40', '41', '43', '44', '45'];
+// '46' = Marina (coastal professional 2-photo, approved 2026-07-15).
+export const EDITABLE_TEMPLATE_IDS = ['2', '6', '7', '8', '10', '24', '25', '26', '27', '28', '30', '31', '32', '33', '34', '35', '36', '37', '38', '40', '41', '43', '44', '45', '46'];
 
 // Pre-made colour SCHEMES (Christian 2026-07-13) — curated coordinated palettes the agency taps to apply to the
 // whole template, instead of fiddling per-layer. Each maps to the four brand slots agencyPalette consumes:

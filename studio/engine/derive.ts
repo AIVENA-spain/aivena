@@ -137,6 +137,19 @@ export function deriveSlots(p: DeriveProperty, agency: DeriveAgency, templateId:
     ].filter(Boolean).join(" · ");
     const addr = [city, p.region].filter(Boolean).join(" · ").toUpperCase();
     const contact = [agency.web, agency.phone].filter(Boolean).join(" · ");
+    if (templateId === "46") {
+      // Marina: wide editorial rows — single-line title auto-fits; facts split left/right.
+      return {
+        brand: T(agency.name.toUpperCase()),
+        address: T(addr),
+        title: T(`${typeCap} in ${city}`),
+        price_value: T(price ?? ""),
+        stat_beds: T(p.beds != null ? `${p.beds} BED` : ""),
+        stat_baths: T(p.baths != null ? `${p.baths} BATH` : ""),
+        stat_area: T(p.size != null ? `${p.size} M²` : ""),
+        cta_web: T([agency.web, agency.phone].filter(Boolean).join(" · ")),
+      };
+    }
     if (templateId === "45") {
       // Piedra: narrow facts column + bronze price panel — balanced splits for both.
       return {

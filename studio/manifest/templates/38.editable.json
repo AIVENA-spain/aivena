@@ -1,0 +1,168 @@
+{
+  "template_id": "38",
+  "canvas": {
+    "width": 1080,
+    "height": 1350
+  },
+  "source_svg": "assets/38/source.stripped.svg",
+  "photo_slots": [
+    {
+      "token": "@@PHOTO0@@"
+    }
+  ],
+  "photo_fit": "attention",
+  "no_knockouts": true,
+  "paint_background": true,
+  "plate_rects": [],
+  "colour_tokens": {
+    "background": {
+      "default": "#f6edd8",
+      "locked": false
+    },
+    "title": {
+      "default": "#33302a",
+      "locked": false
+    },
+    "subtitle/body": {
+      "default": "#8d8471",
+      "locked": false
+    },
+    "accent": {
+      "default": "#c4643b",
+      "locked": false
+    },
+    "stat.label": {
+      "default": "#8d8471",
+      "locked": false
+    },
+    "stat.value": {
+      "default": "#33302a",
+      "locked": false
+    },
+    "badge.fill": {
+      "default": "#ffffff",
+      "locked": true
+    },
+    "badge.text": {
+      "default": "#33302a",
+      "locked": false
+    },
+    "cta": {
+      "default": "#2f6db3",
+      "locked": false
+    },
+    "divider": {
+      "default": "#c4643b",
+      "locked": false
+    },
+    "icon": {
+      "default": "#c4643b",
+      "locked": true
+    },
+    "overlay": {
+      "default": "#000000",
+      "locked": true
+    }
+  },
+  "text_slots": [
+    {
+      "id": "address",
+      "role": "cta",
+      "source": "property_fact",
+      "bbox": [
+        90,
+        926,
+        990,
+        954
+      ],
+      "size": 20,
+      "line_height": 24,
+      "font": "Jost",
+      "align": "center",
+      "text": "ALTEA · ALICANTE",
+      "tracking": 7
+    },
+    {
+      "id": "title",
+      "role": "title",
+      "source": "property_fact",
+      "bbox": [
+        90,
+        962,
+        990,
+        1050
+      ],
+      "size": 72,
+      "line_height": 80,
+      "font": "Fraunces 80pt",
+      "align": "center",
+      "text": "Villa in Altea"
+    },
+    {
+      "id": "type_script",
+      "role": "accent",
+      "source": "template_copy",
+      "bbox": [
+        90,
+        1058,
+        990,
+        1116
+      ],
+      "size": 46,
+      "line_height": 52,
+      "font": "Damion",
+      "align": "center",
+      "text": "vida junto al mar"
+    },
+    {
+      "id": "price_value",
+      "role": "accent",
+      "source": "property_fact",
+      "bbox": [
+        90,
+        1124,
+        990,
+        1180
+      ],
+      "size": 50,
+      "line_height": 56,
+      "font": "Fraunces 80pt",
+      "align": "center",
+      "text": "€695,000"
+    },
+    {
+      "id": "stat_line",
+      "role": "stat.value",
+      "source": "property_fact",
+      "bbox": [
+        90,
+        1192,
+        990,
+        1220
+      ],
+      "size": 20,
+      "line_height": 24,
+      "font": "Jost",
+      "align": "center",
+      "text": "3 BED · 3 BATH · 214 M²",
+      "tracking": 4
+    },
+    {
+      "id": "cta_web",
+      "role": "subtitle/body",
+      "source": "template_copy",
+      "bbox": [
+        340,
+        1234,
+        740,
+        1258
+      ],
+      "size": 17,
+      "line_height": 21,
+      "font": "Jost",
+      "align": "center",
+      "text": "aivena.es · +34 600 999 066",
+      "tracking": 1
+    }
+  ]
+}

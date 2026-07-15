@@ -127,7 +127,7 @@ export function deriveSlots(p: DeriveProperty, agency: DeriveAgency, templateId:
       brand: T(agency.name),
     };
   }
-  if (templateId === "33" || templateId === "34" || templateId === "35" || templateId === "36") {
+  if (["33", "34", "35", "36", "37", "38", "39"].includes(templateId)) {
     // The 3-photo family (CC-authored): Azulejos triptych / Postal stamps / Linea architect's sheet.
     // Shared fact language; per-template casing. Missing facts vanish — no orphaned lines.
     const specs = [
@@ -137,8 +137,8 @@ export function deriveSlots(p: DeriveProperty, agency: DeriveAgency, templateId:
     ].filter(Boolean).join(" · ");
     const addr = [city, p.region].filter(Boolean).join(" · ").toUpperCase();
     const contact = [agency.web, agency.phone].filter(Boolean).join(" · ");
-    if (templateId === "36") {
-      // La Ventana (1-photo): centred window ceremony — one specs line under the sill.
+    if (["36", "37", "38", "39"].includes(templateId)) {
+      // The 1-photo scene family (Ventana/Patio/Chiringuito/Mesa): centred ceremony, one specs line.
       return {
         brand: T(agency.name.toUpperCase()),
         address: T(addr),

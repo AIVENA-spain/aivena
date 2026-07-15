@@ -1,0 +1,116 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1080" height="1350" viewBox="0 0 1080 1350">
+  <!-- Template 37 "El Patio" — CC-authored 1-photo (2026-07-15), sibling of La Ventana.
+       THE IDEA: a Córdoba courtyard — cobalt double doors flung open onto the property, the famous
+       flower-pot wall on both sides, a lantern above, and the house cat asleep by the step.
+       Wall is engine-painted (recolourable). All text engine-drawn (no_knockouts). -->
+  <defs>
+    <clipPath id="puerta"><path d="M 280 320 Q 280 230 370 230 L 710 230 Q 800 230 800 320 L 800 910 L 280 910 Z"/></clipPath>
+    <pattern id="stucco37" width="72" height="72" patternUnits="userSpaceOnUse">
+      <circle cx="14" cy="22" r="1.3" fill="#2f2b26" fill-opacity="0.05"/>
+      <circle cx="52" cy="9" r="1.1" fill="#2f2b26" fill-opacity="0.04"/>
+      <circle cx="38" cy="48" r="1.4" fill="#2f2b26" fill-opacity="0.05"/>
+      <circle cx="8" cy="62" r="1.1" fill="#2f2b26" fill-opacity="0.04"/>
+    </pattern>
+  </defs>
+  <rect x="0" y="0" width="1080" height="1350" fill="url(#stucco37)"/>
+
+  <!-- swifts over the courtyard -->
+  <g stroke="#2f2b26" fill="none" stroke-linecap="round">
+    <path d="M 120 128 C 134 114 150 110 161 117 C 172 108 189 110 200 121" stroke-width="3.5"/>
+    <path d="M 161 117 L 166 134 M 161 117 L 154 133" stroke-width="2.6"/>
+    <path d="M 872 108 C 884 96 898 93 907 99 C 916 92 930 93 939 102" stroke-width="3"/>
+    <path d="M 907 99 L 911 113 M 907 99 L 901 112" stroke-width="2.4"/>
+  </g>
+
+  <!-- the lantern above the door -->
+  <g stroke="#2f2b26" fill="none" stroke-width="3">
+    <path d="M 540 96 L 540 120"/>
+    <path d="M 516 132 L 564 132 L 556 120 L 524 120 Z" fill="#2f2b26"/>
+    <path d="M 520 132 L 516 176 Q 540 190 564 176 L 560 132"/>
+    <path d="M 528 190 L 552 190" stroke-width="4"/>
+  </g>
+  <circle cx="540" cy="156" r="9" fill="#d99a3d"/>
+
+  <!-- stone surround + the view through the doorway -->
+  <path d="M 262 320 Q 262 212 370 212 L 710 212 Q 818 212 818 320 L 818 924 L 262 924 Z" fill="none" stroke="#d8d0bf" stroke-width="16"/>
+  <g clip-path="url(#puerta)">
+    <image x="280" y="230" width="520" height="680" xlink:href="@@PHOTO0@@" preserveAspectRatio="xMidYMid slice"/>
+  </g>
+  <path d="M 280 320 Q 280 230 370 230 L 710 230 Q 800 230 800 320 L 800 910 L 280 910 Z" fill="none" stroke="#2f2b26" stroke-width="6"/>
+
+  <!-- cobalt double doors, flung open against the wall -->
+  <g>
+    <rect x="132" y="252" width="126" height="662" rx="6" fill="#2b5aa7"/>
+    <rect x="146" y="272" width="98" height="220" rx="4" fill="none" stroke="#234a8c" stroke-width="5"/>
+    <rect x="146" y="512" width="98" height="220" rx="4" fill="none" stroke="#234a8c" stroke-width="5"/>
+    <rect x="146" y="752" width="98" height="140" rx="4" fill="none" stroke="#234a8c" stroke-width="5"/>
+    <circle cx="244" cy="580" r="7" fill="#d99a3d"/>
+  </g>
+  <g>
+    <rect x="822" y="252" width="126" height="662" rx="6" fill="#2b5aa7"/>
+    <rect x="836" y="272" width="98" height="220" rx="4" fill="none" stroke="#234a8c" stroke-width="5"/>
+    <rect x="836" y="512" width="98" height="220" rx="4" fill="none" stroke="#234a8c" stroke-width="5"/>
+    <rect x="836" y="752" width="98" height="140" rx="4" fill="none" stroke="#234a8c" stroke-width="5"/>
+    <circle cx="836" cy="580" r="7" fill="#d99a3d"/>
+  </g>
+
+  <!-- the famous flower-pot wall: cobalt pots, red geraniums, both sides -->
+  <g>
+    <g transform="translate(60,290)">
+      <path d="M 0 26 L 52 26 L 44 62 L 8 62 Z" fill="#2b5aa7"/>
+      <g fill="#c23b2e"><circle cx="12" cy="12" r="8"/><circle cx="28" cy="4" r="9"/><circle cx="42" cy="12" r="8"/><circle cx="26" cy="18" r="7"/></g>
+    </g>
+    <g transform="translate(38,470)">
+      <path d="M 0 26 L 52 26 L 44 62 L 8 62 Z" fill="#2b5aa7"/>
+      <g fill="#c23b2e"><circle cx="12" cy="12" r="8"/><circle cx="28" cy="4" r="9"/><circle cx="42" cy="12" r="8"/></g>
+    </g>
+    <g transform="translate(60,650)">
+      <path d="M 0 26 L 52 26 L 44 62 L 8 62 Z" fill="#2b5aa7"/>
+      <g fill="#c23b2e"><circle cx="12" cy="12" r="8"/><circle cx="28" cy="4" r="9"/><circle cx="42" cy="12" r="8"/><circle cx="26" cy="18" r="7"/></g>
+    </g>
+    <g transform="translate(968,290)">
+      <path d="M 0 26 L 52 26 L 44 62 L 8 62 Z" fill="#2b5aa7"/>
+      <g fill="#c23b2e"><circle cx="12" cy="12" r="8"/><circle cx="28" cy="4" r="9"/><circle cx="42" cy="12" r="8"/></g>
+    </g>
+    <g transform="translate(990,470)">
+      <path d="M 0 26 L 52 26 L 44 62 L 8 62 Z" fill="#2b5aa7"/>
+      <g fill="#c23b2e"><circle cx="12" cy="12" r="8"/><circle cx="28" cy="4" r="9"/><circle cx="42" cy="12" r="8"/><circle cx="26" cy="18" r="7"/></g>
+    </g>
+    <g transform="translate(968,650)">
+      <path d="M 0 26 L 52 26 L 44 62 L 8 62 Z" fill="#2b5aa7"/>
+      <g fill="#c23b2e"><circle cx="12" cy="12" r="8"/><circle cx="28" cy="4" r="9"/><circle cx="42" cy="12" r="8"/></g>
+    </g>
+  </g>
+
+  <!-- the step, the agave pot, and the cat asleep in the sun -->
+  <rect x="240" y="924" width="600" height="24" rx="4" fill="#d8d0bf"/>
+  <rect x="222" y="948" width="636" height="22" rx="4" fill="#c9c0ab"/>
+  <rect x="228" y="970" width="624" height="14" fill="#2f2b26" fill-opacity="0.07"/>
+  <g>
+    <ellipse cx="130" cy="1318" rx="82" ry="9" fill="#2f2b26" fill-opacity="0.07"/>
+    <path d="M 88 1246 L 172 1246 L 162 1312 L 98 1312 Z" fill="#bf5b3d"/>
+    <rect x="84" y="1234" width="92" height="14" rx="5" fill="#a94f34"/>
+    <g fill="#5c6b4e">
+      <path d="M 130 1234 C 122 1196 110 1176 88 1160 C 112 1164 126 1180 132 1198 C 134 1176 132 1158 124 1140 C 140 1152 146 1176 144 1200 C 152 1180 162 1166 178 1158 C 168 1178 158 1198 150 1220 C 146 1226 138 1232 130 1234 Z"/>
+    </g>
+  </g>
+  <g fill="#2f2b26" transform="translate(852,1244)">
+    <ellipse cx="60" cy="64" rx="66" ry="30"/>
+    <circle cx="112" cy="42" r="24"/>
+    <path d="M 96 24 L 102 6 L 112 22 Z"/><path d="M 122 22 L 132 6 L 136 24 Z"/>
+    <path d="M 0 64 C -12 50 -8 34 6 30 C 0 44 4 56 14 62 Z"/>
+  </g>
+  <ellipse cx="912" cy="1322" rx="90" ry="9" fill="#2f2b26" fill-opacity="0.07"/>
+
+  <!-- tiled skirt along the very bottom -->
+  <g>
+    <rect x="0" y="1336" width="1080" height="14" fill="#2b5aa7"/>
+    <g fill="#f7f3ea">
+      <path d="M 40 1336 L 54 1343 L 40 1350 L 26 1343 Z"/><path d="M 148 1336 L 162 1343 L 148 1350 L 134 1343 Z"/>
+      <path d="M 256 1336 L 270 1343 L 256 1350 L 242 1343 Z"/><path d="M 364 1336 L 378 1343 L 364 1350 L 350 1343 Z"/>
+      <path d="M 472 1336 L 486 1343 L 472 1350 L 458 1343 Z"/><path d="M 580 1336 L 594 1343 L 580 1350 L 566 1343 Z"/>
+      <path d="M 688 1336 L 702 1343 L 688 1350 L 674 1343 Z"/><path d="M 796 1336 L 810 1343 L 796 1350 L 782 1343 Z"/>
+      <path d="M 904 1336 L 918 1343 L 904 1350 L 890 1343 Z"/><path d="M 1012 1336 L 1026 1343 L 1012 1350 L 998 1343 Z"/>
+    </g>
+  </g>
+</svg>

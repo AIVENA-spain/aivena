@@ -1,0 +1,41 @@
+-- PRESERVED FOR SOURCE OF TRUTH — THIS SECURITY CHANGE IS ALREADY LIVE IN PRODUCTION.
+--
+-- RENAMED ON PURPOSE. On its source branch this file was named
+--   20260704190000_revoke_authenticated_execute_w4c_and_apply_interest.sql
+-- but that version is NOT in the live migration ledger. The version actually applied to production
+-- is 20260704185056 ('revoke_authenticated_execute_w4c_and_apply_interest'), so this file is
+-- committed under the LEDGER version. That is what keeps replay inert: a migration runner finds
+-- 20260704185056 already applied and SKIPS it. Under the old 20260704190000 name it would instead
+-- RE-RUN these REVOKEs — and on a fresh rebuild it would error outright, because the two functions
+-- would not exist yet at that point in the sequence.
+--
+-- WHY IT EXISTS HERE AT ALL: the SQL was applied out-of-band via apply_migration and its file was
+-- never committed. Branch packet2-security-revoke-authenticated (5444e26) held the ONLY git copy —
+-- and its ROLLBACK BLOCK (bottom) exists in NO other artifact: not on main, and not in the ledger,
+-- whose stored statements are the header + the two REVOKEs only. Deleting that branch would have
+-- destroyed the sole written record of how to undo a live security change.
+--
+-- SECURITY POSTURE IS ALREADY LIVE AND IS NOT ALTERED BY THIS COMMIT. Committing a file changes no
+-- grant. Despite the branch name, this is Packet-1/security lane work, not Packet 2.
+--
+-- Everything below is byte-exact from the source branch. The two REVOKE statements are identical to
+-- the ledger's applied statements; the rollback block and the header's "applied to prod" note were
+-- added to the file after the apply, so the file is a superset of what the ledger stored.
+
+-- Security (Packet-1 relay, applied to prod 2026-07-04): close a cross-tenant EXECUTE
+-- hole. w4c_get_lead_match_context(uuid) and apply_conversation_interest(uuid,text,text)
+-- are SECURITY DEFINER owned by a BYPASSRLS role and lack a caller-ownership check, and
+-- the Supabase user-JWT role `authenticated` held EXECUTE — so a signed-in user could
+-- call them directly via PostgREST /rpc/ and read/write another agency's data.
+--
+-- Verified: NO dashboard/API code calls either (0 repo references). Legitimate callers
+-- unaffected: apply_conversation_interest is driven by the trg_message_apply_interest
+-- trigger (runs as postgres, owner) + service_role (pipeline); w4c_get_lead_match_context
+-- by service_role (pipeline). Function LOGIC unchanged; service_role/postgres/aivena_app
+-- grants unchanged.
+REVOKE EXECUTE ON FUNCTION public.w4c_get_lead_match_context(uuid)              FROM authenticated;
+REVOKE EXECUTE ON FUNCTION public.apply_conversation_interest(uuid, text, text) FROM authenticated;
+
+-- Rollback (if ever needed):
+--   GRANT EXECUTE ON FUNCTION public.w4c_get_lead_match_context(uuid)              TO authenticated;
+--   GRANT EXECUTE ON FUNCTION public.apply_conversation_interest(uuid, text, text) TO authenticated;

@@ -124,7 +124,7 @@ RULES — these are hard:
 
   const direction = opts.brief ? `\n\nTHE AGENT'S DIRECTION (follow it): ${opts.brief}` : '';
   const revision = opts.priorSpec
-    ? `\n\nThis is a REVISION. Here is your previous design:\n${JSON.stringify(opts.priorSpec)}\n\nApply ONLY this change, keeping everything else as close as possible to the previous design: ${opts.editNote}`
+    ? `\n\nThis is a REVISION. Here is your previous design:\n${JSON.stringify(opts.priorSpec)}\n\nApply ONLY this change, keeping everything else as close as possible to the previous design — and the change MUST be clearly visible in the result: ${opts.editNote}. If the request concerns the CONTENT of a photograph (things inside the photo), you cannot repaint pixels — achieve the closest effect with layout instead (re-crop/zoom the photo, swap which photo is where, resize or restyle the surrounding elements).`
     : '';
   return base + direction + revision + '\n\nSubmit the design with the submit_design tool.';
 }
@@ -183,6 +183,7 @@ export async function critiqueDesign(opts: {
   canvas: { width: number; height: number };
   facts: Record<string, string>;
   brief: string | null;
+  editNote?: string;
 }): Promise<DesignSpec | null> {
   try {
     const sharp = (await import('sharp')).default;
@@ -273,7 +274,7 @@ export async function designRenderStore(opts: {
   let spec = enforceFacts(raw, opts.facts);
   let png = await renderFreeform(spec, opts.canvas, opts.photoBuffers);
 
-  const critiqued = await critiqueDesign({ renderedPng: png, spec, canvas: opts.canvas, facts: opts.facts, brief: opts.brief });
+  const critiqued = await critiqueDesign({ renderedPng: png, spec, canvas: opts.canvas, facts: opts.facts, brief: opts.brief, editNote: opts.editNote });
   if (critiqued) {
     const spec2 = enforceFacts(critiqued, opts.facts);
     try {

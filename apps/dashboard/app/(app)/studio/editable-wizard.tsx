@@ -52,6 +52,14 @@ const LANGS = [
 ];
 
 const money = (n: number | null) => (n == null ? "" : "€" + n.toLocaleString("es-ES"));
+
+// A few templates keep pieces of the ORIGINAL design as fixed artwork (fonts we can't licence-match or
+// baked glass panels). Being honest about it beats a tap that silently does nothing.
+const BAKED_ART_NOTE: Record<string, string> = {
+  "2": "The \u201Copen HOUSE\u201D lettering is part of this template's original artwork — it can't be edited or recoloured.",
+  "3": "The \u201CLUXURY\u201D lettering and the glass features panel are part of this template's original artwork — they can't be edited or recoloured.",
+  "10": "The big lettering and colours are this template's fixed identity — that's why colour options are limited here.",
+};
 // beds · baths · area — a missing fact is hidden, never invented (data-honesty law).
 const specsOf = (p: PropertyCard) =>
   [p.bedrooms != null ? `${p.bedrooms} bed` : null,
@@ -623,6 +631,33 @@ export function EditableWizard() {
                   )}
                 </div>
                 {err && <div className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">{err}</div>}
+
+                {/* colours live UNDER the template (Christian 2026-07-15) — tap a swatch to see what it
+                    changes flash on the image, or tap the thing itself above. */}
+                {!defaults.palette_locked && (
+                  <div className="mt-4">
+                    <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">Colours</div>
+                    <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                      {defaults.colour_layers.filter((cl) => cl.used).map((cl) => (
+                        <label key={cl.role} onPointerEnter={() => setHoverRole(cl.role)} onPointerLeave={() => setHoverRole(null)}
+                          className={`flex cursor-pointer flex-col items-center gap-1.5 rounded-xl border px-2 py-2.5 transition ${activeRole === cl.role ? "border-emerald-500 ring-1 ring-emerald-500" : "border-neutral-200 hover:border-neutral-400"}`}>
+                          <span className="relative h-7 w-full overflow-hidden rounded-lg border border-black/10" style={{ background: colours[cl.role] ?? cl.value }}>
+                            <input type="color" value={colours[cl.role] ?? cl.value}
+                              onChange={(e) => editColour(cl.role, e.target.value)}
+                              className="absolute inset-0 h-full w-full cursor-pointer opacity-0" />
+                          </span>
+                          <span className="max-w-full truncate text-[11px] font-medium text-neutral-600">{cl.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                    {BAKED_ART_NOTE[templateId ?? ""] && (
+                      <p className="mt-2 text-[11px] text-neutral-400">{BAKED_ART_NOTE[templateId ?? ""]}</p>
+                    )}
+                  </div>
+                )}
+                {defaults.palette_locked && (
+                  <p className="mt-3 text-[11px] text-neutral-400">This template keeps its own colours — they&apos;re part of its design.</p>
+                )}
               </div>
             </div>
 
@@ -657,27 +692,6 @@ export function EditableWizard() {
                 </div>
               </div>
 
-              {/* colour layers — a wheel per layer */}
-              <div>
-                <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">Colours {defaults.palette_locked && <span className="ml-1 font-normal normal-case text-neutral-400">(locked for this template)</span>}</div>
-                {!defaults.palette_locked && (
-                  <>
-                    <p className="mb-2 text-[11px] text-neutral-400">Or tap the thing itself on the image — text, a panel, the background.</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {/* only the layers this template actually renders — a swatch that does nothing is noise */}
-                      {defaults.colour_layers.filter((cl) => cl.used).map((cl) => (
-                        <label key={cl.role} onPointerEnter={() => setHoverRole(cl.role)} onPointerLeave={() => setHoverRole(null)}
-                          className={`flex items-center gap-2 rounded-lg border px-2.5 py-2 ${activeRole === cl.role ? "border-emerald-500 ring-1 ring-emerald-500" : "border-neutral-200"}`}>
-                          <input type="color" value={colours[cl.role] ?? cl.value}
-                            onChange={(e) => editColour(cl.role, e.target.value)}
-                            className="h-6 w-6 shrink-0 cursor-pointer rounded border-0 bg-transparent p-0" />
-                          <span className="truncate text-xs text-neutral-600">{cl.label}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
 
               {/* move / crop each photo inside its frame */}
               {photos.length > 0 && (

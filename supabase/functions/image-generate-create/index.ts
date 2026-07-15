@@ -1,4 +1,6 @@
-// image-generate-create — W13 image generation create path v0.6.7 (AIVENA Studio).
+// image-generate-create — W13 image generation create path v0.6.8 (AIVENA Studio).
+// v0.6.8 (2026-07-15): renovation model → bytedance/seedream-v4-edit (google/nano-banana-edit E005
+//   false-flagged a normal room photo live; same reliability move the enhance path made in v0.6.6).
 // v0.6.7 (2026-07-14): KIE output raised to 4K (Christian: "all kie should be done in 4k so its the best
 //   quality possible"). seedream-v4-edit's image_resolution accepts 1K|2K|4K per docs.kie.ai/market/seedream/
 //   seedream-v4-edit — it was hardcoded "2K". image_size stays omitted so the source aspect ratio is preserved.
@@ -48,7 +50,10 @@ const usableCatalogPhoto = (u: unknown): u is string => typeof u === "string" &&
 const MODEL_BY_TYPE: Record<string, string> = {
   ad_creative:  MODEL_T2I,
   social_post:  MODEL_T2I,
-  renovation:   MODEL_EDIT,
+  // v0.6.8 (2026-07-15): renovation moved off google/nano-banana-edit too — it E005-false-flagged a normal
+  // room photo live today (same non-determinism that moved the enhance path to seedream in v0.6.6). The
+  // MODEL_ENHANCE input branch (image_urls + 4K + ratio preserved) applies automatically.
+  renovation:   MODEL_ENHANCE,
 };
 const VALID_TYPES = ["ad_creative", "social_post", "renovation"];
 

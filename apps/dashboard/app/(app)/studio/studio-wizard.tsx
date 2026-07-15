@@ -500,7 +500,8 @@ export function StudioWizard({
           resultUrl={resultUrl}
           error={error}
           revisionsRemaining={revisionsRemaining}
-          allowRevise={!isRenovationResult}
+          allowRevise
+          beforeUrl={isRenovationResult ? (photos[0] ?? null) : null}
           onRevise={runRevise}
           onRetry={isReno ? runRenovation : runGenerate}
           onBack={() => setScreen(isReno ? "renovation" : mode === "smart" ? "property" : "finetune")}
@@ -1145,13 +1146,15 @@ function Picker({
 /* ── result + revise ─────────────────────────────────────────────────────── */
 
 function ResultStep({
-  status, resultUrl, error, revisionsRemaining, allowRevise, onRevise, onRetry, onBack,
+  status, resultUrl, error, revisionsRemaining, allowRevise, beforeUrl, onRevise, onRetry, onBack,
 }: {
   status: "idle" | "processing" | "completed" | "failed";
   resultUrl: string | null;
   error: string | null;
   revisionsRemaining: number;
   allowRevise: boolean;
+  /** renovation: the original room photo — shows the draggable before/after comparison */
+  beforeUrl?: string | null;
   onRevise: (note: string) => void;
   onRetry: () => void;
   onBack: () => void;
@@ -1162,8 +1165,12 @@ function ResultStep({
       <div className="relative w-full max-w-md overflow-hidden rounded-2xl border border-border bg-muted/40">
         {status === "completed" && resultUrl ? (
           <>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={resultUrl} alt="Generated image" className="w-full" />
+            {beforeUrl ? (
+              <BeforeAfter before={beforeUrl} after={resultUrl} />
+            ) : (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img src={resultUrl} alt="Generated image" className="w-full" />
+            )}
             <a href={resultUrl} target="_blank" rel="noopener noreferrer"
               className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-foreground/80 text-background backdrop-blur-sm hover:opacity-90" aria-label="Open full image">
               <Download className="h-4 w-4" aria-hidden />
@@ -1206,6 +1213,32 @@ function ResultStep({
           ) : null}
         </div>
       ) : null}
+    </div>
+  );
+}
+
+/* ── before / after compare (renovation) ─────────────────────────────────── */
+
+// Drag anywhere across the image to sweep between the original room and the redesign
+// (Christian: "ideally with a thing you can move back and forward to see the difference").
+function BeforeAfter({ before, after }: { before: string; after: string }) {
+  const [pos, setPos] = useState(50);
+  return (
+    <div className="relative select-none">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={after} alt="After" className="block w-full" draggable={false} />
+      <div className="absolute inset-0 overflow-hidden" style={{ clipPath: `inset(0 ${100 - pos}% 0 0)` }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={before} alt="Before" className="block h-full w-full object-cover" draggable={false} />
+      </div>
+      <div className="pointer-events-none absolute bottom-0 top-0 w-0.5 bg-white shadow-[0_0_6px_rgba(0,0,0,.5)]" style={{ left: `${pos}%` }} />
+      <div className="pointer-events-none absolute flex h-8 w-8 items-center justify-center rounded-full bg-white text-[13px] font-bold text-neutral-700 shadow-md"
+        style={{ left: `${pos}%`, top: "50%", transform: "translate(-50%,-50%)" }}>⇄</div>
+      <span className="pointer-events-none absolute left-2 top-2 rounded bg-black/55 px-1.5 py-0.5 text-[10px] font-semibold text-white">BEFORE</span>
+      <span className="pointer-events-none absolute right-2 top-2 rounded bg-black/55 px-1.5 py-0.5 text-[10px] font-semibold text-white">AFTER</span>
+      <input type="range" min={0} max={100} value={pos} onChange={(e) => setPos(Number(e.target.value))}
+        aria-label="Compare before and after"
+        className="absolute inset-0 h-full w-full cursor-ew-resize appearance-none bg-transparent opacity-0" />
     </div>
   );
 }

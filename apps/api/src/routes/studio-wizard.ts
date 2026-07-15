@@ -1217,6 +1217,7 @@ route.post('/smart-design/revise', async (c) => {
          SET status = 'processing',
              result_metadata = jsonb_set(COALESCE(result_metadata, '{}'::jsonb), '{revisions_started}',
                to_jsonb(COALESCE((result_metadata->>'revisions_started')::int, 0) + 1), true),
+             raw_request = jsonb_set(COALESCE(raw_request, '{}'::jsonb), '{last_edit_note}', to_jsonb(${editNote}::text), true),
              updated_at = now()
        WHERE id = ${genId}::uuid AND agency_id = ${agencyId}
          AND status = 'completed'

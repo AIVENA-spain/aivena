@@ -236,16 +236,16 @@ export function SmartStudio() {
             </div>
 
             <div className="space-y-2 rounded-xl border border-neutral-200 p-3">
-              <label className="block text-xs font-semibold uppercase tracking-wide text-neutral-500">Save to a section</label>
+              <label className="block text-xs font-semibold uppercase tracking-wide text-neutral-500">File it in a section</label>
               <input list="smart-sections" value={section} onChange={(e) => { setSection(e.target.value); setSaved(false); }}
                 placeholder="e.g. Just listed (optional)"
                 className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-900" />
               <datalist id="smart-sections">{sections.map((s) => <option key={s} value={s} />)}</datalist>
               <button onClick={() => void save()}
                 className={`flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-white ${saved ? "bg-emerald-600" : "bg-neutral-900"}`}>
-                {saved ? <Check className="h-4 w-4" /> : <Save className="h-4 w-4" />}{saved ? "Saved to library" : "Save to library"}
+                {saved ? <Check className="h-4 w-4" /> : <Save className="h-4 w-4" />}{saved ? "Filed ✓" : "File in section"}
               </button>
-              <p className="text-[11px] text-neutral-400">It&apos;s already in your library — this just files it.</p>
+              <p className="text-[11px] text-neutral-400">Your post is saved to the library automatically — this only chooses which section it lives in.</p>
             </div>
 
             <button type="button" disabled={!image}

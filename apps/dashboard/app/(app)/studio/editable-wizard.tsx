@@ -14,6 +14,10 @@ import {
   translateSlotsAction,
   editableFinishAction,
   statusAction,
+  previewAction,
+  generateAction,
+  reviseAction,
+  setSectionAction,
   type FinishJob,
 } from "./wizard-actions";
 import { PropertyPicker, downloadImage, type PickerProperty } from "./property-picker";
@@ -66,6 +70,16 @@ const specsOf = (p: PropertyCard) =>
    p.bathrooms != null ? `${p.bathrooms} bath` : null,
    p.area != null ? `${p.area} m²` : null].filter(Boolean).join(" · ");
 
+// The best 4 of the old engine's finished designs, kept by Christian's ask (the rest are retired).
+// These are AI-FINISHED: the photo goes through the enhance pass and the design is composed on top —
+// one credit, ~a minute, 2 free changes after.
+const CLASSICS: { key: string; name: string; desc: string }[] = [
+  { key: "magazine", name: "Magazine", desc: "Cover-style, big masthead" },
+  { key: "editorial", name: "Editorial", desc: "Clean serif, understated" },
+  { key: "price_hero", name: "Price hero", desc: "Leads with the price" },
+  { key: "statement", name: "Statement", desc: "Bold type poster" },
+];
+
 // tiny concurrency limiter so a fresh gallery doesn't fire 17 heavy renders at once.
 async function runLimited<T>(items: T[], n: number, fn: (t: T, i: number) => Promise<void>) {
   let idx = 0;
@@ -76,7 +90,7 @@ async function runLimited<T>(items: T[], n: number, fn: (t: T, i: number) => Pro
 }
 
 export function EditableWizard() {
-  const [step, setStep] = useState<"gallery" | "property" | "template" | "edit">("gallery");
+  const [step, setStep] = useState<"gallery" | "property" | "template" | "edit" | "classic">("gallery");
   const [editFrom, setEditFrom] = useState<"gallery" | "template">("gallery");
 
   // gallery step
@@ -88,6 +102,19 @@ export function EditableWizard() {
   // chosen
   const [property, setProperty] = useState<PropertyCard | null>(null);
   const [photos, setPhotos] = useState<string[]>([]);
+
+  // classic designs (the old engine's finished looks — enhance + composed overlay)
+  const [classicThumbs, setClassicThumbs] = useState<Record<string, string | null | undefined>>({});
+  const [classicKey, setClassicKey] = useState<string | null>(null);
+  const [classicGenId, setClassicGenId] = useState<string | null>(null);
+  const [classicImage, setClassicImage] = useState<string | null>(null);
+  const [classicBusy, setClassicBusy] = useState<string | null>(null);
+  const [classicRevLeft, setClassicRevLeft] = useState(2);
+  const [classicNote, setClassicNote] = useState("");
+  const [classicSection, setClassicSection] = useState("");
+  const [classicFiled, setClassicFiled] = useState(false);
+  const classicPoll = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (classicPoll.current) clearTimeout(classicPoll.current); }, []);
 
   // template step
   const [catalogue, setCatalogue] = useState<TemplateMeta[]>([]);
@@ -184,6 +211,70 @@ export function EditableWizard() {
       const res = await editablePreviewAction({ template_id: t.id, property_id: p.id, photos: chosen });
       setThumbs((prev) => ({ ...prev, [t.id]: res.ok ? (res.image_url as string) : null }));
     });
+    // classic previews (free, instant-ish): the design composed over the chosen hero photo
+    setClassicThumbs(Object.fromEntries(CLASSICS.map((c) => [c.key, undefined])));
+    CLASSICS.forEach(async (cd) => {
+      const res = await previewAction({
+        generation_type: "social_post", content_type: "listing", composition: cd.key,
+        source_property_id: p.id, image_urls: [chosen[0]],
+      });
+      setClassicThumbs((prev) => ({ ...prev, [cd.key]: res.ok && res.signed_url ? (res.signed_url as string) : null }));
+    });
+  }
+
+  // ── classic: generate the finished version (enhance pass + composed design) ──
+  function watchClassic(id: string) {
+    const started = Date.now();
+    const tick = async () => {
+      const st = await statusAction(id);
+      const status = st.ok ? (st.status as string) : null;
+      if (status === "completed") {
+        setClassicImage((st.image_url as string) ?? null);
+        if (typeof st.revisions_remaining === "number") setClassicRevLeft(st.revisions_remaining as number);
+        setClassicBusy(null); return;
+      }
+      if (status === "failed") {
+        setErr((st.message as string) ?? "That design couldn't be finished. Please try again.");
+        setClassicBusy(null); return;
+      }
+      if (Date.now() - started > 5 * 60 * 1000) {
+        setErr("This is taking longer than expected — check your library in a minute.");
+        setClassicBusy(null); return;
+      }
+      classicPoll.current = setTimeout(tick, 4000);
+    };
+    classicPoll.current = setTimeout(tick, 3000);
+  }
+  async function pickClassic(key: string) {
+    if (!property) return;
+    setClassicKey(key); setStep("classic"); setErr(null);
+    setClassicImage(null); setClassicGenId(null); setClassicRevLeft(2);
+    setClassicNote(""); setClassicSection(""); setClassicFiled(false);
+    setClassicBusy("Polishing the photo and composing your design — about a minute…");
+    const res = await generateAction({
+      generation_type: "social_post", content_type: "listing", composition: key,
+      source_property_id: property.id, image_urls: [photos[0]],
+    });
+    if (!res.ok || !res.generation_id) {
+      setErr((res.message as string) ?? "Couldn't start that design. Please try again.");
+      setClassicBusy(null); return;
+    }
+    setClassicGenId(res.generation_id as string);
+    watchClassic(res.generation_id as string);
+  }
+  async function reviseClassic() {
+    if (!classicGenId || !classicNote.trim()) return;
+    setErr(null); setClassicBusy("Applying your change…");
+    const res = await reviseAction(classicGenId, classicNote.trim());
+    if (!res.ok) { setErr((res.message as string) ?? "Couldn't apply that change."); setClassicBusy(null); return; }
+    setClassicNote("");
+    watchClassic(classicGenId);
+  }
+  async function fileClassic() {
+    if (!classicGenId) return;
+    const r = await setSectionAction(classicGenId, classicSection.trim() || null);
+    if (r.ok) { setClassicFiled(true); const sec = classicSection.trim(); if (sec && !sections.includes(sec)) setSections((prev) => [...prev, sec].sort()); }
+    else setErr(r.message as string);
   }
 
   const eligibleTemplates = useMemo(
@@ -525,6 +616,86 @@ export function EditableWizard() {
                 <div className="p-2 text-center text-xs font-medium text-neutral-600">Template {t.id}</div>
               </button>
             ))}
+          </div>
+
+          {/* the best 4 of the old engine's finished designs (Christian kept these) */}
+          <div className="mt-8">
+            <div className="mb-1 text-sm font-semibold text-neutral-900">Classic designs</div>
+            <p className="mb-3 text-xs text-neutral-500">
+              AI-finished looks — your photo gets polished and the design composed on top. Uses a credit · 2 free changes after.
+            </p>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              {CLASSICS.map((cd) => (
+                <button key={cd.key} onClick={() => void pickClassic(cd.key)}
+                  className="group overflow-hidden rounded-xl border border-neutral-200 bg-white text-left transition hover:-translate-y-0.5 hover:border-neutral-900 hover:shadow-md">
+                  <div className="aspect-[4/5] bg-neutral-100">
+                    {classicThumbs[cd.key] === undefined ? (
+                      <div className="flex h-full items-center justify-center text-neutral-300"><Loader2 className="h-5 w-5 animate-spin" /></div>
+                    ) : classicThumbs[cd.key] ? (
+                      <img src={classicThumbs[cd.key]!} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                    ) : (
+                      <div className="flex h-full items-center justify-center px-3 text-center text-xs text-neutral-400">preview unavailable</div>
+                    )}
+                  </div>
+                  <div className="p-2">
+                    <div className="text-xs font-semibold text-neutral-800">{cd.name}</div>
+                    <div className="text-[11px] text-neutral-400">{cd.desc}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── CLASSIC RESULT: generated look with 2 free changes ─────────────────── */}
+      {step === "classic" && (
+        <div>
+          <button onClick={() => { if (classicPoll.current) clearTimeout(classicPoll.current); setStep("template"); }}
+            className="mb-4 flex items-center gap-1.5 text-sm text-neutral-500 hover:text-neutral-900"><ArrowLeft className="h-4 w-4" /> Templates</button>
+          <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
+            <div className="overflow-hidden rounded-xl border border-neutral-200 bg-neutral-50">
+              {classicImage ? (
+                <img src={classicImage} alt="Your design" className="w-full" referrerPolicy="no-referrer" />
+              ) : (
+                <div className="flex aspect-[4/5] flex-col items-center justify-center gap-3 text-neutral-400">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                  <p className="px-6 text-center text-sm">{classicBusy ?? "Working…"}</p>
+                </div>
+              )}
+            </div>
+            <div className="space-y-4">
+              <div className="rounded-xl border border-neutral-200 p-3">
+                <label className="block text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                  Change something ({classicRevLeft} free change{classicRevLeft === 1 ? "" : "s"} left)
+                </label>
+                <textarea rows={2} value={classicNote} onChange={(e) => setClassicNote(e.target.value)} maxLength={1000}
+                  disabled={!classicImage || classicRevLeft <= 0 || !!classicBusy}
+                  placeholder="e.g. warmer evening light, remove the car"
+                  className="mt-2 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-900 disabled:opacity-50" />
+                <button onClick={() => void reviseClassic()} disabled={!classicImage || classicRevLeft <= 0 || !classicNote.trim() || !!classicBusy}
+                  className="mt-2 w-full rounded-lg border border-neutral-900 px-4 py-2 text-sm font-medium text-neutral-900 disabled:border-neutral-200 disabled:text-neutral-400">
+                  Apply change
+                </button>
+              </div>
+              <div className="space-y-2 rounded-xl border border-neutral-200 p-3">
+                <label className="block text-xs font-semibold uppercase tracking-wide text-neutral-500">File it in a section</label>
+                <input list="studio-sections" value={classicSection} onChange={(e) => { setClassicSection(e.target.value); setClassicFiled(false); }}
+                  placeholder="e.g. Just listed (optional)"
+                  className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-900" />
+                <button onClick={() => void fileClassic()} disabled={!classicImage}
+                  className={`flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-white ${classicFiled ? "bg-emerald-600" : "bg-neutral-900"} disabled:opacity-40`}>
+                  {classicFiled ? <Check className="h-4 w-4" /> : <Save className="h-4 w-4" />}{classicFiled ? "Filed ✓" : "File in section"}
+                </button>
+                <p className="text-[11px] text-neutral-400">Saved to your library automatically — this only chooses where it lives.</p>
+              </div>
+              <button type="button" disabled={!classicImage}
+                onClick={() => classicImage && void downloadImage(classicImage, `${property?.title || "post"}-${classicKey}.png`)}
+                className={`flex w-full items-center justify-center gap-2 rounded-lg border border-neutral-300 px-4 py-2.5 text-sm font-medium text-neutral-700 ${classicImage ? "hover:bg-neutral-50" : "opacity-40"}`}>
+                <Download className="h-4 w-4" /> Download image
+              </button>
+              {err && <div className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">{err}</div>}
+            </div>
           </div>
         </div>
       )}

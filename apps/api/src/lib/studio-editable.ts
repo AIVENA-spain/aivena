@@ -22,7 +22,9 @@ import {
 // source). #4 uses the bespoke composeOne engine and is NOT in this set yet (follow-up); this serves the 17
 // renderEditable templates.
 
-export const EDITABLE_TEMPLATE_IDS = ['1', '2', '3', '5', '6', '7', '8', '10', '11', '14', '21', '22', '24', '25', '26', '27', '28'];
+// #3 REMOVED 2026-07-15 (Christian): its "LUXURY" lettering + glass features panel are baked artwork that
+// can't be edited — rather than ship a template that ignores taps, it's out. #29 was removed earlier.
+export const EDITABLE_TEMPLATE_IDS = ['1', '2', '5', '6', '7', '8', '10', '11', '14', '21', '22', '24', '25', '26', '27', '28'];
 
 // Pre-made colour SCHEMES (Christian 2026-07-13) — curated coordinated palettes the agency taps to apply to the
 // whole template, instead of fiddling per-layer. Each maps to the four brand slots agencyPalette consumes:

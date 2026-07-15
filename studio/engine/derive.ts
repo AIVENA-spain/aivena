@@ -127,7 +127,7 @@ export function deriveSlots(p: DeriveProperty, agency: DeriveAgency, templateId:
       brand: T(agency.name),
     };
   }
-  if (["33", "34", "35", "36", "37", "38", "39", "40", "41", "42"].includes(templateId)) {
+  if (["33", "34", "35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45"].includes(templateId)) {
     // The 3-photo family (CC-authored): Azulejos triptych / Postal stamps / Linea architect's sheet.
     // Shared fact language; per-template casing. Missing facts vanish — no orphaned lines.
     const specs = [
@@ -137,6 +137,20 @@ export function deriveSlots(p: DeriveProperty, agency: DeriveAgency, templateId:
     ].filter(Boolean).join(" · ");
     const addr = [city, p.region].filter(Boolean).join(" · ").toUpperCase();
     const contact = [agency.web, agency.phone].filter(Boolean).join(" · ");
+    if (templateId === "43") {
+      // Solera: narrow facts panel — the title breaks into balanced lines for the column.
+      return {
+        brand: T(agency.name.toUpperCase()),
+        brand2: T(agency.name.toUpperCase()),
+        address: T(addr),
+        title: T(bestTitleSplit(`${typeCap} in ${city}`, "Libre Caslon Display", "400", 444, 54, 2)),
+        price_value: T(price ?? ""),
+        stat_beds: T(p.beds != null ? `${p.beds} BED` : ""),
+        stat_baths: T(p.baths != null ? `${p.baths} BATH` : ""),
+        stat_area: T(p.size != null ? `${p.size} M²` : ""),
+        cta_web: T(contact),
+      };
+    }
     if (["36", "37", "38", "39"].includes(templateId)) {
       // The 1-photo scene family (Ventana/Patio/Chiringuito/Mesa): centred ceremony, one specs line.
       return {

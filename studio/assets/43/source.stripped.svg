@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1080" height="1350" viewBox="0 0 1080 1350">
+  <!-- Template 43 "Solera" - CC-authored 2-photo (2026-07-15). Professional magazine architecture:
+       full-bleed hero, interior + facts panel splitting the lower half, gold keylines, no dead zones.
+       Panel/band colour = engine background (recolourable); all art colours are live @@COLOUR@@ tokens. -->
+
+  <!-- hero: full bleed under the masthead band -->
+  <image x="0" y="76" width="1080" height="684" xlink:href="@@PHOTO0@@" preserveAspectRatio="xMidYMid slice"/>
+  <rect x="16" y="92" width="1048" height="652" fill="none" stroke="@@COLOUR:accent@@" stroke-width="1.5"/>
+
+  <!-- lower left: the interior, full bleed to the bottom edge -->
+  <image x="0" y="760" width="540" height="590" xlink:href="@@PHOTO1@@" preserveAspectRatio="xMidYMid slice"/>
+  <rect x="16" y="776" width="508" height="558" fill="none" stroke="@@COLOUR:accent@@" stroke-width="1.5"/>
+
+  <!-- masthead ornament: a centered gold diamond pair flanking the brand -->
+  <path d="M 96 38 l 7 7 l -7 7 l -7 -7 Z" fill="@@COLOUR:accent@@"/>
+  <path d="M 984 38 l 7 7 l -7 7 l -7 -7 Z" fill="@@COLOUR:accent@@"/>
+
+  <!-- facts panel rules -->
+  <rect x="588" y="990" width="72" height="3" fill="@@COLOUR:accent@@"/>
+  <rect x="588" y="1226" width="444" height="1.5" fill="@@COLOUR:accent@@" fill-opacity="0.55"/>
+
+  <!-- per-fact line icons: three columns in the panel -->
+  <g stroke="@@COLOUR:icon@@" stroke-width="2.5" fill="none">
+    <path d="M588 1046 L588 1022 L632 1022"/>
+    <path d="M582 1050 L638 1050 L638 1038 A8 8 0 0 0 630 1030 L600 1030"/>
+    <path d="M584 1050 L584 1058 M636 1050 L636 1058"/>
+    <circle cx="593" cy="1027" r="4"/>
+  </g>
+  <g stroke="@@COLOUR:icon@@" stroke-width="2.5" fill="none">
+    <path d="M746 1036 L790 1036 A4 4 0 0 1 794 1040 A16 16 0 0 1 778 1054 L758 1054 A16 16 0 0 1 742 1040 A4 4 0 0 1 746 1036 Z"/>
+    <path d="M750 1036 L750 1022 A7 7 0 0 1 764 1022"/>
+    <path d="M754 1054 L752 1060 M782 1054 L784 1060"/>
+  </g>
+  <g stroke="@@COLOUR:icon@@" stroke-width="2.5" fill="none">
+    <rect x="904" y="1022" width="40" height="36" stroke-dasharray="6 4"/>
+    <path d="M912 1050 L936 1030 M912 1038 L912 1050 L924 1050 M936 1042 L936 1030 L924 1030"/>
+  </g>
+</svg>

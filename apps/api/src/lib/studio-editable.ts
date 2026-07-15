@@ -33,7 +33,8 @@ import {
 // #1 and #11 RETIRED 2026-07-15 (Christian) → the catalogue is exactly 21 templates.
 // INTERNAL ids are stable (files/derive keep them); the USER sees display numbers 1..21 assigned by
 // editableCatalogue() in photo-count order — renaming files would be churn with zero user value.
-export const EDITABLE_TEMPLATE_IDS = ['2', '6', '7', '8', '10', '24', '25', '26', '27', '28', '30', '31', '32', '33', '34', '35', '36', '37', '38', '40', '41'];
+// '43' = Solera (professional 2-photo, approved 2026-07-15). Display numbers re-flow automatically.
+export const EDITABLE_TEMPLATE_IDS = ['2', '6', '7', '8', '10', '24', '25', '26', '27', '28', '30', '31', '32', '33', '34', '35', '36', '37', '38', '40', '41', '43'];
 
 // Pre-made colour SCHEMES (Christian 2026-07-13) — curated coordinated palettes the agency taps to apply to the
 // whole template, instead of fiddling per-layer. Each maps to the four brand slots agencyPalette consumes:
@@ -122,11 +123,19 @@ function colourRegions(m: any): { role: string; bbox: number[] }[] {
   return out;
 }
 /** The colour roles this template actually renders — so the editor never shows a swatch that does nothing. */
+function sourceArtRoles(m: any): string[] {
+  // roles the SOURCE ART references via @@COLOUR:role@@ (live-recolourable drawings/patterns)
+  try {
+    const raw = fs.readFileSync(`${STUDIO_ROOT}/${m.source_svg}`, 'utf8');
+    return [...raw.matchAll(/@@COLOUR:([a-zA-Z._/-]+)@@/g)].map((x) => x[1]);
+  } catch { return []; }
+}
 function usedRoles(m: any): Set<string> {
   // 'background' is only a REAL control on paint_background templates (the engine paints the page from the
   // palette). On the replicated Canva templates the ground is baked into the source raster — a Background
   // swatch there is a dead control (Christian hit exactly that), so it must not be offered.
   const s = new Set<string>(m.paint_background ? ['background'] : []);
+  for (const r of sourceArtRoles(m)) s.add(r);
   for (const t of m.text_slots ?? []) {
     if (t.role) s.add(t.role);
     if (t.pill?.role) s.add(t.pill.role);

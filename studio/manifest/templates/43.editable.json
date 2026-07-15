@@ -1,0 +1,255 @@
+{
+  "template_id": "43",
+  "canvas": {
+    "width": 1080,
+    "height": 1350
+  },
+  "source_svg": "assets/43/source.stripped.svg",
+  "photo_slots": [
+    {
+      "token": "@@PHOTO0@@"
+    },
+    {
+      "token": "@@PHOTO1@@"
+    }
+  ],
+  "photo_fit": "attention",
+  "no_knockouts": true,
+  "paint_background": true,
+  "colour_tokens": {
+    "background": {
+      "default": "#16202e",
+      "locked": false
+    },
+    "title": {
+      "default": "#f0ebe0",
+      "locked": false
+    },
+    "subtitle/body": {
+      "default": "#93a0b3",
+      "locked": false
+    },
+    "accent": {
+      "default": "#c8a24b",
+      "locked": false
+    },
+    "stat.label": {
+      "default": "#93a0b3",
+      "locked": false
+    },
+    "stat.value": {
+      "default": "#f0ebe0",
+      "locked": false
+    },
+    "badge.fill": {
+      "default": "#ffffff",
+      "locked": true
+    },
+    "badge.text": {
+      "default": "#f0ebe0",
+      "locked": false
+    },
+    "cta": {
+      "default": "#c8a24b",
+      "locked": false
+    },
+    "divider": {
+      "default": "#c8a24b",
+      "locked": false
+    },
+    "icon": {
+      "default": "#f0ebe0",
+      "locked": false
+    },
+    "overlay": {
+      "default": "#000000",
+      "locked": true
+    }
+  },
+  "plate_rects": [],
+  "text_slots": [
+    {
+      "id": "brand",
+      "role": "title",
+      "source": "template_copy",
+      "bbox": [
+        64,
+        20,
+        1016,
+        60
+      ],
+      "size": 21,
+      "line_height": 26,
+      "font": "Jost",
+      "align": "center",
+      "text": "MEDITERRÁNEO COSTA HOMES",
+      "tracking": 7,
+      "valign": "center"
+    },
+    {
+      "id": "address",
+      "role": "accent",
+      "source": "property_fact",
+      "bbox": [
+        588,
+        806,
+        1032,
+        834
+      ],
+      "size": 19,
+      "line_height": 23,
+      "font": "Jost",
+      "align": "left",
+      "text": "ALTEA · ALICANTE",
+      "tracking": 6
+    },
+    {
+      "id": "title",
+      "role": "title",
+      "source": "property_fact",
+      "bbox": [
+        588,
+        848,
+        1032,
+        968
+      ],
+      "size": 54,
+      "line_height": 62,
+      "font": "Libre Caslon Display",
+      "align": "left",
+      "text": "Villa in\\nAltea"
+    },
+    {
+      "id": "stat_beds",
+      "role": "stat.value",
+      "source": "property_fact",
+      "bbox": [
+        588,
+        1070,
+        700,
+        1096
+      ],
+      "size": 19,
+      "line_height": 23,
+      "font": "Jost",
+      "align": "left",
+      "text": "3 BED",
+      "tracking": 2,
+      "companion_art": [
+        {
+          "bbox": [
+            582,
+            1016,
+            644,
+            1062
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stat_baths",
+      "role": "stat.value",
+      "source": "property_fact",
+      "bbox": [
+        740,
+        1070,
+        852,
+        1096
+      ],
+      "size": 19,
+      "line_height": 23,
+      "font": "Jost",
+      "align": "left",
+      "text": "3 BATH",
+      "tracking": 2,
+      "companion_art": [
+        {
+          "bbox": [
+            740,
+            1016,
+            800,
+            1062
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stat_area",
+      "role": "stat.value",
+      "source": "property_fact",
+      "bbox": [
+        900,
+        1070,
+        1032,
+        1096
+      ],
+      "size": 19,
+      "line_height": 23,
+      "font": "Jost",
+      "align": "left",
+      "text": "214 M²",
+      "tracking": 2,
+      "companion_art": [
+        {
+          "bbox": [
+            900,
+            1016,
+            950,
+            1062
+          ]
+        }
+      ]
+    },
+    {
+      "id": "price_value",
+      "role": "accent",
+      "source": "property_fact",
+      "bbox": [
+        588,
+        1122,
+        1032,
+        1198
+      ],
+      "size": 60,
+      "line_height": 66,
+      "font": "Libre Caslon Display",
+      "align": "left",
+      "text": "€695,000"
+    },
+    {
+      "id": "cta_web",
+      "role": "subtitle/body",
+      "source": "template_copy",
+      "bbox": [
+        588,
+        1248,
+        1032,
+        1274
+      ],
+      "size": 17,
+      "line_height": 21,
+      "font": "Jost",
+      "align": "left",
+      "text": "aivena.es · +34 600 999 066",
+      "tracking": 1
+    },
+    {
+      "id": "brand2",
+      "role": "title",
+      "source": "template_copy",
+      "bbox": [
+        588,
+        1284,
+        1032,
+        1310
+      ],
+      "size": 18,
+      "line_height": 22,
+      "font": "Jost",
+      "align": "left",
+      "text": "MEDITERRÁNEO COSTA HOMES",
+      "weight": "500",
+      "tracking": 3
+    }
+  ]
+}

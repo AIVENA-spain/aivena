@@ -311,7 +311,13 @@ export type EditOverrides = {
 };
 export async function renderEditable(m: EditableManifest, palette: Palette = {}, photos: string | Record<string, string> = GREY, edits: EditOverrides = {}): Promise<{ svg: string; png: Buffer; editableTextCount: number; photosFilled: number; layout: SlotLayout[]; width: number; height: number }> {
   const [W, H] = [m.canvas.width, m.canvas.height];
-  const src = forceAspectOnPhotoSlots(fs.readFileSync(abs(m.source_svg), "utf8"), m.photo_fit ?? "slice");
+  // LIVE ART COLOURS (Christian 2026-07-15: "every color used should be editable"): a source SVG may
+  // reference palette roles as @@COLOUR:role@@ in any attribute — substituted here from the SAME palette
+  // that drives text, so baked patterns/lines/drawings recolour with the brand, schemes and manual picks.
+  const src = forceAspectOnPhotoSlots(
+    fs.readFileSync(abs(m.source_svg), "utf8")
+      .replace(/@@COLOUR:([a-zA-Z._/-]+)@@/g, (_, role) => roleHex(m, palette, role)),
+    m.photo_fit ?? "slice");
   // background raster = source SVG with EACH photo token filled (hero + thumbnails), then an optional
   // legibility scrim baked in, so the knockout samples the FINAL backdrop tone.
   const tokens = m.photo_slots?.map((p) => p.token) ?? (m.photo_token ? [m.photo_token] : []);

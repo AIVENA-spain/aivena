@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1080" height="1350" viewBox="0 0 1080 1350">
+  <!-- Template 40 "Brisa" - CC-authored 1-photo (2026-07-15). Modern editorial: the photo big and
+       bleeding off the right edge; a concentric line sun rising behind its corner; sea lines crossing
+       ONTO the photo; a vertical type rail; asymmetric facts (icons left, price huge right); corner
+       geometry so no zone is dead. Ground engine-painted (recolourable). All text engine-drawn. -->
+
+  <!-- the line sun, rising behind the photo's top-left corner -->
+  <circle cx="150" cy="170" r="46" fill="none" stroke="#26241f" stroke-width="2"/><circle cx="150" cy="170" r="78" fill="none" stroke="#26241f" stroke-width="2"/><circle cx="150" cy="170" r="110" fill="none" stroke="#26241f" stroke-width="2"/><circle cx="150" cy="170" r="142" fill="none" stroke="#26241f" stroke-width="2"/><circle cx="150" cy="170" r="174" fill="none" stroke="#26241f" stroke-width="2"/><circle cx="150" cy="170" r="206" fill="none" stroke="#26241f" stroke-width="2"/>
+  <circle cx="150" cy="170" r="18" fill="#c25b3b"/>
+
+  <!-- the photo: big, whole, bleeding off the right edge -->
+  <image x="150" y="110" width="930" height="730" xlink:href="@@PHOTO0@@" preserveAspectRatio="xMidYMid slice"/>
+  <rect x="150" y="110" width="930" height="730" fill="none" stroke="#26241f" stroke-width="4"/>
+
+  <!-- sea lines: they start on the wall and run onto the photo -->
+  <g fill="none" stroke-linecap="round">
+    <path d="M 60 792 Q 130 772 200 792 T 340 792 T 480 792 T 620 792" stroke="#26241f" stroke-width="4"/>
+    <path d="M 60 826 Q 130 806 200 826 T 340 826 T 480 826 T 620 826" stroke="#c25b3b" stroke-width="4"/>
+    <path d="M 60 860 Q 130 840 200 860 T 340 860" stroke="#26241f" stroke-width="3"/>
+  </g>
+
+  <!-- the swash behind the title's first words -->
+  <rect x="82" y="884" width="392" height="72" rx="14" fill="#c25b3b" transform="rotate(-1.2 82 884)"/>
+
+  <!-- per-fact line icons, inline row (numbers sit beside them via slots) -->
+  <g stroke="#26241f" stroke-width="2.5" fill="none">
+    <path d="M96 1074 L96 1050 L140 1050"/>
+    <path d="M90 1078 L146 1078 L146 1066 A8 8 0 0 0 138 1058 L108 1058"/>
+    <path d="M92 1078 L92 1086 M144 1078 L144 1086"/>
+    <circle cx="101" cy="1055" r="4"/>
+  </g>
+  <g stroke="#26241f" stroke-width="2.5" fill="none">
+    <path d="M316 1064 L360 1064 A4 4 0 0 1 364 1068 A16 16 0 0 1 348 1082 L328 1082 A16 16 0 0 1 312 1068 A4 4 0 0 1 316 1064 Z"/>
+    <path d="M320 1064 L320 1050 A7 7 0 0 1 334 1050"/>
+    <path d="M324 1082 L322 1088 M352 1082 L354 1088"/>
+  </g>
+  <g stroke="#26241f" stroke-width="2.5" fill="none">
+    <rect x="536" y="1050" width="40" height="36" stroke-dasharray="6 4"/>
+    <path d="M544 1078 L568 1058 M544 1066 L544 1078 L556 1078 M568 1070 L568 1058 L556 1058"/>
+  </g>
+
+  <!-- footer rules -->
+  <path d="M 90 1180 L 990 1180" stroke="#26241f" stroke-width="3"/>
+  <path d="M 90 1188 L 990 1188" stroke="#26241f" stroke-width="1"/>
+
+  <!-- corner geometry: cobalt quarter-arcs (bottom-left), terracotta starburst (bottom-right), dots -->
+  <g fill="none" stroke="#2b62b8" stroke-width="3">
+    <path d="M 0 1350 A 110 110 0 0 1 110 1240"/>
+    <path d="M 0 1350 A 74 74 0 0 1 74 1276"/>
+    <path d="M 0 1350 A 38 38 0 0 1 38 1312"/>
+  </g>
+  <g stroke="#c25b3b" stroke-width="3.5" stroke-linecap="round">
+    <path d="M 986 1268 L 986 1310 M 965 1289 L 1007 1289 M 971 1274 L 1001 1304 M 1001 1274 L 971 1304"/>
+  </g>
+  <circle cx="912" cy="1300" r="5" fill="#2b62b8"/>
+  <circle cx="1044" cy="1240" r="6" fill="#d9a03d"/>
+  <g fill="#26241f">
+    <circle cx="90" cy="1252" r="3"/><circle cx="122" cy="1252" r="3"/><circle cx="154" cy="1252" r="3"/>
+    <circle cx="186" cy="1252" r="3"/><circle cx="218" cy="1252" r="3"/>
+  </g>
+
+  <!-- plus-marks in the quiet spots -->
+  <g stroke="#d9a03d" stroke-width="3" stroke-linecap="round">
+    <path d="M 60 940 L 60 964 M 48 952 L 72 952"/>
+  </g>
+  <g stroke="#2b62b8" stroke-width="2.5" stroke-linecap="round">
+    <path d="M 1032 76 L 1032 96 M 1022 86 L 1042 86"/>
+  </g>
+</svg>

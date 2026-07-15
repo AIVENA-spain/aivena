@@ -27,9 +27,9 @@ import {
 // CC-authored families (Christian-approved 2026-07-15): 30/31/32 = 2-photo (Collector's Card / La Entrada /
 // Riviera); 33/34/35 = 3-photo (Azulejos / Postal / Sol). #5, #14, #21, #22 RETIRED 2026-07-15 (Christian:
 // "not the biggest fan"), joining #3 (uneditable baked art) and #29.
-// '36'/'37'/'38' = the 1-photo scene family (La Ventana / El Patio / El Chiringuito), approved
-// 2026-07-15. #39 'La Mesa' was designed but REJECTED by Christian — not registered.
-export const EDITABLE_TEMPLATE_IDS = ['1', '2', '6', '7', '8', '10', '11', '24', '25', '26', '27', '28', '30', '31', '32', '33', '34', '35', '36', '37', '38'];
+// '36'/'37'/'38' = the 1-photo scene family; '40' = Brisa, the editorial line-work design (approved
+// 2026-07-15 'ouuu yes thats nice'). #39 La Mesa was designed but rejected — not registered.
+export const EDITABLE_TEMPLATE_IDS = ['1', '2', '6', '7', '8', '10', '11', '24', '25', '26', '27', '28', '30', '31', '32', '33', '34', '35', '36', '37', '38', '40'];
 
 // Pre-made colour SCHEMES (Christian 2026-07-13) — curated coordinated palettes the agency taps to apply to the
 // whole template, instead of fiddling per-layer. Each maps to the four brand slots agencyPalette consumes:

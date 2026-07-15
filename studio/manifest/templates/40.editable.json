@@ -1,0 +1,252 @@
+{
+  "template_id": "40",
+  "canvas": {
+    "width": 1080,
+    "height": 1350
+  },
+  "source_svg": "assets/40/source.stripped.svg",
+  "photo_slots": [
+    {
+      "token": "@@PHOTO0@@"
+    }
+  ],
+  "photo_fit": "attention",
+  "no_knockouts": true,
+  "paint_background": true,
+  "colour_tokens": {
+    "background": {
+      "default": "#f5efe3",
+      "locked": false
+    },
+    "title": {
+      "default": "#26241f",
+      "locked": false
+    },
+    "subtitle/body": {
+      "default": "#8a8171",
+      "locked": false
+    },
+    "accent": {
+      "default": "#c25b3b",
+      "locked": false
+    },
+    "stat.label": {
+      "default": "#8a8171",
+      "locked": false
+    },
+    "stat.value": {
+      "default": "#26241f",
+      "locked": false
+    },
+    "badge.fill": {
+      "default": "#ffffff",
+      "locked": true
+    },
+    "badge.text": {
+      "default": "#26241f",
+      "locked": false
+    },
+    "cta": {
+      "default": "#26241f",
+      "locked": false
+    },
+    "divider": {
+      "default": "#c25b3b",
+      "locked": true
+    },
+    "icon": {
+      "default": "#26241f",
+      "locked": true
+    },
+    "overlay": {
+      "default": "#000000",
+      "locked": true
+    }
+  },
+  "plate_rects": [],
+  "text_slots": [
+    {
+      "id": "label",
+      "role": "subtitle/body",
+      "source": "template_copy",
+      "bbox": [
+        30,
+        320,
+        84,
+        830
+      ],
+      "size": 20,
+      "line_height": 24,
+      "font": "Jost",
+      "align": "center",
+      "text": "VIDA MEDITERRÁNEA — COSTA BLANCA",
+      "tracking": 6,
+      "rotate": -90
+    },
+    {
+      "id": "brand",
+      "role": "cta",
+      "source": "template_copy",
+      "bbox": [
+        90,
+        1198,
+        620,
+        1226
+      ],
+      "size": 18,
+      "line_height": 22,
+      "font": "Jost",
+      "align": "left",
+      "text": "MEDITERRÁNEO COSTA HOMES",
+      "weight": "500",
+      "tracking": 3
+    },
+    {
+      "id": "cta_web",
+      "role": "subtitle/body",
+      "source": "template_copy",
+      "bbox": [
+        620,
+        1198,
+        990,
+        1226
+      ],
+      "size": 17,
+      "line_height": 21,
+      "font": "Jost",
+      "align": "right",
+      "text": "aivena.es · +34 600 999 066",
+      "tracking": 1
+    },
+    {
+      "id": "title",
+      "role": "title",
+      "source": "property_fact",
+      "bbox": [
+        100,
+        872,
+        900,
+        964
+      ],
+      "size": 72,
+      "line_height": 80,
+      "font": "Fraunces 80pt",
+      "align": "left",
+      "text": "Villa in Altea"
+    },
+    {
+      "id": "address",
+      "role": "accent",
+      "source": "property_fact",
+      "bbox": [
+        100,
+        976,
+        700,
+        1004
+      ],
+      "size": 20,
+      "line_height": 24,
+      "font": "Jost",
+      "align": "left",
+      "text": "ALTEA · ALICANTE",
+      "tracking": 6
+    },
+    {
+      "id": "stat_beds",
+      "role": "stat.value",
+      "source": "property_fact",
+      "bbox": [
+        158,
+        1054,
+        290,
+        1082
+      ],
+      "size": 21,
+      "line_height": 25,
+      "font": "Jost",
+      "align": "left",
+      "text": "3 BED",
+      "tracking": 2,
+      "companion_art": [
+        {
+          "bbox": [
+            84,
+            1042,
+            152,
+            1092
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stat_baths",
+      "role": "stat.value",
+      "source": "property_fact",
+      "bbox": [
+        378,
+        1054,
+        512,
+        1082
+      ],
+      "size": 21,
+      "line_height": 25,
+      "font": "Jost",
+      "align": "left",
+      "text": "3 BATH",
+      "tracking": 2,
+      "companion_art": [
+        {
+          "bbox": [
+            306,
+            1042,
+            372,
+            1092
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stat_area",
+      "role": "stat.value",
+      "source": "property_fact",
+      "bbox": [
+        590,
+        1054,
+        730,
+        1082
+      ],
+      "size": 21,
+      "line_height": 25,
+      "font": "Jost",
+      "align": "left",
+      "text": "214 M²",
+      "tracking": 2,
+      "companion_art": [
+        {
+          "bbox": [
+            530,
+            1042,
+            584,
+            1092
+          ]
+        }
+      ]
+    },
+    {
+      "id": "price_value",
+      "role": "accent",
+      "source": "property_fact",
+      "bbox": [
+        560,
+        1096,
+        990,
+        1170
+      ],
+      "size": 64,
+      "line_height": 70,
+      "font": "Fraunces 80pt",
+      "align": "right",
+      "text": "€695,000"
+    }
+  ]
+}

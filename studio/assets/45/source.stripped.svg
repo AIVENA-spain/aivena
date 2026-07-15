@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1080" height="1350" viewBox="0 0 1080 1350">
+  <!-- Template 45 "Piedra" - CC-authored 2-photo (2026-07-15). The warm-stone professional: masthead
+       strip, full-bleed hero, and a three-column base - interior photo, facts column, bronze price
+       panel. Zero dead zones. All art colours are live @@COLOUR@@ tokens. -->
+
+  <!-- hero -->
+  <image x="0" y="64" width="1080" height="774" xlink:href="@@PHOTO0@@" preserveAspectRatio="xMidYMid slice"/>
+  <rect x="16" y="80" width="1048" height="742" fill="none" stroke="@@COLOUR:accent@@" stroke-width="1.5"/>
+
+  <!-- base band, column one: the interior -->
+  <image x="0" y="838" width="400" height="512" xlink:href="@@PHOTO1@@" preserveAspectRatio="xMidYMid slice"/>
+  <rect x="16" y="854" width="368" height="480" fill="none" stroke="@@COLOUR:accent@@" stroke-width="1.5"/>
+
+  <!-- column three: the bronze price panel -->
+  <rect x="760" y="838" width="320" height="512" fill="@@COLOUR:badge.fill@@"/>
+  <path d="M 920 1136 l 8 8 l -8 8 l -8 -8 Z" fill="@@COLOUR:badge.text@@"/>
+  <rect x="808" y="1100" width="224" height="1.5" fill="@@COLOUR:badge.text@@" fill-opacity="0.4"/>
+
+  <!-- masthead double rule -->
+  <rect x="0" y="62" width="1080" height="2" fill="@@COLOUR:accent@@"/>
+
+  <!-- facts column rules -->
+  <rect x="440" y="888" width="56" height="3" fill="@@COLOUR:accent@@"/>
+
+  <!-- per-fact line icons, horizontal trio in the facts column -->
+  <g stroke="@@COLOUR:icon@@" stroke-width="2.5" fill="none">
+    <path d="M446 1112 L446 1088 L490 1088"/>
+    <path d="M440 1116 L496 1116 L496 1104 A8 8 0 0 0 488 1096 L458 1096"/>
+    <path d="M442 1116 L442 1124 M494 1116 L494 1124"/>
+    <circle cx="451" cy="1093" r="4"/>
+  </g>
+  <g stroke="@@COLOUR:icon@@" stroke-width="2.5" fill="none">
+    <path d="M548 1102 L592 1102 A4 4 0 0 1 596 1106 A16 16 0 0 1 580 1120 L560 1120 A16 16 0 0 1 544 1106 A4 4 0 0 1 548 1102 Z"/>
+    <path d="M552 1102 L552 1088 A7 7 0 0 1 566 1088"/>
+    <path d="M556 1120 L554 1126 M584 1120 L586 1126"/>
+  </g>
+  <g stroke="@@COLOUR:icon@@" stroke-width="2.5" fill="none">
+    <rect x="646" y="1088" width="40" height="36" stroke-dasharray="6 4"/>
+    <path d="M654 1116 L678 1096 M654 1104 L654 1116 L666 1116 M678 1108 L678 1096 L666 1096"/>
+  </g>
+</svg>

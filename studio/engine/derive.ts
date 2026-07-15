@@ -137,6 +137,20 @@ export function deriveSlots(p: DeriveProperty, agency: DeriveAgency, templateId:
     ].filter(Boolean).join(" · ");
     const addr = [city, p.region].filter(Boolean).join(" · ").toUpperCase();
     const contact = [agency.web, agency.phone].filter(Boolean).join(" · ");
+    if (templateId === "45") {
+      // Piedra: narrow facts column + bronze price panel — balanced splits for both.
+      return {
+        brand: T(agency.name.toUpperCase()),
+        brand2: T(splitTwoLines(agency.name).toUpperCase()),
+        address: T(addr),
+        title: T(bestTitleSplit(`${typeCap} in ${city}`, "Libre Caslon Text", "500", 280, 44, 2)),
+        price_value: T(price ?? ""),
+        stat_beds: T(p.beds != null ? `${p.beds} BED` : ""),
+        stat_baths: T(p.baths != null ? `${p.baths} BATH` : ""),
+        stat_area: T(p.size != null ? `${p.size} M²` : ""),
+        cta_web: T([agency.web, agency.phone].filter(Boolean).join("\n")),
+      };
+    }
     if (templateId === "44") {
       // Calma: narrow ivory column — Prata title splits for a 308px measure; contact stacks two lines.
       return {

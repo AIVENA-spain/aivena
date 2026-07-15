@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1080" height="1350" viewBox="0 0 1080 1350">
+  <!-- Template 44 "Calma" - CC-authored 2-photo (2026-07-15). The light professional: vertical split -
+       facts column left (ivory) with a sage statement block at its base, tall hero + interior stacked
+       right, keylines inset. Zero dead zones. All art colours are live @@COLOUR@@ tokens. -->
+
+  <!-- right: the photos, stacked flush -->
+  <image x="420" y="0" width="660" height="900" xlink:href="@@PHOTO0@@" preserveAspectRatio="xMidYMid slice"/>
+  <image x="420" y="900" width="660" height="450" xlink:href="@@PHOTO1@@" preserveAspectRatio="xMidYMid slice"/>
+  <rect x="436" y="16" width="628" height="868" fill="none" stroke="@@COLOUR:accent@@" stroke-width="1.5"/>
+  <rect x="436" y="916" width="628" height="418" fill="none" stroke="@@COLOUR:accent@@" stroke-width="1.5"/>
+
+  <!-- left column rules -->
+  <rect x="56" y="122" width="64" height="3" fill="@@COLOUR:accent@@"/>
+  <rect x="56" y="812" width="308" height="1.5" fill="@@COLOUR:accent@@" fill-opacity="0.55"/>
+
+  <!-- the sage statement block at the column's base, aligned to the interior row -->
+  <rect x="0" y="900" width="420" height="450" fill="@@COLOUR:badge.fill@@"/>
+  <path d="M 210 1032 l 8 8 l -8 8 l -8 -8 Z" fill="@@COLOUR:badge.text@@"/>
+
+  <!-- per-fact line icons, stacked rows in the column -->
+  <g stroke="@@COLOUR:icon@@" stroke-width="2.5" fill="none">
+    <path d="M62 496 L62 472 L106 472"/>
+    <path d="M56 500 L112 500 L112 488 A8 8 0 0 0 104 480 L74 480"/>
+    <path d="M58 500 L58 508 M110 500 L110 508"/>
+    <circle cx="67" cy="477" r="4"/>
+  </g>
+  <g stroke="@@COLOUR:icon@@" stroke-width="2.5" fill="none">
+    <path d="M60 570 L104 570 A4 4 0 0 1 108 574 A16 16 0 0 1 92 588 L72 588 A16 16 0 0 1 56 574 A4 4 0 0 1 60 570 Z"/>
+    <path d="M64 570 L64 556 A7 7 0 0 1 78 556"/>
+    <path d="M68 588 L66 594 M96 588 L98 594"/>
+  </g>
+  <g stroke="@@COLOUR:icon@@" stroke-width="2.5" fill="none">
+    <rect x="58" y="640" width="40" height="36" stroke-dasharray="6 4"/>
+    <path d="M66 668 L90 648 M66 656 L66 668 L78 668 M90 660 L90 648 L78 648"/>
+  </g>
+</svg>

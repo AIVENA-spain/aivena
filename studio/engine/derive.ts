@@ -137,6 +137,19 @@ export function deriveSlots(p: DeriveProperty, agency: DeriveAgency, templateId:
     ].filter(Boolean).join(" · ");
     const addr = [city, p.region].filter(Boolean).join(" · ").toUpperCase();
     const contact = [agency.web, agency.phone].filter(Boolean).join(" · ");
+    if (templateId === "44") {
+      // Calma: narrow ivory column — Prata title splits for a 308px measure; contact stacks two lines.
+      return {
+        brand: T(agency.name.toUpperCase()),
+        address: T(addr),
+        title: T(bestTitleSplit(`${typeCap} in ${city}`, "Prata", "400", 308, 50, 2)),
+        price_value: T(price ?? ""),
+        stat_beds: T(p.beds != null ? `${p.beds} BED` : ""),
+        stat_baths: T(p.baths != null ? `${p.baths} BATH` : ""),
+        stat_area: T(p.size != null ? `${p.size} M²` : ""),
+        cta_web: T([agency.web, agency.phone].filter(Boolean).join("\n")),
+      };
+    }
     if (templateId === "43") {
       // Solera: narrow facts panel — the title breaks into balanced lines for the column.
       return {

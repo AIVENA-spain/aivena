@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex" />
+<title>AIVENA — valuation widget</title>
+<style>
+  body{ font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif; background:#FAF8F3; color:#10131A; margin:0; padding:48px 20px; }
+  .wrap{ max-width:640px; margin:0 auto; }
+  h1{ font-size:22px; margin:0 0 6px; }
+  p{ color:#5C636C; font-size:14.5px; line-height:1.6; }
+  pre{ background:#10131A; color:#E9F3F0; border-radius:12px; padding:16px 18px; font-size:12.5px; line-height:1.6; overflow-x:auto; }
+  code{ font-family:"SF Mono",ui-monospace,monospace; }
+  .attrs{ width:100%; border-collapse:collapse; font-size:13.5px; margin:18px 0 26px; }
+  .attrs td{ border-top:1px solid rgba(16,19,26,.12); padding:9px 10px 9px 0; vertical-align:top; }
+  .attrs td:first-child{ font-family:ui-monospace,monospace; font-size:12.5px; white-space:nowrap; }
+  a.demo{ display:inline-block; background:#0B7C3A; color:#fff; text-decoration:none; font-weight:600; font-size:14.5px; border-radius:999px; padding:12px 24px; }
+  .foot{ margin-top:36px; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:#5C636C; }
+  .foot a{ color:inherit; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>AIVENA valuation widget</h1>
+  <p>A free "what is my home worth?" form your agency can embed on its own website.
+     It answers in 13 languages, records LOPDGDD consent, and every request becomes a
+     seller lead in your AIVENA inbox. One script tag:</p>
+
+<pre><code>&lt;script src="https://aivena.es/widget/valuation.js"
+        data-agency="YOUR_AGENCY_ID"
+        data-name="Your Agency Name"
+        data-lang="es"
+        data-color="#0B7C3A"&gt;&lt;/script&gt;</code></pre>
+
+  <table class="attrs">
+    <tr><td>data-agency</td><td><b>Required.</b> Your AIVENA agency ID (we give you this).</td></tr>
+    <tr><td>data-name</td><td>Agency name shown in the consent text.</td></tr>
+    <tr><td>data-lang</td><td>Fixed language (en es de nl fr pl sv no da fi ru it pt). Omit to auto-detect the visitor's browser language.</td></tr>
+    <tr><td>data-color</td><td>Brand colour for the button and accents.</td></tr>
+    <tr><td>data-logo</td><td>https URL of your logo (optional).</td></tr>
+  </table>
+
+  <a class="demo" href="/widget/demo.html">See a live demo →</a>
+
+  <p class="foot"><a href="https://aivena.es">aivena.es</a> · christian@aivena.es</p>
+</div>
+</body>
+</html>

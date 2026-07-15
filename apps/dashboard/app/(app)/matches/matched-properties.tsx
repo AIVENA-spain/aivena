@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { BadgeCheck, ChevronDown, ExternalLink, Home } from "lucide-react";
+import { BadgeCheck, ChevronDown, ExternalLink, Home, Info } from "lucide-react";
 
 import type { Match, MatchExplanationItem } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
@@ -47,6 +47,8 @@ export function MatchedProperties({
   leadName,
   onSuggested,
   windowClosed = false,
+  refreshKey,
+  basedOn,
 }: {
   leadId: string;
   /** Lead's full name — drives the "Suggest these to {firstName}" label. */
@@ -55,6 +57,18 @@ export function MatchedProperties({
   onSuggested?: (taskId: string) => void;
   /** True only when the WhatsApp 24h window is known-closed → gate Suggest. */
   windowClosed?: boolean;
+  /**
+   * Changes whenever the conversation does (e.g. message count). Re-fetches the
+   * matches so the rail can't sit on a cached list. NOTE: this fixes the UI-cache
+   * half only — the engine keys off the lead's STORED preference
+   * (leads.location_interest_extracted), which is set at capture and is not yet
+   * updated from later messages (backend gap, owned by the ingestion/matching
+   * lanes). So a re-fetch returns the same set until that lands; `basedOn` below
+   * makes that honest instead of silently stale.
+   */
+  refreshKey?: string | number;
+  /** The stored preference the recommendations are actually keyed to. */
+  basedOn?: string | null;
 }) {
   const t = useTranslations("matches");
   const tIntel = useTranslations("inbox.intel");
@@ -120,8 +134,9 @@ export function MatchedProperties({
       alive = false;
     };
     // ensureExplain is stable per leadId; intentionally omitted.
+    // refreshKey re-runs the fetch when the conversation changes (no stale cache).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [leadId]);
+  }, [leadId, refreshKey]);
 
   const labels: MatchLabels = {
     bed: t("unitBed"),
@@ -163,6 +178,24 @@ export function MatchedProperties({
         </p>
       ) : (
         <div className="flex flex-col gap-4">
+          {/* Honesty line: the engine keys these recommendations off the lead's
+              STORED preference. It is captured at intake and NOT yet refreshed
+              from later messages, so if the buyer has since asked for other
+              areas these can be behind — say so plainly rather than let a stale
+              list look current. (Real fix is backend: re-extract preferences
+              from inbound messages + re-run the match.) */}
+          {basedOn ? (
+            <p className="flex items-start gap-1.5 rounded-lg bg-muted/60 px-2.5 py-1.5 text-[11px] leading-snug text-muted-foreground">
+              <Info className="mt-[1px] h-3 w-3 shrink-0" aria-hidden />
+              <span>
+                {tIntel("basedOnPrefix")}{" "}
+                <span className="font-medium text-foreground">{basedOn}</span>
+                {" — "}
+                {tIntel("basedOnHint")}
+              </span>
+            </p>
+          ) : null}
+
           {/* Top match: card + always-open why, side-by-side when wide. */}
           <div className="grid gap-x-5 gap-y-3 @[420px]:grid-cols-2">
             {/* Matched property */}

@@ -304,7 +304,9 @@
       "whyHeading": "Why this matches",
       "windowClosedPill": "WhatsApp window closed",
       "suggestGated": "Window closed — send a check-in to reopen before suggesting.",
-      "noReason": "No additional reasoning yet."
+      "noReason": "No additional reasoning yet.",
+      "basedOnPrefix": "In base alla preferenza salvata:",
+      "basedOnHint": "se l'acquirente ha chiesto altre zone, aggiorna il suo profilo."
     },
     "searchPlaceholder": "Search conversations…",
     "searchNoResults": "No conversations match your search."

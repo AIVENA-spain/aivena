@@ -122,6 +122,11 @@ export function ClientIntelligence({
         leadName={lead.fullName}
         onSuggested={onSuggested}
         windowClosed={windowClosed}
+        // Re-fetch when a NEW buyer message arrives (kills the UI-cache staleness).
+        refreshKey={lead.latestInboundAt ?? undefined}
+        // The stored preference the engine actually keyed these to — shown so a
+        // recommendation that predates a newer buyer request can't read as current.
+        basedOn={data?.location_interest_extracted ?? null}
       />
 
       {/* Lower compact sections, side-by-side when the panel is wide enough.

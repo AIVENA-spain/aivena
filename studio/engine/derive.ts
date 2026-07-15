@@ -137,6 +137,33 @@ export function deriveSlots(p: DeriveProperty, agency: DeriveAgency, templateId:
     ].filter(Boolean).join(" · ");
     const addr = [city, p.region].filter(Boolean).join(" · ").toUpperCase();
     const contact = [agency.web, agency.phone].filter(Boolean).join(" · ");
+    if (templateId === "52") {
+      // Titular: the title IS the layout — line 1 = "<Type> in", line 2 = the city, both auto-fitting huge.
+      return {
+        brand: T(agency.name.toUpperCase()),
+        address: T(addr),
+        title_line1: T(`${typeCap} in`),
+        title_line2: T(city),
+        price_value: T(price ?? ""),
+        stat_beds: T(p.beds != null ? `${p.beds} BED` : ""),
+        stat_baths: T(p.baths != null ? `${p.baths} BATH` : ""),
+        stat_area: T(p.size != null ? `${p.size} M²` : ""),
+        cta_web: T([agency.web, agency.phone].filter(Boolean).join(" · ")),
+      };
+    }
+    if (templateId === "51") {
+      // Faro: wide editorial band — single-line title beside the price.
+      return {
+        brand: T(agency.name.toUpperCase()),
+        address: T(addr),
+        title: T(`${typeCap} in ${city}`),
+        price_value: T(price ?? ""),
+        stat_beds: T(p.beds != null ? `${p.beds} BED` : ""),
+        stat_baths: T(p.baths != null ? `${p.baths} BATH` : ""),
+        stat_area: T(p.size != null ? `${p.size} M²` : ""),
+        cta_web: T([agency.web, agency.phone].filter(Boolean).join(" · ")),
+      };
+    }
     if (templateId === "50") {
       // Cortijo: stone facts block in the right column — 2-line title for a 384px measure.
       return {

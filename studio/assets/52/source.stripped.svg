@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1080" height="1350" viewBox="0 0 1080 1350">
+  <!-- Template 52 "Titular" - CC-authored 3-photo (2026-07-15). TYPE-LED: the title's two lines are the
+       architecture, interleaved with the photo rows - line one huge above the hero, line two huge and
+       in accent between the rows, staggered right. Zero dead zones. Art colours live tokens. -->
+
+  <image x="0" y="228" width="1080" height="392" xlink:href="@@PHOTO0@@" preserveAspectRatio="xMidYMid slice"/>
+  <rect x="14" y="242" width="1052" height="364" fill="none" stroke="@@COLOUR:title@@" stroke-width="1.5"/>
+
+  <image x="0" y="790" width="536" height="348" xlink:href="@@PHOTO1@@" preserveAspectRatio="xMidYMid slice"/>
+  <image x="544" y="790" width="536" height="348" xlink:href="@@PHOTO2@@" preserveAspectRatio="xMidYMid slice"/>
+  <rect x="14" y="804" width="508" height="320" fill="none" stroke="@@COLOUR:title@@" stroke-width="1.5"/>
+  <rect x="558" y="804" width="508" height="320" fill="none" stroke="@@COLOUR:title@@" stroke-width="1.5"/>
+
+  <!-- facts strip rules -->
+  <rect x="64" y="1168" width="952" height="2" fill="@@COLOUR:accent@@"/>
+
+  <!-- per-fact icons -->
+  <g stroke="@@COLOUR:icon@@" stroke-width="2.5" fill="none">
+    <path d="M70 1226 L70 1202 L114 1202"/>
+    <path d="M64 1230 L120 1230 L120 1218 A8 8 0 0 0 112 1210 L82 1210"/>
+    <path d="M66 1230 L66 1238 M118 1230 L118 1238"/>
+    <circle cx="75" cy="1207" r="4"/>
+  </g>
+  <g stroke="@@COLOUR:icon@@" stroke-width="2.5" fill="none">
+    <path d="M240 1216 L284 1216 A4 4 0 0 1 288 1220 A16 16 0 0 1 272 1234 L252 1234 A16 16 0 0 1 236 1220 A4 4 0 0 1 240 1216 Z"/>
+    <path d="M244 1216 L244 1202 A7 7 0 0 1 258 1202"/>
+    <path d="M248 1234 L246 1240 M276 1234 L278 1240"/>
+  </g>
+  <g stroke="@@COLOUR:icon@@" stroke-width="2.5" fill="none">
+    <rect x="404" y="1202" width="40" height="36" stroke-dasharray="6 4"/>
+    <path d="M412 1230 L436 1210 M412 1218 L412 1230 L424 1230 M436 1222 L436 1210 L424 1210"/>
+  </g>
+</svg>

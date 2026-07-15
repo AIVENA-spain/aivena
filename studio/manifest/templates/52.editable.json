@@ -1,0 +1,256 @@
+{
+  "template_id": "52",
+  "canvas": {
+    "width": 1080,
+    "height": 1350
+  },
+  "source_svg": "assets/52/source.stripped.svg",
+  "photo_slots": [
+    {
+      "token": "@@PHOTO0@@"
+    },
+    {
+      "token": "@@PHOTO1@@"
+    },
+    {
+      "token": "@@PHOTO2@@"
+    }
+  ],
+  "photo_fit": "attention",
+  "no_knockouts": true,
+  "paint_background": true,
+  "colour_tokens": {
+    "background": {
+      "default": "#f6f3ec",
+      "locked": false
+    },
+    "title": {
+      "default": "#1c1c1e",
+      "locked": false
+    },
+    "subtitle/body": {
+      "default": "#8b877c",
+      "locked": false
+    },
+    "accent": {
+      "default": "#b0532f",
+      "locked": false
+    },
+    "stat.label": {
+      "default": "#8b877c",
+      "locked": false
+    },
+    "stat.value": {
+      "default": "#1c1c1e",
+      "locked": false
+    },
+    "badge.fill": {
+      "default": "#ffffff",
+      "locked": true
+    },
+    "badge.text": {
+      "default": "#1c1c1e",
+      "locked": false
+    },
+    "cta": {
+      "default": "#b0532f",
+      "locked": false
+    },
+    "divider": {
+      "default": "#b0532f",
+      "locked": false
+    },
+    "icon": {
+      "default": "#1c1c1e",
+      "locked": false
+    },
+    "overlay": {
+      "default": "#000000",
+      "locked": true
+    }
+  },
+  "plate_rects": [],
+  "text_slots": [
+    {
+      "id": "brand",
+      "role": "subtitle/body",
+      "source": "template_copy",
+      "bbox": [
+        64,
+        30,
+        700,
+        62
+      ],
+      "size": 17,
+      "line_height": 21,
+      "font": "Jost",
+      "align": "left",
+      "text": "MEDITERRÁNEO COSTA HOMES",
+      "weight": "500",
+      "tracking": 4
+    },
+    {
+      "id": "address",
+      "role": "accent",
+      "source": "property_fact",
+      "bbox": [
+        700,
+        30,
+        1016,
+        62
+      ],
+      "size": 17,
+      "line_height": 21,
+      "font": "Jost",
+      "align": "right",
+      "text": "ALTEA · ALICANTE",
+      "tracking": 4
+    },
+    {
+      "id": "title_line1",
+      "role": "title",
+      "source": "property_fact",
+      "bbox": [
+        58,
+        66,
+        1022,
+        218
+      ],
+      "size": 128,
+      "line_height": 136,
+      "font": "Fraunces 80pt",
+      "align": "left",
+      "text": "Villa in"
+    },
+    {
+      "id": "title_line2",
+      "role": "accent",
+      "source": "property_fact",
+      "bbox": [
+        58,
+        622,
+        1022,
+        782
+      ],
+      "size": 132,
+      "line_height": 140,
+      "font": "Fraunces 80pt",
+      "align": "right",
+      "text": "Altea"
+    },
+    {
+      "id": "stat_beds",
+      "role": "stat.value",
+      "source": "property_fact",
+      "bbox": [
+        130,
+        1206,
+        226,
+        1234
+      ],
+      "size": 19,
+      "line_height": 23,
+      "font": "Jost",
+      "align": "left",
+      "text": "3 BED",
+      "tracking": 1,
+      "companion_art": [
+        {
+          "bbox": [
+            60,
+            1196,
+            124,
+            1244
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stat_baths",
+      "role": "stat.value",
+      "source": "property_fact",
+      "bbox": [
+        298,
+        1206,
+        396,
+        1234
+      ],
+      "size": 19,
+      "line_height": 23,
+      "font": "Jost",
+      "align": "left",
+      "text": "3 BATH",
+      "tracking": 1,
+      "companion_art": [
+        {
+          "bbox": [
+            232,
+            1196,
+            292,
+            1244
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stat_area",
+      "role": "stat.value",
+      "source": "property_fact",
+      "bbox": [
+        452,
+        1206,
+        560,
+        1234
+      ],
+      "size": 19,
+      "line_height": 23,
+      "font": "Jost",
+      "align": "left",
+      "text": "214 M²",
+      "tracking": 1,
+      "companion_art": [
+        {
+          "bbox": [
+            400,
+            1196,
+            448,
+            1244
+          ]
+        }
+      ]
+    },
+    {
+      "id": "price_value",
+      "role": "accent",
+      "source": "property_fact",
+      "bbox": [
+        620,
+        1186,
+        1016,
+        1258
+      ],
+      "size": 58,
+      "line_height": 64,
+      "font": "Fraunces 80pt",
+      "align": "right",
+      "text": "€695,000"
+    },
+    {
+      "id": "cta_web",
+      "role": "subtitle/body",
+      "source": "template_copy",
+      "bbox": [
+        64,
+        1292,
+        1016,
+        1320
+      ],
+      "size": 17,
+      "line_height": 21,
+      "font": "Jost",
+      "align": "center",
+      "text": "aivena.es · +34 600 999 066",
+      "tracking": 2
+    }
+  ]
+}

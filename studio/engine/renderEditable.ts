@@ -127,6 +127,10 @@ export const EditableManifest = z.object({
   source_svg: z.string(),
   photo_token: z.string().optional(),                                   // single-photo templates
   photo_slots: z.array(z.object({ token: z.string() })).optional(),     // multi-photo templates (hero + thumbnails)
+  // The ENGINE paints the page colour (roleHex 'background') under the source raster — the source SVG must
+  // leave its ground transparent. This is what makes the Background swatch REAL (Christian 2026-07-15: picked
+  // a lighter blue, nothing changed — the token existed but nothing rendered with it).
+  paint_background: z.boolean().optional(),
   colour_tokens: z.record(z.string(), z.object({ default: z.string(), locked: z.boolean() })),
   // PRODUCTION ELIGIBILITY GUARD: a post whose truth depends on property STATUS (e.g. "Just Sold") must only
   // render for a matching status or an explicit demo/test render — the engine must never auto-generate it for an
@@ -360,7 +364,8 @@ export async function renderEditable(m: EditableManifest, palette: Palette = {},
     scrimBuf = await sharpMod(raw, { raw: { width: W, height: H, channels: 4 } }).png().toBuffer();
   }
   const flat = m.overlay ? `<rect x="0" y="0" width="${W}" height="${H}" fill="${roleHex(m, palette, m.overlay.role)}" fill-opacity="${m.overlay.opacity}"/>` : "";
-  const baseSvg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><image x="0" y="0" width="${W}" height="${H}" xlink:href="${photoUriPng}"/>${flat}</svg>`;
+  const pageBg = m.paint_background ? `<rect x="0" y="0" width="${W}" height="${H}" fill="${roleHex(m, palette, "background")}"/>` : "";
+  const baseSvg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${pageBg}<image x="0" y="0" width="${W}" height="${H}" xlink:href="${photoUriPng}"/>${flat}</svg>`;
   const basePng = renderTemplatePng(baseSvg, W);
   const comps: { input: Buffer; top: number; left: number }[] = [];
   if (scrimBuf) comps.push({ input: scrimBuf, top: 0, left: 0 });

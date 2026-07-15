@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1080" height="1350" viewBox="0 0 1080 1350">
+  <!-- Template 35 "Sol" v2 — CC-authored 3-photo design (2026-07-15), replacing the retired "Linea"
+       (Christian: "a bit boring"). Retro Mediterranean sunset poster: the villa in a grand arch with
+       SUNSET ARCS radiating around it, two lunette windows below, hand-drawn suns, per-fact line icons
+       (companion_art — icon and number vanish together when a fact is missing).
+       All text engine-drawn (no_knockouts). -->
+  <defs>
+    <clipPath id="arco"><path d="M 240 410 A 300 300 0 0 1 840 410 L 840 760 L 240 760 Z"/></clipPath>
+    <clipPath id="lun1"><path d="M 130 1176 A 190 190 0 0 1 510 1176 L 510 1216 L 130 1216 Z"/></clipPath>
+    <clipPath id="lun2"><path d="M 570 1176 A 190 190 0 0 1 950 1176 L 950 1216 L 570 1216 Z"/></clipPath>
+  </defs>
+  <!-- the sunset: concentric arcs radiating from the arch; the keystone gap is a MASK, so the agency
+       name sits in real page colour whatever that colour is -->
+  <mask id="keystone">
+    <rect x="0" y="0" width="1080" height="1350" fill="#ffffff"/>
+    <rect x="236" y="22" width="608" height="82" fill="#000000"/>
+  </mask>
+  <g mask="url(#keystone)">
+    <path d="M 196 760 L 196 410 A 344 344 0 0 1 884 410 L 884 760" fill="none" stroke="#c25b3b" stroke-width="5"/>
+    <path d="M 172 760 L 172 410 A 368 368 0 0 1 908 410 L 908 760" fill="none" stroke="#d99a3d" stroke-width="4"/>
+    <path d="M 150 760 L 150 410 A 390 390 0 0 1 930 410 L 930 760" fill="none" stroke="#c25b3b" stroke-width="2.5"/>
+    <path d="M 130 760 L 130 410 A 410 410 0 0 1 950 410 L 950 760" fill="none" stroke="#d99a3d" stroke-width="1.5"/>
+  </g>
+
+  <!-- hand-drawn suns in the sky corners -->
+  <g stroke="#c25b3b" stroke-width="3" fill="none">
+    <circle cx="88" cy="200" r="24"/>
+    <path d="M88 156 L88 168 M88 232 L88 244 M44 200 L56 200 M120 200 L132 200 M57 169 L65 177 M111 223 L119 231 M119 169 L111 177 M65 223 L57 231"/>
+  </g>
+  <g stroke="#d99a3d" stroke-width="2.5" fill="none">
+    <circle cx="994" cy="238" r="17"/>
+    <path d="M994 207 L994 216 M994 260 L994 269 M963 238 L972 238 M1016 238 L1025 238 M972 216 L978 222 M1010 254 L1016 260 M1016 216 L1010 222 M978 254 L972 260"/>
+  </g>
+
+  <!-- the villa through the grand arch -->
+  <g clip-path="url(#arco)"><image x="240" y="110" width="600" height="650" xlink:href="@@PHOTO0@@" preserveAspectRatio="xMidYMid slice"/></g>
+  <path d="M 240 410 A 300 300 0 0 1 840 410 L 840 760 L 240 760 Z" fill="none" stroke="#4a3226" stroke-width="3"/>
+
+  <!-- two lunette windows: the interiors -->
+  <g clip-path="url(#lun1)"><image x="130" y="986" width="380" height="230" xlink:href="@@PHOTO1@@" preserveAspectRatio="xMidYMid slice"/></g>
+  <g clip-path="url(#lun2)"><image x="570" y="986" width="380" height="230" xlink:href="@@PHOTO2@@" preserveAspectRatio="xMidYMid slice"/></g>
+  <path d="M 130 1176 A 190 190 0 0 1 510 1176 L 510 1216 L 130 1216 Z" fill="none" stroke="#c25b3b" stroke-width="2.5"/>
+  <path d="M 570 1176 A 190 190 0 0 1 950 1176 L 950 1216 L 570 1216 Z" fill="none" stroke="#c25b3b" stroke-width="2.5"/>
+
+  <!-- per-fact line icons (terracotta) — companion_art on the stat slots -->
+  <!-- bed @ cx 250 -->
+  <g stroke="#c25b3b" stroke-width="2.5" fill="none">
+    <path d="M228 1276 L228 1252 L272 1252"/>
+    <path d="M222 1280 L278 1280 L278 1268 A8 8 0 0 0 270 1260 L240 1260"/>
+    <path d="M224 1280 L224 1288 M276 1280 L276 1288"/>
+    <circle cx="233" cy="1257" r="4"/>
+  </g>
+  <!-- bath @ cx 540 -->
+  <g stroke="#c25b3b" stroke-width="2.5" fill="none">
+    <path d="M518 1266 L562 1266 A4 4 0 0 1 566 1270 A16 16 0 0 1 550 1284 L530 1284 A16 16 0 0 1 514 1270 A4 4 0 0 1 518 1266 Z"/>
+    <path d="M522 1266 L522 1252 A7 7 0 0 1 536 1252"/>
+    <path d="M526 1284 L524 1290 M554 1284 L556 1290"/>
+  </g>
+  <!-- area @ cx 830 -->
+  <g stroke="#c25b3b" stroke-width="2.5" fill="none">
+    <rect x="810" y="1252" width="40" height="36" stroke-dasharray="6 4"/>
+    <path d="M818 1280 L842 1260 M818 1268 L818 1280 L830 1280 M842 1272 L842 1260 L830 1260"/>
+  </g>
+</svg>

@@ -18,7 +18,7 @@
   "colour_tokens": {
     "background": {
       "default": "#f7f5f0",
-      "locked": true
+      "locked": false
     },
     "title": {
       "default": "#101114",
@@ -168,5 +168,6 @@
       "tracking": 1,
       "text": "Mediterráneo Costa Homes"
     }
-  ]
+  ],
+  "paint_background": true
 }

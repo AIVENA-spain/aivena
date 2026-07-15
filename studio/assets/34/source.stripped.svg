@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1080" height="1350" viewBox="0 0 1080 1350">
+  <!-- Template 34 "Postal" v2 — the hero stamp grew to near full-width (the photo is the postcard now);
+       small stamps bigger too. Perforated edges + postmark kept — the effect Christian liked.
+       All text engine-drawn (no_knockouts). -->
+  <defs>
+    <clipPath id="s1"><rect x="76" y="146" width="928" height="608"/></clipPath>
+    <clipPath id="s2"><rect x="86" y="856" width="384" height="288"/></clipPath>
+    <clipPath id="s3"><rect x="336" y="916" width="384" height="288"/></clipPath>
+    <pattern id="perfHm" width="28" height="28" patternUnits="userSpaceOnUse">
+      <rect width="28" height="28" fill="#ffffff"/>
+      <circle cx="14" cy="0" r="7" fill="#000000"/><circle cx="14" cy="28" r="7" fill="#000000"/>
+    </pattern>
+    <pattern id="perfVm" width="28" height="28" patternUnits="userSpaceOnUse">
+      <rect width="28" height="28" fill="#ffffff"/>
+      <circle cx="0" cy="14" r="7" fill="#000000"/><circle cx="28" cy="14" r="7" fill="#000000"/>
+    </pattern>
+    <mask id="m1">
+      <rect x="53" y="123" width="974" height="654" fill="#ffffff"/>
+      <rect x="60" y="123" width="960" height="14" fill="url(#perfHm)"/>
+      <rect x="60" y="763" width="960" height="14" fill="url(#perfHm)"/>
+      <rect x="53" y="130" width="14" height="640" fill="url(#perfVm)"/>
+      <rect x="1013" y="130" width="14" height="640" fill="url(#perfVm)"/>
+    </mask>
+    <mask id="m2">
+      <rect x="63" y="833" width="430" height="334" fill="#ffffff"/>
+      <rect x="70" y="833" width="416" height="14" fill="url(#perfHm)"/>
+      <rect x="70" y="1153" width="416" height="14" fill="url(#perfHm)"/>
+      <rect x="63" y="840" width="14" height="320" fill="url(#perfVm)"/>
+      <rect x="479" y="840" width="14" height="320" fill="url(#perfVm)"/>
+    </mask>
+    <mask id="m3">
+      <rect x="313" y="893" width="430" height="334" fill="#ffffff"/>
+      <rect x="320" y="893" width="416" height="14" fill="url(#perfHm)"/>
+      <rect x="320" y="1213" width="416" height="14" fill="url(#perfHm)"/>
+      <rect x="313" y="900" width="14" height="320" fill="url(#perfVm)"/>
+      <rect x="729" y="900" width="14" height="320" fill="url(#perfVm)"/>
+    </mask>
+  </defs>
+  <!-- HERO STAMP — big: the villa fills the top of the card -->
+  <g transform="rotate(-1.6 540 450)">
+    <rect x="53" y="123" width="974" height="654" fill="#ffffff" mask="url(#m1)"/>
+    <g clip-path="url(#s1)"><image x="76" y="146" width="928" height="608" xlink:href="@@PHOTO0@@" preserveAspectRatio="xMidYMid slice"/></g>
+  </g>
+
+  <!-- two smaller stamps laid on the desk, overlapping -->
+  <g transform="rotate(3 278 1000)">
+    <rect x="63" y="833" width="430" height="334" fill="#ffffff" mask="url(#m2)"/>
+    <g clip-path="url(#s2)"><image x="86" y="856" width="384" height="288" xlink:href="@@PHOTO1@@" preserveAspectRatio="xMidYMid slice"/></g>
+  </g>
+  <g transform="rotate(-4 528 1060)">
+    <rect x="313" y="893" width="430" height="334" fill="#ffffff" mask="url(#m3)"/>
+    <g clip-path="url(#s3)"><image x="336" y="916" width="384" height="288" xlink:href="@@PHOTO2@@" preserveAspectRatio="xMidYMid slice"/></g>
+  </g>
+
+  <!-- the postmark, cancelling the hero's top-right corner -->
+  <g stroke="#22344e" fill="none" opacity="0.62">
+    <circle cx="912" cy="176" r="76" stroke-width="2.5" stroke-dasharray="7 5"/>
+    <circle cx="912" cy="176" r="58" stroke-width="1.5"/>
+    <path d="M710 154 Q 760 142 810 154 T 908 154" stroke-width="2.5"/>
+    <path d="M710 182 Q 760 170 810 182 T 908 182" stroke-width="2.5"/>
+    <path d="M710 210 Q 760 198 810 210 T 908 210" stroke-width="2.5"/>
+  </g>
+  <path d="M912 154 l6 14 15 2 -11 10 3 15 -13 -8 -13 8 3 -15 -11 -10 15 -2 Z" fill="#22344e" opacity="0.62"/>
+</svg>

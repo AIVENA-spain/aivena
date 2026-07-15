@@ -127,6 +127,40 @@ export function deriveSlots(p: DeriveProperty, agency: DeriveAgency, templateId:
       brand: T(agency.name),
     };
   }
+  if (templateId === "33" || templateId === "34" || templateId === "35") {
+    // The 3-photo family (CC-authored): Azulejos triptych / Postal stamps / Linea architect's sheet.
+    // Shared fact language; per-template casing. Missing facts vanish — no orphaned lines.
+    const specs = [
+      p.beds != null ? `${p.beds} BED` : null,
+      p.baths != null ? `${p.baths} BATH` : null,
+      p.size != null ? `${p.size} M²` : null,
+    ].filter(Boolean).join(" · ");
+    const addr = [city, p.region].filter(Boolean).join(" · ").toUpperCase();
+    const contact = [agency.web, agency.phone].filter(Boolean).join(" · ");
+    if (templateId === "34") {
+      // Postal: the title is set as a two-line letterhead; Special Elite has no accents-safe tracking issues.
+      return {
+        brand: T(agency.name.toUpperCase()),
+        address: T(addr),
+        title: T(bestTitleSplit(`${typeCap} in ${city}`, "Libre Caslon Display", "400", 300, 54, 3)),
+        price_value: T(price ?? ""),
+        stat_line: T(specs),
+        cta_web: T(contact),
+      };
+    }
+    // 33 (Azulejos) + 35 (Sol): per-fact stats — each pairs with a baked line icon via companion_art,
+    // so a missing fact hides its icon AND its number together (no orphaned icons, per the general rule).
+    return {
+      brand: T(agency.name.toUpperCase()),
+      address: T(addr),
+      title: T(`${typeCap} in ${city}`),
+      price_value: T(price ?? ""),
+      stat_beds: T(p.beds != null ? `${p.beds} BED` : ""),
+      stat_baths: T(p.baths != null ? `${p.baths} BATH` : ""),
+      stat_area: T(p.size != null ? `${p.size} M²` : ""),
+      cta_web: T(contact),
+    };
+  }
   if (templateId === "11") return { brand: T(brand2), title: T(`${typeCap} in\n${city}`.toUpperCase()), address: T(loc) };
   if (templateId === "1") {
     // template style: spelled-out numbers, stacked 2-line caps ("TWO / BEDROOMS")

@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1080" height="1350" viewBox="0 0 1080 1350">
+  <!-- Template 33 "Azulejos" v2 — bigger triptych (edge-to-edge, taller), per-fact line icons (each icon is
+       companion_art on its stat slot: a missing fact hides icon+number together), tile band kept.
+       All text engine-drawn (no_knockouts). -->
+  <defs>
+    <pattern id="azulejo" width="120" height="120" patternUnits="userSpaceOnUse">
+      <rect width="120" height="120" fill="#f8f6f0"/>
+      <path d="M60 14 L74 46 L106 60 L74 74 L60 106 L46 74 L14 60 L46 46 Z" fill="#274e93"/>
+      <path d="M60 30 L82 60 L60 90 L38 60 Z" fill="#f8f6f0"/>
+      <circle cx="60" cy="60" r="10" fill="#274e93"/>
+      <circle cx="60" cy="60" r="4" fill="#c98a2d"/>
+      <path d="M0 0 L22 0 A22 22 0 0 1 0 22 Z" fill="#274e93"/>
+      <path d="M120 0 L120 22 A22 22 0 0 1 98 0 Z" fill="#274e93"/>
+      <path d="M120 120 L98 120 A22 22 0 0 1 120 98 Z" fill="#274e93"/>
+      <path d="M0 120 L0 98 A22 22 0 0 1 22 120 Z" fill="#274e93"/>
+      <circle cx="0" cy="0" r="7" fill="#c98a2d"/><circle cx="120" cy="0" r="7" fill="#c98a2d"/>
+      <circle cx="120" cy="120" r="7" fill="#c98a2d"/><circle cx="0" cy="120" r="7" fill="#c98a2d"/>
+    </pattern>
+    <clipPath id="p1"><rect x="24" y="130" width="328" height="740"/></clipPath>
+    <clipPath id="p2"><rect x="376" y="130" width="328" height="740"/></clipPath>
+    <clipPath id="p3"><rect x="728" y="130" width="328" height="740"/></clipPath>
+  </defs>
+  <rect x="0" y="1230" width="1080" height="120" fill="url(#azulejo)"/>
+  <rect x="0" y="1226" width="1080" height="4" fill="#274e93"/>
+
+  <!-- the triptych, now nearly full-bleed and taller — the photos are the page -->
+  <g clip-path="url(#p1)"><image x="24" y="130" width="328" height="740" xlink:href="@@PHOTO0@@" preserveAspectRatio="xMidYMid slice"/></g>
+  <g clip-path="url(#p2)"><image x="376" y="130" width="328" height="740" xlink:href="@@PHOTO1@@" preserveAspectRatio="xMidYMid slice"/></g>
+  <g clip-path="url(#p3)"><image x="728" y="130" width="328" height="740" xlink:href="@@PHOTO2@@" preserveAspectRatio="xMidYMid slice"/></g>
+  <rect x="24" y="130" width="328" height="740" fill="none" stroke="#274e93" stroke-width="2"/>
+  <rect x="376" y="130" width="328" height="740" fill="none" stroke="#274e93" stroke-width="2"/>
+  <rect x="728" y="130" width="328" height="740" fill="none" stroke="#274e93" stroke-width="2"/>
+
+  <!-- the tile diamond on the axis -->
+  <path d="M540 892 L556 908 L540 924 L524 908 Z" fill="none" stroke="#c98a2d" stroke-width="2"/>
+
+  <!-- per-fact line icons (cobalt, 2px) — each is companion_art on its stat slot -->
+  <!-- bed @ column 1 (cx 250) -->
+  <g stroke="#274e93" stroke-width="2.5" fill="none">
+    <path d="M228 1136 L228 1112 L272 1112"/>
+    <path d="M222 1140 L278 1140 L278 1128 A8 8 0 0 0 270 1120 L240 1120"/>
+    <path d="M224 1140 L224 1148 M276 1140 L276 1148"/>
+    <circle cx="233" cy="1117" r="4"/>
+  </g>
+  <!-- bath @ column 2 (cx 540) -->
+  <g stroke="#274e93" stroke-width="2.5" fill="none">
+    <path d="M518 1126 L562 1126 A4 4 0 0 1 566 1130 A16 16 0 0 1 550 1144 L530 1144 A16 16 0 0 1 514 1130 A4 4 0 0 1 518 1126 Z"/>
+    <path d="M522 1126 L522 1112 A7 7 0 0 1 536 1112"/>
+    <path d="M526 1144 L524 1150 M554 1144 L556 1150"/>
+  </g>
+  <!-- area @ column 3 (cx 830) -->
+  <g stroke="#274e93" stroke-width="2.5" fill="none">
+    <rect x="810" y="1112" width="40" height="36" stroke-dasharray="6 4"/>
+    <path d="M818 1140 L842 1120 M818 1128 L818 1140 L830 1140 M842 1132 L842 1120 L830 1120"/>
+  </g>
+</svg>

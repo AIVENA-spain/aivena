@@ -6,7 +6,6 @@
     <clipPath id="cutTop"><polygon points="0,0 1080,0 1080,520 0,690"/></clipPath>
     <clipPath id="cutBottom"><polygon points="0,780 1080,610 1080,1120 0,1120"/></clipPath>
   </defs>
-  <rect x="0" y="0" width="1080" height="1350" fill="#f7f5f0"/>
   <g clip-path="url(#cutTop)">
     <image x="0" y="0" width="1080" height="690" xlink:href="@@PHOTO0@@" preserveAspectRatio="xMidYMid slice"/>
   </g>

@@ -1,63 +1,66 @@
 {
-  "template_id": "31",
+  "template_id": "34",
   "canvas": {
     "width": 1080,
     "height": 1350
   },
-  "source_svg": "assets/31/source.stripped.svg",
+  "source_svg": "assets/34/source.stripped.svg",
   "photo_slots": [
     {
       "token": "@@PHOTO0@@"
     },
     {
       "token": "@@PHOTO1@@"
+    },
+    {
+      "token": "@@PHOTO2@@"
     }
   ],
   "photo_fit": "attention",
   "no_knockouts": true,
   "colour_tokens": {
     "background": {
-      "default": "#16241d",
+      "default": "#f3ecdc",
       "locked": false
     },
     "title": {
-      "default": "#eae3d3",
+      "default": "#22344e",
       "locked": false
     },
     "subtitle/body": {
-      "default": "#9ba08f",
+      "default": "#7d7362",
       "locked": false
     },
     "accent": {
-      "default": "#c4644a",
+      "default": "#b8452f",
       "locked": false
     },
     "stat.label": {
-      "default": "#9ba08f",
+      "default": "#7d7362",
       "locked": false
     },
     "stat.value": {
-      "default": "#eae3d3",
+      "default": "#22344e",
       "locked": false
     },
     "badge.fill": {
-      "default": "#16241d",
+      "default": "#ffffff",
       "locked": true
     },
     "badge.text": {
-      "default": "#eae3d3",
+      "default": "#22344e",
       "locked": false
     },
     "cta": {
-      "default": "#9ba08f",
+      "default": "#22344e",
       "locked": false
     },
     "divider": {
-      "default": "#c4644a",
+      "default": "#b8452f",
       "locked": false
     },
     "icon": {
-      "default": "#c4644a",
+      "default": "#b8452f",
       "locked": true
     },
     "overlay": {
@@ -68,10 +71,10 @@
   "plate_rects": [
     {
       "bbox": [
-        516,
-        1262,
-        564,
-        1265
+        780,
+        1050,
+        1016,
+        1052
       ],
       "fill_role": "divider"
     }
@@ -79,69 +82,69 @@
   "text_slots": [
     {
       "id": "brand",
-      "role": "title",
+      "role": "subtitle/body",
       "source": "template_copy",
       "bbox": [
         64,
         48,
         1016,
-        90
+        88
       ],
-      "size": 22,
-      "line_height": 28,
-      "valign": "center",
-      "font": "Jost",
+      "size": 21,
+      "line_height": 26,
+      "font": "Special Elite",
       "align": "center",
-      "tracking": 6,
-      "text": "MEDITERRÁNEO COSTA HOMES"
+      "text": "MEDITERRANEO COSTA HOMES",
+      "tracking": 4,
+      "valign": "center"
     },
     {
       "id": "address",
-      "role": "accent",
+      "role": "subtitle/body",
       "source": "property_fact",
       "bbox": [
-        90,
-        964,
-        990,
-        996
+        780,
+        852,
+        1016,
+        882
       ],
       "size": 20,
-      "line_height": 24,
-      "font": "Jost",
-      "align": "center",
-      "tracking": 7,
-      "text": "ALTEA · ALICANTE"
+      "line_height": 25,
+      "font": "Special Elite",
+      "align": "left",
+      "text": "ALTEA · ALICANTE",
+      "tracking": 1
     },
     {
       "id": "title",
       "role": "title",
       "source": "property_fact",
       "bbox": [
-        90,
-        1004,
-        990,
-        1118
+        780,
+        894,
+        1016,
+        1034
       ],
-      "size": 88,
-      "line_height": 96,
-      "font": "Fraunces 115pt",
-      "align": "center",
-      "text": "Villa in Altea"
+      "size": 52,
+      "line_height": 60,
+      "font": "Libre Caslon Display",
+      "align": "left",
+      "text": "Villa in\nAltea"
     },
     {
       "id": "price_value",
       "role": "accent",
       "source": "property_fact",
       "bbox": [
-        90,
-        1132,
-        990,
-        1198
+        780,
+        1066,
+        1016,
+        1122
       ],
-      "size": 54,
-      "line_height": 60,
-      "font": "Fraunces 115pt",
-      "align": "center",
+      "size": 44,
+      "line_height": 50,
+      "font": "Libre Caslon Display",
+      "align": "left",
       "text": "€695,000"
     },
     {
@@ -149,33 +152,31 @@
       "role": "subtitle/body",
       "source": "property_fact",
       "bbox": [
-        90,
-        1210,
-        990,
-        1242
+        780,
+        1138,
+        1016,
+        1192
       ],
-      "size": 22,
+      "size": 19,
       "line_height": 26,
-      "font": "Jost",
-      "align": "center",
-      "tracking": 4,
+      "font": "Special Elite",
+      "align": "left",
       "text": "3 BED · 3 BATH"
     },
     {
       "id": "cta_web",
-      "role": "cta",
+      "role": "subtitle/body",
       "source": "template_copy",
       "bbox": [
-        90,
-        1286,
-        990,
-        1316
+        64,
+        1276,
+        1016,
+        1304
       ],
-      "size": 20,
+      "size": 19,
       "line_height": 24,
-      "font": "Jost",
+      "font": "Special Elite",
       "align": "center",
-      "tracking": 2,
       "text": "aivena.es · +34 600 999 066"
     }
   ],

@@ -24,9 +24,10 @@ import {
 
 // #3 REMOVED 2026-07-15 (Christian): its "LUXURY" lettering + glass features panel are baked artwork that
 // can't be edited — rather than ship a template that ignores taps, it's out. #29 was removed earlier.
-// '30'/'31'/'32' = the 2-photo family, CC-authored + Christian-approved 2026-07-15:
-// Collector's Card (light editorial) / La Entrada (dark arch) / Riviera (diagonal poster).
-export const EDITABLE_TEMPLATE_IDS = ['1', '2', '5', '6', '7', '8', '10', '11', '14', '21', '22', '24', '25', '26', '27', '28', '30', '31', '32'];
+// CC-authored families (Christian-approved 2026-07-15): 30/31/32 = 2-photo (Collector's Card / La Entrada /
+// Riviera); 33/34/35 = 3-photo (Azulejos / Postal / Sol). #5, #14, #21, #22 RETIRED 2026-07-15 (Christian:
+// "not the biggest fan"), joining #3 (uneditable baked art) and #29.
+export const EDITABLE_TEMPLATE_IDS = ['1', '2', '6', '7', '8', '10', '11', '24', '25', '26', '27', '28', '30', '31', '32', '33', '34', '35'];
 
 // Pre-made colour SCHEMES (Christian 2026-07-13) — curated coordinated palettes the agency taps to apply to the
 // whole template, instead of fiddling per-layer. Each maps to the four brand slots agencyPalette consumes:
@@ -116,7 +117,10 @@ function colourRegions(m: any): { role: string; bbox: number[] }[] {
 }
 /** The colour roles this template actually renders — so the editor never shows a swatch that does nothing. */
 function usedRoles(m: any): Set<string> {
-  const s = new Set<string>(['background']); // the page background always applies
+  // 'background' is only a REAL control on paint_background templates (the engine paints the page from the
+  // palette). On the replicated Canva templates the ground is baked into the source raster — a Background
+  // swatch there is a dead control (Christian hit exactly that), so it must not be offered.
+  const s = new Set<string>(m.paint_background ? ['background'] : []);
   for (const t of m.text_slots ?? []) {
     if (t.role) s.add(t.role);
     if (t.pill?.role) s.add(t.pill.role);

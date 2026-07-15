@@ -137,6 +137,20 @@ export function deriveSlots(p: DeriveProperty, agency: DeriveAgency, templateId:
     ].filter(Boolean).join(" · ");
     const addr = [city, p.region].filter(Boolean).join(" · ").toUpperCase();
     const contact = [agency.web, agency.phone].filter(Boolean).join(" · ");
+    if (templateId === "55") {
+      // Cuarteto: Titular's split at four photos — title_line1/2 + a strong price row.
+      return {
+        brand: T(agency.name.toUpperCase()),
+        address: T(addr),
+        title_line1: T(`${typeCap} in`),
+        title_line2: T(city),
+        price_value: T(price ?? ""),
+        stat_beds: T(p.beds != null ? `${p.beds} BED` : ""),
+        stat_baths: T(p.baths != null ? `${p.baths} BATH` : ""),
+        stat_area: T(p.size != null ? `${p.size} M²` : ""),
+        cta_web: T([agency.web, agency.phone].filter(Boolean).join(" · ")),
+      };
+    }
     if (templateId === "54") {
       // Pregón: type bookends — huge single-line title and price, both auto-fitting.
       return {

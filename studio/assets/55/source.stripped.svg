@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1080" height="1350" viewBox="0 0 1080 1350">
+  <!-- Template 55 "Cuarteto" - CC-authored 4-photo (2026-07-15). Titular's type-interleave at four
+       photos: giant title line, photo pair, giant city line staggered right in accent, photo pair,
+       facts strip. Zero dead zones. Art colours live tokens. -->
+
+  <image x="0" y="196" width="536" height="360" xlink:href="@@PHOTO0@@" preserveAspectRatio="xMidYMid slice"/>
+  <image x="544" y="196" width="536" height="360" xlink:href="@@PHOTO1@@" preserveAspectRatio="xMidYMid slice"/>
+  <rect x="14" y="210" width="508" height="332" fill="none" stroke="@@COLOUR:title@@" stroke-width="1.5"/>
+  <rect x="558" y="210" width="508" height="332" fill="none" stroke="@@COLOUR:title@@" stroke-width="1.5"/>
+
+  <image x="0" y="726" width="536" height="360" xlink:href="@@PHOTO2@@" preserveAspectRatio="xMidYMid slice"/>
+  <image x="544" y="726" width="536" height="360" xlink:href="@@PHOTO3@@" preserveAspectRatio="xMidYMid slice"/>
+  <rect x="14" y="740" width="508" height="332" fill="none" stroke="@@COLOUR:title@@" stroke-width="1.5"/>
+  <rect x="558" y="740" width="508" height="332" fill="none" stroke="@@COLOUR:title@@" stroke-width="1.5"/>
+
+  <rect x="64" y="1204" width="952" height="2" fill="@@COLOUR:accent@@"/>
+
+  <g stroke="@@COLOUR:icon@@" stroke-width="2.5" fill="none">
+    <path d="M70 1262 L70 1238 L114 1238"/>
+    <path d="M64 1266 L120 1266 L120 1254 A8 8 0 0 0 112 1246 L82 1246"/>
+    <path d="M66 1266 L66 1274 M118 1266 L118 1274"/>
+    <circle cx="75" cy="1243" r="4"/>
+  </g>
+  <g stroke="@@COLOUR:icon@@" stroke-width="2.5" fill="none">
+    <path d="M240 1252 L284 1252 A4 4 0 0 1 288 1256 A16 16 0 0 1 272 1270 L252 1270 A16 16 0 0 1 236 1256 A4 4 0 0 1 240 1252 Z"/>
+    <path d="M244 1252 L244 1238 A7 7 0 0 1 258 1238"/>
+    <path d="M248 1270 L246 1276 M276 1270 L278 1276"/>
+  </g>
+  <g stroke="@@COLOUR:icon@@" stroke-width="2.5" fill="none">
+    <rect x="404" y="1238" width="40" height="36" stroke-dasharray="6 4"/>
+    <path d="M412 1266 L436 1246 M412 1254 L412 1266 L424 1266 M436 1258 L436 1246 L424 1246"/>
+  </g>
+</svg>

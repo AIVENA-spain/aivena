@@ -720,6 +720,7 @@ route.get('/editable-gallery', async (c) => {
         const hex = galleryAccent(i);
         return {
           template_id: t.id,
+          number: t.number,
           property_id: chosen.id,
           property_title: chosen.title,
           photos: chosen.photos.slice(0, t.photo_count),

@@ -32,6 +32,7 @@ type EditSlot = {
 };
 type ColourRegion = { role: string; bbox: number[] };
 type TemplateMeta = {
+  number?: number;
   id: string; photo_count: number; palette_locked: boolean;
   canvas: { width: number; height: number };
   colour_regions: ColourRegion[];
@@ -45,7 +46,7 @@ type Defaults = Omit<TemplateMeta, "editable_slots" | "colour_layers"> & {
 };
 // the Templates gallery render PLAN (one entry per template)
 type GalleryItem = {
-  template_id: string; property_id: string; property_title: string | null;
+  template_id: string; number?: number; property_id: string; property_title: string | null;
   photos: string[]; palette_locked: boolean; brand: Brand; colour_overrides: Record<string, string>;
 };
 
@@ -555,7 +556,7 @@ export function EditableWizard() {
                     )}
                   </div>
                   <div className="flex items-center justify-between p-2 text-xs">
-                    <span className="font-medium text-neutral-600 dark:text-neutral-300">Template {item.template_id}</span>
+                    <span className="font-medium text-neutral-600 dark:text-neutral-300">Template {item.number ?? item.template_id}</span>
                     <span className="text-neutral-400 opacity-0 transition group-hover:opacity-100">Customise →</span>
                   </div>
                 </button>
@@ -613,7 +614,7 @@ export function EditableWizard() {
                     <div className="flex h-full items-center justify-center text-xs text-neutral-400">preview failed</div>
                   )}
                 </div>
-                <div className="p-2 text-center text-xs font-medium text-neutral-600">Template {t.id}</div>
+                <div className="p-2 text-center text-xs font-medium text-neutral-600">Template {t.number ?? t.id}</div>
               </button>
             ))}
           </div>

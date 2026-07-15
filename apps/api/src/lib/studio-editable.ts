@@ -29,8 +29,11 @@ import {
 // "not the biggest fan"), joining #3 (uneditable baked art) and #29.
 // '36'/'37'/'38' = the 1-photo scene family; '40' = Brisa, the editorial line-work design (approved
 // 2026-07-15 'ouuu yes thats nice'). #39 La Mesa was designed but rejected — not registered.
-// '41' = Luna (night sibling of Brisa, approved 2026-07-15). '42' Terral not approved — unregistered.
-export const EDITABLE_TEMPLATE_IDS = ['1', '2', '6', '7', '8', '10', '11', '24', '25', '26', '27', '28', '30', '31', '32', '33', '34', '35', '36', '37', '38', '40', '41'];
+// '41' = Luna (night sibling of Brisa). '42' Terral not approved — unregistered.
+// #1 and #11 RETIRED 2026-07-15 (Christian) → the catalogue is exactly 21 templates.
+// INTERNAL ids are stable (files/derive keep them); the USER sees display numbers 1..21 assigned by
+// editableCatalogue() in photo-count order — renaming files would be churn with zero user value.
+export const EDITABLE_TEMPLATE_IDS = ['2', '6', '7', '8', '10', '24', '25', '26', '27', '28', '30', '31', '32', '33', '34', '35', '36', '37', '38', '40', '41'];
 
 // Pre-made colour SCHEMES (Christian 2026-07-13) — curated coordinated palettes the agency taps to apply to the
 // whole template, instead of fiddling per-layer. Each maps to the four brand slots agencyPalette consumes:
@@ -140,6 +143,8 @@ function usedRoles(m: any): Set<string> {
 export interface TemplateMeta {
   id: string;
   photo_count: number;
+  /** user-facing catalogue number (1..N), assigned by photo-count order — NOT the internal id */
+  number: number;
   palette_locked: boolean;
   // canvas dimensions (px) — the editor scales the design bboxes below onto the displayed preview.
   canvas: { width: number; height: number };
@@ -161,6 +166,7 @@ export function templateMeta(id: string): TemplateMeta {
   return {
     id,
     photo_count,
+    number: 0, // assigned by catalogue() below (photo-count order)
     palette_locked: !!m.palette_locked,
     canvas: { width: m.canvas.width, height: m.canvas.height },
     colour_regions: colourRegions(m),
@@ -188,7 +194,13 @@ function effectiveColours(m: any, brand: BrandColours): Record<string, string> {
 }
 
 export function catalogue(): TemplateMeta[] {
-  return EDITABLE_TEMPLATE_IDS.filter(isKnownTemplate).map(templateMeta);
+  // Christian 2026-07-15: the catalogue reads 1..N sorted by how many photos a template needs (1-photo
+  // first, 4-photo last). `number` is the user-facing name; internal ids stay stable underneath.
+  const metas = EDITABLE_TEMPLATE_IDS.filter(isKnownTemplate).map(templateMeta);
+  metas.sort((a, b) => a.photo_count - b.photo_count ||
+    EDITABLE_TEMPLATE_IDS.indexOf(a.id) - EDITABLE_TEMPLATE_IDS.indexOf(b.id));
+  metas.forEach((m, i) => { m.number = i + 1; });
+  return metas;
 }
 
 // ── DB-row → engine-input mappers ─────────────────────────────────────────────

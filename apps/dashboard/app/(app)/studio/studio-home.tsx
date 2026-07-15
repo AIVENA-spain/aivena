@@ -14,7 +14,7 @@ type LibraryItem = {
 };
 type Quota = { used?: number; quota?: number | null; remaining?: number | null; plan_tier?: string; unlimited?: boolean } | null;
 type GalleryItem = {
-  template_id: string; property_id: string; property_title: string | null;
+  template_id: string; number?: number; property_id: string; property_title: string | null;
   photos: string[]; brand: { navy: string; gold: string; cream: string; text: string };
   colour_overrides: Record<string, string>;
 };
@@ -191,7 +191,7 @@ export function StudioHome({ initialLibrary, quota }: { initialLibrary: LibraryI
                   )}
                 </div>
                 <div className="flex items-center justify-between p-2 text-xs">
-                  <span className="font-medium text-neutral-600 dark:text-neutral-300">Template {t.template_id}</span>
+                  <span className="font-medium text-neutral-600 dark:text-neutral-300">Template {t.number ?? t.template_id}</span>
                   <span className="truncate pl-2 text-neutral-400">{t.property_title ?? ""}</span>
                 </div>
               </button>

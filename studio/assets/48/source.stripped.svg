@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1080" height="1350" viewBox="0 0 1080 1350">
+  <!-- Template 48 "Galeria" - CC-authored 3-photo (2026-07-15). Professional Nº1 for three photos:
+       masthead band, full-bleed hero, then a navy facts panel LEFT with two stacked photos RIGHT.
+       Zero dead zones. All art colours are live @@COLOUR@@ tokens. -->
+
+  <image x="0" y="64" width="1080" height="696" xlink:href="@@PHOTO0@@" preserveAspectRatio="xMidYMid slice"/>
+  <rect x="16" y="80" width="1048" height="664" fill="none" stroke="@@COLOUR:accent@@" stroke-width="1.5"/>
+
+  <image x="420" y="760" width="660" height="295" xlink:href="@@PHOTO1@@" preserveAspectRatio="xMidYMid slice"/>
+  <image x="420" y="1055" width="660" height="295" xlink:href="@@PHOTO2@@" preserveAspectRatio="xMidYMid slice"/>
+  <rect x="436" y="776" width="628" height="263" fill="none" stroke="@@COLOUR:accent@@" stroke-width="1.5"/>
+  <rect x="436" y="1071" width="628" height="263" fill="none" stroke="@@COLOUR:accent@@" stroke-width="1.5"/>
+
+  <path d="M 96 38 l 7 7 l -7 7 l -7 -7 Z" fill="@@COLOUR:accent@@"/>
+  <path d="M 984 38 l 7 7 l -7 7 l -7 -7 Z" fill="@@COLOUR:accent@@"/>
+
+  <rect x="56" y="972" width="64" height="3" fill="@@COLOUR:accent@@"/>
+  <rect x="56" y="1288" width="308" height="1.5" fill="@@COLOUR:accent@@" fill-opacity="0.55"/>
+
+  <g stroke="@@COLOUR:icon@@" stroke-width="2.5" fill="none">
+    <path d="M62 1026 L62 1002 L106 1002"/>
+    <path d="M56 1030 L112 1030 L112 1018 A8 8 0 0 0 104 1010 L74 1010"/>
+    <path d="M58 1030 L58 1038 M110 1030 L110 1038"/>
+    <circle cx="67" cy="1007" r="4"/>
+  </g>
+  <g stroke="@@COLOUR:icon@@" stroke-width="2.5" fill="none">
+    <path d="M60 1098 L104 1098 A4 4 0 0 1 108 1102 A16 16 0 0 1 92 1116 L72 1116 A16 16 0 0 1 56 1102 A4 4 0 0 1 60 1098 Z"/>
+    <path d="M64 1098 L64 1084 A7 7 0 0 1 78 1084"/>
+    <path d="M68 1116 L66 1122 M96 1116 L98 1122"/>
+  </g>
+  <g stroke="@@COLOUR:icon@@" stroke-width="2.5" fill="none">
+    <rect x="58" y="1160" width="40" height="36" stroke-dasharray="6 4"/>
+    <path d="M66 1188 L90 1168 M66 1176 L66 1188 L78 1188 M90 1180 L90 1168 L78 1168"/>
+  </g>
+</svg>

@@ -137,6 +137,19 @@ export function deriveSlots(p: DeriveProperty, agency: DeriveAgency, templateId:
     ].filter(Boolean).join(" · ");
     const addr = [city, p.region].filter(Boolean).join(" · ").toUpperCase();
     const contact = [agency.web, agency.phone].filter(Boolean).join(" · ");
+    if (templateId === "48") {
+      // Galería: narrow navy panel — balanced 2-line title for a 308px measure.
+      return {
+        brand: T(agency.name.toUpperCase()),
+        address: T(addr),
+        title: T(bestTitleSplit(`${typeCap} in ${city}`, "Libre Caslon Display", "400", 308, 46, 2)),
+        price_value: T(price ?? ""),
+        stat_beds: T(p.beds != null ? `${p.beds} BED` : ""),
+        stat_baths: T(p.baths != null ? `${p.baths} BATH` : ""),
+        stat_area: T(p.size != null ? `${p.size} M²` : ""),
+        cta_web: T([agency.web, agency.phone].filter(Boolean).join(" · ")),
+      };
+    }
     if (templateId === "47") {
       // Vista: full-bleed immersive — wide single-line title, everything anchored on the gradient.
       return {

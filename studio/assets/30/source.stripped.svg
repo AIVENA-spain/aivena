@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1080" height="1350" viewBox="0 0 1080 1350">
+  <!-- Template 30 "Collector's Card" — CC-authored 2-photo design (2026-07-15), not a Canva replication.
+       Baked art = the gallery-paper ground, the print mat + its soft cast shadow. Photos fill the two
+       tokens; ALL text is drawn by the engine (no_knockouts). Gold rules are plate_rects (recolourable). -->
+  <rect x="0" y="0" width="1080" height="1350" fill="#f3f0e9"/>
+  <!-- hero print: the exterior, full grid width -->
+  <image x="64" y="150" width="952" height="640" xlink:href="@@PHOTO0@@" preserveAspectRatio="xMidYMid slice"/>
+  <!-- cast shadow, then the mat, then the interior print overlapping the hero's lower right -->
+  <rect x="604" y="692" width="424" height="424" fill="#23272f" fill-opacity="0.08"/>
+  <rect x="592" y="680" width="424" height="424" fill="#f3f0e9"/>
+  <image x="606" y="694" width="396" height="396" xlink:href="@@PHOTO1@@" preserveAspectRatio="xMidYMid slice"/>
+</svg>

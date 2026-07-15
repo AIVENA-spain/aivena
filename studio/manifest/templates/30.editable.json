@@ -1,0 +1,76 @@
+{
+  "template_id": "30",
+  "canvas": { "width": 1080, "height": 1350 },
+  "source_svg": "assets/30/source.stripped.svg",
+  "photo_slots": [{ "token": "@@PHOTO0@@" }, { "token": "@@PHOTO1@@" }],
+  "photo_fit": "attention",
+  "no_knockouts": true,
+  "colour_tokens": {
+    "background": { "default": "#f3f0e9", "locked": true },
+    "title": { "default": "#23272f", "locked": false },
+    "subtitle/body": { "default": "#6a6e76", "locked": false },
+    "accent": { "default": "#b08a47", "locked": false },
+    "stat.label": { "default": "#23272f", "locked": false },
+    "stat.value": { "default": "#23272f", "locked": false },
+    "badge.fill": { "default": "#f3f0e9", "locked": true },
+    "badge.text": { "default": "#23272f", "locked": false },
+    "cta": { "default": "#23272f", "locked": false },
+    "divider": { "default": "#b08a47", "locked": false },
+    "icon": { "default": "#b08a47", "locked": true },
+    "overlay": { "default": "#000000", "locked": true }
+  },
+  "plate_rects": [
+    { "bbox": [508, 106, 572, 109], "fill_role": "divider" },
+    { "bbox": [64, 1246, 1016, 1248], "fill_role": "divider" }
+  ],
+  "text_slots": [
+    {
+      "id": "brand", "role": "title", "source": "template_copy",
+      "bbox": [64, 50, 1016, 98], "size": 23, "line_height": 30, "valign": "center",
+      "font": "Poppins", "weight": "500", "align": "center", "tracking": 6,
+      "text": "MEDITERRÁNEO COSTA HOMES"
+    },
+    {
+      "id": "type_script", "role": "accent", "source": "template_copy",
+      "bbox": [64, 812, 560, 894], "size": 54, "line_height": 60,
+      "font": "Great Vibes", "align": "left",
+      "text": "Mediterranean living"
+    },
+    {
+      "id": "title", "role": "title", "source": "property_fact",
+      "bbox": [64, 900, 570, 1012], "size": 92, "line_height": 98,
+      "font": "Italiana", "align": "left",
+      "text": "Villa in Altea"
+    },
+    {
+      "id": "address", "role": "subtitle/body", "source": "property_fact",
+      "bbox": [64, 1024, 570, 1056], "size": 22, "line_height": 26,
+      "font": "Poppins", "weight": "500", "align": "left", "tracking": 5,
+      "text": "ALTEA · ALICANTE"
+    },
+    {
+      "id": "price_value", "role": "accent", "source": "property_fact",
+      "bbox": [64, 1080, 570, 1152], "size": 60, "line_height": 66,
+      "font": "Italiana", "align": "left",
+      "text": "€695,000"
+    },
+    {
+      "id": "stat_line", "role": "stat.label", "source": "property_fact",
+      "bbox": [64, 1166, 570, 1198], "size": 23, "line_height": 28,
+      "font": "Poppins", "weight": "500", "align": "left", "tracking": 3,
+      "text": "3 BED · 3 BATH"
+    },
+    {
+      "id": "cta_web", "role": "cta", "source": "template_copy",
+      "bbox": [64, 1262, 520, 1304], "size": 21, "line_height": 26, "valign": "center",
+      "font": "Poppins", "weight": "500", "align": "left", "tracking": 2,
+      "text": "aivena.es"
+    },
+    {
+      "id": "cta_phone", "role": "subtitle/body", "source": "template_copy",
+      "bbox": [540, 1262, 1016, 1304], "size": 21, "line_height": 26, "valign": "center",
+      "font": "Poppins", "align": "right", "tracking": 1,
+      "text": "+34 600 999 066"
+    }
+  ]
+}

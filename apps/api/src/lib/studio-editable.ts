@@ -24,7 +24,8 @@ import {
 
 // #3 REMOVED 2026-07-15 (Christian): its "LUXURY" lettering + glass features panel are baked artwork that
 // can't be edited — rather than ship a template that ignores taps, it's out. #29 was removed earlier.
-export const EDITABLE_TEMPLATE_IDS = ['1', '2', '5', '6', '7', '8', '10', '11', '14', '21', '22', '24', '25', '26', '27', '28'];
+// '30' = the Collector's Card (CC-authored 2026-07-15) — the first 2-photo template.
+export const EDITABLE_TEMPLATE_IDS = ['1', '2', '5', '6', '7', '8', '10', '11', '14', '21', '22', '24', '25', '26', '27', '28', '30'];
 
 // Pre-made colour SCHEMES (Christian 2026-07-13) — curated coordinated palettes the agency taps to apply to the
 // whole template, instead of fiddling per-layer. Each maps to the four brand slots agencyPalette consumes:

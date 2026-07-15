@@ -77,6 +77,25 @@ export function deriveSlots(p: DeriveProperty, agency: DeriveAgency, templateId:
   const price = priceStr(p.price);
   const brand2 = splitTwoLines(agency.name);
   const T = (text: string) => ({ text });
+  if (templateId === "30") {
+    // "Collector's Card" (CC-authored 2-photo design, 2026-07-15): gallery-catalogue facts —
+    // masthead, natural-case display title, tracked-caps location, gold price, one specs line.
+    // Missing facts vanish (empty slot = nothing drawn), never invented.
+    const specs = [
+      p.beds != null ? `${p.beds} BED` : null,
+      p.baths != null ? `${p.baths} BATH` : null,
+      p.size != null ? `${p.size} M²` : null,
+    ].filter(Boolean).join(" · ");
+    return {
+      brand: T(agency.name.toUpperCase()),
+      title: T(`${typeCap} in ${city}`),
+      address: T([city, p.region].filter(Boolean).join(" · ").toUpperCase()),
+      price_value: T(price ?? ""),
+      stat_line: T(specs),
+      cta_web: T(agency.web),
+      cta_phone: T(agency.phone),
+    };
+  }
   if (templateId === "11") return { brand: T(brand2), title: T(`${typeCap} in\n${city}`.toUpperCase()), address: T(loc) };
   if (templateId === "1") {
     // template style: spelled-out numbers, stacked 2-line caps ("TWO / BEDROOMS")

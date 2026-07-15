@@ -1,4 +1,6 @@
-// image-generate-create — W13 image generation create path v0.6.8 (AIVENA Studio).
+// image-generate-create — W13 image generation create path v0.6.9 (AIVENA Studio).
+// v0.6.9 (2026-07-15): renovation back on nano-banana-edit — seedream preserved the room instead of
+//   restyling it (Christian: "looks the same just more ai"). Quality > occasional E005 retry.
 // v0.6.8 (2026-07-15): renovation model → bytedance/seedream-v4-edit (google/nano-banana-edit E005
 //   false-flagged a normal room photo live; same reliability move the enhance path made in v0.6.6).
 // v0.6.7 (2026-07-14): KIE output raised to 4K (Christian: "all kie should be done in 4k so its the best
@@ -50,10 +52,12 @@ const usableCatalogPhoto = (u: unknown): u is string => typeof u === "string" &&
 const MODEL_BY_TYPE: Record<string, string> = {
   ad_creative:  MODEL_T2I,
   social_post:  MODEL_T2I,
-  // v0.6.8 (2026-07-15): renovation moved off google/nano-banana-edit too — it E005-false-flagged a normal
-  // room photo live today (same non-determinism that moved the enhance path to seedream in v0.6.6). The
-  // MODEL_ENHANCE input branch (image_urls + 4K + ratio preserved) applies automatically.
-  renovation:   MODEL_ENHANCE,
+  // v0.6.9 (2026-07-15): renovation BACK on google/nano-banana-edit. The v0.6.8 move to seedream fixed the
+  // E005 false-flags but gutted renovation quality — seedream is tuned to PRESERVE the photo (perfect for
+  // watermark clean-up, wrong for restyling): Christian: "it basically looks the same just more ai".
+  // Trade-off accepted: nano-banana renovates properly but occasionally E005-false-flags a normal room —
+  // the UI's Try again handles that; quality wins for the creative path.
+  renovation:   MODEL_EDIT,
 };
 const VALID_TYPES = ["ad_creative", "social_post", "renovation"];
 

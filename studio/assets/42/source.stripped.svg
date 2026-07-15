@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1080" height="1350" viewBox="0 0 1080 1350">
+  <!-- Template 42 "Terral" - CC-authored 1-photo (2026-07-15), earth sibling of Brisa. Nested line arches
+       behind the photo corner, a diagonal hatch patch riding its far corner, a zigzag run in the header,
+       a diamond column down the left, outlined title banner. Ground engine-painted. -->
+
+  <!-- header zigzag -->
+  <path d="M 640 84 L 668 70 L 696 98 L 724 70 L 752 98 L 780 70 L 808 98 L 836 70 L 864 98 L 892 70 L 920 98 L 948 70 L 976 98" fill="none" stroke="#b0532f" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- nested line arches behind the photo's top-left corner -->
+  <path d="M -6 150 A 70 70 0 0 1 134 150" fill="none" stroke="#b0532f" stroke-width="4" transform="rotate(180 64 150)"/><path d="M -44 150 A 108 108 0 0 1 172 150" fill="none" stroke="#4f5b3a" stroke-width="3.5" transform="rotate(180 64 150)"/><path d="M -82 150 A 146 146 0 0 1 210 150" fill="none" stroke="#d9a03d" stroke-width="3" transform="rotate(180 64 150)"/><path d="M -120 150 A 184 184 0 0 1 248 150" fill="none" stroke="#2a2721" stroke-width="2" transform="rotate(180 64 150)"/>
+
+  <!-- the photo: big, whole, bleeding off the RIGHT edge -->
+  <image x="64" y="150" width="1016" height="716" xlink:href="@@PHOTO0@@" preserveAspectRatio="xMidYMid slice"/>
+  <rect x="64" y="150" width="1016" height="716" fill="none" stroke="#2a2721" stroke-width="4"/>
+
+  <!-- the hatch patch, riding the photo's bottom-right corner -->
+  <g><path d="M 880 900 L 940 840" stroke="#2a2721" stroke-width="2" stroke-opacity="0.65"/><path d="M 896 900 L 956 840" stroke="#2a2721" stroke-width="2" stroke-opacity="0.65"/><path d="M 912 900 L 972 840" stroke="#2a2721" stroke-width="2" stroke-opacity="0.65"/><path d="M 928 900 L 988 840" stroke="#2a2721" stroke-width="2" stroke-opacity="0.65"/><path d="M 944 900 L 1004 840" stroke="#2a2721" stroke-width="2" stroke-opacity="0.65"/><path d="M 960 900 L 1020 840" stroke="#2a2721" stroke-width="2" stroke-opacity="0.65"/><path d="M 976 900 L 1036 840" stroke="#2a2721" stroke-width="2" stroke-opacity="0.65"/><path d="M 992 900 L 1052 840" stroke="#2a2721" stroke-width="2" stroke-opacity="0.65"/><path d="M 1008 900 L 1068 840" stroke="#2a2721" stroke-width="2" stroke-opacity="0.65"/></g>
+
+  <!-- diamond column down the left margin -->
+  <g fill="#4f5b3a">
+    <path d="M 40 940 l 11 11 l -11 11 l -11 -11 Z"/>
+    <path d="M 40 996 l 11 11 l -11 11 l -11 -11 Z"/>
+    <path d="M 40 1052 l 11 11 l -11 11 l -11 -11 Z" fill="#b0532f"/>
+    <path d="M 40 1108 l 11 11 l -11 11 l -11 -11 Z"/>
+  </g>
+
+  <!-- outlined banner behind the title, with rust corner ticks -->
+  <rect x="84" y="890" width="470" height="84" rx="10" fill="none" stroke="#b0532f" stroke-width="3" transform="rotate(-1 84 890)"/>
+  <g stroke="#b0532f" stroke-width="3" stroke-linecap="round">
+    <path d="M 78 884 L 92 884 M 78 884 L 78 898"/>
+    <path d="M 560 978 L 546 978 M 560 978 L 560 964"/>
+  </g>
+
+  <!-- per-fact line icons, inline row -->
+  <g stroke="#4f5b3a" stroke-width="2.5" fill="none">
+    <path d="M112 1074 L112 1050 L156 1050"/>
+    <path d="M106 1078 L162 1078 L162 1066 A8 8 0 0 0 154 1058 L124 1058"/>
+    <path d="M108 1078 L108 1086 M160 1078 L160 1086"/>
+    <circle cx="117" cy="1055" r="4"/>
+  </g>
+  <g stroke="#4f5b3a" stroke-width="2.5" fill="none">
+    <path d="M332 1064 L376 1064 A4 4 0 0 1 380 1068 A16 16 0 0 1 364 1082 L344 1082 A16 16 0 0 1 328 1068 A4 4 0 0 1 332 1064 Z"/>
+    <path d="M336 1064 L336 1050 A7 7 0 0 1 350 1050"/>
+    <path d="M340 1082 L338 1088 M368 1082 L370 1088"/>
+  </g>
+  <g stroke="#4f5b3a" stroke-width="2.5" fill="none">
+    <rect x="552" y="1050" width="40" height="36" stroke-dasharray="6 4"/>
+    <path d="M560 1078 L584 1058 M560 1066 L560 1078 L572 1078 M584 1070 L584 1058 L572 1058"/>
+  </g>
+
+  <!-- footer rules -->
+  <path d="M 90 1180 L 990 1180" stroke="#2a2721" stroke-width="3"/>
+  <path d="M 90 1188 L 990 1188" stroke="#2a2721" stroke-width="1"/>
+
+  <!-- corner geometry: mustard triangle run bottom-left, rust sun-tick bottom-right -->
+  <g fill="#d9a03d">
+    <path d="M 92 1256 l 12 20 l -24 0 Z"/><path d="M 130 1256 l 12 20 l -24 0 Z"/><path d="M 168 1256 l 12 20 l -24 0 Z"/>
+  </g>
+  <g stroke="#b0532f" stroke-width="3" fill="none">
+    <circle cx="1000" cy="1272" r="22"/>
+    <path d="M 1000 1238 L 1000 1226 M 1000 1306 L 1000 1318 M 966 1272 L 954 1272 M 1034 1272 L 1046 1272"/>
+  </g>
+  <circle cx="930" cy="1310" r="4" fill="#4f5b3a"/>
+</svg>

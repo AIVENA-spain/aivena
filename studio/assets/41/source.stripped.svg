@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1080" height="1350" viewBox="0 0 1080 1350">
+  <!-- Template 41 "Luna" - CC-authored 1-photo (2026-07-15), night sibling of Brisa. Photo bleeds off the
+       LEFT edge; a line moon rises behind its right corner; dashed currents cross onto the photo; a
+       constellation lives in the corner. Ground engine-painted (dark). All text engine-drawn. -->
+
+  <!-- the line moon behind the photo's top-right corner, with a gold crescent heart -->
+  <circle cx="936" cy="168" r="44" fill="none" stroke="#efe9db" stroke-width="2"/><circle cx="936" cy="168" r="76" fill="none" stroke="#efe9db" stroke-width="2"/><circle cx="936" cy="168" r="108" fill="none" stroke="#efe9db" stroke-width="2"/><circle cx="936" cy="168" r="140" fill="none" stroke="#efe9db" stroke-width="2"/><circle cx="936" cy="168" r="172" fill="none" stroke="#efe9db" stroke-width="2"/>
+  <path d="M 936 138 A 30 30 0 1 1 936 198 A 24 24 0 1 0 936 138 Z" fill="#c8a24b"/>
+
+  <!-- four-point line stars in the sky corner -->
+  <g stroke="#efe9db" stroke-width="2.5" stroke-linecap="round">
+    <path d="M 1030 300 L 1030 324 M 1018 312 L 1042 312"/>
+    <path d="M 986 388 L 986 404 M 978 396 L 994 396"/>
+  </g>
+  <circle cx="1044" cy="248" r="3.5" fill="#6fb5c0"/>
+
+  <!-- the photo: big, whole, bleeding off the LEFT edge -->
+  <image x="0" y="110" width="930" height="730" xlink:href="@@PHOTO0@@" preserveAspectRatio="xMidYMid slice"/>
+  <rect x="0" y="110" width="930" height="730" fill="none" stroke="#efe9db" stroke-width="4"/>
+
+  <!-- dashed night currents, crossing from the wall onto the photo -->
+  <g fill="none" stroke-linecap="round">
+    <path d="M 1020 780 Q 950 760 880 780 T 740 780 T 600 780 T 460 780" stroke="#efe9db" stroke-width="3.5" stroke-dasharray="14 10"/>
+    <path d="M 1020 816 Q 950 796 880 816 T 740 816 T 600 816" stroke="#6fb5c0" stroke-width="3.5" stroke-dasharray="14 10"/>
+  </g>
+
+  <!-- gold squiggle under the title's first words -->
+  <path d="M 96 966 Q 146 950 196 966 T 296 966 T 396 966" fill="none" stroke="#c8a24b" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- per-fact line icons, inline row -->
+  <g stroke="#efe9db" stroke-width="2.5" fill="none">
+    <path d="M96 1074 L96 1050 L140 1050"/>
+    <path d="M90 1078 L146 1078 L146 1066 A8 8 0 0 0 138 1058 L108 1058"/>
+    <path d="M92 1078 L92 1086 M144 1078 L144 1086"/>
+    <circle cx="101" cy="1055" r="4"/>
+  </g>
+  <g stroke="#efe9db" stroke-width="2.5" fill="none">
+    <path d="M316 1064 L360 1064 A4 4 0 0 1 364 1068 A16 16 0 0 1 348 1082 L328 1082 A16 16 0 0 1 312 1068 A4 4 0 0 1 316 1064 Z"/>
+    <path d="M320 1064 L320 1050 A7 7 0 0 1 334 1050"/>
+    <path d="M324 1082 L322 1088 M352 1082 L354 1088"/>
+  </g>
+  <g stroke="#efe9db" stroke-width="2.5" fill="none">
+    <rect x="536" y="1050" width="40" height="36" stroke-dasharray="6 4"/>
+    <path d="M544 1078 L568 1058 M544 1066 L544 1078 L556 1078 M568 1070 L568 1058 L556 1058"/>
+  </g>
+
+  <!-- footer rules -->
+  <path d="M 90 1180 L 990 1180" stroke="#efe9db" stroke-width="3"/>
+  <path d="M 90 1188 L 990 1188" stroke="#efe9db" stroke-width="1"/>
+
+  <!-- the constellation, bottom-right: stars joined by hairlines -->
+  <g stroke="#8d94a3" stroke-width="1.5" fill="none">
+    <path d="M 880 1258 L 940 1240 L 1000 1266 L 1042 1244"/>
+  </g>
+  <g fill="#c8a24b">
+    <circle cx="880" cy="1258" r="4"/><circle cx="940" cy="1240" r="5"/><circle cx="1000" cy="1266" r="4"/><circle cx="1042" cy="1244" r="3.5"/>
+  </g>
+  <g stroke="#6fb5c0" stroke-width="3" fill="none">
+    <path d="M 0 1350 A 96 96 0 0 1 96 1254"/>
+    <path d="M 0 1350 A 54 54 0 0 1 54 1296"/>
+  </g>
+  <g fill="#efe9db">
+    <circle cx="150" cy="1256" r="3"/><circle cx="180" cy="1256" r="3"/><circle cx="210" cy="1256" r="3"/><circle cx="240" cy="1256" r="3"/>
+  </g>
+</svg>

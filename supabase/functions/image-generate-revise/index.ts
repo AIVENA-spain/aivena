@@ -1,4 +1,7 @@
-// image-generate-revise — W13 free-revision path v0.4 (AIVENA Studio pipeline).
+// image-generate-revise — W13 free-revision path v0.5 (AIVENA Studio pipeline).
+//
+// v0.5 (2026-07-15): model follows the JOB — renovation revisions on nano-banana-edit (creative restyle),
+//   everything else on seedream (preserving). The v0.4 all-seedream move made renovation revisions inert.
 //
 // v0.4 (2026-07-15): CONTEXT-AWARE + off Google. (1) The revision prompt now BUILDS ON the row's original
 //   enhance_prompt (returned by the RPC since v0.2 but never used): a renovation revision keeps restyling the
@@ -25,7 +28,11 @@ const SUPABASE_URL              = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const KIE_CREATE_URL  = "https://api.kie.ai/api/v1/jobs/createTask";
 const CALLBACK_BASE   = "https://atminvhrybxegpdtnnpl.supabase.co/functions/v1/image-generate-callback";
-const MODEL_EDIT = "bytedance/seedream-v4-edit"; // v0.4: off Google (E005 false-flags), matching create's enhance path
+// v0.5: the model follows the JOB. Renovation revisions need the CREATIVE model (nano-banana restyles;
+// seedream preserves — a seedream "renovation" returns the same room). Enhance/clean revisions stay on
+// seedream (nano-banana E005-false-flags normal property photos).
+const MODEL_RENOVATE = "google/nano-banana-edit";
+const MODEL_PRESERVE = "bytedance/seedream-v4-edit";
 const KIE_IMAGE_RESOLUTION = "4K";
 const MAX_REVISIONS = 2;
 
@@ -87,6 +94,8 @@ Deno.serve(async (req) => {
 
   const revisionNumber: number = reserved.revision_number;
   const sourceImageUrl: string = reserved.source_image_url;
+  const { data: genRow } = await admin.from("image_generations").select("generation_type, raw_request").eq("id", generationId).maybeSingle();
+  const isRenovation = genRow?.generation_type === "renovation";
   // v0.4: the revision keeps doing what the ORIGINAL generation was asked to do, plus the new change on top.
   // Without this, revising a renovation quietly dropped the restyle and just photo-enhanced the raw room.
   const originalPrompt: string = typeof reserved.enhance_prompt === "string" && reserved.enhance_prompt.trim()
@@ -118,9 +127,13 @@ Deno.serve(async (req) => {
   }
 
   const callBackUrl = `${CALLBACK_BASE}?gen=${generationId}&token=${callbackToken}&rev=${revisionNumber}`;
-  // seedream input shape (matches create v0.6.7): image_size omitted so the source aspect ratio is preserved.
-  const input: Record<string, unknown> = { prompt: finalPrompt, image_resolution: KIE_IMAGE_RESOLUTION, nsfw_checker: true, image_urls: [sourceImageUrl] };
-  const kiePayload = { model: MODEL_EDIT, callBackUrl, input };
+  const W2 = Number.isInteger(reserved.width) && reserved.width ? reserved.width : 1080;
+  const H2 = Number.isInteger(reserved.height) && reserved.height ? reserved.height : 1350;
+  const model = isRenovation ? MODEL_RENOVATE : MODEL_PRESERVE;
+  const input: Record<string, unknown> = isRenovation
+    ? { prompt: finalPrompt, output_format: "png", image_urls: [sourceImageUrl], image_size: `${W2}x${H2}` }
+    : { prompt: finalPrompt, image_resolution: KIE_IMAGE_RESOLUTION, nsfw_checker: true, image_urls: [sourceImageUrl] };
+  const kiePayload = { model, callBackUrl, input };
 
   let kieStatus = 0; let kieJson: any = null; let fetchErr: string | undefined;
   try {

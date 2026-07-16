@@ -264,7 +264,13 @@
       "windowBanner": "Dieser Käufer hat seit über 24 Stunden nicht geantwortet. WhatsApp erlaubt Nachrichten erst, wenn er erneut antwortet, daher kann dies gerade nicht gesendet werden.",
       "aiCouldntDraft": "Die KI konnte hier keine Antwort entwerfen – bitte schreibe selbst eine.",
       "supersede": "Eine neuere vorgeschlagene Antwort ist verfügbar – aktualisieren",
-      "translatedPreview": "Translated preview"
+      "translatedPreview": "Translated preview",
+      "insertAlternatives": "Alternativen einfügen",
+      "insertingAlternatives": "Wird hinzugefügt…",
+      "insertAlternativesHint": "Echte passende Immobilien zum Entwurf hinzufügen",
+      "altHeader": "Passende Immobilien:",
+      "altNone": "Noch keine passenden Immobilien zum Vorschlagen.",
+      "altError": "Immobilien konnten gerade nicht geladen werden."
     },
     "intel": {
       "buyerProfileHeading": "Buyer profile",

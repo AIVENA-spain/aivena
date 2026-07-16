@@ -264,7 +264,13 @@
       "windowBanner": "Этот покупатель не отвечал более 24 часов. WhatsApp разрешает сообщения только после того, как он ответит снова, поэтому сейчас отправить нельзя.",
       "aiCouldntDraft": "ИИ не смог составить здесь ответ — пожалуйста, напишите его сами.",
       "supersede": "Доступен более новый предложенный ответ — обновить",
-      "translatedPreview": "Translated preview"
+      "translatedPreview": "Translated preview",
+      "insertAlternatives": "Вставить варианты",
+      "insertingAlternatives": "Добавление…",
+      "insertAlternativesHint": "Добавить в черновик подходящие объекты",
+      "altHeader": "Подходящие объекты:",
+      "altNone": "Пока нет подходящих объектов для предложения.",
+      "altError": "Не удалось загрузить объекты сейчас."
     },
     "intel": {
       "buyerProfileHeading": "Buyer profile",

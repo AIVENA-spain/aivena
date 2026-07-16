@@ -264,7 +264,13 @@
       "windowBanner": "Ten kupujący nie odpowiedział od ponad 24 godzin. WhatsApp zezwala na wiadomości dopiero, gdy odpowie ponownie, więc na razie nie można tego wysłać.",
       "aiCouldntDraft": "AI nie mogła tu napisać odpowiedzi — napisz ją samodzielnie.",
       "supersede": "Dostępna jest nowsza sugerowana odpowiedź — odśwież",
-      "translatedPreview": "Translated preview"
+      "translatedPreview": "Translated preview",
+      "insertAlternatives": "Wstaw alternatywy",
+      "insertingAlternatives": "Dodawanie…",
+      "insertAlternativesHint": "Dodaj do wersji roboczej pasujące nieruchomości",
+      "altHeader": "Nieruchomości, które mogą pasować:",
+      "altNone": "Brak pasujących nieruchomości do zaproponowania.",
+      "altError": "Nie udało się teraz załadować nieruchomości."
     },
     "intel": {
       "buyerProfileHeading": "Buyer profile",

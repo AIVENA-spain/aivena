@@ -264,7 +264,13 @@
       "windowBanner": "Deze koper heeft al meer dan 24 uur niet gereageerd. WhatsApp staat berichten pas toe zodra hij weer reageert, dus dit kan nu niet worden verzonden.",
       "aiCouldntDraft": "De AI kon hier geen antwoord opstellen — schrijf er zelf een.",
       "supersede": "Er is een nieuwer voorgesteld antwoord beschikbaar — vernieuwen",
-      "translatedPreview": "Translated preview"
+      "translatedPreview": "Translated preview",
+      "insertAlternatives": "Alternatieven invoegen",
+      "insertingAlternatives": "Toevoegen…",
+      "insertAlternativesHint": "Echte passende woningen aan het concept toevoegen",
+      "altHeader": "Mogelijk passende woningen:",
+      "altNone": "Nog geen passende woningen om voor te stellen.",
+      "altError": "Kon de woningen nu niet laden."
     },
     "intel": {
       "buyerProfileHeading": "Buyer profile",

@@ -264,7 +264,13 @@
       "windowBanner": "Tämä ostaja ei ole vastannut yli 24 tuntiin. WhatsApp sallii viestit vasta, kun hän vastaa uudelleen, joten tätä ei voi lähettää juuri nyt.",
       "aiCouldntDraft": "Tekoäly ei pystynyt laatimaan vastausta tähän — kirjoita se itse.",
       "supersede": "Uudempi ehdotettu vastaus on saatavilla — päivitä",
-      "translatedPreview": "Translated preview"
+      "translatedPreview": "Translated preview",
+      "insertAlternatives": "Lisää vaihtoehtoja",
+      "insertingAlternatives": "Lisätään…",
+      "insertAlternativesHint": "Lisää luonnokseen todelliset vastaavat kohteet",
+      "altHeader": "Mahdollisesti sopivat kohteet:",
+      "altNone": "Ei vielä ehdotettavia vastaavia kohteita.",
+      "altError": "Kohteita ei voitu ladata juuri nyt."
     },
     "intel": {
       "buyerProfileHeading": "Buyer profile",

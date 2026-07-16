@@ -264,7 +264,13 @@
       "windowBanner": "Denne køber har ikke svaret i over 24 timer. WhatsApp tillader kun beskeder, når de svarer igen, så dette kan ikke sendes lige nu.",
       "aiCouldntDraft": "AI'en kunne ikke udarbejde et svar her — skriv venligst et selv.",
       "supersede": "Et nyere foreslået svar er tilgængeligt — opdater",
-      "translatedPreview": "Translated preview"
+      "translatedPreview": "Translated preview",
+      "insertAlternatives": "Indsæt alternativer",
+      "insertingAlternatives": "Tilføjer…",
+      "insertAlternativesHint": "Tilføj rigtige matchende boliger til kladden",
+      "altHeader": "Boliger der kan passe:",
+      "altNone": "Ingen matchende boliger at foreslå endnu.",
+      "altError": "Kunne ikke indlæse boliger lige nu."
     },
     "intel": {
       "buyerProfileHeading": "Buyer profile",

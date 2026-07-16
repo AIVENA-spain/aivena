@@ -264,7 +264,13 @@
       "windowBanner": "This buyer hasn't replied in over 24 hours. WhatsApp only allows messages once they reply again, so this can't be sent right now.",
       "aiCouldntDraft": "The AI couldn't draft a reply here — please write one.",
       "supersede": "A newer suggested reply is available — refresh",
-      "translatedPreview": "Translated preview"
+      "translatedPreview": "Translated preview",
+      "insertAlternatives": "Insert alternatives",
+      "insertingAlternatives": "Adding…",
+      "insertAlternativesHint": "Add real matched properties to the draft",
+      "altHeader": "Properties that may suit them:",
+      "altNone": "No matching properties to suggest yet.",
+      "altError": "Couldn't load properties right now."
     },
     "intel": {
       "buyerProfileHeading": "Buyer profile",

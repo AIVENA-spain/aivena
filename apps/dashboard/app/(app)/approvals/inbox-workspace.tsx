@@ -57,6 +57,11 @@ import {
   type PendingSuggestion,
 } from "./composer-actions";
 import { ClientIntelligence } from "./client-intelligence";
+import { getLeadMatchesAction } from "@/app/(app)/matches/matches-actions";
+import {
+  buildAlternativesBlock,
+  appendAlternatives,
+} from "./composer-alternatives";
 import type {
   InboxRow,
   TaskDetailResponse,
@@ -1581,6 +1586,7 @@ function Composer({
   const t = useTranslations("inbox.reply");
   const tComposer = useTranslations("inbox.composer");
   const tWindow = useTranslations("inbox.window");
+  const tMatches = useTranslations("matches");
   const format = useFormatter();
   // Stable "now" (server render time) — avoids relativeTime fallback warnings.
   const now = useNow();
@@ -1606,6 +1612,10 @@ function Composer({
   const [reengagePreviewLoaded, setReengagePreviewLoaded] = useState(false);
   const [reengaging, setReengaging] = useState(false);
   const [reengaged, setReengaged] = useState(false);
+  // "Insert alternatives" — fetch-in-flight flag + an honest note when there is
+  // nothing real to insert (no matches yet) or the fetch failed.
+  const [inserting, setInserting] = useState(false);
+  const [insertNote, setInsertNote] = useState<string | null>(null);
 
   const pending = pollState?.pending ?? null;
   const whatsapp = pollState?.whatsapp ?? null;
@@ -1792,6 +1802,38 @@ function Composer({
       setError(res.error);
       setBusy(false);
     }
+  }
+
+  // Insert REAL matched properties (get_lead_matches — the same rows the rail
+  // renders) into the draft as honest facts. Never fabricates: an empty match set
+  // or a failed fetch shows a plain note and leaves the draft untouched. Purely a
+  // drafting aid — no send, no automation, no new match reasons.
+  async function handleInsertAlternatives() {
+    if (inserting) return;
+    setInserting(true);
+    setInsertNote(null);
+    const res = await getLeadMatchesAction(leadId);
+    if (!res.ok) {
+      setInsertNote(tComposer("altError"));
+      setInserting(false);
+      return;
+    }
+    const block = buildAlternativesBlock(res.data, {
+      header: tComposer("altHeader"),
+      ref: tMatches("ref"),
+      priceOnRequest: tMatches("priceOnRequest"),
+      bed: tMatches("unitBed"),
+      bath: tMatches("unitBath"),
+      studio: tMatches("unitStudio"),
+    });
+    if (!block) {
+      setInsertNote(tComposer("altNone"));
+      setInserting(false);
+      return;
+    }
+    setText((prev) => appendAlternatives(prev, block));
+    setDirty(true);
+    setInserting(false);
   }
 
   const isSuggested = pending !== null;
@@ -1984,6 +2026,20 @@ function Composer({
           {busy ? t("sending") : t("send")}
         </Button>
 
+        <Button
+          type="button"
+          variant="outline"
+          className="gap-1.5"
+          disabled={busy || inserting}
+          onClick={handleInsertAlternatives}
+          title={tComposer("insertAlternativesHint")}
+        >
+          <Building2 className="h-3.5 w-3.5" aria-hidden />
+          {inserting
+            ? tComposer("insertingAlternatives")
+            : tComposer("insertAlternatives")}
+        </Button>
+
         {isSuggested ? (
           <Button
             type="button"
@@ -1997,6 +2053,12 @@ function Composer({
           </Button>
         ) : null}
       </div>
+
+      {/* Honest note when there is nothing real to insert, or the fetch failed —
+          never an empty or fabricated block. */}
+      {insertNote ? (
+        <p className="mt-2 text-[12px] text-muted-foreground">{insertNote}</p>
+      ) : null}
         </>
       )}
     </div>

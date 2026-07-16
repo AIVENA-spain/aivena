@@ -264,7 +264,13 @@
       "windowBanner": "Questo acquirente non risponde da oltre 24 ore. WhatsApp consente di inviare messaggi solo dopo una sua nuova risposta, quindi al momento non è possibile inviarlo.",
       "aiCouldntDraft": "L'IA non è riuscita a redigere una risposta qui — scrivine una tu.",
       "supersede": "È disponibile una risposta suggerita più recente — aggiorna",
-      "translatedPreview": "Translated preview"
+      "translatedPreview": "Translated preview",
+      "insertAlternatives": "Inserisci alternative",
+      "insertingAlternatives": "Aggiunta…",
+      "insertAlternativesHint": "Aggiungi alla bozza immobili reali corrispondenti",
+      "altHeader": "Immobili che potrebbero interessare:",
+      "altNone": "Nessun immobile corrispondente da suggerire per ora.",
+      "altError": "Impossibile caricare gli immobili in questo momento."
     },
     "intel": {
       "buyerProfileHeading": "Buyer profile",

@@ -264,7 +264,13 @@
       "windowBanner": "Denne kjøperen har ikke svart på over 24 timer. WhatsApp tillater bare meldinger når de svarer igjen, så dette kan ikke sendes akkurat nå.",
       "aiCouldntDraft": "AI-en klarte ikke å lage et svar her — skriv et selv.",
       "supersede": "Et nyere foreslått svar er tilgjengelig — oppdater",
-      "translatedPreview": "Translated preview"
+      "translatedPreview": "Translated preview",
+      "insertAlternatives": "Sett inn alternativer",
+      "insertingAlternatives": "Legger til…",
+      "insertAlternativesHint": "Legg til ekte samsvarende boliger i utkastet",
+      "altHeader": "Boliger som kan passe:",
+      "altNone": "Ingen samsvarende boliger å foreslå ennå.",
+      "altError": "Kunne ikke laste boliger akkurat nå."
     },
     "intel": {
       "buyerProfileHeading": "Buyer profile",

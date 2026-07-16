@@ -264,7 +264,13 @@
       "windowBanner": "Este comprador não responde há mais de 24 horas. O WhatsApp só permite enviar mensagens depois de ele responder novamente, por isso não é possível enviar agora.",
       "aiCouldntDraft": "A IA não conseguiu redigir uma resposta aqui — por favor, escreva uma.",
       "supersede": "Há uma resposta sugerida mais recente — atualizar",
-      "translatedPreview": "Translated preview"
+      "translatedPreview": "Translated preview",
+      "insertAlternatives": "Inserir alternativas",
+      "insertingAlternatives": "Adicionando…",
+      "insertAlternativesHint": "Adicionar ao rascunho imóveis reais correspondentes",
+      "altHeader": "Imóveis que podem interessar:",
+      "altNone": "Ainda não há imóveis correspondentes para sugerir.",
+      "altError": "Não foi possível carregar os imóveis agora."
     },
     "intel": {
       "buyerProfileHeading": "Buyer profile",

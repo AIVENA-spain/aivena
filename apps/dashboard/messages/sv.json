@@ -264,7 +264,13 @@
       "windowBanner": "Den här köparen har inte svarat på över 24 timmar. WhatsApp tillåter endast meddelanden när de svarar igen, så detta kan inte skickas just nu.",
       "aiCouldntDraft": "AI:n kunde inte skapa ett svar här — skriv ett själv.",
       "supersede": "Ett nyare föreslaget svar finns tillgängligt — uppdatera",
-      "translatedPreview": "Translated preview"
+      "translatedPreview": "Translated preview",
+      "insertAlternatives": "Infoga alternativ",
+      "insertingAlternatives": "Lägger till…",
+      "insertAlternativesHint": "Lägg till riktiga matchande bostäder i utkastet",
+      "altHeader": "Bostäder som kan passa:",
+      "altNone": "Inga matchande bostäder att föreslå ännu.",
+      "altError": "Kunde inte ladda bostäder just nu."
     },
     "intel": {
       "buyerProfileHeading": "Buyer profile",

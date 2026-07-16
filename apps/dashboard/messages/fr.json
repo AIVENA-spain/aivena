@@ -264,7 +264,13 @@
       "windowBanner": "Cet acheteur n'a pas répondu depuis plus de 24 heures. WhatsApp n'autorise les messages qu'une fois qu'il répond à nouveau, ce message ne peut donc pas être envoyé pour le moment.",
       "aiCouldntDraft": "L'IA n'a pas pu rédiger de réponse ici — veuillez en écrire une.",
       "supersede": "Une réponse suggérée plus récente est disponible — actualiser",
-      "translatedPreview": "Translated preview"
+      "translatedPreview": "Translated preview",
+      "insertAlternatives": "Insérer des alternatives",
+      "insertingAlternatives": "Ajout…",
+      "insertAlternativesHint": "Ajouter au brouillon des biens réels correspondants",
+      "altHeader": "Biens susceptibles de convenir :",
+      "altNone": "Aucun bien correspondant à suggérer pour l'instant.",
+      "altError": "Impossible de charger les biens pour le moment."
     },
     "intel": {
       "buyerProfileHeading": "Buyer profile",

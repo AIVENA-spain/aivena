@@ -53,6 +53,43 @@ export function wrap(text: string, font: string, size: number, maxW: number, wei
   return lines.join("\n");
 }
 
+/** SEAMLESS device: render ONE wide design (slideCount×1080 wide, 1350 tall) and slice it into
+ *  consecutive slides — photos, rules and display type continue across the swipe boundary, the
+ *  highest-impact carousel visual there is. Keep critical text ≥80px away from each 1080px seam. */
+export async function renderWideSliced(spec: DesignSpec, slideCount: number, photos: Buffer[]): Promise<Buffer[]> {
+  const sharp = (await import("sharp")).default;
+  const wide = await renderFreeform(spec, { width: slideCount * W, height: H }, photos);
+  const out: Buffer[] = [];
+  for (let i = 0; i < slideCount; i++) {
+    out.push(await sharp(wide).extract({ left: i * W, top: 0, width: W, height: H }).png().toBuffer());
+  }
+  return out;
+}
+
+/** GRAIN: one procedural paper-grain pass over a finished slide — turns flat brand fields into
+ *  something that reads printed rather than corporate. Deterministic (seeded LCG, no Math.random),
+ *  cached per size+intensity. 0.04-0.06 = editorial; keep identical across a deck (it's the stock). */
+const grainCache: Record<string, Buffer> = {};
+export async function applyGrain(png: Buffer, intensity = 0.05): Promise<Buffer> {
+  const sharp = (await import("sharp")).default;
+  const meta = await sharp(png).metadata();
+  const gw = meta.width ?? W, gh = meta.height ?? H;
+  const key = `${gw}x${gh}@${intensity}`;
+  if (!grainCache[key]) {
+    const px = gw * gh;
+    const raw = Buffer.alloc(px * 4);
+    const amp = Math.min(1, intensity * 2);
+    let s = 123456789 >>> 0;
+    for (let i = 0; i < px; i++) {
+      s = (1664525 * s + 1013904223) >>> 0;
+      const v = Math.round(128 + ((s & 0xff) - 128) * amp);   // near-mid grey → overlay ≈ subtle grain
+      raw[i * 4] = v; raw[i * 4 + 1] = v; raw[i * 4 + 2] = v; raw[i * 4 + 3] = 255;
+    }
+    grainCache[key] = await sharp(raw, { raw: { width: gw, height: gh, channels: 4 } }).png().toBuffer();
+  }
+  return sharp(png).composite([{ input: grainCache[key], blend: "overlay" }]).png().toBuffer();
+}
+
 /** Blend two #rrggbb colours — the deterministic way to hit the 60% "meta" opacity tier for TEXT
  *  (the freeform text element has no opacity, so we mix the ink toward the ground instead). */
 export function mix(ink: string, ground: string, inkShare: number): string {

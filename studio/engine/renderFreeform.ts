@@ -21,6 +21,26 @@ export const FreeformElement = z.discriminatedUnion("type", [
     zoom: z.number().min(1).max(6).optional(),
     x: z.number().min(0).max(1).optional(),
     y: z.number().min(0).max(1).optional(),
+    // photo treatments (carousel styles 2026-07-16): wash = low-opacity colour grade that unifies
+    // mixed portal photos into one "shoot"; duotone = greyscale mapped into the tint (poster register).
+    // Saturation is NEVER raised — over-HDR is the #1 cheap-listing tell.
+    tint: Colour.optional(),
+    tint_mode: z.enum(["wash", "duotone"]).optional(),
+    tint_opacity: z.number().min(0).max(0.4).optional(),   // wash strength (default 0.12)
+  }),
+  z.object({
+    // PUNCH (carousel styles): covers its bbox with the ground colour EXCEPT a shape-shaped hole,
+    // so the photo underneath shows through an arch / circle. Optional hairline echo ring outside
+    // the crop — the offset-outline device from the Mediterranean identity research.
+    type: z.literal("punch"),
+    bbox: Bbox,
+    fill: Colour,
+    shape: z.enum(["arch", "circle"]),
+    outline: z.object({
+      colour: Colour,
+      width: z.number().min(0.5).max(8).default(1.5),
+      offset: z.number().min(2).max(40).default(10),
+    }).optional(),
   }),
   z.object({
     type: z.literal("rect"),
@@ -42,7 +62,7 @@ export const FreeformElement = z.discriminatedUnion("type", [
     content: z.string().max(300).default(""),
     fact: z.string().optional(),       // fact key — the SERVER substitutes the canonical string
     font: z.string(),
-    size: z.number().min(14).max(400),
+    size: z.number().min(14).max(1000),   // up to oversized display numerals (Cartel/Plano styles)
     colour: Colour,
     align: z.enum(["left", "center", "right"]).default("left"),
     weight: z.string().optional(),     // "500" | "600" | "700" | "bold"
@@ -52,6 +72,11 @@ export const FreeformElement = z.discriminatedUnion("type", [
     line_height: z.number().optional(),
     // vertical placement of the text block within its bbox (default top; buttons/labels want center)
     valign: z.enum(["top", "center", "bottom"]).optional(),
+    // display-type devices (carousel styles 2026-07-16): rotate the block around its centre;
+    // hollow = outline-only type (stroke in the text colour, no fill) — the editorial poster look
+    rotate: z.number().min(-90).max(90).optional(),
+    hollow: z.boolean().optional(),
+    stroke_width: z.number().min(0.5).max(12).optional(),
     // MEASURED button/badge: the renderer draws this pill sized to the text + padding and centers the text in
     // it perfectly — ONE element, so a "CTA cut off / not centered in its box" can never happen by coordinates.
     pill: z.object({
@@ -224,6 +249,18 @@ export async function renderFreeform(
           .resize({ width: fw, height: fh, fit: "cover", position: sharp.strategy.attention })
           .jpeg({ quality: 90 }).toBuffer();
       }
+      if (el.tint) {
+        const rgb = [1, 3, 5].map((i) => parseInt(el.tint!.slice(i, i + 2), 16));
+        if (el.tint_mode === "duotone") {
+          // greyscale mapped into the tint colour — shadows take the tint, highlights stay light
+          buf = await sharp(buf).greyscale().tint({ r: rgb[0], g: rgb[1], b: rgb[2] }).jpeg({ quality: 90 }).toBuffer();
+        } else {
+          // wash: one low-opacity grade pass — unifies mixed photos, never raises saturation
+          const a = el.tint_opacity ?? 0.12;
+          const washSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${fw}" height="${fh}"><rect width="${fw}" height="${fh}" fill="${el.tint}" fill-opacity="${a}"/></svg>`;
+          buf = await sharp(buf).composite([{ input: Buffer.from(washSvg) }]).jpeg({ quality: 90 }).toBuffer();
+        }
+      }
       layers.push({ input: buf, left: Math.round(b[0]), top: Math.round(b[1]) });
 
     } else if (el.type === "rect") {
@@ -231,6 +268,26 @@ export async function renderFreeform(
       overlaySvg += `<rect x="${b[0]}" y="${b[1]}" width="${boxW(b)}" height="${boxH(b)}"` +
         (el.radius ? ` rx="${el.radius}"` : "") + ` fill="${el.fill}"` +
         (el.opacity !== undefined ? ` fill-opacity="${el.opacity}"` : "") + `/>`;
+
+    } else if (el.type === "punch") {
+      // ground colour over the bbox with a shape-shaped hole (evenodd) — the photo below shows through
+      const b = clampBox(el.bbox, W, H);
+      const [x0, y0, x1, y1] = b, w = boxW(b), h = boxH(b);
+      const shapePath = (inset: number): string => {
+        const sx0 = x0 + inset, sy0 = y0 + inset, sx1 = x1 - inset, sy1 = y1 - inset;
+        if (el.shape === "circle") {
+          const cx = (sx0 + sx1) / 2, cy = (sy0 + sy1) / 2, rx = (sx1 - sx0) / 2, ry = (sy1 - sy0) / 2;
+          return `M ${cx - rx},${cy} A ${rx} ${ry} 0 1 0 ${cx + rx},${cy} A ${rx} ${ry} 0 1 0 ${cx - rx},${cy} Z`;
+        }
+        const r = (sx1 - sx0) / 2; // arch: semicircular top on straight sides
+        return `M ${sx0},${sy1} L ${sx0},${Math.min(sy1, sy0 + r)} A ${r} ${r} 0 0 1 ${sx1},${Math.min(sy1, sy0 + r)} L ${sx1},${sy1} Z`;
+      };
+      // cover slightly beyond the bbox so no photo sliver leaks at the crop edge
+      const pad = 2;
+      overlaySvg += `<path fill-rule="evenodd" fill="${el.fill}" d="M ${x0 - pad},${y0 - pad} L ${x1 + pad},${y0 - pad} L ${x1 + pad},${y1 + pad} L ${x0 - pad},${y1 + pad} Z ${shapePath(0)}"/>`;
+      if (el.outline) {
+        overlaySvg += `<path fill="none" stroke="${el.outline.colour}" stroke-width="${el.outline.width}" d="${shapePath(-el.outline.offset)}"/>`;
+      }
 
     } else if (el.type === "scrim") {
       const b = clampBox(el.bbox, W, H);
@@ -276,6 +333,10 @@ export async function renderFreeform(
       const inset = el.pill ? el.pill.pad_x : 0;
       const tx = el.align === "center" ? b[0] + boxW(b) / 2 : el.align === "right" ? b[2] - inset : b[0] + inset;
       const wNum = el.weight ? (/^\d+$/.test(el.weight) ? el.weight : "700") : "";
+      // hollow = outline-only display type: stroke in the text colour, no fill
+      const paint = el.hollow
+        ? ` fill="none" stroke="${el.colour}" stroke-width="${(el.stroke_width ?? Math.max(1.5, size / 40)).toFixed(1)}"`
+        : ` fill="${el.colour}"`;
       const attrs = (wNum ? ` font-weight="${wNum}"` : "") + (el.italic ? ` font-style="italic"` : "") +
         (el.tracking ? ` letter-spacing="${(el.tracking * (size / el.size)).toFixed(2)}"` : "");
 
@@ -290,10 +351,17 @@ export async function renderFreeform(
         overlaySvg += `<rect x="${px.toFixed(1)}" y="${py.toFixed(1)}" width="${pw.toFixed(1)}" height="${ph.toFixed(1)}" rx="${rx}" fill="${el.pill.fill}"/>`;
       }
 
+      // rotated blocks pivot around the text block's centre — for vertical folios, tilted stamps, angled kickers
+      let block = "";
       lines.forEach((ln, i) => {
         const by = b[1] + topPad + size * 0.82 + i * lineH;
-        overlaySvg += `<text x="${tx.toFixed(1)}" y="${by.toFixed(1)}" text-anchor="${anchor}" font-family="${esc(el.font)}" font-size="${size.toFixed(1)}"${attrs} fill="${el.colour}">${esc(ln)}</text>`;
+        block += `<text x="${tx.toFixed(1)}" y="${by.toFixed(1)}" text-anchor="${anchor}" font-family="${esc(el.font)}" font-size="${size.toFixed(1)}"${attrs}${paint}>${esc(ln)}</text>`;
       });
+      if (el.rotate) {
+        const cx = b[0] + boxW(b) / 2, cy = b[1] + topPad + blockH / 2;
+        block = `<g transform="rotate(${el.rotate} ${cx.toFixed(1)} ${cy.toFixed(1)})">${block}</g>`;
+      }
+      overlaySvg += block;
     }
   }
   flushSvg();

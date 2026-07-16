@@ -256,4 +256,88 @@ route.get('/:leadId/whatsapp-state', async (c) => {
   }
 });
 
+// The only editable buyer-preference keys. The RPC is authoritative — this list is a friendly
+// early 400 so an obviously-wrong body never reaches the DB. Mirrors the RPC whitelist exactly.
+export const EDITABLE_PREF_KEYS = [
+  'location_interest_extracted',
+  'budget_extracted',
+  'property_type_pref',
+  'bedrooms_min',
+  'bedrooms_max',
+  'bathrooms_min',
+] as const;
+
+// update_lead_preferences RAISE code → { friendly message, http status }. The raw code / SQL / table
+// NEVER leaves this map (Law 2). `lead_wrong_agency` maps to the same 404 as not-found so a probe
+// can't tell "exists in another agency" from "doesn't exist". require_role denial (SQLSTATE 42501)
+// is handled separately as a 403.
+const PREF_ERROR_MAP: Record<string, { msg: string; status: 400 | 403 | 404 | 422 }> = {
+  invalid_patch: { msg: 'Please provide the preferences to update.', status: 400 },
+  no_fields: { msg: 'No editable preferences were provided.', status: 400 },
+  unknown_field: { msg: "That preference field can't be edited here.", status: 400 },
+  invalid_budget: { msg: 'Budget must be a number of euros (or empty to clear it).', status: 400 },
+  invalid_number: { msg: 'Bedrooms and bathrooms must be whole numbers.', status: 400 },
+  invalid_bedrooms_range: { msg: 'Minimum bedrooms can’t be more than the maximum.', status: 400 },
+  not_a_buyer_lead: { msg: 'Preferences can only be set on buyer leads.', status: 422 },
+  lead_not_found: { msg: "Couldn't find that lead — please refresh and try again.", status: 404 },
+  lead_wrong_agency: { msg: "Couldn't find that lead — please refresh and try again.", status: 404 },
+  // require_role('agent') denial — a viewer (or no-role context). RAISEd as P0001/insufficient_role.
+  insufficient_role: { msg: "You don't have permission to edit this lead's preferences.", status: 403 },
+};
+
+/**
+ * Classify an error thrown by update_lead_preferences into a friendly response. Pure + exported so
+ * the mapping is unit-tested without a DB. All of the RPC's business rejections (incl. require_role's
+ * `insufficient_role`) are RAISEd with SQLSTATE P0001, so we map on the message. SQLSTATE 42501 is
+ * handled defensively as a permission denial too. Anything unrecognised → calm generic 500 (never leaks).
+ */
+export function classifyPrefError(err: unknown): { error: string; status: 400 | 403 | 404 | 422 | 500 } {
+  const pg = asPgError(err);
+  if (pg) {
+    const mapped = PREF_ERROR_MAP[pg.message.trim()];
+    if (mapped) return { error: mapped.msg, status: mapped.status };
+    if (pg.code === '42501') {
+      return { error: "You don't have permission to edit this lead's preferences.", status: 403 };
+    }
+  }
+  return { error: GENERIC, status: 500 };
+}
+
+// PATCH /:leadId/preferences {location_interest_extracted?, budget_extracted?, property_type_pref?,
+//   bedrooms_min?, bedrooms_max?, bathrooms_min?} — agent-editable buyer preferences via
+// update_lead_preferences (SECURITY DEFINER; agency + role + cross-agency + buyer guards live in the
+// RPC). A present key sets that field (null clears it); an absent key is left unchanged. Writing
+// these columns fires the autoembed + automatch triggers, so matches refresh on their own.
+route.patch('/:leadId/preferences', async (c) => {
+  const tx = c.get('tx');
+  const leadId = c.req.param('leadId');
+  if (!UUID_RE.test(leadId)) {
+    return c.json({ ok: false, error: 'A valid lead id is required.' }, 400);
+  }
+  const patch = await readBody(c);
+  const keys = Object.keys(patch);
+  if (keys.length === 0) {
+    return c.json({ ok: false, error: 'No editable preferences were provided.' }, 400);
+  }
+  const unknown = keys.find((k) => !(EDITABLE_PREF_KEYS as readonly string[]).includes(k));
+  if (unknown) {
+    return c.json({ ok: false, error: "That preference field can't be edited here." }, 400);
+  }
+  try {
+    const result = await tx.execute(sql`
+      SELECT public.update_lead_preferences(${leadId}::uuid, ${JSON.stringify(patch)}::jsonb) AS result
+    `);
+    const rows = result as unknown as Array<{ result: unknown }>;
+    const payload = rows[0]?.result;
+    if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
+      return c.json({ ok: true, ...(payload as Record<string, unknown>) });
+    }
+    return c.json({ ok: true });
+  } catch (err) {
+    const { error, status } = classifyPrefError(err);
+    if (status === 500) console.error('[leads/preferences] failed:', leadId, asPgError(err) ?? err);
+    return c.json({ ok: false, error }, status);
+  }
+});
+
 export default route;

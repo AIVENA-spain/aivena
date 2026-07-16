@@ -6,6 +6,7 @@ import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import sharp from "sharp";
 import { renderFreeform, DesignSpec } from "./renderFreeform";
+import { textWidth } from "./renderEditable";
 import { applyGrain, mix, wrap } from "./carouselSlides";
 
 const W = 1080, H = 1350;
@@ -45,7 +46,7 @@ async function cuarteto(photos: Buffer[]): Promise<Buffer[]> {
       { type: "text", bbox: [60, 150, 1020, 420], content: "Villa in", font: CAS, size: 250, colour: INK, align: "left" },
       { type: "photo", photo: 0, bbox: [0, 470, 1080, 1160], tint: TERRA, tint_opacity: 0.06 },
       ...inner([0, 470, 1080, 1160]),
-      { type: "text", bbox: [60, 1180, 1020, 1240], content: "…", font: CAS, size: 90, colour: TERRA, align: "right" },
+      { type: "text", bbox: [700, 1150, 1180, 1280], content: "…", font: CAS, size: 170, colour: TERRA, align: "right" },
       ...band(1, 5, mix(INK, CREAM, 0.55)),
     ],
   }));
@@ -167,8 +168,9 @@ async function brisa(photos: Buffer[]): Promise<Buffer[]> {
       { type: "doodle", bbox: [700, 90, 780, 170], kind: "sparkle", colour: TERRA, stroke_width: 3 },
       ...kpi.flatMap(([k, v, c], i) => {
         const y = 340 + i * 190;
+        const vw = textWidth(CAS, v, 80);
         return [
-          { type: "rect", bbox: [420, y - 18, 1000, y + 96], fill: c, radius: 16, opacity: 0.16, rotate: i % 2 ? 1 : -1 },
+          { type: "rect", bbox: [980 - vw - 44, y - 18, 1006, y + 96], fill: c, radius: 16, opacity: 0.28, rotate: i % 2 ? 1 : -1 },
           { type: "text", bbox: [80, y + 8, 420, y + 42], content: k, font: "Jost", size: 21, colour: mix(INK, PAPER, 0.7), align: "left", tracking: 5 },
           { type: "text", bbox: [440, y - 24, 980, y + 84], content: v, font: CAS, size: 80, colour: INK, align: "right" },
         ];
@@ -295,7 +297,7 @@ async function ventana(photos: Buffer[]): Promise<Buffer[]> {
       { type: "text", bbox: [80, 84, 1000, 118], content: AGENCY, font: "Jost", size: 21, colour: INK, align: "center", weight: "500", tracking: 6 },
       { type: "doodle", bbox: [90, 150, 230, 250], kind: "birds", colour: INK, stroke_width: 3 },
       { type: "photo", photo: 0, bbox: [240, 170, 840, 810], tint: TERRA, tint_opacity: 0.06 },
-      { type: "punch", bbox: [240, 170, 840, 810], fill: PAPER, shape: "arch" },
+      { type: "punch", bbox: [240, 170, 840, 810], fill: PAPER, shape: "arch", outline: { colour: DARK, width: 5, offset: 2 } },
       // muntins: arch outline + horizontal + vertical bars
       ...frame([240, 470, 840, 810], DARK, 5),
       { type: "rect", bbox: [536, 200, 544, 810], fill: DARK },
@@ -318,7 +320,7 @@ async function ventana(photos: Buffer[]): Promise<Buffer[]> {
     background: PAPER,
     elements: [
       { type: "photo", photo: 1, bbox: [290, 140, 790, 640], tint: TERRA, tint_opacity: 0.06 },
-      { type: "punch", bbox: [290, 140, 790, 640], fill: PAPER, shape: "circle" },
+      { type: "punch", bbox: [290, 140, 790, 640], fill: PAPER, shape: "circle", outline: { colour: DARK, width: 5, offset: 2 } },
       ...frame([290, 388, 790, 392], DARK, 4),
       { type: "rect", bbox: [536, 140, 544, 640], fill: DARK },
       { type: "doodle", bbox: [770, 560, 890, 690], kind: "cat", colour: INK },
@@ -331,7 +333,8 @@ async function ventana(photos: Buffer[]): Promise<Buffer[]> {
     ],
   }));
 
-  // S3: the facts as little windows
+  // S3: the facts as little transom windows — value in the clear upper pane (no bar through numbers),
+  // two casements below with the label on the sill line
   const kpi: [string, string][] = [["PRECIO", "695.000 €"], ["M²", "214"], ["DORM", "3"], ["BAÑOS", "3"]];
   specs.push(DesignSpec.parse({
     background: PAPER,
@@ -342,13 +345,15 @@ async function ventana(photos: Buffer[]): Promise<Buffer[]> {
         return [
           { type: "rect", bbox: [x, y, x + 400, y + 330], fill: mix("#ffffff", PAPER, 0.6), radius: 10 },
           ...frame([x + 14, y + 14, x + 386, y + 316], DARK, 4),
-          { type: "rect", bbox: [x + 196, y + 14, x + 204, y + 316], fill: DARK },
-          { type: "rect", bbox: [x + 14, y + 160, x + 386, y + 167], fill: DARK },
-          { type: "text", bbox: [x + 30, y + 40, x + 370, y + 150], content: v, font: CAS, size: 74, colour: INK, align: "center", valign: "center" },
-          { type: "text", bbox: [x + 30, y + 220, x + 370, y + 260], content: k, font: "Jost", size: 22, colour: OLIVEV, align: "center", tracking: 5 },
+          { type: "rect", bbox: [x + 14, y + 190, x + 386, y + 197], fill: DARK },   // transom bar
+          { type: "rect", bbox: [x + 196, y + 197, x + 204, y + 316], fill: DARK },  // casement split BELOW only
+          { type: "text", bbox: [x + 30, y + 30, x + 370, y + 180], content: v, font: CAS, size: 72, colour: INK, align: "center", valign: "center" },
+          { type: "rect", bbox: [x - 6, y + 330, x + 406, y + 344], fill: mix("#ffffff", PAPER, 0.75), radius: 4 },
+          { type: "text", bbox: [x + 30, y + 356, x + 370, y + 392], content: k, font: "Jost", size: 22, colour: OLIVEV, align: "center", tracking: 5 },
         ];
       }),
-      { type: "doodle", bbox: [480, 1090, 600, 1220], kind: "cat", colour: INK },
+      { type: "rect", bbox: [400, 1208, 680, 1220], fill: mix("#ffffff", PAPER, 0.75), radius: 4 },
+      { type: "doodle", bbox: [480, 1084, 600, 1214], kind: "cat", colour: INK },
       ...band(3, 4, mix(INK, PAPER, 0.55)),
     ],
   }));

@@ -213,13 +213,22 @@ function effectiveColours(m: any, brand: BrandColours): Record<string, string> {
 }
 
 export function catalogue(): TemplateMeta[] {
-  // Christian 2026-07-15: the catalogue reads 1..N sorted by how many photos a template needs (1-photo
-  // first, 4-photo last). `number` is the user-facing name; internal ids stay stable underneath.
+  // Christian 2026-07-16: the gallery is FOUR LANES — column 1 = 1-photo templates going down, column 2 =
+  // 2-photo, column 3 = 3-photo, column 4 = 4-photo — and the numbers run ACROSS the rows (Template 1-4 =
+  // the first row, one per lane; 5-8 the second row...). So the array interleaves the lanes row-major:
+  // rendered into an always-4-column grid, each column IS a photo-count lane, and a template's number
+  // tells you its photo count (1,5,9.. = 1 photo; 2,6,10.. = 2; 3,7,11.. = 3; 4,8,12.. = 4). Exactly 8
+  // per lane keeps the grid aligned. `number` is the user-facing name; internal ids stay stable.
   const metas = EDITABLE_TEMPLATE_IDS.filter(isKnownTemplate).map(templateMeta);
-  metas.sort((a, b) => a.photo_count - b.photo_count ||
-    EDITABLE_TEMPLATE_IDS.indexOf(a.id) - EDITABLE_TEMPLATE_IDS.indexOf(b.id));
-  metas.forEach((m, i) => { m.number = i + 1; });
-  return metas;
+  const lanes: TemplateMeta[][] = [[], [], [], []];
+  for (const m of metas) lanes[Math.min(4, Math.max(1, m.photo_count)) - 1].push(m);
+  const out: TemplateMeta[] = [];
+  const rows = Math.max(...lanes.map((l) => l.length));
+  for (let r = 0; r < rows; r++) for (let c = 0; c < 4; c++) {
+    const m = lanes[c][r];
+    if (m) { m.number = out.length + 1; out.push(m); }
+  }
+  return out;
 }
 
 // ── DB-row → engine-input mappers ─────────────────────────────────────────────

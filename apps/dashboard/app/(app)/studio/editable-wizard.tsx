@@ -542,7 +542,7 @@ export function EditableWizard() {
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            <div className="grid grid-cols-4 gap-2 sm:gap-4">
               {gallery.map((item) => (
                 <button key={item.template_id} onClick={() => useGalleryTemplate(item)}
                   className="group overflow-hidden rounded-xl border border-neutral-200 bg-white transition hover:border-neutral-900 hover:shadow-md dark:border-neutral-800 dark:bg-neutral-900">

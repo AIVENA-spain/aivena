@@ -171,7 +171,7 @@ export function StudioHome({ initialLibrary, quota }: { initialLibrary: LibraryI
         </div>
         <button onClick={() => setView("templates")} className="text-sm font-medium text-emerald-600 hover:underline">Browse all →</button>
       </div>
-      <div className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="mt-4 grid grid-cols-4 gap-2 sm:gap-4">
         {showcase.length === 0
           ? Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="flex aspect-[4/5] items-center justify-center rounded-xl border border-neutral-200 bg-neutral-50 text-neutral-300 dark:border-neutral-800 dark:bg-neutral-900">

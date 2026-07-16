@@ -44,6 +44,28 @@ const LANGS: [string, string][] = [
   ["ru", "Русский"], ["it", "Italiano"], ["pt", "Português"],
 ];
 
+// the approved visual styles, per post type (server validates too)
+const STYLES: Record<CarouselType, [string, string, string][]> = {
+  listing: [
+    ["editorial", "Editorial", "Clean and calm — the classic look"],
+    ["horizonte", "Horizonte", "One panorama flowing across the first slides (needs a wide, high-quality photo)"],
+    ["cartel", "Cartel", "Bold Spanish poster type, black & white photos"],
+    ["encalada", "Encalada", "Mediterranean — arch crops, terracotta and olive"],
+    ["sereno", "Sereno", "Quiet luxury — fine lines and lots of air"],
+  ],
+  tips: [
+    ["editorial", "Editorial", "Clean and calm — the classic look"],
+    ["cartel", "Cartel", "Bold Spanish poster type, giant numbers"],
+    ["encalada", "Encalada", "Mediterranean — limewash, terracotta and olive"],
+    ["sereno", "Sereno", "Quiet luxury — fine lines and lots of air"],
+  ],
+  quote: [
+    ["editorial", "Editorial", "Clean and calm — the classic look"],
+    ["sereno", "Sereno", "Quiet luxury — the words framed like a gallery piece"],
+    ["encalada", "Encalada", "Mediterranean warmth around the client's words"],
+  ],
+};
+
 export function CarouselStudio() {
   const [phase, setPhase] = useState<Phase>("type");
   const [ctype, setCtype] = useState<CarouselType>("listing");
@@ -65,6 +87,7 @@ export function CarouselStudio() {
   const [quoteText, setQuoteText] = useState("");
   const [quoteAuthor, setQuoteAuthor] = useState("");
   const [language, setLanguage] = useState("es");
+  const [style, setStyle] = useState("editorial");
   // text editing
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<Plan | null>(null);
@@ -155,9 +178,30 @@ export function CarouselStudio() {
   const field = "w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100";
   const label = "mb-1 block text-xs font-medium text-neutral-500 dark:text-neutral-400";
 
+  function stylePicker() {
+    const options = STYLES[ctype];
+    const active = options.some(([k]) => k === style) ? style : "editorial";
+    return (
+      <div>
+        <label className={label}>Look &amp; feel</label>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {options.map(([key, name, desc]) => (
+            <button key={key} type="button" onClick={() => setStyle(key)}
+              className={`rounded-lg border px-3 py-2 text-left transition ${active === key
+                ? "border-neutral-900 bg-neutral-50 dark:border-neutral-100 dark:bg-neutral-800"
+                : "border-neutral-200 hover:border-neutral-400 dark:border-neutral-700"}`}>
+              <span className="block text-sm font-medium text-neutral-900 dark:text-neutral-100">{name}</span>
+              <span className="block text-xs text-neutral-500 dark:text-neutral-400">{desc}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   function typeCard(t: CarouselType, icon: React.ReactNode, title: string, desc: string, cost: string) {
     return (
-      <button onClick={() => { setCtype(t); setErr(null); setPhase(t === "listing" ? "pick" : "form"); }}
+      <button onClick={() => { setCtype(t); setStyle("editorial"); setErr(null); setPhase(t === "listing" ? "pick" : "form"); }}
         className="flex flex-col items-start gap-2 rounded-xl border border-neutral-200 bg-white p-4 text-left transition hover:border-neutral-400 hover:shadow-sm dark:border-neutral-700 dark:bg-neutral-900">
         <span className="rounded-lg bg-emerald-50 p-2 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400">{icon}</span>
         <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{title}</span>
@@ -195,9 +239,10 @@ export function CarouselStudio() {
             Pick a property and 2–9 photos — cover with the facts, one clean slide per photo, and a contact card to close.
           </p>
           {err && <div className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{err}</div>}
+          <div className="mb-4 max-w-xl">{stylePicker()}</div>
           <PropertyPicker multi minPhotos={2} onConfirm={(p, chosen) => {
             setProperty(p);
-            void start({ type: "listing", property_id: p.id, photos: chosen.slice(0, 9), language }, "pick");
+            void start({ type: "listing", property_id: p.id, photos: chosen.slice(0, 9), language, style }, "pick");
           }} />
         </div>
       )}
@@ -247,6 +292,7 @@ export function CarouselStudio() {
                 </div>
               </>
             )}
+            {stylePicker()}
             <div>
               <label className={label}>Language of the post</label>
               <select value={language} onChange={(e) => setLanguage(e.target.value)} className={field}>
@@ -256,8 +302,8 @@ export function CarouselStudio() {
             <button
               onClick={() => void start(
                 ctype === "tips"
-                  ? { type: "tips", topic: topic.trim(), slide_count: tipCount, language }
-                  : { type: "quote", quote_text: quoteText.trim(), quote_author: quoteAuthor.trim(), language },
+                  ? { type: "tips", topic: topic.trim(), slide_count: tipCount, language, style }
+                  : { type: "quote", quote_text: quoteText.trim(), quote_author: quoteAuthor.trim(), language, style },
                 "form")}
               disabled={ctype === "tips" ? topic.trim().length < 3 : quoteText.trim().length < 10}
               className="rounded-lg bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white disabled:opacity-40 dark:bg-neutral-100 dark:text-neutral-900">

@@ -192,6 +192,7 @@ export async function carouselAction(input: {
   quote_author?: string;
   slide_count?: number;
   language?: string;
+  style?: string;
 }): Promise<Envelope> {
   return call("/api/studio/carousel", { method: "POST", body: input });
 }

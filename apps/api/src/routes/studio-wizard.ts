@@ -22,8 +22,10 @@ import {
   designRenderStore,
 } from '../lib/studio-smart-design';
 import { usablePhotos } from '../lib/property-images';
-import { renderCarousel } from '../../../../studio/engine/renderCarousel';
-import { renderPlannedCarousel, type CarouselPlan } from '../../../../studio/engine/carouselSlides';
+import { type CarouselPlan } from '../../../../studio/engine/carouselSlides';
+import {
+  renderPlannedStyled, renderListingStyled, PLANNED_STYLES, LISTING_STYLES, type CarouselStyle,
+} from '../../../../studio/engine/carouselStyles';
 import { planCarousel, listingCopy, PlanSchema } from '../lib/studio-carousel-plan';
 
 /**
@@ -351,6 +353,7 @@ function shapeStatus(r: GenRow) {
     slides: Array.isArray((meta as any)?.slides) ? (meta as any).slides.map((sl: any) => sl?.url).filter(Boolean) : undefined,
     // planned carousels: the words (editable via POST /carousel/update) + the ready-to-post caption
     carousel_type: typeof (meta as any)?.carousel_type === 'string' ? (meta as any).carousel_type : undefined,
+    carousel_style: typeof (meta as any)?.carousel_style === 'string' ? (meta as any).carousel_style : undefined,
     caption: typeof (meta as any)?.caption === 'string' ? (meta as any).caption : undefined,
     hashtags: Array.isArray((meta as any)?.hashtags) ? (meta as any).hashtags : undefined,
     plan: (meta as any)?.plan && typeof (meta as any).plan === 'object' ? (meta as any).plan : undefined,
@@ -897,7 +900,7 @@ async function storeSlides(agencyId: string, genId: string, slides: Buffer[]): P
 }
 
 async function runCarousel(opts: {
-  genId: string; agencyId: string; refs: string[]; language: string;
+  genId: string; agencyId: string; refs: string[]; language: string; style: CarouselStyle;
   facts: {
     title: string; location: string; price: string; specs: string;
     beds: string; baths: string; area: string; agency: string; contact: string; features: string[];
@@ -917,7 +920,10 @@ async function runCarousel(opts: {
       language: opts.language, agencyName: opts.facts.agency,
     });
 
-    const slides = await renderCarousel(opts.facts, opts.brand, buffers, copy ?? undefined);
+    const slides = await renderListingStyled(opts.style, opts.facts, {
+      hook: copy?.hook ?? '', lifestyle_line: copy?.lifestyle_line ?? '',
+      cta_action: copy?.cta_action ?? '', cta_keyword: copy?.cta_keyword ?? '',
+    }, opts.brand, buffers);
     const stored = await storeSlides(agencyId, genId, slides);
 
     await supabaseAdmin.from('image_generations').update({
@@ -925,7 +931,7 @@ async function runCarousel(opts: {
       result_image_url: stored[0].url,
       result_image_storage_path: stored[0].path,
       result_metadata: {
-        engine: 'carousel', carousel_type: 'listing', slide_count: stored.length, slides: stored,
+        engine: 'carousel', carousel_type: 'listing', carousel_style: opts.style, slide_count: stored.length, slides: stored,
         ...(copy ? { caption: copy.caption, hashtags: copy.hashtags } : {}),
       },
       completed_at: new Date().toISOString(),
@@ -949,7 +955,7 @@ async function runCarousel(opts: {
 async function runPlannedCarousel(opts: {
   genId: string; agencyId: string;
   type: 'tips' | 'quote'; topic?: string; quoteText?: string; quoteAuthor?: string;
-  slideCount?: number; language: string;
+  slideCount?: number; language: string; style: CarouselStyle;
   agency: { name: string; web: string; phone: string };
   brand: { navy: string; gold: string; cream: string; text: string };
 }): Promise<void> {
@@ -960,7 +966,7 @@ async function runPlannedCarousel(opts: {
       slideCount: opts.slideCount, language: opts.language, agencyName: opts.agency.name,
     });
     const contact = [opts.agency.web, opts.agency.phone].filter(Boolean).join(' · ');
-    const slides = await renderPlannedCarousel(plan, opts.agency.name, contact, opts.brand);
+    const slides = await renderPlannedStyled(opts.style, plan, opts.agency.name, contact, opts.brand);
     const stored = await storeSlides(agencyId, genId, slides);
 
     await supabaseAdmin.from('image_generations').update({
@@ -968,7 +974,7 @@ async function runPlannedCarousel(opts: {
       result_image_url: stored[0].url,
       result_image_storage_path: stored[0].path,
       result_metadata: {
-        engine: 'carousel', carousel_type: opts.type, slide_count: stored.length, slides: stored,
+        engine: 'carousel', carousel_type: opts.type, carousel_style: opts.style, slide_count: stored.length, slides: stored,
         plan, caption: plan.caption, hashtags: plan.hashtags,
       },
       completed_at: new Date().toISOString(),
@@ -999,6 +1005,10 @@ route.post('/carousel', async (c) => {
   const b = await readJson(c);
   const type = b.type === 'tips' || b.type === 'quote' ? b.type : 'listing';
   const language = typeof b.language === 'string' && CAROUSEL_LANGS.has(b.language) ? b.language : 'es';
+  // visual style (Christian-approved stylebook): validated against the post type; default = editorial
+  const allowedStyles: CarouselStyle[] = type === 'listing' ? LISTING_STYLES : PLANNED_STYLES[type];
+  const style: CarouselStyle = typeof b.style === 'string' && (allowedStyles as string[]).includes(b.style)
+    ? (b.style as CarouselStyle) : 'editorial';
 
   try {
     // ── tips / quote: no property needed — brand + agency identity only ──────
@@ -1028,7 +1038,7 @@ route.post('/carousel', async (c) => {
           (agency_id, generation_type, status, prompt, requested_by, raw_request)
         VALUES
           (${agencyId}, 'social_post', 'processing', ${label}, ${user?.sub ?? null}::uuid,
-           ${JSON.stringify({ engine: 'carousel', content_type: 'carousel', carousel_type: type, topic, quote_text: quoteText, quote_author: quoteAuthor, slide_count: slideCount, language })}::jsonb)
+           ${JSON.stringify({ engine: 'carousel', content_type: 'carousel', carousel_type: type, carousel_style: style, topic, quote_text: quoteText, quote_author: quoteAuthor, slide_count: slideCount, language })}::jsonb)
         RETURNING id
       `);
       const rows = ins as unknown as Array<{ id: string }>;
@@ -1036,7 +1046,7 @@ route.post('/carousel', async (c) => {
       if (!genId) throw new Error('insert failed');
 
       void runPlannedCarousel({
-        genId, agencyId, type, topic, quoteText, quoteAuthor, slideCount, language,
+        genId, agencyId, type, topic, quoteText, quoteAuthor, slideCount, language, style,
         agency: { name: agency.name, web: agency.web, phone: agency.phone }, brand,
       });
       return c.json({ ok: true, generation_id: genId, status: 'processing' });
@@ -1073,14 +1083,14 @@ route.post('/carousel', async (c) => {
         (agency_id, generation_type, status, prompt, source_property_id, requested_by, raw_request)
       VALUES
         (${agencyId}, 'social_post', 'processing', ${`Carousel · ${refs.length + 1} slides`}, ${propertyId}::uuid, ${user?.sub ?? null}::uuid,
-         ${JSON.stringify({ engine: 'carousel', content_type: 'carousel', carousel_type: 'listing', photos: refs, language })}::jsonb)
+         ${JSON.stringify({ engine: 'carousel', content_type: 'carousel', carousel_type: 'listing', carousel_style: style, photos: refs, language })}::jsonb)
       RETURNING id
     `);
     const rows = ins as unknown as Array<{ id: string }>;
     const genId = rows[0]?.id;
     if (!genId) throw new Error('insert failed');
 
-    void runCarousel({ genId, agencyId, refs, language, facts, brand: loaded.brand });
+    void runCarousel({ genId, agencyId, refs, language, style, facts, brand: loaded.brand });
     return c.json({ ok: true, generation_id: genId, status: 'processing' });
   } catch (err) {
     console.error('[studio/carousel] failed:', err);
@@ -1132,7 +1142,11 @@ route.post('/carousel/update', async (c) => {
     const { agency, brand } = mapBranding(bRows[0] || {});
     const contact = [agency.web, agency.phone].filter(Boolean).join(' · ');
 
-    const slides = await renderPlannedCarousel(plan, agency.name, contact, brand);
+    // re-render in the SAME visual style the carousel was created with
+    const storedStyle: CarouselStyle = typeof meta?.carousel_style === 'string' &&
+      (PLANNED_STYLES[priorPlan.type] as string[]).includes(meta.carousel_style)
+      ? meta.carousel_style : 'editorial';
+    const slides = await renderPlannedStyled(storedStyle, plan, agency.name, contact, brand);
     const stored = await storeSlides(agencyId, genId, slides);
 
     await supabaseAdmin.from('image_generations').update({

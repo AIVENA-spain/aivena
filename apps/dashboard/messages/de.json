@@ -311,7 +311,17 @@
       "suggestGated": "Window closed — send a check-in to reopen before suggesting.",
       "noReason": "No additional reasoning yet.",
       "basedOnPrefix": "Basierend auf der gespeicherten Präferenz:",
-      "basedOnHint": "wenn der Käufer inzwischen andere Gebiete wünscht, aktualisieren Sie sein Profil."
+      "basedOnHint": "wenn der Käufer inzwischen andere Gebiete wünscht, aktualisieren Sie sein Profil.",
+      "editPreferences": "Bearbeiten",
+      "editSave": "Speichern",
+      "editCancel": "Abbrechen",
+      "editSaving": "Wird gespeichert…",
+      "editMin": "Min.",
+      "editMax": "Max.",
+      "editHint": "Diese Änderungen aktualisieren die empfohlenen Immobilien.",
+      "editErrBudget": "Das Budget muss eine Zahl in Euro sein (oder leer zum Löschen).",
+      "editErrNumber": "Schlaf- und Badezimmer müssen ganze Zahlen sein.",
+      "editErrRange": "Die Mindestanzahl der Schlafzimmer darf nicht über dem Maximum liegen."
     },
     "searchPlaceholder": "Search conversations…",
     "searchNoResults": "No conversations match your search."

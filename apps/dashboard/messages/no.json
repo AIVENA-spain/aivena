@@ -311,7 +311,17 @@
       "suggestGated": "Window closed — send a check-in to reopen before suggesting.",
       "noReason": "No additional reasoning yet.",
       "basedOnPrefix": "Basert på lagret preferanse:",
-      "basedOnHint": "hvis kjøperen har bedt om andre områder, oppdater profilen."
+      "basedOnHint": "hvis kjøperen har bedt om andre områder, oppdater profilen.",
+      "editPreferences": "Rediger",
+      "editSave": "Lagre",
+      "editCancel": "Avbryt",
+      "editSaving": "Lagrer…",
+      "editMin": "min",
+      "editMax": "maks",
+      "editHint": "Endringer her oppdaterer de anbefalte boligene.",
+      "editErrBudget": "Budsjett må være et beløp i euro (eller tomt for å fjerne det).",
+      "editErrNumber": "Soverom og bad må være hele tall.",
+      "editErrRange": "Minimum antall soverom kan ikke være mer enn maksimum."
     },
     "searchPlaceholder": "Search conversations…",
     "searchNoResults": "No conversations match your search."

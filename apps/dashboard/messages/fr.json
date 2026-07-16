@@ -311,7 +311,17 @@
       "suggestGated": "Window closed — send a check-in to reopen before suggesting.",
       "noReason": "No additional reasoning yet.",
       "basedOnPrefix": "D'après la préférence enregistrée :",
-      "basedOnHint": "si l'acheteur demande d'autres zones, mettez à jour son profil pour actualiser."
+      "basedOnHint": "si l'acheteur demande d'autres zones, mettez à jour son profil pour actualiser.",
+      "editPreferences": "Modifier",
+      "editSave": "Enregistrer",
+      "editCancel": "Annuler",
+      "editSaving": "Enregistrement…",
+      "editMin": "min",
+      "editMax": "max",
+      "editHint": "Modifier ces champs met à jour les biens recommandés.",
+      "editErrBudget": "Le budget doit être un montant en euros (ou vide pour l'effacer).",
+      "editErrNumber": "Les chambres et salles de bain doivent être des nombres entiers.",
+      "editErrRange": "Le minimum de chambres ne peut pas dépasser le maximum."
     },
     "searchPlaceholder": "Search conversations…",
     "searchNoResults": "No conversations match your search."

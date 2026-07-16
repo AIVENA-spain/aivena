@@ -311,7 +311,17 @@
       "suggestGated": "Window closed — send a check-in to reopen before suggesting.",
       "noReason": "No additional reasoning yet.",
       "basedOnPrefix": "Op basis van de opgeslagen voorkeur:",
-      "basedOnHint": "als de koper om andere gebieden vraagt, werk dan het profiel bij."
+      "basedOnHint": "als de koper om andere gebieden vraagt, werk dan het profiel bij.",
+      "editPreferences": "Bewerken",
+      "editSave": "Opslaan",
+      "editCancel": "Annuleren",
+      "editSaving": "Opslaan…",
+      "editMin": "min",
+      "editMax": "max",
+      "editHint": "Deze wijzigingen werken de aanbevolen woningen bij.",
+      "editErrBudget": "Budget moet een bedrag in euro's zijn (of leeg om te wissen).",
+      "editErrNumber": "Slaapkamers en badkamers moeten hele getallen zijn.",
+      "editErrRange": "Het minimum aantal slaapkamers mag niet hoger zijn dan het maximum."
     },
     "searchPlaceholder": "Search conversations…",
     "searchNoResults": "No conversations match your search."

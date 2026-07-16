@@ -311,7 +311,17 @@
       "suggestGated": "Window closed — send a check-in to reopen before suggesting.",
       "noReason": "No additional reasoning yet.",
       "basedOnPrefix": "Baseret på den gemte præference:",
-      "basedOnHint": "hvis køberen har spurgt om andre områder, opdatér profilen."
+      "basedOnHint": "hvis køberen har spurgt om andre områder, opdatér profilen.",
+      "editPreferences": "Rediger",
+      "editSave": "Gem",
+      "editCancel": "Annuller",
+      "editSaving": "Gemmer…",
+      "editMin": "min",
+      "editMax": "maks",
+      "editHint": "Ændringer her opdaterer de anbefalede boliger.",
+      "editErrBudget": "Budget skal være et beløb i euro (eller tomt for at rydde det).",
+      "editErrNumber": "Soveværelser og badeværelser skal være hele tal.",
+      "editErrRange": "Minimum antal soveværelser må ikke være større end maksimum."
     },
     "searchPlaceholder": "Search conversations…",
     "searchNoResults": "No conversations match your search."

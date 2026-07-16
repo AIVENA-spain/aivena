@@ -311,7 +311,17 @@
       "suggestGated": "Window closed — send a check-in to reopen before suggesting.",
       "noReason": "No additional reasoning yet.",
       "basedOnPrefix": "На основе сохранённого предпочтения:",
-      "basedOnHint": "если покупатель просит другие районы, обновите его профиль."
+      "basedOnHint": "если покупатель просит другие районы, обновите его профиль.",
+      "editPreferences": "Изменить",
+      "editSave": "Сохранить",
+      "editCancel": "Отмена",
+      "editSaving": "Сохранение…",
+      "editMin": "мин",
+      "editMax": "макс",
+      "editHint": "Изменение этих полей обновит рекомендованные объекты.",
+      "editErrBudget": "Бюджет должен быть суммой в евро (или пустым, чтобы очистить).",
+      "editErrNumber": "Количество спален и ванных должно быть целым числом.",
+      "editErrRange": "Минимум спален не может превышать максимум."
     },
     "searchPlaceholder": "Search conversations…",
     "searchNoResults": "No conversations match your search."

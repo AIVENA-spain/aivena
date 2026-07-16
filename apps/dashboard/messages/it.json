@@ -311,7 +311,17 @@
       "suggestGated": "Window closed — send a check-in to reopen before suggesting.",
       "noReason": "No additional reasoning yet.",
       "basedOnPrefix": "In base alla preferenza salvata:",
-      "basedOnHint": "se l'acquirente ha chiesto altre zone, aggiorna il suo profilo."
+      "basedOnHint": "se l'acquirente ha chiesto altre zone, aggiorna il suo profilo.",
+      "editPreferences": "Modifica",
+      "editSave": "Salva",
+      "editCancel": "Annulla",
+      "editSaving": "Salvataggio…",
+      "editMin": "min",
+      "editMax": "max",
+      "editHint": "Modificando questi campi si aggiornano gli immobili consigliati.",
+      "editErrBudget": "Il budget deve essere un numero in euro (o vuoto per cancellarlo).",
+      "editErrNumber": "Camere e bagni devono essere numeri interi.",
+      "editErrRange": "Il minimo di camere non può superare il massimo."
     },
     "searchPlaceholder": "Search conversations…",
     "searchNoResults": "No conversations match your search."

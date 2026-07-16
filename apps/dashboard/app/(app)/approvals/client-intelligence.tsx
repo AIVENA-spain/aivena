@@ -8,6 +8,7 @@ import {
   CalendarClock,
   MessageCircle,
   Lock,
+  Pencil,
   type LucideIcon,
 } from "lucide-react";
 
@@ -19,6 +20,8 @@ import { LeadNotes } from "./lead-notes";
 import { MatchedProperties } from "@/app/(app)/matches/matched-properties";
 import { getLeadIntelAction, getLeadWhatsappStateAction } from "./lead-intel-actions";
 import { nextActionBullets } from "./client-intelligence-lib";
+import { BuyerProfileEdit } from "./buyer-profile-edit";
+import type { EditablePrefs } from "./buyer-profile-edit-model";
 
 /**
  * Client Intelligence — the right third column of /approvals (Day-2). A wide,
@@ -51,6 +54,10 @@ export function ClientIntelligence({
 }) {
   const t = useTranslations("inbox.intel");
   const [intel, setIntel] = useState<IntelState>({ kind: "loading" });
+  // Bumped after an agent edits the buyer profile — re-fetches intel AND re-runs
+  // the match panel (the edit re-embeds + re-matches server-side, so the
+  // recommendations refresh honestly rather than showing the pre-edit set).
+  const [editVersion, setEditVersion] = useState(0);
 
   const isWhatsapp = (lead.channel ?? "").toLowerCase().includes("whatsapp");
   const [wa, setWa] = useState<WaState>(
@@ -71,7 +78,7 @@ export function ClientIntelligence({
     return () => {
       alive = false;
     };
-  }, [lead.leadId]);
+  }, [lead.leadId, editVersion]);
 
   useEffect(() => {
     if (!isWhatsapp) {
@@ -113,7 +120,13 @@ export function ClientIntelligence({
         ) : null}
       </div>
 
-      <BuyerProfile lead={lead} data={data} loading={loading} t={t} />
+      <BuyerProfile
+        lead={lead}
+        data={data}
+        loading={loading}
+        t={t}
+        onEdited={() => setEditVersion((v) => v + 1)}
+      />
       <NextBestAction data={data} loading={loading} t={t} />
 
       <MatchedProperties
@@ -122,8 +135,9 @@ export function ClientIntelligence({
         leadName={lead.fullName}
         onSuggested={onSuggested}
         windowClosed={windowClosed}
-        // Re-fetch when a NEW buyer message arrives (kills the UI-cache staleness).
-        refreshKey={lead.latestInboundAt ?? undefined}
+        // Re-fetch when a NEW buyer message arrives OR the agent edits the profile
+        // (both change the recommendation basis) — kills UI-cache staleness.
+        refreshKey={`${lead.latestInboundAt ?? ""}:${editVersion}`}
         // The stored preference the engine actually keyed these to — shown so a
         // recommendation that predates a newer buyer request can't read as current.
         basedOn={data?.location_interest_extracted ?? null}
@@ -257,12 +271,17 @@ function BuyerProfile({
   data,
   loading,
   t,
+  onEdited,
 }: {
   lead: InboxRow;
   data: LeadIntel | null;
   loading: boolean;
   t: Tr;
+  /** Called after a successful preference edit so the parent refreshes matches. */
+  onEdited: () => void;
 }) {
+  const [editing, setEditing] = useState(false);
+
   const scoreVal =
     lead.score != null
       ? lead.temperature
@@ -272,25 +291,65 @@ function BuyerProfile({
         ? titleCaseWord(lead.temperature.replace(/_/g, " "))
         : null;
 
+  // Preferences are editable on BUYER leads only (the RPC rejects sellers). Wait for
+  // the intel to load so the form pre-fills from real saved values, not blanks.
+  const isBuyer = (lead.leadType ?? "buyer").toLowerCase() !== "seller";
+  const canEdit = isBuyer && !loading && data != null;
+
+  const original: EditablePrefs = {
+    location_interest_extracted: data?.location_interest_extracted ?? null,
+    budget_extracted: data?.budget_extracted ?? null,
+    property_type_pref: data?.property_type_pref ?? null,
+    bedrooms_min: data?.bedrooms_min ?? null,
+    bedrooms_max: data?.bedrooms_max ?? null,
+    bathrooms_min: data?.bathrooms_min ?? null,
+  };
+
   return (
-    <Section icon={User} title={t("buyerProfileHeading")}>
-      <div className="grid gap-x-8 gap-y-1 @[320px]:grid-cols-2">
-        <div className="flex flex-col gap-1">
-          <BulletRow label={t("type")} value={lead.leadType ? typeLabel(lead.leadType) : null} />
-          <BulletRow label={t("score")} value={scoreVal} />
-          <BulletRow label={t("urgency")} value={titleCaseWord(data?.urgency ?? null)} loading={loading} />
-          <BulletRow label={t("timeframe")} value={titleCaseWord(data?.timeframe ?? null)} loading={loading} />
-        </div>
-        <div className="flex flex-col gap-1">
-          <BulletRow label={t("budget")} value={fmtEur(data?.budget_extracted ?? null)} loading={loading} />
-          <BulletRow label={t("location")} value={data?.location_interest_extracted ?? null} loading={loading} />
-          <BulletRow label={t("bedrooms")} value={fmtBedrooms(data?.bedrooms_min ?? null, data?.bedrooms_max ?? null)} loading={loading} />
-          <BulletRow label={t("bathrooms")} value={fmtBathrooms(data?.bathrooms_min ?? null)} loading={loading} />
-          <BulletRow label={t("propertyType")} value={data?.property_type_pref ? typeLabel(data.property_type_pref) : null} loading={loading} />
-          <BulletRow label={t("language")} value={langLabel(lead.language)} />
-        </div>
+    <section className="flex flex-col gap-2 border-t border-border pt-3">
+      <div className="flex items-center justify-between gap-2">
+        <SectionHeader icon={User} title={t("buyerProfileHeading")} />
+        {canEdit && !editing ? (
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            <Pencil className="h-3 w-3" aria-hidden />
+            {t("editPreferences")}
+          </button>
+        ) : null}
       </div>
-    </Section>
+
+      {editing ? (
+        <BuyerProfileEdit
+          leadId={lead.leadId}
+          original={original}
+          onSaved={() => {
+            setEditing(false);
+            onEdited();
+          }}
+          onCancel={() => setEditing(false)}
+        />
+      ) : (
+        <div className="grid gap-x-8 gap-y-1 @[320px]:grid-cols-2">
+          <div className="flex flex-col gap-1">
+            <BulletRow label={t("type")} value={lead.leadType ? typeLabel(lead.leadType) : null} />
+            <BulletRow label={t("score")} value={scoreVal} />
+            <BulletRow label={t("urgency")} value={titleCaseWord(data?.urgency ?? null)} loading={loading} />
+            <BulletRow label={t("timeframe")} value={titleCaseWord(data?.timeframe ?? null)} loading={loading} />
+          </div>
+          <div className="flex flex-col gap-1">
+            <BulletRow label={t("budget")} value={fmtEur(data?.budget_extracted ?? null)} loading={loading} />
+            <BulletRow label={t("location")} value={data?.location_interest_extracted ?? null} loading={loading} />
+            <BulletRow label={t("bedrooms")} value={fmtBedrooms(data?.bedrooms_min ?? null, data?.bedrooms_max ?? null)} loading={loading} />
+            <BulletRow label={t("bathrooms")} value={fmtBathrooms(data?.bathrooms_min ?? null)} loading={loading} />
+            <BulletRow label={t("propertyType")} value={data?.property_type_pref ? typeLabel(data.property_type_pref) : null} loading={loading} />
+            <BulletRow label={t("language")} value={langLabel(lead.language)} />
+          </div>
+        </div>
+      )}
+    </section>
   );
 }
 

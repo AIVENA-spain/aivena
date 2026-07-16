@@ -311,7 +311,17 @@
       "suggestGated": "Window closed — send a check-in to reopen before suggesting.",
       "noReason": "No additional reasoning yet.",
       "basedOnPrefix": "Baserat på sparad preferens:",
-      "basedOnHint": "om köparen frågat efter andra områden, uppdatera profilen."
+      "basedOnHint": "om köparen frågat efter andra områden, uppdatera profilen.",
+      "editPreferences": "Redigera",
+      "editSave": "Spara",
+      "editCancel": "Avbryt",
+      "editSaving": "Sparar…",
+      "editMin": "min",
+      "editMax": "max",
+      "editHint": "Ändringar här uppdaterar de rekommenderade bostäderna.",
+      "editErrBudget": "Budget måste vara ett belopp i euro (eller tomt för att rensa).",
+      "editErrNumber": "Sovrum och badrum måste vara heltal.",
+      "editErrRange": "Minsta antal sovrum får inte vara fler än max."
     },
     "searchPlaceholder": "Search conversations…",
     "searchNoResults": "No conversations match your search."

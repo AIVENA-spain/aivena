@@ -311,7 +311,17 @@
       "suggestGated": "Window closed — send a check-in to reopen before suggesting.",
       "noReason": "No additional reasoning yet.",
       "basedOnPrefix": "Based on the saved preference:",
-      "basedOnHint": "if the buyer has since asked for other areas, update their profile to refresh these."
+      "basedOnHint": "if the buyer has since asked for other areas, update their profile to refresh these.",
+      "editPreferences": "Edit",
+      "editSave": "Save",
+      "editCancel": "Cancel",
+      "editSaving": "Saving…",
+      "editMin": "min",
+      "editMax": "max",
+      "editHint": "Editing these updates the recommended properties.",
+      "editErrBudget": "Budget must be a number of euros (or empty to clear it).",
+      "editErrNumber": "Bedrooms and bathrooms must be whole numbers.",
+      "editErrRange": "Minimum bedrooms can’t be more than the maximum."
     },
     "searchPlaceholder": "Search conversations…",
     "searchNoResults": "No conversations match your search."

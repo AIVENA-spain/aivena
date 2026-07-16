@@ -311,7 +311,17 @@
       "suggestGated": "Window closed — send a check-in to reopen before suggesting.",
       "noReason": "No additional reasoning yet.",
       "basedOnPrefix": "Perustuu tallennettuun toiveeseen:",
-      "basedOnHint": "jos ostaja on pyytänyt muita alueita, päivitä profiili."
+      "basedOnHint": "jos ostaja on pyytänyt muita alueita, päivitä profiili.",
+      "editPreferences": "Muokkaa",
+      "editSave": "Tallenna",
+      "editCancel": "Peruuta",
+      "editSaving": "Tallennetaan…",
+      "editMin": "väh.",
+      "editMax": "enint.",
+      "editHint": "Näiden muokkaaminen päivittää suositellut kohteet.",
+      "editErrBudget": "Budjetin on oltava euromäärä (tai tyhjä poistaaksesi sen).",
+      "editErrNumber": "Makuuhuoneiden ja kylpyhuoneiden on oltava kokonaislukuja.",
+      "editErrRange": "Makuuhuoneiden vähimmäismäärä ei voi olla suurempi kuin enimmäismäärä."
     },
     "searchPlaceholder": "Search conversations…",
     "searchNoResults": "No conversations match your search."

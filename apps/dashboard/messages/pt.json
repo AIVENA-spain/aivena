@@ -311,7 +311,17 @@
       "suggestGated": "Window closed — send a check-in to reopen before suggesting.",
       "noReason": "No additional reasoning yet.",
       "basedOnPrefix": "Com base na preferência guardada:",
-      "basedOnHint": "se o comprador pediu outras zonas, atualize o perfil para renovar."
+      "basedOnHint": "se o comprador pediu outras zonas, atualize o perfil para renovar.",
+      "editPreferences": "Editar",
+      "editSave": "Guardar",
+      "editCancel": "Cancelar",
+      "editSaving": "A guardar…",
+      "editMin": "mín",
+      "editMax": "máx",
+      "editHint": "Editar estes dados atualiza os imóveis recomendados.",
+      "editErrBudget": "O orçamento deve ser um número de euros (ou vazio para o limpar).",
+      "editErrNumber": "Os quartos e casas de banho devem ser números inteiros.",
+      "editErrRange": "O mínimo de quartos não pode ser superior ao máximo."
     },
     "searchPlaceholder": "Search conversations…",
     "searchNoResults": "No conversations match your search."

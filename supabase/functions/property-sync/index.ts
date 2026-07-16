@@ -1,22 +1,25 @@
-// CAPTURE (version control) of the deploy-only Edge Function `property-sync`.
-// Slug: property-sync · id 8f98e0ec-8878-4e71-8766-7aa2bad27e77 · version 2 · ACTIVE · verify_jwt=false
-// ezbr_sha256: e7bf541d485f35d5bcbadb1d88033a169cf1d954f47e8ddc7bf6fdf6ba9c87e6
-// Captured 2026-07-06 via Supabase get_edge_function. The DEPLOYED function is authoritative — if this
-// file ever diverges, re-fetch and reconcile. This is documentation/source-control; deploying is a
-// separate, gated action (not done here).
-
-// AIVENA — property-sync  (Phase 1 ingestion engine)
-// Pulls an agency property feed (Kyero XML standard), normalizes + upserts into
-// `properties` keyed by (agency_id, external_id), marks vanished listings withdrawn,
-// and logs a property_sync_run. Auto-embedding is handled by the property_autoembed
-// DB trigger (fires on insert / content-change), so this function never embeds directly.
+// AIVENA — property-sync  (v3: safe real-catalogue ingestion — image mirror + withdrawal guard + dry-run)
+// Slug: property-sync · id 8f98e0ec-8878-4e71-8766-7aa2bad27e77 · verify_jwt=false
 //
-// Auth: deploy with verify_jwt=false (internal function). Gated by an internal secret
-// header: x-internal-secret must equal the Vault secret PROPERTY_SYNC_INTERNAL_SECRET.
+// This is the v3 SOURCE built for deploy (deployed live is still v2, the old unguarded engine). Deploy
+// is a separate GATED step — do NOT point a real feed at the live v2. v3 fixes the three ways the old
+// engine was unsafe:
+//   1. IMAGE MIRRORING (index.ts) — feed image links are downloaded into our own `property-images`
+//      bucket and the OWNED url is stored, never the feed's link. Storing links is what let montinmo.es
+//      take 57% of the demo catalogue down with it (2026-07-14). See guard.ts ownedUrlFor().
+//   2. WITHDRAWAL GUARD (guard.ts) — the old engine withdrew every active row not in the feed, with no
+//      guard, so a truncated / re-keyed / wrong-agency feed would wipe a catalogue. Now: withdrawal is
+//      scoped to FEED-OWNED rows only (never CSV/demo rows), the active count is read BEFORE the upsert
+//      (honest denominator), and a delta cap DEFERS a suspicious mass-withdraw (run → needs_review)
+//      rather than executing it. allow_mass_withdraw is the human override.
+//   3. DRY-RUN (default) — the function reports what it WOULD do and writes NOTHING unless the caller
+//      passes dry_run:false. First real-feed contact must be a dry-run, reviewed, before any apply.
+// The Kyero v3 parser lives in ./kyero.ts (built/plot separated, all languages kept, 0=unknown) and is
+// unit-tested (kyero.test.ts). Auto-embedding is the property_autoembed DB trigger; this fn never embeds.
 //
+// Auth: internal secret header x-internal-secret == Vault PROPERTY_SYNC_INTERNAL_SECRET.
 // Invoke (pg_net / n8n) with JSON:
-//   { agency_id: string, feed_url?: string, feed_xml?: string, format?: "kyero" }
-// Provide feed_url (production) OR feed_xml (inline, for testing). format defaults to kyero.
+//   { agency_id, feed_url? | feed_xml?, format?="kyero", dry_run?=true, allow_mass_withdraw?=false }
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
@@ -25,11 +28,16 @@ import { XMLParser } from "npm:fast-xml-parser@4";
 // fixtures (kyero.test.ts). It previously lived inline in this file, which is precisely why it went
 // unproven: nothing here can be unit-tested (it needs Deno + the network + the DB). Keep the split —
 // parsing/normalising belongs there, I/O belongs here.
-import { normalizeFeed, type NormProp } from "./kyero.ts";
+import { normalizeFeed, MAX_IMAGES, type NormProp } from "./kyero.ts";
+import {
+  evaluateWithdrawalGuard, isOwnedImageUrl, imageExt, storagePathFor, ownedUrlFor,
+} from "./guard.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const SECRET_NAME = "PROPERTY_SYNC_INTERNAL_SECRET";
+const IMAGE_BUCKET = "property-images";
+const UA = "AIVENA-PropertySync/3.0 (+https://aivena.es)";
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
@@ -39,6 +47,42 @@ function parseFeed(xml: string, format: string): NormProp[] {
   if (format !== "kyero") throw new Error(`unsupported_format:${format}`);
   const parser = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: "@_", trimValues: true, parseTagValue: false });
   return normalizeFeed(parser.parse(xml));
+}
+
+// Mirror a property's feed image urls into our own bucket → return the OWNED urls. A url that is
+// ALREADY ours is kept as-is (a re-sync must not re-download). A feed image that can't be fetched or
+// stored is SKIPPED (never fails the property) — a listing with fewer photos beats a broken one, and
+// the shared usable-photo rule then treats a fully-unmirrored listing as photoless, honestly.
+// Capped at MAX_IMAGES (50, the Kyero schema max) per property.
+async function mirrorImages(
+  sb: ReturnType<typeof createClient>,
+  agencyId: string,
+  externalId: string,
+  urls: string[],
+): Promise<{ owned: string[]; mirrored: number; skipped: number; alreadyOwned: number }> {
+  const owned: string[] = [];
+  let mirrored = 0, skipped = 0, alreadyOwned = 0;
+  const slice = urls.slice(0, MAX_IMAGES);
+  for (let i = 0; i < slice.length; i++) {
+    const src = slice[i];
+    if (isOwnedImageUrl(src)) { owned.push(src); alreadyOwned++; continue; }
+    try {
+      const resp = await fetch(src, { headers: { "User-Agent": UA, Accept: "image/*" }, redirect: "follow" });
+      if (!resp.ok) { skipped++; continue; }
+      const bytes = new Uint8Array(await resp.arrayBuffer());
+      if (bytes.length === 0) { skipped++; continue; }
+      const ext = imageExt(src);
+      const path = storagePathFor(agencyId, externalId, i, ext);
+      const { error } = await sb.storage.from(IMAGE_BUCKET).upload(path, bytes, {
+        contentType: resp.headers.get("content-type") ?? `image/${ext}`,
+        upsert: true,
+      });
+      if (error) { skipped++; continue; }
+      owned.push(ownedUrlFor(SUPABASE_URL, path));
+      mirrored++;
+    } catch { skipped++; }
+  }
+  return { owned, mirrored, skipped, alreadyOwned };
 }
 
 Deno.serve(async (req: Request) => {
@@ -58,12 +102,17 @@ Deno.serve(async (req: Request) => {
   const feed_url = typeof body.feed_url === "string" ? body.feed_url : null;
   const feed_xml = typeof body.feed_xml === "string" ? body.feed_xml : null;
   const format = typeof body.format === "string" ? body.format : "kyero";
+  // SAFE DEFAULT: dry-run unless the caller EXPLICITLY passes dry_run:false. First real-feed contact
+  // must be a dry-run. allow_mass_withdraw is the deliberate human override for a genuine delisting.
+  const dry_run = body.dry_run !== false;
+  const allow_mass_withdraw = body.allow_mass_withdraw === true;
   if (!agency_id) return json({ ok: false, error: "agency_id_required" }, 400);
   if (!feed_url && !feed_xml) return json({ ok: false, error: "feed_url_or_feed_xml_required" }, 400);
 
+  const nowIso = new Date().toISOString();
   const { data: runRow, error: runErr } = await sb
     .from("property_sync_runs")
-    .insert({ agency_id, status: "running", started_at: new Date().toISOString() })
+    .insert({ agency_id, status: dry_run ? "dry_run" : "running", started_at: nowIso })
     .select("id").single();
   if (runErr) return json({ ok: false, error: "sync_run_open_failed", detail: runErr.message }, 500);
   const run_id = runRow.id as string;
@@ -71,9 +120,13 @@ Deno.serve(async (req: Request) => {
     sb.from("property_sync_runs").update({ ...patch, completed_at: new Date().toISOString() }).eq("id", run_id);
 
   try {
+    // ── fetch + parse — FAIL-CLOSED before any write or withdrawal ──
     let xml = feed_xml;
     if (!xml) {
-      const resp = await fetch(feed_url!, { headers: { "User-Agent": "AIVENA-PropertySync/1.0" } });
+      let resp: Response;
+      try { resp = await fetch(feed_url!, { headers: { "User-Agent": UA } }); }
+      catch (e) { await finishRun({ status: "error", error_message: `feed_fetch_${String((e as Error).message).slice(0, 80)}` });
+        return json({ ok: false, error: "feed_fetch_failed" }, 502); }
       if (!resp.ok) { await finishRun({ status: "error", error_message: `feed_fetch_${resp.status}` });
         return json({ ok: false, error: "feed_fetch_failed", upstream_status: resp.status }, 502); }
       xml = await resp.text();
@@ -87,19 +140,71 @@ Deno.serve(async (req: Request) => {
     if (items.length === 0) { await finishRun({ status: "error", error_message: "feed_empty", properties_found: 0 });
       return json({ ok: false, error: "feed_empty" }, 422); }
 
-    const nowIso = new Date().toISOString();
+    const feedSet = new Set(items.map((n) => n.external_id));
+
+    // ── PRE-UPSERT read of FEED-OWNED active rows: the honest withdraw set + denominator ──
+    // Scoped to import_source='property-sync' → a feed NEVER withdraws CSV-imported or demo rows.
+    // Read BEFORE the upsert so the guard's denominator isn't inflated by the upsert forcing 'active'.
+    const { data: activeRows, error: aErr } = await sb.from("properties")
+      .select("id, external_id")
+      .eq("agency_id", agency_id).eq("status", "active")
+      .eq("raw_payload->>import_source", "property-sync");
+    if (aErr) { await finishRun({ status: "error", error_message: `active_read_${aErr.message.slice(0, 120)}`, properties_found: items.length });
+      return json({ ok: false, error: "active_read_failed" }, 500); }
+
+    const activeFeedOwned = activeRows ?? [];
+    const existingExt = new Set(activeFeedOwned.map((r) => r.external_id as string));
+    const toWithdraw = activeFeedOwned.filter((r) => !feedSet.has(r.external_id as string)).map((r) => r.id as string);
+    const guard = evaluateWithdrawalGuard(toWithdraw.length, activeFeedOwned.length, allow_mass_withdraw);
+
+    const imagesTotal = items.reduce((s, n) => s + n.images.length, 0);
+    const alreadyOwned = items.reduce((s, n) => s + n.images.filter(isOwnedImageUrl).length, 0);
+    const wouldInsert = items.filter((n) => !existingExt.has(n.external_id)).length;
+
+    const report = {
+      found: items.length,
+      would_insert: wouldInsert,
+      would_update: items.length - wouldInsert,
+      would_withdraw: toWithdraw.length,
+      withdraw_blocked: guard.blocked,
+      withdraw_reason: guard.reason,
+      active_feed_owned_before: activeFeedOwned.length,
+      images_total: imagesTotal,
+      images_already_owned: alreadyOwned,
+      images_to_mirror: imagesTotal - alreadyOwned,
+      with_built: items.filter((n) => n.area_built_sqm != null).length,
+      with_plot: items.filter((n) => n.area_plot_sqm != null).length,
+      no_usable_area: items.filter((n) => n.area_sqm == null).length,
+    };
+
+    // ── DRY RUN (default): report what WOULD happen, write NOTHING ──
+    if (dry_run) {
+      await finishRun({ status: "dry_run", properties_found: items.length, properties_updated: 0,
+        properties_withdrawn: 0, error_message: `dry_run;${guard.reason}` });
+      return json({ ok: true, dry_run: true, run_id, report });
+    }
+
+    // ── APPLY: mirror every property's images into our own bucket, then upsert with OWNED urls ──
+    let mirroredTotal = 0, skippedImages = 0;
+    for (const n of items) {
+      if (n.images.length === 0) continue;
+      const m = await mirrorImages(sb, agency_id, n.external_id, n.images);
+      n.images = m.owned;                 // OWNED urls only — never the feed's links
+      mirroredTotal += m.mirrored;
+      skippedImages += m.skipped;
+    }
+
     const rows = items.map((n) => ({
       agency_id, external_id: n.external_id, title: n.title, description: n.description,
       property_type: n.property_type, status: "active", price: n.price,
       price_currency: n.price_currency || "EUR", bedrooms: n.bedrooms, bathrooms: n.bathrooms,
-      // Built and plot are written to their own columns; area_sqm carries the BUILT size only.
-      // A plot size must never reach area_sqm — the Studio renders that as "N m² built".
+      // Built and plot in their own columns; area_sqm is the BUILT size only (Studio renders it as
+      // "N m² built") — a plot size must never reach it.
       area_sqm: n.area_sqm, area_built_sqm: n.area_built_sqm, area_plot_sqm: n.area_plot_sqm,
       location_city: n.location_city, location_region: n.location_region,
       location_country: n.location_country, lat: n.lat, lng: n.lng, images: n.images, features: n.features,
       source_url: n.source_url, scraped_at: nowIso,
-      // descriptions keeps every language the feed supplied (13 in Kyero's own sample, 33 in the
-      // OpenEstate fixture); `description` above is only the preferred one. Nothing is discarded.
+      // descriptions keeps every language the feed supplied; `description` is only the preferred one.
       raw_payload: { import_source: "property-sync", format, synced_at: nowIso, descriptions: n.descriptions, feed: n.raw },
       updated_at: nowIso,
     }));
@@ -108,14 +213,15 @@ Deno.serve(async (req: Request) => {
     if (upErr) { await finishRun({ status: "error", error_message: `upsert_${upErr.message.slice(0, 120)}`, properties_found: items.length });
       return json({ ok: false, error: "upsert_failed", detail: upErr.message }, 500); }
 
-    // Withdrawal: any still-active property for this agency that is no longer in the feed.
-    const feedSet = new Set(items.map((n) => n.external_id));
-    const { data: activeRows, error: aErr } = await sb.from("properties")
-      .select("id, external_id").eq("agency_id", agency_id).eq("status", "active");
-    if (aErr) { await finishRun({ status: "error", error_message: `active_read_${aErr.message.slice(0, 120)}`, properties_found: items.length });
-      return json({ ok: false, error: "active_read_failed" }, 500); }
+    // ── WITHDRAWAL: apply only if the guard passed; else DEFER (keep the upsert, flag needs_review) ──
+    if (guard.blocked) {
+      await finishRun({ status: "needs_review", properties_found: items.length, properties_updated: items.length,
+        properties_withdrawn: 0, error_message: guard.reason });
+      return json({ ok: false, error: "withdraw_deferred_needs_review", run_id,
+        withdraw_deferred: toWithdraw.length, reason: guard.reason,
+        mirrored_images: mirroredTotal, skipped_images: skippedImages, found: items.length });
+    }
 
-    const toWithdraw = (activeRows ?? []).filter((r) => !feedSet.has(r.external_id as string)).map((r) => r.id as string);
     let withdrawn = 0;
     for (let i = 0; i < toWithdraw.length; i += 200) {
       const chunk = toWithdraw.slice(i, i + 200);
@@ -125,8 +231,10 @@ Deno.serve(async (req: Request) => {
       withdrawn += chunk.length;
     }
 
-    await finishRun({ status: "success", properties_found: items.length, properties_updated: items.length, properties_withdrawn: withdrawn });
-    return json({ ok: true, run_id, found: items.length, withdrawn });
+    await finishRun({ status: "success", properties_found: items.length, properties_updated: items.length,
+      properties_withdrawn: withdrawn });
+    return json({ ok: true, run_id, found: items.length, withdrawn,
+      mirrored_images: mirroredTotal, skipped_images: skippedImages });
   } catch (e) {
     await finishRun({ status: "error", error_message: `unexpected_${String((e as Error).message).slice(0, 120)}` });
     return json({ ok: false, error: "unexpected_error" }, 500);

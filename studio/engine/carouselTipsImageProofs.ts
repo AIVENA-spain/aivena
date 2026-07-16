@@ -47,7 +47,7 @@ function cover(c: DeckCopy, total: number, mode: "dusk" | "light" | "photo", was
     els.push(...band(1, total, mix(CREAM, NAVY, 0.65)));
   } else if (mode === "light") {
     els.push({ type: "text", bbox: [80, 96, 720, 128], content: AGENCY, font: "Jost", size: 20, colour: mix(NAVY, CREAM, 0.75), align: "left", weight: "500", tracking: 5, shield: false });
-    els.push({ type: "text", bbox: [80, 200, 1000, 236], content: c.kicker.toUpperCase(), font: "Jost", size: 22, colour: deepGold, align: "left", tracking: 6, shield: false });
+    els.push({ type: "text", bbox: [80, 200, 1000, 236], content: c.kicker.toUpperCase(), font: "Jost", size: 22, colour: mix(NAVY, CREAM, 0.72), align: "left", tracking: 6, shield: false });
     els.push({ type: "text", bbox: [80, 260, 1000, 560], content: wrap(c.hook, FR, 92, 920), font: FR, size: 92, colour: NAVY, align: "left", line_height: 108, shield: false });
     els.push({ ...aiTag(mix(NAVY, CREAM, 0.5)), shield: false });
     els.push(...band(1, total, mix(NAVY, CREAM, 0.6)).map((e) => ({ ...e, shield: false })));
@@ -104,12 +104,91 @@ async function renderDeck(specs: unknown[], photos: Buffer[], grain: number): Pr
   return out;
 }
 
+/** INTERSTITIAL: the deck's third image full-bleed with one pulling line — the mid-deck re-hook. */
+function interstitial(line: string, mode: "dusk" | "light" | "photo", total: number, idx = 4) {
+  const els: any[] = [{ type: "photo", photo: 2, bbox: [0, 0, W, H] }];
+  if (mode === "light") {
+    els.push({ type: "text", bbox: [80, 150, 1000, 400], content: wrap(line, FR, 64, 920), font: FR, size: 64, colour: NAVY, align: "left", line_height: 80, shield: false });
+    els.push({ ...aiTag(mix(NAVY, CREAM, 0.5)), shield: false });
+    els.push(...band(idx, total, mix(NAVY, CREAM, 0.6)).map((e) => ({ ...e, shield: false })));
+  } else {
+    els.push({ type: "scrim", bbox: [0, 820, W, H], colour: NAVY });
+    els.push({ type: "scrim", bbox: [0, 1000, W, H], colour: NAVY });
+    els.push({ type: "text", bbox: [80, 1030, 1000, 1220], content: wrap(line, FR, 64, 920), font: FR, size: 64, colour: "#f6f1e7", align: "left", line_height: 80 });
+    els.push(aiTag(mix(CREAM, NAVY, 0.6)));
+    els.push(...band(idx, total, mix(CREAM, NAVY, 0.65)));
+  }
+  return DesignSpec.parse({ background: NAVY, elements: els });
+}
+
+/** S2 with the deck's second image — per-style treatment. */
+function s2Card(c: DeckCopy, total: number) {  // image in a cream card on navy (Bodegon / Salitre polaroid-ish)
+  return DesignSpec.parse({
+    background: NAVY,
+    elements: [
+      { type: "rect", bbox: [310, 130, 770, 590], fill: CREAM, radius: 10 },
+      { type: "photo", photo: 1, bbox: [332, 152, 748, 568], zoom: 1.15, x: 0.5, y: 0.5 },
+      { type: "text", bbox: [80, 660, 1000, 696], content: c.kicker.toUpperCase(), font: "Jost", size: 21, colour: GOLD, align: "center", tracking: 6 },
+      { type: "text", bbox: [110, 740, 970, 970], content: wrap(c.s2title, FR, 64, 860), font: FR, size: 64, colour: CREAM, align: "center", line_height: 80, valign: "center" },
+      { type: "text", bbox: [150, 1020, 930, 1150], content: wrap(c.s2body, "Jost", 29, 720), font: "Jost", size: 29, colour: mix(CREAM, NAVY, 0.85), align: "center", line_height: 44 },
+      aiTag(mix(CREAM, NAVY, 0.6)),
+      ...band(2, total, mix(CREAM, NAVY, 0.65)),
+    ],
+  });
+}
+function s2Strip(c: DeckCopy, total: number) {  // cream page + the second image as a wide footer strip (Litoral)
+  return DesignSpec.parse({
+    background: CREAM,
+    elements: [
+      { type: "text", bbox: [80, 120, 1000, 156], content: c.kicker.toUpperCase(), font: "Jost", size: 21, colour: GOLD, align: "left", tracking: 6 },
+      { type: "text", bbox: [80, 220, 1000, 520], content: wrap(c.s2title, FR, 76, 920), font: FR, size: 76, colour: NAVY, align: "left", line_height: 92, valign: "center" },
+      { type: "text", bbox: [80, 580, 1000, 720], content: wrap(c.s2body, "Jost", 32, 920), font: "Jost", size: 32, colour: "#333333", align: "left", line_height: 48 },
+      { type: "photo", photo: 1, bbox: [0, 800, 1080, 1210], zoom: 1.15, x: 0.5, y: 0.6 },
+      { type: "rect", bbox: [0, 796, 1080, 800], fill: NAVY },
+      { ...aiTag(mix(INK, CREAM, 0.55), true), shield: false },
+      ...band(2, total, mix(INK, CREAM, 0.55)).map((e) => ({ ...e, shield: false })),
+    ],
+  });
+}
+function s2Full(c: DeckCopy, total: number) {  // second image full-bleed, dusk text (Tinta lighthouse)
+  return DesignSpec.parse({
+    background: NAVY,
+    elements: [
+      { type: "photo", photo: 1, bbox: [0, 0, W, H] },
+      { type: "scrim", bbox: [0, 0, W, 560], colour: NAVY, direction: "down" },
+      { type: "text", bbox: [80, 130, 1000, 166], content: c.kicker.toUpperCase(), font: "Jost", size: 21, colour: GOLD, align: "left", tracking: 6 },
+      { type: "text", bbox: [80, 210, 1000, 470], content: wrap(c.s2title, FR, 72, 920), font: FR, size: 72, colour: "#f6f1e7", align: "left", line_height: 88 },
+      aiTag(mix(CREAM, NAVY, 0.6)),
+      ...band(2, total, mix(CREAM, NAVY, 0.65)),
+    ],
+  });
+}
+
+/** Candidate cover for the "more styles" strip. */
+function candidate(hook: string, kicker: string, mode: "light" | "dusk", zoom?: { z: number; y: number }) {
+  const els: any[] = [{ type: "photo", photo: 0, bbox: [0, 0, W, H], ...(zoom ? { zoom: zoom.z, x: 0.5, y: zoom.y } : {}) }];
+  if (mode === "light") {
+    els.push({ type: "text", bbox: [80, 96, 720, 128], content: AGENCY, font: "Jost", size: 20, colour: mix(NAVY, CREAM, 0.75), align: "left", weight: "500", tracking: 5, shield: false });
+    els.push({ type: "text", bbox: [80, 200, 1000, 236], content: kicker.toUpperCase(), font: "Jost", size: 22, colour: mix(NAVY, CREAM, 0.72), align: "left", tracking: 6, shield: false });
+    els.push({ type: "text", bbox: [80, 260, 1000, 560], content: wrap(hook, FR, 92, 920), font: FR, size: 92, colour: NAVY, align: "left", line_height: 108, shield: false });
+    els.push({ ...aiTag(mix(NAVY, CREAM, 0.5)), shield: false });
+    els.push(...band(1, 8, mix(NAVY, CREAM, 0.6)).map((e) => ({ ...e, shield: false })));
+  } else {
+    els.push({ type: "scrim", bbox: [0, 0, W, 620], colour: NAVY, direction: "down" });
+    els.push({ type: "text", bbox: [80, 96, 720, 128], content: AGENCY, font: "Jost", size: 20, colour: CREAM, align: "left", weight: "500", tracking: 5 });
+    els.push({ type: "text", bbox: [80, 200, 1000, 236], content: kicker.toUpperCase(), font: "Jost", size: 22, colour: GOLD, align: "left", tracking: 6 });
+    els.push({ type: "text", bbox: [80, 260, 1000, 560], content: wrap(hook, FR, 92, 920), font: FR, size: 92, colour: "#f6f1e7", align: "left", line_height: 108 });
+    els.push(aiTag(mix(CREAM, NAVY, 0.6)));
+    els.push(...band(1, 8, mix(CREAM, NAVY, 0.65)));
+  }
+  return DesignSpec.parse({ background: NAVY, elements: els });
+}
+
 async function main() {
   const outdir = process.argv[2] ?? "studio/out/carousel-tips-ai";
   const genDir = process.argv[3] ?? "";
   mkdirSync(outdir, { recursive: true });
-  const hero = (f: string) => readFileSync(join(genDir, f));
-
+  const g = (f: string) => readFileSync(join(genDir, `gen-${f}.png`));
   const save = async (name: string, slides: Buffer[]) => {
     for (let i = 0; i < slides.length; i++) {
       writeFileSync(join(outdir, `${name}-${i + 1}.jpg`), await sharp(slides[i]).resize({ width: 540 }).jpeg({ quality: 82 }).toBuffer());
@@ -117,132 +196,97 @@ async function main() {
     console.log(`${name}: ${slides.length} slides`);
   };
 
-  // ── BODEGÓN — hidden costs / the amphora ────────────────────────────────────
+  // ── BODEGÓN — hidden costs (amphora / paper boat / balancing stones) ─────────
   {
     const c: DeckCopy = {
       kicker: "Guía para compradores", hook: "Los costes que no ves",
-      s2title: "¿Compras este año? Esto es lo que queda bajo la superficie.",
-      s2body: "Impuestos, notaría, comunidad, suministros — los gastos que no salen en el anuncio, explicados uno a uno.",
+      s2title: "Lo que queda bajo la superficie", s2body: "Impuestos, notaría, comunidad, suministros — los gastos que no salen en el anuncio, uno a uno.",
       tipNum: "01", tipTitle: "El impuesto que llega después", tipBody: "El ITP se paga tras la compra, no en la reserva. Resérvalo desde el primer día o el presupuesto se hunde cuando ya no hay vuelta atrás.",
       teaser: "Siguiente: la factura de la notaría →",
       ctaHeading: "Que nada te pille bajo el agua", ctaAction: "Envíaselo a la persona con quien vas a comprar — y guardadlo para la firma.", keyword: "Escríbenos: COSTES",
     };
-    const photos = [hero("gen-bodegon.png")];
+    const photos = [g("bodegon"), g("bodegon-2"), g("bodegon-3")];
     const specs: unknown[] = [
-      cover(c, 4, "dusk"),
-      // S2: tight object crop in a cream card on navy — zero contrast risk
-      DesignSpec.parse({
-        background: NAVY,
-        elements: [
-          { type: "rect", bbox: [330, 140, 750, 560], fill: CREAM, radius: 10 },
-          { type: "photo", photo: 0, bbox: [352, 162, 728, 538], zoom: 1.9, x: 0.5, y: 0.62 },
-          { type: "text", bbox: [80, 640, 1000, 676], content: "GUÍA PARA COMPRADORES", font: "Jost", size: 21, colour: GOLD, align: "center", tracking: 6 },
-          { type: "text", bbox: [110, 720, 970, 960], content: wrap(c.s2title, FR, 64, 860), font: FR, size: 64, colour: CREAM, align: "center", line_height: 80, valign: "center" },
-          { type: "text", bbox: [150, 1010, 930, 1140], content: wrap(c.s2body, "Jost", 29, 720), font: "Jost", size: 29, colour: mix(CREAM, NAVY, 0.85), align: "center", line_height: 44 },
-          aiTag(mix(CREAM, NAVY, 0.6)),
-          ...band(2, 4, mix(CREAM, NAVY, 0.65)),
-        ],
-      }),
-      tipSlide(c, CREAM, NAVY, GOLD, 4),
-      cta(c, 4, 0.75),
+      cover(c, 5, "dusk"),
+      s2Card(c, 5),
+      tipSlide(c, CREAM, NAVY, GOLD, 5),
+      interstitial("El equilibrio se aprende antes de firmar.", "dusk", 5),
+      cta(c, 5, 0.75),
     ];
     await save("bodegon", await renderDeck(specs, photos, 0.04));
   }
 
-  // ── LITORAL — moving to the coast / the gouache street ──────────────────────
+  // ── LITORAL — moving to the coast (street / harbor / terrace) ────────────────
   {
     const c: DeckCopy = {
       kicker: "Mudarse a la costa", hook: "Lo que nadie te cuenta antes de mudarte",
-      s2title: "¿Cambias de país este año? Empieza por aquí.",
-      s2body: "Papeles, plazos, barrios y estaciones — la guía honesta para llegar bien a la Costa Blanca.",
+      s2title: "¿Cambias de país este año?", s2body: "Papeles, plazos, barrios y estaciones — la guía honesta para llegar bien a la Costa Blanca.",
       tipNum: "01", tipTitle: "El pueblo cambia en invierno", tipBody: "Visita tu futura calle en enero. Los comercios que abren, el ruido real y la luz de la tarde cuentan más que cualquier foto de agosto.",
       teaser: "Siguiente: el papeleo del NIE →",
       ctaHeading: "El Mediterráneo te espera", ctaAction: "Envíaselo a quien sueña con mudarse contigo — y guardadlo para el gran día.", keyword: "Escríbenos: COSTA",
     };
-    const photos = [hero("gen-litoral.png")];
+    const photos = [g("litoral"), g("litoral-2"), g("litoral-3")];
     const specs: unknown[] = [
-      cover(c, 4, "light", 0),
-      // S2: solid cream + thin illustrated horizon strip as footer
-      DesignSpec.parse({
-        background: CREAM,
-        elements: [
-          { type: "text", bbox: [80, 120, 1000, 156], content: "MUDARSE A LA COSTA", font: "Jost", size: 21, colour: GOLD, align: "left", tracking: 6 },
-          { type: "text", bbox: [80, 220, 1000, 520], content: wrap(c.s2title, FR, 76, 920), font: FR, size: 76, colour: NAVY, align: "left", line_height: 92, valign: "center" },
-          { type: "text", bbox: [80, 580, 1000, 720], content: wrap(c.s2body, "Jost", 32, 920), font: "Jost", size: 32, colour: "#333333", align: "left", line_height: 48 },
-          { type: "photo", photo: 0, bbox: [0, 830, 1080, 1200], zoom: 1.4, x: 0.5, y: 0.86 },
-          { type: "rect", bbox: [0, 826, 1080, 830], fill: NAVY },
-          { ...aiTag(mix(INK, CREAM, 0.55), true), shield: false },
-          ...band(2, 4, mix(INK, CREAM, 0.55)).map((e) => ({ ...e, shield: false })),
-        ],
-      }),
-      tipSlide(c, CREAM, NAVY, GOLD, 4),
-      cta(c, 4, 0.5),
+      cover(c, 5, "light", 0),
+      s2Strip(c, 5),
+      tipSlide(c, CREAM, NAVY, GOLD, 5),
+      interstitial("Tu mesa al sol ya existe. Falta la dirección.", "light", 5),
+      cta(c, 5, 0.5),
     ];
     await save("litoral", await renderDeck(specs, photos, 0.04));
   }
 
-  // ── TINTA — renovation traps / the riso paint roller ────────────────────────
+  // ── TINTA — renovation/selling (sun / lighthouse / gold window) ──────────────
   {
     const c: DeckCopy = {
-      kicker: "Reformas sin sustos", hook: "Los errores que la pintura no tapa",
-      s2title: "¿Reformas para vender? Lee esto antes de pintar.",
-      s2body: "Cinco arreglos que suman valor — y los parches que un comprador detecta en la primera visita.",
-      tipNum: "01", tipTitle: "La grieta vuelve siempre", tipBody: "Tapar una grieta sin tratar la causa cuesta el doble: la pintura la esconde tres meses, la tasación la encuentra en tres minutos.",
-      teaser: "Siguiente: el presupuesto honesto →",
-      ctaHeading: "Reforma lo que suma", ctaAction: "Guárdalo antes de pedir el primer presupuesto — y compártelo con quien reforma contigo.", keyword: "Escríbenos: REFORMA",
+      kicker: "Vender bien", hook: "Que tu casa sea la que brilla",
+      s2title: "El comprador ve cien anuncios. Guíalo al tuyo.", s2body: "Cinco decisiones que hacen que una casa destaque — antes de bajar un solo euro.",
+      tipNum: "01", tipTitle: "La primera foto decide", tipBody: "Tu anuncio compite en una pantalla llena de miniaturas. Una portada luminosa y despejada dobla las visitas antes de que nadie lea el precio.",
+      teaser: "Siguiente: la luz que vende →",
+      ctaHeading: "Enciende tu anuncio", ctaAction: "Guárdalo para antes de publicar — y compártelo con quien vende contigo.", keyword: "Escríbenos: BRILLA",
     };
-    const photos = [hero("gen-tinta.png")];
+    const photos = [g("tinta-h"), g("tinta-2"), g("tinta-3")];
     const specs: unknown[] = [
-      cover(c, 4, "light", 0),
-      // S2: pure typographic print poster — engine-only, no image
-      DesignSpec.parse({
-        background: "#f2ecdd",
-        elements: [
-          { type: "rect", bbox: [80, 150, 430, 168], fill: GOLD },
-          { type: "text", bbox: [80, 230, 1000, 610], content: wrap(c.s2title, FR, 92, 920), font: FR, size: 92, colour: NAVY, align: "left", line_height: 110, valign: "center" },
-          { type: "rect", bbox: [80, 680, 1000, 683], fill: NAVY },
-          { type: "text", bbox: [80, 730, 1000, 880], content: wrap(c.s2body, "Jost", 32, 920), font: "Jost", size: 32, colour: mix(NAVY, "#f2ecdd", 0.85), align: "left", line_height: 48 },
-          { type: "text", bbox: [80, 1000, 1000, 1036], content: "SERIE · REFORMAS SIN SUSTOS · Nº 02", font: "Jost", size: 20, colour: GOLD, align: "left", tracking: 5 },
-          ...band(2, 4, mix(NAVY, "#f2ecdd", 0.55)),
-        ],
-      }),
-      tipSlide(c, "#f2ecdd", NAVY, GOLD, 4),
-      cta(c, 4, 0.75),
+      cover(c, 5, "light", 0),
+      s2Full(c, 5),
+      tipSlide(c, "#f2ecdd", NAVY, GOLD, 5),
+      interstitial("Una ventana encendida basta.", "dusk", 5),
+      cta(c, 5, 0.4),
     ];
     await save("tinta", await renderDeck(specs, photos, 0.05));
   }
 
-  // ── SALITRE — coastal living / the film photo ───────────────────────────────
+  // ── SALITRE — coastal living (aerial boat / persiana wall / espadrilles) ─────
   {
     const c: DeckCopy = {
       kicker: "Vivir en la costa", hook: "Comprar en la costa, sin prisas",
-      s2title: "La casa correcta llega despacio.",
-      s2body: "Cómo visitar, comparar y decidir con calma — la compra que se disfruta también antes de las llaves.",
+      s2title: "La casa correcta llega despacio.", s2body: "Cómo visitar, comparar y decidir con calma — la compra que se disfruta también antes de las llaves.",
       tipNum: "01", tipTitle: "Toma el café en el barrio", tipBody: "Antes de la segunda visita, desayuna en la plaza más cercana. Si el barrio te gusta un martes cualquiera, la casa acertará.",
       teaser: "Siguiente: la lista de la visita →",
-      ctaHeading: "Tu mesa junto al mar", ctaAction: "Envíaselo a la persona con quien compartirás la mesa — y guardadlo para la búsqueda.", keyword: "Escríbenos: CALMA",
+      ctaHeading: "Tu sitio al sol", ctaAction: "Envíaselo a la persona con quien compartirás la mesa — y guardadlo para la búsqueda.", keyword: "Escríbenos: CALMA",
     };
-    const photos = [hero("gen-salitre.png")];
+    const photos = [g("salitre-h"), g("salitre-2"), g("salitre-3")];
     const specs: unknown[] = [
-      cover(c, 4, "photo", 0),
-      // S2: solid navy + the photo as a small taped polaroid card (honest hybrid)
-      DesignSpec.parse({
-        background: NAVY,
-        elements: [
-          { type: "rect", bbox: [340, 130, 760, 560], fill: "#ffffff", rotate: -2 },
-          { type: "photo", photo: 0, bbox: [362, 152, 738, 500], zoom: 1.3, x: 0.5, y: 0.55, rotate: -2 },
-          { type: "rect", bbox: [480, 96, 630, 140], fill: "#e8e0cd", opacity: 0.85, rotate: -8 },
-          { type: "text", bbox: [80, 640, 1000, 676], content: "VIVIR EN LA COSTA", font: "Jost", size: 21, colour: GOLD, align: "center", tracking: 6 },
-          { type: "text", bbox: [110, 720, 970, 920], content: wrap(c.s2title, FR, 72, 860), font: FR, size: 72, colour: CREAM, align: "center", line_height: 88, valign: "center" },
-          { type: "text", bbox: [150, 980, 930, 1110], content: wrap(c.s2body, "Jost", 29, 720), font: "Jost", size: 29, colour: mix(CREAM, NAVY, 0.85), align: "center", line_height: 44 },
-          aiTag(mix(CREAM, NAVY, 0.6)),
-          ...band(2, 4, mix(CREAM, NAVY, 0.65)),
-        ],
-      }),
-      tipSlide(c, CREAM, NAVY, GOLD, 4),
-      cta(c, 4, 0.55),
+      cover(c, 5, "photo", 0),
+      s2Card(c, 5),
+      tipSlide(c, CREAM, NAVY, GOLD, 5),
+      interstitial("Despacio también es una dirección.", "photo", 5),
+      cta(c, 5, 0.5),
     ];
     await save("salitre", await renderDeck(specs, photos, 0.045));
+  }
+
+  // ── CANDIDATES — four more styles, composed as covers ────────────────────────
+  const cands: [string, unknown, Buffer[]][] = [
+    ["cand-papel", candidate("Los pasos que nadie te explica", "Comprar por etapas", "light", { z: 1.45, y: 0.5 }), [g("papel")]],
+    ["cand-arcilla", candidate("¿Tu primera casa en España?", "Pequeña guía práctica", "light"), [g("arcilla")]],
+    ["cand-acuarela", candidate("Vivir con vistas, bien elegido", "La guía del balcón", "light"), [g("acuarela")]],
+    ["cand-bordado", candidate("Consejos que duran años", "Hecho a mano", "light"), [g("bordado")]],
+  ];
+  for (const [name, spec, photos] of cands) {
+    const png = await applyGrain(await renderFreeform(spec as DesignSpec, { width: W, height: H }, photos), 0.035);
+    writeFileSync(join(outdir, `${name}.jpg`), await sharp(png).resize({ width: 540 }).jpeg({ quality: 82 }).toBuffer());
+    console.log(name, "done");
   }
 }
 main().catch((e) => { console.error(e); process.exit(1); });

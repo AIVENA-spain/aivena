@@ -24,7 +24,7 @@ import {
 import { usablePhotos } from '../lib/property-images';
 import { renderCarousel } from '../../../../studio/engine/renderCarousel';
 import { renderPlannedCarousel, type CarouselPlan } from '../../../../studio/engine/carouselSlides';
-import { planCarousel, listingCaption, PlanSchema } from '../lib/studio-carousel-plan';
+import { planCarousel, listingCopy, PlanSchema } from '../lib/studio-carousel-plan';
 
 /**
  * Studio wizard proxy (W13 v0.6) — the browser's ONLY door to Vega's image
@@ -898,7 +898,10 @@ async function storeSlides(agencyId: string, genId: string, slides: Buffer[]): P
 
 async function runCarousel(opts: {
   genId: string; agencyId: string; refs: string[]; language: string;
-  facts: { title: string; location: string; price: string; specs: string; agency: string; contact: string };
+  facts: {
+    title: string; location: string; price: string; specs: string;
+    beds: string; baths: string; area: string; agency: string; contact: string; features: string[];
+  };
   brand: { navy: string; gold: string; cream: string; text: string };
 }): Promise<void> {
   const { genId, agencyId } = opts;
@@ -907,14 +910,15 @@ async function runCarousel(opts: {
     for (const ref of opts.refs) { const buf = await loadPhotoBuffer(ref); if (buf) buffers.push(buf); }
     if (buffers.length < 2) throw new Error('not enough loadable photos');
 
-    const slides = await renderCarousel(opts.facts, opts.brand, buffers);
-    const stored = await storeSlides(agencyId, genId, slides);
-
-    // best-effort AI caption from the same canonical facts — a caption failure never fails the carousel
-    const cap = await listingCaption({
+    // best-effort AI copy (hook overlay, lifestyle line, CTA, caption) from the same canonical facts —
+    // a copy failure never fails the carousel: the design falls back to deterministic text.
+    const copy = await listingCopy({
       facts: { title: opts.facts.title, location: opts.facts.location, price: opts.facts.price, specs: opts.facts.specs, agency: opts.facts.agency, contact: opts.facts.contact },
       language: opts.language, agencyName: opts.facts.agency,
     });
+
+    const slides = await renderCarousel(opts.facts, opts.brand, buffers, copy ?? undefined);
+    const stored = await storeSlides(agencyId, genId, slides);
 
     await supabaseAdmin.from('image_generations').update({
       status: 'completed',
@@ -922,7 +926,7 @@ async function runCarousel(opts: {
       result_image_storage_path: stored[0].path,
       result_metadata: {
         engine: 'carousel', carousel_type: 'listing', slide_count: stored.length, slides: stored,
-        ...(cap ? { caption: cap.caption, hashtags: cap.hashtags } : {}),
+        ...(copy ? { caption: copy.caption, hashtags: copy.hashtags } : {}),
       },
       completed_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -1056,8 +1060,12 @@ route.post('/carousel', async (c) => {
       location: (f.location ?? '').toUpperCase().split(', ').join(' · '),
       price: f.price ?? '',
       specs: (f.specs ?? '').toUpperCase(),
+      beds: (f.beds ?? '').replace(/\D/g, ''),
+      baths: (f.baths ?? '').replace(/\D/g, ''),
+      area: f.area ?? '',
       agency: f.agency ?? '',
       contact: [f.website, f.phone].filter(Boolean).join(' · '),
+      features: [f.feature_1, f.feature_2, f.feature_3, f.feature_4, f.feature_5, f.feature_6].filter((x): x is string => !!x),
     };
 
     const ins = await tx.execute(sql`

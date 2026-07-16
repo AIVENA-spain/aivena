@@ -21,12 +21,18 @@ interface Plan {
   type: "tips" | "quote";
   eyebrow: string;
   hook_title: string;
-  tips: { title: string; body: string }[];
+  slide2_title: string;
+  slide2_body: string;
+  tips: { title: string; body: string; teaser: string }[];
+  recap_title: string;
+  save_line: string;
   quote_parts: string[];
+  quote_hook: string;
+  quote_context: string;
   attribution: string;
   cta_heading: string;
-  cta_sub: string;
-  cta_button: string;
+  cta_action: string;
+  cta_keyword: string;
   swipe_cue: string;
   caption: string;
   hashtags: string[];
@@ -306,15 +312,45 @@ export function CarouselStudio() {
                 <label className={label}>Cover — title</label>
                 <textarea value={draft.hook_title} onChange={(e) => setDraft({ ...draft, hook_title: e.target.value })} className={field} maxLength={90} />
               </div>
+              {draft.type === "quote" && (
+                <div>
+                  <label className={label}>Cover — the quote fragment shown (must be words from the quote)</label>
+                  <textarea value={draft.quote_hook} onChange={(e) => setDraft({ ...draft, quote_hook: e.target.value })} className={field} maxLength={120} />
+                </div>
+              )}
+              <div>
+                <label className={label}>Slide 2 — headline (works on its own — some people see this slide first)</label>
+                <input value={draft.slide2_title} onChange={(e) => setDraft({ ...draft, slide2_title: e.target.value })} className={field} maxLength={80} />
+              </div>
+              <div>
+                <label className={label}>Slide 2 — supporting line</label>
+                <textarea value={draft.type === "quote" ? draft.quote_context : draft.slide2_body}
+                  onChange={(e) => setDraft(draft.type === "quote" ? { ...draft, quote_context: e.target.value } : { ...draft, slide2_body: e.target.value })}
+                  className={field} maxLength={220} />
+              </div>
               {draft.type === "tips" && draft.tips.map((t, i) => (
                 <div key={i} className="flex flex-col gap-2 rounded-lg border border-neutral-200 p-3 dark:border-neutral-700">
-                  <span className="text-xs font-semibold text-neutral-400">Tip {i + 1}</span>
+                  <span className="text-xs font-semibold text-neutral-400">Point {i + 1}</span>
                   <input value={t.title} maxLength={62} className={field}
                     onChange={(e) => setDraft({ ...draft, tips: draft.tips.map((x, j) => j === i ? { ...x, title: e.target.value } : x) })} />
                   <textarea value={t.body} maxLength={250} className={`${field} min-h-20`}
                     onChange={(e) => setDraft({ ...draft, tips: draft.tips.map((x, j) => j === i ? { ...x, body: e.target.value } : x) })} />
+                  <input value={t.teaser} maxLength={70} className={field} placeholder="Teaser for the next slide (optional)"
+                    onChange={(e) => setDraft({ ...draft, tips: draft.tips.map((x, j) => j === i ? { ...x, teaser: e.target.value } : x) })} />
                 </div>
               ))}
+              {draft.type === "tips" && (
+                <>
+                  <div>
+                    <label className={label}>Recap slide — heading</label>
+                    <input value={draft.recap_title} onChange={(e) => setDraft({ ...draft, recap_title: e.target.value })} className={field} maxLength={60} />
+                  </div>
+                  <div>
+                    <label className={label}>Recap slide — save line</label>
+                    <input value={draft.save_line} onChange={(e) => setDraft({ ...draft, save_line: e.target.value })} className={field} maxLength={70} />
+                  </div>
+                </>
+              )}
               {draft.type === "quote" && (
                 <>
                   {draft.quote_parts.map((q, i) => (
@@ -335,12 +371,12 @@ export function CarouselStudio() {
                 <input value={draft.cta_heading} onChange={(e) => setDraft({ ...draft, cta_heading: e.target.value })} className={field} maxLength={78} />
               </div>
               <div>
-                <label className={label}>Closing slide — supporting line</label>
-                <input value={draft.cta_sub} onChange={(e) => setDraft({ ...draft, cta_sub: e.target.value })} className={field} maxLength={130} />
+                <label className={label}>Closing slide — what you ask people to do</label>
+                <input value={draft.cta_action} onChange={(e) => setDraft({ ...draft, cta_action: e.target.value })} className={field} maxLength={140} />
               </div>
               <div>
-                <label className={label}>Closing slide — button</label>
-                <input value={draft.cta_button} onChange={(e) => setDraft({ ...draft, cta_button: e.target.value })} className={field} maxLength={26} />
+                <label className={label}>Closing slide — DM keyword button</label>
+                <input value={draft.cta_keyword} onChange={(e) => setDraft({ ...draft, cta_keyword: e.target.value })} className={field} maxLength={34} />
               </div>
               <div>
                 <label className={label}>Caption</label>

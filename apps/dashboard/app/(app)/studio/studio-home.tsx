@@ -162,7 +162,7 @@ export function StudioHome({ initialLibrary, quota }: { initialLibrary: LibraryI
           desc="Upload or pick a room, choose the style — AIVENA redesigns the space." onClick={() => setView("renovation")} />
         <EntryCard tint="bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-300"
           icon={<Images className="h-6 w-6" />} title="Carousel"
-          desc="One listing, 2-9 photos — a swipeable multi-slide post with cover and contact card." onClick={() => setView("carousel")} />
+          desc="Swipeable multi-slide posts — a listing tour, tips & advice, or a client quote. Caption included." onClick={() => setView("carousel")} />
 
         <div className="flex flex-col rounded-2xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900">
           <div className="text-xs font-medium uppercase tracking-wide text-neutral-400">Credits</div>

@@ -271,7 +271,10 @@ export async function renderFreeform(
         : el.valign === "bottom" ? Math.max(0, boxH(b) - blockH) : 0;
 
       const anchor = el.align === "center" ? "middle" : el.align === "right" ? "end" : "start";
-      const tx = el.align === "center" ? b[0] + boxW(b) / 2 : el.align === "right" ? b[2] : b[0];
+      // pill labels: inset the text by pad_x so the padding is symmetric (the pill's edge stays on the
+      // bbox/grid). Without this, a left-aligned button renders its text flush against the pill's left edge.
+      const inset = el.pill ? el.pill.pad_x : 0;
+      const tx = el.align === "center" ? b[0] + boxW(b) / 2 : el.align === "right" ? b[2] - inset : b[0] + inset;
       const wNum = el.weight ? (/^\d+$/.test(el.weight) ? el.weight : "700") : "";
       const attrs = (wNum ? ` font-weight="${wNum}"` : "") + (el.italic ? ` font-style="italic"` : "") +
         (el.tracking ? ` letter-spacing="${(el.tracking * (size / el.size)).toFixed(2)}"` : "");

@@ -23,6 +23,8 @@ import {
 } from '../lib/studio-smart-design';
 import { usablePhotos } from '../lib/property-images';
 import { renderCarousel } from '../../../../studio/engine/renderCarousel';
+import { renderPlannedCarousel, type CarouselPlan } from '../../../../studio/engine/carouselSlides';
+import { planCarousel, listingCaption, PlanSchema } from '../lib/studio-carousel-plan';
 
 /**
  * Studio wizard proxy (W13 v0.6) — the browser's ONLY door to Vega's image
@@ -347,6 +349,11 @@ function shapeStatus(r: GenRow) {
     last_revision_error: !!(meta && meta.last_revision_error === true),
     // carousel rows: every slide, in order (cover..CTA)
     slides: Array.isArray((meta as any)?.slides) ? (meta as any).slides.map((sl: any) => sl?.url).filter(Boolean) : undefined,
+    // planned carousels: the words (editable via POST /carousel/update) + the ready-to-post caption
+    carousel_type: typeof (meta as any)?.carousel_type === 'string' ? (meta as any).carousel_type : undefined,
+    caption: typeof (meta as any)?.caption === 'string' ? (meta as any).caption : undefined,
+    hashtags: Array.isArray((meta as any)?.hashtags) ? (meta as any).hashtags : undefined,
+    plan: (meta as any)?.plan && typeof (meta as any).plan === 'object' ? (meta as any).plan : undefined,
     created_at: r.created_at,
     completed_at: r.completed_at,
   };
@@ -875,8 +882,22 @@ route.post('/editable-generate', async (c) => {
 // CTA card, drawn by the freeform engine from canonical facts. No AI, no provider: renders in seconds,
 // runs async only to stay clear of serverless timeouts. Produces the slide IMAGES (posting to Instagram
 // is the agent's job — no publishing integration).
+/** Upload rendered slides to their per-generation folder and return signed URLs (1 year). */
+async function storeSlides(agencyId: string, genId: string, slides: Buffer[]): Promise<{ path: string; url: string }[]> {
+  const stored: { path: string; url: string }[] = [];
+  for (let i = 0; i < slides.length; i++) {
+    const key = `carousel/${agencyId}/${genId}/slide-${i + 1}.png`;
+    const up = await supabaseAdmin.storage.from('generated-images').upload(key, slides[i], { contentType: 'image/png', upsert: true });
+    if (up.error) throw new Error(`slide upload: ${up.error.message}`);
+    const signed = await supabaseAdmin.storage.from('generated-images').createSignedUrl(key, 60 * 60 * 24 * 365);
+    if (signed.error || !signed.data?.signedUrl) throw new Error('slide sign failed');
+    stored.push({ path: key, url: signed.data.signedUrl });
+  }
+  return stored;
+}
+
 async function runCarousel(opts: {
-  genId: string; agencyId: string; refs: string[];
+  genId: string; agencyId: string; refs: string[]; language: string;
   facts: { title: string; location: string; price: string; specs: string; agency: string; contact: string };
   brand: { navy: string; gold: string; cream: string; text: string };
 }): Promise<void> {
@@ -887,21 +908,22 @@ async function runCarousel(opts: {
     if (buffers.length < 2) throw new Error('not enough loadable photos');
 
     const slides = await renderCarousel(opts.facts, opts.brand, buffers);
-    const stored: { path: string; url: string }[] = [];
-    for (let i = 0; i < slides.length; i++) {
-      const key = `carousel/${agencyId}/${genId}/slide-${i + 1}.png`;
-      const up = await supabaseAdmin.storage.from('generated-images').upload(key, slides[i], { contentType: 'image/png', upsert: true });
-      if (up.error) throw new Error(`slide upload: ${up.error.message}`);
-      const signed = await supabaseAdmin.storage.from('generated-images').createSignedUrl(key, 60 * 60 * 24 * 365);
-      if (signed.error || !signed.data?.signedUrl) throw new Error('slide sign failed');
-      stored.push({ path: key, url: signed.data.signedUrl });
-    }
+    const stored = await storeSlides(agencyId, genId, slides);
+
+    // best-effort AI caption from the same canonical facts — a caption failure never fails the carousel
+    const cap = await listingCaption({
+      facts: { title: opts.facts.title, location: opts.facts.location, price: opts.facts.price, specs: opts.facts.specs, agency: opts.facts.agency, contact: opts.facts.contact },
+      language: opts.language, agencyName: opts.facts.agency,
+    });
 
     await supabaseAdmin.from('image_generations').update({
       status: 'completed',
       result_image_url: stored[0].url,
       result_image_storage_path: stored[0].path,
-      result_metadata: { engine: 'carousel', slide_count: stored.length, slides: stored },
+      result_metadata: {
+        engine: 'carousel', carousel_type: 'listing', slide_count: stored.length, slides: stored,
+        ...(cap ? { caption: cap.caption, hashtags: cap.hashtags } : {}),
+      },
       completed_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }).eq('id', genId).eq('agency_id', agencyId);
@@ -916,17 +938,112 @@ async function runCarousel(opts: {
   }
 }
 
+// PLANNED carousels (Christian-approved 2026-07-16): tips/quote posts — the AI plans the WORDS
+// (validated, honesty-gated: no figures, no invented facts), the slide library draws every pixel.
+// One credit per carousel (it's an AI generation, like Smart); the plan is stored so every slide's
+// text stays editable afterwards via POST /carousel/update.
+async function runPlannedCarousel(opts: {
+  genId: string; agencyId: string;
+  type: 'tips' | 'quote'; topic?: string; quoteText?: string; quoteAuthor?: string;
+  slideCount?: number; language: string;
+  agency: { name: string; web: string; phone: string };
+  brand: { navy: string; gold: string; cream: string; text: string };
+}): Promise<void> {
+  const { genId, agencyId } = opts;
+  try {
+    const plan = await planCarousel({
+      type: opts.type, topic: opts.topic, quoteText: opts.quoteText, quoteAuthor: opts.quoteAuthor,
+      slideCount: opts.slideCount, language: opts.language, agencyName: opts.agency.name,
+    });
+    const contact = [opts.agency.web, opts.agency.phone].filter(Boolean).join(' · ');
+    const slides = await renderPlannedCarousel(plan, opts.agency.name, contact, opts.brand);
+    const stored = await storeSlides(agencyId, genId, slides);
+
+    await supabaseAdmin.from('image_generations').update({
+      status: 'completed',
+      result_image_url: stored[0].url,
+      result_image_storage_path: stored[0].path,
+      result_metadata: {
+        engine: 'carousel', carousel_type: opts.type, slide_count: stored.length, slides: stored,
+        plan, caption: plan.caption, hashtags: plan.hashtags,
+      },
+      completed_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }).eq('id', genId).eq('agency_id', agencyId);
+
+    const { error: qErr } = await supabaseAdmin.rpc('image_gen_increment_usage', {
+      p_agency_id: agencyId, p_generation_type: 'social_post',
+    });
+    if (qErr) console.error('[studio/carousel] usage increment failed:', qErr.message);
+  } catch (err) {
+    console.error('[studio/carousel] planned render failed:', err);
+    await supabaseAdmin.from('image_generations').update({
+      status: 'failed',
+      failure_reason: ((err as Error)?.message ?? 'carousel_failed').slice(0, 240),
+      completed_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }).eq('id', genId).eq('agency_id', agencyId);
+  }
+}
+
+const CAROUSEL_LANGS = new Set(['es', 'en', 'de', 'fr', 'nl', 'sv', 'no', 'da', 'fi', 'pl', 'ru', 'it', 'pt']);
+
 route.post('/carousel', async (c) => {
   const tx = c.get('tx');
   const agencyId = c.get('agencyId');
   const user = c.get('user');
   const b = await readJson(c);
-  const propertyId = typeof b.property_id === 'string' ? b.property_id : '';
-  const refs = Array.isArray(b.photos) ? (b.photos.filter((u: unknown): u is string => typeof u === 'string')).slice(0, 9) : [];
-  if (!propertyId || refs.length < 2) {
-    return c.json({ ok: false, error: 'invalid_request', message: 'Pick a property and at least 2 photos (up to 9).' }, 400);
-  }
+  const type = b.type === 'tips' || b.type === 'quote' ? b.type : 'listing';
+  const language = typeof b.language === 'string' && CAROUSEL_LANGS.has(b.language) ? b.language : 'es';
+
   try {
+    // ── tips / quote: no property needed — brand + agency identity only ──────
+    if (type === 'tips' || type === 'quote') {
+      const topic = typeof b.topic === 'string' ? b.topic.trim().slice(0, 300) : '';
+      const quoteText = typeof b.quote_text === 'string' ? b.quote_text.trim().slice(0, 700) : '';
+      const quoteAuthor = typeof b.quote_author === 'string' ? b.quote_author.trim().slice(0, 80) : '';
+      const slideCount = Number.isInteger(b.slide_count) ? Math.min(7, Math.max(3, b.slide_count as number)) : 5;
+      if (type === 'tips' && topic.length < 3) {
+        return c.json({ ok: false, error: 'invalid_request', message: 'Tell us what the tips should be about.' }, 400);
+      }
+      if (type === 'quote' && quoteText.length < 10) {
+        return c.json({ ok: false, error: 'invalid_request', message: 'Paste the client quote (at least a sentence).' }, 400);
+      }
+
+      const bRes = await tx.execute(sql`
+        SELECT brand_name, primary_color, accent_color, background_color, text_color,
+               phone, whatsapp_number, website_url, sender_email, email_signature_name
+        FROM agency_branding WHERE agency_id = ${agencyId} LIMIT 1
+      `);
+      const bRows = bRes as unknown as any[];
+      const { agency, brand } = mapBranding(bRows[0] || {});
+
+      const label = type === 'tips' ? `Tips carousel · ${topic.slice(0, 80)}` : 'Client quote carousel';
+      const ins = await tx.execute(sql`
+        INSERT INTO image_generations
+          (agency_id, generation_type, status, prompt, requested_by, raw_request)
+        VALUES
+          (${agencyId}, 'social_post', 'processing', ${label}, ${user?.sub ?? null}::uuid,
+           ${JSON.stringify({ engine: 'carousel', content_type: 'carousel', carousel_type: type, topic, quote_text: quoteText, quote_author: quoteAuthor, slide_count: slideCount, language })}::jsonb)
+        RETURNING id
+      `);
+      const rows = ins as unknown as Array<{ id: string }>;
+      const genId = rows[0]?.id;
+      if (!genId) throw new Error('insert failed');
+
+      void runPlannedCarousel({
+        genId, agencyId, type, topic, quoteText, quoteAuthor, slideCount, language,
+        agency: { name: agency.name, web: agency.web, phone: agency.phone }, brand,
+      });
+      return c.json({ ok: true, generation_id: genId, status: 'processing' });
+    }
+
+    // ── listing: the property-photo carousel (deterministic slides + AI caption) ──
+    const propertyId = typeof b.property_id === 'string' ? b.property_id : '';
+    const refs = Array.isArray(b.photos) ? (b.photos.filter((u: unknown): u is string => typeof u === 'string')).slice(0, 9) : [];
+    if (!propertyId || refs.length < 2) {
+      return c.json({ ok: false, error: 'invalid_request', message: 'Pick a property and at least 2 photos (up to 9).' }, 400);
+    }
     const loaded = await loadPropertyAndBrand(tx, agencyId, propertyId);
     if (!loaded) return c.json({ ok: false, error: 'not_found', message: 'That property could not be found.' }, 404);
     for (const u of refs) {
@@ -948,18 +1065,85 @@ route.post('/carousel', async (c) => {
         (agency_id, generation_type, status, prompt, source_property_id, requested_by, raw_request)
       VALUES
         (${agencyId}, 'social_post', 'processing', ${`Carousel · ${refs.length + 1} slides`}, ${propertyId}::uuid, ${user?.sub ?? null}::uuid,
-         ${JSON.stringify({ engine: 'carousel', content_type: 'carousel', photos: refs })}::jsonb)
+         ${JSON.stringify({ engine: 'carousel', content_type: 'carousel', carousel_type: 'listing', photos: refs, language })}::jsonb)
       RETURNING id
     `);
     const rows = ins as unknown as Array<{ id: string }>;
     const genId = rows[0]?.id;
     if (!genId) throw new Error('insert failed');
 
-    void runCarousel({ genId, agencyId, refs, facts, brand: loaded.brand });
+    void runCarousel({ genId, agencyId, refs, language, facts, brand: loaded.brand });
     return c.json({ ok: true, generation_id: genId, status: 'processing' });
   } catch (err) {
     console.error('[studio/carousel] failed:', err);
     return c.json({ ok: false, error: 'carousel_failed', message: GENERIC }, 500);
+  }
+});
+
+// ── POST /api/studio/carousel/update — per-slide TEXT editing on planned carousels ──
+// The agent edits the stored plan's words (their own copy — no AI involved, no credit), the same
+// deterministic library re-renders every slide over the same storage paths, and fresh signed URLs
+// come back. Structure is fixed: same type, same number of tips/quote parts (text edits only).
+route.post('/carousel/update', async (c) => {
+  const tx = c.get('tx');
+  const agencyId = c.get('agencyId');
+  const b = await readJson(c);
+  const genId = typeof b.generation_id === 'string' ? b.generation_id : '';
+  if (!genId || !b.plan || typeof b.plan !== 'object') {
+    return c.json({ ok: false, error: 'invalid_request', message: 'Missing carousel or edited text.' }, 400);
+  }
+  try {
+    const res = await tx.execute(sql`
+      SELECT id, status::text AS status, result_metadata
+      FROM image_generations
+      WHERE id = ${genId}::uuid AND agency_id = ${agencyId} LIMIT 1
+    `);
+    const rows = res as unknown as Array<{ id: string; status: string; result_metadata: Record<string, unknown> | null }>;
+    if (rows.length === 0) return c.json({ ok: false, error: 'not_found', message: 'That carousel could not be found.' }, 404);
+    const meta = rows[0].result_metadata as any;
+    const priorPlan = meta?.plan as CarouselPlan | undefined;
+    if (rows[0].status !== 'completed' || meta?.engine !== 'carousel' || !priorPlan) {
+      return c.json({ ok: false, error: 'not_editable', message: 'Only finished tips/quote carousels can be edited.' }, 400);
+    }
+
+    const parsed = PlanSchema.safeParse({ ...(b.plan as object), type: priorPlan.type });
+    if (!parsed.success) {
+      return c.json({ ok: false, error: 'invalid_plan', message: 'Some of the edited text is too long or missing.' }, 400);
+    }
+    const plan = parsed.data as CarouselPlan;
+    if (plan.tips.length !== priorPlan.tips.length || plan.quote_parts.length !== priorPlan.quote_parts.length) {
+      return c.json({ ok: false, error: 'invalid_plan', message: 'You can edit the text, but not add or remove slides.' }, 400);
+    }
+
+    const bRes = await tx.execute(sql`
+      SELECT brand_name, primary_color, accent_color, background_color, text_color,
+             phone, whatsapp_number, website_url, sender_email, email_signature_name
+      FROM agency_branding WHERE agency_id = ${agencyId} LIMIT 1
+    `);
+    const bRows = bRes as unknown as any[];
+    const { agency, brand } = mapBranding(bRows[0] || {});
+    const contact = [agency.web, agency.phone].filter(Boolean).join(' · ');
+
+    const slides = await renderPlannedCarousel(plan, agency.name, contact, brand);
+    const stored = await storeSlides(agencyId, genId, slides);
+
+    await supabaseAdmin.from('image_generations').update({
+      result_image_url: stored[0].url,
+      result_image_storage_path: stored[0].path,
+      result_metadata: {
+        ...meta, slide_count: stored.length, slides: stored,
+        plan, caption: plan.caption, hashtags: plan.hashtags,
+      },
+      updated_at: new Date().toISOString(),
+    }).eq('id', genId).eq('agency_id', agencyId);
+
+    return c.json({
+      ok: true, id: genId,
+      slides: stored.map((s) => s.url), plan, caption: plan.caption, hashtags: plan.hashtags,
+    });
+  } catch (err) {
+    console.error('[studio/carousel-update] failed:', err);
+    return c.json({ ok: false, error: 'update_failed', message: GENERIC }, 500);
   }
 });
 

@@ -183,8 +183,20 @@ export async function smartDesignAction(input: {
   return call("/api/studio/smart-design", { method: "POST", body: input });
 }
 // ── CAROUSEL: deterministic multi-slide post (cover + photo slides + CTA card) ──
-export async function carouselAction(input: { property_id: string; photos: string[] }): Promise<Envelope> {
+export async function carouselAction(input: {
+  type?: "listing" | "tips" | "quote";
+  property_id?: string;
+  photos?: string[];
+  topic?: string;
+  quote_text?: string;
+  quote_author?: string;
+  slide_count?: number;
+  language?: string;
+}): Promise<Envelope> {
   return call("/api/studio/carousel", { method: "POST", body: input });
+}
+export async function carouselUpdateAction(generationId: string, plan: unknown): Promise<Envelope> {
+  return call("/api/studio/carousel/update", { method: "POST", body: { generation_id: generationId, plan } });
 }
 export async function smartReviseAction(generationId: string, editNote: string): Promise<Envelope> {
   return call("/api/studio/smart-design/revise", {

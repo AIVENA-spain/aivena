@@ -1,6 +1,6 @@
 {
   "template_id": "25",
-  "title_font_status": "Belgan Aesthetic 400 (vault, same face as #24). Stats/address = Arimo 400 (0.78, strong), seeded.",
+  "title_font_status": "Belgan Aesthetic 400 (vault, same face as #24). Stats/address = Arimo 400 (0.78, strong), seeded. | 2026-07-16: SWAPPED to Italiana (open licence, adjudication runner-up) — Belgan commercial licence unresolved; revert this swap in one commit if the licence is purchased.",
   "_note": "#25 (Now Available — ornamental egg/pill photo mask). STRIP-PLATE from canonical source: mask artwork + plates baked; title + three ROTATED columns (rotate:-90, read bottom-to-top, end-flush at the top edge = align right) editable. Stats + address from real facts; missing fact hides its column.",
   "canvas": {
     "width": 1080,
@@ -75,7 +75,7 @@
         800,
         415
       ],
-      "font": "Belgan Aesthetic",
+      "font": "Italiana",
       "size": 205,
       "align": "left",
       "text": "Now\nAvailable",

@@ -1,6 +1,6 @@
 {
   "template_id": "24",
-  "title_font_status": "Belgan Aesthetic 400 (vault) — closest match to the Canva-library flare serif (visual adjudication; hairline faces defeat IoU). Body = Inter 400 (0.77, strong), seeded.",
+  "title_font_status": "Belgan Aesthetic 400 (vault) — closest match to the Canva-library flare serif (visual adjudication; hairline faces defeat IoU). Body = Inter 400 (0.77, strong), seeded. | 2026-07-16: SWAPPED to Italiana (open licence, adjudication runner-up) — Belgan commercial licence unresolved; revert this swap in one commit if the licence is purchased.",
   "_note": "#24 (Now Available — navy, organic photo lobes). STRIP-PLATE from canonical Drive source: full-bleed photo behind a multi-lobe clip mask + navy plate stay baked; title + two ROTATED right-edge columns editable (rotate:90, read top-to-bottom). stat_line composes beds | baths | top feature from real facts, dropping missing segments with their separators. All text editable per Christian 2026-07-07.",
   "canvas": {
     "width": 1080,
@@ -75,7 +75,7 @@
         800,
         415
       ],
-      "font": "Belgan Aesthetic",
+      "font": "Italiana",
       "size": 205,
       "align": "left",
       "text": "Now\nAvailable",

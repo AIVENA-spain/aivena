@@ -1,6 +1,6 @@
 {
   "template_id": "6",
-  "title_font_status": "IDENTIFIED 2026-07-06 (isolated-glyph IoU + letterform anatomy, adversarially verified): Belgan Aesthetic 400 (Handpik — a Canva-library face). Signature glyphs coincide in pixel overlays: crossing-swash single-story 'a', ball-terminal 'j', droopy teardrop 'r' flags, droopy T-bar, hairline V. Replaces the Italiana+stroke_px stopgap. LICENSE: free for personal use; commercial desktop license sold via Creative Fabrica — purchase before production use (business call for Christian).",
+  "title_font_status": "IDENTIFIED 2026-07-06 (isolated-glyph IoU + letterform anatomy, adversarially verified): Belgan Aesthetic 400 (Handpik — a Canva-library face). Signature glyphs coincide in pixel overlays: crossing-swash single-story 'a', ball-terminal 'j', droopy teardrop 'r' flags, droopy T-bar, hairline V. Replaces the Italiana+stroke_px stopgap. LICENSE: free for personal use; commercial desktop license sold via Creative Fabrica — purchase before production use (business call for Christian). | 2026-07-16: SWAPPED to Italiana (open licence, adjudication runner-up) — Belgan commercial licence unresolved; revert this swap in one commit if the licence is purchased.",
   "_note": "#6 = Canva p6 \"Villa in Torrevieja\" (CANONICAL Drive source 'aivena docs/studio templates/6.svg' -> assets/6c; replaces bucket 6b whose layout variant lacked the full-height left image. Big left photo = PHOTO0 full-height half-width; 3 small framed photos across the top; NO plate_rects — canonical frames are exact rects). STRIP-PLATE v3 (2026-07-04): honest primitives only — plate_rects rebuild the cream crop margins the ONE-ASPECT force-slice floods (no dummy-slot panel hacks); the title is TWO per-line slots (the source sets line 1 at 154 and line 2 at 107 with different baselines) so each line keeps its design size/baseline and long real values auto-fit independently; title face = Italiana + stroke_px 2 replicating the SOURCE's baked stroke effect (constant ~2px stem delta across both title sizes = stroke, not a bolder face) + word_spacing -25 matching the source's near-fused word gaps; handle/stat follow the source's caps + plain-digit M2 conventions via deriveSlots (no remapped fonts); stat icons/dividers stay baked and are companion_art of their stat slots.",
   "canvas": {
     "width": 1080,
@@ -102,7 +102,7 @@
       "size": 154,
       "line_height": 143,
       "valign": "bottom",
-      "font": "Belgan Aesthetic",
+      "font": "Italiana",
       "align": "left",
       "tracking": -10,
       "scale_x": 0.96,
@@ -121,7 +121,7 @@
       "size": 107,
       "line_height": 106,
       "valign": "bottom",
-      "font": "Belgan Aesthetic",
+      "font": "Italiana",
       "align": "left",
       "tracking": -4,
       "scale_x": 0.92,

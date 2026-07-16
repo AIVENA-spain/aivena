@@ -19,10 +19,16 @@ import { CarouselFacts, CarouselCopy, CarouselBrand, renderCarousel } from "./re
 export type CarouselStyle =
   | "editorial" | "horizonte" | "cartel" | "encalada" | "sereno"
   | "plano" | "portada" | "recorte" | "marea"
-  | "cuarteto" | "brisa" | "riviera" | "ventana";
+  | "cuarteto" | "brisa" | "riviera" | "ventana"
+  | "bodegon" | "litoral" | "tinta" | "salitre"
+  | "papel" | "arcilla" | "acuarela" | "bordado";
 
 export const PLANNED_STYLES: Record<"tips" | "quote", CarouselStyle[]> = {
-  tips: ["editorial", "cartel", "encalada", "sereno"],
+  tips: [
+    "editorial", "cartel", "encalada", "sereno",
+    // AI-imagery styles (Christian-approved 2026-07-17) — 3-image families from the seeded library
+    "bodegon", "litoral", "tinta", "salitre", "papel", "arcilla", "acuarela", "bordado",
+  ],
   quote: ["editorial", "sereno", "encalada"],
 };
 export const LISTING_STYLES: CarouselStyle[] = [

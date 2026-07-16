@@ -27,6 +27,8 @@ import {
   renderPlannedStyled, renderListingStyled, PLANNED_STYLES, LISTING_STYLES, type CarouselStyle,
 } from '../../../../studio/engine/carouselStyles';
 import { planCarousel, listingCopy, PlanSchema } from '../lib/studio-carousel-plan';
+import { renderTipsImageStyled, isTipsImageStyle } from '../../../../studio/engine/carouselTipsImage';
+import { loadTipsImages } from '../lib/studio-carousel-image';
 
 /**
  * Studio wizard proxy (W13 v0.6) — the browser's ONLY door to Vega's image
@@ -966,7 +968,21 @@ async function runPlannedCarousel(opts: {
       slideCount: opts.slideCount, language: opts.language, agencyName: opts.agency.name,
     });
     const contact = [opts.agency.web, opts.agency.phone].filter(Boolean).join(' · ');
-    const slides = await renderPlannedStyled(opts.style, plan, opts.agency.name, contact, opts.brand, opts.language);
+    // AI-imagery styles compose the pre-seeded generated family; a library miss falls back to the
+    // editorial type-only deck — an image can never block a post (spec fallback rule)
+    let slides: Buffer[];
+    let usedStyle = opts.style;
+    if (opts.type === 'tips' && isTipsImageStyle(opts.style)) {
+      const images = await loadTipsImages(opts.style);
+      if (images) {
+        slides = await renderTipsImageStyled(opts.style, plan, opts.agency.name, contact, opts.brand, images, opts.language);
+      } else {
+        usedStyle = 'editorial';
+        slides = await renderPlannedStyled('editorial', plan, opts.agency.name, contact, opts.brand, opts.language);
+      }
+    } else {
+      slides = await renderPlannedStyled(opts.style, plan, opts.agency.name, contact, opts.brand, opts.language);
+    }
     const stored = await storeSlides(agencyId, genId, slides);
 
     await supabaseAdmin.from('image_generations').update({
@@ -974,7 +990,8 @@ async function runPlannedCarousel(opts: {
       result_image_url: stored[0].url,
       result_image_storage_path: stored[0].path,
       result_metadata: {
-        engine: 'carousel', carousel_type: opts.type, carousel_style: opts.style, slide_count: stored.length, slides: stored,
+        engine: 'carousel', carousel_type: opts.type, carousel_style: usedStyle, slide_count: stored.length, slides: stored,
+        ai_imagery: opts.type === 'tips' && isTipsImageStyle(usedStyle),
         plan, caption: plan.caption, hashtags: plan.hashtags,
       },
       completed_at: new Date().toISOString(),
@@ -1151,7 +1168,15 @@ route.post('/carousel/update', async (c) => {
       (PLANNED_STYLES[priorPlan.type] as string[]).includes(meta.carousel_style)
       ? meta.carousel_style : 'editorial';
     const storedLang = typeof rows[0].raw_request?.language === 'string' ? (rows[0].raw_request.language as string) : 'es';
-    const slides = await renderPlannedStyled(storedStyle, plan, agency.name, contact, brand, storedLang);
+    let slides: Buffer[];
+    if (priorPlan.type === 'tips' && isTipsImageStyle(storedStyle)) {
+      const images = await loadTipsImages(storedStyle);
+      slides = images
+        ? await renderTipsImageStyled(storedStyle, plan, agency.name, contact, brand, images, storedLang)
+        : await renderPlannedStyled('editorial', plan, agency.name, contact, brand, storedLang);
+    } else {
+      slides = await renderPlannedStyled(storedStyle, plan, agency.name, contact, brand, storedLang);
+    }
     const stored = await storeSlides(agencyId, genId, slides);
 
     await supabaseAdmin.from('image_generations').update({

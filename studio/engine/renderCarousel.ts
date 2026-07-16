@@ -1,5 +1,5 @@
 import { renderFreeform, DesignSpec } from "./renderFreeform";
-import { wrap } from "./carouselSlides";
+import { wrap, chrome } from "./carouselSlides";
 
 // LISTING CAROUSEL v2 (research-rebuilt 2026-07-16): a swipeable property tour built from the listing's
 // real photos and canonical facts. Doctrine applied:
@@ -111,11 +111,12 @@ function lifestyleSpec(slideIndex: number, copy: CarouselCopy, facts: CarouselFa
 }
 
 /** Facts strip — the numbers, big and honest: beds/baths/m² as large numerals, price. Missing → hidden. */
-function factsSpec(slideIndex: number, facts: CarouselFacts, brand: CarouselBrand, total: number) {
+function factsSpec(slideIndex: number, facts: CarouselFacts, brand: CarouselBrand, total: number, lang = "es") {
+  const T = chrome(lang);
   const cells: { label: string; value: string }[] = [];
-  if (facts.beds) cells.push({ label: "BED", value: facts.beds });
-  if (facts.baths) cells.push({ label: "BATH", value: facts.baths });
-  if (facts.area) cells.push({ label: "M²", value: facts.area.replace(/\s*m²$/i, "") });
+  if (facts.beds) cells.push({ label: T.bed, value: facts.beds });
+  if (facts.baths) cells.push({ label: T.bath, value: facts.baths });
+  if (facts.area) cells.push({ label: T.sqm, value: facts.area.replace(/\s*m²$/i, "") });
   const elements: any[] = [
     { type: "text", bbox: [M, 96, 700, 130], content: facts.agency.toUpperCase(), font: SANS, size: 21, colour: mixHex(brand.navy, brand.cream, 0.6), align: "left", weight: "500", tracking: 5 },
     { type: "text", bbox: [M, 250, W - M, 282], content: facts.location, font: SANS, size: 22, colour: brand.gold, align: "left", tracking: 6 },
@@ -139,9 +140,10 @@ function factsSpec(slideIndex: number, facts: CarouselFacts, brand: CarouselBran
 }
 
 /** CTA — DM keyword leads, save line supports, contact demoted to the muted footer strip. */
-function ctaSpec(facts: CarouselFacts, copy: CarouselCopy, brand: CarouselBrand, total: number) {
-  const action = copy.cta_action || "Guarda este anuncio para tu próxima visita a la zona.";
-  const keyword = copy.cta_keyword || "ESCRÍBENOS: VISITA";
+function ctaSpec(facts: CarouselFacts, copy: CarouselCopy, brand: CarouselBrand, total: number, lang = "es") {
+  const T = chrome(lang);
+  const action = copy.cta_action || T.save_cta;
+  const keyword = copy.cta_keyword || `${T.write_us}: ${T.visit_kw}`;
   const mutedCream = mixHex(INK, brand.navy, 0.65);
   return DesignSpec.parse({
     background: brand.navy,
@@ -170,7 +172,7 @@ function ctaSpec(facts: CarouselFacts, copy: CarouselCopy, brand: CarouselBrand,
  * photos.length must be 2..9.
  */
 export async function renderCarousel(
-  facts: CarouselFacts, brand: CarouselBrand, photos: Buffer[], copy?: Partial<CarouselCopy>,
+  facts: CarouselFacts, brand: CarouselBrand, photos: Buffer[], copy?: Partial<CarouselCopy>, lang = "es",
 ): Promise<Buffer[]> {
   if (photos.length < 2 || photos.length > 9) throw new Error("carousel needs 2-9 photos");
   const c: CarouselCopy = { hook: "", lifestyle_line: "", cta_action: "", cta_keyword: "", ...copy };
@@ -191,8 +193,8 @@ export async function renderCarousel(
     specs.push(photoSpec(i, slideIndex++, pills[i - 1], facts, brand, total));
     if (i === midAt) specs.push(lifestyleSpec(slideIndex++, c, facts, brand, total));
   }
-  specs.push(factsSpec(slideIndex++, facts, brand, total));
-  specs.push(ctaSpec(facts, c, brand, total));
+  specs.push(factsSpec(slideIndex++, facts, brand, total, lang));
+  specs.push(ctaSpec(facts, c, brand, total, lang));
 
   const slides: Buffer[] = [];
   for (const spec of specs) slides.push(await renderFreeform(spec, { width: W, height: H }, photos));

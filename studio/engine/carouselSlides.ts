@@ -53,6 +53,48 @@ export function wrap(text: string, font: string, size: number, maxW: number, wei
   return lines.join("\n");
 }
 
+// ── CHROME i18n (Christian 2026-07-16: "carousels chooseable in all languages") ─────────────────
+// Every FIXED string the deterministic renderers draw (labels, fallbacks, furniture) — the AI copy
+// already follows the post language; this dictionary makes the chrome follow it too.
+export interface CarouselChrome {
+  bed: string; bath: string; sqm: string;
+  price: string; area: string; bedrooms: string; bathrooms: string; extras: string;
+  the_sheet: string;         // "LA FICHA" — the facts-plate heading
+  save_sheet: string;        // "Guarda esta ficha para tu visita"
+  follow: string;            // "Sigue"
+  swipe: string;             // fallback swipe cue
+  write_us: string;          // "ESCRÍBENOS" — DM keyword prefix
+  visit_kw: string;          // default DM keyword
+  save_cta: string;          // default CTA action
+  the_detail: string;        // "EL DETALLE"
+  lot: string;               // "LOTE Nº" collector label
+  save_calm: string;         // sereno recap line
+  on_cover: string;          // "EN PORTADA"
+  in_this_issue: string;     // "EN ESTE NÚMERO"
+  note_for_you: string;      // recorte CTA note heading
+  error_n: string;           // "Nº %1 DE %2" progress label
+  found: string;             // recorte script annotation ("encontrada")
+}
+const C = (o: CarouselChrome) => o;
+export const CAROUSEL_CHROME: Record<string, CarouselChrome> = {
+  es: C({ bed: "DORM", bath: "BAÑOS", sqm: "M²", price: "PRECIO", area: "SUPERFICIE", bedrooms: "DORMITORIOS", bathrooms: "BAÑOS", extras: "EXTRAS", the_sheet: "LA FICHA", save_sheet: "Guarda esta ficha para tu visita", follow: "Sigue", swipe: "Desliza", write_us: "ESCRÍBENOS", visit_kw: "VISITA", save_cta: "Guarda este anuncio para tu próxima visita a la zona.", the_detail: "EL DETALLE", lot: "LOTE Nº", save_calm: "Guarda la ficha — vuelve a ella con calma.", on_cover: "EN PORTADA", in_this_issue: "EN ESTE NÚMERO", note_for_you: "NOTA PARA TI:", error_n: "Nº %1 DE %2", found: "encontrada" }),
+  en: C({ bed: "BED", bath: "BATH", sqm: "M²", price: "PRICE", area: "SIZE", bedrooms: "BEDROOMS", bathrooms: "BATHROOMS", extras: "EXTRAS", the_sheet: "THE FACTS", save_sheet: "Save this sheet for your viewing", follow: "Next", swipe: "Swipe", write_us: "MESSAGE US", visit_kw: "VISIT", save_cta: "Save this listing for your next trip to the area.", the_detail: "THE DETAIL", lot: "LOT No.", save_calm: "Save the sheet — come back to it calmly.", on_cover: "ON THE COVER", in_this_issue: "IN THIS ISSUE", note_for_you: "NOTE TO YOU:", error_n: "No. %1 OF %2", found: "found it" }),
+  de: C({ bed: "SCHLAFZ.", bath: "BÄDER", sqm: "M²", price: "PREIS", area: "FLÄCHE", bedrooms: "SCHLAFZIMMER", bathrooms: "BADEZIMMER", extras: "EXTRAS", the_sheet: "DAS EXPOSÉ", save_sheet: "Speichern Sie dieses Exposé für Ihre Besichtigung", follow: "Weiter", swipe: "Wischen", write_us: "SCHREIBEN SIE UNS", visit_kw: "BESUCH", save_cta: "Speichern Sie dieses Angebot für Ihre nächste Reise.", the_detail: "DAS DETAIL", lot: "LOS Nr.", save_calm: "Speichern — und in Ruhe wiederkommen.", on_cover: "AUF DEM COVER", in_this_issue: "IN DIESER AUSGABE", note_for_you: "NOTIZ FÜR SIE:", error_n: "Nr. %1 VON %2", found: "gefunden" }),
+  fr: C({ bed: "CH.", bath: "SDB", sqm: "M²", price: "PRIX", area: "SURFACE", bedrooms: "CHAMBRES", bathrooms: "SALLES DE BAIN", extras: "EXTRAS", the_sheet: "LA FICHE", save_sheet: "Gardez cette fiche pour votre visite", follow: "Suite", swipe: "Glissez", write_us: "ÉCRIVEZ-NOUS", visit_kw: "VISITE", save_cta: "Gardez cette annonce pour votre prochain séjour.", the_detail: "LE DÉTAIL", lot: "LOT Nº", save_calm: "Gardez la fiche — revenez-y calmement.", on_cover: "EN COUVERTURE", in_this_issue: "DANS CE NUMÉRO", note_for_you: "NOTE POUR VOUS :", error_n: "Nº %1 SUR %2", found: "trouvée" }),
+  nl: C({ bed: "SLPK", bath: "BADK", sqm: "M²", price: "PRIJS", area: "OPPERVLAKTE", bedrooms: "SLAAPKAMERS", bathrooms: "BADKAMERS", extras: "EXTRA'S", the_sheet: "DE FICHE", save_sheet: "Bewaar deze fiche voor je bezichtiging", follow: "Verder", swipe: "Swipe", write_us: "STUUR ONS", visit_kw: "BEZOEK", save_cta: "Bewaar deze woning voor je volgende trip.", the_detail: "HET DETAIL", lot: "LOT Nr.", save_calm: "Bewaar de fiche — kom er rustig op terug.", on_cover: "OP DE COVER", in_this_issue: "IN DIT NUMMER", note_for_you: "NOTITIE VOOR JOU:", error_n: "Nr. %1 VAN %2", found: "gevonden" }),
+  sv: C({ bed: "SOVRUM", bath: "BADRUM", sqm: "M²", price: "PRIS", area: "YTA", bedrooms: "SOVRUM", bathrooms: "BADRUM", extras: "EXTRA", the_sheet: "FAKTABLADET", save_sheet: "Spara bladet till din visning", follow: "Nästa", swipe: "Svep", write_us: "SKRIV TILL OSS", visit_kw: "VISNING", save_cta: "Spara annonsen till din nästa resa hit.", the_detail: "DETALJEN", lot: "POST Nr", save_calm: "Spara bladet — återkom i lugn och ro.", on_cover: "PÅ OMSLAGET", in_this_issue: "I DETTA NUMMER", note_for_you: "ANTECKNING TILL DIG:", error_n: "Nr %1 AV %2", found: "hittad" }),
+  no: C({ bed: "SOVEROM", bath: "BAD", sqm: "M²", price: "PRIS", area: "AREAL", bedrooms: "SOVEROM", bathrooms: "BAD", extras: "EKSTRA", the_sheet: "FAKTAARKET", save_sheet: "Lagre arket til visningen din", follow: "Neste", swipe: "Sveip", write_us: "SKRIV TIL OSS", visit_kw: "VISNING", save_cta: "Lagre annonsen til neste tur hit.", the_detail: "DETALJEN", lot: "POST Nr", save_calm: "Lagre arket — kom tilbake i ro og mak.", on_cover: "PÅ FORSIDEN", in_this_issue: "I DETTE NUMMERET", note_for_you: "NOTAT TIL DEG:", error_n: "Nr %1 AV %2", found: "funnet" }),
+  da: C({ bed: "VÆRELSER", bath: "BADEVÆR.", sqm: "M²", price: "PRIS", area: "AREAL", bedrooms: "SOVEVÆRELSER", bathrooms: "BADEVÆRELSER", extras: "EKSTRA", the_sheet: "FAKTAARKET", save_sheet: "Gem arket til din fremvisning", follow: "Næste", swipe: "Swipe", write_us: "SKRIV TIL OS", visit_kw: "BESØG", save_cta: "Gem annoncen til din næste tur hertil.", the_detail: "DETALJEN", lot: "PARTI Nr.", save_calm: "Gem arket — vend roligt tilbage.", on_cover: "PÅ FORSIDEN", in_this_issue: "I DETTE NUMMER", note_for_you: "NOTE TIL DIG:", error_n: "Nr. %1 AF %2", found: "fundet" }),
+  fi: C({ bed: "MH", bath: "KPH", sqm: "M²", price: "HINTA", area: "PINTA-ALA", bedrooms: "MAKUUHUONEET", bathrooms: "KYLPYHUONEET", extras: "LISÄT", the_sheet: "TIETOKORTTI", save_sheet: "Tallenna kortti näyttöäsi varten", follow: "Seuraava", swipe: "Pyyhkäise", write_us: "KIRJOITA MEILLE", visit_kw: "NÄYTTÖ", save_cta: "Tallenna ilmoitus seuraavaa matkaasi varten.", the_detail: "YKSITYISKOHTA", lot: "ERÄ Nro", save_calm: "Tallenna kortti — palaa siihen rauhassa.", on_cover: "KANNESSA", in_this_issue: "TÄSSÄ NUMEROSSA", note_for_you: "MUISTIINPANO SINULLE:", error_n: "Nro %1 / %2", found: "löytyi" }),
+  pl: C({ bed: "SYP.", bath: "ŁAZ.", sqm: "M²", price: "CENA", area: "POWIERZCHNIA", bedrooms: "SYPIALNIE", bathrooms: "ŁAZIENKI", extras: "DODATKI", the_sheet: "KARTA OFERTY", save_sheet: "Zapisz kartę na swoją wizytę", follow: "Dalej", swipe: "Przesuń", write_us: "NAPISZ DO NAS", visit_kw: "WIZYTA", save_cta: "Zapisz ogłoszenie na następny wyjazd.", the_detail: "DETAL", lot: "POZYCJA Nr", save_calm: "Zapisz kartę — wróć do niej spokojnie.", on_cover: "NA OKŁADCE", in_this_issue: "W TYM NUMERZE", note_for_you: "NOTATKA DLA CIEBIE:", error_n: "Nr %1 Z %2", found: "znalezione" }),
+  ru: C({ bed: "СПАЛЬНИ", bath: "ВАННЫЕ", sqm: "М²", price: "ЦЕНА", area: "ПЛОЩАДЬ", bedrooms: "СПАЛЬНИ", bathrooms: "ВАННЫЕ", extras: "ДОПОЛНИТЕЛЬНО", the_sheet: "КАРТОЧКА", save_sheet: "Сохраните карточку для просмотра", follow: "Далее", swipe: "Листайте", write_us: "НАПИШИТЕ НАМ", visit_kw: "ВИЗИТ", save_cta: "Сохраните объявление для следующей поездки.", the_detail: "ДЕТАЛЬ", lot: "ЛОТ №", save_calm: "Сохраните карточку — вернитесь к ней спокойно.", on_cover: "НА ОБЛОЖКЕ", in_this_issue: "В ЭТОМ НОМЕРЕ", note_for_you: "ЗАМЕТКА ДЛЯ ВАС:", error_n: "№ %1 ИЗ %2", found: "нашли" }),
+  it: C({ bed: "CAMERE", bath: "BAGNI", sqm: "M²", price: "PREZZO", area: "SUPERFICIE", bedrooms: "CAMERE", bathrooms: "BAGNI", extras: "EXTRA", the_sheet: "LA SCHEDA", save_sheet: "Salva questa scheda per la tua visita", follow: "Avanti", swipe: "Scorri", write_us: "SCRIVICI", visit_kw: "VISITA", save_cta: "Salva questo annuncio per il tuo prossimo viaggio.", the_detail: "IL DETTAGLIO", lot: "LOTTO N.", save_calm: "Salva la scheda — riguardala con calma.", on_cover: "IN COPERTINA", in_this_issue: "IN QUESTO NUMERO", note_for_you: "NOTA PER TE:", error_n: "N. %1 DI %2", found: "trovata" }),
+  pt: C({ bed: "QUARTOS", bath: "WC", sqm: "M²", price: "PREÇO", area: "ÁREA", bedrooms: "QUARTOS", bathrooms: "CASAS DE BANHO", extras: "EXTRAS", the_sheet: "A FICHA", save_sheet: "Guarde esta ficha para a sua visita", follow: "Seguinte", swipe: "Deslize", write_us: "ESCREVA-NOS", visit_kw: "VISITA", save_cta: "Guarde este anúncio para a sua próxima viagem.", the_detail: "O DETALHE", lot: "LOTE Nº", save_calm: "Guarde a ficha — volte a ela com calma.", on_cover: "EM CAPA", in_this_issue: "NESTE NÚMERO", note_for_you: "NOTA PARA SI:", error_n: "Nº %1 DE %2", found: "encontrada" }),
+};
+export function chrome(lang: string): CarouselChrome {
+  return CAROUSEL_CHROME[lang] ?? CAROUSEL_CHROME.es;
+}
+
 /** SEAMLESS device: render ONE wide design (slideCount×1080 wide, 1350 tall) and slice it into
  *  consecutive slides — photos, rules and display type continue across the swipe boundary, the
  *  highest-impact carousel visual there is. Keep critical text ≥80px away from each 1080px seam. */

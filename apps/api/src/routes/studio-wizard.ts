@@ -22,7 +22,7 @@ import {
   designRenderStore,
 } from '../lib/studio-smart-design';
 import { usablePhotos } from '../lib/property-images';
-import { type CarouselPlan } from '../../../../studio/engine/carouselSlides';
+import { type CarouselPlan, chrome as carouselChrome } from '../../../../studio/engine/carouselSlides';
 import {
   renderPlannedStyled, renderListingStyled, PLANNED_STYLES, LISTING_STYLES, type CarouselStyle,
 } from '../../../../studio/engine/carouselStyles';
@@ -923,7 +923,7 @@ async function runCarousel(opts: {
     const slides = await renderListingStyled(opts.style, opts.facts, {
       hook: copy?.hook ?? '', lifestyle_line: copy?.lifestyle_line ?? '',
       cta_action: copy?.cta_action ?? '', cta_keyword: copy?.cta_keyword ?? '',
-    }, opts.brand, buffers);
+    }, opts.brand, buffers, opts.language);
     const stored = await storeSlides(agencyId, genId, slides);
 
     await supabaseAdmin.from('image_generations').update({
@@ -966,7 +966,7 @@ async function runPlannedCarousel(opts: {
       slideCount: opts.slideCount, language: opts.language, agencyName: opts.agency.name,
     });
     const contact = [opts.agency.web, opts.agency.phone].filter(Boolean).join(' · ');
-    const slides = await renderPlannedStyled(opts.style, plan, opts.agency.name, contact, opts.brand);
+    const slides = await renderPlannedStyled(opts.style, plan, opts.agency.name, contact, opts.brand, opts.language);
     const stored = await storeSlides(agencyId, genId, slides);
 
     await supabaseAdmin.from('image_generations').update({
@@ -1065,11 +1065,15 @@ route.post('/carousel', async (c) => {
     }
 
     const f = buildFacts({ ...loaded.property, title: loaded.title }, loaded.agency);
+    const T = carouselChrome(language);
+    const bedsN = (f.beds ?? '').replace(/\D/g, '');
+    const bathsN = (f.baths ?? '').replace(/\D/g, '');
     const facts = {
       title: f.title ?? 'New listing',
       location: (f.location ?? '').toUpperCase().split(', ').join(' · '),
       price: f.price ?? '',
-      specs: (f.specs ?? '').toUpperCase(),
+      specs: [bedsN && `${bedsN} ${T.bed}`, bathsN && `${bathsN} ${T.bath}`, f.area && f.area.toUpperCase()]
+        .filter(Boolean).join(' · '),
       beds: (f.beds ?? '').replace(/\D/g, ''),
       baths: (f.baths ?? '').replace(/\D/g, ''),
       area: f.area ?? '',
@@ -1112,11 +1116,11 @@ route.post('/carousel/update', async (c) => {
   }
   try {
     const res = await tx.execute(sql`
-      SELECT id, status::text AS status, result_metadata
+      SELECT id, status::text AS status, result_metadata, raw_request
       FROM image_generations
       WHERE id = ${genId}::uuid AND agency_id = ${agencyId} LIMIT 1
     `);
-    const rows = res as unknown as Array<{ id: string; status: string; result_metadata: Record<string, unknown> | null }>;
+    const rows = res as unknown as Array<{ id: string; status: string; result_metadata: Record<string, unknown> | null; raw_request: Record<string, unknown> | null }>;
     if (rows.length === 0) return c.json({ ok: false, error: 'not_found', message: 'That carousel could not be found.' }, 404);
     const meta = rows[0].result_metadata as any;
     const priorPlan = meta?.plan as CarouselPlan | undefined;
@@ -1146,7 +1150,8 @@ route.post('/carousel/update', async (c) => {
     const storedStyle: CarouselStyle = typeof meta?.carousel_style === 'string' &&
       (PLANNED_STYLES[priorPlan.type] as string[]).includes(meta.carousel_style)
       ? meta.carousel_style : 'editorial';
-    const slides = await renderPlannedStyled(storedStyle, plan, agency.name, contact, brand);
+    const storedLang = typeof rows[0].raw_request?.language === 'string' ? (rows[0].raw_request.language as string) : 'es';
+    const slides = await renderPlannedStyled(storedStyle, plan, agency.name, contact, brand, storedLang);
     const stored = await storeSlides(agencyId, genId, slides);
 
     await supabaseAdmin.from('image_generations').update({

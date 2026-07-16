@@ -52,6 +52,10 @@ const STYLES: Record<CarouselType, [string, string, string][]> = {
     ["cartel", "Cartel", "Bold Spanish poster type, black & white photos"],
     ["encalada", "Encalada", "Mediterranean — arch crops, terracotta and olive"],
     ["sereno", "Sereno", "Quiet luxury — fine lines and lots of air"],
+    ["plano", "Plano", "The blueprint — giant numbers, technical annotations"],
+    ["portada", "Portada", "Your listing as a magazine cover"],
+    ["recorte", "Recorte", "Scrapbook — taped photos, handwritten touch"],
+    ["marea", "Marea", "The type wall — huge letters, maximum impact"],
   ],
   tips: [
     ["editorial", "Editorial", "Clean and calm — the classic look"],
@@ -239,7 +243,15 @@ export function CarouselStudio() {
             Pick a property and 2–9 photos — cover with the facts, one clean slide per photo, and a contact card to close.
           </p>
           {err && <div className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{err}</div>}
-          <div className="mb-4 max-w-xl">{stylePicker()}</div>
+          <div className="mb-4 flex max-w-xl flex-col gap-4">
+            {stylePicker()}
+            <div>
+              <label className={label}>Language of the post</label>
+              <select value={language} onChange={(e) => setLanguage(e.target.value)} className={field}>
+                {LANGS.map(([code, name]) => <option key={code} value={code}>{name}</option>)}
+              </select>
+            </div>
+          </div>
           <PropertyPicker multi minPhotos={2} onConfirm={(p, chosen) => {
             setProperty(p);
             void start({ type: "listing", property_id: p.id, photos: chosen.slice(0, 9), language, style }, "pick");

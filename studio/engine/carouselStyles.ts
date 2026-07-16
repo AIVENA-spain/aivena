@@ -1,6 +1,6 @@
 import { renderFreeform, DesignSpec } from "./renderFreeform";
 import {
-  CarouselPlan, renderPlannedCarousel, renderWideSliced, applyGrain, mix, wrap,
+  CarouselPlan, renderPlannedCarousel, renderWideSliced, applyGrain, mix, wrap, chrome,
 } from "./carouselSlides";
 import { CarouselFacts, CarouselCopy, CarouselBrand, renderCarousel } from "./renderCarousel";
 
@@ -15,13 +15,18 @@ import { CarouselFacts, CarouselCopy, CarouselBrand, renderCarousel } from "./re
 // Style laws from the research live here: grain per deck, no saturation boosts, one accent, one
 // vernacular motif per slide, 150px top/bottom kill zones, folio + agency anchor on every slide.
 
-export type CarouselStyle = "editorial" | "horizonte" | "cartel" | "encalada" | "sereno";
+export type CarouselStyle =
+  | "editorial" | "horizonte" | "cartel" | "encalada" | "sereno"
+  | "plano" | "portada" | "recorte" | "marea";
 
 export const PLANNED_STYLES: Record<"tips" | "quote", CarouselStyle[]> = {
   tips: ["editorial", "cartel", "encalada", "sereno"],
   quote: ["editorial", "sereno", "encalada"],
 };
-export const LISTING_STYLES: CarouselStyle[] = ["editorial", "horizonte", "cartel", "encalada", "sereno"];
+export const LISTING_STYLES: CarouselStyle[] = [
+  "editorial", "horizonte", "cartel", "encalada", "sereno",
+  "plano", "portada", "recorte", "marea",
+];
 
 const W = 1080, H = 1350;
 const FR = "Fraunces 115pt";
@@ -77,7 +82,8 @@ async function renderAll(specs: unknown[], photos: Buffer[], grain: number): Pro
 }
 
 // ═══ CARTEL — planned (tips) ══════════════════════════════════════════════════
-function cartelPlanned(plan: CarouselPlan, agency: string, contact: string, brand: CarouselBrand): unknown[] {
+function cartelPlanned(plan: CarouselPlan, agency: string, contact: string, brand: CarouselBrand, lang = "es"): unknown[] {
+  const T = chrome(lang);
   const NAVY = brand.navy, GOLD = brand.gold, CREAM = brand.cream;
   const total = plan.tips.length + 4;
   const rule = (y: number, colour: string) => ({ type: "rect", bbox: [200, y, 880, y + 2], fill: colour });
@@ -107,7 +113,7 @@ function cartelPlanned(plan: CarouselPlan, agency: string, contact: string, bran
       { type: "text", bbox: [80, 260, 1000, 560], content: wrap(plan.slide2_title.toUpperCase(), "Anton", 100, 900), font: "Anton", size: 100, colour: LIME, align: "center", line_height: 114, valign: "center" },
       rule(640, LIME),
       { type: "text", bbox: [140, 700, 940, 900], content: wrap(plan.slide2_body, "Archivo", 32, 780), font: "Archivo", size: 32, colour: LIME, align: "center", line_height: 48 },
-      { type: "text", bbox: [80, 1050, 1000, 1082], content: `SIGUE · Nº 1 DE ${plan.tips.length}`, font: "Archivo", size: 20, colour: LIME, align: "center", tracking: 4 },
+      { type: "text", bbox: [80, 1050, 1000, 1082], content: `${T.follow.toUpperCase()} · 01 / ${String(plan.tips.length).padStart(2, '0')}`, font: "Archivo", size: 20, colour: LIME, align: "center", tracking: 4 },
       ...band(agency, 2, total, mix(LIME, TERRA, 0.75)),
     ],
   }));
@@ -380,9 +386,9 @@ function serenoPlanned(plan: CarouselPlan, agency: string, contact: string, bran
 
 /** PLANNED carousels (tips/quote) in a chosen style. 'editorial' = the approved v2 default. */
 export async function renderPlannedStyled(
-  style: CarouselStyle, plan: CarouselPlan, agency: string, contact: string, brand: CarouselBrand,
+  style: CarouselStyle, plan: CarouselPlan, agency: string, contact: string, brand: CarouselBrand, lang = "es",
 ): Promise<Buffer[]> {
-  if (style === "cartel" && plan.type === "tips") return renderAll(cartelPlanned(plan, agency, contact, brand), [], 0.05);
+  if (style === "cartel" && plan.type === "tips") return renderAll(cartelPlanned(plan, agency, contact, brand, lang), [], 0.05);
   if (style === "encalada") return renderAll(encaladaPlanned(plan, agency, contact, brand), [], 0.045);
   if (style === "sereno") return renderAll(serenoPlanned(plan, agency, contact, brand), [], 0.035);
   return renderPlannedCarousel(plan, agency, contact, brand);
@@ -390,14 +396,15 @@ export async function renderPlannedStyled(
 
 // ═══ LISTING styles ═══════════════════════════════════════════════════════════
 
-async function horizonteListing(facts: CarouselFacts, copy: CarouselCopy, brand: CarouselBrand, photos: Buffer[]): Promise<Buffer[]> {
+async function horizonteListing(facts: CarouselFacts, copy: CarouselCopy, brand: CarouselBrand, photos: Buffer[], lang = "es"): Promise<Buffer[]> {
+  const T = chrome(lang);
   const sharp = (await import("sharp")).default;
   const NAVY = brand.navy, GOLD = brand.gold, CREAM = brand.cream;
   const meta = await sharp(photos[0]).metadata();
   const slices = (meta.width ?? 0) >= 3240 ? 3 : (meta.width ?? 0) >= 2160 ? 2 : 0;
   if (!slices) {
     // eligibility gate: not wide enough for a seamless run → the approved editorial listing
-    return renderCarousel(facts, brand, photos, copy);
+    return renderCarousel(facts, brand, photos, copy, lang);
   }
   const PW = slices * W;
   const town = (facts.location.split("·")[0] ?? "").trim() || facts.title;
@@ -427,7 +434,7 @@ async function horizonteListing(facts: CarouselFacts, copy: CarouselCopy, brand:
     if (facts.price) els.push({ type: "text", bbox: [2330, 520, 3000, 590], content: facts.price, font: CAS, size: 56, colour: GOLD, align: "left" });
     if (facts.specs) els.push({ type: "text", bbox: [2330, 610, 3100, 642], content: facts.specs, font: "Jost", size: 21, colour: "#f3efe6", align: "left", tracking: 4 });
     els.push({ type: "text", bbox: [2240, 96, 3160, 130], content: facts.agency.toUpperCase(), font: "Jost", size: 21, colour: "#f3efe6", align: "left", weight: "500", tracking: 5 });
-    els.push({ type: "text", bbox: [2240, 1080, 3160, 1150], content: "Sigue →", font: CAS, size: 44, colour: GOLD, align: "left" });
+    els.push({ type: "text", bbox: [2240, 1080, 3160, 1150], content: `${T.follow} →`, font: CAS, size: 44, colour: GOLD, align: "left" });
   } else if (facts.price) {
     els.push({ type: "text", bbox: [1160, 520, 2000, 600], content: facts.price, font: CAS, size: 60, colour: GOLD, align: "left" });
   }
@@ -462,11 +469,11 @@ async function horizonteListing(facts: CarouselFacts, copy: CarouselCopy, brand:
 
   // spec plate
   const rows: [string, string][] = [];
-  if (facts.price) rows.push(["PRECIO", facts.price]);
-  if (facts.area) rows.push(["SUPERFICIE", facts.area]);
-  if (facts.beds) rows.push(["DORMITORIOS", facts.beds]);
-  if (facts.baths) rows.push(["BAÑOS", facts.baths]);
-  if (facts.features[0]) rows.push(["EXTRAS", facts.features.slice(0, 2).join(" · ")]);
+  if (facts.price) rows.push([T.price, facts.price]);
+  if (facts.area) rows.push([T.area, facts.area]);
+  if (facts.beds) rows.push([T.bedrooms, facts.beds]);
+  if (facts.baths) rows.push([T.bathrooms, facts.baths]);
+  if (facts.features[0]) rows.push([T.extras, facts.features.slice(0, 2).join(" · ")]);
   specs.push(DesignSpec.parse({
     background: NAVY,
     elements: [
@@ -481,7 +488,7 @@ async function horizonteListing(facts: CarouselFacts, copy: CarouselCopy, brand:
           { type: "rect", bbox: [80, y + rh - 48, 1000, y + rh - 47], fill: GOLD, opacity: 0.3 },
         ];
       }),
-      { type: "text", bbox: [80, 1140, 940, 1190], content: "Guarda esta ficha para tu visita", font: "Jost", size: 26, colour: NAVY, align: "left", weight: "500", valign: "center", pill: { fill: GOLD, pad_x: 30, pad_y: 14 } },
+      { type: "text", bbox: [80, 1140, 940, 1190], content: T.save_sheet, font: "Jost", size: 26, colour: NAVY, align: "left", weight: "500", valign: "center", pill: { fill: GOLD, pad_x: 30, pad_y: 14 } },
       { type: "text", bbox: [80, 1272, 640, 1300], content: facts.agency.toUpperCase(), font: "Jost", size: 17, colour: mix("#f3efe6", NAVY, 0.6), align: "left", weight: "500", tracking: 4 },
       { type: "text", bbox: [640, 1272, 1000, 1300], content: `Nº ${String(total - 1).padStart(2, "0")} — ${String(total).padStart(2, "0")}`, font: "Jost", size: 17, colour: mix("#f3efe6", NAVY, 0.6), align: "right", tracking: 3 },
     ],
@@ -493,8 +500,8 @@ async function horizonteListing(facts: CarouselFacts, copy: CarouselCopy, brand:
     elements: [
       { type: "text", bbox: [80, 96, 1000, 130], content: facts.agency.toUpperCase(), font: "Jost", size: 21, colour: CREAM, align: "left", weight: "500", tracking: 5 },
       ...seal(540, 400, 110, GOLD, NAVY, initials(facts.agency)),
-      { type: "text", bbox: [110, 610, 970, 790], content: wrap(copy.cta_action || "Guarda este anuncio para tu próxima visita.", "Jost", 34, 860, "500"), font: "Jost", size: 34, colour: CREAM, align: "center", weight: "500", line_height: 50, valign: "center" },
-      { type: "text", bbox: [320, 880, 760, 940], content: (copy.cta_keyword || "ESCRÍBENOS: VISITA").toUpperCase(), font: "Jost", size: 25, colour: NAVY, align: "center", weight: "600", tracking: 3, valign: "center", pill: { fill: GOLD, pad_x: 40, pad_y: 20 } },
+      { type: "text", bbox: [110, 610, 970, 790], content: wrap(copy.cta_action || T.save_cta, "Jost", 34, 860, "500"), font: "Jost", size: 34, colour: CREAM, align: "center", weight: "500", line_height: 50, valign: "center" },
+      { type: "text", bbox: [320, 880, 760, 940], content: (copy.cta_keyword || `${T.write_us}: ${T.visit_kw}`).toUpperCase(), font: "Jost", size: 25, colour: NAVY, align: "center", weight: "600", tracking: 3, valign: "center", pill: { fill: GOLD, pad_x: 40, pad_y: 20 } },
       { type: "text", bbox: [110, 1040, 970, 1070], content: facts.contact, font: "Jost", size: 21, colour: mix("#f3efe6", NAVY, 0.65), align: "center", tracking: 2 },
       { type: "text", bbox: [640, 1272, 1000, 1300], content: `Nº ${String(total).padStart(2, "0")} — ${String(total).padStart(2, "0")}`, font: "Jost", size: 17, colour: mix("#f3efe6", NAVY, 0.6), align: "right", tracking: 3 },
     ],
@@ -508,7 +515,8 @@ async function horizonteListing(facts: CarouselFacts, copy: CarouselCopy, brand:
   return out;
 }
 
-function cartelListing(facts: CarouselFacts, copy: CarouselCopy, brand: CarouselBrand, photoCount: number): unknown[] {
+function cartelListing(facts: CarouselFacts, copy: CarouselCopy, brand: CarouselBrand, photoCount: number, lang = "es"): unknown[] {
+  const T = chrome(lang);
   const NAVY = brand.navy, GOLD = brand.gold, CREAM = brand.cream;
   const total = Math.min(9, photoCount) + 2;
   const specs: unknown[] = [];
@@ -554,8 +562,8 @@ function cartelListing(facts: CarouselFacts, copy: CarouselCopy, brand: Carousel
         { type: "text", bbox: [80, 220, 1000, 440], content: wrap(facts.title.toUpperCase(), "Anton", 120, 920), font: "Anton", size: 120, colour: NAVY, align: "center", line_height: 134 },
       ]),
       { type: "rect", bbox: [340, 540, 740, 543], fill: NAVY },
-      { type: "text", bbox: [140, 600, 940, 720], content: wrap(copy.cta_action || "Guarda este anuncio para tu visita.", "Archivo", 32, 780), font: "Archivo", size: 32, colour: NAVY, align: "center", line_height: 46 },
-      { type: "text", bbox: [280, 800, 800, 864], content: (copy.cta_keyword || "ESCRÍBENOS: VISITA").toUpperCase(), font: "Archivo", size: 26, colour: GOLD, align: "center", weight: "500", tracking: 3, valign: "center", pill: { fill: NAVY, pad_x: 44, pad_y: 20 } },
+      { type: "text", bbox: [140, 600, 940, 720], content: wrap(copy.cta_action || T.save_cta, "Archivo", 32, 780), font: "Archivo", size: 32, colour: NAVY, align: "center", line_height: 46 },
+      { type: "text", bbox: [280, 800, 800, 864], content: (copy.cta_keyword || `${T.write_us}: ${T.visit_kw}`).toUpperCase(), font: "Archivo", size: 26, colour: GOLD, align: "center", weight: "500", tracking: 3, valign: "center", pill: { fill: NAVY, pad_x: 44, pad_y: 20 } },
       { type: "text", bbox: [80, 960, 1000, 1010], content: "→ → →", font: "Anton", size: 44, colour: NAVY, align: "center", tracking: 30 },
       { type: "text", bbox: [80, 1090, 1000, 1120], content: facts.contact.toUpperCase(), font: "Archivo", size: 20, colour: NAVY, align: "center", tracking: 3 },
       ...band(facts.agency, total, total, mix(NAVY, GOLD, 0.8)),
@@ -564,7 +572,8 @@ function cartelListing(facts: CarouselFacts, copy: CarouselCopy, brand: Carousel
   return specs;
 }
 
-function encaladaListing(facts: CarouselFacts, copy: CarouselCopy, brand: CarouselBrand, photoCount: number): unknown[] {
+function encaladaListing(facts: CarouselFacts, copy: CarouselCopy, brand: CarouselBrand, photoCount: number, lang = "es"): unknown[] {
+  const T = chrome(lang);
   const NAVY = brand.navy;
   const inkMuted = mix(NAVY, LIME, 0.55);
   const total = Math.min(4, photoCount) + 2;
@@ -595,7 +604,7 @@ function encaladaListing(facts: CarouselFacts, copy: CarouselCopy, brand: Carous
         elements: [
           { type: "photo", photo: i, bbox: [300, 120, 780, 600], tint: TERRA, tint_opacity: 0.1 },
           { type: "punch", bbox: [300, 120, 780, 600], fill: LIME, shape: "circle", outline: { colour: OLIVE, width: 1.5, offset: 12 } },
-          { type: "text", bbox: [80, 680, 1000, 712], content: (feature || "EL DETALLE").toUpperCase(), font: "Questrial", size: 21, colour: OLIVE, align: "center", tracking: 7 },
+          { type: "text", bbox: [80, 680, 1000, 712], content: (feature || T.the_detail).toUpperCase(), font: "Questrial", size: 21, colour: OLIVE, align: "center", tracking: 7 },
           { type: "text", bbox: [110, 760, 970, 980], content: wrap(copy.lifestyle_line || facts.title, FR, 56, 860), font: FR, size: 56, colour: NAVY, align: "center", line_height: 72, valign: "center" },
           ...tiles(1150),
           ...band(facts.agency, i + 1, total, inkMuted),
@@ -619,15 +628,15 @@ function encaladaListing(facts: CarouselFacts, copy: CarouselCopy, brand: Carous
 
   // LA FICHA
   const kpi: [string, string][] = [];
-  if (facts.price) kpi.push(["PRECIO", facts.price]);
-  if (facts.area) kpi.push(["SUPERFICIE", facts.area]);
-  if (facts.beds) kpi.push(["DORMITORIOS", facts.beds]);
-  if (facts.baths) kpi.push(["BAÑOS", facts.baths]);
+  if (facts.price) kpi.push([T.price, facts.price]);
+  if (facts.area) kpi.push([T.area, facts.area]);
+  if (facts.beds) kpi.push([T.bedrooms, facts.beds]);
+  if (facts.baths) kpi.push([T.bathrooms, facts.baths]);
   const rowH = Math.min(150, 620 / Math.max(1, kpi.length));
   specs.push(DesignSpec.parse({
     background: LIME,
     elements: [
-      { type: "text", bbox: [80, 130, 1000, 170], content: "LA FICHA", font: "Questrial", size: 22, colour: TERRA, align: "center", tracking: 7 },
+      { type: "text", bbox: [80, 130, 1000, 170], content: T.the_sheet, font: "Questrial", size: 22, colour: TERRA, align: "center", tracking: 7 },
       { type: "text", bbox: [80, 210, 1000, 330], content: wrap(facts.title, FR, 76, 920), font: FR, size: 76, colour: NAVY, align: "center" },
       ...kpi.flatMap(([k, v], i) => {
         const y = 440 + i * rowH;
@@ -637,7 +646,7 @@ function encaladaListing(facts: CarouselFacts, copy: CarouselCopy, brand: Carous
           { type: "rect", bbox: [120, y + rowH - 56, 960, y + rowH - 54.5], fill: mix(OLIVE, LIME, 0.5) },
         ];
       }),
-      { type: "text", bbox: [230, 1120, 850, 1176], content: "Guárdala para tu próxima visita", font: "Jost", size: 26, colour: LIME, align: "center", weight: "500", valign: "center", pill: { fill: OLIVE, pad_x: 34, pad_y: 16 } },
+      { type: "text", bbox: [230, 1120, 850, 1176], content: T.save_sheet, font: "Jost", size: 26, colour: LIME, align: "center", weight: "500", valign: "center", pill: { fill: OLIVE, pad_x: 34, pad_y: 16 } },
       ...band(facts.agency, total - 1, total, inkMuted),
     ],
   }));
@@ -647,8 +656,8 @@ function encaladaListing(facts: CarouselFacts, copy: CarouselCopy, brand: Carous
     background: TERRA,
     elements: [
       ...seal(540, 360, 100, LIME, TERRA, initials(facts.agency)),
-      { type: "text", bbox: [110, 540, 970, 740], content: wrap(copy.cta_action || "¿Te ves aquí este verano?", FR, 64, 860), font: FR, size: 64, colour: LIME, align: "center", line_height: 80, valign: "center" },
-      { type: "text", bbox: [310, 860, 770, 920], content: (copy.cta_keyword || "ESCRÍBENOS: VISITA").toUpperCase(), font: "Jost", size: 25, colour: TERRA, align: "center", weight: "600", tracking: 3, valign: "center", pill: { fill: LIME, pad_x: 40, pad_y: 20 } },
+      { type: "text", bbox: [110, 540, 970, 740], content: wrap(copy.cta_action || T.save_cta, FR, 64, 860), font: FR, size: 64, colour: LIME, align: "center", line_height: 80, valign: "center" },
+      { type: "text", bbox: [310, 860, 770, 920], content: (copy.cta_keyword || `${T.write_us}: ${T.visit_kw}`).toUpperCase(), font: "Jost", size: 25, colour: TERRA, align: "center", weight: "600", tracking: 3, valign: "center", pill: { fill: LIME, pad_x: 40, pad_y: 20 } },
       { type: "text", bbox: [110, 1020, 970, 1050], content: facts.contact, font: "Jost", size: 21, colour: mix(LIME, TERRA, 0.8), align: "center", tracking: 2 },
       ...band(facts.agency, total, total, mix(LIME, TERRA, 0.75)),
     ],
@@ -656,7 +665,8 @@ function encaladaListing(facts: CarouselFacts, copy: CarouselCopy, brand: Carous
   return specs;
 }
 
-function serenoListing(facts: CarouselFacts, copy: CarouselCopy, brand: CarouselBrand, photoCount: number): unknown[] {
+function serenoListing(facts: CarouselFacts, copy: CarouselCopy, brand: CarouselBrand, photoCount: number, lang = "es"): unknown[] {
+  const T = chrome(lang);
   const NAVY = brand.navy, GOLD = brand.gold;
   const warm = "#f5f1e8";
   const inkMuted = mix(NAVY, warm, 0.55);
@@ -710,25 +720,25 @@ function serenoListing(facts: CarouselFacts, copy: CarouselCopy, brand: Carousel
 
   // collector facts
   const lots: [string, string][] = [];
-  if (facts.price) lots.push(["PRECIO", facts.price]);
-  if (facts.area) lots.push(["SUPERFICIE", facts.area]);
-  if (facts.beds) lots.push(["DORMITORIOS", facts.beds]);
-  if (facts.baths) lots.push(["BAÑOS", facts.baths]);
+  if (facts.price) lots.push([T.price, facts.price]);
+  if (facts.area) lots.push([T.area, facts.area]);
+  if (facts.beds) lots.push([T.bedrooms, facts.beds]);
+  if (facts.baths) lots.push([T.bathrooms, facts.baths]);
   const rowH = Math.min(210, 860 / Math.max(1, lots.length));
   specs.push(DesignSpec.parse({
     background: warm,
     elements: [
       ...frame([40, 40, 1040, 1310], NAVY, 1.5, 0.35),
-      { type: "text", bbox: [96, 110, 980, 142], content: `LA FICHA · ${facts.title.toUpperCase()}`, font: "Glacial Indifference", size: 21, colour: GOLD, align: "left", tracking: 7 },
+      { type: "text", bbox: [96, 110, 980, 142], content: `${T.the_sheet} · ${facts.title.toUpperCase()}`, font: "Glacial Indifference", size: 21, colour: GOLD, align: "left", tracking: 7 },
       ...lots.flatMap(([k, v], i) => {
         const y = 240 + i * rowH;
         return [
-          { type: "text", bbox: [96, y, 700, y + 30], content: `LOTE Nº ${i + 1} · ${k}`, font: "Glacial Indifference", size: 19, colour: inkMuted, align: "left", tracking: 5 },
+          { type: "text", bbox: [96, y, 700, y + 30], content: `${T.lot} ${i + 1} · ${k}`, font: "Glacial Indifference", size: 19, colour: inkMuted, align: "left", tracking: 5 },
           { type: "text", bbox: [96, y + 40, 980, y + Math.min(160, rowH - 40)], content: v, font: FR, size: Math.min(92, rowH - 90), colour: NAVY, align: "left" },
           { type: "rect", bbox: [96, y + rowH - 36, 980, y + rowH - 35], fill: NAVY, opacity: 0.25 },
         ];
       }),
-      { type: "text", bbox: [96, 1150, 940, 1200], content: "Guarda la ficha — vuelve a ella con calma.", font: FR, size: 34, colour: NAVY, align: "left", italic: true },
+      { type: "text", bbox: [96, 1150, 940, 1200], content: T.save_calm, font: FR, size: 34, colour: NAVY, align: "left", italic: true },
       folioLine(total - 1, inkMuted),
     ],
   }));
@@ -738,10 +748,369 @@ function serenoListing(facts: CarouselFacts, copy: CarouselCopy, brand: Carousel
     background: NAVY,
     elements: [
       ...seal(540, 430, 110, GOLD, NAVY, initials(facts.agency)),
-      { type: "text", bbox: [140, 640, 940, 790], content: wrap(copy.cta_action || "Para verla, una palabra basta.", FR, 54, 800), font: FR, size: 54, colour: brand.cream, align: "center", line_height: 70, valign: "center" },
-      { type: "text", bbox: [320, 870, 760, 930], content: (copy.cta_keyword || "ESCRÍBENOS: VISITA").toUpperCase(), font: "Glacial Indifference", size: 24, colour: NAVY, align: "center", weight: "500", tracking: 4, valign: "center", pill: { fill: GOLD, pad_x: 40, pad_y: 20 } },
+      { type: "text", bbox: [140, 640, 940, 790], content: wrap(copy.cta_action || T.save_cta, FR, 54, 800), font: FR, size: 54, colour: brand.cream, align: "center", line_height: 70, valign: "center" },
+      { type: "text", bbox: [320, 870, 760, 930], content: (copy.cta_keyword || `${T.write_us}: ${T.visit_kw}`).toUpperCase(), font: "Glacial Indifference", size: 24, colour: NAVY, align: "center", weight: "500", tracking: 4, valign: "center", pill: { fill: GOLD, pad_x: 40, pad_y: 20 } },
       { type: "text", bbox: [140, 1020, 940, 1050], content: facts.contact, font: "Jost", size: 20, colour: mix("#f3efe6", NAVY, 0.65), align: "center", tracking: 2 },
       { type: "text", bbox: [96, 1240, 984, 1270], content: `Nº ${String(total).padStart(2, "0")} — ${String(total).padStart(2, "0")} · ${facts.agency.toUpperCase()} · MMXXVI`, font: "Jost", size: 16, colour: mix("#f3efe6", NAVY, 0.6), align: "center", tracking: 3 },
+    ],
+  }));
+  return specs;
+}
+
+// ═══ PLANO — annotated blueprint (approved round 2) ═══════════════════════════
+function planoCallout(x: number, y: number, w: number, text: string, colour: string, toX: number, toY: number, paper?: string) {
+  const hairline = Math.abs(toY - y) > Math.abs(toX - x)
+    ? { type: "rect", bbox: [Math.min(x + w / 2, toX), Math.min(y, toY), Math.min(x + w / 2, toX) + 1, Math.max(y, toY)], fill: colour, opacity: 0.7 }
+    : { type: "rect", bbox: [Math.min(x, toX), Math.min(y + 20, toY), Math.max(x, toX), Math.min(y + 20, toY) + 1], fill: colour, opacity: 0.7 };
+  return [
+    hairline,
+    ...(paper ? [{ type: "rect", bbox: [x, y, x + w, y + 42], fill: paper, opacity: 0.82 }] : []),
+    ...frame([x, y, x + w, y + 42], colour, 1),
+    { type: "text", bbox: [x + 12, y, x + w - 12, y + 42], content: text, font: "Archivo", size: 17, colour, align: "left", tracking: 3, valign: "center" },
+  ];
+}
+function planoListing(facts: CarouselFacts, copy: CarouselCopy, brand: CarouselBrand, photoCount: number, lang = "es"): unknown[] {
+  const T = chrome(lang);
+  const NAVY = brand.navy, GOLD = brand.gold, CREAM = brand.cream;
+  const specimen = photoCount >= 3;
+  const total = 3 + (specimen ? 1 : 0) + 1;
+  const [town, region] = facts.location.split("·").map((s) => s.trim());
+  const numeral = facts.area ? facts.area.replace(/\s*m²/i, "") : facts.beds || "1";
+  const numeralLabel = facts.area ? (copy.hook || facts.title) : facts.title;
+  const specs: unknown[] = [];
+
+  specs.push(DesignSpec.parse({
+    background: NAVY,
+    elements: [
+      ...frame([40, 40, 1040, 1310], GOLD, 1, 0.4),
+      { type: "text", bbox: [70, 250, 1010, 900], content: numeral, font: FR, size: Math.min(560, 1500 / Math.max(2, numeral.length)), colour: CREAM, align: "center", valign: "center" },
+      { type: "text", bbox: [80, 850, 1000, 910], content: wrap(numeralLabel.toUpperCase(), "Anton", 52, 900), font: "Anton", size: 52, colour: GOLD, align: "center", line_height: 62 },
+      ...(town ? planoCallout(90, 150, 300, town.toUpperCase(), GOLD, 240, 320) : []),
+      ...(region ? planoCallout(700, 150, 290, region.toUpperCase(), GOLD, 840, 320) : []),
+      ...(facts.beds ? planoCallout(90, 1000, 300, `${facts.beds} ${T.bedrooms}`, GOLD, 240, 900) : []),
+      ...(facts.baths ? planoCallout(660, 1000, 330, `${facts.baths} ${T.bathrooms}`, GOLD, 800, 900) : []),
+      ...Array.from({ length: 21 }, (_, i) => ({ type: "rect", bbox: [90 + i * 45, 940, 91.5 + i * 45, i % 5 === 0 ? 962 : 952], fill: GOLD, opacity: 0.7 })),
+      { type: "text", bbox: [80, 1090, 1000, 1130], content: [facts.title, facts.price].filter(Boolean).join(" · ").toUpperCase(), font: "Archivo", size: 22, colour: CREAM, align: "center", tracking: 5 },
+      ...band(facts.agency, 1, total, mix(CREAM, NAVY, 0.6)),
+    ],
+  }));
+
+  specs.push(DesignSpec.parse({
+    background: LIME,
+    elements: [
+      { type: "photo", photo: 0, bbox: [90, 160, 990, 1010], tint: NAVY, tint_opacity: 0.1 },
+      ...frame([90, 160, 990, 1010], NAVY, 1.5),
+      ...Array.from({ length: 19 }, (_, i) => ({ type: "rect", bbox: [90 + i * 47.4, 1022, 91.5 + i * 47.4, i % 5 === 0 ? 1046 : 1036], fill: NAVY, opacity: 0.7 })),
+      ...Array.from({ length: 17 }, (_, i) => ({ type: "rect", bbox: [66, 160 + i * 50, 76, 161.5 + i * 50], fill: NAVY, opacity: 0.7 })),
+      ...(facts.features[0] ? planoCallout(130, 210, 340, `① ${facts.features[0].toUpperCase()}`.slice(0, 30), NAVY, 380, 700, LIME) : []),
+      ...(facts.features[1] ? planoCallout(600, 320, 350, `② ${facts.features[1].toUpperCase()}`.slice(0, 30), NAVY, 800, 620, LIME) : []),
+      { type: "text", bbox: [1004, 400, 1064, 900], content: `${facts.location} · ${facts.agency.toUpperCase()}`, font: "Archivo", size: 16, colour: mix(NAVY, LIME, 0.6), tracking: 4, rotate: 90, align: "center" },
+      { type: "text", bbox: [90, 1080, 990, 1190], content: wrap(copy.lifestyle_line || facts.title, FR, 54, 900), font: FR, size: 54, colour: NAVY, align: "left", line_height: 68 },
+      ...band(facts.agency, 2, total, mix(NAVY, LIME, 0.55)),
+    ],
+  }));
+
+  if (specimen) {
+    specs.push(DesignSpec.parse({
+      background: LIME,
+      elements: [
+        { type: "text", bbox: [80, 110, 1000, 145], content: `${T.the_detail} · 01 02 03`, font: "Archivo", size: 20, colour: TERRA, align: "left", tracking: 6 },
+        ...[0, 1, 2].map((i) => ({ type: "photo", photo: i, bbox: [110 + i * 300, 240, 370 + i * 300, 500], tint: NAVY, tint_opacity: 0.08 })),
+        ...[0, 1, 2].map((i) => ({ type: "punch", bbox: [110 + i * 300, 240, 370 + i * 300, 500], fill: LIME, shape: "circle", outline: { colour: NAVY, width: 1, offset: 8 } })),
+        ...[0, 1, 2].flatMap((i) => [
+          { type: "text", bbox: [110 + i * 300, 540, 370 + i * 300, 580], content: `0${i + 1}`, font: FR, size: 36, colour: brand.gold, align: "center" },
+          { type: "rect", bbox: [140 + i * 300, 600, 340 + i * 300, 601], fill: mix(NAVY, LIME, 0.4) },
+        ]),
+        { type: "text", bbox: [80, 680, 1000, 880], content: wrap(copy.hook || facts.title, FR, 68, 920), font: FR, size: 68, colour: NAVY, align: "left", line_height: 84 },
+        { type: "text", bbox: [80, 940, 1000, 1100], content: wrap(facts.features.slice(0, 3).join(" · ") || facts.location, "Jost", 30, 920), font: "Jost", size: 30, colour: mix(NAVY, LIME, 0.85), align: "left", line_height: 46 },
+        ...band(facts.agency, 3, total, mix(NAVY, LIME, 0.55)),
+      ],
+    }));
+  }
+
+  const rows: [string, string][] = [];
+  if (facts.price) rows.push([T.price, facts.price]);
+  if (facts.area) rows.push([T.area, facts.area]);
+  if (facts.beds) rows.push([T.bedrooms, facts.beds]);
+  if (facts.baths) rows.push([T.bathrooms, facts.baths]);
+  if (facts.features[0]) rows.push([T.extras, facts.features.slice(0, 2).join(" · ")]);
+  const rowH = Math.min(150, 800 / Math.max(1, rows.length));
+  specs.push(DesignSpec.parse({
+    background: NAVY,
+    elements: [
+      ...frame([40, 40, 1040, 1310], GOLD, 1, 0.4),
+      { type: "text", bbox: [90, 110, 990, 145], content: `${T.the_sheet} · ${facts.title.toUpperCase()}`, font: "Archivo", size: 20, colour: GOLD, align: "left", tracking: 6 },
+      ...rows.flatMap(([k, v], i) => {
+        const y = 230 + i * rowH;
+        return [
+          { type: "text", bbox: [90, y, 460, y + 40], content: `${String(i + 1).padStart(2, "0")} · ${k}`, font: "Archivo", size: 20, colour: mix(CREAM, NAVY, 0.65), align: "left", tracking: 4, valign: "center" },
+          { type: "text", bbox: [460, y - 24, 990, y + 64], content: v, font: FR, size: 50, colour: CREAM, align: "right" },
+          { type: "rect", bbox: [90, y + rowH - 56, 990, y + rowH - 55], fill: GOLD, opacity: 0.3 },
+        ];
+      }),
+      { type: "text", bbox: [90, 1160, 940, 1206], content: T.save_sheet.toUpperCase(), font: "Archivo", size: 20, colour: NAVY, align: "left", tracking: 2, valign: "center", pill: { fill: GOLD, pad_x: 28, pad_y: 14, radius: 4 } },
+      ...band(facts.agency, total - 1, total, mix(CREAM, NAVY, 0.6)),
+    ],
+  }));
+
+  specs.push(DesignSpec.parse({
+    background: NAVY,
+    elements: [
+      ...seal(540, 350, 100, GOLD, NAVY, initials(facts.agency)),
+      ...frame([160, 540, 920, 780], GOLD, 1.5),
+      { type: "text", bbox: [200, 590, 880, 680], content: wrap((copy.cta_action || T.save_cta), "Anton", 52, 640), font: "Anton", size: 52, colour: CREAM, align: "center", line_height: 62, valign: "center" },
+      { type: "text", bbox: [200, 690, 880, 740], content: (copy.cta_keyword || `${T.write_us}: ${T.visit_kw}`).toUpperCase(), font: "Archivo", size: 24, colour: GOLD, align: "center", tracking: 5 },
+      ...Array.from({ length: 5 }, (_, i) => ({ type: "rect", bbox: [500 + i * 18, 830, 501.5 + i * 18, 860], fill: GOLD, opacity: 1 - i * 0.18 })),
+      { type: "text", bbox: [140, 920, 940, 950], content: facts.contact, font: "Jost", size: 21, colour: mix(CREAM, NAVY, 0.65), align: "center", tracking: 2 },
+      ...band(facts.agency, total, total, mix(CREAM, NAVY, 0.6)),
+    ],
+  }));
+  return specs;
+}
+
+// ═══ PORTADA — the magazine issue (approved round 2) ══════════════════════════
+function portadaListing(facts: CarouselFacts, copy: CarouselCopy, brand: CarouselBrand, photoCount: number, lang = "es"): unknown[] {
+  const T = chrome(lang);
+  const NAVY = brand.navy, GOLD = brand.gold, CREAM = brand.cream;
+  const total = 4 + (photoCount >= 3 ? 1 : 0);
+  const town = (facts.location.split("·")[0] ?? "").trim().toUpperCase() || "COSTA";
+  const specs: unknown[] = [];
+
+  specs.push(DesignSpec.parse({
+    background: "#0a0c10",
+    elements: [
+      { type: "photo", photo: 0, bbox: [0, 0, W, H], tint: TERRA, tint_opacity: 0.1 },
+      { type: "scrim", bbox: [0, 0, W, 560], colour: "#0a0c10", direction: "down" },
+      { type: "scrim", bbox: [0, 0, W, 420], colour: "#0a0c10", direction: "down" },
+      { type: "scrim", bbox: [0, 820, W, H], colour: "#0a0c10" },
+      { type: "text", bbox: [60, 90, 1020, 330], content: town, font: "Anton", size: Math.min(250, 1900 / Math.max(4, town.length)), colour: CREAM, align: "center", valign: "center" },
+      { type: "text", bbox: [80, 350, 640, 384], content: facts.agency.toUpperCase(), font: "Jost", size: 20, colour: GOLD, align: "left", tracking: 5 },
+      { type: "text", bbox: [640, 350, 1000, 384], content: facts.location, font: "Jost", size: 20, colour: CREAM, align: "right", tracking: 4 },
+      { type: "text", bbox: [80, 880, 1000, 918], content: T.on_cover, font: "Jost", size: 20, colour: GOLD, align: "left", tracking: 6 },
+      { type: "text", bbox: [80, 940, 1000, 1120], content: wrap(copy.hook || facts.title, FR, 62, 920), font: FR, size: 62, colour: CREAM, align: "left", line_height: 78 },
+      { type: "text", bbox: [80, 1160, 760, 1195], content: (facts.specs || facts.location), font: "Jost", size: 21, colour: mix(CREAM, "#0a0c10", 0.75), align: "left", tracking: 1 },
+      ...(facts.price ? [
+        { type: "rect", bbox: [860, 430, 1030, 600], fill: GOLD, radius: 85, rotate: 12 },
+        { type: "text", bbox: [860, 480, 1030, 530], content: facts.price, font: "Jost", size: 26, colour: NAVY, align: "center", weight: "600", rotate: 12 },
+        { type: "text", bbox: [860, 528, 1030, 560], content: (facts.area || facts.title).toUpperCase().slice(0, 16), font: "Jost", size: 15, colour: NAVY, align: "center", tracking: 2, rotate: 12 },
+      ] : []),
+      ...Array.from({ length: 24 }, (_, i) => ({ type: "rect", bbox: [850 + i * 6, 1240, 850 + i * 6 + (i % 3 === 0 ? 3 : 1.5), 1296], fill: CREAM })),
+      { type: "text", bbox: [80, 1256, 640, 1284], content: facts.agency.toUpperCase(), font: "Jost", size: 17, colour: mix(CREAM, "#0a0c10", 0.7), align: "left", weight: "500", tracking: 4 },
+    ],
+  }));
+
+  specs.push(DesignSpec.parse({
+    background: CREAM,
+    elements: [
+      { type: "text", bbox: [80, 100, 1000, 134], content: `${town} · ${T.on_cover} · P.02`, font: "Jost", size: 18, colour: mix(NAVY, CREAM, 0.55), align: "left", tracking: 5 },
+      { type: "rect", bbox: [80, 158, 1000, 160], fill: NAVY },
+      { type: "text", bbox: [80, 210, 1000, 420], content: wrap(copy.lifestyle_line || facts.title, FR, 80, 900), font: FR, size: 80, colour: NAVY, align: "left", line_height: 96 },
+      { type: "photo", photo: Math.min(1, photoCount - 1), bbox: [560, 460, 1000, 1030], tint: TERRA, tint_opacity: 0.08 },
+      ...frame([560, 460, 1000, 1030], NAVY, 1),
+      ...facts.features.slice(0, 4).flatMap((feat, i) => {
+        const y = 500 + i * 130;
+        return [
+          { type: "text", bbox: [80, y, 130, y + 50], content: String(i + 1).padStart(2, "0"), font: FR, size: 34, colour: GOLD, align: "left", valign: "center" },
+          { type: "text", bbox: [140, y, 530, y + 90], content: wrap(feat, "Jost", 27, 380), font: "Jost", size: 27, colour: "#333333", align: "left", line_height: 38, valign: "center" },
+        ];
+      }),
+      { type: "rect", bbox: [80, 1080, 1000, 1081], fill: mix(NAVY, CREAM, 0.3) },
+      { type: "text", bbox: [80, 1100, 1000, 1135], content: `${T.follow.toUpperCase()} →`, font: "Jost", size: 19, colour: TERRA, align: "right", tracking: 4 },
+      ...band(facts.agency, 2, total, mix(NAVY, CREAM, 0.55)),
+    ],
+  }));
+
+  if (photoCount >= 3) {
+    specs.push(DesignSpec.parse({
+      background: "#0a0c10",
+      elements: [
+        { type: "photo", photo: 2, bbox: [0, 0, W, H], tint: TERRA, tint_opacity: 0.08 },
+        { type: "scrim", bbox: [0, 700, W, H], colour: "#0a0c10" },
+        { type: "text", bbox: [80, 96, 700, 128], content: `${town} · P.03`, font: "Jost", size: 18, colour: CREAM, align: "left", tracking: 5 },
+        { type: "text", bbox: [70, 850, 320, 1050], content: "“", font: FR, size: 200, colour: GOLD, align: "left" },
+        { type: "text", bbox: [80, 1010, 1000, 1180], content: wrap(copy.lifestyle_line || copy.hook || facts.title, FR, 58, 920), font: FR, size: 58, colour: CREAM, align: "left", line_height: 74 },
+        ...band(facts.agency, 3, total, mix(CREAM, "#0a0c10", 0.7)),
+      ],
+    }));
+  }
+
+  const toc: [string, string][] = [];
+  if (facts.price) toc.push([T.price, facts.price]);
+  if (facts.area) toc.push([T.area, facts.area]);
+  if (facts.beds) toc.push([T.bedrooms, facts.beds]);
+  if (facts.baths) toc.push([T.bathrooms, facts.baths]);
+  if (facts.features[0]) toc.push([T.extras, facts.features.slice(0, 2).join(" · ")]);
+  const tocH = Math.min(150, 820 / Math.max(1, toc.length));
+  specs.push(DesignSpec.parse({
+    background: NAVY,
+    elements: [
+      { type: "text", bbox: [80, 110, 1000, 160], content: T.in_this_issue, font: "Anton", size: 46, colour: GOLD, align: "left" },
+      { type: "rect", bbox: [80, 190, 1000, 192], fill: GOLD, opacity: 0.5 },
+      ...toc.flatMap(([k, v], i) => {
+        const y = 260 + i * tocH;
+        return [
+          { type: "text", bbox: [80, y, 200, y + 60], content: String(i + 1).padStart(2, "0"), font: FR, size: 42, colour: GOLD, align: "left", valign: "center" },
+          { type: "text", bbox: [220, y, 620, y + 60], content: k, font: "Jost", size: 23, colour: mix(CREAM, NAVY, 0.7), align: "left", tracking: 4, valign: "center" },
+          { type: "text", bbox: [520, y - 10, 1000, y + 70], content: v, font: FR, size: 44, colour: CREAM, align: "right", valign: "center" },
+          { type: "rect", bbox: [80, y + tocH - 50, 1000, y + tocH - 49], fill: mix(CREAM, NAVY, 0.25) },
+        ];
+      }),
+      { type: "text", bbox: [80, 1120, 940, 1170], content: T.save_sheet, font: "Jost", size: 25, colour: NAVY, align: "left", weight: "500", valign: "center", pill: { fill: GOLD, pad_x: 30, pad_y: 14 } },
+      ...band(facts.agency, total - 1, total, mix(CREAM, NAVY, 0.6)),
+    ],
+  }));
+
+  specs.push(DesignSpec.parse({
+    background: CREAM,
+    elements: [
+      { type: "rect", bbox: [80, 120, 1000, 122], fill: NAVY },
+      { type: "text", bbox: [80, 180, 1000, 430], content: wrap(copy.cta_action || T.save_cta, FR, 76, 900), font: FR, size: 76, colour: NAVY, align: "left", line_height: 92, valign: "center" },
+      ...seal(540, 640, 100, TERRA, CREAM, initials(facts.agency)),
+      { type: "text", bbox: [300, 860, 780, 920], content: (copy.cta_keyword || `${T.write_us}: ${T.visit_kw}`).toUpperCase(), font: "Jost", size: 24, colour: CREAM, align: "center", weight: "600", tracking: 3, valign: "center", pill: { fill: NAVY, pad_x: 40, pad_y: 20 } },
+      { type: "text", bbox: [140, 1000, 940, 1030], content: facts.contact, font: "Jost", size: 21, colour: mix(NAVY, CREAM, 0.6), align: "center", tracking: 2 },
+      ...band(facts.agency, total, total, mix(NAVY, CREAM, 0.55)),
+    ],
+  }));
+  return specs;
+}
+
+// ═══ RECORTE — the structured scrapbook (approved round 2) ════════════════════
+function recorteListing(facts: CarouselFacts, copy: CarouselCopy, brand: CarouselBrand, photoCount: number, lang = "es"): unknown[] {
+  const T = chrome(lang);
+  const paper = "#f1ece1", ink = "#2b2f36";
+  const total = 4;
+  const tape = (x: number, y: number, deg: number) => ({ type: "rect", bbox: [x, y, x + 150, y + 44], fill: "#e8e0cd", opacity: 0.85, rotate: deg });
+  const card = (photo: number, b: [number, number, number, number], deg: number) => [
+    { type: "rect", bbox: [b[0] - 18, b[1] - 18, b[2] + 18, b[3] + 60], fill: "#ffffff", rotate: deg },
+    { type: "photo", photo, bbox: b, rotate: deg, tint: TERRA, tint_opacity: 0.1 },
+  ];
+  const specs: unknown[] = [];
+
+  specs.push(DesignSpec.parse({
+    background: paper,
+    elements: [
+      ...card(0, [110, 170, 610, 590], -3),
+      ...card(Math.min(1, photoCount - 1), [480, 420, 950, 810], 2),
+      tape(180, 130, -8), tape(820, 390, 6),
+      { type: "text", bbox: [80, 900, 1000, 940], content: facts.location, font: "Special Elite", size: 26, colour: TERRA, align: "left" },
+      { type: "text", bbox: [80, 960, 1000, 1130], content: wrap(copy.hook || facts.title, FR, 62, 920), font: FR, size: 62, colour: ink, align: "left", line_height: 78 },
+      { type: "text", bbox: [700, 1140, 1000, 1210], content: T.found, font: "Damion", size: 54, colour: TERRA, align: "center", rotate: -5 },
+      ...band(facts.agency, 1, total, mix(ink, paper, 0.55)),
+    ],
+  }));
+
+  specs.push(DesignSpec.parse({
+    background: paper,
+    elements: [
+      ...card(Math.min(2, photoCount - 1), [120, 140, 960, 850], -2),
+      tape(160, 100, -10), tape(800, 110, 7),
+      { type: "rect", bbox: [200, 900, 880, 990], fill: "#ffffff", rotate: 1.5 },
+      { type: "text", bbox: [220, 920, 860, 975], content: (facts.features[0] || facts.location).slice(0, 44), font: "Special Elite", size: 28, colour: ink, align: "center", rotate: 1.5 },
+      tape(480, 870, -6),
+      { type: "text", bbox: [80, 1060, 1000, 1180], content: wrap(copy.lifestyle_line || facts.title, "Jost", 32, 900), font: "Jost", size: 32, colour: mix(ink, paper, 0.85), align: "center", line_height: 48 },
+      ...band(facts.agency, 2, total, mix(ink, paper, 0.55)),
+    ],
+  }));
+
+  const notes: [string, string][] = [];
+  if (facts.price) notes.push([T.price, facts.price]);
+  if (facts.area) notes.push([T.area, facts.area]);
+  if (facts.beds) notes.push([T.bedrooms, facts.beds]);
+  if (facts.baths) notes.push([T.bathrooms, facts.baths]);
+  const spots: [number, number, number][] = [[90, 220, -2], [560, 200, 2], [120, 560, 1.5], [580, 580, -2.5]];
+  specs.push(DesignSpec.parse({
+    background: paper,
+    elements: [
+      { type: "text", bbox: [80, 110, 1000, 150], content: facts.title.toUpperCase(), font: "Special Elite", size: 28, colour: TERRA, align: "center" },
+      ...notes.slice(0, 4).flatMap(([k, v], i) => {
+        const [x, y, deg] = spots[i];
+        return [
+          { type: "rect", bbox: [x, y, x + 420, y + 250], fill: "#ffffff", rotate: deg },
+          tape(x + 130, y - 22, deg > 0 ? -7 : 7),
+          { type: "text", bbox: [x + 30, y + 44, x + 390, y + 80], content: k, font: "Special Elite", size: 22, colour: mix(ink, "#ffffff", 0.6), align: "left", rotate: deg },
+          { type: "text", bbox: [x + 30, y + 96, x + 390, y + 210], content: v, font: FR, size: Math.min(74, 700 / Math.max(4, v.length)), colour: ink, align: "left", rotate: deg, valign: "center" },
+        ];
+      }),
+      { type: "text", bbox: [80, 920, 1000, 1060], content: wrap(copy.lifestyle_line || facts.location, FR, 56, 900), font: FR, size: 56, colour: ink, align: "center", line_height: 72 },
+      ...band(facts.agency, 3, total, mix(ink, paper, 0.55)),
+    ],
+  }));
+
+  specs.push(DesignSpec.parse({
+    background: paper,
+    elements: [
+      { type: "rect", bbox: [140, 260, 940, 850], fill: "#ffffff", rotate: -1.5 },
+      tape(240, 220, -9), tape(700, 230, 8),
+      { type: "text", bbox: [200, 340, 880, 420], content: T.note_for_you, font: "Special Elite", size: 30, colour: TERRA, align: "center", rotate: -1.5 },
+      { type: "text", bbox: [200, 440, 880, 640], content: wrap(copy.cta_action || T.save_cta, FR, 52, 640), font: FR, size: 52, colour: ink, align: "center", line_height: 68, rotate: -1.5, valign: "center" },
+      { type: "text", bbox: [310, 690, 770, 748], content: (copy.cta_keyword || `${T.write_us}: ${T.visit_kw}`).toUpperCase(), font: "Jost", size: 24, colour: paper, align: "center", weight: "600", tracking: 3, valign: "center", pill: { fill: ink, pad_x: 38, pad_y: 18 }, rotate: -1.5 },
+      { type: "text", bbox: [140, 950, 940, 1000], content: T.save_sheet, font: "Jost", size: 28, colour: mix(ink, paper, 0.85), align: "center" },
+      { type: "text", bbox: [140, 1060, 940, 1090], content: facts.contact, font: "Jost", size: 21, colour: mix(ink, paper, 0.6), align: "center", tracking: 2 },
+      ...band(facts.agency, 4, total, mix(ink, paper, 0.55)),
+    ],
+  }));
+  return specs;
+}
+
+// ═══ MAREA — the type wall (approved round 2) ═════════════════════════════════
+function mareaListing(facts: CarouselFacts, copy: CarouselCopy, brand: CarouselBrand, photoCount: number, lang = "es"): unknown[] {
+  const T = chrome(lang);
+  const NAVY = brand.navy, GOLD = brand.gold, CREAM = brand.cream;
+  const total = 4;
+  const town = (facts.location.split("·")[0] ?? "").trim().toUpperCase() || facts.title.toUpperCase();
+  const hookLines = (copy.hook || facts.title).toUpperCase().split(" ");
+  const l1 = hookLines.slice(0, Math.ceil(hookLines.length / 2)).join(" ");
+  const l2 = hookLines.slice(Math.ceil(hookLines.length / 2)).join(" ");
+  const specs: unknown[] = [];
+
+  specs.push(DesignSpec.parse({
+    background: NAVY,
+    elements: [
+      { type: "photo", photo: 0, bbox: [0, 0, W, H], tint: "#2b4a75", tint_mode: "duotone" },
+      { type: "scrim", bbox: [0, 0, W, 300], colour: "#101c2e", direction: "down" },
+      { type: "scrim", bbox: [0, 500, W, H], colour: "#101c2e" },
+      { type: "text", bbox: [80, 96, 700, 128], content: facts.agency.toUpperCase(), font: "Jost", size: 20, colour: CREAM, align: "left", weight: "500", tracking: 5 },
+      { type: "text", bbox: [-30, 320, 1110, 620], content: town, font: "Anton", size: Math.min(260, 1900 / Math.max(4, town.length)), colour: CREAM, align: "center", hollow: true, stroke_width: 3.5, valign: "center" },
+      { type: "rect", bbox: [-100, 880, 1180, 960], fill: GOLD, rotate: -4 },
+      { type: "text", bbox: [40, 892, 1040, 948], content: [facts.location, facts.price].filter(Boolean).join(" · "), font: "Anton", size: 42, colour: NAVY, align: "center", rotate: -4 },
+      { type: "text", bbox: [80, 1080, 1000, 1140], content: wrap(`${copy.hook || facts.title}. ${T.swipe}.`, FR, 36, 900), font: FR, size: 36, colour: CREAM, align: "center", italic: true, line_height: 48 },
+      ...band(facts.agency, 1, total, mix(CREAM, NAVY, 0.7)),
+    ],
+  }));
+
+  specs.push(DesignSpec.parse({
+    background: NAVY,
+    elements: [
+      { type: "text", bbox: [-30, 200, 1110, 480], content: wrap(l1, "Anton", 190, 1000), font: "Anton", size: 190, colour: mix(GOLD, NAVY, 0.5), align: "center", line_height: 204, valign: "center" },
+      { type: "text", bbox: [-30, 500, 1110, 820], content: wrap(l2 || town, "Anton", 190, 1000), font: "Anton", size: 190, colour: CREAM, align: "center", line_height: 204, valign: "center" },
+      { type: "rect", bbox: [200, 900, 880, 903], fill: GOLD },
+      { type: "text", bbox: [140, 950, 940, 1090], content: wrap(copy.lifestyle_line || facts.specs || facts.location, "Jost", 30, 780), font: "Jost", size: 30, colour: mix(CREAM, NAVY, 0.85), align: "center", line_height: 46 },
+      ...band(facts.agency, 2, total, mix(CREAM, NAVY, 0.6)),
+    ],
+  }));
+
+  specs.push(DesignSpec.parse({
+    background: "#101c2e",
+    elements: [
+      { type: "photo", photo: Math.min(1, photoCount - 1), bbox: [0, 0, W, 900], tint: "#2b4a75", tint_mode: "duotone" },
+      { type: "scrim", bbox: [0, 620, W, 900], colour: "#101c2e" },
+      ...(facts.price ? [{ type: "text", bbox: [-40, 860, 1120, 1140], content: facts.price, font: "Anton", size: Math.min(230, 2000 / Math.max(6, facts.price.length)), colour: GOLD, align: "center", valign: "center" }] : [
+        { type: "text", bbox: [-40, 880, 1120, 1120], content: town, font: "Anton", size: 200, colour: GOLD, align: "center", valign: "center" },
+      ]),
+      { type: "text", bbox: [80, 1150, 1000, 1190], content: (facts.specs || facts.location), font: "Jost", size: 22, colour: CREAM, align: "center", tracking: 5 },
+      ...band(facts.agency, 3, total, mix(CREAM, "#101c2e", 0.65)),
+    ],
+  }));
+
+  specs.push(DesignSpec.parse({
+    background: GOLD,
+    elements: [
+      { type: "text", bbox: [-30, 200, 1110, 560], content: wrap((copy.cta_keyword ? copy.cta_keyword.split(":")[1]?.trim() || town : town).toUpperCase(), "Anton", 230, 1000), font: "Anton", size: 230, colour: NAVY, align: "center", valign: "center" },
+      { type: "rect", bbox: [-100, 700, 1180, 790], fill: NAVY, rotate: -4 },
+      { type: "text", bbox: [40, 718, 1040, 778], content: (copy.cta_keyword || `${T.write_us}: ${T.visit_kw}`).toUpperCase(), font: "Anton", size: 46, colour: GOLD, align: "center", rotate: -4, tracking: 4 },
+      { type: "text", bbox: [140, 900, 940, 1000], content: wrap(copy.cta_action || T.save_cta, "Jost", 30, 780), font: "Jost", size: 30, colour: NAVY, align: "center", line_height: 44 },
+      { type: "text", bbox: [140, 1090, 940, 1120], content: facts.contact, font: "Jost", size: 21, colour: NAVY, align: "center", tracking: 2 },
+      ...band(facts.agency, 4, total, mix(NAVY, GOLD, 0.8)),
     ],
   }));
   return specs;
@@ -750,11 +1119,15 @@ function serenoListing(facts: CarouselFacts, copy: CarouselCopy, brand: Carousel
 /** LISTING carousel in a chosen style. 'editorial' = the approved v2 default; horizonte falls back to it
  *  automatically when the hero photo is too narrow for a seamless run. */
 export async function renderListingStyled(
-  style: CarouselStyle, facts: CarouselFacts, copy: CarouselCopy, brand: CarouselBrand, photos: Buffer[],
+  style: CarouselStyle, facts: CarouselFacts, copy: CarouselCopy, brand: CarouselBrand, photos: Buffer[], lang = "es",
 ): Promise<Buffer[]> {
-  if (style === "horizonte") return horizonteListing(facts, copy, brand, photos);
-  if (style === "cartel") return renderAll(cartelListing(facts, copy, brand, photos.length), photos, 0.05);
-  if (style === "encalada") return renderAll(encaladaListing(facts, copy, brand, photos.length), photos, 0.045);
-  if (style === "sereno") return renderAll(serenoListing(facts, copy, brand, photos.length), photos, 0.035);
-  return renderCarousel(facts, brand, photos, copy);
+  if (style === "horizonte") return horizonteListing(facts, copy, brand, photos, lang);
+  if (style === "cartel") return renderAll(cartelListing(facts, copy, brand, photos.length, lang), photos, 0.05);
+  if (style === "encalada") return renderAll(encaladaListing(facts, copy, brand, photos.length, lang), photos, 0.045);
+  if (style === "sereno") return renderAll(serenoListing(facts, copy, brand, photos.length, lang), photos, 0.035);
+  if (style === "plano") return renderAll(planoListing(facts, copy, brand, photos.length, lang), photos, 0.04);
+  if (style === "portada") return renderAll(portadaListing(facts, copy, brand, photos.length, lang), photos, 0.045);
+  if (style === "recorte") return renderAll(recorteListing(facts, copy, brand, photos.length, lang), photos, 0.08);
+  if (style === "marea") return renderAll(mareaListing(facts, copy, brand, photos.length, lang), photos, 0.05);
+  return renderCarousel(facts, brand, photos, copy, lang);
 }

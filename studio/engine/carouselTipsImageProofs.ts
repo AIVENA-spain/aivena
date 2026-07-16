@@ -35,9 +35,10 @@ interface DeckCopy {
  *  dusk  = navy eased scrim from the top over a light sky zone, cream type (Bodegon)
  *  light = NO scrim — flat light ground carries navy type natively (Litoral / Tinta)
  *  photo = agency line under a top scrim, hook deep in a strong bottom scrim (Salitre) */
-function cover(c: DeckCopy, total: number, mode: "dusk" | "light" | "photo", wash = 0.06) {
+function cover(c: DeckCopy, total: number, mode: "dusk" | "light" | "photo", wash = 0.06, crop?: { z: number; y: number }) {
   const deepGold = mix(GOLD, NAVY, 0.72);
-  const els: any[] = [{ type: "photo", photo: 0, bbox: [0, 0, W, H], ...(wash ? { tint: NAVY, tint_opacity: wash } : {}) }];
+  void deepGold;
+  const els: any[] = [{ type: "photo", photo: 0, bbox: [0, 0, W, H], ...(crop ? { zoom: crop.z, x: 0.5, y: crop.y } : {}), ...(wash ? { tint: NAVY, tint_opacity: wash } : {}) }];
   if (mode === "dusk") {
     els.push({ type: "scrim", bbox: [0, 0, W, 620], colour: NAVY, direction: "down" });
     els.push({ type: "text", bbox: [80, 96, 720, 128], content: AGENCY, font: "Jost", size: 20, colour: CREAM, align: "left", weight: "500", tracking: 5 });
@@ -276,17 +277,84 @@ async function main() {
     await save("salitre", await renderDeck(specs, photos, 0.045));
   }
 
-  // ── CANDIDATES — four more styles, composed as covers ────────────────────────
-  const cands: [string, unknown, Buffer[]][] = [
-    ["cand-papel", candidate("Los pasos que nadie te explica", "Comprar por etapas", "light", { z: 1.45, y: 0.5 }), [g("papel")]],
-    ["cand-arcilla", candidate("¿Tu primera casa en España?", "Pequeña guía práctica", "light"), [g("arcilla")]],
-    ["cand-acuarela", candidate("Vivir con vistas, bien elegido", "La guía del balcón", "light"), [g("acuarela")]],
-    ["cand-bordado", candidate("Consejos que duran años", "Hecho a mano", "light"), [g("bordado")]],
-  ];
-  for (const [name, spec, photos] of cands) {
-    const png = await applyGrain(await renderFreeform(spec as DesignSpec, { width: W, height: H }, photos), 0.035);
-    writeFileSync(join(outdir, `${name}.jpg`), await sharp(png).resize({ width: 540 }).jpeg({ quality: 82 }).toBuffer());
-    console.log(name, "done");
+  // ── PAPEL — buying in stages (cove / sailboats / paper sun) ──────────────────
+  {
+    const c: DeckCopy = {
+      kicker: "Comprar por etapas", hook: "Los pasos que nadie te explica",
+      s2title: "Del sueño a las llaves, por capas", s2body: "Reserva, arras, notaría — cada etapa tiene su momento y su papel. Aquí van, una a una.",
+      tipNum: "01", tipTitle: "La reserva no es el contrato", tipBody: "La señal aparta la casa unos días; las arras te comprometen de verdad. Saber cuál firmas evita perder dinero — o la casa.",
+      teaser: "Siguiente: las arras, sin susto →",
+      ctaHeading: "Sube un escalón cada semana", ctaAction: "Guárdalo para tu proceso — y envíaselo a quien compra contigo.", keyword: "Escríbenos: ETAPAS",
+    };
+    const photos = [g("papel"), g("papel-2"), g("papel-3")];
+    const specs: unknown[] = [
+      cover(c, 5, "light", 0, { z: 1.45, y: 0.52 }),
+      s2Strip(c, 5),
+      tipSlide(c, CREAM, NAVY, GOLD, 5),
+      interstitial("Cada etapa tiene su amanecer.", "light", 5),
+      cta(c, 5, 0.6),
+    ];
+    await save("papel", await renderDeck(specs, photos, 0.035));
+  }
+
+  // ── ARCILLA — first home in Spain (house+pool / beach / moving boxes) ────────
+  {
+    const c: DeckCopy = {
+      kicker: "Pequeña guía práctica", hook: "¿Tu primera casa en España?",
+      s2title: "Pequeños pasos, casa grande", s2body: "NIE, cuenta bancaria, reserva y escritura — lo esencial para comprar siendo nuevo aquí, sin letra pequeña.",
+      tipNum: "01", tipTitle: "Primero el NIE, luego todo", tipBody: "Sin el número de extranjero no hay compra, ni banco, ni luz. Pídelo antes de enamorarte de una casa — tarda más de lo que crees.",
+      teaser: "Siguiente: la cuenta bancaria →",
+      ctaHeading: "Tu casita te espera", ctaAction: "Guárdalo para tu mudanza — y compártelo con quien viene contigo.", keyword: "Escríbenos: PRIMERA",
+    };
+    const photos = [g("arcilla"), g("arcilla-2"), g("arcilla-3")];
+    const specs: unknown[] = [
+      cover(c, 5, "light", 0),
+      s2Card(c, 5),
+      tipSlide(c, CREAM, NAVY, GOLD, 5),
+      interstitial("La mudanza también cabe en cajas pequeñas.", "light", 5),
+      cta(c, 5, 0.7),
+    ];
+    await save("arcilla", await renderDeck(specs, photos, 0.035));
+  }
+
+  // ── ACUARELA — choosing views & light (balcony / doorway cat / bay) ──────────
+  {
+    const c: DeckCopy = {
+      kicker: "La guía del balcón", hook: "Vivir con vistas, bien elegido",
+      s2title: "La vista se disfruta; la luz se vive.", s2body: "Orientación, horas de sol y lo que se ve desde cada ventana — cómo elegir la casa que se siente bien todo el año.",
+      tipNum: "01", tipTitle: "El sur paga la calefacción", tipBody: "Una orientación sur bien aprovechada regala luz en invierno y sombra fácil en verano. Pregunta la orientación antes que los metros.",
+      teaser: "Siguiente: la hora de la visita →",
+      ctaHeading: "Elige tu ventana", ctaAction: "Guárdalo para tus visitas — y envíaselo a quien mira casas contigo.", keyword: "Escríbenos: VISTAS",
+    };
+    const photos = [g("acuarela"), g("acuarela-2"), g("acuarela-3")];
+    const specs: unknown[] = [
+      cover(c, 5, "light", 0),
+      s2Card(c, 5),
+      tipSlide(c, CREAM, NAVY, GOLD, 5),
+      interstitial("Hay bahías que se eligen desde arriba.", "light", 5),
+      cta(c, 5, 0.55),
+    ];
+    await save("acuarela", await renderDeck(specs, photos, 0.035));
+  }
+
+  // ── BORDADO — advice that lasts (coast sunset / casita / sailboat) ───────────
+  {
+    const c: DeckCopy = {
+      kicker: "Hecho a mano", hook: "Consejos que duran años",
+      s2title: "Una casa se cuida puntada a puntada", s2body: "Mantenimiento, vecinos, humedad y sol — los cuidados pequeños que mantienen grande el valor de tu casa.",
+      tipNum: "01", tipTitle: "Revisa la fachada cada otoño", tipBody: "El salitre trabaja despacio: una mano de cal y un repaso de juntas cada año ahorran la obra grande cada década.",
+      teaser: "Siguiente: la humedad silenciosa →",
+      ctaHeading: "Cose tu calendario de cuidados", ctaAction: "Guárdalo — es tu lista anual. Y envíaselo a quien comparte casa contigo.", keyword: "Escríbenos: CUIDAR",
+    };
+    const photos = [g("bordado"), g("bordado-2"), g("bordado-3")];
+    const specs: unknown[] = [
+      cover(c, 5, "light", 0),
+      s2Card(c, 5),
+      tipSlide(c, CREAM, NAVY, GOLD, 5),
+      interstitial("Rumbo tranquilo, casa contenta.", "light", 5),
+      cta(c, 5, 0.75),
+    ];
+    await save("bordado", await renderDeck(specs, photos, 0.035));
   }
 }
 main().catch((e) => { console.error(e); process.exit(1); });

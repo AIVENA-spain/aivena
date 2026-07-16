@@ -957,7 +957,7 @@ async function runCarousel(opts: {
 async function runPlannedCarousel(opts: {
   genId: string; agencyId: string;
   type: 'tips' | 'quote'; topic?: string; quoteText?: string; quoteAuthor?: string;
-  slideCount?: number; language: string; style: CarouselStyle; scheme: string; includeRecap: boolean;
+  slideCount?: number; language: string; style: CarouselStyle; scheme: string; includeRecap: boolean; includeContext: boolean;
   agency: { name: string; web: string; phone: string };
   brand: { navy: string; gold: string; cream: string; text: string };
 }): Promise<void> {
@@ -994,7 +994,7 @@ async function runPlannedCarousel(opts: {
       if (!images) images = await loadTipsImages(opts.style);
       if (images) {
         slides = perSlideArt
-          ? await renderTipsImageStyledV2(opts.style, plan, opts.agency.name, contact, opts.brand, images, opts.language, opts.includeRecap)
+          ? await renderTipsImageStyledV2(opts.style, plan, opts.agency.name, contact, opts.brand, images, opts.language, opts.includeRecap, opts.includeContext)
           : await renderTipsImageStyled(opts.style, plan, opts.agency.name, contact, opts.brand, images, opts.language);
       } else {
         usedStyle = 'editorial';
@@ -1012,7 +1012,7 @@ async function runPlannedCarousel(opts: {
       result_metadata: {
         engine: 'carousel', carousel_type: opts.type, carousel_style: usedStyle, slide_count: stored.length, slides: stored,
         ai_imagery: opts.type === 'tips' && isTipsImageStyle(usedStyle),
-        image_paths: imagePaths, image_scheme: opts.scheme, per_slide_art: perSlideArt, include_recap: opts.includeRecap,
+        image_paths: imagePaths, image_scheme: opts.scheme, per_slide_art: perSlideArt, include_recap: opts.includeRecap, include_context: opts.includeContext,
         plan, caption: plan.caption, hashtags: plan.hashtags,
       },
       completed_at: new Date().toISOString(),
@@ -1055,12 +1055,13 @@ route.post('/carousel', async (c) => {
       const topic = typeof b.topic === 'string' ? b.topic.trim().slice(0, 300) : '';
       const quoteText = typeof b.quote_text === 'string' ? b.quote_text.trim().slice(0, 700) : '';
       const quoteAuthor = typeof b.quote_author === 'string' ? b.quote_author.trim().slice(0, 80) : '';
-      // 'slides' = TOTAL deck length the agent asked for (6..11). tips = slides-4 (with recap) or
-      // slides-3 at 6 (recap dropped). Legacy slide_count (= tips) still honoured.
-      const slidesTotal = Number.isInteger(b.slides) ? Math.min(11, Math.max(6, b.slides as number)) : null;
+      // 'slides' = TOTAL deck length the agent asked for (3..10): cover + [context when >=5] + tips +
+      // [recap when >=7] + CTA. Legacy slide_count (= tips) still honoured.
+      const slidesTotal = Number.isInteger(b.slides) ? Math.min(10, Math.max(3, b.slides as number)) : null;
+      const includeContext = slidesTotal === null ? true : slidesTotal >= 5;
       const includeRecap = slidesTotal === null ? true : slidesTotal >= 7;
       const slideCount = slidesTotal !== null
-        ? Math.min(7, Math.max(3, slidesTotal - (includeRecap ? 4 : 3)))
+        ? Math.min(7, Math.max(1, slidesTotal - 2 - (includeContext ? 1 : 0) - (includeRecap ? 1 : 0)))
         : (Number.isInteger(b.slide_count) ? Math.min(7, Math.max(3, b.slide_count as number)) : 5);
       if (type === 'tips' && topic.length < 3) {
         return c.json({ ok: false, error: 'invalid_request', message: 'Tell us what the tips should be about.' }, 400);
@@ -1083,7 +1084,7 @@ route.post('/carousel', async (c) => {
           (agency_id, generation_type, status, prompt, requested_by, raw_request)
         VALUES
           (${agencyId}, 'social_post', 'processing', ${label}, ${user?.sub ?? null}::uuid,
-           ${JSON.stringify({ engine: 'carousel', content_type: 'carousel', carousel_type: type, carousel_style: style, image_scheme: scheme, include_recap: includeRecap, topic, quote_text: quoteText, quote_author: quoteAuthor, slide_count: slideCount, language })}::jsonb)
+           ${JSON.stringify({ engine: 'carousel', content_type: 'carousel', carousel_type: type, carousel_style: style, image_scheme: scheme, include_recap: includeRecap, include_context: includeContext, topic, quote_text: quoteText, quote_author: quoteAuthor, slide_count: slideCount, language })}::jsonb)
         RETURNING id
       `);
       const rows = ins as unknown as Array<{ id: string }>;
@@ -1091,7 +1092,7 @@ route.post('/carousel', async (c) => {
       if (!genId) throw new Error('insert failed');
 
       void runPlannedCarousel({
-        genId, agencyId, type, topic, quoteText, quoteAuthor, slideCount, language, style, scheme, includeRecap,
+        genId, agencyId, type, topic, quoteText, quoteAuthor, slideCount, language, style, scheme, includeRecap, includeContext,
         agency: { name: agency.name, web: agency.web, phone: agency.phone }, brand,
       });
       return c.json({ ok: true, generation_id: genId, status: 'processing' });
@@ -1204,7 +1205,7 @@ route.post('/carousel/update', async (c) => {
         ?? await loadTipsImages(storedStyle);
       if (images) {
         slides = perSlideArt
-          ? await renderTipsImageStyledV2(storedStyle, plan, agency.name, contact, brand, images, storedLang, meta?.include_recap !== false)
+          ? await renderTipsImageStyledV2(storedStyle, plan, agency.name, contact, brand, images, storedLang, meta?.include_recap !== false, meta?.include_context !== false)
           : await renderTipsImageStyled(storedStyle, plan, agency.name, contact, brand, images, storedLang);
       } else {
         slides = await renderPlannedStyled('editorial', plan, agency.name, contact, brand, storedLang);
@@ -1241,18 +1242,20 @@ route.get('/carousel/style-examples', async (c) => {
     if (Date.now() - EXAMPLES_CACHE.at < 30 * 60_000 && Object.keys(EXAMPLES_CACHE.data).length) {
       return c.json({ ok: true, examples: EXAMPLES_CACHE.data });
     }
-    const { data: dirs } = await supabaseAdmin.storage.from('generated-images').list('carousel/_examples', { limit: 100 });
+    const COUNTS: Record<string, number> = {
+      editorial: 3, horizonte: 3, cartel: 3, encalada: 2, sereno: 2, plano: 3, portada: 3, recorte: 2,
+      marea: 2, cuarteto: 2, brisa: 2, riviera: 2, ventana: 2,
+      bodegon: 3, litoral: 3, tinta: 3, salitre: 3, papel: 3, arcilla: 3, acuarela: 3, bordado: 3,
+    };
     const out: Record<string, string[]> = {};
-    for (const d of dirs ?? []) {
-      if (!d.name || d.name.includes('.')) continue;
-      const { data: files } = await supabaseAdmin.storage.from('generated-images').list(`carousel/_examples/${d.name}`, { limit: 6 });
+    for (const [styleId, count] of Object.entries(COUNTS)) {
       const urls: string[] = [];
-      for (const f of files ?? []) {
+      for (let i = 1; i <= count; i++) {
         const signed = await supabaseAdmin.storage.from('generated-images')
-          .createSignedUrl(`carousel/_examples/${d.name}/${f.name}`, 3600 * 12);
+          .createSignedUrl(`carousel/_examples/${styleId}/${i}.jpg`, 3600 * 12);
         if (signed.data?.signedUrl) urls.push(signed.data.signedUrl);
       }
-      if (urls.length) out[d.name] = urls;
+      if (urls.length) out[styleId] = urls;
     }
     EXAMPLES_CACHE.at = Date.now(); EXAMPLES_CACHE.data = out;
     return c.json({ ok: true, examples: out });

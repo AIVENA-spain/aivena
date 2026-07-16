@@ -35,7 +35,7 @@ export const PlanSchema = z.object({
   hashtags: z.array(z.string().min(2).max(40)).max(5).default([]),   // Instagram hard cap since Dec 2025
 }).superRefine((p, ctx) => {
   if (p.type === 'tips') {
-    if (p.tips.length < 3) ctx.addIssue({ code: 'custom', path: ['tips'], message: 'tips carousel needs 3-7 tips' });
+    if (p.tips.length < 1) ctx.addIssue({ code: 'custom', path: ['tips'], message: 'tips carousel needs 1-7 tips' });
     if (!p.recap_title) ctx.addIssue({ code: 'custom', path: ['recap_title'], message: 'tips carousel needs a recap heading' });
     if (!p.save_line) ctx.addIssue({ code: 'custom', path: ['save_line'], message: 'tips carousel needs a save line' });
   }
@@ -128,7 +128,7 @@ export async function planCarousel(opts: {
   const region = opts.region || 'the Costa Blanca';
 
   const task = opts.type === 'tips'
-    ? `Create an EDUCATIONAL carousel: exactly ${Math.min(7, Math.max(3, opts.slideCount ?? 5))} points about: "${opts.topic}".
+    ? `Create an EDUCATIONAL carousel: exactly ${Math.min(7, Math.max(1, opts.slideCount ?? 5))} points about: "${opts.topic}".
 Prefer the LOSS/MISTAKE frame — "errors that cost you money", "what nobody warns you about", "what I'd never do" — it is the only hook style with experimental proof. Each point = one slide: punchy title + 15-40 words of genuinely useful, practical advice a real buyer/seller can act on. One idea per point. Each point's "teaser" is an open loop pulling to the next slide; leave the last teaser empty.
 If the hook promises a number ("5 errores"), it MUST equal the number of points delivered.`
     : `Create a CLIENT STORY carousel from this quote (provided by the agency — treat as authentic):

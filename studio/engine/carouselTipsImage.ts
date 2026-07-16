@@ -223,13 +223,13 @@ export async function renderTipsImageStyled(
  */
 export async function renderTipsImageStyledV2(
   style: TipsImageStyle, plan: CarouselPlan, agency: string, contact: string,
-  brand: CarouselBrand, images: Buffer[], lang = "es", includeRecap = true,
+  brand: CarouselBrand, images: Buffer[], lang = "es", includeRecap = true, includeContext = true,
 ): Promise<Buffer[]> {
   const cfg = CFG[style];
   const T = chrome(lang);
   const NAVY = brand.navy, GOLD = brand.gold, CREAM = brand.cream;
   const n = plan.tips.length;
-  const total = n + 3 + (includeRecap ? 1 : 0);
+  const total = n + 2 + (includeContext ? 1 : 0) + (includeRecap ? 1 : 0);
 
   const band = (i: number, colour: string) => [
     { type: "text", bbox: [80, 1272, 640, 1300], content: agency.toUpperCase(), font: "Jost", size: 17, colour, align: "left", weight: "500", tracking: 4 },
@@ -269,8 +269,8 @@ export async function renderTipsImageStyledV2(
     specs.push(DesignSpec.parse({ background: NAVY, elements: els }));
   }
 
-  // 2 · CONTEXT — a tight detail crop of the COVER art in a card (works for every style)
-  specs.push(DesignSpec.parse({
+  // 2 · CONTEXT — a tight detail crop of the COVER art in a card (dropped on the shortest decks)
+  if (includeContext) specs.push(DesignSpec.parse({
     background: NAVY,
     elements: [
       { type: "rect", bbox: [310, 130, 770, 590], fill: CREAM, radius: 10 },
@@ -286,7 +286,7 @@ export async function renderTipsImageStyledV2(
   // 3..N+2 · TIP SLIDES — each with its own art, three layouts rotating
   plan.tips.forEach((tip, i) => {
     const photo = Math.min(i + 1, images.length - 1);
-    const slideNo = i + 3;
+    const slideNo = i + 2 + (includeContext ? 1 : 0);
     const variant = i % 3;
     if (variant === 0) {
       // ART-TOP: artwork band above, type below on ground

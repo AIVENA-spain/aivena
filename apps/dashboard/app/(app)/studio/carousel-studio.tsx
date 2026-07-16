@@ -99,7 +99,7 @@ export function CarouselStudio() {
   const [copied, setCopied] = useState(false);
   // tips/quote form fields
   const [topic, setTopic] = useState("");
-  const [slideTotal, setSlideTotal] = useState(8);
+  const [slideTotal, setSlideTotal] = useState(7);
   const [examples, setExamples] = useState<Record<string, string[]>>({});
   const [exampleStyle, setExampleStyle] = useState<string | null>(null);
   const [quoteText, setQuoteText] = useState("");
@@ -229,7 +229,12 @@ export function CarouselStudio() {
 
   function typeCard(t: CarouselType, icon: React.ReactNode, title: string, desc: string, cost: string) {
     return (
-      <button onClick={() => { setCtype(t); setStyle("editorial"); setErr(null); setPhase(t === "listing" ? "pick" : "form"); }}
+      <button onClick={() => {
+        setCtype(t); setStyle("editorial"); setErr(null); setPhase(t === "listing" ? "pick" : "form");
+        if (!Object.keys(examples).length) void carouselStyleExamplesAction().then((e) => {
+          if (e.ok && e.examples && typeof e.examples === "object") setExamples(e.examples as Record<string, string[]>);
+        });
+      }}
         className="flex flex-col items-start gap-2 rounded-xl border border-neutral-200 bg-white p-4 text-left transition hover:border-neutral-400 hover:shadow-sm dark:border-neutral-700 dark:bg-neutral-900">
         <span className="rounded-lg bg-emerald-50 p-2 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400">{icon}</span>
         <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{title}</span>
@@ -319,14 +324,21 @@ export function CarouselStudio() {
                 </div>
                 <div>
                   <label className={label}>Number of slides (the whole carousel)</label>
-                  <div className="flex gap-2">
-                    {[6, 7, 8, 9, 10].map((n) => (
+                  <div className="flex flex-wrap gap-2">
+                    {[3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
                       <button key={n} onClick={() => setSlideTotal(n)}
                         className={`h-9 w-9 rounded-lg border text-sm font-medium ${slideTotal === n ? "border-neutral-900 bg-neutral-900 text-white dark:border-neutral-100 dark:bg-neutral-100 dark:text-neutral-900" : "border-neutral-300 text-neutral-600 dark:border-neutral-700 dark:text-neutral-300"}`}>
                         {n}
                       </button>
                     ))}
                   </div>
+                  <p className="mt-1.5 text-[11px] text-neutral-400">
+                    {(() => {
+                      const ctx = slideTotal >= 5, rec = slideTotal >= 7;
+                      const tips = Math.min(7, Math.max(1, slideTotal - 2 - (ctx ? 1 : 0) - (rec ? 1 : 0)));
+                      return `= cover + ${ctx ? "intro + " : ""}${tips} tip${tips > 1 ? "s" : ""}${rec ? " + summary" : ""} + closing slide`;
+                    })()}
+                  </p>
                 </div>
               </>
             ) : (

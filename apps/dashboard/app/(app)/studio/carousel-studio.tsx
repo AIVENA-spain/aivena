@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Check, Copy, Download, Images, Lightbulb, Loader2, MessageSquareQuote, Pencil, Save } from "lucide-react";
 import { PropertyPicker, downloadImage, type PickerProperty } from "./property-picker";
-import { carouselAction, carouselUpdateAction, statusAction, editableSectionsAction, setSectionAction } from "./wizard-actions";
+import { carouselAction, carouselUpdateAction, carouselStyleExamplesAction, statusAction, editableSectionsAction, setSectionAction } from "./wizard-actions";
 
 /**
  * CAROUSEL STUDIO (Christian 2026-07-16, Phase 1): three post types —
@@ -99,7 +99,9 @@ export function CarouselStudio() {
   const [copied, setCopied] = useState(false);
   // tips/quote form fields
   const [topic, setTopic] = useState("");
-  const [tipCount, setTipCount] = useState(5);
+  const [slideTotal, setSlideTotal] = useState(8);
+  const [examples, setExamples] = useState<Record<string, string[]>>({});
+  const [exampleStyle, setExampleStyle] = useState<string | null>(null);
   const [quoteText, setQuoteText] = useState("");
   const [quoteAuthor, setQuoteAuthor] = useState("");
   const [language, setLanguage] = useState("es");
@@ -116,6 +118,8 @@ export function CarouselStudio() {
     (async () => {
       const r = await editableSectionsAction();
       if (r.ok && Array.isArray(r.sections)) setSections(r.sections as string[]);
+      const e = await carouselStyleExamplesAction();
+      if (e.ok && e.examples && typeof e.examples === "object") setExamples(e.examples as Record<string, string[]>);
     })();
   }, []);
 
@@ -203,13 +207,20 @@ export function CarouselStudio() {
         <label className={label}>Look &amp; feel</label>
         <div className="grid gap-2 sm:grid-cols-2">
           {options.map(([key, name, desc]) => (
-            <button key={key} type="button" onClick={() => setStyle(key)}
-              className={`rounded-lg border px-3 py-2 text-left transition ${active === key
+            <div key={key} className={`rounded-lg border transition ${active === key
                 ? "border-neutral-900 bg-neutral-50 dark:border-neutral-100 dark:bg-neutral-800"
                 : "border-neutral-200 hover:border-neutral-400 dark:border-neutral-700"}`}>
-              <span className="block text-sm font-medium text-neutral-900 dark:text-neutral-100">{name}</span>
-              <span className="block text-xs text-neutral-500 dark:text-neutral-400">{desc}</span>
-            </button>
+              <button type="button" onClick={() => setStyle(key)} className="w-full px-3 pt-2 text-left">
+                <span className="block text-sm font-medium text-neutral-900 dark:text-neutral-100">{name}</span>
+                <span className="block text-xs text-neutral-500 dark:text-neutral-400">{desc}</span>
+              </button>
+              {examples[key]?.length ? (
+                <button type="button" onClick={() => setExampleStyle(key)}
+                  className="px-3 pb-2 pt-1 text-[11px] font-medium text-emerald-700 hover:underline dark:text-emerald-400">
+                  See example →
+                </button>
+              ) : <span className="block pb-2" />}
+            </div>
           ))}
         </div>
       </div>
@@ -307,11 +318,11 @@ export function CarouselStudio() {
                     placeholder="e.g. mistakes to avoid when buying on the coast" maxLength={300} />
                 </div>
                 <div>
-                  <label className={label}>Number of tips</label>
+                  <label className={label}>Number of slides (the whole carousel)</label>
                   <div className="flex gap-2">
-                    {[3, 4, 5, 6, 7].map((n) => (
-                      <button key={n} onClick={() => setTipCount(n)}
-                        className={`h-9 w-9 rounded-lg border text-sm font-medium ${tipCount === n ? "border-neutral-900 bg-neutral-900 text-white dark:border-neutral-100 dark:bg-neutral-100 dark:text-neutral-900" : "border-neutral-300 text-neutral-600 dark:border-neutral-700 dark:text-neutral-300"}`}>
+                    {[6, 7, 8, 9, 10].map((n) => (
+                      <button key={n} onClick={() => setSlideTotal(n)}
+                        className={`h-9 w-9 rounded-lg border text-sm font-medium ${slideTotal === n ? "border-neutral-900 bg-neutral-900 text-white dark:border-neutral-100 dark:bg-neutral-100 dark:text-neutral-900" : "border-neutral-300 text-neutral-600 dark:border-neutral-700 dark:text-neutral-300"}`}>
                         {n}
                       </button>
                     ))}
@@ -357,7 +368,7 @@ export function CarouselStudio() {
             <button
               onClick={() => void start(
                 ctype === "tips"
-                  ? { type: "tips", topic: topic.trim(), slide_count: tipCount, language, style, scheme }
+                  ? { type: "tips", topic: topic.trim(), slides: slideTotal, language, style, scheme }
                   : { type: "quote", quote_text: quoteText.trim(), quote_author: quoteAuthor.trim(), language, style },
                 "form")}
               disabled={ctype === "tips" ? topic.trim().length < 3 : quoteText.trim().length < 10}
@@ -529,6 +540,22 @@ export function CarouselStudio() {
           </div>
           <p className="mt-2 text-[11px] text-neutral-400">Saved to your library automatically. Post the slides in order as an Instagram carousel.</p>
           {err && <div className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">{err}</div>}
+        </div>
+      )}
+      {exampleStyle && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={() => setExampleStyle(null)}>
+          <div className="max-h-[85vh] w-full max-w-3xl overflow-auto rounded-2xl bg-white p-4 dark:bg-neutral-900" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-3 flex items-center justify-between">
+              <span className="text-sm font-semibold capitalize text-neutral-900 dark:text-neutral-100">{exampleStyle} — example slides</span>
+              <button onClick={() => setExampleStyle(null)} className="rounded-lg border border-neutral-300 px-3 py-1 text-xs text-neutral-600 dark:border-neutral-700 dark:text-neutral-300">Close</button>
+            </div>
+            <div className="flex gap-3 overflow-x-auto pb-2">
+              {(examples[exampleStyle] ?? []).map((u) => (
+                <img key={u} src={u} alt="example slide" className="w-56 shrink-0 rounded-lg border border-neutral-200 dark:border-neutral-700" referrerPolicy="no-referrer" />
+              ))}
+            </div>
+            <p className="mt-2 text-[11px] text-neutral-400">Your post will follow this look — with fresh artwork generated for your topic.</p>
+          </div>
         </div>
       )}
     </div>

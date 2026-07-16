@@ -88,17 +88,18 @@ async function pollTask(key: string, taskId: string, maxMs: number): Promise<Buf
 }
 
 /**
- * Generate a FRESH per-post family: 3 nano-banana-edit tasks in parallel, each conditioned on the
- * style's approved anchor (same art, new scene) + the chosen colour scheme. The finished images are
- * copied under the generation (carousel/<agency>/<gen>/src-N.png) so text edits re-render without
- * regenerating. Null on any failure — callers fall back to the seeded family, then editorial.
+ * Generate a FRESH per-post image set: one nano-banana-edit task PER SCENE (cover + one per tip),
+ * all in parallel, each conditioned on the style's approved anchor (same art, new scene) + the
+ * chosen colour scheme. Finished images are copied under the generation so text edits re-render
+ * without regenerating. Null on any failure — callers fall back to the seeded family, then editorial.
  */
-export async function generateTipsFamily(opts: {
+export async function generateTipsImages(opts: {
   style: string; scheme: string; scenes: string[]; agencyId: string; genId: string;
 }): Promise<{ buffers: Buffer[]; paths: string[] } | null> {
   const files = TIPS_LIBRARY[opts.style];
   const scheme = TIPS_SCHEMES[opts.scheme] ?? TIPS_SCHEMES.clasico;
-  if (!files || opts.scenes.length < 3) return null;
+  const scenes = opts.scenes.filter((x) => typeof x === 'string' && x.trim().length >= 10).slice(0, 9);
+  if (!files || scenes.length < 1) return null;
   try {
     const key = await kieKey();
     if (!key) return null;
@@ -108,7 +109,7 @@ export async function generateTipsFamily(opts: {
     if (!anchorUrl) return null;
 
     const tasks: (string | null)[] = [];
-    for (const scene of opts.scenes.slice(0, 3)) {
+    for (const scene of scenes) {
       const prompt = `Keep exactly the same artistic style, technique, texture, lighting and composition language as this reference image, but create a different scene: ${scene}. ${scheme.clause} Keep generous calm empty space for text. ${NEG}`;
       const res = await fetch(KIE_CREATE, {
         method: 'POST',
@@ -124,7 +125,7 @@ export async function generateTipsFamily(opts: {
     if (buffers.some((b) => !b)) return null;
 
     const paths: string[] = [];
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < buffers.length; i++) {
       const path = `carousel/${opts.agencyId}/${opts.genId}/src-${i + 1}.png`;
       const up = await supabaseAdmin.storage.from(BUCKET).upload(path, buffers[i]!, { contentType: 'image/png', upsert: true });
       if (up.error) return null;

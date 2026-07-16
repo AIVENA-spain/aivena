@@ -23,7 +23,7 @@ export interface CarouselPlan {
   hook_title: string;                         // cover headline — 5-8 words, loss/gap framed
   slide2_title: string;                       // second cover: self-qualification headline
   slide2_body: string;                        // who this is for / the stakes (standalone — never a continuation)
-  tips: { title: string; body: string; teaser: string }[];  // tips type: teaser = open-loop line for the NEXT slide
+  tips: { title: string; body: string; teaser: string; scene?: string }[];  // teaser = open loop; scene = this tip's visual (image styles)
   recap_title: string;                        // tips type: recap heading ("En 30 segundos")
   save_line: string;                          // recap: the save trigger ("Guárdalo para tu próxima visita")
   quote_parts: string[];                      // quote type: the quote VERBATIM, in readable chunks

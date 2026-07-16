@@ -194,8 +194,12 @@ export async function carouselAction(input: {
   language?: string;
   style?: string;
   scheme?: string;
+  slides?: number;
 }): Promise<Envelope> {
   return call("/api/studio/carousel", { method: "POST", body: input });
+}
+export async function carouselStyleExamplesAction(): Promise<Envelope> {
+  return call("/api/studio/carousel/style-examples");
 }
 export async function carouselUpdateAction(generationId: string, plan: unknown): Promise<Envelope> {
   return call("/api/studio/carousel/update", { method: "POST", body: { generation_id: generationId, plan } });

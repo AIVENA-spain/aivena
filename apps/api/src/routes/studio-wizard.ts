@@ -27,8 +27,8 @@ import {
   renderPlannedStyled, renderListingStyled, PLANNED_STYLES, LISTING_STYLES, type CarouselStyle,
 } from '../../../../studio/engine/carouselStyles';
 import { planCarousel, listingCopy, PlanSchema } from '../lib/studio-carousel-plan';
-import { renderTipsImageStyled, isTipsImageStyle } from '../../../../studio/engine/carouselTipsImage';
-import { loadTipsImages, generateTipsFamily, loadGenerationImages, TIPS_SCHEMES } from '../lib/studio-carousel-image';
+import { renderTipsImageStyled, renderTipsImageStyledV2, isTipsImageStyle } from '../../../../studio/engine/carouselTipsImage';
+import { loadTipsImages, generateTipsImages, loadGenerationImages, TIPS_SCHEMES } from '../lib/studio-carousel-image';
 
 /**
  * Studio wizard proxy (W13 v0.6) — the browser's ONLY door to Vega's image
@@ -957,7 +957,7 @@ async function runCarousel(opts: {
 async function runPlannedCarousel(opts: {
   genId: string; agencyId: string;
   type: 'tips' | 'quote'; topic?: string; quoteText?: string; quoteAuthor?: string;
-  slideCount?: number; language: string; style: CarouselStyle; scheme: string;
+  slideCount?: number; language: string; style: CarouselStyle; scheme: string; includeRecap: boolean;
   agency: { name: string; web: string; phone: string };
   brand: { navy: string; gold: string; cream: string; text: string };
 }): Promise<void> {
@@ -973,17 +973,29 @@ async function runPlannedCarousel(opts: {
     let slides: Buffer[];
     let usedStyle = opts.style;
     let imagePaths: string[] = [];
+    let perSlideArt = false;
     if (opts.type === 'tips' && isTipsImageStyle(opts.style)) {
-      // fresh per-post family: the style anchor + the plan's emotion scenes + the chosen scheme —
-      // micro-unique every time; seeded approved family as fallback; editorial deck as backstop
-      const fresh = await generateTipsFamily({
-        style: opts.style, scheme: opts.scheme, scenes: plan.image_scenes ?? [],
-        agencyId, genId,
-      });
-      const images = fresh?.buffers ?? await loadTipsImages(opts.style);
-      if (fresh) imagePaths = fresh.paths;
+      // per-slide artwork: cover scene + one scene PER TIP (every slide's design = that slide's topic);
+      // micro-unique every post. Fallbacks: 3-scene family → seeded approved family → editorial deck.
+      const tipScenes = plan.tips.map((t) => t.scene ?? '');
+      const coverScene = plan.image_scenes?.[0] ?? '';
+      const allScenes = [coverScene, ...tipScenes];
+      let images: Buffer[] | null = null;
+      if (allScenes.every((x) => typeof x === 'string' && x.trim().length >= 10)) {
+        const fresh = await generateTipsImages({ style: opts.style, scheme: opts.scheme, scenes: allScenes, agencyId, genId });
+        if (fresh && fresh.buffers.length === plan.tips.length + 1) {
+          images = fresh.buffers; imagePaths = fresh.paths; perSlideArt = true;
+        }
+      }
+      if (!images) {
+        const fam = await generateTipsImages({ style: opts.style, scheme: opts.scheme, scenes: (plan.image_scenes ?? []).slice(0, 3), agencyId, genId });
+        if (fam && fam.buffers.length === 3) { images = fam.buffers; imagePaths = fam.paths; }
+      }
+      if (!images) images = await loadTipsImages(opts.style);
       if (images) {
-        slides = await renderTipsImageStyled(opts.style, plan, opts.agency.name, contact, opts.brand, images, opts.language);
+        slides = perSlideArt
+          ? await renderTipsImageStyledV2(opts.style, plan, opts.agency.name, contact, opts.brand, images, opts.language, opts.includeRecap)
+          : await renderTipsImageStyled(opts.style, plan, opts.agency.name, contact, opts.brand, images, opts.language);
       } else {
         usedStyle = 'editorial';
         slides = await renderPlannedStyled('editorial', plan, opts.agency.name, contact, opts.brand, opts.language);
@@ -1000,7 +1012,7 @@ async function runPlannedCarousel(opts: {
       result_metadata: {
         engine: 'carousel', carousel_type: opts.type, carousel_style: usedStyle, slide_count: stored.length, slides: stored,
         ai_imagery: opts.type === 'tips' && isTipsImageStyle(usedStyle),
-        image_paths: imagePaths, image_scheme: opts.scheme,
+        image_paths: imagePaths, image_scheme: opts.scheme, per_slide_art: perSlideArt, include_recap: opts.includeRecap,
         plan, caption: plan.caption, hashtags: plan.hashtags,
       },
       completed_at: new Date().toISOString(),
@@ -1043,7 +1055,13 @@ route.post('/carousel', async (c) => {
       const topic = typeof b.topic === 'string' ? b.topic.trim().slice(0, 300) : '';
       const quoteText = typeof b.quote_text === 'string' ? b.quote_text.trim().slice(0, 700) : '';
       const quoteAuthor = typeof b.quote_author === 'string' ? b.quote_author.trim().slice(0, 80) : '';
-      const slideCount = Number.isInteger(b.slide_count) ? Math.min(7, Math.max(3, b.slide_count as number)) : 5;
+      // 'slides' = TOTAL deck length the agent asked for (6..11). tips = slides-4 (with recap) or
+      // slides-3 at 6 (recap dropped). Legacy slide_count (= tips) still honoured.
+      const slidesTotal = Number.isInteger(b.slides) ? Math.min(11, Math.max(6, b.slides as number)) : null;
+      const includeRecap = slidesTotal === null ? true : slidesTotal >= 7;
+      const slideCount = slidesTotal !== null
+        ? Math.min(7, Math.max(3, slidesTotal - (includeRecap ? 4 : 3)))
+        : (Number.isInteger(b.slide_count) ? Math.min(7, Math.max(3, b.slide_count as number)) : 5);
       if (type === 'tips' && topic.length < 3) {
         return c.json({ ok: false, error: 'invalid_request', message: 'Tell us what the tips should be about.' }, 400);
       }
@@ -1065,7 +1083,7 @@ route.post('/carousel', async (c) => {
           (agency_id, generation_type, status, prompt, requested_by, raw_request)
         VALUES
           (${agencyId}, 'social_post', 'processing', ${label}, ${user?.sub ?? null}::uuid,
-           ${JSON.stringify({ engine: 'carousel', content_type: 'carousel', carousel_type: type, carousel_style: style, image_scheme: scheme, topic, quote_text: quoteText, quote_author: quoteAuthor, slide_count: slideCount, language })}::jsonb)
+           ${JSON.stringify({ engine: 'carousel', content_type: 'carousel', carousel_type: type, carousel_style: style, image_scheme: scheme, include_recap: includeRecap, topic, quote_text: quoteText, quote_author: quoteAuthor, slide_count: slideCount, language })}::jsonb)
         RETURNING id
       `);
       const rows = ins as unknown as Array<{ id: string }>;
@@ -1073,7 +1091,7 @@ route.post('/carousel', async (c) => {
       if (!genId) throw new Error('insert failed');
 
       void runPlannedCarousel({
-        genId, agencyId, type, topic, quoteText, quoteAuthor, slideCount, language, style, scheme,
+        genId, agencyId, type, topic, quoteText, quoteAuthor, slideCount, language, style, scheme, includeRecap,
         agency: { name: agency.name, web: agency.web, phone: agency.phone }, brand,
       });
       return c.json({ ok: true, generation_id: genId, status: 'processing' });
@@ -1181,11 +1199,16 @@ route.post('/carousel/update', async (c) => {
     let slides: Buffer[];
     if (priorPlan.type === 'tips' && isTipsImageStyle(storedStyle)) {
       const ownPaths = Array.isArray(meta?.image_paths) ? (meta.image_paths as string[]) : [];
-      const images = (ownPaths.length === 3 ? await loadGenerationImages(ownPaths) : null)
+      const perSlideArt = meta?.per_slide_art === true && ownPaths.length === plan.tips.length + 1;
+      const images = (ownPaths.length >= 3 ? await loadGenerationImages(ownPaths) : null)
         ?? await loadTipsImages(storedStyle);
-      slides = images
-        ? await renderTipsImageStyled(storedStyle, plan, agency.name, contact, brand, images, storedLang)
-        : await renderPlannedStyled('editorial', plan, agency.name, contact, brand, storedLang);
+      if (images) {
+        slides = perSlideArt
+          ? await renderTipsImageStyledV2(storedStyle, plan, agency.name, contact, brand, images, storedLang, meta?.include_recap !== false)
+          : await renderTipsImageStyled(storedStyle, plan, agency.name, contact, brand, images, storedLang);
+      } else {
+        slides = await renderPlannedStyled('editorial', plan, agency.name, contact, brand, storedLang);
+      }
     } else {
       slides = await renderPlannedStyled(storedStyle, plan, agency.name, contact, brand, storedLang);
     }
@@ -1208,6 +1231,34 @@ route.post('/carousel/update', async (c) => {
   } catch (err) {
     console.error('[studio/carousel-update] failed:', err);
     return c.json({ ok: false, error: 'update_failed', message: GENERIC }, 500);
+  }
+});
+
+// ── GET /api/studio/carousel/style-examples — example slides per Look & feel (for the picker) ──
+const EXAMPLES_CACHE: { at: number; data: Record<string, string[]> } = { at: 0, data: {} };
+route.get('/carousel/style-examples', async (c) => {
+  try {
+    if (Date.now() - EXAMPLES_CACHE.at < 30 * 60_000 && Object.keys(EXAMPLES_CACHE.data).length) {
+      return c.json({ ok: true, examples: EXAMPLES_CACHE.data });
+    }
+    const { data: dirs } = await supabaseAdmin.storage.from('generated-images').list('carousel/_examples', { limit: 100 });
+    const out: Record<string, string[]> = {};
+    for (const d of dirs ?? []) {
+      if (!d.name || d.name.includes('.')) continue;
+      const { data: files } = await supabaseAdmin.storage.from('generated-images').list(`carousel/_examples/${d.name}`, { limit: 6 });
+      const urls: string[] = [];
+      for (const f of files ?? []) {
+        const signed = await supabaseAdmin.storage.from('generated-images')
+          .createSignedUrl(`carousel/_examples/${d.name}/${f.name}`, 3600 * 12);
+        if (signed.data?.signedUrl) urls.push(signed.data.signedUrl);
+      }
+      if (urls.length) out[d.name] = urls;
+    }
+    EXAMPLES_CACHE.at = Date.now(); EXAMPLES_CACHE.data = out;
+    return c.json({ ok: true, examples: out });
+  } catch (err) {
+    console.error('[studio/style-examples] failed:', err);
+    return c.json({ ok: false, error: 'examples_failed', message: GENERIC }, 500);
   }
 });
 

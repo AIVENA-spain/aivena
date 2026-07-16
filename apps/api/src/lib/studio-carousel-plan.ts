@@ -18,6 +18,7 @@ export const PlanSchema = z.object({
     title: z.string().min(1).max(62),
     body: z.string().min(1).max(250),
     teaser: z.string().max(70).default(''),
+    scene: z.string().max(300).default(''),
   })).max(7).default([]),
   recap_title: z.string().max(60).default(''),
   save_line: z.string().max(70).default(''),
@@ -64,6 +65,7 @@ const PLAN_TOOL = {
             title: { type: 'string', description: 'the point as a punchy headline, max 62 chars' },
             body: { type: 'string', description: 'the advice: 15-40 words, one idea, concrete and actionable, max 250 chars' },
             teaser: { type: 'string', description: 'OPEN LOOP: one short line teasing the NEXT slide, max 70 chars ("Siguiente: el gasto que todos olvidan"). Leave empty on the last tip.' },
+            scene: { type: 'string', description: "THIS TIP's visual (ENGLISH, 15-40 words): one concrete Mediterranean object/scene that translates THIS specific tip into imagery — different from every other tip's scene. Same rules as image_scenes: concrete nouns, no interiors, no facades, no landmarks, no close people, no text." },
           },
         },
       },
@@ -149,6 +151,7 @@ CAROUSEL DOCTRINE (how these posts win — follow it):
 - Caption line 1: a standalone hook under 125 characters with a location keyword, complementing (not repeating) the cover.
 - Hashtags: 3-5 only, no mega-tags.
 - image_scenes: 3 concrete Mediterranean scenes (ENGLISH) that translate the topic's emotion — the longing for a home in Spain, the promise of a better life — into carefully purposeful imagery. One familiar object/scene per beat carrying one extra meaning. Concrete nouns; no interiors, no property facades, no landmarks, no close people, no text.
+- EVERY tip also gets its own "scene": the visual translation of THAT tip specifically. All scenes across the deck must be clearly DIFFERENT from each other — different objects, different compositions — while living in the same world. Repetition across slides is a failure.
 
 HARD RULES:
 - NO specific prices, percentages, statistics, interest rates, tax figures, or legal guarantees anywhere in slide copy. General, evergreen advice only — you have no data source, so any figure would be invented. Use place names for specificity instead of numbers.

@@ -56,6 +56,10 @@ const STYLES: Record<CarouselType, [string, string, string][]> = {
     ["portada", "Portada", "Your listing as a magazine cover"],
     ["recorte", "Recorte", "Scrapbook — taped photos, handwritten touch"],
     ["marea", "Marea", "The type wall — huge letters, maximum impact"],
+    ["cuarteto", "Cuarteto", "Giant serif words woven between the photos"],
+    ["brisa", "Brisa", "Hand-drawn line-work — rings, waves, marker strokes"],
+    ["riviera", "Riviera", "Diagonal poster cuts with the blue price medallion"],
+    ["ventana", "Ventana", "The illustrated window — shutters, plants and the cat"],
   ],
   tips: [
     ["editorial", "Editorial", "Clean and calm — the classic look"],

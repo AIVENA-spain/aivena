@@ -1,4 +1,5 @@
 import { renderFreeform, DesignSpec } from "./renderFreeform";
+import { textWidth } from "./renderEditable";
 import {
   CarouselPlan, renderPlannedCarousel, renderWideSliced, applyGrain, mix, wrap, chrome,
 } from "./carouselSlides";
@@ -17,7 +18,8 @@ import { CarouselFacts, CarouselCopy, CarouselBrand, renderCarousel } from "./re
 
 export type CarouselStyle =
   | "editorial" | "horizonte" | "cartel" | "encalada" | "sereno"
-  | "plano" | "portada" | "recorte" | "marea";
+  | "plano" | "portada" | "recorte" | "marea"
+  | "cuarteto" | "brisa" | "riviera" | "ventana";
 
 export const PLANNED_STYLES: Record<"tips" | "quote", CarouselStyle[]> = {
   tips: ["editorial", "cartel", "encalada", "sereno"],
@@ -26,6 +28,7 @@ export const PLANNED_STYLES: Record<"tips" | "quote", CarouselStyle[]> = {
 export const LISTING_STYLES: CarouselStyle[] = [
   "editorial", "horizonte", "cartel", "encalada", "sereno",
   "plano", "portada", "recorte", "marea",
+  "cuarteto", "brisa", "riviera", "ventana",
 ];
 
 const W = 1080, H = 1350;
@@ -1116,6 +1119,354 @@ function mareaListing(facts: CarouselFacts, copy: CarouselCopy, brand: CarouselB
   return specs;
 }
 
+// ═══ CUARTETO — the sentence woven between photo bands (catalogue #32, approved round 3) ═══════
+function cuartetoListing(facts: CarouselFacts, copy: CarouselCopy, brand: CarouselBrand, photoCount: number, lang = "es"): unknown[] {
+  const T = chrome(lang);
+  const CREAM = "#f3efe6", INK = "#23272f", TERRACO = "#b5502e";
+  const inner = (b: [number, number, number, number]) => frame([b[0] + 22, b[1] + 22, b[2] - 22, b[3] - 22], "#ffffff", 1.5, 0.85);
+  const muted = mix(INK, CREAM, 0.55);
+  const words = facts.title.trim().split(/\s+/);
+  const lastWord = words.length > 1 ? words.pop()! : (facts.location.split("·")[0] ?? facts.title).trim();
+  const firstPart = words.join(" ") || facts.title;
+  const total = 5;
+  const fit = (t: string, max: number) => Math.min(max, Math.floor((1080 - 120) / Math.max(3, t.length) / 0.48));
+  const specs: unknown[] = [];
+
+  specs.push(DesignSpec.parse({
+    background: CREAM,
+    elements: [
+      { type: "text", bbox: [70, 76, 700, 108], content: facts.agency.toUpperCase(), font: "Jost", size: 19, colour: muted, align: "left", weight: "500", tracking: 5 },
+      { type: "text", bbox: [700, 76, 1010, 108], content: facts.location, font: "Jost", size: 19, colour: TERRACO, align: "right", tracking: 4 },
+      { type: "text", bbox: [60, 150, 1020, 420], content: firstPart, font: CAS, size: fit(firstPart, 250), colour: INK, align: "left", valign: "center" },
+      { type: "photo", photo: 0, bbox: [0, 470, 1080, 1160], tint: TERRACO, tint_opacity: 0.06 },
+      ...inner([0, 470, 1080, 1160]),
+      { type: "text", bbox: [700, 1150, 1180, 1280], content: "…", font: CAS, size: 170, colour: TERRACO, align: "right" },
+      ...band(facts.agency, 1, total, muted),
+    ],
+  }));
+
+  specs.push(DesignSpec.parse({
+    background: CREAM,
+    elements: [
+      { type: "photo", photo: Math.min(1, photoCount - 1), bbox: [0, 90, 1080, 780], tint: TERRACO, tint_opacity: 0.06 },
+      ...inner([0, 90, 1080, 780]),
+      { type: "text", bbox: [60, 820, 1020, 1120], content: lastWord, font: CAS, size: fit(lastWord, 270), colour: TERRACO, align: "right", valign: "center" },
+      ...(facts.specs ? [{ type: "text", bbox: [60, 1150, 1020, 1190], content: facts.specs, font: "Jost", size: 21, colour: mix(INK, CREAM, 0.7), align: "left", tracking: 5 }] : []),
+      ...band(facts.agency, 2, total, muted),
+    ],
+  }));
+
+  specs.push(DesignSpec.parse({
+    background: CREAM,
+    elements: [
+      { type: "photo", photo: Math.min(2, photoCount - 1), bbox: [0, 80, 1080, 520], tint: TERRACO, tint_opacity: 0.06 },
+      ...inner([0, 80, 1080, 520]),
+      { type: "text", bbox: [60, 560, 1020, 800], content: facts.price || facts.location, font: CAS, size: facts.price ? fit(facts.price, 190) : 110, colour: INK, align: "left", valign: "center" },
+      { type: "photo", photo: 0, bbox: [0, 850, 1080, 1230], zoom: 1.6, x: 0.5, y: 0.7, tint: TERRACO, tint_opacity: 0.06 },
+      ...inner([0, 850, 1080, 1230]),
+      ...band(facts.agency, 3, total, muted),
+    ],
+  }));
+
+  const kpi: [string, string][] = [];
+  if (facts.price) kpi.push([T.price, facts.price]);
+  if (facts.area) kpi.push([T.area, facts.area]);
+  if (facts.beds) kpi.push([T.bedrooms, facts.beds]);
+  if (facts.baths) kpi.push([T.bathrooms, facts.baths]);
+  const rowH = Math.min(170, 700 / Math.max(1, kpi.length));
+  specs.push(DesignSpec.parse({
+    background: CREAM,
+    elements: [
+      { type: "text", bbox: [60, 100, 1020, 300], content: T.the_sheet.charAt(0) + T.the_sheet.slice(1).toLowerCase(), font: CAS, size: 130, colour: INK, align: "left" },
+      ...kpi.flatMap(([k, v], i) => {
+        const y = 380 + i * rowH;
+        return [
+          { type: "text", bbox: [70, y, 520, y + 34], content: k, font: "Jost", size: 21, colour: TERRACO, align: "left", tracking: 5 },
+          { type: "text", bbox: [420, y - 30, 1010, y + 70], content: v, font: CAS, size: 72, colour: INK, align: "right" },
+          { type: "rect", bbox: [70, y + rowH - 66, 1010, y + rowH - 64.5], fill: mix(INK, CREAM, 0.25) },
+        ];
+      }),
+      { type: "text", bbox: [70, 1120, 940, 1176], content: T.save_sheet, font: "Jost", size: 26, colour: CREAM, align: "left", weight: "500", valign: "center", pill: { fill: TERRACO, pad_x: 32, pad_y: 15 } },
+      ...band(facts.agency, 4, total, muted),
+    ],
+  }));
+
+  specs.push(DesignSpec.parse({
+    background: INK,
+    elements: [
+      { type: "text", bbox: [60, 200, 1020, 620], content: wrap(copy.cta_action || T.save_cta, CAS, 110, 940), font: CAS, size: 110, colour: CREAM, align: "left", line_height: 128, valign: "center" },
+      { type: "rect", bbox: [70, 700, 400, 703], fill: TERRACO },
+      { type: "text", bbox: [70, 920, 660, 980], content: (copy.cta_keyword || `${T.write_us}: ${T.visit_kw}`).toUpperCase(), font: "Jost", size: 25, colour: INK, align: "left", weight: "600", tracking: 3, valign: "center", pill: { fill: TERRACO, pad_x: 40, pad_y: 20 } },
+      { type: "text", bbox: [70, 1080, 1010, 1110], content: facts.contact, font: "Jost", size: 21, colour: mix(CREAM, INK, 0.6), align: "left", tracking: 2 },
+      ...band(facts.agency, 5, total, mix(CREAM, INK, 0.6)),
+    ],
+  }));
+  return specs;
+}
+
+// ═══ BRISA — editorial line-work (catalogue #25, approved round 3) ═════════════
+function brisaListing(facts: CarouselFacts, copy: CarouselCopy, brand: CarouselBrand, photoCount: number, lang = "es"): unknown[] {
+  const T = chrome(lang);
+  const PAPER = "#f0ead9", INK = "#23272f", TERRACO = "#c4644a", AZUL = "#2456c4", GOLDY = "#d9a13b";
+  const muted = mix(INK, PAPER, 0.6);
+  const total = 4;
+  const specs: unknown[] = [];
+
+  specs.push(DesignSpec.parse({
+    background: PAPER,
+    elements: [
+      { type: "doodle", bbox: [-60, -60, 300, 300], kind: "rings", colour: INK, accent: TERRACO, stroke_width: 2 },
+      { type: "photo", photo: 0, bbox: [150, 105, 1035, 840], tint: TERRACO, tint_opacity: 0.06 },
+      ...frame([150, 105, 1035, 840], INK, 2),
+      { type: "doodle", bbox: [60, 760, 640, 880], kind: "wave", colour: INK, accent: TERRACO, stroke_width: 2.5 },
+      { type: "doodle", bbox: [990, 60, 1050, 120], kind: "plus", colour: AZUL, stroke_width: 3 },
+      { type: "doodle", bbox: [30, 920, 80, 970], kind: "plus", colour: GOLDY, stroke_width: 3 },
+      { type: "text", bbox: [30, 330, 62, 830], content: `${facts.agency.toUpperCase()} — ${facts.location}`, font: "Jost", size: 19, colour: mix(INK, PAPER, 0.65), tracking: 5, rotate: -90, align: "center" },
+      { type: "rect", bbox: [80, 878, Math.min(940, 120 + textWidth(CAS, facts.title, 58)), 972], fill: TERRACO, radius: 18, rotate: -1 },
+      { type: "text", bbox: [100, 892, Math.min(920, 100 + textWidth(CAS, facts.title, 58)), 958], content: facts.title, font: CAS, size: 58, colour: PAPER, align: "center", valign: "center" },
+      { type: "text", bbox: [100, 1000, 700, 1032], content: facts.location, font: "Jost", size: 21, colour: TERRACO, align: "left", tracking: 6 },
+      ...(facts.specs ? [{ type: "text", bbox: [100, 1060, 1000, 1110], content: facts.specs, font: "Jost", size: 24, colour: INK, align: "left", tracking: 3 }] : []),
+      ...(facts.price ? [{ type: "text", bbox: [560, 1090, 1000, 1180], content: facts.price, font: CAS, size: 74, colour: TERRACO, align: "right" }] : []),
+      { type: "rect", bbox: [80, 1215, 1000, 1217], fill: INK },
+      { type: "doodle", bbox: [80, 1226, 240, 1262], kind: "dots_row", colour: INK },
+      { type: "doodle", bbox: [930, 1150, 990, 1210], kind: "sparkle", colour: TERRACO, stroke_width: 2.5 },
+      ...band(facts.agency, 1, total, muted),
+    ],
+  }));
+
+  specs.push(DesignSpec.parse({
+    background: PAPER,
+    elements: [
+      { type: "doodle", bbox: [880, -70, 1160, 210], kind: "rings", colour: TERRACO, accent: AZUL, stroke_width: 2 },
+      { type: "photo", photo: Math.min(1, photoCount - 1), bbox: [45, 120, 930, 855], tint: TERRACO, tint_opacity: 0.06 },
+      ...frame([45, 120, 930, 855], INK, 2),
+      { type: "doodle", bbox: [430, 790, 1010, 905], kind: "wave", colour: INK, accent: AZUL, stroke_width: 2.5 },
+      { type: "text", bbox: [80, 950, 700, 982], content: (facts.features[0] || T.the_detail).toUpperCase(), font: "Jost", size: 21, colour: AZUL, align: "left", tracking: 7 },
+      { type: "text", bbox: [80, 1010, 1000, 1170], content: wrap(copy.lifestyle_line || facts.title, CAS, 68, 900), font: CAS, size: 68, colour: INK, align: "left", line_height: 84 },
+      { type: "doodle", bbox: [880, 1000, 950, 1070], kind: "sparkle", colour: GOLDY, stroke_width: 2.5 },
+      { type: "doodle", bbox: [-40, 1080, 220, 1340], kind: "arc", colour: AZUL, accent: TERRACO, stroke_width: 2.5 },
+      ...band(facts.agency, 2, total, muted),
+    ],
+  }));
+
+  const kpi: [string, string, string][] = [];
+  if (facts.price) kpi.push([T.price, facts.price, TERRACO]);
+  if (facts.area) kpi.push([T.area, facts.area, AZUL]);
+  if (facts.beds) kpi.push([T.bedrooms, facts.beds, GOLDY]);
+  if (facts.baths) kpi.push([T.bathrooms, facts.baths, TERRACO]);
+  const rowH = Math.min(190, 760 / Math.max(1, kpi.length));
+  specs.push(DesignSpec.parse({
+    background: PAPER,
+    elements: [
+      { type: "text", bbox: [80, 110, 1000, 260], content: T.the_sheet.charAt(0) + T.the_sheet.slice(1).toLowerCase(), font: CAS, size: 110, colour: INK, align: "left" },
+      { type: "doodle", bbox: [700, 90, 780, 170], kind: "sparkle", colour: TERRACO, stroke_width: 3 },
+      ...kpi.flatMap(([k, v, c], i) => {
+        const y = 340 + i * rowH;
+        const vw = textWidth(CAS, v, 80);
+        return [
+          { type: "rect", bbox: [980 - vw - 44, y - 18, 1006, y + 96], fill: c, radius: 16, opacity: 0.28, rotate: i % 2 ? 1 : -1 },
+          { type: "text", bbox: [80, y + 8, 420, y + 42], content: k, font: "Jost", size: 21, colour: mix(INK, PAPER, 0.7), align: "left", tracking: 5 },
+          { type: "text", bbox: [440, y - 24, 980, y + 84], content: v, font: CAS, size: 80, colour: INK, align: "right" },
+        ];
+      }),
+      { type: "doodle", bbox: [80, 1130, 240, 1166], kind: "dots_row", colour: INK },
+      { type: "text", bbox: [300, 1108, 1000, 1164], content: T.save_sheet, font: "Jost", size: 25, colour: PAPER, align: "center", weight: "500", valign: "center", pill: { fill: INK, pad_x: 34, pad_y: 15 } },
+      ...band(facts.agency, 3, total, muted),
+    ],
+  }));
+
+  specs.push(DesignSpec.parse({
+    background: PAPER,
+    elements: [
+      { type: "doodle", bbox: [-80, -80, 340, 340], kind: "rings", colour: AZUL, accent: TERRACO, stroke_width: 2 },
+      { type: "doodle", bbox: [850, 120, 1040, 250], kind: "birds", colour: INK, stroke_width: 3 },
+      { type: "text", bbox: [80, 360, 1000, 720], content: wrap(copy.cta_action || T.save_cta, CAS, 110, 900), font: CAS, size: 110, colour: INK, align: "left", line_height: 130, valign: "center" },
+      { type: "text", bbox: [80, 950, 660, 1010], content: (copy.cta_keyword || `${T.write_us}: ${T.visit_kw}`).toUpperCase(), font: "Jost", size: 25, colour: PAPER, align: "left", weight: "600", tracking: 3, valign: "center", pill: { fill: AZUL, pad_x: 40, pad_y: 20 } },
+      { type: "doodle", bbox: [700, 940, 1020, 1050], kind: "wave", colour: INK, accent: TERRACO, stroke_width: 2.5 },
+      { type: "text", bbox: [80, 1090, 1010, 1120], content: facts.contact, font: "Jost", size: 21, colour: muted, align: "left", tracking: 2 },
+      ...band(facts.agency, 4, total, muted),
+    ],
+  }));
+  return specs;
+}
+
+// ═══ RIVIERA — the diagonal poster (catalogue #10, approved round 3) ═══════════
+function rivieraListing(facts: CarouselFacts, copy: CarouselCopy, brand: CarouselBrand, photoCount: number, lang = "es"): unknown[] {
+  const T = chrome(lang);
+  const OFF = "#f4f2ec", INK = "#101114", AZUL = "#2456c4";
+  const total = 4;
+  const specs: unknown[] = [];
+
+  specs.push(DesignSpec.parse({
+    background: OFF,
+    elements: [
+      { type: "photo", photo: 0, bbox: [0, 0, 1080, 660] },
+      { type: "photo", photo: Math.min(1, photoCount - 1), bbox: [0, 640, 1080, 1120] },
+      { type: "rect", bbox: [-200, 600, 1280, 690], fill: OFF, rotate: -7 },
+      { type: "text", bbox: [70, 640, 500, 690], content: T.on_cover, font: "Jost", size: 24, colour: AZUL, align: "left", weight: "600", tracking: 6, rotate: -7 },
+      ...(facts.price ? [
+        { type: "rect", bbox: [720, 540, 1010, 660], fill: AZUL, radius: 60, rotate: -7 },
+        { type: "text", bbox: [720, 575, 1010, 630], content: facts.price, font: "Jost", size: 40, colour: OFF, align: "center", weight: "600", rotate: -7 },
+      ] : []),
+      { type: "rect", bbox: [0, 1120, 1080, 1350], fill: OFF },
+      { type: "rect", bbox: [70, 1128, 200, 1136], fill: AZUL },
+      { type: "text", bbox: [66, 1150, 1014, 1260], content: wrap(facts.title.toUpperCase(), "Anton", 96, 948), font: "Anton", size: 96, colour: INK, align: "left", line_height: 108 },
+      ...band(facts.agency, 1, total, mix(INK, OFF, 0.6)),
+    ],
+  }));
+
+  specs.push(DesignSpec.parse({
+    background: OFF,
+    elements: [
+      { type: "text", bbox: [70, 90, 1010, 190], content: wrap((copy.hook || facts.location).toUpperCase(), "Anton", 84, 940), font: "Anton", size: 84, colour: INK, align: "left", line_height: 96 },
+      { type: "text", bbox: [70, 210, 1010, 250], content: (facts.features[0] || facts.location).toUpperCase(), font: "Jost", size: 22, colour: AZUL, align: "left", tracking: 5, weight: "600" },
+      { type: "photo", photo: Math.min(2, photoCount - 1), bbox: [0, 300, 1080, 1140] },
+      { type: "rect", bbox: [-200, 1080, 1280, 1170], fill: OFF, rotate: 7 },
+      ...(facts.area ? [
+        { type: "rect", bbox: [700, 1010, 1010, 1120], fill: AZUL, radius: 56, rotate: 7 },
+        { type: "text", bbox: [700, 1042, 1010, 1094], content: facts.area.toUpperCase(), font: "Jost", size: 38, colour: OFF, align: "center", weight: "600", rotate: 7 },
+      ] : []),
+      ...(facts.specs ? [{ type: "text", bbox: [70, 1190, 1010, 1240], content: facts.specs, font: "Jost", size: 24, colour: INK, align: "left", tracking: 4 }] : []),
+      ...band(facts.agency, 2, total, mix(INK, OFF, 0.6)),
+    ],
+  }));
+
+  const kpi: [string, string][] = [];
+  if (facts.price) kpi.push([T.price, facts.price]);
+  if (facts.area) kpi.push([T.area, facts.area.toUpperCase()]);
+  if (facts.beds) kpi.push([T.bedrooms, facts.beds]);
+  if (facts.baths) kpi.push([T.bathrooms, facts.baths]);
+  const rowH = Math.min(190, 740 / Math.max(1, kpi.length));
+  specs.push(DesignSpec.parse({
+    background: INK,
+    elements: [
+      { type: "rect", bbox: [-200, 130, 1280, 220], fill: AZUL, rotate: -7 },
+      { type: "text", bbox: [70, 150, 1010, 205], content: T.the_sheet, font: "Anton", size: 52, colour: OFF, align: "center", rotate: -7 },
+      ...kpi.flatMap(([k, v], i) => {
+        const y = 340 + i * rowH;
+        return [
+          { type: "text", bbox: [80, y, 520, y + 40], content: k, font: "Jost", size: 22, colour: mix(OFF, INK, 0.6), align: "left", tracking: 5, valign: "center" },
+          { type: "text", bbox: [420, y - 40, 1000, y + 90], content: v, font: "Anton", size: 96, colour: OFF, align: "right" },
+          { type: "rect", bbox: [80, y + rowH - 62, 1000, y + rowH - 60], fill: AZUL, opacity: 0.6 },
+        ];
+      }),
+      { type: "text", bbox: [230, 1130, 850, 1186], content: T.save_sheet.toUpperCase(), font: "Jost", size: 23, colour: INK, align: "center", weight: "600", tracking: 3, valign: "center", pill: { fill: OFF, pad_x: 36, pad_y: 16 } },
+      ...band(facts.agency, 3, total, mix(OFF, INK, 0.6)),
+    ],
+  }));
+
+  specs.push(DesignSpec.parse({
+    background: AZUL,
+    elements: [
+      { type: "text", bbox: [70, 220, 1010, 520], content: wrap((copy.cta_action || T.save_cta).toUpperCase(), "Anton", 110, 940), font: "Anton", size: 110, colour: OFF, align: "left", line_height: 126, valign: "center" },
+      { type: "rect", bbox: [-200, 620, 1280, 710], fill: OFF, rotate: -7 },
+      { type: "text", bbox: [70, 655, 1010, 700], content: (copy.cta_keyword || `${T.write_us}: ${T.visit_kw}`).toUpperCase(), font: "Anton", size: 46, colour: AZUL, align: "center", rotate: -7, tracking: 3 },
+      { type: "text", bbox: [70, 1050, 1010, 1080], content: facts.contact.toUpperCase(), font: "Jost", size: 20, colour: mix(OFF, AZUL, 0.85), align: "left", tracking: 3 },
+      ...band(facts.agency, 4, total, mix(OFF, AZUL, 0.85)),
+    ],
+  }));
+  return specs;
+}
+
+// ═══ VENTANA — the illustrated window + the cat (catalogue #13, approved round 3) ═══
+function ventanaListing(facts: CarouselFacts, copy: CarouselCopy, brand: CarouselBrand, photoCount: number, lang = "es"): unknown[] {
+  const T = chrome(lang);
+  const PAPER = "#f0ecdf", INK = "#2b2b26", OLIVEV = "#6d7a55", TERRACO = "#c05f3c", DARK = "#33352c";
+  const muted = mix(INK, PAPER, 0.55);
+  const total = 4;
+  const shutters = (x0: number, x1: number, y0: number, y1: number) => {
+    const els: unknown[] = [{ type: "rect", bbox: [x0, y0, x1, y1], fill: OLIVEV, radius: 6 }];
+    const n = Math.floor((y1 - y0 - 40) / 34);
+    for (let i = 0; i < n; i++) (els as any[]).push({ type: "rect", bbox: [x0 + 16, y0 + 26 + i * 34, x1 - 16, y0 + 26 + i * 34 + 14], fill: mix(INK, OLIVEV, 0.35), radius: 7 });
+    return els as any[];
+  };
+  const specs: unknown[] = [];
+
+  specs.push(DesignSpec.parse({
+    background: PAPER,
+    elements: [
+      { type: "text", bbox: [80, 84, 1000, 118], content: facts.agency.toUpperCase(), font: "Jost", size: 21, colour: INK, align: "center", weight: "500", tracking: 6 },
+      { type: "doodle", bbox: [90, 150, 230, 250], kind: "birds", colour: INK, stroke_width: 3 },
+      { type: "photo", photo: 0, bbox: [240, 170, 840, 810], tint: TERRACO, tint_opacity: 0.06 },
+      { type: "punch", bbox: [240, 170, 840, 810], fill: PAPER, shape: "arch", outline: { colour: DARK, width: 5, offset: 2 } },
+      ...frame([240, 470, 840, 810], DARK, 5),
+      { type: "rect", bbox: [536, 200, 544, 810], fill: DARK },
+      { type: "rect", bbox: [240, 620, 840, 627], fill: DARK },
+      ...shutters(120, 236, 460, 860),
+      ...shutters(844, 960, 460, 860),
+      { type: "rect", bbox: [100, 856, 980, 900], fill: mix("#ffffff", PAPER, 0.7), radius: 8 },
+      { type: "doodle", bbox: [230, 742, 330, 862], kind: "pot_plant", colour: TERRACO, accent: OLIVEV },
+      { type: "doodle", bbox: [700, 738, 820, 866], kind: "cat", colour: INK },
+      { type: "text", bbox: [80, 950, 1000, 982], content: facts.location, font: "Jost", size: 21, colour: TERRACO, align: "center", tracking: 7 },
+      { type: "text", bbox: [120, 1010, 960, 1120], content: wrap(facts.title, CAS, 88, 840), font: CAS, size: 88, colour: INK, align: "center" },
+      ...(facts.price ? [{ type: "text", bbox: [120, 1140, 960, 1220], content: facts.price, font: CAS, size: 64, colour: TERRACO, align: "center" }] : []),
+      ...band(facts.agency, 1, total, muted),
+    ],
+  }));
+
+  specs.push(DesignSpec.parse({
+    background: PAPER,
+    elements: [
+      { type: "photo", photo: Math.min(1, photoCount - 1), bbox: [290, 140, 790, 640], tint: TERRACO, tint_opacity: 0.06 },
+      { type: "punch", bbox: [290, 140, 790, 640], fill: PAPER, shape: "circle", outline: { colour: DARK, width: 5, offset: 2 } },
+      ...frame([290, 388, 790, 392], DARK, 4),
+      { type: "rect", bbox: [536, 140, 544, 640], fill: DARK },
+      { type: "doodle", bbox: [770, 560, 890, 690], kind: "cat", colour: INK },
+      { type: "doodle", bbox: [180, 590, 270, 700], kind: "pot_plant", colour: TERRACO, accent: OLIVEV },
+      { type: "rect", bbox: [160, 686, 920, 720], fill: mix("#ffffff", PAPER, 0.7), radius: 8 },
+      { type: "text", bbox: [80, 790, 1000, 822], content: (facts.features[0] || T.the_detail).toUpperCase(), font: "Jost", size: 21, colour: OLIVEV, align: "center", tracking: 7 },
+      { type: "text", bbox: [110, 860, 970, 1060], content: wrap(copy.lifestyle_line || facts.title, CAS, 70, 860), font: CAS, size: 70, colour: INK, align: "center", line_height: 86, valign: "center" },
+      ...(facts.specs ? [{ type: "text", bbox: [80, 1100, 1000, 1140], content: facts.specs, font: "Jost", size: 22, colour: mix(INK, PAPER, 0.7), align: "center", tracking: 5 }] : []),
+      ...band(facts.agency, 2, total, muted),
+    ],
+  }));
+
+  const kpi: [string, string][] = [];
+  if (facts.price) kpi.push([T.price, facts.price]);
+  if (facts.area) kpi.push([T.sqm, facts.area.replace(/\s*m²/i, "")]);
+  if (facts.beds) kpi.push([T.bed, facts.beds]);
+  if (facts.baths) kpi.push([T.bath, facts.baths]);
+  specs.push(DesignSpec.parse({
+    background: PAPER,
+    elements: [
+      { type: "text", bbox: [80, 110, 1000, 150], content: T.the_sheet, font: "Jost", size: 21, colour: TERRACO, align: "center", tracking: 6 },
+      ...kpi.slice(0, 4).flatMap(([k, v], i) => {
+        const x = 110 + (i % 2) * 460, y = 230 + Math.floor(i / 2) * 420;
+        return [
+          { type: "rect", bbox: [x, y, x + 400, y + 330], fill: mix("#ffffff", PAPER, 0.6), radius: 10 },
+          ...frame([x + 14, y + 14, x + 386, y + 316], DARK, 4),
+          { type: "rect", bbox: [x + 14, y + 190, x + 386, y + 197], fill: DARK },
+          { type: "rect", bbox: [x + 196, y + 197, x + 204, y + 316], fill: DARK },
+          { type: "text", bbox: [x + 30, y + 30, x + 370, y + 180], content: v, font: CAS, size: Math.min(72, 640 / Math.max(3, v.length)), colour: INK, align: "center", valign: "center" },
+          { type: "rect", bbox: [x - 6, y + 330, x + 406, y + 344], fill: mix("#ffffff", PAPER, 0.75), radius: 4 },
+          { type: "text", bbox: [x + 30, y + 356, x + 370, y + 392], content: k, font: "Jost", size: 22, colour: OLIVEV, align: "center", tracking: 5 },
+        ];
+      }),
+      { type: "rect", bbox: [400, 1208, 680, 1220], fill: mix("#ffffff", PAPER, 0.75), radius: 4 },
+      { type: "doodle", bbox: [480, 1084, 600, 1214], kind: "cat", colour: INK },
+      ...band(facts.agency, 3, total, muted),
+    ],
+  }));
+
+  specs.push(DesignSpec.parse({
+    background: PAPER,
+    elements: [
+      ...shutters(80, 330, 180, 900),
+      ...shutters(750, 1000, 180, 900),
+      { type: "text", bbox: [340, 300, 740, 340], content: facts.location, font: "Jost", size: 20, colour: TERRACO, align: "center", tracking: 6 },
+      { type: "text", bbox: [340, 380, 740, 660], content: wrap(copy.cta_action || T.save_cta, CAS, 78, 380), font: CAS, size: 78, colour: INK, align: "center", line_height: 96, valign: "center" },
+      { type: "text", bbox: [355, 720, 725, 776], content: (copy.cta_keyword || `${T.write_us}: ${T.visit_kw}`).toUpperCase(), font: "Jost", size: 22, colour: PAPER, align: "center", weight: "600", tracking: 2, valign: "center", pill: { fill: TERRACO, pad_x: 30, pad_y: 16 } },
+      { type: "rect", bbox: [60, 896, 1020, 936], fill: mix("#ffffff", PAPER, 0.7), radius: 8 },
+      { type: "doodle", bbox: [620, 780, 740, 906], kind: "cat", colour: INK },
+      { type: "doodle", bbox: [330, 800, 420, 910], kind: "pot_plant", colour: TERRACO, accent: OLIVEV },
+      { type: "text", bbox: [80, 1000, 1000, 1100], content: wrap(T.save_sheet, "Jost", 30, 840), font: "Jost", size: 30, colour: mix(INK, PAPER, 0.85), align: "center", line_height: 44 },
+      { type: "text", bbox: [80, 1150, 1000, 1180], content: facts.contact, font: "Jost", size: 21, colour: muted, align: "center", tracking: 2 },
+      ...band(facts.agency, 4, total, muted),
+    ],
+  }));
+  return specs;
+}
+
 /** LISTING carousel in a chosen style. 'editorial' = the approved v2 default; horizonte falls back to it
  *  automatically when the hero photo is too narrow for a seamless run. */
 export async function renderListingStyled(
@@ -1129,5 +1480,9 @@ export async function renderListingStyled(
   if (style === "portada") return renderAll(portadaListing(facts, copy, brand, photos.length, lang), photos, 0.045);
   if (style === "recorte") return renderAll(recorteListing(facts, copy, brand, photos.length, lang), photos, 0.08);
   if (style === "marea") return renderAll(mareaListing(facts, copy, brand, photos.length, lang), photos, 0.05);
+  if (style === "cuarteto") return renderAll(cuartetoListing(facts, copy, brand, photos.length, lang), photos, 0.04);
+  if (style === "brisa") return renderAll(brisaListing(facts, copy, brand, photos.length, lang), photos, 0.04);
+  if (style === "riviera") return renderAll(rivieraListing(facts, copy, brand, photos.length, lang), photos, 0.035);
+  if (style === "ventana") return renderAll(ventanaListing(facts, copy, brand, photos.length, lang), photos, 0.045);
   return renderCarousel(facts, brand, photos, copy, lang);
 }

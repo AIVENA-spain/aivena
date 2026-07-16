@@ -30,6 +30,17 @@ export const FreeformElement = z.discriminatedUnion("type", [
     rotate: z.number().min(-45).max(45).optional(),        // tilt (scrapbook photo cards)
   }),
   z.object({
+    // DOODLE (carousel styles inspired by the template catalogue's line-work): hand-authored editorial
+    // marks — concentric rings, waves, sparkles, the signature cat — scaled into the bbox.
+    type: z.literal("doodle"),
+    bbox: Bbox,
+    kind: z.enum(["rings", "wave", "plus", "sparkle", "dots_row", "arc", "cat", "birds", "pot_plant"]),
+    colour: Colour,
+    accent: Colour.optional(),           // second colour (rings' dot, pot's plant)
+    stroke_width: z.number().min(0.5).max(12).optional(),
+    rotate: z.number().min(-90).max(90).optional(),
+  }),
+  z.object({
     // PUNCH (carousel styles): covers its bbox with the ground colour EXCEPT a shape-shaped hole,
     // so the photo underneath shows through an arch / circle. Optional hairline echo ring outside
     // the crop — the offset-outline device from the Mediterranean identity research.
@@ -282,6 +293,52 @@ export async function renderFreeform(
       overlaySvg += el.rotate
         ? `<g transform="rotate(${el.rotate} ${(b[0] + boxW(b) / 2).toFixed(1)} ${(b[1] + boxH(b) / 2).toFixed(1)})">${rectSvg}</g>`
         : rectSvg;
+
+    } else if (el.type === "doodle") {
+      // drawn in a 100×100 design space, scaled into the bbox (cat/pot keep aspect via uniform scale)
+      const b = clampBox(el.bbox, W, H);
+      const sw = el.stroke_width ?? 2.5;
+      const st = `fill="none" stroke="${el.colour}" stroke-width="${sw}" stroke-linecap="round"`;
+      const acc = el.accent ?? el.colour;
+      let art = "";
+      if (el.kind === "rings") {
+        for (let r = 12; r <= 48; r += 9) art += `<circle cx="50" cy="50" r="${r}" ${st}/>`;
+        art += `<circle cx="66" cy="38" r="6" fill="${acc}"/>`;
+      } else if (el.kind === "wave") {
+        for (let k = 0; k < 3; k++) {
+          const y = 30 + k * 18;
+          art += `<path d="M 0 ${y} C 12 ${y - 10}, 24 ${y + 10}, 36 ${y} S 60 ${y - 10}, 72 ${y} S 96 ${y + 10}, 100 ${y}" ${k === 1 ? `fill="none" stroke="${acc}" stroke-width="${sw}" stroke-linecap="round"` : st}/>`;
+        }
+      } else if (el.kind === "plus") {
+        art += `<path d="M 50 20 V 80 M 20 50 H 80" ${st}/>`;
+      } else if (el.kind === "sparkle") {
+        art += `<path d="M 50 8 V 92 M 8 50 H 92 M 24 24 L 76 76 M 76 24 L 24 76" ${st}/>`;
+      } else if (el.kind === "dots_row") {
+        for (let i = 0; i < 6; i++) art += `<circle cx="${8 + i * 17}" cy="50" r="4.5" fill="${el.colour}"/>`;
+      } else if (el.kind === "arc") {
+        art += `<path d="M 0 100 Q 0 30 70 20" ${st}/><path d="M 0 100 Q 10 55 55 45" fill="none" stroke="${acc}" stroke-width="${sw}" stroke-linecap="round"/>`;
+      } else if (el.kind === "cat") {
+        // the catalogue's signature: a sitting cat, tail curled — filled silhouette
+        art += `<path fill="${el.colour}" d="M 30 92 C 18 92 12 80 14 66 C 16 52 26 44 28 36 L 24 18 L 34 28 C 37 26 43 26 46 28 L 56 18 L 52 36 C 60 46 66 58 64 72 C 63 82 56 92 44 92 Z"/>` +
+          `<path fill="none" stroke="${el.colour}" stroke-width="7" stroke-linecap="round" d="M 62 86 C 78 88 84 76 76 66"/>`;
+      } else if (el.kind === "birds") {
+        art += `<path d="M 10 40 Q 22 28 34 40 Q 46 28 58 40" ${st}/><path d="M 48 66 Q 58 56 68 66 Q 78 56 88 66" ${st}/>`;
+      } else if (el.kind === "pot_plant") {
+        art += `<path fill="${acc}" d="M 50 18 C 66 18 76 30 74 44 C 72 54 62 60 50 60 C 38 60 28 54 26 44 C 24 30 34 18 50 18 Z"/>` +
+          `<rect x="44" y="58" width="12" height="10" fill="${el.colour}"/>` +
+          `<path fill="${el.colour}" d="M 34 68 H 66 L 61 94 H 39 Z"/>`;
+      }
+      const isUniform = el.kind === "cat" || el.kind === "pot_plant";
+      const sx = boxW(b) / 100, sy = boxH(b) / 100;
+      const s2 = isUniform ? Math.min(sx, sy) : sy;
+      const s1 = isUniform ? Math.min(sx, sy) : sx;
+      const ox = b[0] + (boxW(b) - 100 * s1) / 2, oy = b[1] + (boxH(b) - 100 * s2) / 2;
+      let g = `<g transform="translate(${ox.toFixed(1)} ${oy.toFixed(1)}) scale(${s1.toFixed(3)} ${s2.toFixed(3)})">${art}</g>`;
+      if (el.rotate) {
+        const cx = b[0] + boxW(b) / 2, cy = b[1] + boxH(b) / 2;
+        g = `<g transform="rotate(${el.rotate} ${cx.toFixed(1)} ${cy.toFixed(1)})">${g}</g>`;
+      }
+      overlaySvg += g;
 
     } else if (el.type === "punch") {
       // ground colour over the bbox with a shape-shaped hole (evenodd) — the photo below shows through

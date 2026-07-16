@@ -182,6 +182,10 @@ export async function smartDesignAction(input: {
 }): Promise<Envelope> {
   return call("/api/studio/smart-design", { method: "POST", body: input });
 }
+// ── CAROUSEL: deterministic multi-slide post (cover + photo slides + CTA card) ──
+export async function carouselAction(input: { property_id: string; photos: string[] }): Promise<Envelope> {
+  return call("/api/studio/carousel", { method: "POST", body: input });
+}
 export async function smartReviseAction(generationId: string, editNote: string): Promise<Envelope> {
   return call("/api/studio/smart-design/revise", {
     method: "POST",

@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Sparkles, LayoutTemplate, Home as HomeIcon, ArrowLeft, ChevronRight, ImageIcon, Loader2 } from "lucide-react";
+import { Sparkles, LayoutTemplate, Home as HomeIcon, ArrowLeft, ChevronRight, ImageIcon, Loader2, Images } from "lucide-react";
 import { EditableWizard } from "./editable-wizard";
 import { StudioWizard } from "./studio-wizard";
 import { SmartStudio } from "./smart-studio";
+import { CarouselStudio } from "./carousel-studio";
 import { editableGalleryAction, editablePreviewAction } from "./wizard-actions";
 
 type LibraryItem = {
@@ -54,7 +55,7 @@ function EntryCard({
 }
 
 export function StudioHome({ initialLibrary, quota }: { initialLibrary: LibraryItem[]; quota: Quota }) {
-  const [view, setView] = useState<"home" | "templates" | "smart" | "renovation">("home");
+  const [view, setView] = useState<"home" | "templates" | "smart" | "renovation" | "carousel">("home");
 
   // live templates showcase — the real gallery plan (top listings, neutral + shifting accent), rendered cached
   const [showcase, setShowcase] = useState<GalleryItem[]>([]);
@@ -117,6 +118,16 @@ export function StudioHome({ initialLibrary, quota }: { initialLibrary: LibraryI
       </div>
     );
   }
+  if (view === "carousel") {
+    return (
+      <div>
+        <div className="mx-auto max-w-6xl px-4 pt-6">
+          <button onClick={() => setView("home")} className="flex items-center gap-1.5 text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100"><ArrowLeft className="h-4 w-4" /> Studio home</button>
+        </div>
+        <CarouselStudio />
+      </div>
+    );
+  }
   if (view === "renovation") {
     return (
       <div>
@@ -136,10 +147,10 @@ export function StudioHome({ initialLibrary, quota }: { initialLibrary: LibraryI
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
       <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">What would you like to create today?</h2>
-      <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">Three ways to make something — or browse your templates below.</p>
+      <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">Four ways to make something — or browse your templates below.</p>
 
       {/* ways to create + credits */}
-      <div className="mt-5 grid gap-4 lg:grid-cols-4">
+      <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <EntryCard recommended tint="bg-sky-100 text-sky-600 dark:bg-sky-900/40 dark:text-sky-300"
           icon={<LayoutTemplate className="h-6 w-6" />} title="Templates"
           desc="Start from a proven template and edit the text, colours and layout yourself." onClick={() => setView("templates")} />
@@ -149,6 +160,9 @@ export function StudioHome({ initialLibrary, quota }: { initialLibrary: LibraryI
         <EntryCard tint="bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-300"
           icon={<HomeIcon className="h-6 w-6" />} title="Renovation"
           desc="Upload or pick a room, choose the style — AIVENA redesigns the space." onClick={() => setView("renovation")} />
+        <EntryCard tint="bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-300"
+          icon={<Images className="h-6 w-6" />} title="Carousel"
+          desc="One listing, 2-9 photos — a swipeable multi-slide post with cover and contact card." onClick={() => setView("carousel")} />
 
         <div className="flex flex-col rounded-2xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900">
           <div className="text-xs font-medium uppercase tracking-wide text-neutral-400">Credits</div>

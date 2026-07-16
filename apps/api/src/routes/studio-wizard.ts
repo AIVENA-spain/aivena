@@ -22,6 +22,7 @@ import {
   designRenderStore,
 } from '../lib/studio-smart-design';
 import { usablePhotos } from '../lib/property-images';
+import { renderCarousel } from '../../../../studio/engine/renderCarousel';
 
 /**
  * Studio wizard proxy (W13 v0.6) — the browser's ONLY door to Vega's image
@@ -344,6 +345,8 @@ function shapeStatus(r: GenRow) {
     revisions_remaining: remaining,
     // A failed revision refunds its slot and leaves the image unchanged.
     last_revision_error: !!(meta && meta.last_revision_error === true),
+    // carousel rows: every slide, in order (cover..CTA)
+    slides: Array.isArray((meta as any)?.slides) ? (meta as any).slides.map((sl: any) => sl?.url).filter(Boolean) : undefined,
     created_at: r.created_at,
     completed_at: r.completed_at,
   };
@@ -865,6 +868,98 @@ route.post('/editable-generate', async (c) => {
   } catch (err) {
     console.error('[studio/editable-generate] failed:', err);
     return c.json({ ok: false, error: 'generate_failed', message: GENERIC }, 500);
+  }
+});
+
+// ── CAROUSEL (Christian 2026-07-16): deterministic multi-slide post — cover + one slide per photo +
+// CTA card, drawn by the freeform engine from canonical facts. No AI, no provider: renders in seconds,
+// runs async only to stay clear of serverless timeouts. Produces the slide IMAGES (posting to Instagram
+// is the agent's job — no publishing integration).
+async function runCarousel(opts: {
+  genId: string; agencyId: string; refs: string[];
+  facts: { title: string; location: string; price: string; specs: string; agency: string; contact: string };
+  brand: { navy: string; gold: string; cream: string; text: string };
+}): Promise<void> {
+  const { genId, agencyId } = opts;
+  try {
+    const buffers: Buffer[] = [];
+    for (const ref of opts.refs) { const buf = await loadPhotoBuffer(ref); if (buf) buffers.push(buf); }
+    if (buffers.length < 2) throw new Error('not enough loadable photos');
+
+    const slides = await renderCarousel(opts.facts, opts.brand, buffers);
+    const stored: { path: string; url: string }[] = [];
+    for (let i = 0; i < slides.length; i++) {
+      const key = `carousel/${agencyId}/${genId}/slide-${i + 1}.png`;
+      const up = await supabaseAdmin.storage.from('generated-images').upload(key, slides[i], { contentType: 'image/png', upsert: true });
+      if (up.error) throw new Error(`slide upload: ${up.error.message}`);
+      const signed = await supabaseAdmin.storage.from('generated-images').createSignedUrl(key, 60 * 60 * 24 * 365);
+      if (signed.error || !signed.data?.signedUrl) throw new Error('slide sign failed');
+      stored.push({ path: key, url: signed.data.signedUrl });
+    }
+
+    await supabaseAdmin.from('image_generations').update({
+      status: 'completed',
+      result_image_url: stored[0].url,
+      result_image_storage_path: stored[0].path,
+      result_metadata: { engine: 'carousel', slide_count: stored.length, slides: stored },
+      completed_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }).eq('id', genId).eq('agency_id', agencyId);
+  } catch (err) {
+    console.error('[studio/carousel] render failed:', err);
+    await supabaseAdmin.from('image_generations').update({
+      status: 'failed',
+      failure_reason: ((err as Error)?.message ?? 'carousel_failed').slice(0, 240),
+      completed_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }).eq('id', genId).eq('agency_id', agencyId);
+  }
+}
+
+route.post('/carousel', async (c) => {
+  const tx = c.get('tx');
+  const agencyId = c.get('agencyId');
+  const user = c.get('user');
+  const b = await readJson(c);
+  const propertyId = typeof b.property_id === 'string' ? b.property_id : '';
+  const refs = Array.isArray(b.photos) ? (b.photos.filter((u: unknown): u is string => typeof u === 'string')).slice(0, 9) : [];
+  if (!propertyId || refs.length < 2) {
+    return c.json({ ok: false, error: 'invalid_request', message: 'Pick a property and at least 2 photos (up to 9).' }, 400);
+  }
+  try {
+    const loaded = await loadPropertyAndBrand(tx, agencyId, propertyId);
+    if (!loaded) return c.json({ ok: false, error: 'not_found', message: 'That property could not be found.' }, 404);
+    for (const u of refs) {
+      if (!loaded.images.includes(u)) return c.json({ ok: false, error: 'invalid_photo', message: 'One of those photos does not belong to this property.' }, 400);
+    }
+
+    const f = buildFacts({ ...loaded.property, title: loaded.title }, loaded.agency);
+    const facts = {
+      title: f.title ?? 'New listing',
+      location: (f.location ?? '').toUpperCase().split(', ').join(' · '),
+      price: f.price ?? '',
+      specs: (f.specs ?? '').toUpperCase(),
+      agency: f.agency ?? '',
+      contact: [f.website, f.phone].filter(Boolean).join(' · '),
+    };
+
+    const ins = await tx.execute(sql`
+      INSERT INTO image_generations
+        (agency_id, generation_type, status, prompt, source_property_id, requested_by, raw_request)
+      VALUES
+        (${agencyId}, 'social_post', 'processing', ${`Carousel · ${refs.length + 1} slides`}, ${propertyId}::uuid, ${user?.sub ?? null}::uuid,
+         ${JSON.stringify({ engine: 'carousel', content_type: 'carousel', photos: refs })}::jsonb)
+      RETURNING id
+    `);
+    const rows = ins as unknown as Array<{ id: string }>;
+    const genId = rows[0]?.id;
+    if (!genId) throw new Error('insert failed');
+
+    void runCarousel({ genId, agencyId, refs, facts, brand: loaded.brand });
+    return c.json({ ok: true, generation_id: genId, status: 'processing' });
+  } catch (err) {
+    console.error('[studio/carousel] failed:', err);
+    return c.json({ ok: false, error: 'carousel_failed', message: GENERIC }, 500);
   }
 });
 

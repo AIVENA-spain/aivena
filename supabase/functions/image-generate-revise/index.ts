@@ -1,5 +1,11 @@
-// image-generate-revise — W13 free-revision path v0.5 (AIVENA Studio pipeline).
+// image-generate-revise — W13 free-revision path v0.6 (AIVENA Studio pipeline).
 //
+// v0.6 (2026-07-16): renovation revisions now edit the PREVIOUS RESULT with a change-only prompt on
+//   seedream (preserving). v0.5 re-ran the full restyle from the ORIGINAL photo on nano-banana — a new
+//   dice-roll every time, so "remove the watermark" produced a completely different room (Christian:
+//   "the renovation needs to stay the same for the revisions"), and Google's filter kept false-flagging
+//   the source photo, showing a failure before eventually working. Editing the prior RESULT with
+//   "change only this" is deterministic-feeling, Google-free, and exactly what a revision means.
 // v0.5 (2026-07-15): model follows the JOB — renovation revisions on nano-banana-edit (creative restyle),
 //   everything else on seedream (preserving). The v0.4 all-seedream move made renovation revisions inert.
 //
@@ -94,18 +100,26 @@ Deno.serve(async (req) => {
 
   const revisionNumber: number = reserved.revision_number;
   const sourceImageUrl: string = reserved.source_image_url;
-  const { data: genRow } = await admin.from("image_generations").select("generation_type, raw_request").eq("id", generationId).maybeSingle();
+  const { data: genRow } = await admin.from("image_generations").select("generation_type, raw_request, result_image_url").eq("id", generationId).maybeSingle();
   const isRenovation = genRow?.generation_type === "renovation";
+  // v0.6: a renovation revision edits the PRIOR RESULT (still on the row at reserve time), not the
+  // original room — continuity is the whole point of a revision.
+  const priorResultUrl = typeof genRow?.result_image_url === "string" && genRow.result_image_url.startsWith("http")
+    ? genRow.result_image_url : null;
   // v0.4: the revision keeps doing what the ORIGINAL generation was asked to do, plus the new change on top.
   // Without this, revising a renovation quietly dropped the restyle and just photo-enhanced the raw room.
   const originalPrompt: string = typeof reserved.enhance_prompt === "string" && reserved.enhance_prompt.trim()
     ? reserved.enhance_prompt.trim()
     : "Professional real-estate photo enhancement of the exact property shown. Keep the architecture, room layout, walls, windows, views and every structural element exactly as in the original photo.";
-  const finalPrompt =
-    originalPrompt + " " +
-    "ON TOP OF THAT — apply the agent's requested change fully and visibly; this is the top-priority goal of this edit: " + editNote + ". " +
-    "If the request is to remove something (vehicles, cars, people, clutter, signs, reflections or other distractions), remove it completely and fill the area with a natural, seamless background that matches the surroundings. " +
-    "Do not add any text, words, letters, logos or watermarks.";
+  const finalPrompt = isRenovation
+    ? "Edit this image with ONE change only: " + editNote + ". " +
+      "If the request is to remove something (watermarks, text, objects, clutter), remove it completely and fill the area seamlessly. " +
+      "Keep absolutely everything else exactly the same — the same room design, furniture, materials, colours, lighting and camera angle. " +
+      "Do NOT redesign, restyle or rearrange anything beyond the requested change. Do not add any text, words, letters, logos or watermarks."
+    : originalPrompt + " " +
+      "ON TOP OF THAT — apply the agent's requested change fully and visibly; this is the top-priority goal of this edit: " + editNote + ". " +
+      "If the request is to remove something (vehicles, cars, people, clutter, signs, reflections or other distractions), remove it completely and fill the area with a natural, seamless background that matches the surroundings. " +
+      "Do not add any text, words, letters, logos or watermarks.";
 
   async function refund() {
     const { data: r } = await admin.from("image_generations").select("result_metadata, raw_request").eq("id", generationId).maybeSingle();
@@ -129,10 +143,11 @@ Deno.serve(async (req) => {
   const callBackUrl = `${CALLBACK_BASE}?gen=${generationId}&token=${callbackToken}&rev=${revisionNumber}`;
   const W2 = Number.isInteger(reserved.width) && reserved.width ? reserved.width : 1080;
   const H2 = Number.isInteger(reserved.height) && reserved.height ? reserved.height : 1350;
-  const model = isRenovation ? MODEL_RENOVATE : MODEL_PRESERVE;
-  const input: Record<string, unknown> = isRenovation
-    ? { prompt: finalPrompt, output_format: "png", image_urls: [sourceImageUrl], image_size: `${W2}x${H2}` }
-    : { prompt: finalPrompt, image_resolution: KIE_IMAGE_RESOLUTION, nsfw_checker: true, image_urls: [sourceImageUrl] };
+  // v0.6: renovation revisions edit the prior RESULT on the preserving model (change-only prompt above);
+  // everything stays on seedream — MODEL_RENOVATE is only used by the CREATE path now.
+  const editSource = isRenovation ? (priorResultUrl ?? sourceImageUrl) : sourceImageUrl;
+  const model = MODEL_PRESERVE;
+  const input: Record<string, unknown> = { prompt: finalPrompt, image_resolution: KIE_IMAGE_RESOLUTION, nsfw_checker: true, image_urls: [editSource] };
   const kiePayload = { model, callBackUrl, input };
 
   let kieStatus = 0; let kieJson: any = null; let fetchErr: string | undefined;

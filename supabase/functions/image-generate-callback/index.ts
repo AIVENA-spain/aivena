@@ -1,4 +1,7 @@
-// image-generate-callback — W13 completion handler v0.5 (AIVENA Studio pipeline).
+// image-generate-callback — W13 completion handler v0.5.1 (AIVENA Studio pipeline).
+// v0.5.1 (2026-07-16): revision results write to a NEW storage path (-revN suffix). Until now a revision
+//   UPSERTED over the original file — Christian's favourite first renovation was destroyed by its own
+//   "remove watermark" revision. Prior results are now permanent.
 // v0.5 (2026-07-15): RENOVATION FALLBACK. Google's nano-banana-edit E005-false-flags some room photos
 //   DETERMINISTICALLY (Christian's kitchen failed 3 straight tries) — retrying the same model is useless
 //   for those images. On a renovation failure that matches the policy-filter signature, the callback now
@@ -219,7 +222,8 @@ Deno.serve(async (req) => {
   const compose = gen.raw_request?.compose ?? null;
   const wantCompose = compose && typeof compose === "object" && typeof compose.content_type === "string";
 
-  const photoPath = wantCompose ? `${gen.agency_id}/${genId}-photo.${ext}` : `${gen.agency_id}/${genId}.${ext}`;
+  const revSuffix = isRevision ? `-rev${pendingRevision?.number ?? revParam ?? Date.now() % 100000}` : "";
+  const photoPath = wantCompose ? `${gen.agency_id}/${genId}-photo${revSuffix}.${ext}` : `${gen.agency_id}/${genId}${revSuffix}.${ext}`;
 
   const { error: upErr } = await admin.storage.from(BUCKET).upload(photoPath, imgBytes, {
     contentType, upsert: true,
@@ -268,7 +272,7 @@ Deno.serve(async (req) => {
           color_treatment: compose.color_treatment ?? undefined,
           width: W,
           height: H,
-          out_path: `${gen.agency_id}/${genId}.png`,
+          out_path: `${gen.agency_id}/${genId}${revSuffix}.png`,
           badge_label: compose.badge_label ?? undefined,
           copy: compose.copy ?? {},
           brand: compose.brand ?? {},

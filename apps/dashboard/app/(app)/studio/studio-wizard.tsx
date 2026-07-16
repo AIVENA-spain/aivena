@@ -370,7 +370,9 @@ export function StudioWizard({
         return;
       }
       if (st === "failed") { setError("That image couldn't be generated. Please try again."); setGenStatus("failed"); return; }
-      if (Date.now() - started > 120_000) { setError("This is taking longer than expected. Please try again."); setGenStatus("failed"); return; }
+      // Renovations can run two models back-to-back (auto-fallback) — give the job real time before
+      // giving up, and never imply failure while it may still complete in the background.
+      if (Date.now() - started > 480_000) { setError("Still working in the background — check your library in a couple of minutes."); setGenStatus("failed"); return; }
       pollRef.current = window.setTimeout(tick, 3000);
     };
     tick();

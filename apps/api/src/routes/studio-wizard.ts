@@ -695,25 +695,31 @@ route.get('/editable-gallery', async (c) => {
       FROM properties
       WHERE agency_id = ${agencyId} AND price IS NOT NULL
       ORDER BY price DESC
-      LIMIT 40
+      LIMIT 60
     `);
     const pRows = pRes as unknown as Array<{ id: string; title: string | null; images: string[] | null }>;
-    const listings = pRows
+    const allListings = pRows
       .map((r) => ({ id: r.id, title: r.title, photos: usablePhotos(r.images) }))
-      .filter((l) => l.photos.length > 0)
-      .slice(0, 4);
+      .filter((l) => l.photos.length > 0);
+
+    // Christian 2026-07-16: ONE house per ROW — the catalogue is 8 rows of 4 (one template per photo-count
+    // lane), so we pick the 8 best-looking / most expensive listings that can feed a whole row (every row
+    // contains a 4-photo template, so the row's house needs >= 4 usable photos). Row 1 = priciest.
+    const rowListings = allListings.filter((l) => l.photos.length >= 4).slice(0, 8);
+    const listings = rowListings.length > 0 ? rowListings : allListings.slice(0, 4);
 
     if (listings.length === 0) {
       return c.json({ ok: true, has_listings: false, templates: [] });
     }
 
-    // assign each template a listing that has enough photos (round-robin from the tile index so the four houses
-    // vary across the grid) + a shifting accent.
+    // one house per ROW: templates i=0..3 are row 1 (one per lane), 4..7 row 2, ... — each row shows the
+    // SAME listing across its four templates; k-scan is the safety net if a listing lacks photos.
     const items = editableCatalogue()
       .map((t, i) => {
+        const rowStart = Math.floor(i / 4);
         let chosen: { id: string; title: string | null; photos: string[] } | null = null;
         for (let k = 0; k < listings.length; k++) {
-          const cand = listings[(i + k) % listings.length];
+          const cand = listings[(rowStart + k) % listings.length];
           if (cand.photos.length >= t.photo_count) { chosen = cand; break; }
         }
         if (!chosen) return null; // no listing has enough photos for this template

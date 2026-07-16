@@ -28,7 +28,7 @@ import {
 } from '../../../../studio/engine/carouselStyles';
 import { planCarousel, listingCopy, PlanSchema } from '../lib/studio-carousel-plan';
 import { renderTipsImageStyled, isTipsImageStyle } from '../../../../studio/engine/carouselTipsImage';
-import { loadTipsImages } from '../lib/studio-carousel-image';
+import { loadTipsImages, generateTipsFamily, loadGenerationImages, TIPS_SCHEMES } from '../lib/studio-carousel-image';
 
 /**
  * Studio wizard proxy (W13 v0.6) — the browser's ONLY door to Vega's image
@@ -957,7 +957,7 @@ async function runCarousel(opts: {
 async function runPlannedCarousel(opts: {
   genId: string; agencyId: string;
   type: 'tips' | 'quote'; topic?: string; quoteText?: string; quoteAuthor?: string;
-  slideCount?: number; language: string; style: CarouselStyle;
+  slideCount?: number; language: string; style: CarouselStyle; scheme: string;
   agency: { name: string; web: string; phone: string };
   brand: { navy: string; gold: string; cream: string; text: string };
 }): Promise<void> {
@@ -972,8 +972,16 @@ async function runPlannedCarousel(opts: {
     // editorial type-only deck — an image can never block a post (spec fallback rule)
     let slides: Buffer[];
     let usedStyle = opts.style;
+    let imagePaths: string[] = [];
     if (opts.type === 'tips' && isTipsImageStyle(opts.style)) {
-      const images = await loadTipsImages(opts.style);
+      // fresh per-post family: the style anchor + the plan's emotion scenes + the chosen scheme —
+      // micro-unique every time; seeded approved family as fallback; editorial deck as backstop
+      const fresh = await generateTipsFamily({
+        style: opts.style, scheme: opts.scheme, scenes: plan.image_scenes ?? [],
+        agencyId, genId,
+      });
+      const images = fresh?.buffers ?? await loadTipsImages(opts.style);
+      if (fresh) imagePaths = fresh.paths;
       if (images) {
         slides = await renderTipsImageStyled(opts.style, plan, opts.agency.name, contact, opts.brand, images, opts.language);
       } else {
@@ -992,6 +1000,7 @@ async function runPlannedCarousel(opts: {
       result_metadata: {
         engine: 'carousel', carousel_type: opts.type, carousel_style: usedStyle, slide_count: stored.length, slides: stored,
         ai_imagery: opts.type === 'tips' && isTipsImageStyle(usedStyle),
+        image_paths: imagePaths, image_scheme: opts.scheme,
         plan, caption: plan.caption, hashtags: plan.hashtags,
       },
       completed_at: new Date().toISOString(),
@@ -1026,6 +1035,7 @@ route.post('/carousel', async (c) => {
   const allowedStyles: CarouselStyle[] = type === 'listing' ? LISTING_STYLES : PLANNED_STYLES[type];
   const style: CarouselStyle = typeof b.style === 'string' && (allowedStyles as string[]).includes(b.style)
     ? (b.style as CarouselStyle) : 'editorial';
+  const scheme = typeof b.scheme === 'string' && TIPS_SCHEMES[b.scheme] ? b.scheme : 'clasico';
 
   try {
     // ── tips / quote: no property needed — brand + agency identity only ──────
@@ -1055,7 +1065,7 @@ route.post('/carousel', async (c) => {
           (agency_id, generation_type, status, prompt, requested_by, raw_request)
         VALUES
           (${agencyId}, 'social_post', 'processing', ${label}, ${user?.sub ?? null}::uuid,
-           ${JSON.stringify({ engine: 'carousel', content_type: 'carousel', carousel_type: type, carousel_style: style, topic, quote_text: quoteText, quote_author: quoteAuthor, slide_count: slideCount, language })}::jsonb)
+           ${JSON.stringify({ engine: 'carousel', content_type: 'carousel', carousel_type: type, carousel_style: style, image_scheme: scheme, topic, quote_text: quoteText, quote_author: quoteAuthor, slide_count: slideCount, language })}::jsonb)
         RETURNING id
       `);
       const rows = ins as unknown as Array<{ id: string }>;
@@ -1063,7 +1073,7 @@ route.post('/carousel', async (c) => {
       if (!genId) throw new Error('insert failed');
 
       void runPlannedCarousel({
-        genId, agencyId, type, topic, quoteText, quoteAuthor, slideCount, language, style,
+        genId, agencyId, type, topic, quoteText, quoteAuthor, slideCount, language, style, scheme,
         agency: { name: agency.name, web: agency.web, phone: agency.phone }, brand,
       });
       return c.json({ ok: true, generation_id: genId, status: 'processing' });
@@ -1170,7 +1180,9 @@ route.post('/carousel/update', async (c) => {
     const storedLang = typeof rows[0].raw_request?.language === 'string' ? (rows[0].raw_request.language as string) : 'es';
     let slides: Buffer[];
     if (priorPlan.type === 'tips' && isTipsImageStyle(storedStyle)) {
-      const images = await loadTipsImages(storedStyle);
+      const ownPaths = Array.isArray(meta?.image_paths) ? (meta.image_paths as string[]) : [];
+      const images = (ownPaths.length === 3 ? await loadGenerationImages(ownPaths) : null)
+        ?? await loadTipsImages(storedStyle);
       slides = images
         ? await renderTipsImageStyled(storedStyle, plan, agency.name, contact, brand, images, storedLang)
         : await renderPlannedStyled('editorial', plan, agency.name, contact, brand, storedLang);

@@ -29,6 +29,7 @@ export const PlanSchema = z.object({
   cta_action: z.string().min(1).max(140),
   cta_keyword: z.string().min(1).max(34),
   swipe_cue: z.string().min(1).max(18).default('Desliza'),
+  image_scenes: z.array(z.string().min(10).max(300)).max(3).default([]),
   caption: z.string().min(1).max(1600),
   hashtags: z.array(z.string().min(2).max(40)).max(5).default([]),   // Instagram hard cap since Dec 2025
 }).superRefine((p, ctx) => {
@@ -76,6 +77,7 @@ const PLAN_TOOL = {
       cta_action: { type: 'string', description: 'THE REAL CTA, max 140 chars: a save or send action matched to the post ("Envíaselo a la persona con quien compras" / "Guarda esta guía para tu próxima visita"). Help-framed — never "tag a friend"/"share this"/"follow us" (Meta demotes engagement bait).' },
       cta_keyword: { type: 'string', description: 'the DM keyword pill, max 34 chars: "Escríbenos: GUÍA" style — one word the reader can DM' },
       swipe_cue: { type: 'string', description: 'the "swipe" word in the post language, max 18 chars (es: "Desliza", en: "Swipe")' },
+      image_scenes: { type: 'array', items: { type: 'string' }, description: 'EXACTLY 3 concrete visual scenes (in ENGLISH, 15-40 words each) translating the post topic and its EMOTION into imagery: [0] the cover hero — one familiar Mediterranean object or scene carrying the topic as a visual metaphor (longing, the promise of a better life in Spain); [1] a companion scene in the same world; [2] a quieter closing beat. Rules: concrete nouns only (diffusion fails on abstractions), NO interiors, NO building facades that could read as a real property, NO recognizable landmarks, NO people close-up, NO text in the scene. Example for hidden costs: "a half-submerged terracotta amphora in clear turquoise water".' },
       caption: { type: 'string', description: 'the Instagram caption. STRUCTURE: line 1 = standalone hook under 125 chars containing a location keyword, COMPLEMENTING the cover (not repeating it) → blank line → 2-4 short value lines (one idea each, line breaks between) → blank line → ONE CTA line. No hashtags inside. Location + topic keywords as natural prose in the first two sentences (Instagram search + Google index the caption).' },
       hashtags: { type: 'array', items: { type: 'string' }, description: 'EXACTLY 3-5 hashtags WITHOUT #: 2 geo tags (town + region), 1-2 niche topic tags, optionally the agency name. NEVER mega-tags like realestate/home/luxury (useless since Instagram capped hashtags at 5).' },
     },
@@ -146,6 +148,7 @@ CAROUSEL DOCTRINE (how these posts win — follow it):
 - The CTA leads with ONE action: a save or send framing (cta_action) + a DM keyword (cta_keyword). Contact details are handled by the design, not by you. NEVER "tag a friend", "share this", "follow for more" — Meta demotes engagement bait; help-framing ("send this to the person you're buying with") is the substitute.
 - Caption line 1: a standalone hook under 125 characters with a location keyword, complementing (not repeating) the cover.
 - Hashtags: 3-5 only, no mega-tags.
+- image_scenes: 3 concrete Mediterranean scenes (ENGLISH) that translate the topic's emotion — the longing for a home in Spain, the promise of a better life — into carefully purposeful imagery. One familiar object/scene per beat carrying one extra meaning. Concrete nouns; no interiors, no property facades, no landmarks, no close people, no text.
 
 HARD RULES:
 - NO specific prices, percentages, statistics, interest rates, tax figures, or legal guarantees anywhere in slide copy. General, evergreen advice only — you have no data source, so any figure would be invented. Use place names for specificity instead of numbers.

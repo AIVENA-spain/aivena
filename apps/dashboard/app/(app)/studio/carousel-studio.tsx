@@ -104,6 +104,7 @@ export function CarouselStudio() {
   const [quoteAuthor, setQuoteAuthor] = useState("");
   const [language, setLanguage] = useState("es");
   const [style, setStyle] = useState("editorial");
+  const [scheme, setScheme] = useState("clasico");
   // text editing
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<Plan | null>(null);
@@ -134,7 +135,7 @@ export function CarouselStudio() {
       const st = s.ok ? (s.status as string) : null;
       if (st === "completed") { showResult(s); return; }
       if (st === "failed") { setErr((s.message as string) ?? "That didn't come out — please try again."); setPhase(ctype === "listing" ? "pick" : "form"); return; }
-      if (Date.now() - started > 180_000) { setErr("Still working in the background — check your library in a minute."); setPhase(ctype === "listing" ? "pick" : "form"); return; }
+      if (Date.now() - started > 300_000) { setErr("Still working in the background — check your library in a minute."); setPhase(ctype === "listing" ? "pick" : "form"); return; }
       poll.current = setTimeout(tick, 2500);
     };
     poll.current = setTimeout(tick, 2000);
@@ -257,6 +258,21 @@ export function CarouselStudio() {
           {err && <div className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{err}</div>}
           <div className="mb-4 flex max-w-xl flex-col gap-4">
             {stylePicker()}
+            {ctype === "tips" && style !== "editorial" && ["bodegon", "litoral", "tinta", "salitre", "papel", "arcilla", "acuarela", "bordado"].includes(style) && (
+              <div>
+                <label className={label}>Colour mood (the artwork is generated fresh for your topic)</label>
+                <div className="flex flex-wrap gap-2">
+                  {[["clasico", "Clásico — navy & gold"], ["atardecer", "Atardecer — sunset terracotta"], ["oliva", "Oliva — olive & sage"], ["mar", "Mar — sea & foam"]].map(([key, name]) => (
+                    <button key={key} type="button" onClick={() => setScheme(key)}
+                      className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${scheme === key
+                        ? "border-neutral-900 bg-neutral-50 text-neutral-900 dark:border-neutral-100 dark:bg-neutral-800 dark:text-neutral-100"
+                        : "border-neutral-200 text-neutral-500 hover:border-neutral-400 dark:border-neutral-700"}`}>
+                      {name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <div>
               <label className={label}>Language of the post</label>
               <select value={language} onChange={(e) => setLanguage(e.target.value)} className={field}>
@@ -317,6 +333,21 @@ export function CarouselStudio() {
               </>
             )}
             {stylePicker()}
+            {ctype === "tips" && style !== "editorial" && ["bodegon", "litoral", "tinta", "salitre", "papel", "arcilla", "acuarela", "bordado"].includes(style) && (
+              <div>
+                <label className={label}>Colour mood (the artwork is generated fresh for your topic)</label>
+                <div className="flex flex-wrap gap-2">
+                  {[["clasico", "Clásico — navy & gold"], ["atardecer", "Atardecer — sunset terracotta"], ["oliva", "Oliva — olive & sage"], ["mar", "Mar — sea & foam"]].map(([key, name]) => (
+                    <button key={key} type="button" onClick={() => setScheme(key)}
+                      className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${scheme === key
+                        ? "border-neutral-900 bg-neutral-50 text-neutral-900 dark:border-neutral-100 dark:bg-neutral-800 dark:text-neutral-100"
+                        : "border-neutral-200 text-neutral-500 hover:border-neutral-400 dark:border-neutral-700"}`}>
+                      {name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <div>
               <label className={label}>Language of the post</label>
               <select value={language} onChange={(e) => setLanguage(e.target.value)} className={field}>
@@ -326,7 +357,7 @@ export function CarouselStudio() {
             <button
               onClick={() => void start(
                 ctype === "tips"
-                  ? { type: "tips", topic: topic.trim(), slide_count: tipCount, language, style }
+                  ? { type: "tips", topic: topic.trim(), slide_count: tipCount, language, style, scheme }
                   : { type: "quote", quote_text: quoteText.trim(), quote_author: quoteAuthor.trim(), language, style },
                 "form")}
               disabled={ctype === "tips" ? topic.trim().length < 3 : quoteText.trim().length < 10}

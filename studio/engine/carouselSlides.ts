@@ -34,6 +34,7 @@ export interface CarouselPlan {
   cta_action: string;                         // the KPI action line (save/send framing) — the real CTA
   cta_keyword: string;                        // DM keyword pill text ("Escríbenos: GUÍA")
   swipe_cue: string;                          // "Desliza" / "Swipe" in the post language
+  image_scenes: string[];                     // tips image-styles: 3 scene beats (EN) translating the topic's emotion
   caption: string;
   hashtags: string[];                         // HARD MAX 5 (Instagram cap since Dec 2025)
 }

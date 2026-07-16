@@ -268,7 +268,6 @@
       "insertAlternatives": "Inserir alternativas",
       "insertingAlternatives": "Adicionando…",
       "insertAlternativesHint": "Adicionar ao rascunho imóveis reais correspondentes",
-      "altHeader": "Imóveis que podem interessar:",
       "altNone": "Ainda não há imóveis correspondentes para sugerir.",
       "altError": "Não foi possível carregar os imóveis agora."
     },

@@ -268,7 +268,6 @@
       "insertAlternatives": "Insérer des alternatives",
       "insertingAlternatives": "Ajout…",
       "insertAlternativesHint": "Ajouter au brouillon des biens réels correspondants",
-      "altHeader": "Biens susceptibles de convenir :",
       "altNone": "Aucun bien correspondant à suggérer pour l'instant.",
       "altError": "Impossible de charger les biens pour le moment."
     },

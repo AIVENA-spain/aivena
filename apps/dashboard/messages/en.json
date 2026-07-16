@@ -268,7 +268,6 @@
       "insertAlternatives": "Insert alternatives",
       "insertingAlternatives": "Adding…",
       "insertAlternativesHint": "Add real matched properties to the draft",
-      "altHeader": "Properties that may suit them:",
       "altNone": "No matching properties to suggest yet.",
       "altError": "Couldn't load properties right now."
     },

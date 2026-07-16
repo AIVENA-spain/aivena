@@ -268,7 +268,6 @@
       "insertAlternatives": "Indsæt alternativer",
       "insertingAlternatives": "Tilføjer…",
       "insertAlternativesHint": "Tilføj rigtige matchende boliger til kladden",
-      "altHeader": "Boliger der kan passe:",
       "altNone": "Ingen matchende boliger at foreslå endnu.",
       "altError": "Kunne ikke indlæse boliger lige nu."
     },

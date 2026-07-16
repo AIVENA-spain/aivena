@@ -268,7 +268,6 @@
       "insertAlternatives": "Alternatieven invoegen",
       "insertingAlternatives": "Toevoegen…",
       "insertAlternativesHint": "Echte passende woningen aan het concept toevoegen",
-      "altHeader": "Mogelijk passende woningen:",
       "altNone": "Nog geen passende woningen om voor te stellen.",
       "altError": "Kon de woningen nu niet laden."
     },

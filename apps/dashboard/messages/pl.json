@@ -268,7 +268,6 @@
       "insertAlternatives": "Wstaw alternatywy",
       "insertingAlternatives": "Dodawanie…",
       "insertAlternativesHint": "Dodaj do wersji roboczej pasujące nieruchomości",
-      "altHeader": "Nieruchomości, które mogą pasować:",
       "altNone": "Brak pasujących nieruchomości do zaproponowania.",
       "altError": "Nie udało się teraz załadować nieruchomości."
     },

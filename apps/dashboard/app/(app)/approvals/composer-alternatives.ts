@@ -8,11 +8,12 @@ import type { Match } from "@/lib/api/types";
  *   - NO invented "why it matches" reasons, no similarity scores, no ranking spin.
  *   - Returns "" when there is nothing real to insert — the caller shows an honest
  *     "no matches yet" note rather than inserting an empty or fabricated block.
- * The block is a drafting aid the operator always reviews/edits before sending;
- * scaffold words (header/units) come from the operator's UI language.
+ * The block is a drafting aid the operator always reviews/edits before sending.
+ * The header is buyer-FACING (it goes into the client's message) so it is rendered
+ * in the CLIENT's language via `altHeaderForLanguage`, not the operator's UI.
  */
 export type AlternativeLabels = {
-  /** Lead-in line, e.g. "Properties that may suit them:" */
+  /** Client-facing lead-in line, in the buyer's language (see altHeaderForLanguage). */
   header: string;
   /** Reference-number prefix, e.g. "Ref". */
   ref: string;
@@ -24,6 +25,48 @@ export type AlternativeLabels = {
 
 /** Default number of properties inserted (matches the rail's featured + 2 shape). */
 export const DEFAULT_ALTERNATIVES = 3;
+
+// Maps a lead's detected language (a NAME like "norwegian", or already a code
+// like "no") to one of the dashboard's supported locale codes.
+const LANGUAGE_TO_LOCALE: Record<string, string> = {
+  english: "en", spanish: "es", german: "de", french: "fr", italian: "it",
+  dutch: "nl", portuguese: "pt", polish: "pl", russian: "ru", danish: "da",
+  swedish: "sv", finnish: "fi", norwegian: "no",
+  en: "en", es: "es", de: "de", fr: "fr", it: "it", nl: "nl", pt: "pt",
+  pl: "pl", ru: "ru", da: "da", sv: "sv", fi: "fi", no: "no", nb: "no", nn: "no",
+};
+
+// Buyer-FACING header, per locale. This line is inserted into the reply the agent
+// sends to the client, so it must read in the CLIENT's language and address them
+// directly ("you") — never the operator's dashboard language, and never third
+// person ("them"). Kept here rather than in the operator i18n namespace precisely
+// because it is buyer-facing content and the client bundle only carries the
+// operator's active locale (so another locale can't be looked up at runtime).
+const ALT_HEADER_BY_LOCALE: Record<string, string> = {
+  en: "A few options that may suit you:",
+  es: "Algunas opciones que pueden encajarle:",
+  de: "Einige Optionen, die zu Ihnen passen könnten:",
+  fr: "Quelques biens susceptibles de vous convenir :",
+  it: "Alcune opzioni che potrebbero fare al caso suo:",
+  nl: "Enkele opties die bij u kunnen passen:",
+  pt: "Algumas opções que podem ser do seu interesse:",
+  da: "Nogle muligheder, der kan passe til dig:",
+  no: "Noen alternativer som kan passe for deg:",
+  sv: "Några alternativ som kan passa dig:",
+  fi: "Muutama vaihtoehto, joka voisi sopia sinulle:",
+  pl: "Kilka opcji, które mogą Panu/Pani odpowiadać:",
+  ru: "Несколько вариантов, которые могут вам подойти:",
+};
+
+/**
+ * The client-language header for the inserted block. Falls back to English for an
+ * unknown / unsupported buyer language (the agent always edits before sending).
+ */
+export function altHeaderForLanguage(language: string | null | undefined): string {
+  const key = (language ?? "").trim().toLowerCase();
+  const locale = LANGUAGE_TO_LOCALE[key] ?? "en";
+  return ALT_HEADER_BY_LOCALE[locale] ?? ALT_HEADER_BY_LOCALE.en;
+}
 
 // The three formatters below intentionally mirror the pure helpers in
 // app/(app)/matches/_shared.tsx. They are re-implemented here (not imported) so

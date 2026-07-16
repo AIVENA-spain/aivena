@@ -268,7 +268,6 @@
       "insertAlternatives": "Infoga alternativ",
       "insertingAlternatives": "Lägger till…",
       "insertAlternativesHint": "Lägg till riktiga matchande bostäder i utkastet",
-      "altHeader": "Bostäder som kan passa:",
       "altNone": "Inga matchande bostäder att föreslå ännu.",
       "altError": "Kunde inte ladda bostäder just nu."
     },

@@ -61,6 +61,7 @@ import { getLeadMatchesAction } from "@/app/(app)/matches/matches-actions";
 import {
   buildAlternativesBlock,
   appendAlternatives,
+  altHeaderForLanguage,
 } from "./composer-alternatives";
 import type {
   InboxRow,
@@ -1309,6 +1310,7 @@ function ThreadAndReply({
         leadId={lead.leadId}
         channel={lead.channel}
         leadName={lead.fullName}
+        leadLanguage={lead.language}
         suggestedSubject={lead.aiReplySubject}
         onActionDone={onComposerDone}
       />
@@ -1571,6 +1573,7 @@ function Composer({
   leadId,
   channel,
   leadName,
+  leadLanguage,
   suggestedSubject,
   onActionDone,
 }: {
@@ -1578,6 +1581,8 @@ function Composer({
   leadId: string;
   channel: string | null;
   leadName: string | null;
+  /** Buyer's detected language — the inserted alternatives block is written in it. */
+  leadLanguage: string | null;
   /** AI-drafted subject (email only), prefilled in the suggested state. */
   suggestedSubject: string | null;
   /** Reconcile the thread + refresh rows after a send/dismiss. */
@@ -1819,7 +1824,9 @@ function Composer({
       return;
     }
     const block = buildAlternativesBlock(res.data, {
-      header: tComposer("altHeader"),
+      // Header addresses the CLIENT, so render it in the buyer's language (not the
+      // operator's UI). Units mirror the Matches surface's shared labels.
+      header: altHeaderForLanguage(leadLanguage),
       ref: tMatches("ref"),
       priceOnRequest: tMatches("priceOnRequest"),
       bed: tMatches("unitBed"),

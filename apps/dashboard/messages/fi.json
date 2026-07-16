@@ -268,7 +268,6 @@
       "insertAlternatives": "Lisää vaihtoehtoja",
       "insertingAlternatives": "Lisätään…",
       "insertAlternativesHint": "Lisää luonnokseen todelliset vastaavat kohteet",
-      "altHeader": "Mahdollisesti sopivat kohteet:",
       "altNone": "Ei vielä ehdotettavia vastaavia kohteita.",
       "altError": "Kohteita ei voitu ladata juuri nyt."
     },

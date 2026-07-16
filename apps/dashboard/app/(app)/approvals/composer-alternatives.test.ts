@@ -3,6 +3,7 @@ import type { Match } from "@/lib/api/types";
 import {
   buildAlternativesBlock,
   appendAlternatives,
+  altHeaderForLanguage,
   DEFAULT_ALTERNATIVES,
   type AlternativeLabels,
 } from "./composer-alternatives";
@@ -98,6 +99,36 @@ describe("buildAlternativesBlock", () => {
     for (const banned of ["match", "similar", "because", "recommend", "score", "%"]) {
       expect(out).not.toContain(banned);
     }
+  });
+});
+
+describe("altHeaderForLanguage", () => {
+  it("renders the header in the buyer's language (by language NAME)", () => {
+    expect(altHeaderForLanguage("norwegian")).toBe(
+      "Noen alternativer som kan passe for deg:",
+    );
+    expect(altHeaderForLanguage("spanish")).toBe(
+      "Algunas opciones que pueden encajarle:",
+    );
+  });
+
+  it("accepts a locale CODE too (case-insensitive, incl. nb/nn → no)", () => {
+    expect(altHeaderForLanguage("NO")).toBe("Noen alternativer som kan passe for deg:");
+    expect(altHeaderForLanguage("nb")).toBe("Noen alternativer som kan passe for deg:");
+    expect(altHeaderForLanguage("de")).toBe(
+      "Einige Optionen, die zu Ihnen passen könnten:",
+    );
+  });
+
+  it("addresses the client ('you'), never third person ('them')", () => {
+    expect(altHeaderForLanguage("english")).toBe("A few options that may suit you:");
+    expect(altHeaderForLanguage("english").toLowerCase()).not.toContain("them");
+  });
+
+  it("falls back to English for unknown / null language", () => {
+    expect(altHeaderForLanguage(null)).toBe("A few options that may suit you:");
+    expect(altHeaderForLanguage("")).toBe("A few options that may suit you:");
+    expect(altHeaderForLanguage("klingon")).toBe("A few options that may suit you:");
   });
 });
 

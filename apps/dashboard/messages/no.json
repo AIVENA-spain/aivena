@@ -268,7 +268,6 @@
       "insertAlternatives": "Sett inn alternativer",
       "insertingAlternatives": "Legger til…",
       "insertAlternativesHint": "Legg til ekte samsvarende boliger i utkastet",
-      "altHeader": "Boliger som kan passe:",
       "altNone": "Ingen samsvarende boliger å foreslå ennå.",
       "altError": "Kunne ikke laste boliger akkurat nå."
     },

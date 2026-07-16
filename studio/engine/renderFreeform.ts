@@ -85,6 +85,9 @@ export const FreeformElement = z.discriminatedUnion("type", [
     line_height: z.number().optional(),
     // vertical placement of the text block within its bbox (default top; buttons/labels want center)
     valign: z.enum(["top", "center", "bottom"]).optional(),
+    // authored styles set shield:false when the ground is known-light (e.g. gouache sky, riso paper)
+    // and the automatic legibility gradient would smear the design
+    shield: z.boolean().optional(),
     // display-type devices (carousel styles 2026-07-16): rotate the block around its centre;
     // hollow = outline-only type (stroke in the text colour, no fill) — the editorial poster look
     rotate: z.number().min(-90).max(90).optional(),
@@ -374,7 +377,7 @@ export async function renderFreeform(
 
       // legibility floor — a SOFT gradient, never a box (the first run's grey plates looked like wireframes).
       const onPhoto = photoBoxes.some((pb) => overlap(pb, b) > 0.35 * boxW(b) * boxH(b));
-      if (onPhoto && coverage(b, idx) < 0.5) {
+      if (el.shield !== false && onPhoto && coverage(b, idx) < 0.5) {
         const padX = Math.round(el.size * 1.2), padY = Math.round(el.size * 1.1);
         const gb = clampBox([b[0] - padX, b[1] - padY, b[2] + padX, b[3] + padY * 0.6], W, H);
         overlaySvg += `<rect x="${gb[0]}" y="${gb[1]}" width="${boxW(gb)}" height="${boxH(gb)}" fill="url(#${gradient("#0B0F14", "up", 0.55)})"/>`;

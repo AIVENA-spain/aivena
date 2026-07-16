@@ -311,7 +311,7 @@
       "suggestGated": "Window closed — send a check-in to reopen before suggesting.",
       "noReason": "No additional reasoning yet.",
       "basedOnPrefix": "На основе сохранённого предпочтения:",
-      "basedOnHint": "если покупатель просит другие районы, обновите его профиль.",
+      "basedOnHint": "измените профиль покупателя, чтобы обновить их.",
       "editPreferences": "Изменить",
       "editSave": "Сохранить",
       "editCancel": "Отмена",
@@ -1264,6 +1264,7 @@
     "title": "Просмотры",
     "cardUpcoming": "Предстоящие просмотры",
     "cardTotal": "Всего запланировано",
-    "cardManual": "Запланировано вручную"
+    "cardManual": "Запланировано вручную",
+    "syncNote": "Показы сохраняются в AIVENA. Синхронизация с Google Календарём появится позже."
   }
 }

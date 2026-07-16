@@ -311,7 +311,7 @@
       "suggestGated": "Window closed — send a check-in to reopen before suggesting.",
       "noReason": "No additional reasoning yet.",
       "basedOnPrefix": "Com base na preferência guardada:",
-      "basedOnHint": "se o comprador pediu outras zonas, atualize o perfil para renovar.",
+      "basedOnHint": "edite o perfil do comprador para as atualizar.",
       "editPreferences": "Editar",
       "editSave": "Guardar",
       "editCancel": "Cancelar",
@@ -1264,6 +1264,7 @@
     "title": "Visitas",
     "cardUpcoming": "Próximas visitas",
     "cardTotal": "Total agendadas",
-    "cardManual": "Agendadas manualmente"
+    "cardManual": "Agendadas manualmente",
+    "syncNote": "As visitas são guardadas no AIVENA. A sincronização com o Google Calendar chegará mais tarde."
   }
 }

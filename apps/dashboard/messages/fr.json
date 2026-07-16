@@ -311,7 +311,7 @@
       "suggestGated": "Window closed — send a check-in to reopen before suggesting.",
       "noReason": "No additional reasoning yet.",
       "basedOnPrefix": "D'après la préférence enregistrée :",
-      "basedOnHint": "si l'acheteur demande d'autres zones, mettez à jour son profil pour actualiser.",
+      "basedOnHint": "modifiez le profil de l'acheteur pour les mettre à jour.",
       "editPreferences": "Modifier",
       "editSave": "Enregistrer",
       "editCancel": "Annuler",
@@ -1264,6 +1264,7 @@
     "title": "Visites",
     "cardUpcoming": "Visites à venir",
     "cardTotal": "Total programmées",
-    "cardManual": "Programmées manuellement"
+    "cardManual": "Programmées manuellement",
+    "syncNote": "Les visites sont enregistrées dans AIVENA. La synchronisation avec Google Agenda arrivera plus tard."
   }
 }

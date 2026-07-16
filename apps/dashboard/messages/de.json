@@ -311,7 +311,7 @@
       "suggestGated": "Window closed — send a check-in to reopen before suggesting.",
       "noReason": "No additional reasoning yet.",
       "basedOnPrefix": "Basierend auf der gespeicherten Präferenz:",
-      "basedOnHint": "wenn der Käufer inzwischen andere Gebiete wünscht, aktualisieren Sie sein Profil.",
+      "basedOnHint": "bearbeiten Sie das Käuferprofil, um sie zu aktualisieren.",
       "editPreferences": "Bearbeiten",
       "editSave": "Speichern",
       "editCancel": "Abbrechen",
@@ -1264,6 +1264,7 @@
     "title": "Besichtigungen",
     "cardUpcoming": "Anstehende Besichtigungen",
     "cardTotal": "Insgesamt geplant",
-    "cardManual": "Manuell geplant"
+    "cardManual": "Manuell geplant",
+    "syncNote": "Besichtigungen werden in AIVENA gespeichert. Die Google-Kalender-Synchronisierung folgt später."
   }
 }

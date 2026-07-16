@@ -311,7 +311,7 @@
       "suggestGated": "Window closed — send a check-in to reopen before suggesting.",
       "noReason": "No additional reasoning yet.",
       "basedOnPrefix": "Na podstawie zapisanej preferencji:",
-      "basedOnHint": "jeśli kupujący prosi o inne obszary, zaktualizuj jego profil.",
+      "basedOnHint": "edytuj profil kupującego, aby je zaktualizować.",
       "editPreferences": "Edytuj",
       "editSave": "Zapisz",
       "editCancel": "Anuluj",
@@ -1264,6 +1264,7 @@
     "title": "Oglądania",
     "cardUpcoming": "Nadchodzące oglądania",
     "cardTotal": "Łącznie zaplanowane",
-    "cardManual": "Zaplanowane ręcznie"
+    "cardManual": "Zaplanowane ręcznie",
+    "syncNote": "Prezentacje są zapisywane w AIVENA. Synchronizacja z Kalendarzem Google pojawi się później."
   }
 }

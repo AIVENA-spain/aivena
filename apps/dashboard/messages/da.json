@@ -311,7 +311,7 @@
       "suggestGated": "Window closed — send a check-in to reopen before suggesting.",
       "noReason": "No additional reasoning yet.",
       "basedOnPrefix": "Baseret på den gemte præference:",
-      "basedOnHint": "hvis køberen har spurgt om andre områder, opdatér profilen.",
+      "basedOnHint": "rediger køberprofilen for at opdatere dem.",
       "editPreferences": "Rediger",
       "editSave": "Gem",
       "editCancel": "Annuller",
@@ -1264,6 +1264,7 @@
     "title": "Fremvisninger",
     "cardUpcoming": "Kommende fremvisninger",
     "cardTotal": "Planlagt i alt",
-    "cardManual": "Manuelt planlagt"
+    "cardManual": "Manuelt planlagt",
+    "syncNote": "Fremvisninger gemmes i AIVENA. Synkronisering med Google Kalender kommer senere."
   }
 }

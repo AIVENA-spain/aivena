@@ -311,7 +311,7 @@
       "suggestGated": "Window closed — send a check-in to reopen before suggesting.",
       "noReason": "No additional reasoning yet.",
       "basedOnPrefix": "Basert på lagret preferanse:",
-      "basedOnHint": "hvis kjøperen har bedt om andre områder, oppdater profilen.",
+      "basedOnHint": "rediger kjøperprofilen for å oppdatere dem.",
       "editPreferences": "Rediger",
       "editSave": "Lagre",
       "editCancel": "Avbryt",
@@ -1264,6 +1264,7 @@
     "title": "Visninger",
     "cardUpcoming": "Kommende visninger",
     "cardTotal": "Totalt planlagt",
-    "cardManual": "Manuelt planlagt"
+    "cardManual": "Manuelt planlagt",
+    "syncNote": "Visninger lagres i AIVENA. Synkronisering med Google Kalender kommer senere."
   }
 }

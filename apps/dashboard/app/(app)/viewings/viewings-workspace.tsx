@@ -9,6 +9,7 @@ import {
   CalendarDays,
   ChevronLeft,
   ChevronRight,
+  Info,
   List,
   Loader2,
   MapPin,
@@ -163,6 +164,14 @@ export function ViewingsWorkspace({
           value={manualCount}
         />
       </div>
+
+      {/* Honest stub-state note — bookings live in AIVENA; real Google Calendar
+          sync is a later, gated step. So an agent is never surprised a viewing
+          isn't on their actual Google calendar. */}
+      <p className="flex items-center gap-1.5 text-[11.5px] text-muted-foreground">
+        <Info className="h-3.5 w-3.5 shrink-0" aria-hidden />
+        {t("syncNote")}
+      </p>
 
       {view === "month" ? (
         <MonthGrid

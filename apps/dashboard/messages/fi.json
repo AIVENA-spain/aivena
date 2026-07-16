@@ -311,7 +311,7 @@
       "suggestGated": "Window closed — send a check-in to reopen before suggesting.",
       "noReason": "No additional reasoning yet.",
       "basedOnPrefix": "Perustuu tallennettuun toiveeseen:",
-      "basedOnHint": "jos ostaja on pyytänyt muita alueita, päivitä profiili.",
+      "basedOnHint": "muokkaa ostajan profiilia päivittääksesi ne.",
       "editPreferences": "Muokkaa",
       "editSave": "Tallenna",
       "editCancel": "Peruuta",
@@ -1264,6 +1264,7 @@
     "title": "Esittelyt",
     "cardUpcoming": "Tulevat esittelyt",
     "cardTotal": "Ajastettu yhteensä",
-    "cardManual": "Ajastettu manuaalisesti"
+    "cardManual": "Ajastettu manuaalisesti",
+    "syncNote": "Esittelyt tallennetaan AIVENAan. Google-kalenterin synkronointi tulee myöhemmin."
   }
 }

@@ -311,7 +311,7 @@
       "suggestGated": "Window closed — send a check-in to reopen before suggesting.",
       "noReason": "No additional reasoning yet.",
       "basedOnPrefix": "Op basis van de opgeslagen voorkeur:",
-      "basedOnHint": "als de koper om andere gebieden vraagt, werk dan het profiel bij.",
+      "basedOnHint": "bewerk het kopersprofiel om ze bij te werken.",
       "editPreferences": "Bewerken",
       "editSave": "Opslaan",
       "editCancel": "Annuleren",
@@ -1264,6 +1264,7 @@
     "title": "Bezichtigingen",
     "cardUpcoming": "Aankomende bezichtigingen",
     "cardTotal": "Totaal gepland",
-    "cardManual": "Handmatig gepland"
+    "cardManual": "Handmatig gepland",
+    "syncNote": "Bezichtigingen worden opgeslagen in AIVENA. Synchronisatie met Google Agenda volgt later."
   }
 }

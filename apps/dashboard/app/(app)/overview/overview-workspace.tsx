@@ -622,7 +622,7 @@ function SelectedLeadPanel({ lead }: { lead: NeedsYouRow | null }) {
           </div>
           {win.windowClosed ? (
             <div className="text-[11.5px] font-semibold text-foreground">
-              {lead.aiReplySubject ?? t("previousDraft")}
+              {lead.aiReplySubject || t("previousDraft")}
             </div>
           ) : lead.aiReplySubject ? (
             <div className="text-[11.5px] font-semibold text-foreground">

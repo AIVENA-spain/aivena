@@ -311,7 +311,7 @@
       "suggestGated": "Window closed — send a check-in to reopen before suggesting.",
       "noReason": "No additional reasoning yet.",
       "basedOnPrefix": "Baserat på sparad preferens:",
-      "basedOnHint": "om köparen frågat efter andra områden, uppdatera profilen.",
+      "basedOnHint": "redigera köparprofilen för att uppdatera dem.",
       "editPreferences": "Redigera",
       "editSave": "Spara",
       "editCancel": "Avbryt",
@@ -1264,6 +1264,7 @@
     "title": "Visningar",
     "cardUpcoming": "Kommande visningar",
     "cardTotal": "Totalt schemalagda",
-    "cardManual": "Manuellt schemalagda"
+    "cardManual": "Manuellt schemalagda",
+    "syncNote": "Visningar sparas i AIVENA. Synkronisering med Google Kalender kommer senare."
   }
 }

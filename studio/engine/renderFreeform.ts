@@ -27,6 +27,7 @@ export const FreeformElement = z.discriminatedUnion("type", [
     tint: Colour.optional(),
     tint_mode: z.enum(["wash", "duotone"]).optional(),
     tint_opacity: z.number().min(0).max(0.4).optional(),   // wash strength (default 0.12)
+    rotate: z.number().min(-45).max(45).optional(),        // tilt (scrapbook photo cards)
   }),
   z.object({
     // PUNCH (carousel styles): covers its bbox with the ground colour EXCEPT a shape-shaped hole,
@@ -48,6 +49,7 @@ export const FreeformElement = z.discriminatedUnion("type", [
     fill: Colour,
     radius: z.number().min(0).max(400).optional(),
     opacity: z.number().min(0).max(1).optional(),
+    rotate: z.number().min(-90).max(90).optional(),   // degrees around the rect's centre (tape strips, diagonal bands)
   }),
   z.object({
     type: z.literal("scrim"), // legibility gradient over a photo (transparent → colour)
@@ -91,7 +93,7 @@ export type FreeformElement = z.infer<typeof FreeformElement>;
 
 export const DesignSpec = z.object({
   background: Colour,
-  elements: z.array(FreeformElement).min(1).max(40),
+  elements: z.array(FreeformElement).min(1).max(80),   // authored carousel styles use tick/annotation kits
 });
 export type DesignSpec = z.infer<typeof DesignSpec>;
 
@@ -261,13 +263,25 @@ export async function renderFreeform(
           buf = await sharp(buf).composite([{ input: Buffer.from(washSvg) }]).jpeg({ quality: 90 }).toBuffer();
         }
       }
-      layers.push({ input: buf, left: Math.round(b[0]), top: Math.round(b[1]) });
+      if (el.rotate) {
+        // tilt the placed photo around its centre; the rotated canvas grows, so re-anchor by the growth
+        const rad = Math.abs(el.rotate) * Math.PI / 180;
+        const rw = Math.round(fw * Math.cos(rad) + fh * Math.sin(rad));
+        const rh = Math.round(fh * Math.cos(rad) + fw * Math.sin(rad));
+        buf = await sharp(buf).rotate(el.rotate, { background: { r: 0, g: 0, b: 0, alpha: 0 } }).png().toBuffer();
+        layers.push({ input: buf, left: Math.round(b[0] - (rw - fw) / 2), top: Math.round(b[1] - (rh - fh) / 2) });
+      } else {
+        layers.push({ input: buf, left: Math.round(b[0]), top: Math.round(b[1]) });
+      }
 
     } else if (el.type === "rect") {
       const b = clampBox(el.bbox, W, H);
-      overlaySvg += `<rect x="${b[0]}" y="${b[1]}" width="${boxW(b)}" height="${boxH(b)}"` +
+      const rectSvg = `<rect x="${b[0]}" y="${b[1]}" width="${boxW(b)}" height="${boxH(b)}"` +
         (el.radius ? ` rx="${el.radius}"` : "") + ` fill="${el.fill}"` +
         (el.opacity !== undefined ? ` fill-opacity="${el.opacity}"` : "") + `/>`;
+      overlaySvg += el.rotate
+        ? `<g transform="rotate(${el.rotate} ${(b[0] + boxW(b) / 2).toFixed(1)} ${(b[1] + boxH(b) / 2).toFixed(1)})">${rectSvg}</g>`
+        : rectSvg;
 
     } else if (el.type === "punch") {
       // ground colour over the bbox with a shape-shaped hole (evenodd) — the photo below shows through

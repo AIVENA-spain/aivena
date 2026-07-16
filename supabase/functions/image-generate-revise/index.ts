@@ -1,4 +1,8 @@
-// image-generate-revise — W13 free-revision path v0.6 (AIVENA Studio pipeline).
+// image-generate-revise — W13 free-revision path v0.6.1 (AIVENA Studio pipeline).
+//
+// v0.6.1 (2026-07-16): multi-change revision notes. v0.6's "ONE change only" phrasing made the model
+//   apply just the first listed change and skip the rest (Christian: removed the watermark, ignored the
+//   other notes). Now "applying ALL of the following requested changes and nothing else".
 //
 // v0.6 (2026-07-16): renovation revisions now edit the PREVIOUS RESULT with a change-only prompt on
 //   seedream (preserving). v0.5 re-ran the full restyle from the ORIGINAL photo on nano-banana — a new
@@ -112,10 +116,11 @@ Deno.serve(async (req) => {
     ? reserved.enhance_prompt.trim()
     : "Professional real-estate photo enhancement of the exact property shown. Keep the architecture, room layout, walls, windows, views and every structural element exactly as in the original photo.";
   const finalPrompt = isRenovation
-    ? "Edit this image with ONE change only: " + editNote + ". " +
-      "If the request is to remove something (watermarks, text, objects, clutter), remove it completely and fill the area seamlessly. " +
+    ? "Edit this image, applying ALL of the following requested changes and nothing else: " + editNote + ". " +
+      "Apply every part of the request — if it lists several changes, make each one. " +
+      "If a change removes something (watermarks, text, objects, curtains, clutter), remove it completely and fill the area seamlessly. " +
       "Keep absolutely everything else exactly the same — the same room design, furniture, materials, colours, lighting and camera angle. " +
-      "Do NOT redesign, restyle or rearrange anything beyond the requested change. Do not add any text, words, letters, logos or watermarks."
+      "Do NOT redesign, restyle or rearrange anything beyond the requested changes. Do not add any text, words, letters, logos or watermarks."
     : originalPrompt + " " +
       "ON TOP OF THAT — apply the agent's requested change fully and visibly; this is the top-priority goal of this edit: " + editNote + ". " +
       "If the request is to remove something (vehicles, cars, people, clutter, signs, reflections or other distractions), remove it completely and fill the area with a natural, seamless background that matches the surroundings. " +

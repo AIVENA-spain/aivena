@@ -17,6 +17,7 @@ import { CarouselFacts, CarouselCopy, CarouselBrand, renderCarousel } from "./re
 // vernacular motif per slide, 150px top/bottom kill zones, folio + agency anchor on every slide.
 
 export type CarouselStyle =
+  | "vibra"
   | "editorial" | "horizonte" | "cartel" | "encalada" | "sereno"
   | "plano" | "portada" | "recorte" | "marea"
   | "cuarteto" | "brisa" | "riviera" | "ventana"
@@ -32,7 +33,7 @@ export const PLANNED_STYLES: Record<"tips" | "quote", CarouselStyle[]> = {
   quote: ["editorial", "sereno", "encalada"],
 };
 export const LISTING_STYLES: CarouselStyle[] = [
-  "editorial", "horizonte", "cartel", "encalada", "sereno",
+  "vibra", "editorial", "horizonte", "cartel", "encalada", "sereno",
   "plano", "portada", "recorte", "marea",
   "cuarteto", "brisa", "riviera", "ventana",
 ];
@@ -1468,6 +1469,141 @@ function ventanaListing(facts: CarouselFacts, copy: CarouselCopy, brand: Carouse
       { type: "text", bbox: [80, 1000, 1000, 1100], content: wrap(T.save_sheet, "Jost", 30, 840), font: "Jost", size: 30, colour: mix(INK, PAPER, 0.85), align: "center", line_height: 44 },
       { type: "text", bbox: [80, 1150, 1000, 1180], content: facts.contact, font: "Jost", size: 21, colour: muted, align: "center", tracking: 2 },
       ...band(facts.agency, 4, total, muted),
+    ],
+  }));
+  return specs;
+}
+
+// ═══ VIBRA — the story listing (Christian 2026-07-17): vision-written line per photo, rotating
+// creative layouts (full-bleed / framed plate / arch crop), one generated vibe-artwork interstitial
+// matched to the property, human captions. The tips engine's creativity, aimed at real photos.
+export interface VibraStory {
+  hook: string; photo_lines: string[]; cta_action: string; cta_keyword: string;
+}
+export function vibraListing(
+  facts: CarouselFacts, story: VibraStory, brand: CarouselBrand, photoCount: number,
+  hasArt: boolean, lang = "es",
+): unknown[] {
+  const T = chrome(lang);
+  const NAVY = brand.navy, GOLD = brand.gold, CREAM = brand.cream;
+  const muted = mix(NAVY, CREAM, 0.55);
+  const artIdx = photoCount;                       // the artwork buffer rides AFTER the photos
+  const artAfter = Math.min(2, photoCount - 1);    // vibe artwork lands after the 2nd photo slide
+  const total = 1 + (photoCount - 1) + (hasArt ? 1 : 0) + 2;
+  const aiTag = (colour: string) => ({ type: "text", bbox: [440, 1240, 1000, 1262], content: T.ai_tag, font: "Jost", size: 15, colour, align: "right", tracking: 1 });
+  const specs: unknown[] = [];
+  let no = 1;
+
+  // COVER — best photo + vision hook + price
+  specs.push(DesignSpec.parse({
+    background: "#0a0c10",
+    elements: [
+      { type: "photo", photo: 0, bbox: [0, 0, 1080, 1350], tint: TERRA, tint_opacity: 0.06 },
+      { type: "scrim", bbox: [0, 0, 1080, 250], colour: NAVY, direction: "down" },
+      { type: "scrim", bbox: [0, 620, 1080, 1350], colour: NAVY },
+      { type: "scrim", bbox: [0, 900, 1080, 1350], colour: NAVY },
+      { type: "text", bbox: [80, 96, 700, 128], content: facts.agency.toUpperCase(), font: "Jost", size: 20, colour: CREAM, align: "left", weight: "500", tracking: 5 },
+      { type: "text", bbox: [80, 890, 1000, 922], content: facts.location, font: "Jost", size: 22, colour: GOLD, align: "left", tracking: 6 },
+      { type: "text", bbox: [80, 940, 1000, 1150], content: wrap(story.hook, FR, 84, 920), font: FR, size: 84, colour: "#f6f1e7", align: "left", line_height: 98 },
+      ...(facts.price ? [{ type: "text", bbox: [80, 1170, 700, 1236], content: facts.price, font: CAS, size: 54, colour: GOLD, align: "left" }] : []),
+      ...band(facts.agency, no, total, mix(CREAM, NAVY, 0.7)),
+    ],
+  }));
+  no++;
+
+  // PHOTO SLIDES — three rotating treatments, each carrying its vision line
+  for (let i = 1; i < photoCount; i++) {
+    const line = story.photo_lines[i] ?? story.photo_lines[0] ?? facts.title;
+    const v = (i - 1) % 3;
+    if (v === 0) {
+      specs.push(DesignSpec.parse({
+        background: "#0a0c10",
+        elements: [
+          { type: "photo", photo: i, bbox: [0, 0, 1080, 1350], tint: TERRA, tint_opacity: 0.06 },
+          { type: "scrim", bbox: [0, 900, 1080, 1350], colour: NAVY },
+          { type: "scrim", bbox: [0, 1080, 1080, 1350], colour: NAVY },
+          { type: "text", bbox: [80, 1090, 1000, 1230], content: wrap(line, FR, 52, 920), font: FR, size: 52, colour: "#f6f1e7", align: "left", line_height: 66 },
+          ...band(facts.agency, no, total, mix(CREAM, NAVY, 0.7)),
+        ],
+      }));
+    } else if (v === 1) {
+      specs.push(DesignSpec.parse({
+        background: CREAM,
+        elements: [
+          { type: "photo", photo: i, bbox: [80, 120, 1000, 860], tint: TERRA, tint_opacity: 0.06 },
+          ...frame([64, 104, 1016, 876], NAVY, 1.5, 0.5),
+          { type: "text", bbox: [80, 930, 1000, 962], content: facts.location, font: "Jost", size: 20, colour: mix(NAVY, CREAM, 0.6), align: "left", tracking: 5 },
+          { type: "text", bbox: [80, 990, 1000, 1170], content: wrap(line, FR, 54, 920), font: FR, size: 54, colour: NAVY, align: "left", line_height: 68 },
+          ...band(facts.agency, no, total, muted),
+        ],
+      }));
+    } else {
+      specs.push(DesignSpec.parse({
+        background: LIME,
+        elements: [
+          { type: "photo", photo: i, bbox: [190, 110, 890, 780], tint: TERRA, tint_opacity: 0.08 },
+          { type: "punch", bbox: [190, 110, 890, 780], fill: LIME, shape: "arch", outline: { colour: TERRA, width: 1.5, offset: 12 } },
+          { type: "text", bbox: [100, 860, 980, 1060], content: wrap(line, FR, 56, 860), font: FR, size: 56, colour: NAVY, align: "center", line_height: 72, valign: "center" },
+          ...band(facts.agency, no, total, mix(NAVY, LIME, 0.55)),
+        ],
+      }));
+    }
+    no++;
+    if (hasArt && i === artAfter) {
+      // the VIBE — generated artwork matched to the property, clearly artwork, tagged
+      specs.push(DesignSpec.parse({
+        background: NAVY,
+        elements: [
+          { type: "photo", photo: artIdx, bbox: [0, 0, 1080, 1350] },
+          { type: "scrim", bbox: [0, 940, 1080, 1350], colour: NAVY },
+          { type: "scrim", bbox: [0, 1100, 1080, 1350], colour: NAVY },
+          { type: "text", bbox: [80, 1120, 1000, 1230], content: wrap(story.photo_lines[0] ?? facts.title, FR, 50, 920), font: FR, size: 50, colour: "#f6f1e7", align: "left", line_height: 64 },
+          aiTag(mix(CREAM, NAVY, 0.65)),
+          ...band(facts.agency, no, total, mix(CREAM, NAVY, 0.7)),
+        ],
+      }));
+      no++;
+    }
+  }
+
+  // FACTS PLATE
+  const rows: [string, string][] = [];
+  if (facts.price) rows.push([T.price, facts.price]);
+  if (facts.area) rows.push([T.area, facts.area]);
+  if (facts.beds) rows.push([T.bedrooms, facts.beds]);
+  if (facts.baths) rows.push([T.bathrooms, facts.baths]);
+  const rowH = Math.min(140, 660 / Math.max(1, rows.length));
+  specs.push(DesignSpec.parse({
+    background: CREAM,
+    elements: [
+      { type: "text", bbox: [80, 110, 1000, 144], content: facts.location, font: "Jost", size: 21, colour: GOLD, align: "left", tracking: 6 },
+      { type: "text", bbox: [80, 190, 1000, 330], content: wrap(facts.title, FR, 76, 920), font: FR, size: 76, colour: NAVY, align: "left" },
+      ...rows.flatMap(([k, v], i) => {
+        const y = 430 + i * rowH;
+        return [
+          { type: "text", bbox: [90, y, 460, y + 34], content: k, font: "Jost", size: 21, colour: mix(NAVY, CREAM, 0.6), align: "left", tracking: 5 },
+          { type: "text", bbox: [460, y - 18, 990, y + 56], content: v, font: FR, size: 48, colour: NAVY, align: "right" },
+          { type: "rect", bbox: [90, y + rowH - 52, 990, y + rowH - 51], fill: GOLD, opacity: 0.4 },
+        ];
+      }),
+      { type: "text", bbox: [80, 1140, 940, 1192], content: T.save_sheet, font: "Jost", size: 26, colour: NAVY, align: "left", weight: "500", valign: "center", pill: { fill: GOLD, pad_x: 30, pad_y: 15 } },
+      ...band(facts.agency, no, total, muted),
+    ],
+  }));
+  no++;
+
+  // CTA — first photo re-crop, panel
+  specs.push(DesignSpec.parse({
+    background: NAVY,
+    elements: [
+      { type: "photo", photo: 0, bbox: [0, 0, 1080, 1350], zoom: 1.6, x: 0.5, y: 0.55, tint: NAVY, tint_opacity: 0.3 },
+      { type: "scrim", bbox: [0, 0, 1080, 1350], colour: NAVY },
+      { type: "rect", bbox: [90, 340, 990, 1030], fill: CREAM, radius: 8, opacity: 0.97 },
+      { type: "text", bbox: [150, 420, 930, 610], content: wrap(story.cta_action || T.save_cta, FR, 62, 760), font: FR, size: 62, colour: NAVY, align: "center", line_height: 78, valign: "center" },
+      { type: "text", bbox: [310, 700, 770, 760], content: (story.cta_keyword || `${T.write_us}: ${T.visit_kw}`).toUpperCase(), font: "Jost", size: 24, colour: CREAM, align: "center", weight: "600", tracking: 3, valign: "center", pill: { fill: NAVY, pad_x: 40, pad_y: 20 } },
+      { type: "text", bbox: [150, 850, 930, 880], content: facts.contact, font: "Jost", size: 20, colour: mix(NAVY, CREAM, 0.6), align: "center", tracking: 2 },
+      ...(facts.price ? [{ type: "text", bbox: [150, 920, 930, 990], content: `${facts.title} · ${facts.price}`, font: "Jost", size: 22, colour: mix(NAVY, CREAM, 0.75), align: "center", tracking: 1 }] : []),
+      ...band(facts.agency, total, total, mix(CREAM, NAVY, 0.7)),
     ],
   }));
   return specs;

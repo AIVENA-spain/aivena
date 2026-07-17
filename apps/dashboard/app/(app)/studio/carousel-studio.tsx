@@ -47,6 +47,7 @@ const LANGS: [string, string][] = [
 // the approved visual styles, per post type (server validates too)
 const STYLES: Record<CarouselType, [string, string, string][]> = {
   listing: [
+    ["vibra", "Vibra ✦ Recommended", "The story engine — AI reads your photos, writes a line for each, adds matched artwork"],
     ["editorial", "Editorial", "Clean and calm — the classic look"],
     ["horizonte", "Horizonte", "One panorama flowing across the first slides (needs a wide, high-quality photo)"],
     ["cartel", "Cartel", "Bold Spanish poster type, black & white photos"],
@@ -258,8 +259,7 @@ export function CarouselStudio() {
               "A property's photos as a swipeable tour: cover with the facts, one clean slide per photo, contact card. Caption written for you.", "Free · ready in seconds")}
             {typeCard("tips", <Lightbulb className="h-5 w-5" />, "Tips & advice",
               "Tell us the topic — the AI writes 3–7 practical tips and draws a slide for each, plus the caption and hashtags.", "1 credit · ~30 seconds")}
-            {typeCard("quote", <MessageSquareQuote className="h-5 w-5" />, "Client quote",
-              "Paste a happy client's words — they go on elegant quote slides exactly as written, never reworded.", "1 credit · ~30 seconds")}
+
           </div>
         </div>
       )}
@@ -274,7 +274,7 @@ export function CarouselStudio() {
           {err && <div className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{err}</div>}
           <div className="mb-4 flex max-w-xl flex-col gap-4">
             {stylePicker()}
-            {ctype === "tips" && style !== "editorial" && ["bodegon", "litoral", "tinta", "salitre", "papel", "arcilla", "acuarela", "bordado"].includes(style) && (
+            {((ctype === "tips" && ["bodegon", "litoral", "tinta", "salitre", "papel", "arcilla", "acuarela", "bordado"].includes(style)) || (ctype === "listing" && style === "vibra")) && (
               <div>
                 <label className={label}>Colour mood (the artwork is generated fresh for your topic)</label>
                 <div className="flex flex-wrap gap-2">
@@ -356,7 +356,7 @@ export function CarouselStudio() {
               </>
             )}
             {stylePicker()}
-            {ctype === "tips" && style !== "editorial" && ["bodegon", "litoral", "tinta", "salitre", "papel", "arcilla", "acuarela", "bordado"].includes(style) && (
+            {((ctype === "tips" && ["bodegon", "litoral", "tinta", "salitre", "papel", "arcilla", "acuarela", "bordado"].includes(style)) || (ctype === "listing" && style === "vibra")) && (
               <div>
                 <label className={label}>Colour mood (the artwork is generated fresh for your topic)</label>
                 <div className="flex flex-wrap gap-2">

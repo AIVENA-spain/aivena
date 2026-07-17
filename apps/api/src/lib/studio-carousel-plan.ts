@@ -80,7 +80,7 @@ const PLAN_TOOL = {
       cta_keyword: { type: 'string', description: 'the DM keyword pill, max 34 chars: "Escríbenos: GUÍA" style — one word the reader can DM' },
       swipe_cue: { type: 'string', description: 'the "swipe" word in the post language, max 18 chars (es: "Desliza", en: "Swipe")' },
       image_scenes: { type: 'array', items: { type: 'string' }, description: 'EXACTLY 3 concrete visual scenes (in ENGLISH, 15-40 words each) translating the post topic and its EMOTION into imagery: [0] the cover hero — one familiar Mediterranean object or scene carrying the topic as a visual metaphor (longing, the promise of a better life in Spain); [1] a companion scene in the same world; [2] a quieter closing beat. Rules: concrete nouns only (diffusion fails on abstractions), NO interiors, NO building facades that could read as a real property, NO recognizable landmarks, NO people close-up, NO text in the scene. Example for hidden costs: "a half-submerged terracotta amphora in clear turquoise water".' },
-      caption: { type: 'string', description: 'the Instagram caption. STRUCTURE: line 1 = standalone hook under 125 chars containing a location keyword, COMPLEMENTING the cover (not repeating it) → blank line → 2-4 short value lines (one idea each, line breaks between) → blank line → ONE CTA line. No hashtags inside. Location + topic keywords as natural prose in the first two sentences (Instagram search + Google index the caption).' },
+      caption: { type: 'string', description: 'the Instagram caption — SHORT and HUMAN, like an agent typing on their phone: max 3 short lines + one CTA line (under 320 chars total). Contractions, plain words, no rhetorical-question openers, no formulas. BANNED: dreaming of, hidden gem, look no further, imagine yourself, sueñas con, joya escondida. Include one location word naturally. No hashtags inside.' },
       hashtags: { type: 'array', items: { type: 'string' }, description: 'EXACTLY 3-5 hashtags WITHOUT #: 2 geo tags (town + region), 1-2 niche topic tags, optionally the agency name. NEVER mega-tags like realestate/home/luxury (useless since Instagram capped hashtags at 5).' },
     },
   },
@@ -148,7 +148,7 @@ CAROUSEL DOCTRINE (how these posts win — follow it):
 - One idea per slide. Each slide answers the question the previous one raised.
 - The recap is the SAVE unit — people screenshot and forward it.
 - The CTA leads with ONE action: a save or send framing (cta_action) + a DM keyword (cta_keyword). Contact details are handled by the design, not by you. NEVER "tag a friend", "share this", "follow for more" — Meta demotes engagement bait; help-framing ("send this to the person you're buying with") is the substitute.
-- Caption line 1: a standalone hook under 125 characters with a location keyword, complementing (not repeating) the cover.
+- Caption: SHORT and human — 3 lines max + a CTA line, written like a person, not a brochure. No clichés, no rhetorical-question openers.
 - Hashtags: 3-5 only, no mega-tags.
 - image_scenes: 3 concrete Mediterranean scenes (ENGLISH) that translate the topic's emotion — the longing for a home in Spain, the promise of a better life — into carefully purposeful imagery. One familiar object/scene per beat carrying one extra meaning. Concrete nouns; no interiors, no property facades, no landmarks, no close people, no text.
 - EVERY tip also gets its own "scene": the visual translation of THAT tip specifically. All scenes across the deck must be clearly DIFFERENT from each other — different objects, different compositions — while living in the same world. Repetition across slides is a failure.
@@ -211,7 +211,7 @@ const LISTING_TOOL = {
       lifestyle_line: { type: 'string', description: 'one line selling the TOWN, not the house, max 130 chars, no digits ("Vivir en Altea: cafés junto al mar y calas escondidas")' },
       cta_action: { type: 'string', description: 'save/send action line, max 120 chars ("Guárdalo para tu próxima visita a la zona"), help-framed, no engagement bait' },
       cta_keyword: { type: 'string', description: 'DM keyword pill, max 34 chars ("Escríbenos: VISITA")' },
-      caption: { type: 'string', description: 'SHORT caption (under 40 words of prose): line 1 = hook under 125 chars with the town name, blank line, 1-2 fact lines using ONLY the provided facts verbatim, blank line, one CTA line with the DM keyword. No hashtags inside.' },
+      caption: { type: 'string', description: 'SHORT HUMAN caption (under 250 chars): 1-2 plain lines a person would actually type — the town name once, one honest reason to care, then a one-line CTA with the DM keyword. Contractions fine. BANNED: dreaming of, hidden gem, look no further, oasis, imagine yourself, sueñas con. Facts verbatim only. No hashtags inside.' },
       hashtags: { type: 'array', items: { type: 'string' }, description: '3-5 hashtags WITHOUT #: 2 geo (town + region), 1-2 niche (property type / buyer intent), optionally the agency. No mega-tags.' },
     },
   },
@@ -224,6 +224,74 @@ export interface ListingCopy {
   cta_keyword: string;
   caption: string;
   hashtags: string[];
+}
+
+const STORY_TOOL = {
+  name: 'submit_story',
+  description: 'Submit the listing story package.',
+  input_schema: {
+    type: 'object',
+    required: ['hook', 'photo_lines', 'vibe_scene', 'art_style', 'caption'],
+    properties: {
+      hook: { type: 'string', description: 'cover hook over the best photo, max 58 chars, NO digits — the lifestyle promise this specific property makes (you can SEE the photos)' },
+      photo_lines: { type: 'array', items: { type: 'string' }, description: 'ONE line per photo, in the exact order given (max 80 chars each): what makes THAT photo worth pausing on — concrete, sensory, human, no digits, never generic ("bright living room" is a failure; "morning light hits the long table first" is the standard)' },
+      vibe_scene: { type: 'string', description: "ENGLISH, 15-35 words: one artwork scene capturing this property's VIBE (golf calm / beach morning / village evening...) as a Mediterranean visual metaphor. Concrete nouns. NO interiors, NO building facades, NO landmarks, NO people close-up, NO text." },
+      art_style: { type: 'string', enum: ['bodegon', 'litoral', 'tinta', 'salitre', 'papel', 'arcilla', 'acuarela', 'bordado'], description: 'the artwork style that best matches this property vibe' },
+      caption: { type: 'string', description: 'SHORT HUMAN caption (max 250 chars): 1-2 plain lines a person would type + one CTA line with the DM keyword. Town once. Facts verbatim only if used. BANNED: dreaming of, hidden gem, look no further, oasis, imagine yourself, sueñas con.' },
+      cta_action: { type: 'string', description: 'save/send line, max 100 chars, help-framed' },
+      cta_keyword: { type: 'string', description: 'DM keyword pill, max 30 chars' },
+      hashtags: { type: 'array', items: { type: 'string' }, description: '3-5 without #: 2 geo + 1-2 niche, no mega-tags' },
+    },
+  },
+} as const;
+
+export interface ListingStory {
+  hook: string; photo_lines: string[]; vibe_scene: string; art_style: string;
+  caption: string; cta_action: string; cta_keyword: string; hashtags: string[];
+}
+
+/** Vision storyteller for the Vibra listing style: LOOKS at the chosen photos, writes one line per
+ *  photo + the property's vibe as an artwork scene. Facts verbatim; null on any failure. */
+export async function listingStory(opts: {
+  photoUrls: string[]; facts: Record<string, string>; language: string; agencyName: string;
+}): Promise<ListingStory | null> {
+  try {
+    const langNames: Record<string, string> = { es: 'Spanish', en: 'English', de: 'German', fr: 'French', nl: 'Dutch', sv: 'Swedish', no: 'Norwegian', da: 'Danish', fi: 'Finnish', pl: 'Polish', ru: 'Russian', it: 'Italian', pt: 'Portuguese' };
+    const factList = Object.entries(opts.facts).filter(([, v]) => v).map(([k, v]) => `  ${k}: "${v}"`).join('\n');
+    const content: unknown[] = opts.photoUrls.slice(0, 8).map((u) => ({ type: 'image', source: { type: 'url', url: u } }));
+    content.push({
+      type: 'text',
+      text: `These are the chosen photos (in posting order) of a real listing marketed by "${opts.agencyName}". Facts (verbatim only): \n${factList}\n\nWrite the story package in ${langNames[opts.language] ?? 'Spanish'} (vibe_scene in English). One photo_line PER photo, same order, each specific to what is visible in THAT photo. Human, warm, zero brochure-speak. Submit with submit_story.`,
+    });
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-5', max_tokens: 1600,
+        tools: [STORY_TOOL], tool_choice: { type: 'tool', name: 'submit_story' },
+        messages: [{ role: 'user', content }],
+      }),
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { content?: { type: string; input?: unknown }[] };
+    const input = data.content?.find((c) => c.type === 'tool_use')?.input as Partial<ListingStory> | undefined;
+    if (!input || typeof input.hook !== 'string' || !Array.isArray(input.photo_lines)) return null;
+    const clean = (x: unknown, max: number) => (typeof x === 'string' ? x.trim().slice(0, max) : '');
+    const hook = clean(input.hook, 58);
+    if (!hook || /\d/.test(hook)) return null;
+    return {
+      hook,
+      photo_lines: input.photo_lines.map((l) => clean(l, 80)).slice(0, 8),
+      vibe_scene: clean(input.vibe_scene, 300),
+      art_style: typeof input.art_style === 'string' ? input.art_style : 'litoral',
+      caption: clean(input.caption, 260),
+      cta_action: clean(input.cta_action, 100),
+      cta_keyword: clean(input.cta_keyword, 30),
+      hashtags: Array.isArray(input.hashtags) ? input.hashtags.filter((h): h is string => typeof h === 'string').map((h) => h.replace(/^#/, '').trim()).slice(0, 5) : [],
+    };
+  } catch {
+    return null;
+  }
 }
 
 /** Best-effort AI copy for a LISTING carousel — facts passed verbatim, never invented. Null on any failure. */

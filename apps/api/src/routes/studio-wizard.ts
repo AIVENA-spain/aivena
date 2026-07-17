@@ -24,10 +24,12 @@ import {
 import { usablePhotos } from '../lib/property-images';
 import { type CarouselPlan, chrome as carouselChrome } from '../../../../studio/engine/carouselSlides';
 import {
-  renderPlannedStyled, renderListingStyled, PLANNED_STYLES, LISTING_STYLES, type CarouselStyle,
+  renderPlannedStyled, renderListingStyled, vibraListing, PLANNED_STYLES, LISTING_STYLES, type CarouselStyle,
 } from '../../../../studio/engine/carouselStyles';
-import { planCarousel, listingCopy, PlanSchema } from '../lib/studio-carousel-plan';
+import { planCarousel, listingCopy, listingStory, PlanSchema } from '../lib/studio-carousel-plan';
 import { renderTipsImageStyled, renderTipsImageStyledV2, isTipsImageStyle } from '../../../../studio/engine/carouselTipsImage';
+import { renderFreeform, type DesignSpec } from '../../../../studio/engine/renderFreeform';
+import { applyGrain } from '../../../../studio/engine/carouselSlides';
 import { loadTipsImages, generateTipsImages, loadGenerationImages, TIPS_SCHEMES } from '../lib/studio-carousel-image';
 
 /**
@@ -902,7 +904,7 @@ async function storeSlides(agencyId: string, genId: string, slides: Buffer[]): P
 }
 
 async function runCarousel(opts: {
-  genId: string; agencyId: string; refs: string[]; language: string; style: CarouselStyle;
+  genId: string; agencyId: string; refs: string[]; language: string; style: CarouselStyle; scheme: string;
   facts: {
     title: string; location: string; price: string; specs: string;
     beds: string; baths: string; area: string; agency: string; contact: string; features: string[];
@@ -915,17 +917,42 @@ async function runCarousel(opts: {
     for (const ref of opts.refs) { const buf = await loadPhotoBuffer(ref); if (buf) buffers.push(buf); }
     if (buffers.length < 2) throw new Error('not enough loadable photos');
 
-    // best-effort AI copy (hook overlay, lifestyle line, CTA, caption) from the same canonical facts —
-    // a copy failure never fails the carousel: the design falls back to deterministic text.
-    const copy = await listingCopy({
-      facts: { title: opts.facts.title, location: opts.facts.location, price: opts.facts.price, specs: opts.facts.specs, agency: opts.facts.agency, contact: opts.facts.contact },
-      language: opts.language, agencyName: opts.facts.agency,
-    });
-
-    const slides = await renderListingStyled(opts.style, opts.facts, {
-      hook: copy?.hook ?? '', lifestyle_line: copy?.lifestyle_line ?? '',
-      cta_action: copy?.cta_action ?? '', cta_keyword: copy?.cta_keyword ?? '',
-    }, opts.brand, buffers, opts.language);
+    let slides: Buffer[];
+    let caption: string | undefined;
+    let hashtags: string[] | undefined;
+    if (opts.style === 'vibra') {
+      // VIBRA: vision reads the chosen photos → a line per photo + the property's vibe as artwork
+      const story = await listingStory({
+        photoUrls: opts.refs,
+        facts: { title: opts.facts.title, location: opts.facts.location, price: opts.facts.price, specs: opts.facts.specs, agency: opts.facts.agency },
+        language: opts.language, agencyName: opts.facts.agency,
+      });
+      let art: Buffer | null = null;
+      if (story?.vibe_scene) {
+        const gen = await generateTipsImages({ style: story.art_style, scheme: opts.scheme, scenes: [story.vibe_scene], agencyId, genId });
+        art = gen?.buffers[0] ?? null;
+      }
+      const st = story ?? { hook: opts.facts.title, photo_lines: [], vibe_scene: '', art_style: 'litoral', caption: '', cta_action: '', cta_keyword: '', hashtags: [] };
+      caption = story?.caption || undefined;
+      hashtags = story?.hashtags?.length ? story.hashtags : undefined;
+      const specs = vibraListing(opts.facts, st, opts.brand, buffers.length, !!art, opts.language);
+      const all = art ? [...buffers, art] : buffers;
+      slides = [];
+      for (const sp of specs) slides.push(await applyGrain(await renderFreeform(sp as DesignSpec, { width: 1080, height: 1350 }, all), 0.035));
+    } else {
+      // best-effort AI copy (hook overlay, lifestyle line, CTA, caption) from the same canonical facts —
+      // a copy failure never fails the carousel: the design falls back to deterministic text.
+      const copy = await listingCopy({
+        facts: { title: opts.facts.title, location: opts.facts.location, price: opts.facts.price, specs: opts.facts.specs, agency: opts.facts.agency, contact: opts.facts.contact },
+        language: opts.language, agencyName: opts.facts.agency,
+      });
+      caption = copy?.caption || undefined;
+      hashtags = copy?.hashtags?.length ? copy.hashtags : undefined;
+      slides = await renderListingStyled(opts.style, opts.facts, {
+        hook: copy?.hook ?? '', lifestyle_line: copy?.lifestyle_line ?? '',
+        cta_action: copy?.cta_action ?? '', cta_keyword: copy?.cta_keyword ?? '',
+      }, opts.brand, buffers, opts.language);
+    }
     const stored = await storeSlides(agencyId, genId, slides);
 
     await supabaseAdmin.from('image_generations').update({
@@ -934,7 +961,8 @@ async function runCarousel(opts: {
       result_image_storage_path: stored[0].path,
       result_metadata: {
         engine: 'carousel', carousel_type: 'listing', carousel_style: opts.style, slide_count: stored.length, slides: stored,
-        ...(copy ? { caption: copy.caption, hashtags: copy.hashtags } : {}),
+        ...(caption ? { caption } : {}), ...(hashtags ? { hashtags } : {}),
+        ai_imagery: opts.style === 'vibra',
       },
       completed_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -1140,7 +1168,7 @@ route.post('/carousel', async (c) => {
     const genId = rows[0]?.id;
     if (!genId) throw new Error('insert failed');
 
-    void runCarousel({ genId, agencyId, refs, language, style, facts, brand: loaded.brand });
+    void runCarousel({ genId, agencyId, refs, language, style, scheme, facts, brand: loaded.brand });
     return c.json({ ok: true, generation_id: genId, status: 'processing' });
   } catch (err) {
     console.error('[studio/carousel] failed:', err);

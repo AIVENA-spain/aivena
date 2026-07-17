@@ -54,7 +54,7 @@ const PLAN_TOOL = {
     properties: {
       type: { type: 'string', enum: ['tips', 'quote'] },
       eyebrow: { type: 'string', description: 'short kicker above the cover headline, max 44 chars — names the audience or topic ("Guía para compradores extranjeros")' },
-      hook_title: { type: 'string', description: 'the cover headline: 5-8 words, max 12, max 90 chars. Loss/mistake/gap framed, specific (real place names), leaves the question OPEN. Banned: "tips", "consejos útiles", "update", "bienvenido", anything that summarizes the whole carousel.' },
+      hook_title: { type: 'string', description: 'the cover headline: 5-8 words, max 12, max 90 chars. Loss/mistake/gap framed, leaves the question OPEN. Use a place name ONLY if the topic itself names one — NEVER add a town/area the user did not mention. Banned: "tips", "consejos útiles", "update", "bienvenido", anything that summarizes the whole carousel.' },
       slide2_title: { type: 'string', description: 'SLIDE 2 IS A SECOND COVER (Instagram re-serves unswiped carousels starting at slide 2): a standalone self-qualification headline, max 80 chars ("¿Vendes este año? Esto te ahorra dinero"). Never a continuation of slide 1.' },
       slide2_body: { type: 'string', description: 'slide 2 supporting line: who this is for + the stakes, max 220 chars, standalone.' },
       tips: {
@@ -81,7 +81,7 @@ const PLAN_TOOL = {
       swipe_cue: { type: 'string', description: 'the "swipe" word in the post language, max 18 chars (es: "Desliza", en: "Swipe")' },
       image_scenes: { type: 'array', items: { type: 'string' }, description: 'EXACTLY 3 concrete visual scenes (in ENGLISH, 15-40 words each) translating the post topic and its EMOTION into imagery: [0] the cover hero — one familiar Mediterranean object or scene carrying the topic as a visual metaphor (longing, the promise of a better life in Spain); [1] a companion scene in the same world; [2] a quieter closing beat. Rules: concrete nouns only (diffusion fails on abstractions), NO interiors, NO building facades that could read as a real property, NO recognizable landmarks, NO people close-up, NO text in the scene. Example for hidden costs: "a half-submerged terracotta amphora in clear turquoise water".' },
       caption: { type: 'string', description: 'the Instagram caption — SHORT and HUMAN, like an agent typing on their phone: max 3 short lines + one CTA line (under 320 chars total). Contractions, plain words, no rhetorical-question openers, no formulas. BANNED: dreaming of, hidden gem, look no further, imagine yourself, sueñas con, joya escondida. Include one location word naturally. No hashtags inside.' },
-      hashtags: { type: 'array', items: { type: 'string' }, description: 'EXACTLY 3-5 hashtags WITHOUT #: 2 geo tags (town + region), 1-2 niche topic tags, optionally the agency name. NEVER mega-tags like realestate/home/luxury (useless since Instagram capped hashtags at 5).' },
+      hashtags: { type: 'array', items: { type: 'string' }, description: 'EXACTLY 3-5 hashtags WITHOUT #: geo tags ONLY if the topic names a place, otherwise topic-niche tags + optionally the agency name. NEVER mega-tags like realestate/home/luxury.' },
     },
   },
 } as const;
@@ -143,12 +143,13 @@ ${task}
 Write ALL copy in ${lang} — one language for the whole post (comprehension and keyword search are language-literal).
 
 CAROUSEL DOCTRINE (how these posts win — follow it):
-- The cover headline: 5-8 words, loss/gap-framed, SPECIFIC (real town/region names beat "the area"), and it must leave the question open — a title that summarizes the answer kills the swipe.
+- The cover headline: 5-8 words, loss/gap-framed, and it must leave the question open — a title that summarizes the answer kills the swipe.
+- PLACES: mention a specific town/area ONLY if the topic itself names one. If it doesn't, keep every slide and the caption location-neutral ("the coast", "the area") — never insert a town the user didn't ask for.
 - Slide 2 is a SECOND cover: Instagram re-serves unswiped carousels starting at slide 2, so slide2_title must stand alone with zero context ("Selling this year? This saves you money.").
 - One idea per slide. Each slide answers the question the previous one raised.
 - The recap is the SAVE unit — people screenshot and forward it.
 - The CTA leads with ONE action: a save or send framing (cta_action) + a DM keyword (cta_keyword). Contact details are handled by the design, not by you. NEVER "tag a friend", "share this", "follow for more" — Meta demotes engagement bait; help-framing ("send this to the person you're buying with") is the substitute.
-- Caption: SHORT and human — 3 lines max + a CTA line, written like a person, not a brochure. No clichés, no rhetorical-question openers.
+- Caption: SHORT and human — 3 lines max + a CTA line, written like a person, not a brochure. No clichés, no rhetorical-question openers. Same place rule: no towns unless the topic names one.
 - Hashtags: 3-5 only, no mega-tags.
 - image_scenes: 3 concrete Mediterranean scenes (ENGLISH) that translate the topic's emotion — the longing for a home in Spain, the promise of a better life — into carefully purposeful imagery. One familiar object/scene per beat carrying one extra meaning. Concrete nouns; no interiors, no property facades, no landmarks, no close people, no text.
 - EVERY tip also gets its own "scene": the visual translation of THAT tip specifically. All scenes across the deck must be clearly DIFFERENT from each other — different objects, different compositions — while living in the same world. Repetition across slides is a failure.

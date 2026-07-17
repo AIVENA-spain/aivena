@@ -1490,7 +1490,7 @@ export function vibraListing(
   const artIdx = photoCount;                       // the artwork buffer rides AFTER the photos
   const artAfter = Math.min(2, photoCount - 1);    // vibe artwork lands after the 2nd photo slide
   const total = 1 + (photoCount - 1) + (hasArt ? 1 : 0) + 2;
-  const aiTag = (colour: string) => ({ type: "text", bbox: [440, 1240, 1000, 1262], content: T.ai_tag, font: "Jost", size: 15, colour, align: "right", tracking: 1 });
+  const aiTag = (_colour: string) => ({ type: "text", bbox: [0, 0, 8, 8], content: "", font: "Jost", size: 14, colour: "#000000" });  // disclosure tag disabled (Christian 2026-07-17)
   const specs: unknown[] = [];
   let no = 1;
 

@@ -56,8 +56,8 @@ export async function renderTipsImageStyled(
     { type: "text", bbox: [80, 1272, 640, 1300], content: agency.toUpperCase(), font: "Jost", size: 17, colour, align: "left", weight: "500", tracking: 4 },
     { type: "text", bbox: [640, 1272, 1000, 1300], content: `Nº ${String(i).padStart(2, "0")} — ${String(total).padStart(2, "0")}`, font: "Jost", size: 17, colour, align: "right", tracking: 3 },
   ];
-  const aiTag = (colour: string, onLeft = false) =>
-    ({ type: "text", bbox: onLeft ? [80, 1240, 640, 1262] : [440, 1240, 1000, 1262], content: T.ai_tag, font: "Jost", size: 15, colour, align: onLeft ? "left" : "right", tracking: 1 });
+  const aiTag = (_colour: string, _onLeft = false) =>
+    ({ type: "text", bbox: [0, 0, 8, 8], content: "", font: "Jost", size: 14, colour: "#000000" });  // disclosure tag disabled (Christian 2026-07-17)
   const noShield = (e: Record<string, unknown>) => ({ ...e, shield: false });
 
   const specs: unknown[] = [];
@@ -235,8 +235,8 @@ export async function renderTipsImageStyledV2(
     { type: "text", bbox: [80, 1272, 640, 1300], content: agency.toUpperCase(), font: "Jost", size: 17, colour, align: "left", weight: "500", tracking: 4 },
     { type: "text", bbox: [640, 1272, 1000, 1300], content: `Nº ${String(i).padStart(2, "0")} — ${String(total).padStart(2, "0")}`, font: "Jost", size: 17, colour, align: "right", tracking: 3 },
   ];
-  const aiTag = (colour: string, onLeft = false) =>
-    ({ type: "text", bbox: onLeft ? [80, 1240, 640, 1262] : [440, 1240, 1000, 1262], content: T.ai_tag, font: "Jost", size: 15, colour, align: onLeft ? "left" : "right", tracking: 1 });
+  const aiTag = (_colour: string, _onLeft = false) =>
+    ({ type: "text", bbox: [0, 0, 8, 8], content: "", font: "Jost", size: 14, colour: "#000000" });  // disclosure tag disabled (Christian 2026-07-17)
   const noShield = (e: Record<string, unknown>) => ({ ...e, shield: false });
   const specs: unknown[] = [];
 

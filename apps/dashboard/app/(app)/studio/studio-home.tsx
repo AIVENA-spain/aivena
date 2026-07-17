@@ -11,6 +11,10 @@ import { StudioWizard } from "./studio-wizard";
 import { SmartStudio } from "./smart-studio";
 import { CarouselStudio } from "./carousel-studio";
 import { downloadImage } from "./property-picker";
+import { withBasePath } from "@/lib/base-path";
+
+/** Studio-home static assets live in public/studio; prefix so they resolve under the /dashboard basePath. */
+const asset = (name: string) => withBasePath(`/studio/${name}`);
 
 type LibraryItem = {
   id: string; image_url: string; generation_type: string;
@@ -197,10 +201,10 @@ export function StudioHome({
   const recent = initialLibrary.slice(0, 4);
 
   const STYLES: { img: string; name: string; desc: string; swatches: string[] }[] = [
-    { img: "/studio/style-minimal.jpg", name: "Minimal Luxury", desc: "Clean, elegant and high-end aesthetic.", swatches: ["#F2EEE6", "#C9B79C", "#6B6B6B", "#1A1A1A"] },
-    { img: "/studio/style-mediterranean.jpg", name: "Mediterranean Editorial", desc: "Warm, natural and timeless storytelling.", swatches: ["#D8C3A5", "#8A9A7B", "#2D6E8E", "#B5623C"] },
-    { img: "/studio/style-poster.jpg", name: "Bold Spanish Poster", desc: "Strong typography and vibrant Mediterranean energy.", swatches: ["#E07A3E", "#F4E9D8", "#14294B", "#1A1A1A"] },
-    { img: "/studio/style-brochure.jpg", name: "Clean Property Brochure", desc: "Refined layouts for listings and brochures.", swatches: ["#B8BFC2", "#D8C3A5", "#4A6B4E", "#14294B"] },
+    { img: asset("style-minimal.jpg"), name: "Minimal Luxury", desc: "Clean, elegant and high-end aesthetic.", swatches: ["#F2EEE6", "#C9B79C", "#6B6B6B", "#1A1A1A"] },
+    { img: asset("style-mediterranean.jpg"), name: "Mediterranean Editorial", desc: "Warm, natural and timeless storytelling.", swatches: ["#D8C3A5", "#8A9A7B", "#2D6E8E", "#B5623C"] },
+    { img: asset("style-poster.jpg"), name: "Bold Spanish Poster", desc: "Strong typography and vibrant Mediterranean energy.", swatches: ["#E07A3E", "#F4E9D8", "#14294B", "#1A1A1A"] },
+    { img: asset("style-brochure.jpg"), name: "Clean Property Brochure", desc: "Refined layouts for listings and brochures.", swatches: ["#B8BFC2", "#D8C3A5", "#4A6B4E", "#14294B"] },
   ];
 
   return (
@@ -226,13 +230,13 @@ export function StudioHome({
 
       {/* ── three entry cards ── */}
       <div className="mt-8 grid gap-5 md:grid-cols-3">
-        <HeroCard img="/studio/hero-property.jpg" tint="text-emerald-600 dark:text-emerald-400"
+        <HeroCard img={asset("hero-property.jpg")} tint="text-emerald-600 dark:text-emerald-400"
           icon={<HomeIcon className="h-5 w-5" />} title="Create from a property"
           desc="Turn a listing into posts, carousels and brochures." onClick={() => setView("templates")} />
-        <HeroCard img="/studio/hero-advice.jpg" tint="text-violet-600 dark:text-violet-400"
+        <HeroCard img={asset("hero-advice.jpg")} tint="text-violet-600 dark:text-violet-400"
           icon={<SquarePen className="h-5 w-5" />} title="Create advice content"
           desc="Generate buyer tips, seller advice and market posts." onClick={() => setView("carousel")} />
-        <HeroCard img="/studio/hero-room.jpg" tint="text-amber-600 dark:text-amber-400"
+        <HeroCard img={asset("hero-room.jpg")} tint="text-amber-600 dark:text-amber-400"
           icon={<Hammer className="h-5 w-5" />} title="Transform a room"
           desc="Create renovation concepts and before/after content." onClick={() => setView("renovation")} />
       </div>
@@ -240,11 +244,11 @@ export function StudioHome({
       {/* ── suggested for today ── */}
       <SectionHead title="Suggested for today" link="View all suggestions" onLink={() => setView("templates")} />
       <div className="grid gap-4 md:grid-cols-3">
-        <SuggestCard img="/studio/style-poster.jpg" icon={<Sparkles className="h-4 w-4" />}
+        <SuggestCard img={asset("style-poster.jpg")} icon={<Sparkles className="h-4 w-4" />}
           title="5 buyer mistakes on the Costa Blanca" sub="Carousel · Spanish · 5 slides" cta="Create carousel" onClick={() => setView("carousel")} />
-        <SuggestCard img="/studio/hero-property.jpg" icon={<HomeIcon className="h-4 w-4" />}
+        <SuggestCard img={asset("hero-property.jpg")} icon={<HomeIcon className="h-4 w-4" />}
           title="Turn a listing into a luxury post" sub="Listing post" cta="Create post" onClick={() => setView("smart")} />
-        <SuggestCard img="/studio/hero-room.jpg" icon={<Hammer className="h-4 w-4" />}
+        <SuggestCard img={asset("hero-room.jpg")} icon={<Hammer className="h-4 w-4" />}
           title="Kitchen before/after inspiration" sub="Renovation" cta="Create concept" onClick={() => setView("renovation")} />
       </div>
 

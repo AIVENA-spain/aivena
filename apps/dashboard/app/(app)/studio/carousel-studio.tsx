@@ -1,17 +1,16 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Check, Copy, Download, Images, Lightbulb, Loader2, MessageSquareQuote, Pencil, Save } from "lucide-react";
-import { PropertyPicker, downloadImage, type PickerProperty } from "./property-picker";
+import { ArrowLeft, Check, Copy, Download, Images, Loader2, Pencil, Save } from "lucide-react";
+import { downloadImage } from "./property-picker";
 import { carouselAction, carouselUpdateAction, carouselStyleExamplesAction, statusAction, editableSectionsAction, setSectionAction } from "./wizard-actions";
 
 /**
- * CAROUSEL STUDIO (Christian 2026-07-16, Phase 1): three post types —
- *  · Listing: cover + one clean slide per photo + contact card (deterministic) + AI caption.
- *  · Tips & advice: AI writes the tips from a topic, the engine draws brand-themed slides.
- *  · Client quote: the client's words verbatim on elegant quote slides.
- * Tips/quote text stays editable after generation (the engine re-renders in seconds).
- * Honest scope: produces the slide images + caption to post — no Instagram publishing.
+ * CAROUSEL STUDIO — tips & advice only (Christian 2026-07-17: property carousels REMOVED from the
+ * UI after three grammars failed his bar; the raw portal photos cap the ceiling. Server routes and
+ * engine styles stay parked for a possible post-pilot return; properties post via the single-image
+ * Studio). The AI writes the tips from a topic, the engine draws brand-themed slides; text stays
+ * editable after generation. Honest scope: slide images + caption to post — no IG publishing.
  */
 
 type CarouselType = "listing" | "tips" | "quote";
@@ -84,9 +83,8 @@ const STYLES: Record<CarouselType, [string, string, string][]> = {
 };
 
 export function CarouselStudio() {
-  const [phase, setPhase] = useState<Phase>("type");
-  const [ctype, setCtype] = useState<CarouselType>("listing");
-  const [property, setProperty] = useState<PickerProperty | null>(null);
+  const [phase, setPhase] = useState<Phase>("form");   // tips-only: land straight on the form
+  const [ctype] = useState<CarouselType>("tips");
   const [slides, setSlides] = useState<string[]>([]);
   const [genId, setGenId] = useState<string | null>(null);
   const [caption, setCaption] = useState<string>("");
@@ -170,7 +168,7 @@ export function CarouselStudio() {
 
   async function downloadAll() {
     setDownloading(true);
-    const base = ctype === "listing" ? property?.title || "carousel" : ctype;
+    const base = ctype;
     for (let i = 0; i < slides.length; i++) {
       await downloadImage(slides[i], `${base}-slide-${i + 1}.png`);
     }
@@ -228,89 +226,13 @@ export function CarouselStudio() {
     );
   }
 
-  function typeCard(t: CarouselType, icon: React.ReactNode, title: string, desc: string, cost: string) {
-    return (
-      <button onClick={() => {
-        setCtype(t); setStyle("editorial"); setErr(null); setPhase(t === "listing" ? "pick" : "form");
-        if (!Object.keys(examples).length) void carouselStyleExamplesAction().then((e) => {
-          if (e.ok && e.examples && typeof e.examples === "object") setExamples(e.examples as Record<string, string[]>);
-        });
-      }}
-        className="flex flex-col items-start gap-2 rounded-xl border border-neutral-200 bg-white p-4 text-left transition hover:border-neutral-400 hover:shadow-sm dark:border-neutral-700 dark:bg-neutral-900">
-        <span className="rounded-lg bg-emerald-50 p-2 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400">{icon}</span>
-        <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{title}</span>
-        <span className="text-xs text-neutral-500 dark:text-neutral-400">{desc}</span>
-        <span className="text-[11px] text-neutral-400">{cost}</span>
-      </button>
-    );
-  }
-
   return (
     <div className="mx-auto max-w-6xl px-4 py-6">
-      {phase === "type" && (
-        <div>
-          <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Carousel</h2>
-          <p className="mb-4 text-sm text-neutral-500 dark:text-neutral-400">
-            A swipeable multi-slide post in your brand — pick what kind of post you want to make.
-          </p>
-          {err && <div className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{err}</div>}
-          <div className="grid gap-3 sm:grid-cols-3">
-            {typeCard("listing", <Images className="h-5 w-5" />, "Listing",
-              "A property's photos as a swipeable tour: cover with the facts, one clean slide per photo, contact card. Caption written for you.", "Free · ready in seconds")}
-            {typeCard("tips", <Lightbulb className="h-5 w-5" />, "Tips & advice",
-              "Tell us the topic — the AI writes 3–7 practical tips and draws a slide for each, plus the caption and hashtags.", "1 credit · ~30 seconds")}
-
-          </div>
-        </div>
-      )}
-
-      {phase === "pick" && (
-        <div>
-          <button onClick={() => setPhase("type")} className="mb-3 flex items-center gap-1.5 text-sm text-neutral-500 hover:text-neutral-900"><ArrowLeft className="h-4 w-4" /> Post type</button>
-          <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Listing carousel</h2>
-          <p className="mb-4 text-sm text-neutral-500 dark:text-neutral-400">
-            Pick a property and 2–9 photos — cover with the facts, one clean slide per photo, and a contact card to close.
-          </p>
-          {err && <div className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{err}</div>}
-          <div className="mb-4 flex max-w-xl flex-col gap-4">
-            {stylePicker()}
-            {((ctype === "tips" && ["bodegon", "litoral", "tinta", "salitre", "papel", "arcilla", "acuarela", "bordado"].includes(style)) || (ctype === "listing" && style === "vibra")) && (
-              <div>
-                <label className={label}>Colour mood (the artwork is generated fresh for your topic)</label>
-                <div className="flex flex-wrap gap-2">
-                  {[["clasico", "Clásico — navy & gold"], ["atardecer", "Atardecer — sunset terracotta"], ["oliva", "Oliva — olive & sage"], ["mar", "Mar — sea & foam"]].map(([key, name]) => (
-                    <button key={key} type="button" onClick={() => setScheme(key)}
-                      className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${scheme === key
-                        ? "border-neutral-900 bg-neutral-50 text-neutral-900 dark:border-neutral-100 dark:bg-neutral-800 dark:text-neutral-100"
-                        : "border-neutral-200 text-neutral-500 hover:border-neutral-400 dark:border-neutral-700"}`}>
-                      {name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-            <div>
-              <label className={label}>Language of the post</label>
-              <select value={language} onChange={(e) => setLanguage(e.target.value)} className={field}>
-                {LANGS.map(([code, name]) => <option key={code} value={code}>{name}</option>)}
-              </select>
-            </div>
-          </div>
-          <PropertyPicker multi minPhotos={2} onConfirm={(p, chosen) => {
-            setProperty(p);
-            void start({ type: "listing", property_id: p.id, photos: chosen.slice(0, 9), language, style }, "pick");
-          }} />
-        </div>
-      )}
-
       {phase === "form" && (
         <div className="max-w-xl">
-          <button onClick={() => setPhase("type")} className="mb-3 flex items-center gap-1.5 text-sm text-neutral-500 hover:text-neutral-900"><ArrowLeft className="h-4 w-4" /> Post type</button>
-          <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{ctype === "tips" ? "Tips & advice" : "Client quote"}</h2>
+          <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Tips &amp; advice carousel</h2>
           <p className="mb-4 text-sm text-neutral-500 dark:text-neutral-400">
-            {ctype === "tips"
-              ? "What should the carousel teach? The AI writes the tips (general advice only — it never invents prices or statistics)."
-              : "Paste the client's words — they appear on the slides exactly as written."}
+            What should the carousel teach? The AI writes the tips (general advice only — it never invents prices or statistics).
           </p>
           {err && <div className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{err}</div>}
 
@@ -402,7 +324,7 @@ export function CarouselStudio() {
 
       {phase === "result" && (
         <div>
-          <button onClick={() => { setPhase("type"); setSlides([]); setPlan(null); setCaption(""); }}
+          <button onClick={() => { setPhase("form"); setSlides([]); setPlan(null); setCaption(""); }}
             className="mb-4 flex items-center gap-1.5 text-sm text-neutral-500 hover:text-neutral-900"><ArrowLeft className="h-4 w-4" /> New carousel</button>
           <div className="mb-2 flex items-center gap-2 text-sm font-medium text-emerald-700"><Check className="h-4 w-4" /> {slides.length} slides ready — swipe order left to right</div>
 

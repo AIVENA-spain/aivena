@@ -107,7 +107,7 @@ export type FreeformElement = z.infer<typeof FreeformElement>;
 
 export const DesignSpec = z.object({
   background: Colour,
-  elements: z.array(FreeformElement).min(1).max(80),   // authored carousel styles use tick/annotation kits
+  elements: z.array(FreeformElement).min(1).max(300),  // seamless wide strips carry a whole deck in one spec
 });
 export type DesignSpec = z.infer<typeof DesignSpec>;
 

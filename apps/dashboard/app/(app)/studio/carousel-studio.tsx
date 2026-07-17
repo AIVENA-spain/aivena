@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Check, Copy, Download, Images, Loader2, Pencil, RefreshCw, Save } from "lucide-react";
+import { ArrowLeft, Check, Copy, Download, Images, Loader2, Pencil, RefreshCw, Save, Sparkles } from "lucide-react";
 import { downloadImage } from "./property-picker";
-import { carouselAction, carouselRemixAction, carouselUpdateAction, carouselStyleExamplesAction, statusAction, editableSectionsAction, setSectionAction } from "./wizard-actions";
+import { carouselAction, carouselRemixAction, carouselTopicIdeasAction, carouselUpdateAction, carouselStyleExamplesAction, statusAction, editableSectionsAction, setSectionAction } from "./wizard-actions";
 
 /**
  * CAROUSEL STUDIO — tips & advice only (Christian 2026-07-17: property carousels REMOVED from the
@@ -98,6 +98,9 @@ export function CarouselStudio() {
   const [copied, setCopied] = useState(false);
   // tips/quote form fields
   const [topic, setTopic] = useState("");
+  const [ideas, setIdeas] = useState<string[]>([]);
+  const [seenIdeas, setSeenIdeas] = useState<string[]>([]);
+  const [ideasLoading, setIdeasLoading] = useState(false);
   const [slideTotal, setSlideTotal] = useState(7);
   const [examples, setExamples] = useState<Record<string, string[]>>({});
   const [exampleStyle, setExampleStyle] = useState<string | null>(null);
@@ -202,6 +205,17 @@ export function CarouselStudio() {
     setEditing(false); setDraft(null); setSaved(false);
   }
 
+  async function inspire() {
+    if (ideasLoading) return;
+    setIdeasLoading(true); setErr(null);
+    const r = await carouselTopicIdeasAction(language, seenIdeas);
+    setIdeasLoading(false);
+    if (!r.ok || !Array.isArray(r.topics)) { setErr((r.message as string) ?? "Couldn't think of ideas right now — please try again."); return; }
+    const fresh = r.topics as string[];
+    setIdeas(fresh);
+    setSeenIdeas((prev) => [...prev, ...fresh].slice(-24));
+  }
+
   async function remix(axis: "hook" | "style" | "layout") {
     if (!genId || remixing) return;
     setRemixing(axis); setErr(null);
@@ -263,9 +277,28 @@ export function CarouselStudio() {
             {ctype === "tips" ? (
               <>
                 <div>
-                  <label className={label}>Topic</label>
+                  <div className="mb-1 flex items-center justify-between">
+                    <label className={`${label} mb-0`}>Topic</label>
+                    <button type="button" onClick={() => void inspire()} disabled={ideasLoading}
+                      className="flex items-center gap-1 text-xs font-medium text-emerald-700 hover:underline disabled:opacity-50 dark:text-emerald-400">
+                      {ideasLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                      {ideas.length ? "More ideas" : "Get inspired"}
+                    </button>
+                  </div>
                   <input value={topic} onChange={(e) => setTopic(e.target.value)} className={field}
                     placeholder="e.g. mistakes to avoid when buying on the coast" maxLength={300} />
+                  {ideas.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {ideas.map((t) => (
+                        <button key={t} type="button" onClick={() => setTopic(t)}
+                          className={`rounded-full border px-3 py-1.5 text-left text-xs transition ${topic === t
+                            ? "border-neutral-900 bg-neutral-900 text-white dark:border-neutral-100 dark:bg-neutral-100 dark:text-neutral-900"
+                            : "border-neutral-200 text-neutral-600 hover:border-neutral-400 dark:border-neutral-700 dark:text-neutral-300"}`}>
+                          {t}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className={label}>Number of slides (the whole carousel)</label>

@@ -418,3 +418,51 @@ Submit with the submit_remix tool.`;
     return null;
   }
 }
+
+// ── GET INSPIRED · topic ideas (2026-07-17) ───────────────────────────────────
+// Six fresh tips-carousel topics for agents who don't know what to post. Free, no
+// credit; same honesty rails as the planner (no prices/stats/place names).
+const IDEAS_TOOL = {
+  name: 'submit_ideas',
+  description: 'Submit the topic ideas.',
+  input_schema: {
+    type: 'object' as const,
+    properties: {
+      topics: { type: 'array', items: { type: 'string' }, description: '6 carousel topics, each 30-90 chars, in the requested language' },
+    },
+    required: ['topics'],
+  },
+};
+
+export async function topicIdeas(language: string, exclude: string[]): Promise<string[] | null> {
+  const month = new Date().toLocaleString('en', { month: 'long' });
+  const prompt = `You suggest Instagram tips-carousel topics for a real-estate agency on the Spanish coast (buyers are often foreign, sellers often local; the audience dreams of a home in Spain).
+
+Write 6 topic ideas in language "${language}". Rules:
+- Each is a TOPIC for a tips/advice carousel (the copywriter will write the hook later) — specific and curiosity-driven, not generic ("Why sea-view flats sell in winter" beats "Tips for sellers").
+- Mix the angles: buying, selling, owning, relocating, financing/process, and one seasonal angle (it is ${month}).
+- NO place names, NO prices, NO statistics, NO legal/tax advice framing.
+- 30-90 characters each, no emoji, no numbering.${exclude.length ? `\n- Do NOT repeat or paraphrase these already-shown ideas:\n${exclude.slice(0, 24).map((t) => `  · ${t}`).join('\n')}` : ''}
+
+Submit with the submit_ideas tool.`;
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-5', max_tokens: 700,
+        tools: [IDEAS_TOOL], tool_choice: { type: 'tool', name: 'submit_ideas' },
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { content?: { type: string; input?: unknown }[] };
+    const input = unesc(data.content?.find((c) => c.type === 'tool_use')?.input) as { topics?: unknown } | undefined;
+    const topics = Array.isArray(input?.topics)
+      ? input.topics.filter((t): t is string => typeof t === 'string' && t.trim().length >= 10).map((t) => t.trim().slice(0, 120)).slice(0, 6)
+      : [];
+    return topics.length >= 3 ? topics : null;
+  } catch {
+    return null;
+  }
+}

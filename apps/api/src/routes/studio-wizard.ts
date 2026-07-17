@@ -26,7 +26,7 @@ import { type CarouselPlan, chrome as carouselChrome } from '../../../../studio/
 import {
   renderPlannedStyled, renderListingStyled, vibraListing, PLANNED_STYLES, LISTING_STYLES, type CarouselStyle,
 } from '../../../../studio/engine/carouselStyles';
-import { planCarousel, remixHook, listingCopy, listingStory, PlanSchema } from '../lib/studio-carousel-plan';
+import { planCarousel, remixHook, topicIdeas, listingCopy, listingStory, PlanSchema } from '../lib/studio-carousel-plan';
 import { renderTipsImageStyled, renderTipsImageStyledV2, isTipsImageStyle } from '../../../../studio/engine/carouselTipsImage';
 import { renderFreeform, type DesignSpec } from '../../../../studio/engine/renderFreeform';
 import { applyGrain, photoPalette } from '../../../../studio/engine/carouselSlides';
@@ -1263,6 +1263,22 @@ route.post('/carousel/update', async (c) => {
   } catch (err) {
     console.error('[studio/carousel-update] failed:', err);
     return c.json({ ok: false, error: 'update_failed', message: GENERIC }, 500);
+  }
+});
+
+// ── POST /api/studio/carousel/topic-ideas — GET INSPIRED: 6 fresh tips topics (free) ──
+route.post('/carousel/topic-ideas', async (c) => {
+  const b = await readJson(c);
+  const language = typeof b.language === 'string' && b.language.trim() ? b.language.trim().slice(0, 5) : 'es';
+  const exclude = Array.isArray(b.exclude)
+    ? (b.exclude as unknown[]).filter((x): x is string => typeof x === 'string').slice(0, 24) : [];
+  try {
+    const topics = await topicIdeas(language, exclude);
+    if (!topics) return c.json({ ok: false, error: 'ideas_failed', message: "Couldn't think of ideas right now — please try again." }, 502);
+    return c.json({ ok: true, topics });
+  } catch (err) {
+    console.error('[studio/topic-ideas] failed:', err);
+    return c.json({ ok: false, error: 'ideas_failed', message: GENERIC }, 500);
   }
 });
 

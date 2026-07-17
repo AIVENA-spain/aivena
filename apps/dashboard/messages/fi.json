@@ -321,7 +321,8 @@
       "editHint": "Näiden muokkaaminen päivittää suositellut kohteet.",
       "editErrBudget": "Budjetin on oltava euromäärä (tai tyhjä poistaaksesi sen).",
       "editErrNumber": "Makuuhuoneiden ja kylpyhuoneiden on oltava kokonaislukuja.",
-      "editErrRange": "Makuuhuoneiden vähimmäismäärä ei voi olla suurempi kuin enimmäismäärä."
+      "editErrRange": "Makuuhuoneiden vähimmäismäärä ei voi olla suurempi kuin enimmäismäärä.",
+      "updatedFromMessage": "Päivitetty ostajan viestistä"
     },
     "searchPlaceholder": "Search conversations…",
     "searchNoResults": "No conversations match your search."

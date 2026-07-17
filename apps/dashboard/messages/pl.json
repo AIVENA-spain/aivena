@@ -321,7 +321,8 @@
       "editHint": "Zmiana tych pól aktualizuje polecane nieruchomości.",
       "editErrBudget": "Budżet musi być kwotą w euro (lub pusty, aby go wyczyścić).",
       "editErrNumber": "Sypialnie i łazienki muszą być liczbami całkowitymi.",
-      "editErrRange": "Minimalna liczba sypialni nie może być większa niż maksymalna."
+      "editErrRange": "Minimalna liczba sypialni nie może być większa niż maksymalna.",
+      "updatedFromMessage": "Zaktualizowano na podstawie wiadomości kupującego"
     },
     "searchPlaceholder": "Search conversations…",
     "searchNoResults": "No conversations match your search."

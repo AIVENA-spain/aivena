@@ -321,7 +321,8 @@
       "editHint": "Deze wijzigingen werken de aanbevolen woningen bij.",
       "editErrBudget": "Budget moet een bedrag in euro's zijn (of leeg om te wissen).",
       "editErrNumber": "Slaapkamers en badkamers moeten hele getallen zijn.",
-      "editErrRange": "Het minimum aantal slaapkamers mag niet hoger zijn dan het maximum."
+      "editErrRange": "Het minimum aantal slaapkamers mag niet hoger zijn dan het maximum.",
+      "updatedFromMessage": "Bijgewerkt op basis van het bericht van de koper"
     },
     "searchPlaceholder": "Search conversations…",
     "searchNoResults": "No conversations match your search."

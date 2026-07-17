@@ -321,7 +321,8 @@
       "editHint": "Ändringar här uppdaterar de rekommenderade bostäderna.",
       "editErrBudget": "Budget måste vara ett belopp i euro (eller tomt för att rensa).",
       "editErrNumber": "Sovrum och badrum måste vara heltal.",
-      "editErrRange": "Minsta antal sovrum får inte vara fler än max."
+      "editErrRange": "Minsta antal sovrum får inte vara fler än max.",
+      "updatedFromMessage": "Uppdaterad utifrån köparens meddelande"
     },
     "searchPlaceholder": "Search conversations…",
     "searchNoResults": "No conversations match your search."

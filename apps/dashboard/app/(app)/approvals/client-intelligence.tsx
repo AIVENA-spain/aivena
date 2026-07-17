@@ -9,6 +9,7 @@ import {
   MessageCircle,
   Lock,
   Pencil,
+  RefreshCw,
   type LucideIcon,
 } from "lucide-react";
 
@@ -66,19 +67,34 @@ export function ClientIntelligence({
 
   useEffect(() => {
     let alive = true;
-    setIntel({ kind: "loading" });
-    getLeadIntelAction(lead.leadId).then((res) => {
-      if (!alive) return;
-      setIntel(
-        res.ok
-          ? { kind: "ready", data: res.data }
-          : { kind: "error", message: res.error },
-      );
-    });
+    const load = (showLoading: boolean) => {
+      if (showLoading) setIntel({ kind: "loading" });
+      getLeadIntelAction(lead.leadId).then((res) => {
+        if (!alive) return;
+        setIntel(
+          res.ok
+            ? { kind: "ready", data: res.data }
+            : { kind: "error", message: res.error },
+        );
+      });
+    };
+    load(true);
+    // A new inbound triggers the LLM intent extraction, which writes the profile
+    // update + `preferences_update_summary` a few SECONDS later (async EF). If the
+    // message is fresh, re-poll once (no loading flash) so the "updated from their
+    // message" note + refreshed matches appear without a manual reload.
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const inboundAgeMs = lead.latestInboundAt
+      ? Date.now() - new Date(lead.latestInboundAt).getTime()
+      : Infinity;
+    if (inboundAgeMs < 60_000) {
+      timer = setTimeout(() => load(false), 6_000);
+    }
     return () => {
       alive = false;
+      if (timer) clearTimeout(timer);
     };
-  }, [lead.leadId, editVersion]);
+  }, [lead.leadId, editVersion, lead.latestInboundAt]);
 
   useEffect(() => {
     if (!isWhatsapp) {
@@ -320,6 +336,20 @@ function BuyerProfile({
           </button>
         ) : null}
       </div>
+
+      {/* Honest transparency: the saved search was derived from a buyer message
+          (deterministic today, the LLM intent path once enabled) — never a silent
+          change. Summary + when; Edit above corrects it if the read was wrong. */}
+      {!editing && data?.preferences_updated_from_message_at ? (
+        <div className="flex items-start gap-1.5 rounded-md bg-brand-soft/50 px-2 py-1 text-[11px] leading-snug text-muted-foreground">
+          <RefreshCw className="mt-[1px] h-3 w-3 shrink-0 text-brand" aria-hidden />
+          <span>
+            {data.preferences_update_summary?.trim() || t("updatedFromMessage")}
+            {" · "}
+            <RelativeTime iso={data.preferences_updated_from_message_at} />
+          </span>
+        </div>
+      ) : null}
 
       {editing ? (
         <BuyerProfileEdit

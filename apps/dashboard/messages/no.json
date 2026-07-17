@@ -321,7 +321,8 @@
       "editHint": "Endringer her oppdaterer de anbefalte boligene.",
       "editErrBudget": "Budsjett må være et beløp i euro (eller tomt for å fjerne det).",
       "editErrNumber": "Soverom og bad må være hele tall.",
-      "editErrRange": "Minimum antall soverom kan ikke være mer enn maksimum."
+      "editErrRange": "Minimum antall soverom kan ikke være mer enn maksimum.",
+      "updatedFromMessage": "Oppdatert fra kjøperens melding"
     },
     "searchPlaceholder": "Search conversations…",
     "searchNoResults": "No conversations match your search."

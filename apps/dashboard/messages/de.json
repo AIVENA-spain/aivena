@@ -321,7 +321,8 @@
       "editHint": "Diese Änderungen aktualisieren die empfohlenen Immobilien.",
       "editErrBudget": "Das Budget muss eine Zahl in Euro sein (oder leer zum Löschen).",
       "editErrNumber": "Schlaf- und Badezimmer müssen ganze Zahlen sein.",
-      "editErrRange": "Die Mindestanzahl der Schlafzimmer darf nicht über dem Maximum liegen."
+      "editErrRange": "Die Mindestanzahl der Schlafzimmer darf nicht über dem Maximum liegen.",
+      "updatedFromMessage": "Aus der Nachricht des Käufers aktualisiert"
     },
     "searchPlaceholder": "Search conversations…",
     "searchNoResults": "No conversations match your search."

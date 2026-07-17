@@ -321,7 +321,8 @@
       "editHint": "Editar estos datos actualiza las propiedades recomendadas.",
       "editErrBudget": "El presupuesto debe ser un número de euros (o vacío para borrarlo).",
       "editErrNumber": "Los dormitorios y baños deben ser números enteros.",
-      "editErrRange": "El mínimo de dormitorios no puede ser mayor que el máximo."
+      "editErrRange": "El mínimo de dormitorios no puede ser mayor que el máximo.",
+      "updatedFromMessage": "Actualizado a partir del mensaje del comprador"
     },
     "searchPlaceholder": "Search conversations…",
     "searchNoResults": "No conversations match your search."

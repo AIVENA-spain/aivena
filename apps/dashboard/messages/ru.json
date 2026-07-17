@@ -321,7 +321,8 @@
       "editHint": "Изменение этих полей обновит рекомендованные объекты.",
       "editErrBudget": "Бюджет должен быть суммой в евро (или пустым, чтобы очистить).",
       "editErrNumber": "Количество спален и ванных должно быть целым числом.",
-      "editErrRange": "Минимум спален не может превышать максимум."
+      "editErrRange": "Минимум спален не может превышать максимум.",
+      "updatedFromMessage": "Обновлено на основе сообщения покупателя"
     },
     "searchPlaceholder": "Search conversations…",
     "searchNoResults": "No conversations match your search."

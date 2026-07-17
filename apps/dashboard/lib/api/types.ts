@@ -699,6 +699,11 @@ export type LeadIntel = {
   reasoning_summary: string | null;
   followup_paused: boolean | null;
   next_followup_at: string | null;
+  // Set when this lead's saved search was last updated from a buyer message (the
+  // most-recent `interest_updated_from_conversation` event — written by BOTH the
+  // deterministic extractor and the LLM intent path). NULL when it never was.
+  preferences_update_summary: string | null;
+  preferences_updated_from_message_at: string | null;
 };
 
 export type LeadIntelResponse = { ok: true; data: LeadIntel };

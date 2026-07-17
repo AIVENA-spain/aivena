@@ -321,7 +321,8 @@
       "editHint": "Modificando questi campi si aggiornano gli immobili consigliati.",
       "editErrBudget": "Il budget deve essere un numero in euro (o vuoto per cancellarlo).",
       "editErrNumber": "Camere e bagni devono essere numeri interi.",
-      "editErrRange": "Il minimo di camere non può superare il massimo."
+      "editErrRange": "Il minimo di camere non può superare il massimo.",
+      "updatedFromMessage": "Aggiornato dal messaggio dell'acquirente"
     },
     "searchPlaceholder": "Search conversations…",
     "searchNoResults": "No conversations match your search."

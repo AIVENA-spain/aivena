@@ -321,7 +321,8 @@
       "editHint": "Ændringer her opdaterer de anbefalede boliger.",
       "editErrBudget": "Budget skal være et beløb i euro (eller tomt for at rydde det).",
       "editErrNumber": "Soveværelser og badeværelser skal være hele tal.",
-      "editErrRange": "Minimum antal soveværelser må ikke være større end maksimum."
+      "editErrRange": "Minimum antal soveværelser må ikke være større end maksimum.",
+      "updatedFromMessage": "Opdateret ud fra køberens besked"
     },
     "searchPlaceholder": "Search conversations…",
     "searchNoResults": "No conversations match your search."

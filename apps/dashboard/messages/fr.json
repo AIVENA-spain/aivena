@@ -321,7 +321,8 @@
       "editHint": "Modifier ces champs met à jour les biens recommandés.",
       "editErrBudget": "Le budget doit être un montant en euros (ou vide pour l'effacer).",
       "editErrNumber": "Les chambres et salles de bain doivent être des nombres entiers.",
-      "editErrRange": "Le minimum de chambres ne peut pas dépasser le maximum."
+      "editErrRange": "Le minimum de chambres ne peut pas dépasser le maximum.",
+      "updatedFromMessage": "Mis à jour d'après le message de l'acheteur"
     },
     "searchPlaceholder": "Search conversations…",
     "searchNoResults": "No conversations match your search."

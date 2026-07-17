@@ -321,7 +321,8 @@
       "editHint": "Editar estes dados atualiza os imóveis recomendados.",
       "editErrBudget": "O orçamento deve ser um número de euros (ou vazio para o limpar).",
       "editErrNumber": "Os quartos e casas de banho devem ser números inteiros.",
-      "editErrRange": "O mínimo de quartos não pode ser superior ao máximo."
+      "editErrRange": "O mínimo de quartos não pode ser superior ao máximo.",
+      "updatedFromMessage": "Atualizado a partir da mensagem do comprador"
     },
     "searchPlaceholder": "Search conversations…",
     "searchNoResults": "No conversations match your search."

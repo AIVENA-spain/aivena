@@ -321,7 +321,8 @@
       "editHint": "Editing these updates the recommended properties.",
       "editErrBudget": "Budget must be a number of euros (or empty to clear it).",
       "editErrNumber": "Bedrooms and bathrooms must be whole numbers.",
-      "editErrRange": "Minimum bedrooms can’t be more than the maximum."
+      "editErrRange": "Minimum bedrooms can’t be more than the maximum.",
+      "updatedFromMessage": "Updated from the buyer's message"
     },
     "searchPlaceholder": "Search conversations…",
     "searchNoResults": "No conversations match your search."

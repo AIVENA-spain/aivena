@@ -86,6 +86,14 @@ const PLAN_TOOL = {
   },
 } as const;
 
+/** Models sometimes emit literal backslash-n sequences — render them as real newlines everywhere. */
+function unesc(v: unknown): unknown {
+  if (typeof v === 'string') return v.replace(/\\n/g, '\n');
+  if (Array.isArray(v)) return v.map(unesc);
+  if (v && typeof v === 'object') return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, unesc(x)]));
+  return v;
+}
+
 const BANNED = /(\d+\s*%|€|EUR\b|\$)/i;
 const WEAK_HOOK = /^(tips|consejos|\d+\s+(tips|consejos)\b.{0,12}$|update|actualización|bienvenid|welcome|nueva propiedad|new listing)/i;
 
@@ -181,7 +189,7 @@ Submit with the submit_carousel tool.`;
     }
     const data = (await res.json()) as { content?: { type: string; input?: unknown }[] };
     const tool = data.content?.find((c) => c.type === 'tool_use');
-    const input = { type: opts.type, ...(tool?.input as object ?? {}) };  // the requested type always wins
+    const input = { type: opts.type, ...(unesc(tool?.input) as object ?? {}) };  // the requested type always wins
     const parsed = PlanSchema.safeParse(input);
     if (!parsed.success) {
       lastErr = parsed.error.issues.slice(0, 5).map((i) => `${i.path.join('.')}: ${i.message}`).join('; ');
@@ -275,7 +283,7 @@ export async function listingStory(opts: {
     });
     if (!res.ok) return null;
     const data = (await res.json()) as { content?: { type: string; input?: unknown }[] };
-    const input = data.content?.find((c) => c.type === 'tool_use')?.input as Partial<ListingStory> | undefined;
+    const input = unesc(data.content?.find((c) => c.type === 'tool_use')?.input) as Partial<ListingStory> | undefined;
     if (!input || typeof input.hook !== 'string' || !Array.isArray(input.photo_lines)) return null;
     const clean = (x: unknown, max: number) => (typeof x === 'string' ? x.trim().slice(0, max) : '');
     const hook = clean(input.hook, 58);
@@ -323,7 +331,7 @@ The hook is the reason to stop: the lifestyle benefit, never the spec sheet. The
     });
     if (!res.ok) return null;
     const data = (await res.json()) as { content?: { type: string; input?: unknown }[] };
-    const input = data.content?.find((c) => c.type === 'tool_use')?.input as Partial<ListingCopy> | undefined;
+    const input = unesc(data.content?.find((c) => c.type === 'tool_use')?.input) as Partial<ListingCopy> | undefined;
     if (!input || typeof input.hook !== 'string' || typeof input.caption !== 'string') return null;
     const clean = (s: unknown, max: number) => (typeof s === 'string' ? s.trim().slice(0, max) : '');
     const hook = clean(input.hook, 60);

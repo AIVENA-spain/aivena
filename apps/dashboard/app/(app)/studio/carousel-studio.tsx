@@ -394,7 +394,9 @@ export function CarouselStudio() {
       {phase === "working" && (
         <div className="flex flex-col items-center gap-3 py-24 text-neutral-500">
           <Loader2 className="h-7 w-7 animate-spin" />
-          <p className="text-sm">{ctype === "listing" ? "Building your carousel — a few seconds…" : "Writing and drawing your carousel — about half a minute…"}</p>
+          <p className="text-sm">{["bodegon", "litoral", "tinta", "salitre", "papel", "arcilla", "acuarela", "bordado"].includes(style) || style === "vibra"
+            ? "Writing the copy and painting the artwork — this takes a few minutes. Worth it."
+            : ctype === "listing" ? "Building your carousel — under a minute…" : "Writing your carousel — about a minute…"}</p>
         </div>
       )}
 

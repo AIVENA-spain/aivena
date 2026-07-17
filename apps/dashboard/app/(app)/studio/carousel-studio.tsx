@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Check, Copy, Download, Images, Loader2, Pencil, RefreshCw, Save, Sparkles } from "lucide-react";
+import { ArrowLeft, Check, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Copy, Download, Globe, Images, Info, Loader2, Pencil, PlayCircle, RefreshCw, Save, Sparkles, X } from "lucide-react";
 import { downloadImage } from "./property-picker";
 import { carouselAction, carouselRemixAction, carouselTopicIdeasAction, carouselUpdateAction, carouselStyleExamplesAction, statusAction, editableSectionsAction, setSectionAction } from "./wizard-actions";
 
@@ -98,7 +98,11 @@ export function CarouselStudio() {
   const [copied, setCopied] = useState(false);
   // tips/quote form fields
   const [topic, setTopic] = useState("");
-  const [ideas, setIdeas] = useState<string[]>([]);
+  const [ideas, setIdeas] = useState<string[]>([
+    "First-time buyer mistakes", "How to prepare your home for viewings", "Questions to ask before you make an offer",
+  ]);
+  const [previewIdx, setPreviewIdx] = useState(0);
+  const [showHow, setShowHow] = useState(false);
   const [seenIdeas, setSeenIdeas] = useState<string[]>([]);
   const [ideasLoading, setIdeasLoading] = useState(false);
   const [slideTotal, setSlideTotal] = useState(7);
@@ -266,106 +270,222 @@ export function CarouselStudio() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-6">
       {phase === "form" && (
-        <div className="max-w-xl">
-          <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Tips &amp; advice carousel</h2>
-          <p className="mb-4 text-sm text-neutral-500 dark:text-neutral-400">
-            What should the carousel teach? The AI writes the tips (general advice only — it never invents prices or statistics).
-          </p>
-          {err && <div className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{err}</div>}
-
-          <div className="flex flex-col gap-4">
-            {ctype === "tips" ? (
-              <>
-                <div>
-                  <div className="mb-1 flex items-center justify-between">
-                    <label className={`${label} mb-0`}>Topic</label>
-                    <button type="button" onClick={() => void inspire()} disabled={ideasLoading}
-                      className="flex items-center gap-1 text-xs font-medium text-emerald-700 hover:underline disabled:opacity-50 dark:text-emerald-400">
-                      {ideasLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-                      {ideas.length ? "More ideas" : "Get inspired"}
-                    </button>
-                  </div>
-                  <input value={topic} onChange={(e) => setTopic(e.target.value)} className={field}
-                    placeholder="e.g. mistakes to avoid when buying on the coast" maxLength={300} />
-                  {ideas.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-1.5">
-                      {ideas.map((t) => (
-                        <button key={t} type="button" onClick={() => setTopic(t)}
-                          className={`rounded-full border px-3 py-1.5 text-left text-xs transition ${topic === t
-                            ? "border-neutral-900 bg-neutral-900 text-white dark:border-neutral-100 dark:bg-neutral-100 dark:text-neutral-900"
-                            : "border-neutral-200 text-neutral-600 hover:border-neutral-400 dark:border-neutral-700 dark:text-neutral-300"}`}>
-                          {t}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <label className={label}>Number of slides (the whole carousel)</label>
-                  <div className="flex flex-wrap gap-2">
-                    {[3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
-                      <button key={n} onClick={() => setSlideTotal(n)}
-                        className={`h-9 w-9 rounded-lg border text-sm font-medium ${slideTotal === n ? "border-neutral-900 bg-neutral-900 text-white dark:border-neutral-100 dark:bg-neutral-100 dark:text-neutral-900" : "border-neutral-300 text-neutral-600 dark:border-neutral-700 dark:text-neutral-300"}`}>
-                        {n}
-                      </button>
-                    ))}
-                  </div>
-                  <p className="mt-1.5 text-[11px] text-neutral-400">
-                    {(() => {
-                      const ctx = slideTotal >= 5, rec = slideTotal >= 7;
-                      const tips = Math.min(7, Math.max(1, slideTotal - 2 - (ctx ? 1 : 0) - (rec ? 1 : 0)));
-                      return `= cover + ${ctx ? "intro + " : ""}${tips} tip${tips > 1 ? "s" : ""}${rec ? " + summary" : ""} + closing slide`;
-                    })()}
-                  </p>
-                </div>
-              </>
-            ) : (
-              <>
-                <div>
-                  <label className={label}>The client&apos;s words</label>
-                  <textarea value={quoteText} onChange={(e) => setQuoteText(e.target.value)} className={`${field} min-h-28`}
-                    placeholder="e.g. Vendimos nuestra casa en dos meses. Nos acompañaron en cada paso…" maxLength={700} />
-                </div>
-                <div>
-                  <label className={label}>Who said it (shown under the quote)</label>
-                  <input value={quoteAuthor} onChange={(e) => setQuoteAuthor(e.target.value)} className={field}
-                    placeholder="e.g. María G., Altea" maxLength={80} />
-                </div>
-              </>
-            )}
-            {stylePicker()}
-            {((ctype === "tips" && ["bodegon", "litoral", "tinta", "salitre", "papel", "arcilla", "acuarela", "bordado"].includes(style)) || (ctype === "listing" && style === "vibra")) && (
+        <div className="flex gap-8">
+          {/* ── the form column ─────────────────────────────────────────── */}
+          <div className="min-w-0 flex-1">
+            <div className="mb-6 flex items-start justify-between gap-4">
               <div>
-                <label className={label}>Colour mood (the artwork is generated fresh for your topic)</label>
+                <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">Tips &amp; advice carousel</h1>
+                <p className="mt-1 max-w-md text-sm text-neutral-500 dark:text-neutral-400">
+                  Create engaging Instagram carousels packed with useful tips your audience will love to save and share.
+                </p>
+              </div>
+              <button type="button" onClick={() => setShowHow(true)}
+                className="flex shrink-0 items-center gap-1.5 rounded-full border border-neutral-200 bg-white px-3.5 py-2 text-sm font-medium text-neutral-700 hover:border-neutral-400 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300">
+                <PlayCircle className="h-4 w-4" /> How it works
+              </button>
+            </div>
+            {err && <div className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{err}</div>}
+
+            <div className="mb-2 text-sm font-semibold text-neutral-900 dark:text-neutral-100">1. What&rsquo;s your topic?</div>
+            <div className="flex gap-3">
+              <div className="relative flex-1">
+                <Sparkles className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+                <input value={topic} onChange={(e) => setTopic(e.target.value)} maxLength={300}
+                  placeholder="e.g. mistakes to avoid when buying on the coast"
+                  className="w-full rounded-xl border border-neutral-200 bg-white py-3 pl-10 pr-3 text-sm outline-none placeholder:text-neutral-400 focus:border-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:focus:border-neutral-100" />
+              </div>
+              <button type="button" onClick={() => void inspire()} disabled={ideasLoading}
+                className="flex shrink-0 items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-4 text-sm font-medium text-emerald-700 hover:border-emerald-600 disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-emerald-400">
+                {ideasLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />} Get inspired
+              </button>
+            </div>
+            <div className="mt-3 text-xs font-medium text-neutral-400">Popular ideas</div>
+            <div className="mt-1.5 flex flex-wrap items-center gap-2">
+              {ideas.map((t) => (
+                <button key={t} type="button" onClick={() => setTopic(t)}
+                  className={`rounded-lg border px-3.5 py-2 text-xs font-medium transition ${topic === t
+                    ? "border-emerald-600 bg-emerald-600 text-white"
+                    : "border-neutral-200 bg-white text-emerald-800 hover:border-emerald-600 dark:border-neutral-700 dark:bg-neutral-900 dark:text-emerald-400"}`}>
+                  {t}
+                </button>
+              ))}
+              <button type="button" onClick={() => void inspire()} disabled={ideasLoading} title="More ideas"
+                className="rounded-lg border border-neutral-200 bg-white p-2 text-neutral-400 hover:text-neutral-700 disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900 dark:hover:text-neutral-200">
+                {ideasLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+              </button>
+            </div>
+
+            <div className="mb-2 mt-7 text-sm font-semibold text-neutral-900 dark:text-neutral-100">2. How many slides?</div>
+            <div className="flex flex-wrap gap-2">
+              {[3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+                <button key={n} onClick={() => setSlideTotal(n)}
+                  className={`h-10 w-11 rounded-lg border text-sm font-medium transition ${slideTotal === n
+                    ? "border-emerald-600 bg-emerald-600 text-white"
+                    : "border-neutral-200 bg-white text-neutral-600 hover:border-neutral-400 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300"}`}>
+                  {n}
+                </button>
+              ))}
+            </div>
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-neutral-400">
+              {(() => {
+                const ctx = slideTotal >= 5, rec = slideTotal >= 7;
+                const tips = Math.min(7, Math.max(1, slideTotal - 2 - (ctx ? 1 : 0) - (rec ? 1 : 0)));
+                const parts = ["1 cover", ...(ctx ? ["1 intro"] : []), `${tips} tip${tips > 1 ? "s" : ""}`, ...(rec ? ["1 summary"] : []), "1 closing slide"];
+                return parts.map((part, i) => (
+                  <span key={part} className="flex items-center gap-2">{i > 0 && <span>+</span>}<span>{part}</span></span>
+                ));
+              })()}
+            </div>
+
+            <div className="mb-2 mt-7 text-sm font-semibold text-neutral-900 dark:text-neutral-100">3. Choose a look &amp; feel</div>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+              {STYLES.tips.map(([key, name, desc]) => (
+                <button key={key} type="button" onClick={() => { setStyle(key); setPreviewIdx(0); }}
+                  className={`relative rounded-xl border text-left transition ${style === key
+                    ? "border-emerald-600 ring-1 ring-emerald-600"
+                    : "border-neutral-200 bg-white hover:border-neutral-400 dark:border-neutral-700 dark:bg-neutral-900"}`}>
+                  {examples[key]?.[0]
+                    ? <img src={examples[key][0]} alt={name} referrerPolicy="no-referrer" className="aspect-[4/5] w-full rounded-t-xl object-cover" />
+                    : <div className="aspect-[4/5] w-full rounded-t-xl bg-gradient-to-br from-neutral-100 to-neutral-200 dark:from-neutral-800 dark:to-neutral-700" />}
+                  <div className="p-2.5">
+                    <div className="text-[13px] font-semibold text-neutral-900 dark:text-neutral-100">{name.replace(" ✦ Recommended", "")}</div>
+                    <div className="mt-0.5 text-[11px] leading-snug text-neutral-500 dark:text-neutral-400">{desc.replace(/^AI imagery — /, "")}</div>
+                  </div>
+                  {style === key && (
+                    <span className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-600">
+                      <Check className="h-3.5 w-3.5 text-white" strokeWidth={3} />
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+
+            {["bodegon", "litoral", "tinta", "salitre", "papel", "arcilla", "acuarela", "bordado"].includes(style) && (
+              <>
+                <div className="mb-2 mt-7 text-sm font-semibold text-neutral-900 dark:text-neutral-100">Colour mood <span className="font-normal text-neutral-400">(the artwork is generated fresh for your topic)</span></div>
                 <div className="flex flex-wrap gap-2">
                   {[["clasico", "Clásico — navy & gold"], ["atardecer", "Atardecer — sunset terracotta"], ["oliva", "Oliva — olive & sage"], ["mar", "Mar — sea & foam"]].map(([key, name]) => (
                     <button key={key} type="button" onClick={() => setScheme(key)}
-                      className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${scheme === key
-                        ? "border-neutral-900 bg-neutral-50 text-neutral-900 dark:border-neutral-100 dark:bg-neutral-800 dark:text-neutral-100"
-                        : "border-neutral-200 text-neutral-500 hover:border-neutral-400 dark:border-neutral-700"}`}>
+                      className={`rounded-lg border px-3.5 py-2 text-xs font-medium transition ${scheme === key
+                        ? "border-emerald-600 bg-emerald-600 text-white"
+                        : "border-neutral-200 bg-white text-neutral-600 hover:border-neutral-400 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300"}`}>
                       {name}
                     </button>
                   ))}
                 </div>
-              </div>
+              </>
             )}
-            <div>
-              <label className={label}>Language of the post</label>
-              <select value={language} onChange={(e) => setLanguage(e.target.value)} className={field}>
+
+            <div className="mb-2 mt-7 text-sm font-semibold text-neutral-900 dark:text-neutral-100">4. Language of the post</div>
+            <div className="relative">
+              <Globe className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+              <select value={language} onChange={(e) => setLanguage(e.target.value)}
+                className="w-full appearance-none rounded-xl border border-neutral-200 bg-white py-3 pl-10 pr-8 text-sm outline-none focus:border-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100">
                 {LANGS.map(([code, name]) => <option key={code} value={code}>{name}</option>)}
               </select>
+              <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
             </div>
+
             <button
-              onClick={() => void start(
-                ctype === "tips"
-                  ? { type: "tips", topic: topic.trim(), slides: slideTotal, language, style, scheme }
-                  : { type: "quote", quote_text: quoteText.trim(), quote_author: quoteAuthor.trim(), language, style },
-                "form")}
-              disabled={ctype === "tips" ? topic.trim().length < 3 : quoteText.trim().length < 10}
-              className="rounded-lg bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white disabled:opacity-40 dark:bg-neutral-100 dark:text-neutral-900">
-              Create carousel
+              onClick={() => void start({ type: "tips", topic: topic.trim(), slides: slideTotal, language, style, scheme }, "form")}
+              disabled={topic.trim().length < 3}
+              className="mt-7 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3.5 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-40">
+              <Sparkles className="h-4 w-4" /> Create carousel
             </button>
           </div>
+
+          {/* ── live preview rail ───────────────────────────────────────── */}
+          <div className="hidden w-[360px] shrink-0 xl:block">
+            <div className="sticky top-6 rounded-2xl border border-neutral-200 bg-white p-5 dark:border-neutral-700 dark:bg-neutral-900">
+              <div className="text-base font-semibold text-neutral-900 dark:text-neutral-100">Live preview</div>
+              <div className="mt-3 flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
+                <span className="h-2 w-2 rounded-full bg-emerald-500" /> Cover preview
+                <span title="Example slides in this look — your own carousel is written and drawn fresh for your topic."><Info className="h-3.5 w-3.5 text-neutral-300" /></span>
+              </div>
+              <div className="mt-2 flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400">
+                <span className="flex h-5 w-5 items-center justify-center rounded-md bg-gradient-to-tr from-amber-400 via-pink-500 to-purple-500">
+                  <svg className="h-3 w-3 text-white" fill="none" stroke="currentColor" strokeWidth={2.4} viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.2" cy="6.8" r="0.6" fill="currentColor" /></svg>
+                </span>
+                Instagram · 1080 × 1350
+              </div>
+              {examples[style]?.length ? (
+                <img src={examples[style][previewIdx % examples[style].length]} alt="Style example" referrerPolicy="no-referrer"
+                  className="mt-3 aspect-[4/5] w-full rounded-xl object-cover shadow-md" />
+              ) : (
+                <div className="mt-3 aspect-[4/5] w-full rounded-xl bg-gradient-to-b from-neutral-100 to-neutral-200 shadow-md dark:from-neutral-800 dark:to-neutral-700" />
+              )}
+              {(examples[style]?.length ?? 0) > 1 && (
+                <div className="mt-3 flex items-center justify-between">
+                  <button type="button" onClick={() => setPreviewIdx((i) => (i - 1 + examples[style].length) % examples[style].length)}
+                    className="rounded-full border border-neutral-200 p-2 text-neutral-500 hover:border-neutral-400 dark:border-neutral-700"><ChevronLeft className="h-4 w-4" /></button>
+                  <div className="flex gap-1.5">
+                    {examples[style].map((_, i) => (
+                      <span key={i} className={`h-1.5 w-1.5 rounded-full ${i === previewIdx % examples[style].length ? "bg-emerald-600" : "bg-neutral-200 dark:bg-neutral-700"}`} />
+                    ))}
+                  </div>
+                  <button type="button" onClick={() => setPreviewIdx((i) => (i + 1) % examples[style].length)}
+                    className="rounded-full border border-neutral-200 p-2 text-neutral-500 hover:border-neutral-400 dark:border-neutral-700"><ChevronRight className="h-4 w-4" /></button>
+                </div>
+              )}
+              <div className="mt-4 rounded-xl bg-emerald-50 p-4 dark:bg-emerald-950">
+                <div className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">What&rsquo;s included</div>
+                <div className="mt-2 flex flex-col gap-1.5 text-[13px] text-neutral-600 dark:text-neutral-300">
+                  {(() => {
+                    const ctx = slideTotal >= 5, rec = slideTotal >= 7;
+                    const tips = Math.min(7, Math.max(1, slideTotal - 2 - (ctx ? 1 : 0) - (rec ? 1 : 0)));
+                    return [
+                      "Cover slide with strong hook",
+                      ...(ctx ? ["Intro slide that sets the scene"] : []),
+                      `${tips} practical tip slide${tips > 1 ? "s" : ""}`,
+                      ...(rec ? ["Summary slide worth saving"] : []),
+                      "Closing slide with takeaway",
+                    ].map((line) => (
+                      <div key={line} className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />{line}</div>
+                    ));
+                  })()}
+                </div>
+              </div>
+              <div className="mt-3 flex items-start gap-3 rounded-xl border border-neutral-200 p-4 dark:border-neutral-700">
+                <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                <div className="min-w-0 text-[13px]">
+                  <div className="font-semibold text-neutral-900 dark:text-neutral-100">Tip</div>
+                  <div className="mt-0.5 text-neutral-500 dark:text-neutral-400">Great topics solve a problem, teach something actionable or spark curiosity.</div>
+                </div>
+                {examples[style]?.length ? (
+                  <button type="button" onClick={() => setExampleStyle(style)}
+                    className="shrink-0 self-center rounded-lg border border-neutral-200 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:border-emerald-600 dark:border-neutral-700 dark:text-emerald-400">
+                    See examples
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          </div>
+
+          {/* ── how it works ────────────────────────────────────────────── */}
+          {showHow && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowHow(false)}>
+              <div className="w-full max-w-md rounded-2xl bg-white p-6 dark:bg-neutral-900" onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">How it works</h3>
+                  <button onClick={() => setShowHow(false)} className="rounded-lg p-1 text-neutral-400 hover:text-neutral-700"><X className="h-5 w-5" /></button>
+                </div>
+                <ol className="mt-4 flex flex-col gap-3 text-sm text-neutral-600 dark:text-neutral-300">
+                  {[
+                    ["Pick a topic", "Type your own or tap Get inspired for fresh ideas."],
+                    ["The AI writes the tips", "Practical, honest advice — it never invents prices or statistics."],
+                    ["The engine paints the slides", "Artwork is generated fresh for your topic in the look you chose — no two posts are ever the same."],
+                    ["Review, tweak, post", "Edit any text, remix with Otra vuelta, then download the slides and caption."],
+                  ].map(([t, d], i) => (
+                    <li key={t} className="flex gap-3">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-xs font-semibold text-white">{i + 1}</span>
+                      <span><span className="font-medium text-neutral-900 dark:text-neutral-100">{t}.</span> {d}</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

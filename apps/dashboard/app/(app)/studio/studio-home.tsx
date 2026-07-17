@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft, ArrowRight, Download, ExternalLink, FolderOpen, Hammer, Home as HomeIcon,
@@ -11,7 +11,20 @@ import { StudioWizard } from "./studio-wizard";
 import { SmartStudio } from "./smart-studio";
 import { CarouselStudio } from "./carousel-studio";
 import { downloadImage } from "./property-picker";
+import { studioSuggestionsAction } from "./wizard-actions";
 import { withBasePath } from "@/lib/base-path";
+
+type Suggestions = {
+  carousel: { topic: string; language: string; slides: number } | null;
+  listing: { property_id: string; title: string; thumb_url: string } | null;
+  renovation: { idea: string; room: string };
+};
+const LANG_NAMES: Record<string, string> = {
+  es: "Spanish", en: "English", de: "German", fr: "French", nl: "Dutch",
+  sv: "Swedish", no: "Norwegian", da: "Danish", fi: "Finnish", pl: "Polish",
+  ru: "Russian", it: "Italian", pt: "Portuguese",
+};
+const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 
 /** Studio-home static assets live in public/studio; prefix so they resolve under the /dashboard basePath. */
 const asset = (name: string) => withBasePath(`/studio/${name}`);
@@ -137,6 +150,20 @@ export function StudioHome({
   const [view, setView] = useState<View>("home");
   const [menuId, setMenuId] = useState<string | null>(null);
 
+  // "Suggested for today" — fetched once; the static values below stand in until it lands / if it fails.
+  const [sugg, setSugg] = useState<Suggestions | null>(null);
+  // a suggestion can pre-fill the carousel form with its topic + language
+  const [pendingTopic, setPendingTopic] = useState("");
+  const [pendingLang, setPendingLang] = useState<string | undefined>(undefined);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const r = await studioSuggestionsAction();
+      if (!cancelled && r.ok && r.suggestions) setSugg(r.suggestions as Suggestions);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   // ── the full library grid (its own sub-view), grouped by your sections ──
   const sections = useMemo(() => {
     const s = new Set<string>();
@@ -152,7 +179,7 @@ export function StudioHome({
 
   if (view === "templates") return <SubViewShell onBack={() => setView("home")}><EditableWizard /></SubViewShell>;
   if (view === "smart") return <SubViewShell onBack={() => setView("home")}><SmartStudio /></SubViewShell>;
-  if (view === "carousel") return <SubViewShell onBack={() => setView("home")} crumb="Tips carousel"><CarouselStudio /></SubViewShell>;
+  if (view === "carousel") return <SubViewShell onBack={() => setView("home")} crumb="Tips carousel"><CarouselStudio initialTopic={pendingTopic} initialLanguage={pendingLang} /></SubViewShell>;
   if (view === "renovation") return <SubViewShell onBack={() => setView("home")}><StudioWizard initialLibrary={initialLibrary} initialFork="renovation" /></SubViewShell>;
 
   if (view === "library") {
@@ -235,21 +262,29 @@ export function StudioHome({
           desc="Turn a listing into posts, carousels and brochures." onClick={() => setView("templates")} />
         <HeroCard img={asset("hero-advice.jpg")} tint="text-violet-600 dark:text-violet-400"
           icon={<SquarePen className="h-5 w-5" />} title="Create advice content"
-          desc="Generate buyer tips, seller advice and market posts." onClick={() => setView("carousel")} />
+          desc="Generate buyer tips, seller advice and market posts." onClick={() => { setPendingTopic(""); setPendingLang(undefined); setView("carousel"); }} />
         <HeroCard img={asset("hero-room.jpg")} tint="text-amber-600 dark:text-amber-400"
           icon={<Hammer className="h-5 w-5" />} title="Transform a room"
           desc="Create renovation concepts and before/after content." onClick={() => setView("renovation")} />
       </div>
 
-      {/* ── suggested for today ── */}
+      {/* ── suggested for today (dynamic; static values stand in until the fetch lands) ── */}
       <SectionHead title="Suggested for today" link="View all suggestions" onLink={() => setView("templates")} />
       <div className="grid gap-4 md:grid-cols-3">
         <SuggestCard img={asset("style-poster.jpg")} icon={<Sparkles className="h-4 w-4" />}
-          title="5 buyer mistakes on the Costa Blanca" sub="Carousel · Spanish · 5 slides" cta="Create carousel" onClick={() => setView("carousel")} />
-        <SuggestCard img={asset("hero-property.jpg")} icon={<HomeIcon className="h-4 w-4" />}
-          title="Turn a listing into a luxury post" sub="Listing post" cta="Create post" onClick={() => setView("smart")} />
+          title={sugg?.carousel ? cap(sugg.carousel.topic) : "A fresh tips carousel"}
+          sub={sugg?.carousel ? `Carousel · ${LANG_NAMES[sugg.carousel.language] ?? "Spanish"} · ${sugg.carousel.slides} slides` : "Carousel · Spanish · 5 slides"}
+          cta="Create carousel"
+          onClick={() => {
+            setPendingTopic(sugg?.carousel?.topic ?? "");
+            setPendingLang(sugg?.carousel?.language);
+            setView("carousel");
+          }} />
+        <SuggestCard img={sugg?.listing?.thumb_url ?? asset("hero-property.jpg")} icon={<HomeIcon className="h-4 w-4" />}
+          title={sugg?.listing ? `Turn ${sugg.listing.title} into a luxury post` : "Turn a listing into a luxury post"}
+          sub="Listing post" cta="Create post" onClick={() => setView("smart")} />
         <SuggestCard img={asset("hero-room.jpg")} icon={<Hammer className="h-4 w-4" />}
-          title="Kitchen before/after inspiration" sub="Renovation" cta="Create concept" onClick={() => setView("renovation")} />
+          title={sugg?.renovation?.idea ?? "Kitchen before/after inspiration"} sub="Renovation" cta="Create concept" onClick={() => setView("renovation")} />
       </div>
 
       {/* ── choose a style ── */}

@@ -1282,6 +1282,55 @@ route.post('/carousel/topic-ideas', async (c) => {
   }
 });
 
+// ── GET /api/studio/suggestions — "Suggested for today" (3 dynamic cards for the Studio home) ──
+// A carousel topic (fresh AI ideas, cached per agency+day so a home-page visit costs ~1 AI call/day),
+// a REAL listing to turn into a post (best-priced with usable photos, rotated by day), and a stable
+// renovation nudge. All honesty rails inherited from topicIdeas (no invented places/prices/stats).
+const SUGGEST_CACHE = new Map<string, string[]>();
+route.get('/suggestions', async (c) => {
+  const tx = c.get('tx');
+  const agencyId = c.get('agencyId');
+  const lang = 'es';   // pilot is the Spanish coast; carousel copy is Spanish
+  try {
+    const day = Math.floor(Date.now() / 86_400_000);
+
+    // 1) carousel topic — daily-cached so repeated home visits don't each hit the model
+    const key = `${agencyId}:${lang}:${day}`;
+    let topics = SUGGEST_CACHE.get(key);
+    if (!topics) {
+      topics = (await topicIdeas(lang, [])) ?? [];
+      if (SUGGEST_CACHE.size > 400) SUGGEST_CACHE.clear();   // crude bound; resets on redeploy anyway
+      SUGGEST_CACHE.set(key, topics);
+    }
+    const topic = topics.length ? topics[day % topics.length] : null;
+
+    // 2) a real listing — best-priced first, only ones with usable (non-dead) photos, rotated by day
+    const res = await tx.execute(sql`
+      SELECT id, title, images
+      FROM properties
+      WHERE agency_id = ${agencyId}
+      ORDER BY price DESC NULLS LAST, created_at DESC
+      LIMIT 12`);
+    const rows = res as unknown as Array<{ id: string; title: string; images: unknown }>;
+    const withPhotos = rows
+      .map((r) => ({ id: r.id, title: r.title, photos: usablePhotos(r.images) }))
+      .filter((r) => r.photos.length > 0);
+    const prop = withPhotos.length ? withPhotos[day % withPhotos.length] : null;
+
+    return c.json({
+      ok: true,
+      suggestions: {
+        carousel: topic ? { topic, language: lang, slides: 5 } : null,
+        listing: prop ? { property_id: prop.id, title: prop.title, thumb_url: prop.photos[0] } : null,
+        renovation: { idea: 'Kitchen before/after inspiration', room: 'kitchen' },
+      },
+    });
+  } catch (err) {
+    console.error('[studio/suggestions] failed:', err);
+    return c.json({ ok: false, error: 'suggestions_failed', message: GENERIC }, 500);
+  }
+});
+
 // ── POST /api/studio/carousel/remix — OTRA VUELTA: one-axis remix of a finished tips deck ──
 // Three axes, all reusing the deck's own artwork (no KIE, no credit):
 //   hook   → the AI reframes ONLY the cover (different persuasion angle)

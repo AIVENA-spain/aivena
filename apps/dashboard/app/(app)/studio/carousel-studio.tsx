@@ -82,7 +82,7 @@ const STYLES: Record<CarouselType, [string, string, string][]> = {
   ],
 };
 
-export function CarouselStudio() {
+export function CarouselStudio({ initialTopic = "", initialLanguage }: { initialTopic?: string; initialLanguage?: string } = {}) {
   const [phase, setPhase] = useState<Phase>("form");   // tips-only: land straight on the form
   const [ctype] = useState<CarouselType>("tips");
   const [slides, setSlides] = useState<string[]>([]);
@@ -96,8 +96,8 @@ export function CarouselStudio() {
   const [saved, setSaved] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [copied, setCopied] = useState(false);
-  // tips/quote form fields
-  const [topic, setTopic] = useState("");
+  // tips/quote form fields — a suggestion from the Studio home can pre-fill the topic + language
+  const [topic, setTopic] = useState(initialTopic);
   const [ideas, setIdeas] = useState<string[]>([
     "First-time buyer mistakes", "How to prepare your home for viewings", "Questions to ask before you make an offer",
   ]);
@@ -110,7 +110,7 @@ export function CarouselStudio() {
   const [exampleStyle, setExampleStyle] = useState<string | null>(null);
   const [quoteText, setQuoteText] = useState("");
   const [quoteAuthor, setQuoteAuthor] = useState("");
-  const [language, setLanguage] = useState("es");
+  const [language, setLanguage] = useState(initialLanguage ?? "es");
   const [style, setStyle] = useState("editorial");
   const [scheme, setScheme] = useState("clasico");
   // otra vuelta (one-axis remix)

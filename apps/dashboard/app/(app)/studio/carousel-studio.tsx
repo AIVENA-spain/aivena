@@ -268,14 +268,14 @@ export function CarouselStudio() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6">
+    <div className={`mx-auto ${phase === "form" ? "max-w-[1600px] px-6 lg:px-8" : "max-w-6xl px-4"} py-6`}>
       {phase === "form" && (
         <div className="flex gap-8">
           {/* ── the form column ─────────────────────────────────────────── */}
           <div className="min-w-0 flex-1">
             <div className="mb-6 flex items-start justify-between gap-4">
               <div>
-                <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">Tips &amp; advice carousel</h1>
+                <h1 className="text-[28px] leading-tight font-bold tracking-tight text-neutral-900 dark:text-neutral-100">Tips &amp; advice carousel</h1>
                 <p className="mt-1 max-w-md text-sm text-neutral-500 dark:text-neutral-400">
                   Create engaging Instagram carousels packed with useful tips your audience will love to save and share.
                 </p>
@@ -293,7 +293,7 @@ export function CarouselStudio() {
                 <Sparkles className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
                 <input value={topic} onChange={(e) => setTopic(e.target.value)} maxLength={300}
                   placeholder="e.g. mistakes to avoid when buying on the coast"
-                  className="w-full rounded-xl border border-neutral-200 bg-white py-3 pl-10 pr-3 text-sm outline-none placeholder:text-neutral-400 focus:border-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:focus:border-neutral-100" />
+                  className="w-full rounded-xl border border-neutral-200 bg-white py-3.5 pl-10 pr-3 text-sm outline-none placeholder:text-neutral-400 focus:border-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:focus:border-neutral-100" />
               </div>
               <button type="button" onClick={() => void inspire()} disabled={ideasLoading}
                 className="flex shrink-0 items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-4 text-sm font-medium text-emerald-700 hover:border-emerald-600 disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-emerald-400">
@@ -320,7 +320,7 @@ export function CarouselStudio() {
             <div className="flex flex-wrap gap-2">
               {[3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
                 <button key={n} onClick={() => setSlideTotal(n)}
-                  className={`h-10 w-11 rounded-lg border text-sm font-medium transition ${slideTotal === n
+                  className={`h-11 w-12 rounded-lg border text-sm font-medium transition ${slideTotal === n
                     ? "border-emerald-600 bg-emerald-600 text-white"
                     : "border-neutral-200 bg-white text-neutral-600 hover:border-neutral-400 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300"}`}>
                   {n}
@@ -346,8 +346,8 @@ export function CarouselStudio() {
                     ? "border-emerald-600 ring-1 ring-emerald-600"
                     : "border-neutral-200 bg-white hover:border-neutral-400 dark:border-neutral-700 dark:bg-neutral-900"}`}>
                   {examples[key]?.[0]
-                    ? <img src={examples[key][0]} alt={name} referrerPolicy="no-referrer" className="aspect-[4/5] w-full rounded-t-xl object-cover" />
-                    : <div className="aspect-[4/5] w-full rounded-t-xl bg-gradient-to-br from-neutral-100 to-neutral-200 dark:from-neutral-800 dark:to-neutral-700" />}
+                    ? <img src={examples[key][0]} alt={name} referrerPolicy="no-referrer" className="aspect-square w-full rounded-t-xl object-cover object-top" />
+                    : <div className="aspect-square w-full rounded-t-xl bg-gradient-to-br from-neutral-100 to-neutral-200 dark:from-neutral-800 dark:to-neutral-700" />}
                   <div className="p-2.5">
                     <div className="text-[13px] font-semibold text-neutral-900 dark:text-neutral-100">{name.replace(" ✦ Recommended", "")}</div>
                     <div className="mt-0.5 text-[11px] leading-snug text-neutral-500 dark:text-neutral-400">{desc.replace(/^AI imagery — /, "")}</div>
@@ -381,7 +381,7 @@ export function CarouselStudio() {
             <div className="relative">
               <Globe className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
               <select value={language} onChange={(e) => setLanguage(e.target.value)}
-                className="w-full appearance-none rounded-xl border border-neutral-200 bg-white py-3 pl-10 pr-8 text-sm outline-none focus:border-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100">
+                className="w-full appearance-none rounded-xl border border-neutral-200 bg-white py-3.5 pl-10 pr-8 text-sm outline-none focus:border-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100">
                 {LANGS.map(([code, name]) => <option key={code} value={code}>{name}</option>)}
               </select>
               <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
@@ -390,13 +390,13 @@ export function CarouselStudio() {
             <button
               onClick={() => void start({ type: "tips", topic: topic.trim(), slides: slideTotal, language, style, scheme }, "form")}
               disabled={topic.trim().length < 3}
-              className="mt-7 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3.5 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-40">
+              className="mt-7 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-4 text-[15px] font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-40">
               <Sparkles className="h-4 w-4" /> Create carousel
             </button>
           </div>
 
           {/* ── live preview rail ───────────────────────────────────────── */}
-          <div className="hidden w-[360px] shrink-0 xl:block">
+          <div className="hidden w-[380px] shrink-0 xl:block">
             <div className="sticky top-6 rounded-2xl border border-neutral-200 bg-white p-5 dark:border-neutral-700 dark:bg-neutral-900">
               <div className="text-base font-semibold text-neutral-900 dark:text-neutral-100">Live preview</div>
               <div className="mt-3 flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">

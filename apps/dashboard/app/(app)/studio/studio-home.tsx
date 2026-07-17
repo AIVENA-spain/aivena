@@ -121,7 +121,7 @@ export function StudioHome({ initialLibrary, quota }: { initialLibrary: LibraryI
   if (view === "carousel") {
     return (
       <div>
-        <div className="mx-auto flex max-w-6xl items-center gap-1.5 px-4 pt-6 text-sm text-neutral-500">
+        <div className="mx-auto flex max-w-[1600px] items-center gap-1.5 px-6 pt-6 text-sm text-neutral-500 lg:px-8">
           <button onClick={() => setView("home")} className="flex items-center gap-1.5 hover:text-neutral-900 dark:hover:text-neutral-100"><ArrowLeft className="h-4 w-4" /> Studio home</button>
           <span className="text-neutral-300 dark:text-neutral-600">/</span>
           <span className="text-neutral-700 dark:text-neutral-300">Tips carousel</span>

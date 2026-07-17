@@ -65,7 +65,7 @@ const PLAN_TOOL = {
             title: { type: 'string', description: 'the point as a punchy headline, max 62 chars' },
             body: { type: 'string', description: 'the advice: 15-40 words, one idea, concrete and actionable, max 250 chars' },
             teaser: { type: 'string', description: 'OPEN LOOP: one short line teasing the NEXT slide, max 70 chars ("Siguiente: el gasto que todos olvidan"). Leave empty on the last tip.' },
-            scene: { type: 'string', description: "THIS TIP's visual (ENGLISH, 15-40 words): one concrete Mediterranean object/scene that translates THIS specific tip into imagery — different from every other tip's scene. Same rules as image_scenes: concrete nouns, no interiors, no facades, no landmarks, no close people, no text." },
+            scene: { type: 'string', description: "THIS TIP's visual (ENGLISH, 15-40 words): name ONE concrete hero object IN THE FIRST FIVE WORDS that embodies THIS specific tip, then the setting. The hero object must be different from every other slide's hero object (cover included). Same rules as image_scenes: concrete nouns, no interiors, no facades, no landmarks, no close people, no text." },
           },
         },
       },
@@ -160,12 +160,13 @@ CAROUSEL DOCTRINE (how these posts win — follow it):
 - Caption: SHORT and human — 3 lines max + a CTA line, written like a person, not a brochure. No clichés, no rhetorical-question openers. Same place rule: no towns unless the topic names one. End with a short P.D. question answerable in ONE word.
 - Hashtags: 3-5 only, no mega-tags.
 - image_scenes: 3 concrete Mediterranean scenes (ENGLISH) that translate the topic's emotion — the longing for a home in Spain, the promise of a better life — into carefully purposeful imagery. One familiar object/scene per beat carrying one extra meaning. Concrete nouns; no interiors, no property facades, no landmarks, no close people, no text.
-- EVERY tip also gets its own "scene": the visual translation of THAT tip specifically. All scenes across the deck must be clearly DIFFERENT from each other — different objects, different compositions — while living in the same world. Repetition across slides is a failure.
+- EVERY tip also gets its own "scene": the visual translation of THAT tip specifically. HERO OBJECT LAW: each scene names ONE hero object in its first five words, and no two scenes in the deck (cover included) may share a hero object or lean on the same motif — different objects, different compositions, same world. Repetition across slides is a failure. If the topic tempts you to reuse keys, windows or doors, pick the tip's OWN object instead (bills → tied envelopes; maintenance → a dripping tap; paperwork → a stamped folder).
 
 HARD RULES:
 - NO specific prices, percentages, statistics, interest rates, tax figures, or legal guarantees anywhere in slide copy. General, evergreen advice only — you have no data source, so any figure would be invented. Use place names for specificity instead of numbers.
 - NO invented facts about the agency, the market, or any client. The agency name is the only real-world name you may use${opts.type === 'quote' ? ' (plus the client attribution provided)' : ''}.
 - Friendly expert tone: confident, warm, zero clickbait, no emoji in slide copy (caption may use a few).
+- Every sentence must parse cleanly on FIRST read: no clipped elliptical constructions ("has needs a full-time home doesn't"), no dropped relative pronouns that read like typos — write the complete clause ("has needs that a full-time home doesn't").
 
 Submit with the submit_carousel tool.`;
 

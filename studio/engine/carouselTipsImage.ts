@@ -37,6 +37,53 @@ const CFG: Record<TipsImageStyle, StyleCfg> = {
   bordado: { mode: "light", s2: "card", grain: 0.035, ctaY: 0.75 },
 };
 
+
+/** The cover's photo element — one definition shared by the spec and the legibility measurement. */
+function coverPhotoEl(cfg: StyleCfg): Record<string, unknown> {
+  return { type: "photo", photo: 0, bbox: [0, 0, W, H], ...(cfg.crop ? { zoom: cfg.crop.z, x: 0.5, y: cfg.crop.y } : {}) };
+}
+
+/** COVER LEGIBILITY GUARD (Christian 2026-07-17: "the text on the first slide isn't visible enough").
+ *  Light-mode covers draw navy type straight on the artwork; whether that reads depends entirely on
+ *  the generated image. So we MEASURE: render the photo layer alone, sample the title zone and the
+ *  bottom band zone, and add a paper gradient scrim only where the art is too dark or too busy —
+ *  stacked double when it's very busy. Clean artwork stays untouched (micro-variation intact). */
+async function lightCoverGuard(img: Buffer, cfg: StyleCfg, paper: string): Promise<{ els: Record<string, unknown>[]; bandColour: string | null }> {
+  try {
+    const bg = await renderFreeform(
+      DesignSpec.parse({ background: "#ffffff", elements: [coverPhotoEl(cfg)] }),
+      { width: W, height: H }, [img],
+    );
+    const sharp = (await import("sharp")).default;
+    const zone = async (left: number, top: number, width: number, height: number) => {
+      const raw = await sharp(bg).extract({ left, top, width, height })
+        .resize({ width: 64 }).greyscale().raw().toBuffer();
+      let sum = 0, sq = 0;
+      for (const v of raw) { sum += v; sq += v * v; }
+      const mean = sum / raw.length;
+      return { mean, sd: Math.sqrt(Math.max(0, sq / raw.length - mean * mean)) };
+    };
+    const top = await zone(60, 70, 960, 550);      // eyebrow + title block
+    const bot = await zone(60, 1230, 960, 100);    // brand band strip
+    const els: Record<string, unknown>[] = [];
+    if (top.mean < 190 || top.sd > 26) els.push({ type: "scrim", bbox: [0, 0, W, 660], colour: paper, direction: "down" });
+    if (top.mean < 150 || top.sd > 45) els.push({ type: "scrim", bbox: [0, 0, W, 620], colour: paper, direction: "down" });
+    // bottom band: DARK art carries light text natively (no scrim — the tinta look);
+    // busy mid-tones get a paper scrim strong enough at the band's own y (starts 1140, not 1180).
+    let bandColour: string | null = null;
+    if (bot.mean < 128) bandColour = "cream";
+    else if (bot.mean < 190 || bot.sd > 26) {
+      els.push({ type: "scrim", bbox: [0, 1140, W, H], colour: paper, direction: "up" });
+      // heavily textured bottoms (stitches, waves, tiles) need double density at the band's line
+      if (bot.sd > 40 || bot.mean < 165) els.push({ type: "scrim", bbox: [0, 1200, W, H], colour: paper, direction: "up" });
+    }
+    return { els, bandColour };
+  } catch {
+    // measurement is best-effort — on any failure ship the classic open-art cover
+    return { els: [], bandColour: null };
+  }
+}
+
 export function isTipsImageStyle(s: string): s is TipsImageStyle {
   return (TIPS_IMAGE_STYLES as string[]).includes(s);
 }
@@ -64,7 +111,9 @@ export async function renderTipsImageStyled(
 
   // ── 1 · COVER (img0) ─────────────────────────────────────────────────────────
   {
-    const els: any[] = [{ type: "photo", photo: 0, bbox: [0, 0, W, H], ...(cfg.crop ? { zoom: cfg.crop.z, x: 0.5, y: cfg.crop.y } : {}) }];
+    const els: any[] = [coverPhotoEl(cfg)];
+    const guard = cfg.mode === "light" ? await lightCoverGuard(images[0], cfg, CREAM) : { els: [], bandColour: null };
+    els.push(...guard.els);
     if (cfg.mode === "dusk") {
       els.push({ type: "scrim", bbox: [0, 0, W, 620], colour: NAVY, direction: "down" });
       els.push({ type: "text", bbox: [80, 96, 720, 128], content: agency.toUpperCase(), font: "Jost", size: 20, colour: CREAM, align: "left", weight: "500", tracking: 5 });
@@ -73,11 +122,10 @@ export async function renderTipsImageStyled(
       els.push(aiTag(mix(CREAM, NAVY, 0.6)));
       els.push(...band(1, mix(CREAM, NAVY, 0.65)));
     } else if (cfg.mode === "light") {
-      els.push(noShield({ type: "text", bbox: [80, 96, 720, 128], content: agency.toUpperCase(), font: "Jost", size: 20, colour: mix(NAVY, CREAM, 0.75), align: "left", weight: "500", tracking: 5 }));
       els.push(noShield({ type: "text", bbox: [80, 200, 1000, 236], content: plan.eyebrow.toUpperCase(), font: "Jost", size: 22, colour: mix(NAVY, CREAM, 0.72), align: "left", tracking: 6 }));
       els.push(noShield({ type: "text", bbox: [80, 260, 1000, 560], content: wrap(plan.hook_title, FR, 92, 920), font: FR, size: 92, colour: NAVY, align: "left", line_height: 108 }));
       els.push(noShield(aiTag(mix(NAVY, CREAM, 0.5))));
-      els.push(...band(1, mix(NAVY, CREAM, 0.6)).map(noShield));
+      els.push(...band(1, guard.bandColour === "cream" ? mix(CREAM, NAVY, 0.8) : mix(NAVY, CREAM, 0.6)).map(noShield));
     } else {
       els.push({ type: "scrim", bbox: [0, 0, W, 260], colour: NAVY, direction: "down" });
       els.push({ type: "scrim", bbox: [0, 640, W, H], colour: NAVY });
@@ -243,7 +291,9 @@ export async function renderTipsImageStyledV2(
 
   // 1 · COVER — identical grammar to V1
   {
-    const els: any[] = [{ type: "photo", photo: 0, bbox: [0, 0, W, H], ...(cfg.crop ? { zoom: cfg.crop.z, x: 0.5, y: cfg.crop.y } : {}) }];
+    const els: any[] = [coverPhotoEl(cfg)];
+    const guard = cfg.mode === "light" ? await lightCoverGuard(images[0], cfg, CREAM) : { els: [], bandColour: null };
+    els.push(...guard.els);
     if (cfg.mode === "dusk") {
       els.push({ type: "scrim", bbox: [0, 0, W, 620], colour: NAVY, direction: "down" });
       els.push({ type: "text", bbox: [80, 96, 720, 128], content: agency.toUpperCase(), font: "Jost", size: 20, colour: CREAM, align: "left", weight: "500", tracking: 5 });
@@ -252,11 +302,10 @@ export async function renderTipsImageStyledV2(
       els.push(aiTag(mix(CREAM, NAVY, 0.6)));
       els.push(...band(1, mix(CREAM, NAVY, 0.65)));
     } else if (cfg.mode === "light") {
-      els.push(noShield({ type: "text", bbox: [80, 96, 720, 128], content: agency.toUpperCase(), font: "Jost", size: 20, colour: mix(NAVY, CREAM, 0.75), align: "left", weight: "500", tracking: 5 }));
       els.push(noShield({ type: "text", bbox: [80, 200, 1000, 236], content: plan.eyebrow.toUpperCase(), font: "Jost", size: 22, colour: mix(NAVY, CREAM, 0.72), align: "left", tracking: 6 }));
       els.push(noShield({ type: "text", bbox: [80, 260, 1000, 560], content: wrap(plan.hook_title, FR, 92, 920), font: FR, size: 92, colour: NAVY, align: "left", line_height: 108 }));
       els.push(noShield(aiTag(mix(NAVY, CREAM, 0.5))));
-      els.push(...band(1, mix(NAVY, CREAM, 0.6)).map(noShield));
+      els.push(...band(1, guard.bandColour === "cream" ? mix(CREAM, NAVY, 0.8) : mix(NAVY, CREAM, 0.6)).map(noShield));
     } else {
       els.push({ type: "scrim", bbox: [0, 0, W, 260], colour: NAVY, direction: "down" });
       els.push({ type: "scrim", bbox: [0, 640, W, H], colour: NAVY });

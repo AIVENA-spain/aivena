@@ -1,0 +1,111 @@
+{
+  "_meta": {
+    "purpose": "SYNTHETIC-ONLY eval set for the extract-lead-intent Edge Function.",
+    "warning": "Every `text` below is invented test copy. This file MUST NEVER be pointed at real buyer messages or real leads. The runner (run.ts) always calls the EF with dry_run:true and a zero sentinel lead_id, so no DB write can happen.",
+    "contract_fields": [
+      "areas_add", "areas_exclude", "open_to_nearby", "budget_max",
+      "property_type", "bedrooms_min", "bedrooms_max", "bathrooms_min",
+      "must_haves", "confidence", "summary"
+    ],
+    "expected_matchers": {
+      "areas_add": "exact case-insensitive set equality",
+      "areas_exclude": "exact case-insensitive set equality",
+      "areas_add_not": "NONE of these may appear in areas_add (guarantee 1)",
+      "areas_exclude_not": "NONE of these may appear in areas_exclude (guarantee 3)",
+      "open_to_nearby": "strict boolean equality",
+      "budget_max": "strict numeric (or null) equality",
+      "property_type": "exact case-insensitive string (or null)",
+      "property_type_any": "actual must be one of these (case-insensitive)",
+      "bedrooms_min": "strict numeric (or null) equality",
+      "bedrooms_max": "strict numeric (or null) equality",
+      "bathrooms_min": "strict numeric (or null) equality",
+      "must_haves_include": "each entry must be a case-insensitive substring of some actual must_haves item",
+      "all_empty": "every contract field empty/false/null (summary/confidence not asserted)"
+    },
+    "universal_guarantees": [
+      "areas_add and areas_exclude never share a member (case-insensitive) — the 'not X -> X' bug",
+      "no empty/whitespace entries in areas_add or areas_exclude",
+      "confidence, when present, is within [0,1]"
+    ]
+  },
+  "cases": [
+    {
+      "id": "marte_no",
+      "lang": "no",
+      "text": "Kan du sende meg noen fra andre steder, ikke El Raso? Det trenger ikke aa vaere Guardamar.",
+      "expected": {
+        "areas_exclude": ["El Raso"],
+        "areas_add": [],
+        "open_to_nearby": true,
+        "areas_exclude_not": ["Guardamar"],
+        "areas_add_not": ["Guardamar", "El Raso"]
+      }
+    },
+    {
+      "id": "plain_negation_en",
+      "lang": "en",
+      "text": "Please, not Torrevieja.",
+      "expected": {
+        "areas_exclude": ["Torrevieja"],
+        "areas_add_not": ["Torrevieja"]
+      }
+    },
+    {
+      "id": "vague_expand_en",
+      "lang": "en",
+      "text": "Show me something near the coast, other places too",
+      "expected": {
+        "open_to_nearby": true,
+        "areas_add": []
+      }
+    },
+    {
+      "id": "budget_raise_en",
+      "lang": "en",
+      "text": "we can go up to 600k now",
+      "expected": {
+        "budget_max": 600000
+      }
+    },
+    {
+      "id": "multi_intent_en",
+      "lang": "en",
+      "text": "3 bed villa with a pool in Ciudad Quesada under 450k",
+      "expected": {
+        "areas_add": ["Ciudad Quesada"],
+        "property_type_any": ["house", "villa"],
+        "bedrooms_min": 3,
+        "budget_max": 450000,
+        "must_haves_include": ["pool"]
+      }
+    },
+    {
+      "id": "greeting_en",
+      "lang": "en",
+      "text": "Hi, thanks so much!",
+      "expected": {
+        "all_empty": true
+      }
+    },
+    {
+      "id": "adversarial_neg_en",
+      "lang": "en",
+      "text": "Just to be clear we do NOT want Torrevieja",
+      "expected": {
+        "areas_exclude": ["Torrevieja"],
+        "areas_add": [],
+        "areas_add_not": ["Torrevieja"]
+      }
+    },
+    {
+      "id": "mixed_lang",
+      "lang": "es-en",
+      "text": "Busco casa, but not in El Raso, open to nearby towns",
+      "expected": {
+        "areas_exclude": ["El Raso"],
+        "open_to_nearby": true,
+        "areas_add_not": ["El Raso"]
+      }
+    }
+  ]
+}

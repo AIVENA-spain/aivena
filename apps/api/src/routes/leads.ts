@@ -203,25 +203,44 @@ route.get('/:leadId/intel', async (c) => {
     return c.json({ ok: false, error: 'A valid lead id is required.' }, 400);
   }
   try {
+    // Phase-2 add: two fields surfacing WHEN a buyer message last updated this lead's
+    // interest. latest_pref_event picks the most-recent 'interest_updated_from_conversation'
+    // lead_event (written by BOTH apply_conversation_interest [deterministic] and
+    // apply_extracted_intent [llm], so this covers both paths). The CTE carries the SAME
+    // agency GUC fence as the leads read; the LEFT JOIN leaves both fields NULL when there is
+    // no such event, and a missing/wrong-tenant lead still yields zero rows. Purely additive.
     const result = await tx.execute(sql`
-      SELECT urgency,
-             timeframe,
-             budget_extracted,
-             budget_raw,
-             location_interest_extracted,
-             location_interest_raw,
-             bedrooms_min,
-             bedrooms_max,
-             bathrooms_min,
-             property_type_pref,
-             next_action,
-             recommended_channel,
-             reasoning_summary,
-             followup_paused,
-             next_followup_at
-        FROM public.leads
-       WHERE id = ${leadId}::uuid
-         AND agency_id = current_setting('app.current_agency_id', true)
+      WITH latest_pref_event AS (
+        SELECT summary   AS preferences_update_summary,
+               timestamp AS preferences_updated_from_message_at
+          FROM public.lead_events
+         WHERE lead_id = ${leadId}::uuid
+           AND agency_id = current_setting('app.current_agency_id', true)
+           AND type = 'interest_updated_from_conversation'
+         ORDER BY timestamp DESC
+         LIMIT 1
+      )
+      SELECT l.urgency,
+             l.timeframe,
+             l.budget_extracted,
+             l.budget_raw,
+             l.location_interest_extracted,
+             l.location_interest_raw,
+             l.bedrooms_min,
+             l.bedrooms_max,
+             l.bathrooms_min,
+             l.property_type_pref,
+             l.next_action,
+             l.recommended_channel,
+             l.reasoning_summary,
+             l.followup_paused,
+             l.next_followup_at,
+             e.preferences_updated_from_message_at,
+             e.preferences_update_summary
+        FROM public.leads l
+        LEFT JOIN latest_pref_event e ON true
+       WHERE l.id = ${leadId}::uuid
+         AND l.agency_id = current_setting('app.current_agency_id', true)
     `);
     const rows = result as unknown as Array<Record<string, unknown>>;
     if (rows.length === 0) {

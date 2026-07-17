@@ -1,4 +1,5 @@
 import { apiFetch } from "@/lib/api/client";
+import { getCurrentUserContext } from "@/lib/auth/context";
 
 import { StudioHome } from "./studio-home";
 
@@ -55,5 +56,21 @@ export default async function StudioPage() {
     quota = quotaRes.value.quota ?? null;
   }
 
-  return <StudioHome initialLibrary={library} quota={quota} />;
+  // Greeting line for the page header (mirrors the topbar's own logic).
+  const ctx = await getCurrentUserContext();
+  const rawName = ctx?.email.split("@")[0]?.split(".")[0] ?? "";
+  const firstName = rawName ? rawName.charAt(0).toUpperCase() + rawName.slice(1) : "";
+  const agencyName = ctx?.activeAgency?.agency.displayName ?? "";
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+
+  return (
+    <StudioHome
+      initialLibrary={library}
+      quota={quota}
+      firstName={firstName}
+      agencyName={agencyName}
+      greeting={greeting}
+    />
+  );
 }

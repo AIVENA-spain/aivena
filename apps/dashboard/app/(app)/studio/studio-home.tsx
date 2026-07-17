@@ -1,24 +1,23 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Sparkles, LayoutTemplate, Home as HomeIcon, ArrowLeft, ChevronRight, ImageIcon, Loader2, Images } from "lucide-react";
+import {
+  ArrowLeft, ArrowRight, Download, ExternalLink, FolderOpen, Hammer, Home as HomeIcon,
+  ImageIcon, MoreVertical, Palette, Sparkles, SquarePen,
+} from "lucide-react";
 import { EditableWizard } from "./editable-wizard";
 import { StudioWizard } from "./studio-wizard";
 import { SmartStudio } from "./smart-studio";
 import { CarouselStudio } from "./carousel-studio";
-import { editableGalleryAction, editablePreviewAction } from "./wizard-actions";
+import { downloadImage } from "./property-picker";
 
 type LibraryItem = {
   id: string; image_url: string; generation_type: string;
   content_type: string | null; created_at: string; section?: string | null;
 };
 type Quota = { used?: number; quota?: number | null; remaining?: number | null; plan_tier?: string; unlimited?: boolean } | null;
-type GalleryItem = {
-  template_id: string; number?: number; property_id: string; property_title: string | null;
-  photos: string[]; brand: { navy: string; gold: string; cream: string; text: string };
-  colour_overrides: Record<string, string>;
-};
+type View = "home" | "templates" | "smart" | "renovation" | "carousel" | "library";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 const TYPE_LABEL: Record<string, string> = {
@@ -31,58 +30,110 @@ function labelFor(it: LibraryItem): string {
 }
 function ago(iso: string): string {
   const s = Math.max(1, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
-  if (s < 60) return `${s}s ago`;
+  if (s < 60) return "just now";
   const m = Math.floor(s / 60); if (m < 60) return `${m}m ago`;
   const h = Math.floor(m / 60); if (h < 24) return `${h}h ago`;
-  const d = Math.floor(h / 24); return `${d}d ago`;
+  const d = Math.floor(h / 24); if (d === 1) return "yesterday";
+  return `${d} days ago`;
 }
 
-function EntryCard({
-  icon, tint, title, desc, recommended, onClick,
-}: { icon: React.ReactNode; tint: string; title: string; desc: string; recommended?: boolean; onClick: () => void }) {
+// ── the "Studio home" back-link shell used by every sub-view ───────────────────
+function SubViewShell({ onBack, crumb, children }: { onBack: () => void; crumb?: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <div className="mx-auto flex max-w-[1600px] items-center gap-1.5 px-6 pt-6 text-sm text-neutral-500 lg:px-8">
+        <button onClick={onBack} className="flex items-center gap-1.5 hover:text-neutral-900 dark:hover:text-neutral-100"><ArrowLeft className="h-4 w-4" /> Studio home</button>
+        {crumb && <><span className="text-neutral-300 dark:text-neutral-600">/</span><span className="text-neutral-700 dark:text-neutral-300">{crumb}</span></>}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+// ── section header with a right-side link ──────────────────────────────────────
+function SectionHead({ title, link, onLink }: { title: string; link: string; onLink: () => void }) {
+  return (
+    <div className="mb-4 mt-10 flex items-center justify-between">
+      <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{title}</h3>
+      <button onClick={onLink} className="flex items-center gap-1 text-sm font-medium text-emerald-600 hover:underline dark:text-emerald-400">
+        {link} <ArrowRight className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  );
+}
+
+// ── the three big entry cards ──────────────────────────────────────────────────
+function HeroCard({ img, icon, tint, title, desc, onClick }: {
+  img: string; icon: React.ReactNode; tint: string; title: string; desc: string; onClick: () => void;
+}) {
+  return (
+    <div className="group flex flex-col overflow-hidden rounded-2xl border border-neutral-200 bg-white transition hover:-translate-y-0.5 hover:shadow-md dark:border-neutral-800 dark:bg-neutral-900">
+      <div className="aspect-[16/9] w-full overflow-hidden bg-neutral-100 dark:bg-neutral-800">
+        <img src={img} alt="" className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]" />
+      </div>
+      <div className="relative flex flex-1 flex-col p-5">
+        <span className={`absolute -top-6 left-5 flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-neutral-100 dark:bg-neutral-900 dark:ring-neutral-800 ${tint}`}>{icon}</span>
+        <div className="mt-5 text-[17px] font-semibold text-neutral-900 dark:text-neutral-100">{title}</div>
+        <div className="mt-1 text-sm leading-relaxed text-neutral-500 dark:text-neutral-400">{desc}</div>
+        <button onClick={onClick}
+          className="mt-4 inline-flex items-center gap-1.5 self-start rounded-lg border border-neutral-200 px-3.5 py-2 text-sm font-medium text-emerald-700 transition hover:border-emerald-600 dark:border-neutral-700 dark:text-emerald-400">
+          Start <ArrowRight className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── a "suggested for today" card ───────────────────────────────────────────────
+function SuggestCard({ img, icon, title, sub, cta, onClick }: {
+  img: string; icon: React.ReactNode; title: string; sub: string; cta: string; onClick: () => void;
+}) {
+  return (
+    <div className="relative flex gap-3 rounded-xl border border-neutral-200 bg-white p-3 dark:border-neutral-800 dark:bg-neutral-900">
+      <img src={img} alt="" className="h-[72px] w-[72px] shrink-0 rounded-lg object-cover" />
+      <div className="min-w-0 flex-1 pr-5">
+        <div className="line-clamp-2 text-sm font-semibold leading-snug text-neutral-900 dark:text-neutral-100">{title}</div>
+        <div className="mt-0.5 text-xs text-neutral-400">{sub}</div>
+        <button onClick={onClick}
+          className="mt-2 inline-flex items-center gap-1 rounded-lg border border-neutral-200 px-2.5 py-1.5 text-xs font-medium text-emerald-700 transition hover:border-emerald-600 dark:border-neutral-700 dark:text-emerald-400">
+          {cta} <ArrowRight className="h-3.5 w-3.5" />
+        </button>
+      </div>
+      <span className="absolute right-3 top-3 text-neutral-300 dark:text-neutral-600">{icon}</span>
+    </div>
+  );
+}
+
+// ── a "choose a style" card ────────────────────────────────────────────────────
+function StyleCard({ img, name, desc, swatches, onClick }: {
+  img: string; name: string; desc: string; swatches: string[]; onClick: () => void;
+}) {
   return (
     <button onClick={onClick}
-      className="group flex flex-col rounded-2xl border border-neutral-200 bg-white p-5 text-left transition hover:-translate-y-0.5 hover:border-neutral-300 hover:shadow-md dark:border-neutral-800 dark:bg-neutral-900">
-      <div className="mb-4 flex items-start justify-between">
-        <span className={`flex h-12 w-12 items-center justify-center rounded-xl ${tint}`}>{icon}</span>
-        {recommended && <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">Recommended</span>}
+      className="flex gap-4 rounded-xl border border-neutral-200 bg-white p-3 text-left transition hover:-translate-y-0.5 hover:shadow-md dark:border-neutral-800 dark:bg-neutral-900">
+      <div className="shrink-0">
+        <img src={img} alt="" className="h-[86px] w-[120px] rounded-lg object-cover" />
+        <div className="mt-2 flex gap-1.5">
+          {swatches.map((c, i) => <span key={i} className="h-4 w-4 rounded ring-1 ring-black/5" style={{ background: c }} />)}
+        </div>
       </div>
-      <div className="mb-1 text-base font-semibold text-neutral-900 dark:text-neutral-100">{title}</div>
-      <div className="text-sm leading-relaxed text-neutral-500 dark:text-neutral-400">{desc}</div>
-      <ChevronRight className="mt-4 h-4 w-4 text-neutral-300 transition group-hover:translate-x-0.5 group-hover:text-neutral-500" />
+      <div className="min-w-0">
+        <div className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{name}</div>
+        <div className="mt-1 text-xs leading-snug text-neutral-500 dark:text-neutral-400">{desc}</div>
+      </div>
     </button>
   );
 }
 
-export function StudioHome({ initialLibrary, quota }: { initialLibrary: LibraryItem[]; quota: Quota }) {
-  const [view, setView] = useState<"home" | "templates" | "smart" | "renovation" | "carousel">("home");
+export function StudioHome({
+  initialLibrary, quota: _quota, firstName, agencyName, greeting,
+}: {
+  initialLibrary: LibraryItem[]; quota: Quota; firstName: string; agencyName: string; greeting: string;
+}) {
+  const [view, setView] = useState<View>("home");
+  const [menuId, setMenuId] = useState<string | null>(null);
 
-  // live templates showcase — the real gallery plan (top listings, neutral + shifting accent), rendered cached
-  const [showcase, setShowcase] = useState<GalleryItem[]>([]);
-  const [shots, setShots] = useState<Record<string, string | null | undefined>>({});
-
-  useEffect(() => {
-    if (view !== "home") return;
-    let cancelled = false;
-    (async () => {
-      const res = await editableGalleryAction();
-      if (cancelled || !res.ok || !Array.isArray(res.templates)) return;
-      const items = (res.templates as GalleryItem[]).slice(0, 4);
-      setShowcase(items);
-      setShots(Object.fromEntries(items.map((t) => [t.template_id, undefined])));
-      for (const item of items) {
-        const r = await editablePreviewAction({
-          template_id: item.template_id, property_id: item.property_id,
-          photos: item.photos, brand: item.brand, colour_overrides: item.colour_overrides,
-        });
-        if (cancelled) return;
-        setShots((p) => ({ ...p, [item.template_id]: r.ok ? (r.image_url as string) : null }));
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [view]);
-
-  // ── one sectioned library (Recent + Library merged, grouped by your sections) ──
+  // ── the full library grid (its own sub-view), grouped by your sections ──
   const sections = useMemo(() => {
     const s = new Set<string>();
     for (const it of initialLibrary) if (it.section) s.add(it.section);
@@ -95,193 +146,152 @@ export function StudioHome({ initialLibrary, quota }: { initialLibrary: LibraryI
     return initialLibrary.filter((i) => i.section === activeSection);
   }, [initialLibrary, activeSection]);
 
-  const renovations = useMemo(() => initialLibrary.filter((i) => i.generation_type === "renovation").slice(0, 3), [initialLibrary]);
+  if (view === "templates") return <SubViewShell onBack={() => setView("home")}><EditableWizard /></SubViewShell>;
+  if (view === "smart") return <SubViewShell onBack={() => setView("home")}><SmartStudio /></SubViewShell>;
+  if (view === "carousel") return <SubViewShell onBack={() => setView("home")} crumb="Tips carousel"><CarouselStudio /></SubViewShell>;
+  if (view === "renovation") return <SubViewShell onBack={() => setView("home")}><StudioWizard initialLibrary={initialLibrary} initialFork="renovation" /></SubViewShell>;
 
-  if (view === "templates") {
+  if (view === "library") {
     return (
-      <div>
-        <div className="mx-auto max-w-6xl px-4 pt-6">
-          <button onClick={() => setView("home")} className="flex items-center gap-1.5 text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100"><ArrowLeft className="h-4 w-4" /> Studio home</button>
+      <SubViewShell onBack={() => setView("home")} crumb="Library">
+        <div className="mx-auto max-w-6xl px-6 py-6 lg:px-8">
+          <div className="rounded-2xl border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900">
+            <div className="flex flex-wrap items-center gap-2 border-b border-neutral-200 px-4 py-3 dark:border-neutral-800">
+              <h3 className="mr-2 font-semibold text-neutral-900 dark:text-neutral-100">Your library</h3>
+              {[{ k: "all", l: "All" }, ...sections.map((s) => ({ k: s, l: s })), ...(initialLibrary.some((i) => !i.section) && sections.length ? [{ k: "__unfiled", l: "Unfiled" }] : [])].map((t) => (
+                <button key={t.k} onClick={() => setActiveSection(t.k)}
+                  className={`rounded-full border px-3 py-1 text-xs font-medium transition ${activeSection === t.k ? "border-neutral-900 bg-neutral-900 text-white dark:border-neutral-100 dark:bg-neutral-100 dark:text-neutral-900" : "border-neutral-200 text-neutral-500 hover:text-neutral-900 dark:border-neutral-700"}`}>
+                  {t.l}
+                </button>
+              ))}
+              <span className="ml-auto text-xs text-neutral-400">{libraryItems.length} item{libraryItems.length === 1 ? "" : "s"}</span>
+            </div>
+            {libraryItems.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-2 py-16 text-center text-sm text-neutral-400">
+                <ImageIcon className="h-8 w-8" />
+                {initialLibrary.length === 0 ? "Nothing yet — create your first post and it'll show up here." : "Nothing filed under this section yet."}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-4 p-4 sm:grid-cols-3 lg:grid-cols-5">
+                {libraryItems.map((it) => (
+                  <div key={it.id} className="overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-800">
+                    <div className="relative aspect-[4/5] bg-neutral-100 dark:bg-neutral-800">
+                      {it.image_url ? <img src={it.image_url} alt="" className="h-full w-full object-cover" /> : null}
+                      {it.section && <span className="absolute right-2 top-2 max-w-[80%] truncate rounded-md bg-white/90 px-2 py-0.5 text-[11px] font-medium text-neutral-700 shadow">{it.section}</span>}
+                    </div>
+                    <div className="p-2.5">
+                      <div className="truncate text-sm font-medium text-neutral-800 dark:text-neutral-200">{labelFor(it)}</div>
+                      <div className="text-xs text-neutral-400">{ago(it.created_at)}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-        <EditableWizard />
-      </div>
-    );
-  }
-  // Smart is the ONE place AI designs the whole post itself (layout + text, full creative freedom).
-  if (view === "smart") {
-    return (
-      <div>
-        <div className="mx-auto max-w-6xl px-4 pt-6">
-          <button onClick={() => setView("home")} className="flex items-center gap-1.5 text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100"><ArrowLeft className="h-4 w-4" /> Studio home</button>
-        </div>
-        <SmartStudio />
-      </div>
-    );
-  }
-  if (view === "carousel") {
-    return (
-      <div>
-        <div className="mx-auto flex max-w-[1600px] items-center gap-1.5 px-6 pt-6 text-sm text-neutral-500 lg:px-8">
-          <button onClick={() => setView("home")} className="flex items-center gap-1.5 hover:text-neutral-900 dark:hover:text-neutral-100"><ArrowLeft className="h-4 w-4" /> Studio home</button>
-          <span className="text-neutral-300 dark:text-neutral-600">/</span>
-          <span className="text-neutral-700 dark:text-neutral-300">Tips carousel</span>
-        </div>
-        <CarouselStudio />
-      </div>
-    );
-  }
-  if (view === "renovation") {
-    return (
-      <div>
-        <div className="mx-auto max-w-6xl px-4 pt-6">
-          <button onClick={() => setView("home")} className="flex items-center gap-1.5 text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100"><ArrowLeft className="h-4 w-4" /> Studio home</button>
-        </div>
-        <StudioWizard initialLibrary={initialLibrary} initialFork="renovation" />
-      </div>
+      </SubViewShell>
     );
   }
 
-  const unlimited = quota?.unlimited || quota?.plan_tier === "unlimited";
-  const used = quota?.used ?? 0;
-  const limit = quota?.quota ?? null;
-  const pct = unlimited || !limit ? 100 : Math.min(100, Math.round((used / limit) * 100));
+  // ── HOME ──────────────────────────────────────────────────────────────────────
+  const recent = initialLibrary.slice(0, 4);
+
+  const STYLES: { img: string; name: string; desc: string; swatches: string[] }[] = [
+    { img: "/studio/style-minimal.jpg", name: "Minimal Luxury", desc: "Clean, elegant and high-end aesthetic.", swatches: ["#F2EEE6", "#C9B79C", "#6B6B6B", "#1A1A1A"] },
+    { img: "/studio/style-mediterranean.jpg", name: "Mediterranean Editorial", desc: "Warm, natural and timeless storytelling.", swatches: ["#D8C3A5", "#8A9A7B", "#2D6E8E", "#B5623C"] },
+    { img: "/studio/style-poster.jpg", name: "Bold Spanish Poster", desc: "Strong typography and vibrant Mediterranean energy.", swatches: ["#E07A3E", "#F4E9D8", "#14294B", "#1A1A1A"] },
+    { img: "/studio/style-brochure.jpg", name: "Clean Property Brochure", desc: "Refined layouts for listings and brochures.", swatches: ["#B8BFC2", "#D8C3A5", "#4A6B4E", "#14294B"] },
+  ];
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
-      <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">What would you like to create today?</h2>
-      <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">Four ways to make something — or browse your templates below.</p>
-
-      {/* ways to create + credits */}
-      <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        <EntryCard recommended tint="bg-sky-100 text-sky-600 dark:bg-sky-900/40 dark:text-sky-300"
-          icon={<LayoutTemplate className="h-6 w-6" />} title="Templates"
-          desc="Start from a proven template and edit the text, colours and layout yourself." onClick={() => setView("templates")} />
-        <EntryCard tint="bg-violet-100 text-violet-600 dark:bg-violet-900/40 dark:text-violet-300"
-          icon={<Sparkles className="h-6 w-6" />} title="Smart"
-          desc="Pick a property and photos — AIVENA designs the whole post itself." onClick={() => setView("smart")} />
-        <EntryCard tint="bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-300"
-          icon={<HomeIcon className="h-6 w-6" />} title="Renovation"
-          desc="Upload or pick a room, choose the style — AIVENA redesigns the space." onClick={() => setView("renovation")} />
-        <EntryCard tint="bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-300"
-          icon={<Images className="h-6 w-6" />} title="Carousel"
-          desc="Swipeable multi-slide posts — a listing tour, tips & advice, or a client quote. Caption included." onClick={() => setView("carousel")} />
-
-        <div className="flex flex-col rounded-2xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900">
-          <div className="text-xs font-medium uppercase tracking-wide text-neutral-400">Credits</div>
-          <div className="mt-1 text-3xl font-semibold text-neutral-900 dark:text-neutral-100">
-            {unlimited ? "Unlimited" : <>{Math.max(0, (limit ?? 0) - used)}<span className="text-lg text-neutral-400"> / {limit ?? 0}</span></>}
-          </div>
-          <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-neutral-100 dark:bg-neutral-800">
-            <div className={`h-full rounded-full ${unlimited ? "bg-emerald-500" : pct > 85 ? "bg-red-500" : "bg-emerald-500"}`} style={{ width: `${unlimited ? 100 : Math.max(4, 100 - pct)}%` }} />
-          </div>
-          <div className="mt-2 text-xs capitalize text-neutral-400">{quota?.plan_tier ? `${quota.plan_tier} plan` : "Resets monthly"}</div>
-          <Link href="/settings" className="mt-auto rounded-lg border border-neutral-300 px-3 py-2 text-center text-sm font-medium text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-200">Manage plan</Link>
-        </div>
-      </div>
-
-      {/* templates showcase — your real templates on your best listings */}
-      <div className="mt-9 flex items-end justify-between">
+    <div className="mx-auto max-w-6xl px-6 py-8 lg:px-8" onClick={() => menuId && setMenuId(null)}>
+      {/* ── header ── */}
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">Your templates, on your best listings</h3>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">Shown in a neutral style — pick one to customise in your colours.</p>
+          <h1 className="text-[30px] font-bold tracking-tight text-neutral-900 dark:text-neutral-100">Studio</h1>
+          <p className="mt-1 text-[15px] text-neutral-500 dark:text-neutral-400">Create beautiful real estate content for your agency.</p>
+          <p className="mt-1 text-sm text-neutral-400">
+            {greeting}, {firstName || "there"} 👋{agencyName ? ` — ${agencyName}` : ""}
+          </p>
         </div>
-        <button onClick={() => setView("templates")} className="text-sm font-medium text-emerald-600 hover:underline">Browse all →</button>
-      </div>
-      <div className="mt-4 grid grid-cols-4 gap-2 sm:gap-4">
-        {showcase.length === 0
-          ? Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="flex aspect-[4/5] items-center justify-center rounded-xl border border-neutral-200 bg-neutral-50 text-neutral-300 dark:border-neutral-800 dark:bg-neutral-900">
-                <Loader2 className="h-5 w-5 animate-spin" />
-              </div>
-            ))
-          : showcase.map((t) => (
-              <button key={t.template_id} onClick={() => setView("templates")}
-                className="group overflow-hidden rounded-xl border border-neutral-200 bg-white transition hover:-translate-y-0.5 hover:border-neutral-900 hover:shadow-md dark:border-neutral-800 dark:bg-neutral-900">
-                <div className="aspect-[4/5] bg-neutral-100 dark:bg-neutral-800">
-                  {shots[t.template_id] === undefined ? (
-                    <div className="flex h-full items-center justify-center text-neutral-300"><Loader2 className="h-5 w-5 animate-spin" /></div>
-                  ) : shots[t.template_id] ? (
-                    <img src={shots[t.template_id]!} alt="" className="h-full w-full object-cover" />
-                  ) : (
-                    <div className="flex h-full items-center justify-center text-xs text-neutral-400">preview unavailable</div>
-                  )}
-                </div>
-                <div className="flex items-center justify-between p-2 text-xs">
-                  <span className="font-medium text-neutral-600 dark:text-neutral-300">Template {t.number ?? t.template_id}</span>
-                  <span className="truncate pl-2 text-neutral-400">{t.property_title ?? ""}</span>
-                </div>
-              </button>
-            ))}
+        <div className="flex items-center gap-2">
+          <Link href="/settings" className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3.5 py-2 text-sm font-medium text-neutral-700 transition hover:border-neutral-400 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300">
+            <Palette className="h-4 w-4" /> Brand kit
+          </Link>
+          <button onClick={() => setView("library")} className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3.5 py-2 text-sm font-medium text-neutral-700 transition hover:border-neutral-400 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300">
+            <FolderOpen className="h-4 w-4" /> View library
+          </button>
+        </div>
       </div>
 
-      {/* renovation showcase — real renovations you've made, or how it works */}
-      <div className="mt-9 flex items-end justify-between">
-        <div>
-          <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">Redesign a room</h3>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">Upload or pick a room, choose the style — AIVENA restyles the space.</p>
-        </div>
-        <button onClick={() => setView("renovation")} className="text-sm font-medium text-emerald-600 hover:underline">Try renovation →</button>
+      {/* ── three entry cards ── */}
+      <div className="mt-8 grid gap-5 md:grid-cols-3">
+        <HeroCard img="/studio/hero-property.jpg" tint="text-emerald-600 dark:text-emerald-400"
+          icon={<HomeIcon className="h-5 w-5" />} title="Create from a property"
+          desc="Turn a listing into posts, carousels and brochures." onClick={() => setView("templates")} />
+        <HeroCard img="/studio/hero-advice.jpg" tint="text-violet-600 dark:text-violet-400"
+          icon={<SquarePen className="h-5 w-5" />} title="Create advice content"
+          desc="Generate buyer tips, seller advice and market posts." onClick={() => setView("carousel")} />
+        <HeroCard img="/studio/hero-room.jpg" tint="text-amber-600 dark:text-amber-400"
+          icon={<Hammer className="h-5 w-5" />} title="Transform a room"
+          desc="Create renovation concepts and before/after content." onClick={() => setView("renovation")} />
       </div>
-      {renovations.length > 0 ? (
-        <div className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-3">
-          {renovations.map((r) => (
-            <button key={r.id} onClick={() => setView("renovation")} className="overflow-hidden rounded-xl border border-neutral-200 bg-white text-left transition hover:-translate-y-0.5 hover:shadow-md dark:border-neutral-800 dark:bg-neutral-900">
-              <div className="aspect-video bg-neutral-100 dark:bg-neutral-800">
-                {r.image_url ? <img src={r.image_url} alt="" className="h-full w-full object-cover" /> : null}
-              </div>
-              <div className="flex items-center justify-between p-2.5 text-xs">
-                <span className="font-medium text-neutral-700 dark:text-neutral-300">Redesigned room</span>
-                <span className="text-neutral-400">{ago(r.created_at)}</span>
-              </div>
-            </button>
-          ))}
+
+      {/* ── suggested for today ── */}
+      <SectionHead title="Suggested for today" link="View all suggestions" onLink={() => setView("templates")} />
+      <div className="grid gap-4 md:grid-cols-3">
+        <SuggestCard img="/studio/style-poster.jpg" icon={<Sparkles className="h-4 w-4" />}
+          title="5 buyer mistakes on the Costa Blanca" sub="Carousel · Spanish · 5 slides" cta="Create carousel" onClick={() => setView("carousel")} />
+        <SuggestCard img="/studio/hero-property.jpg" icon={<HomeIcon className="h-4 w-4" />}
+          title="Turn a listing into a luxury post" sub="Listing post" cta="Create post" onClick={() => setView("smart")} />
+        <SuggestCard img="/studio/hero-room.jpg" icon={<Hammer className="h-4 w-4" />}
+          title="Kitchen before/after inspiration" sub="Renovation" cta="Create concept" onClick={() => setView("renovation")} />
+      </div>
+
+      {/* ── choose a style ── */}
+      <SectionHead title="Choose a style" link="Browse all styles" onLink={() => setView("templates")} />
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {STYLES.map((s) => <StyleCard key={s.name} {...s} onClick={() => setView("templates")} />)}
+      </div>
+
+      {/* ── recent work ── */}
+      <SectionHead title="Recent work" link="View all" onLink={() => setView("library")} />
+      {recent.length === 0 ? (
+        <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-neutral-300 py-14 text-center text-sm text-neutral-400 dark:border-neutral-700">
+          <ImageIcon className="h-7 w-7" />
+          Nothing yet — create your first post and it&rsquo;ll show up here.
         </div>
       ) : (
-        <button onClick={() => setView("renovation")}
-          className="mt-4 flex w-full items-center gap-4 rounded-2xl border border-dashed border-neutral-300 bg-white p-5 text-left transition hover:border-neutral-400 dark:border-neutral-700 dark:bg-neutral-900">
-          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-300"><HomeIcon className="h-6 w-6" /></span>
-          <span className="text-sm text-neutral-600 dark:text-neutral-400">
-            <span className="block font-semibold text-neutral-900 dark:text-neutral-100">You haven&apos;t redesigned a room yet</span>
-            Upload a room photo or pick one from a listing, choose the style, amount of furniture, lighting and colours — and AIVENA restyles it.
-          </span>
-        </button>
-      )}
-
-      {/* one library — grouped by your sections */}
-      <div className="mt-9 rounded-2xl border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900">
-        <div className="flex flex-wrap items-center gap-2 border-b border-neutral-200 px-4 py-3 dark:border-neutral-800">
-          <h3 className="mr-2 font-semibold text-neutral-900 dark:text-neutral-100">Your library</h3>
-          {[{ k: "all", l: "All" }, ...sections.map((s) => ({ k: s, l: s })), ...(initialLibrary.some((i) => !i.section) && sections.length ? [{ k: "__unfiled", l: "Unfiled" }] : [])].map((t) => (
-            <button key={t.k} onClick={() => setActiveSection(t.k)}
-              className={`rounded-full border px-3 py-1 text-xs font-medium transition ${activeSection === t.k ? "border-neutral-900 bg-neutral-900 text-white dark:border-neutral-100 dark:bg-neutral-100 dark:text-neutral-900" : "border-neutral-200 text-neutral-500 hover:text-neutral-900 dark:border-neutral-700"}`}>
-              {t.l}
-            </button>
-          ))}
-          <span className="ml-auto text-xs text-neutral-400">{libraryItems.length} item{libraryItems.length === 1 ? "" : "s"}</span>
-        </div>
-
-        {libraryItems.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-2 py-16 text-center text-sm text-neutral-400">
-            <ImageIcon className="h-8 w-8" />
-            {initialLibrary.length === 0 ? "Nothing yet — create your first post and it'll show up here." : "Nothing filed under this section yet."}
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-4 p-4 sm:grid-cols-3 lg:grid-cols-5">
-            {libraryItems.map((it) => (
-              <div key={it.id} className="overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-800">
-                <div className="relative aspect-[4/5] bg-neutral-100 dark:bg-neutral-800">
-                  {it.image_url ? <img src={it.image_url} alt="" className="h-full w-full object-cover" /> : null}
-                  {it.section && <span className="absolute right-2 top-2 max-w-[80%] truncate rounded-md bg-white/90 px-2 py-0.5 text-[11px] font-medium text-neutral-700 shadow">{it.section}</span>}
-                </div>
-                <div className="p-2.5">
-                  <div className="truncate text-sm font-medium text-neutral-800 dark:text-neutral-200">{labelFor(it)}</div>
-                  <div className="text-xs text-neutral-400">{ago(it.created_at)}</div>
-                </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {recent.map((it) => (
+            <div key={it.id} className="relative flex items-center gap-3 rounded-xl border border-neutral-200 bg-white p-3 dark:border-neutral-800 dark:bg-neutral-900">
+              <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-neutral-100 dark:bg-neutral-800">
+                {it.image_url ? <img src={it.image_url} alt="" className="h-full w-full object-cover" /> : null}
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+              <div className="min-w-0 flex-1 pr-5">
+                <div className="line-clamp-2 text-sm font-semibold leading-snug text-neutral-900 dark:text-neutral-100">{labelFor(it)}</div>
+                <div className="mt-0.5 text-xs text-neutral-400">Edited {ago(it.created_at)}</div>
+              </div>
+              <button onClick={(e) => { e.stopPropagation(); setMenuId(menuId === it.id ? null : it.id); }}
+                className="absolute right-2 top-2 rounded-lg p-1.5 text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-neutral-800">
+                <MoreVertical className="h-4 w-4" />
+              </button>
+              {menuId === it.id && (
+                <div className="absolute right-2 top-9 z-10 w-40 overflow-hidden rounded-lg border border-neutral-200 bg-white py-1 shadow-lg dark:border-neutral-700 dark:bg-neutral-900" onClick={(e) => e.stopPropagation()}>
+                  <button onClick={() => { window.open(it.image_url, "_blank", "noopener"); setMenuId(null); }}
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-neutral-700 hover:bg-neutral-50 dark:text-neutral-200 dark:hover:bg-neutral-800">
+                    <ExternalLink className="h-4 w-4" /> Open image
+                  </button>
+                  <button onClick={() => { void downloadImage(it.image_url, `${labelFor(it).toLowerCase().replace(/\s+/g, "-")}.png`); setMenuId(null); }}
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-neutral-700 hover:bg-neutral-50 dark:text-neutral-200 dark:hover:bg-neutral-800">
+                    <Download className="h-4 w-4" /> Download
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

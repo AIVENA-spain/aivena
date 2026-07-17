@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Check, Copy, Download, Images, Loader2, Pencil, Save } from "lucide-react";
+import { ArrowLeft, Check, Copy, Download, Images, Loader2, Pencil, RefreshCw, Save } from "lucide-react";
 import { downloadImage } from "./property-picker";
-import { carouselAction, carouselUpdateAction, carouselStyleExamplesAction, statusAction, editableSectionsAction, setSectionAction } from "./wizard-actions";
+import { carouselAction, carouselRemixAction, carouselUpdateAction, carouselStyleExamplesAction, statusAction, editableSectionsAction, setSectionAction } from "./wizard-actions";
 
 /**
  * CAROUSEL STUDIO — tips & advice only (Christian 2026-07-17: property carousels REMOVED from the
@@ -106,6 +106,11 @@ export function CarouselStudio() {
   const [language, setLanguage] = useState("es");
   const [style, setStyle] = useState("editorial");
   const [scheme, setScheme] = useState("clasico");
+  // otra vuelta (one-axis remix)
+  const [resultStyle, setResultStyle] = useState<string>("editorial");
+  const [resultPerSlideArt, setResultPerSlideArt] = useState(false);
+  const [remixing, setRemixing] = useState<"" | "hook" | "style" | "layout">("");
+  const [remixed, setRemixed] = useState(false);
   // text editing
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<Plan | null>(null);
@@ -127,7 +132,9 @@ export function CarouselStudio() {
     setCaption(typeof s.caption === "string" ? s.caption : "");
     setHashtags(Array.isArray(s.hashtags) ? (s.hashtags as string[]) : []);
     setPlan(s.plan && typeof s.plan === "object" ? (s.plan as Plan) : null);
-    setEditing(false); setDraft(null);
+    if (typeof s.carousel_style === "string") setResultStyle(s.carousel_style);
+    setResultPerSlideArt(s.per_slide_art === true);
+    setEditing(false); setDraft(null); setRemixed(false);
     setPhase("result");
   }
 
@@ -193,6 +200,22 @@ export function CarouselStudio() {
     setCaption(typeof r.caption === "string" ? r.caption : draft.caption);
     setHashtags(Array.isArray(r.hashtags) ? (r.hashtags as string[]) : draft.hashtags);
     setEditing(false); setDraft(null); setSaved(false);
+  }
+
+  async function remix(axis: "hook" | "style" | "layout") {
+    if (!genId || remixing) return;
+    setRemixing(axis); setErr(null);
+    const r = await carouselRemixAction(genId, axis);
+    setRemixing("");
+    if (!r.ok) { setErr((r.message as string) ?? "Couldn't remix — please try again."); return; }
+    setGenId((r.generation_id as string) ?? genId);
+    setSlides(Array.isArray(r.slides) ? (r.slides as string[]) : slides);
+    setPlan((r.plan as Plan) ?? plan);
+    setCaption(typeof r.caption === "string" ? r.caption : caption);
+    setHashtags(Array.isArray(r.hashtags) ? (r.hashtags as string[]) : hashtags);
+    if (typeof r.carousel_style === "string") setResultStyle(r.carousel_style);
+    setResultPerSlideArt(r.per_slide_art === true);
+    setEditing(false); setDraft(null); setSaved(false); setSection(""); setRemixed(true);
   }
 
   const field = "w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100";
@@ -343,10 +366,24 @@ export function CarouselStudio() {
           </div>
 
           {plan && !editing && (
-            <button onClick={() => { setDraft(JSON.parse(JSON.stringify(plan)) as Plan); setEditing(true); }}
-              className="mt-1 flex items-center gap-1.5 rounded-lg border border-neutral-300 px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300">
-              <Pencil className="h-4 w-4" /> Edit the text on the slides
-            </button>
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <button onClick={() => { setDraft(JSON.parse(JSON.stringify(plan)) as Plan); setEditing(true); }}
+                className="flex items-center gap-1.5 rounded-lg border border-neutral-300 px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300">
+                <Pencil className="h-4 w-4" /> Edit the text on the slides
+              </button>
+              {plan.type === "tips" && ([
+                ["hook", "Otra vuelta · new hook", "The AI reframes the cover from a different angle"],
+                ["style", "Otra vuelta · new look", "Same words and artwork, next look"],
+                ...(resultPerSlideArt && ["bodegon", "litoral", "tinta", "salitre", "papel", "arcilla", "acuarela", "bordado"].includes(resultStyle)
+                  ? [["layout", "Otra vuelta · recompose", "Same everything, slides rearranged"]] : []),
+              ] as [typeof remixing, string, string][]).map(([axis, title2, tip]) => (
+                <button key={axis} title={tip} disabled={!!remixing} onClick={() => void remix(axis as "hook" | "style" | "layout")}
+                  className="flex items-center gap-1.5 rounded-lg border border-neutral-300 px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-50 disabled:opacity-40 dark:border-neutral-700 dark:text-neutral-300">
+                  {remixing === axis ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />} {title2}
+                </button>
+              ))}
+              {remixed && <span className="text-xs text-neutral-400">Free — the original is still in your library.</span>}
+            </div>
           )}
 
           {editing && draft && (

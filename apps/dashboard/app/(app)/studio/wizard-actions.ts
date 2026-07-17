@@ -204,6 +204,10 @@ export async function carouselStyleExamplesAction(): Promise<Envelope> {
 export async function carouselUpdateAction(generationId: string, plan: unknown): Promise<Envelope> {
   return call("/api/studio/carousel/update", { method: "POST", body: { generation_id: generationId, plan } });
 }
+// OTRA VUELTA: one-axis remix of a finished tips carousel (hook | style | layout) — free, lands as a new generation
+export async function carouselRemixAction(generationId: string, axis: "hook" | "style" | "layout"): Promise<Envelope> {
+  return call("/api/studio/carousel/remix", { method: "POST", body: { generation_id: generationId, axis } });
+}
 export async function smartReviseAction(generationId: string, editNote: string): Promise<Envelope> {
   return call("/api/studio/smart-design/revise", {
     method: "POST",

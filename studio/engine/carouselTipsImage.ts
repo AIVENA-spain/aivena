@@ -224,6 +224,7 @@ export async function renderTipsImageStyled(
 export async function renderTipsImageStyledV2(
   style: TipsImageStyle, plan: CarouselPlan, agency: string, contact: string,
   brand: CarouselBrand, images: Buffer[], lang = "es", includeRecap = true, includeContext = true,
+  variantOffset = 0,   // OTRA VUELTA layout remix: shifts the per-tip layout rotation
 ): Promise<Buffer[]> {
   const cfg = CFG[style];
   const T = chrome(lang);
@@ -287,7 +288,7 @@ export async function renderTipsImageStyledV2(
   plan.tips.forEach((tip, i) => {
     const photo = Math.min(i + 1, images.length - 1);
     const slideNo = i + 2 + (includeContext ? 1 : 0);
-    const variant = i % 3;
+    const variant = (i + variantOffset) % 3;
     if (variant === 0) {
       // ART-TOP: artwork band above, type below on ground
       specs.push(DesignSpec.parse({

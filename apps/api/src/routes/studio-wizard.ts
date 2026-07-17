@@ -26,7 +26,7 @@ import { type CarouselPlan, chrome as carouselChrome } from '../../../../studio/
 import {
   renderPlannedStyled, renderListingStyled, vibraListing, PLANNED_STYLES, LISTING_STYLES, type CarouselStyle,
 } from '../../../../studio/engine/carouselStyles';
-import { planCarousel, listingCopy, listingStory, PlanSchema } from '../lib/studio-carousel-plan';
+import { planCarousel, remixHook, listingCopy, listingStory, PlanSchema } from '../lib/studio-carousel-plan';
 import { renderTipsImageStyled, renderTipsImageStyledV2, isTipsImageStyle } from '../../../../studio/engine/carouselTipsImage';
 import { renderFreeform, type DesignSpec } from '../../../../studio/engine/renderFreeform';
 import { applyGrain, photoPalette } from '../../../../studio/engine/carouselSlides';
@@ -358,6 +358,7 @@ function shapeStatus(r: GenRow) {
     // planned carousels: the words (editable via POST /carousel/update) + the ready-to-post caption
     carousel_type: typeof (meta as any)?.carousel_type === 'string' ? (meta as any).carousel_type : undefined,
     carousel_style: typeof (meta as any)?.carousel_style === 'string' ? (meta as any).carousel_style : undefined,
+    per_slide_art: (meta as any)?.per_slide_art === true ? true : undefined,
     caption: typeof (meta as any)?.caption === 'string' ? (meta as any).caption : undefined,
     hashtags: Array.isArray((meta as any)?.hashtags) ? (meta as any).hashtags : undefined,
     plan: (meta as any)?.plan && typeof (meta as any).plan === 'object' ? (meta as any).plan : undefined,
@@ -1235,7 +1236,7 @@ route.post('/carousel/update', async (c) => {
         ?? await loadTipsImages(storedStyle);
       if (images) {
         slides = perSlideArt
-          ? await renderTipsImageStyledV2(storedStyle, plan, agency.name, contact, brand, images, storedLang, meta?.include_recap !== false, meta?.include_context !== false)
+          ? await renderTipsImageStyledV2(storedStyle, plan, agency.name, contact, brand, images, storedLang, meta?.include_recap !== false, meta?.include_context !== false, typeof meta?.layout_variant === 'number' ? meta.layout_variant : 0)
           : await renderTipsImageStyled(storedStyle, plan, agency.name, contact, brand, images, storedLang);
       } else {
         slides = await renderPlannedStyled('editorial', plan, agency.name, contact, brand, storedLang);
@@ -1262,6 +1263,135 @@ route.post('/carousel/update', async (c) => {
   } catch (err) {
     console.error('[studio/carousel-update] failed:', err);
     return c.json({ ok: false, error: 'update_failed', message: GENERIC }, 500);
+  }
+});
+
+// ── POST /api/studio/carousel/remix — OTRA VUELTA: one-axis remix of a finished tips deck ──
+// Three axes, all reusing the deck's own artwork (no KIE, no credit):
+//   hook   → the AI reframes ONLY the cover (different persuasion angle)
+//   style  → same words + artwork, next look in the ring (chrome/type treatment changes)
+//   layout → same everything, per-tip layout rotation shifts (per-slide-art decks only)
+// The remix lands as a NEW generation so the original stays in the library untouched.
+const REMIX_IMG_RING = ['bodegon', 'litoral', 'tinta', 'salitre', 'papel', 'arcilla', 'acuarela', 'bordado'];
+const REMIX_TYPE_RING = ['editorial', 'cartel', 'encalada', 'sereno'];
+route.post('/carousel/remix', async (c) => {
+  const tx = c.get('tx');
+  const agencyId = c.get('agencyId');
+  const user = c.get('user');
+  const b = await readJson(c);
+  const parentId = typeof b.generation_id === 'string' ? b.generation_id : '';
+  const axis = b.axis === 'hook' || b.axis === 'style' || b.axis === 'layout' ? (b.axis as string) : '';
+  if (!parentId || !axis) {
+    return c.json({ ok: false, error: 'invalid_request', message: 'Missing carousel or remix choice.' }, 400);
+  }
+  try {
+    const res = await tx.execute(sql`
+      SELECT id, status::text AS status, result_metadata, raw_request
+      FROM image_generations
+      WHERE id = ${parentId}::uuid AND agency_id = ${agencyId} LIMIT 1
+    `);
+    const rows = res as unknown as Array<{ id: string; status: string; result_metadata: Record<string, unknown> | null; raw_request: Record<string, unknown> | null }>;
+    if (rows.length === 0) return c.json({ ok: false, error: 'not_found', message: 'That carousel could not be found.' }, 404);
+    const meta = rows[0].result_metadata as any;
+    const raw = (rows[0].raw_request ?? {}) as Record<string, unknown>;
+    const priorPlan = meta?.plan as CarouselPlan | undefined;
+    if (rows[0].status !== 'completed' || meta?.engine !== 'carousel' || !priorPlan || priorPlan.type !== 'tips') {
+      return c.json({ ok: false, error: 'not_remixable', message: 'Only finished tips carousels can be remixed.' }, 400);
+    }
+
+    const storedStyle: CarouselStyle = typeof meta?.carousel_style === 'string' &&
+      (PLANNED_STYLES.tips as string[]).includes(meta.carousel_style) ? meta.carousel_style : 'editorial';
+    const storedLang = typeof raw.language === 'string' ? (raw.language as string) : 'es';
+    const ownPaths = Array.isArray(meta?.image_paths) ? (meta.image_paths as string[]) : [];
+    const perSlideArt = meta?.per_slide_art === true && ownPaths.length === priorPlan.tips.length + 1;
+    const priorVariant = typeof meta?.layout_variant === 'number' ? (meta.layout_variant as number) : 0;
+
+    // the one axis that changes
+    let plan: CarouselPlan = priorPlan;
+    let newStyle: CarouselStyle = storedStyle;
+    let layoutVariant = priorVariant;
+    if (axis === 'hook') {
+      const topic = typeof raw.topic === 'string' ? (raw.topic as string) : '';
+      const reframed = await remixHook(priorPlan, storedLang, topic);
+      if (!reframed) return c.json({ ok: false, error: 'remix_failed', message: "Couldn't find a better angle right now — please try again." }, 502);
+      plan = { ...priorPlan, ...reframed };
+    } else if (axis === 'style') {
+      const ring = isTipsImageStyle(storedStyle) ? REMIX_IMG_RING : REMIX_TYPE_RING;
+      const at = ring.indexOf(storedStyle);
+      newStyle = ring[(at + 1) % ring.length] as CarouselStyle;
+    } else {
+      if (!(isTipsImageStyle(storedStyle) && perSlideArt)) {
+        return c.json({ ok: false, error: 'no_layouts', message: "This look doesn't have alternative compositions — try a new hook or another look." }, 400);
+      }
+      layoutVariant = (priorVariant + 1) % 3;   // three compositions exist; cycle them
+    }
+
+    const bRes = await tx.execute(sql`
+      SELECT brand_name, primary_color, accent_color, background_color, text_color,
+             phone, whatsapp_number, website_url, sender_email, email_signature_name
+      FROM agency_branding WHERE agency_id = ${agencyId} LIMIT 1
+    `);
+    const bRows = bRes as unknown as any[];
+    const { agency, brand } = mapBranding(bRows[0] || {});
+    const contact = [agency.web, agency.phone].filter(Boolean).join(' · ');
+
+    // render synchronously — the deck's own artwork is reused, so this is seconds, not minutes
+    let slides: Buffer[];
+    if (isTipsImageStyle(newStyle)) {
+      const images = (ownPaths.length >= 3 ? await loadGenerationImages(ownPaths) : null)
+        ?? await loadTipsImages(newStyle);
+      if (!images) return c.json({ ok: false, error: 'remix_failed', message: GENERIC }, 500);
+      slides = perSlideArt
+        ? await renderTipsImageStyledV2(newStyle, plan, agency.name, contact, brand, images, storedLang, meta?.include_recap !== false, meta?.include_context !== false, layoutVariant)
+        : await renderTipsImageStyled(newStyle, plan, agency.name, contact, brand, images, storedLang);
+    } else {
+      slides = await renderPlannedStyled(newStyle, plan, agency.name, contact, brand, storedLang);
+    }
+
+    const label = `Remix · ${axis} · ${String(raw.topic ?? '').slice(0, 70) || 'tips carousel'}`;
+    const ins = await tx.execute(sql`
+      INSERT INTO image_generations
+        (agency_id, generation_type, status, prompt, requested_by, raw_request)
+      VALUES
+        (${agencyId}, 'social_post', 'processing', ${label}, ${user?.sub ?? null}::uuid,
+         ${JSON.stringify({ ...raw, engine: 'carousel', content_type: 'carousel', carousel_style: newStyle, remix_of: parentId, remix_axis: axis })}::jsonb)
+      RETURNING id
+    `);
+    const insRows = ins as unknown as Array<{ id: string }>;
+    const genId = insRows[0]?.id;
+    if (!genId) throw new Error('insert failed');
+
+    const stored = await storeSlides(agencyId, genId, slides);
+    // Finish the row via the SAME tx that inserted it — the row is uncommitted until this handler
+    // returns, so a PostgREST update on another connection would match 0 rows and strand the remix
+    // in 'processing' forever. NOTE: image_paths deliberately point at the PARENT's src artwork
+    // (edits reuse it, nothing regenerates); no delete flow exists, but if one ever does, it must
+    // leave parent folders alone while remixes reference them.
+    const newMeta = {
+      engine: 'carousel', carousel_type: 'tips', carousel_style: newStyle, slide_count: stored.length, slides: stored,
+      plan, caption: plan.caption, hashtags: plan.hashtags,
+      image_paths: ownPaths, image_scheme: meta?.image_scheme, per_slide_art: perSlideArt,
+      include_recap: meta?.include_recap !== false, include_context: meta?.include_context !== false,
+      layout_variant: layoutVariant, remix_of: parentId, remix_axis: axis,
+    };
+    await tx.execute(sql`
+      UPDATE image_generations
+      SET status = 'completed',
+          result_image_url = ${stored[0].url},
+          result_image_storage_path = ${stored[0].path},
+          result_metadata = ${JSON.stringify(newMeta)}::jsonb,
+          completed_at = now(), updated_at = now()
+      WHERE id = ${genId}::uuid AND agency_id = ${agencyId}
+    `);
+
+    return c.json({
+      ok: true, generation_id: genId,
+      slides: stored.map((sl) => sl.url), plan, caption: plan.caption, hashtags: plan.hashtags,
+      carousel_style: newStyle, per_slide_art: perSlideArt,
+    });
+  } catch (err) {
+    console.error('[studio/carousel-remix] failed:', err);
+    return c.json({ ok: false, error: 'remix_failed', message: GENERIC }, 500);
   }
 });
 

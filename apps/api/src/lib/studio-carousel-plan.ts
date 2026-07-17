@@ -364,3 +364,57 @@ The hook is the reason to stop: the lifestyle benefit, never the spec sheet. The
     return null;
   }
 }
+
+// ── OTRA VUELTA · hook remix (2026-07-17) ─────────────────────────────────────
+// Rewrites ONLY the cover framing of a finished tips deck from a different angle.
+// No credit, no image work — one small call; the rest of the plan stays verbatim.
+const REMIX_TOOL = {
+  name: 'submit_remix',
+  description: 'Submit the reframed carousel cover.',
+  input_schema: {
+    type: 'object' as const,
+    properties: {
+      eyebrow: { type: 'string', description: 'kicker label, max 40 chars, same language' },
+      hook_title: { type: 'string', description: 'the NEW cover hook, max 85 chars, same language, different persuasion angle than the current one' },
+      swipe_cue: { type: 'string', description: 'short swipe cue, max 16 chars, same language' },
+    },
+    required: ['eyebrow', 'hook_title', 'swipe_cue'],
+  },
+};
+
+export async function remixHook(plan: CarouselPlan, language: string, topic: string): Promise<Pick<CarouselPlan, 'eyebrow' | 'hook_title' | 'swipe_cue'> | null> {
+  const prompt = `You reframe Instagram carousel covers for Spanish real-estate agencies.
+
+CURRENT COVER (language: ${language}):
+- eyebrow: ${plan.eyebrow}
+- hook: ${plan.hook_title}
+- swipe cue: ${plan.swipe_cue}
+Topic: ${topic || '(same as the hook implies)'}
+The tips inside stay EXACTLY the same — you only reframe the cover.
+
+Write a NEW cover in ${language} with a DIFFERENT persuasion angle: if the current hook is loss-framed, go curiosity or contrarian; if it asks a question, make a bold claim; if it is generic, make it specific. Same topic, same honesty (no prices, no statistics, no invented facts, no place names unless the current cover names one). No emoji, no clickbait words.
+
+Submit with the submit_remix tool.`;
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-5', max_tokens: 600,
+        tools: [REMIX_TOOL], tool_choice: { type: 'tool', name: 'submit_remix' },
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { content?: { type: string; input?: unknown }[] };
+    const input = unesc(data.content?.find((c) => c.type === 'tool_use')?.input) as Record<string, unknown> | undefined;
+    const out = z.object({
+      eyebrow: z.string().min(1).max(44),
+      hook_title: z.string().min(1).max(90),
+      swipe_cue: z.string().min(1).max(18),
+    }).safeParse(input);
+    return out.success ? out.data : null;
+  } catch {
+    return null;
+  }
+}

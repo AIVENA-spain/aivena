@@ -157,7 +157,7 @@ CAROUSEL DOCTRINE (how these posts win — follow it):
 - One idea per slide. Each slide answers the question the previous one raised.
 - The recap is the SAVE unit — people screenshot and forward it.
 - The CTA leads with ONE action: a save or send framing (cta_action) + a DM keyword (cta_keyword). Contact details are handled by the design, not by you. NEVER "tag a friend", "share this", "follow for more" — Meta demotes engagement bait; help-framing ("send this to the person you're buying with") is the substitute.
-- Caption: SHORT and human — 3 lines max + a CTA line, written like a person, not a brochure. No clichés, no rhetorical-question openers. Same place rule: no towns unless the topic names one.
+- Caption: SHORT and human — 3 lines max + a CTA line, written like a person, not a brochure. No clichés, no rhetorical-question openers. Same place rule: no towns unless the topic names one. End with a short P.D. question answerable in ONE word.
 - Hashtags: 3-5 only, no mega-tags.
 - image_scenes: 3 concrete Mediterranean scenes (ENGLISH) that translate the topic's emotion — the longing for a home in Spain, the promise of a better life — into carefully purposeful imagery. One familiar object/scene per beat carrying one extra meaning. Concrete nouns; no interiors, no property facades, no landmarks, no close people, no text.
 - EVERY tip also gets its own "scene": the visual translation of THAT tip specifically. All scenes across the deck must be clearly DIFFERENT from each other — different objects, different compositions — while living in the same world. Repetition across slides is a failure.
@@ -250,13 +250,21 @@ const STORY_TOOL = {
       cta_action: { type: 'string', description: 'save/send line, max 100 chars, help-framed' },
       cta_keyword: { type: 'string', description: 'DM keyword pill, max 30 chars' },
       hashtags: { type: 'array', items: { type: 'string' }, description: '3-5 without #: 2 geo + 1-2 niche, no mega-tags' },
+      details: { type: 'array', items: { type: 'object', required: ['photo', 'box', 'line', 'score'], properties: {
+        photo: { type: 'integer', description: '0-based index of the photo containing this detail' },
+        box: { type: 'array', items: { type: 'number' }, description: '[x,y,w,h] of the detail region, fractions 0-1 of that photo' },
+        line: { type: 'string', description: 'a whispered curator line about this detail, max 70 chars, no digits, no property name' },
+        score: { type: 'number', description: '0-1: how evocative/scroll-stopping this detail is as a COLD OPEN (sliver of sea, lemon tree, original tiles). Below 0.7 = not worth it.' },
+      } }, description: 'the 2-3 most evocative DETAILS across all photos — small telling things a design magazine would notice. Empty if the photos are too plain.' },
     },
   },
 } as const;
 
+export interface StoryDetail { photo: number; box: number[]; line: string; score: number }
 export interface ListingStory {
   hook: string; photo_lines: string[]; vibe_scene: string; art_style: string;
   caption: string; cta_action: string; cta_keyword: string; hashtags: string[];
+  details: StoryDetail[];
 }
 
 /** Vision storyteller for the Vibra listing style: LOOKS at the chosen photos, writes one line per
@@ -270,7 +278,7 @@ export async function listingStory(opts: {
     const content: unknown[] = opts.photoUrls.slice(0, 8).map((u) => ({ type: 'image', source: { type: 'url', url: u } }));
     content.push({
       type: 'text',
-      text: `These are the chosen photos (in posting order) of a real listing marketed by "${opts.agencyName}". Facts (verbatim only): \n${factList}\n\nWrite the story package in ${langNames[opts.language] ?? 'Spanish'} (vibe_scene in English). One photo_line PER photo, same order, each specific to what is visible in THAT photo. Human, warm, zero brochure-speak. Submit with submit_story.`,
+      text: `These are the chosen photos (in posting order) of a real listing marketed by "${opts.agencyName}". Facts (verbatim only): \n${factList}\n\nWrite the story package in ${langNames[opts.language] ?? 'Spanish'} (vibe_scene in English). One photo_line PER photo, same order, each specific to what is visible in THAT photo. Also hunt for 2-3 evocative DETAILS (small telling things: the sliver of sea between walls, original tiles, the lemon tree) with precise boxes — they become cinematic cold-open crops. End the caption with a short P.D. question answerable in ONE word (e.g. 'P.D. ¿Terraza o playa?'). Human, warm, zero brochure-speak. Submit with submit_story.`,
     });
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -297,6 +305,12 @@ export async function listingStory(opts: {
       cta_action: clean(input.cta_action, 100),
       cta_keyword: clean(input.cta_keyword, 30),
       hashtags: Array.isArray(input.hashtags) ? input.hashtags.filter((h): h is string => typeof h === 'string').map((h) => h.replace(/^#/, '').trim()).slice(0, 5) : [],
+      details: Array.isArray((input as { details?: unknown }).details)
+        ? ((input as { details: StoryDetail[] }).details)
+            .filter((d) => d && Number.isInteger(d.photo) && Array.isArray(d.box) && d.box.length === 4 && typeof d.line === 'string' && typeof d.score === 'number')
+            .map((d) => ({ photo: d.photo, box: d.box.map((v) => Math.max(0, Math.min(1, Number(v)))), line: d.line.slice(0, 70), score: Math.max(0, Math.min(1, d.score)) }))
+            .slice(0, 3)
+        : [],
     };
   } catch {
     return null;

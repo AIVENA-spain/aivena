@@ -1477,24 +1477,54 @@ function ventanaListing(facts: CarouselFacts, copy: CarouselCopy, brand: Carouse
 // ═══ VIBRA — the story listing (Christian 2026-07-17): vision-written line per photo, rotating
 // creative layouts (full-bleed / framed plate / arch crop), one generated vibe-artwork interstitial
 // matched to the property, human captions. The tips engine's creativity, aimed at real photos.
+export interface VibraDetail { photo: number; box: number[]; line: string; score: number }
 export interface VibraStory {
   hook: string; photo_lines: string[]; cta_action: string; cta_keyword: string;
+  details?: VibraDetail[];
+}
+/** crop params from a 0-1 detail box: zoom into the region, centred on it */
+function boxCrop(box: number[]): { zoom: number; x: number; y: number } {
+  const [x, y, w, h] = box;
+  const zoom = Math.min(3.2, Math.max(1.4, 1 / Math.max(0.18, Math.max(w, h))));
+  return { zoom, x: Math.min(1, Math.max(0, x + w / 2)), y: Math.min(1, Math.max(0, y + h / 2)) };
 }
 export function vibraListing(
   facts: CarouselFacts, story: VibraStory, brand: CarouselBrand, photoCount: number,
-  hasArt: boolean, lang = "es",
+  hasArt: boolean, lang = "es", palettes: { accent: string; ground: string }[] = [],
 ): unknown[] {
+  const pal = (i: number) => palettes[i] ?? { accent: brand.gold, ground: brand.cream };
+  const details = (story.details ?? []).filter((d) => d.score >= 0.7 && d.photo < photoCount).slice(0, 2);
+  const coldOpen = details.length >= 1;
   const T = chrome(lang);
   const NAVY = brand.navy, GOLD = brand.gold, CREAM = brand.cream;
   const muted = mix(NAVY, CREAM, 0.55);
   const artIdx = photoCount;                       // the artwork buffer rides AFTER the photos
   const artAfter = Math.min(2, photoCount - 1);    // vibe artwork lands after the 2nd photo slide
-  const total = 1 + (photoCount - 1) + (hasArt ? 1 : 0) + 2;
+  const total = (coldOpen ? details.length + 1 : 1) + (photoCount - 1) + (hasArt ? 1 : 0) + 2;
   const aiTag = (_colour: string) => ({ type: "text", bbox: [0, 0, 8, 8], content: "", font: "Jost", size: 14, colour: "#000000" });  // disclosure tag disabled (Christian 2026-07-17)
   const specs: unknown[] = [];
   let no = 1;
 
-  // COVER — best photo + vision hook + price
+  // LA MIRADA — cold open on the most evocative DETAILS, then the wide reveal lands as the payoff
+  if (coldOpen) {
+    details.forEach((d) => {
+      const c = boxCrop(d.box);
+      specs.push(DesignSpec.parse({
+        background: "#0a0c10",
+        elements: [
+          { type: "photo", photo: d.photo, bbox: [0, 0, 1080, 1350], zoom: c.zoom, x: c.x, y: c.y, tint: TERRA, tint_opacity: 0.05 },
+          { type: "scrim", bbox: [0, 980, 1080, 1350], colour: NAVY },
+          { type: "scrim", bbox: [0, 1140, 1080, 1350], colour: NAVY },
+          { type: "text", bbox: [80, 96, 640, 126], content: facts.agency.toUpperCase(), font: "Jost", size: 18, colour: mix(CREAM, NAVY, 0.85), align: "left", weight: "500", tracking: 5 },
+          { type: "text", bbox: [80, 1160, 1000, 1250], content: wrap(d.line, FR, 46, 920), font: FR, size: 46, colour: "#f6f1e7", align: "left", line_height: 60, italic: true },
+          ...band(facts.agency, no, total, mix(CREAM, NAVY, 0.7)),
+        ],
+      }));
+      no++;
+    });
+  }
+
+  // COVER / THE REVEAL — best photo + vision hook + price
   specs.push(DesignSpec.parse({
     background: "#0a0c10",
     elements: [
@@ -1527,24 +1557,36 @@ export function vibraListing(
         ],
       }));
     } else if (v === 1) {
+      // framed plate on the PHOTO's own palette; hosts the LOUPE when a detail lives in this photo
+      const pp = pal(i);
+      const det = details.find((d) => d.photo === i);
+      const loupe: any[] = [];
+      if (det) {
+        const c = boxCrop(det.box);
+        loupe.push({ type: "photo", photo: i, bbox: [700, 620, 990, 910], zoom: Math.min(4, c.zoom * 1.4), x: c.x, y: c.y });
+        loupe.push({ type: "punch", bbox: [700, 620, 990, 910], fill: pp.ground, shape: "circle", outline: { colour: pp.accent, width: 2.5, offset: 4 } });
+        loupe.push({ type: "rect", bbox: [666, 596, 716, 646], fill: pp.accent, radius: 3, rotate: 45, opacity: 0.9 });
+      }
       specs.push(DesignSpec.parse({
-        background: CREAM,
+        background: pp.ground,
         elements: [
-          { type: "photo", photo: i, bbox: [80, 120, 1000, 860], tint: TERRA, tint_opacity: 0.06 },
-          ...frame([64, 104, 1016, 876], NAVY, 1.5, 0.5),
-          { type: "text", bbox: [80, 930, 1000, 962], content: facts.location, font: "Jost", size: 20, colour: mix(NAVY, CREAM, 0.6), align: "left", tracking: 5 },
-          { type: "text", bbox: [80, 990, 1000, 1170], content: wrap(line, FR, 54, 920), font: FR, size: 54, colour: NAVY, align: "left", line_height: 68 },
+          { type: "photo", photo: i, bbox: [80, 120, 1000, 860], tint: TERRA, tint_opacity: 0.05 },
+          ...frame([64, 104, 1016, 876], pp.accent, 1.5, 0.7),
+          ...loupe,
+          { type: "text", bbox: [80, 930, 1000, 962], content: facts.location, font: "Jost", size: 20, colour: pp.accent, align: "left", tracking: 5 },
+          { type: "text", bbox: [80, 990, 1000, 1170], content: wrap(det?.line ?? line, FR, 54, 920), font: FR, size: 54, colour: NAVY, align: "left", line_height: 68 },
           ...band(facts.agency, no, total, muted),
         ],
       }));
     } else {
+      const pp = pal(i);
       specs.push(DesignSpec.parse({
-        background: LIME,
+        background: pp.ground,
         elements: [
-          { type: "photo", photo: i, bbox: [190, 110, 890, 780], tint: TERRA, tint_opacity: 0.08 },
-          { type: "punch", bbox: [190, 110, 890, 780], fill: LIME, shape: "arch", outline: { colour: TERRA, width: 1.5, offset: 12 } },
+          { type: "photo", photo: i, bbox: [190, 110, 890, 780], tint: TERRA, tint_opacity: 0.06 },
+          { type: "punch", bbox: [190, 110, 890, 780], fill: pp.ground, shape: "arch", outline: { colour: pp.accent, width: 1.5, offset: 12 } },
           { type: "text", bbox: [100, 860, 980, 1060], content: wrap(line, FR, 56, 860), font: FR, size: 56, colour: NAVY, align: "center", line_height: 72, valign: "center" },
-          ...band(facts.agency, no, total, mix(NAVY, LIME, 0.55)),
+          ...band(facts.agency, no, total, mix(NAVY, pp.ground, 0.55)),
         ],
       }));
     }
@@ -1600,7 +1642,7 @@ export function vibraListing(
       { type: "scrim", bbox: [0, 0, 1080, 1350], colour: NAVY },
       { type: "rect", bbox: [90, 340, 990, 1030], fill: CREAM, radius: 8, opacity: 0.97 },
       { type: "text", bbox: [150, 420, 930, 610], content: wrap(story.cta_action || T.save_cta, FR, 62, 760), font: FR, size: 62, colour: NAVY, align: "center", line_height: 78, valign: "center" },
-      { type: "text", bbox: [310, 700, 770, 760], content: (story.cta_keyword || `${T.write_us}: ${T.visit_kw}`).toUpperCase(), font: "Jost", size: 24, colour: CREAM, align: "center", weight: "600", tracking: 3, valign: "center", pill: { fill: NAVY, pad_x: 40, pad_y: 20 } },
+      { type: "text", bbox: [150, 690, 930, 770], content: wrap(`P.D. — ${story.cta_keyword || `${T.write_us}: ${T.visit_kw}`}`, FR, 34, 760), font: FR, size: 34, colour: NAVY, align: "center", italic: true, line_height: 46 },
       { type: "text", bbox: [150, 850, 930, 880], content: facts.contact, font: "Jost", size: 20, colour: mix(NAVY, CREAM, 0.6), align: "center", tracking: 2 },
       ...(facts.price ? [{ type: "text", bbox: [150, 920, 930, 990], content: `${facts.title} · ${facts.price}`, font: "Jost", size: 22, colour: mix(NAVY, CREAM, 0.75), align: "center", tracking: 1 }] : []),
       ...band(facts.agency, total, total, mix(CREAM, NAVY, 0.7)),

@@ -134,6 +134,37 @@ export async function applyGrain(png: Buffer, intensity = 0.05): Promise<Buffer>
   return sharp(png).composite([{ input: grainCache[key], blend: "overlay" }]).png().toBuffer();
 }
 
+/** THE VIBE LAW (Christian 2026-07-17): a slide's chrome follows the colours of the image on it.
+ *  Cheap deterministic extraction: downsample, find the most saturated pixel cluster → accent;
+ *  ground = near-paper tint of the same hue. Never neon, never muddy. */
+export async function photoPalette(buf: Buffer): Promise<{ accent: string; ground: string }> {
+  try {
+    const sharp = (await import("sharp")).default;
+    const { data } = await sharp(buf).resize(24, 24, { fit: "cover" }).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+    let best = { sat: -1, r: 31, g: 58, b: 95 };
+    let acc = { r: 0, g: 0, b: 0, n: 0 };
+    for (let i = 0; i < data.length; i += 3) {
+      const r = data[i], g = data[i + 1], b = data[i + 2];
+      const mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+      const sat = mx === 0 ? 0 : (mx - mn) / mx;
+      const lum = (r + g + b) / 3;
+      acc.r += r; acc.g += g; acc.b += b; acc.n++;
+      if (lum > 40 && lum < 225 && sat > best.sat) best = { sat, r, g, b };
+    }
+    const clampC = (v: number) => Math.max(0, Math.min(255, Math.round(v)));
+    // tasteful accent: pull toward mid-luminance, cap the scream
+    const k = best.sat > 0.75 ? 0.8 : 1;
+    const hex = (r: number, g: number, b: number) => "#" + [r, g, b].map((v) => clampC(v).toString(16).padStart(2, "0")).join("");
+    const accent = hex(best.r * k + 20 * (1 - k), best.g * k + 20 * (1 - k), best.b * k + 20 * (1 - k));
+    // ground: paper warmed by the image's average colour
+    const g0 = { r: acc.r / acc.n, g: acc.g / acc.n, b: acc.b / acc.n };
+    const ground = hex(246 * 0.88 + g0.r * 0.12, 243 * 0.88 + g0.g * 0.12, 234 * 0.88 + g0.b * 0.12);
+    return { accent, ground };
+  } catch {
+    return { accent: "#c9a227", ground: "#f6f1e7" };
+  }
+}
+
 /** Blend two #rrggbb colours — the deterministic way to hit the 60% "meta" opacity tier for TEXT
  *  (the freeform text element has no opacity, so we mix the ink toward the ground instead). */
 export function mix(ink: string, ground: string, inkShare: number): string {

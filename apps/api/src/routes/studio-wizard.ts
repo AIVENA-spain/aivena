@@ -29,7 +29,7 @@ import {
 import { planCarousel, listingCopy, listingStory, PlanSchema } from '../lib/studio-carousel-plan';
 import { renderTipsImageStyled, renderTipsImageStyledV2, isTipsImageStyle } from '../../../../studio/engine/carouselTipsImage';
 import { renderFreeform, type DesignSpec } from '../../../../studio/engine/renderFreeform';
-import { applyGrain } from '../../../../studio/engine/carouselSlides';
+import { applyGrain, photoPalette } from '../../../../studio/engine/carouselSlides';
 import { loadTipsImages, generateTipsImages, loadGenerationImages, TIPS_SCHEMES } from '../lib/studio-carousel-image';
 
 /**
@@ -932,10 +932,12 @@ async function runCarousel(opts: {
         const gen = await generateTipsImages({ style: story.art_style, scheme: opts.scheme, scenes: [story.vibe_scene], agencyId, genId });
         art = gen?.buffers[0] ?? null;
       }
-      const st = story ?? { hook: opts.facts.title, photo_lines: [], vibe_scene: '', art_style: 'litoral', caption: '', cta_action: '', cta_keyword: '', hashtags: [] };
+      const st = story ?? { hook: opts.facts.title, photo_lines: [], vibe_scene: '', art_style: 'litoral', caption: '', cta_action: '', cta_keyword: '', hashtags: [], details: [] };
       caption = story?.caption || undefined;
       hashtags = story?.hashtags?.length ? story.hashtags : undefined;
-      const specs = vibraListing(opts.facts, st, opts.brand, buffers.length, !!art, opts.language);
+      // THE VIBE LAW: every slide follows its own photo's colours
+      const palettes = await Promise.all(buffers.map((b) => photoPalette(b)));
+      const specs = vibraListing(opts.facts, st, opts.brand, buffers.length, !!art, opts.language, palettes);
       const all = art ? [...buffers, art] : buffers;
       slides = [];
       for (const sp of specs) slides.push(await applyGrain(await renderFreeform(sp as DesignSpec, { width: 1080, height: 1350 }, all), 0.035));

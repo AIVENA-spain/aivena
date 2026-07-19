@@ -142,7 +142,7 @@ export type EditablePreviewInput = {
 // ── KIE finishing pass: hand each chosen photo to KIE (watermark removal + the asked-for aesthetic
 // changes). KIE only ever touches the images — the template + text stay deterministic. One job per photo;
 // poll each with statusAction, then re-render with cleaned_generation_ids.
-export type FinishJob = { photo: string; generation_id: string | null; error: string | null };
+export type FinishJob = { photo: string; generation_id: string | null; cleaned?: boolean; error: string | null };
 export async function editableFinishAction(
   propertyId: string,
   photos: string[],

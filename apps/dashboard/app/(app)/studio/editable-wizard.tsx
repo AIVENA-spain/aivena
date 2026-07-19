@@ -143,7 +143,6 @@ export function EditableWizard() {
   const [cleanedIds, setCleanedIds] = useState<string[]>([]);
   // move/crop each photo inside its frame: { [photoIndex]: { zoom, x, y } }
   const [photoTr, setPhotoTr] = useState<Record<number, { zoom: number; x: number; y: number }>>({});
-  const [finishNote, setFinishNote] = useState("");
   const [finishing, setFinishing] = useState(false);
   const [finishMsg, setFinishMsg] = useState<string | null>(null);
 
@@ -292,7 +291,7 @@ export function EditableWizard() {
     setText(Object.fromEntries(d.editable_slots.map((s) => [s.id, s.value])));
     setColours(Object.fromEntries(d.colour_layers.map((c) => [c.role, c.value])));
     setPositions({}); setSizes({}); setSelected(null); setRegionSel(null); setHoverRole(null);
-    setCleanedIds([]); setFinishMsg(null); setFinishNote(""); setPhotoTr({});
+    setCleanedIds([]); setFinishMsg(null); setPhotoTr({});
     return d;
   }
 
@@ -438,41 +437,34 @@ export function EditableWizard() {
   // template and every fact stay exactly as they are — the engine re-renders them over the cleaned photos.
   async function runFinish() {
     if (!property || !templateId) return;
-    setFinishing(true); setErr(null); setFinishMsg("Sending your photos for clean-up…");
+    setFinishing(true); setErr(null); setFinishMsg("Removing watermarks…");
     try {
-      const res = await editableFinishAction(property.id, photos, finishNote);
+      // Surgical local removal — instant, and returns ONE job per chosen photo IN ORDER (completed
+      // immediately). Only montinmo-watermarked photos change; others pass through untouched.
+      const res = await editableFinishAction(property.id, photos);
       if (!res.ok) { setErr(res.message as string); setFinishing(false); setFinishMsg(null); return; }
-      const jobs = (res.jobs as FinishJob[]).filter((j) => j.generation_id);
-      if (!jobs.length) { setErr("The photo clean-up couldn't be started."); setFinishing(false); setFinishMsg(null); return; }
-
-      // poll each job until it lands (KIE takes ~1 min per photo)
-      const done: string[] = [];
-      const failed: string[] = [];
-      const deadline = Date.now() + 4 * 60 * 1000;
-      const pending = new Map(jobs.map((j) => [j.generation_id as string, true]));
-      while (pending.size > 0 && Date.now() < deadline) {
-        await new Promise((r) => setTimeout(r, 4000));
-        for (const id of [...pending.keys()]) {
-          const s = await statusAction(id);
-          const st = s.ok ? (s.status as string) : null;
-          if (st === "completed") { pending.delete(id); done.push(id); }
-          else if (st === "failed") { pending.delete(id); failed.push(id); }
-        }
-        setFinishMsg(`Cleaning your photos… ${done.length}/${jobs.length} done`);
+      const jobs = (res.jobs as FinishJob[]);
+      const ids = jobs.map((j) => j.generation_id);
+      if (!ids.length || ids.some((id) => !id)) {
+        // A photo couldn't be processed — keep the template's photo ORDER by using the originals
+        // (never a partial, shifted set). No drift, no reorder.
+        setCleanedIds([]);
+        setFinishMsg("Some photos couldn't be processed — your originals are used, unchanged.");
+        setSaved(false); scheduleRender();
+        return;
       }
-      if (!done.length) {
-        setErr(pending.size ? "The photo clean-up is taking longer than expected. Please try again shortly." : "The photos couldn't be cleaned up.");
-        setFinishing(false); setFinishMsg(null); return;
-      }
-      // Order the cleaned photos the way the template expects them (job order = chosen photo order).
-      const ordered = jobs.map((j) => j.generation_id as string).filter((id) => done.includes(id));
-      setCleanedIds(ordered); setSaved(false);
-      setFinishMsg(failed.length
-        ? `Photos cleaned (${failed.length} couldn't be done — the originals are used for those).`
-        : "Photos cleaned and placed back in your template.");
+      // full-length, in the same order as `photos` → template slots never shift
+      setCleanedIds(ids as string[]); setSaved(false);
+      const cleaned = jobs.filter((j) => (j as { cleaned?: boolean }).cleaned).length;
+      const none = jobs.length - cleaned;
+      setFinishMsg(cleaned === 0
+        ? "No watermarks found — your photos are unchanged."
+        : none > 0
+          ? `Watermark removed from ${cleaned} photo${cleaned === 1 ? "" : "s"} (${none} had none). The rest of each photo is untouched.`
+          : "Watermarks removed — the rest of every photo is untouched.");
       scheduleRender();
     } catch {
-      setErr("The photo clean-up couldn't be finished. Please try again.");
+      setErr("The watermark removal couldn't be finished. Please try again.");
       setFinishMsg(null);
     } finally {
       setFinishing(false);
@@ -508,7 +500,7 @@ export function EditableWizard() {
     setDefaults(null); setText({}); setColours({}); setPreview(null); setThumbs({});
     setSection(""); setSaved(false); setErr(null);
     setPositions({}); setSizes({}); setSelected(null); setRegionSel(null); setHoverRole(null);
-    setCleanedIds([]); setFinishMsg(null); setFinishNote(""); setPhotoTr({});
+    setCleanedIds([]); setFinishMsg(null); setPhotoTr({});
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -905,23 +897,22 @@ export function EditableWizard() {
                 </div>
               )}
 
-              {/* KIE finishing pass — photos only; the template + text never change */}
+              {/* Surgical watermark removal — only the watermark's own pixels change; the rest of each
+                  photo, plus your text and layout, are never touched. Instant + free. */}
               <div className="space-y-2 rounded-xl border border-neutral-200 p-3">
                 <div className="flex items-center justify-between">
-                  <label className="block text-xs font-semibold uppercase tracking-wide text-neutral-500">Clean up the photos</label>
-                  {cleanedIds.length > 0 && <span className="flex items-center gap-1 text-[11px] font-medium text-emerald-600"><Check className="h-3 w-3" /> cleaned</span>}
+                  <label className="block text-xs font-semibold uppercase tracking-wide text-neutral-500">Remove watermarks</label>
+                  {cleanedIds.length > 0 && <span className="flex items-center gap-1 text-[11px] font-medium text-emerald-600"><Check className="h-3 w-3" /> removed</span>}
                 </div>
                 <p className="text-[11px] leading-relaxed text-neutral-400">
-                  Removes portal watermarks and improves the lighting on your photos, then puts them straight back
-                  into this template. Your text and layout are never touched. Uses a credit per photo.
+                  Erases the portal watermark from your photos and puts them straight back into this template.
+                  Only the watermark itself is touched — the house, the framing and your text stay exactly the same.
+                  Instant and free.
                 </p>
-                <input value={finishNote} onChange={(e) => setFinishNote(e.target.value)} disabled={finishing}
-                  placeholder="Anything else? e.g. brighter sky, warmer light (optional)"
-                  className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-900 disabled:opacity-60" />
                 <button onClick={() => void runFinish()} disabled={finishing || !preview}
                   className={`flex w-full items-center justify-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium ${finishing || !preview ? "border-neutral-200 text-neutral-400" : "border-neutral-900 text-neutral-900 hover:bg-neutral-50"}`}>
                   {finishing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                  {cleanedIds.length > 0 ? "Clean up again" : `Clean up ${photos.length} photo${photos.length === 1 ? "" : "s"}`}
+                  {cleanedIds.length > 0 ? "Remove again" : `Remove from ${photos.length} photo${photos.length === 1 ? "" : "s"}`}
                 </button>
                 {finishMsg && <p className="text-[11px] text-neutral-500">{finishMsg}</p>}
               </div>

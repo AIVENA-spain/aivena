@@ -21,7 +21,9 @@ import {
   buildFacts,
   designRenderStore,
 } from '../lib/studio-smart-design';
+import sharp from 'sharp';
 import { usablePhotos } from '../lib/property-images';
+import { removeMontinmoWatermark } from '../lib/watermark-removal';
 import { type CarouselPlan, chrome as carouselChrome } from '../../../../studio/engine/carouselSlides';
 import {
   renderPlannedStyled, renderListingStyled, vibraListing, PLANNED_STYLES, LISTING_STYLES, type CarouselStyle,
@@ -1508,30 +1510,41 @@ async function kieFetchableUrl(ref: string): Promise<string | null> {
   return data.signedUrl;
 }
 
-/** Resolve cleaned-photo generation ids → image buffers. Agency-scoped + completed-only (a client can never
- *  point this at someone else's image, and ids are the only accepted handle — never raw URLs). */
+/** Resolve cleaned-photo generation ids → image buffers, ONE per id and IN ORDER. Agency-scoped +
+ *  completed-only (a client can never point this at someone else's image; ids are the only accepted
+ *  handle — never raw URLs). If a cleaned image can't be downloaded, fall back to that intermediate's
+ *  ORIGINAL source photo so the template slot is never dropped/shifted (order + count preserved). */
 async function cleanedBuffers(tx: any, agencyId: string, ids: string[]): Promise<Buffer[]> {
   const out: Buffer[] = [];
   for (const id of ids) {
     if (!/^[0-9a-fA-F-]{36}$/.test(id)) continue;
     const res = await tx.execute(sql`
-      SELECT result_image_storage_path FROM image_generations
+      SELECT result_image_storage_path, raw_request->>'source_ref' AS source_ref FROM image_generations
       WHERE id = ${id}::uuid AND agency_id = ${agencyId} AND status = 'completed'
       LIMIT 1
     `);
-    const rows = res as unknown as Array<{ result_image_storage_path: string | null }>;
+    const rows = res as unknown as Array<{ result_image_storage_path: string | null; source_ref: string | null }>;
     const path = rows[0]?.result_image_storage_path;
-    if (!path) continue;
-    const dl = await supabaseAdmin.storage.from('generated-images').download(path);
-    if (dl.error || !dl.data) continue;
-    out.push(Buffer.from(await dl.data.arrayBuffer()));
+    if (path) {
+      const dl = await supabaseAdmin.storage.from('generated-images').download(path);
+      if (!dl.error && dl.data) { out.push(Buffer.from(await dl.data.arrayBuffer())); continue; }
+    }
+    // download miss → keep the slot with the original source photo (never shift the deck)
+    const orig = rows[0]?.source_ref ? await loadPhotoBuffer(rows[0].source_ref) : null;
+    if (orig) out.push(orig);
   }
   return out;
 }
 
-// ── POST /api/studio/editable-finish — hand each chosen photo to KIE (watermark + aesthetic) ──
-// Body: { property_id, photos?: string[], note?: string }. Returns one job per photo; the browser polls
-// /api/studio/status/:id for each, then re-renders the template with cleaned_generation_ids.
+// ── POST /api/studio/editable-finish — SURGICAL local watermark removal (Christian 2026-07-19) ──
+// Replaces the seedream "clean up" that REPAINTED the whole photo (moved furniture, reframed the
+// house). Now each chosen photo is de-watermarked LOCALLY: only the montinmo logo's own pixels are
+// altered, everything else is byte-identical (see lib/watermark-removal). It's instant + free + can't
+// drift the house. Every chosen photo yields ONE completed intermediate (a cleaned image, or — if the
+// photo isn't the calibrated montinmo size, or removal fails — the ORIGINAL passed through unchanged),
+// IN ORDER, so the template slots never shift (fixes the old failed-clean-collapse reorder bug).
+// Body: { property_id, photos?: string[] }. Returns one job per photo (completed immediately); the
+// browser polls /status/:id (instant), then re-renders with cleaned_generation_ids.
 route.post('/editable-finish', async (c) => {
   const tx = c.get('tx');
   const agencyId = c.get('agencyId');
@@ -1544,7 +1557,6 @@ route.post('/editable-finish', async (c) => {
     return c.json({ ok: false, error: 'invalid_json', message: 'Request body must be valid JSON.' }, 400);
   }
   const propertyId = typeof b.property_id === 'string' ? b.property_id.trim() : '';
-  const note = typeof b.note === 'string' ? b.note.trim().slice(0, 900) : '';
   try {
     const loaded = await loadPropertyAndBrand(tx, agencyId, propertyId);
     if (!loaded) return c.json({ ok: false, error: 'not_found', message: 'That property could not be found.' }, 404);
@@ -1552,50 +1564,47 @@ route.post('/editable-finish', async (c) => {
     const refs = chosen.length ? chosen : loaded.images;
     if (refs.length === 0) return c.json({ ok: false, error: 'no_photos', message: 'This property has no photos to clean up.' }, 422);
 
-    const secret = await internalSecret();
-    if (!secret) return c.json({ ok: false, error: 'unavailable', message: "The photo service isn't available right now. Please try again shortly." }, 503);
-
-    const jobs: { photo: string; generation_id: string | null; error: string | null }[] = [];
+    const jobs: { photo: string; generation_id: string | null; cleaned: boolean; error: string | null }[] = [];
     for (const ref of refs) {
-      const url = await kieFetchableUrl(ref);
-      if (!url) { jobs.push({ photo: ref, generation_id: null, error: "That photo couldn't be opened." }); continue; }
+      const buf = await loadPhotoBuffer(ref);
+      if (!buf) { jobs.push({ photo: ref, generation_id: null, cleaned: false, error: "That photo couldn't be opened." }); continue; }
+      // surgical removal; null → keep the ORIGINAL (never a generative guess). Either way the slot is filled.
+      // An undecodable photo (corrupt bytes, unsupported codec) must degrade THIS photo only, never 500 the batch.
+      let outBuf: Buffer | null = null; let cleaned = false;
       try {
-        const res = await fetch(`${EF_BASE}/image-generate-create`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'x-internal-secret': secret },
-          body: JSON.stringify({
-            agency_id: agencyId,
-            generation_type: 'social_post',
-            template: 'none',          // raw cleaned photo out — no overlay, no text: KIE only touches the image
-            source_image_url: url,
-            source_property_id: propertyId,
-            requested_by: user?.sub ?? null,
-            // clean_only = remove watermarks and change NOTHING else (no relight, no colour-grade, no declutter).
-            // Christian: "if its left empty it should just remove watermark, not change lightning or anything
-            // else unless it has been specified." A note is applied as the ONLY extra change.
-            clean_only: true,
-            ...(note ? { prompt: note } : {}),
-          }),
-        });
-        const j = (await res.json().catch(() => null)) as { ok?: boolean; generation_id?: string; message?: string } | null;
-        if (res.ok && j?.ok && j.generation_id) {
-          // A cleaned photo is an INTERMEDIATE, not a creation — mark it so the library shows only the finished
-          // post (Christian: "just the 4 images showed up in library, not the actual post that was made").
-          try {
-            await tx.execute(sql`
-              UPDATE image_generations
-                 SET raw_request = jsonb_set(COALESCE(raw_request, '{}'::jsonb), '{intermediate}', 'true'::jsonb, true)
-               WHERE id = ${j.generation_id}::uuid AND agency_id = ${agencyId}
-            `);
-          } catch { /* marking is best-effort; never fail the clean-up over it */ }
-          jobs.push({ photo: ref, generation_id: j.generation_id, error: null });
-        } else jobs.push({ photo: ref, generation_id: null, error: j?.message ?? "That photo couldn't be cleaned up." });
+        const removed = await removeMontinmoWatermark(buf);
+        if (removed) { outBuf = removed; cleaned = true; } else { outBuf = await sharp(buf).png().toBuffer(); }
       } catch {
-        jobs.push({ photo: ref, generation_id: null, error: "That photo couldn't be cleaned up." });
+        try { outBuf = await sharp(buf).png().toBuffer(); } catch { /* undecodable — fall through to null-id job */ }
+      }
+      if (!outBuf) { jobs.push({ photo: ref, generation_id: null, cleaned: false, error: "That photo couldn't be processed." }); continue; }
+      // store as a completed intermediate (hidden from the library) so cleaned_generation_ids stays in order
+      try {
+        const ins = await tx.execute(sql`
+          INSERT INTO image_generations (agency_id, generation_type, status, prompt, source_property_id, requested_by, raw_request)
+          VALUES (${agencyId}, 'social_post', 'processing', 'Cleaned photo', ${propertyId}::uuid, ${user?.sub ?? null}::uuid,
+                  ${JSON.stringify({ engine: 'watermark_removal', intermediate: true, content_type: 'listing', cleaned, source_ref: ref })}::jsonb)
+          RETURNING id
+        `);
+        const id = (ins as unknown as Array<{ id: string }>)[0]?.id;
+        if (!id) throw new Error('insert failed');
+        const key = `studio/cleaned/${agencyId}/${id}.png`;
+        const up = await supabaseAdmin.storage.from('generated-images').upload(key, outBuf, { contentType: 'image/png', upsert: true });
+        if (up.error) throw new Error(up.error.message);
+        const signed = await supabaseAdmin.storage.from('generated-images').createSignedUrl(key, 60 * 60 * 24 * 365);
+        await tx.execute(sql`
+          UPDATE image_generations
+             SET status = 'completed', result_image_url = ${signed.data?.signedUrl ?? ''}, result_image_storage_path = ${key}, completed_at = now()
+           WHERE id = ${id}::uuid AND agency_id = ${agencyId}
+        `);
+        jobs.push({ photo: ref, generation_id: id, cleaned, error: null });
+      } catch (e) {
+        console.error('[studio/editable-finish] store failed:', (e as Error).message);
+        jobs.push({ photo: ref, generation_id: null, cleaned: false, error: "That photo couldn't be cleaned up." });
       }
     }
     if (!jobs.some((j) => j.generation_id)) {
-      return c.json({ ok: false, error: 'finish_failed', message: "The photo clean-up couldn't be started. Please try again.", jobs }, 502);
+      return c.json({ ok: false, error: 'finish_failed', message: "The photo clean-up couldn't be done. Please try again.", jobs }, 502);
     }
     return c.json({ ok: true, jobs });
   } catch (err) {

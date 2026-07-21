@@ -1047,5 +1047,162 @@
   if (LANG === 'es') applyLang('es'); else renderDial('approve');
 })();
 </script>
+<!-- ============ CHATBOT WIDGET (carried over 1:1 from the previous landing) ============ -->
+<style>
+  .cw-launch{ position:fixed; right:20px; bottom:20px; z-index:80; display:inline-flex; align-items:center; gap:10px;
+    background:#1FE874; color:#04140A; border:none; border-radius:999px; padding:12px 16px 12px 14px; cursor:pointer; font-family:Inter,sans-serif; font-weight:600; font-size:14px;
+    box-shadow:0 12px 34px -8px rgba(31,232,116,.7); transition:transform .25s cubic-bezier(.16,1,.3,1), box-shadow .25s; }
+  .cw-launch:hover{ transform:translateY(-2px); box-shadow:0 16px 42px -8px rgba(31,232,116,.85); }
+  .cw-launch.hide{ opacity:0; pointer-events:none; transform:scale(.8); }
+  .cw-launch .cw-ping{ position:absolute; top:-3px; right:-3px; width:12px; height:12px; border-radius:50%; background:#1FE874; box-shadow:0 0 0 3px #070908; }
+  .cw-launch .cw-ping::after{ content:""; position:absolute; inset:0; border-radius:50%; border:1px solid #1FE874; animation:cwping 2s cubic-bezier(0,0,.2,1) infinite; }
+  @keyframes cwping{ 0%{transform:scale(.6);opacity:.9} 100%{transform:scale(2.2);opacity:0} }
+  .cw-panel{ position:fixed; right:20px; bottom:20px; z-index:81; width:380px; max-width:calc(100vw - 32px);
+    height:560px; max-height:calc(100dvh - 40px); display:flex; flex-direction:column; overflow:hidden;
+    background:linear-gradient(180deg, rgba(14,22,20,.96), rgba(8,14,12,.97)); border:1px solid rgba(31,232,116,.22); border-radius:20px;
+    backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); box-shadow:0 40px 100px -30px rgba(0,0,0,.8);
+    transform-origin:bottom right; opacity:0; transform:scale(.85) translateY(12px); pointer-events:none;
+    transition:opacity .3s cubic-bezier(.16,1,.3,1), transform .35s cubic-bezier(.16,1,.3,1); }
+  .cw-panel.open{ opacity:1; transform:none; pointer-events:auto; }
+  .cw-head{ display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid rgba(255,255,255,.08); }
+  .cw-id{ display:flex; align-items:center; gap:9px; }
+  .cw-id .cw-mark{ width:30px; height:30px; border-radius:8px; background:#1FE874; color:#04140A; display:grid; place-items:center; }
+  .cw-name{ font-size:14px; font-weight:600; display:flex; align-items:center; gap:6px; color:#F1F4F2; line-height:1.15; margin:0; font-family:Inter,sans-serif; }
+  .cw-sub{ font-size:12px; color:#94A09A; margin:0; font-family:Inter,sans-serif; }
+  .cw-tag{ font-family:'JetBrains Mono',monospace; font-size:8px; letter-spacing:.14em; text-transform:uppercase; color:#04140A; background:#1FE874; padding:2px 5px; border-radius:4px; }
+  .cw-close{ background:transparent; border:none; color:#94A09A; cursor:pointer; font-size:22px; line-height:1; padding:4px; }
+  .cw-close:hover{ color:#F1F4F2; }
+  .cw-modes{ display:flex; gap:6px; padding:10px 14px; border-bottom:1px solid rgba(255,255,255,.06); }
+  .cw-mode{ flex:1; font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.1em; text-transform:uppercase; cursor:pointer;
+    background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); color:#94A09A; border-radius:8px; padding:8px 6px; transition:all .2s; }
+  .cw-mode.on{ background:rgba(31,232,116,.14); border-color:rgba(31,232,116,.4); color:#7DF2AC; }
+  .cw-body{ flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:10px; }
+  .cw-body::-webkit-scrollbar{ width:6px } .cw-body::-webkit-scrollbar-thumb{ background:rgba(255,255,255,.12); border-radius:3px }
+  .cw-msg{ max-width:84%; padding:9px 13px; border-radius:14px; font-size:13.5px; line-height:1.5; animation:cwin .35s cubic-bezier(.16,1,.3,1); font-family:Inter,sans-serif; }
+  @keyframes cwin{ from{ opacity:0; transform:translateY(8px) } to{ opacity:1; transform:none } }
+  .cw-bot{ align-self:flex-start; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.07); color:#E9F3F0; border-top-left-radius:4px; }
+  .cw-user{ align-self:flex-end; background:rgba(31,232,116,.16); border:1px solid rgba(31,232,116,.3); color:#F1F4F2; border-top-right-radius:4px; }
+  .cw-meta{ font-family:'JetBrains Mono',monospace; font-size:8px; letter-spacing:.1em; text-transform:uppercase; color:#5C6562; margin-top:4px; }
+  .cw-typing{ align-self:flex-start; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.07); border-radius:14px; border-top-left-radius:4px; padding:11px 14px; }
+  .cw-dots{ display:inline-flex; gap:5px; align-items:center; padding:3px 0; }
+  .cw-dots i{ width:6px; height:6px; border-radius:50%; background:#94A09A; display:inline-block; animation:cwtd 1.3s infinite ease-in-out; }
+  .cw-dots i:nth-child(2){ animation-delay:.16s } .cw-dots i:nth-child(3){ animation-delay:.32s }
+  @keyframes cwtd{ 0%,80%,100%{ transform:translateY(0); opacity:.35 } 40%{ transform:translateY(-4px); opacity:1 } }
+  .cw-chips{ display:flex; flex-wrap:wrap; gap:6px; padding:0 14px 10px; }
+  .cw-chip{ font-size:12px; cursor:pointer; background:rgba(255,255,255,.04); border:1px solid rgba(31,232,116,.25); color:#C7D0CB; border-radius:999px; padding:6px 11px; transition:all .2s; font-family:Inter,sans-serif; }
+  .cw-chip:hover{ background:rgba(31,232,116,.12); color:#fff; }
+  .cw-input{ display:flex; gap:8px; padding:12px 14px; border-top:1px solid rgba(255,255,255,.08); }
+  .cw-input input{ flex:1; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.1); border-radius:10px; padding:10px 12px; color:#F1F4F2; font-family:Inter,sans-serif; font-size:13.5px; outline:none; }
+  .cw-input input:focus{ border-color:rgba(31,232,116,.45); }
+  .cw-input button{ background:#1FE874; color:#04140A; border:none; border-radius:10px; width:42px; display:grid; place-items:center; cursor:pointer; }
+  .cw-input.disabled{ opacity:.5; pointer-events:none; }
+  @media (max-width:480px){ .cw-panel{ right:10px; left:10px; bottom:10px; width:auto; height:min(72dvh,560px); } }
+  @media (prefers-reduced-motion: reduce){ .cw-launch .cw-ping::after, .cw-dots i{ animation:none !important; } }
+</style>
+
+<button id="cwLaunch" class="cw-launch" aria-label="Open the AIVENA assistant">
+  <span class="cw-ping" aria-hidden="true"></span>
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+  <span>Ask AIVENA</span>
+</button>
+
+<section id="cwPanel" class="cw-panel" role="dialog" aria-label="AIVENA assistant" aria-hidden="true">
+  <header class="cw-head">
+    <div class="cw-id">
+      <span class="cw-mark"><img src="assets/logo-mark-ink.png" alt="" style="width:18px;height:auto" /></span>
+      <div>
+        <p class="cw-name">AIVENA Assistant <span class="cw-tag">Demo</span></p>
+        <p class="cw-sub">Ask anything about AIVENA</p>
+      </div>
+    </div>
+    <button class="cw-close" id="cwClose" aria-label="Close assistant">&times;</button>
+  </header>
+  <div class="cw-modes">
+    <button class="cw-mode on" data-mode="about" type="button">About AIVENA</button>
+    <button class="cw-mode" data-mode="site" type="button">On your site</button>
+  </div>
+  <div class="cw-body" id="cwBody"></div>
+  <div class="cw-chips" id="cwChips"></div>
+  <form class="cw-input" id="cwForm">
+    <input id="cwInput" placeholder="Ask about AIVENA…" autocomplete="off" aria-label="Message" />
+    <button type="submit" aria-label="Send"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg></button>
+  </form>
+</section>
+
+<script>
+/* chatbot widget — self-contained, no network calls (scripted keyword assistant) */
+(function(){
+  var CW_REDUCE = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var cwSleep = function(ms){ return new Promise(function(r){ setTimeout(r, ms); }); };
+  var launch=document.getElementById('cwLaunch'), panel=document.getElementById('cwPanel'), closeBtn=document.getElementById('cwClose'),
+      body=document.getElementById('cwBody'), chips=document.getElementById('cwChips'), form=document.getElementById('cwForm'), input=document.getElementById('cwInput');
+  if(!launch) return;
+  var KB=[
+    {k:['price','pricing','cost','how much','euro','€','plan','tier','starter','pro','unlimited','month'], a:"Three plans, and every feature is included in all of them: Starter €599, Pro €699, Unlimited €999 a month. Only voice minutes and image quotas scale. A year still costs less than a single commission."},
+    {k:['pilot','free','trial','feedback'], a:"There's a pilot for the first three agencies: the first gets a full year free, the next two get three months free — in exchange for honest feedback."},
+    {k:['language','languages','speak','translat','13'], a:"AIVENA works in 13 languages. It detects the buyer's language automatically and replies in it — and the dashboard itself is available in all 13 too."},
+    {k:['missed call','missed-call'], a:"If a call is missed, AIVENA instantly sends that caller a WhatsApp in their language — before they ring the next agency."},
+    {k:['voice','phone','caller','calls'], a:"A voice agent answers phone calls in the caller's own language. And any missed call instantly triggers a WhatsApp to the caller, in their language."},
+    {k:['channel','whatsapp','email','form','facebook','google','instagram','inbox'], a:"Every channel you own lands in one inbox: WhatsApp, website chat, website forms, email, Facebook & Google lead ads, phone and missed calls. Only the channels you own — no portals."},
+    {k:['gdpr','data','secure','security','privacy','compliance','ai act','hosted','safe'], a:"EU-hosted and GDPR-ready, and built for the EU AI Act — AI is disclosed on voice and chat. Each agency's data is walled off and yours alone."},
+    {k:['valuation','seller','worth','owner','listing','win listing'], a:"A valuation widget sits on your site: a homeowner gets an instant valuation and you get a seller lead, with proper consent. AIVENA can also tell owners 'we have buyers for a property like yours.'"},
+    {k:['studio','image','creative','ad ','ads','social','staging','renovation','visual','picture','photo'], a:"Studio generates branded ad creative for Meta, social posts and virtual-staging visuals — copy in the buyer's language. There are live examples in the Studio section on this page."},
+    {k:['match','matching','right home','fit'], a:"AIVENA matches each buyer to the properties that actually fit them — budget, area, the features they asked for."},
+    {k:['dashboard','control','demo','explore'], a:"The control room shows every conversation, channel and language beside an instant translation into your own. You approve what goes out; it sends under your name. Write to christian@aivena.es for a live walkthrough."},
+    {k:['crm','switch','integrat'], a:"AIVENA fits around your existing CRM — no need to switch tools. Think of it as a safety net under everything you already do."},
+    {k:['human','approve','control','auto','rule','invent','escalat'], a:"You're always in control. AIVENA drafts the reply; you approve with one tap, or set rules to auto-send the routine ones. It never invents an answer — if it isn't sure, it escalates to a human."},
+    {k:['who','founder','christian'], a:"AIVENA was built by Christian, who has lived on the Costa Blanca for 25 years, specifically for how this market actually works."},
+    {k:['viewing','appointment','booking','calendar','reminder'], a:"Confirm a viewing time in one click and the buyer gets a WhatsApp confirmation, a reminder 24h before and a follow-up 24h after — in their language — and it lands in your Google Calendar."},
+    {k:['what','work','works','about','aivena','do','help'], a:"AIVENA answers every enquiry your agency gets — in minutes, in the buyer's language, on your own channels, under your name. A hybrid system: secure backend for anything touching customer data, automation for consistency, AI where AI belongs."},
+    {k:['hi','hello','hey','hallo','hola'], a:"Hello! I can tell you about pricing, languages, channels, security, the pilot, or how AIVENA works. What would you like to know?"},
+    {k:['contact','talk','email','reach','start','book a','call you'], a:"The fastest way is to start the conversation — email christian@aivena.es and the team will take it from there."}
+  ];
+  var FALLBACK="Good question. I can cover pricing, languages, the channels, security, the pilot, or how AIVENA works — or you can start the conversation and a human will pick it up at christian@aivena.es.";
+  var SUGGEST=["What does AIVENA do?","How much is it?","Which languages?","Is my data safe?","Tell me about the pilot"];
+  var mode='about', demoToken=0;
+  var scroll=function(){ body.scrollTop=body.scrollHeight; };
+  function add(text, who, meta){ var d=document.createElement('div'); d.className='cw-msg '+(who==='user'?'cw-user':'cw-bot'); d.textContent=text; if(meta){ var m=document.createElement('div'); m.className='cw-meta'; m.textContent=meta; d.appendChild(m);} body.appendChild(d); scroll(); return d; }
+  function showTyping(){ var d=document.createElement('div'); d.className='cw-typing'; d.innerHTML='<span class="cw-dots"><i></i><i></i><i></i></span>'; body.appendChild(d); scroll(); return d; }
+  function answer(q){ var s=' '+q.toLowerCase()+' '; for(var i=0;i<KB.length;i++){ var it=KB[i]; for(var j=0;j<it.k.length;j++){ if(s.indexOf(it.k[j])!==-1) return it.a; } } return FALLBACK; }
+  function botSay(text, meta){ var t=showTyping(); return cwSleep(CW_REDUCE?0:(520+Math.min(900,text.length*7))).then(function(){ t.remove(); add(text,'bot',meta); }); }
+  function renderChips(list){ chips.innerHTML=''; list.forEach(function(q){ var b=document.createElement('button'); b.type='button'; b.className='cw-chip'; b.textContent=q; b.onclick=function(){ handleUser(q); }; chips.appendChild(b); }); }
+  function handleUser(q){ if(mode!=='about') return; add(q,'user'); chips.innerHTML=''; botSay(answer(q)).then(function(){ renderChips(SUGGEST); }); }
+  function setModeBtns(){ document.querySelectorAll('.cw-mode').forEach(function(x){ x.classList.toggle('on', x.dataset.mode===mode); }); }
+  function initAbout(){ demoToken++; mode='about'; setModeBtns(); body.innerHTML=''; form.classList.remove('disabled'); input.placeholder='Ask about AIVENA…';
+    add("Hi — I'm the AIVENA assistant. Ask me anything about how AIVENA works, pricing, languages, or the pilot.",'bot'); renderChips(SUGGEST); }
+  function initDemo(){ var my=++demoToken; mode='site'; setModeBtns(); body.innerHTML=''; chips.innerHTML=''; form.classList.add('disabled');
+    add("This is how AIVENA's chatbot looks on an agency's own website — answering a buyer in their language, around the clock.",'bot','Preview');
+    var DEMO=[
+      {who:'bot',t:'Welcome to Mediterráneo Costa Homes. How can I help with your search on the Costa Blanca?'},
+      {who:'user',t:'Buonasera, avete ville con piscina a Moraira?',meta:'Buyer · Italian'},
+      {who:'bot',t:'Buonasera! Sì, al momento abbiamo tre ville con piscina a Moraira a partire da 420.000 €. Desidera fissare una visita?',meta:'Auto-reply · Italian'},
+      {who:'user',t:'Sì, volentieri! Sabato andrebbe bene.',meta:'Buyer · Italian'},
+      {who:'bot',t:'Perfetto! Ho fissato per sabato alle 11:00. Riceverà a breve una conferma su WhatsApp. A sabato!',meta:'Auto-reply · Italian'}
+    ];
+    var chain=Promise.resolve();
+    DEMO.forEach(function(m){
+      chain=chain.then(function(){
+        if(my!==demoToken) return;
+        if(m.who==='bot'){ return botSay(m.t,m.meta); }
+        return cwSleep(CW_REDUCE?0:750).then(function(){ if(my!==demoToken) return; add(m.t,'user',m.meta); });
+      });
+    });
+    chain.then(function(){
+      if(my!==demoToken) return;
+      chips.innerHTML=''; var b=document.createElement('button'); b.type='button'; b.className='cw-chip'; b.textContent='Replay demo'; b.onclick=initDemo; chips.appendChild(b);
+    });
+  }
+  function open(){ panel.classList.add('open'); panel.setAttribute('aria-hidden','false'); launch.classList.add('hide'); if(!body.dataset.init){ initAbout(); body.dataset.init='1'; } }
+  function close(){ panel.classList.remove('open'); panel.setAttribute('aria-hidden','true'); launch.classList.remove('hide'); }
+  document.querySelectorAll('.cw-mode').forEach(function(btn){ btn.addEventListener('click',function(){ if(btn.dataset.mode===mode) return; (btn.dataset.mode==='about')?initAbout():initDemo(); }); });
+  form.addEventListener('submit',function(e){ e.preventDefault(); var v=input.value.trim(); if(!v) return; input.value=''; handleUser(v); });
+  launch.addEventListener('click',open); closeBtn.addEventListener('click',close);
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape' && panel.classList.contains('open')) close(); });
+})();
+</script>
+
+<!-- cookie consent (LOPDGDD) — must run on every page -->
+<script src="/assets/cookie-banner.js"></script>
+
 </body>
 </html>

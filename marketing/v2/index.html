@@ -184,6 +184,16 @@
   .print{flex:1;min-width:0;background:#fff;padding:10px 10px 12px;box-shadow:var(--shadow);border-radius:8px;transition:transform .5s var(--ease)}
   .print img{width:100%;height:auto;border-radius:3px;display:block}
   .print .pcap{display:flex;justify-content:space-between;font-family:var(--mono);font-size:.6rem;color:var(--stone);padding-top:8px}
+  .stylecol{flex:1;min-width:0;display:flex;flex-direction:column}
+  .stylecol .print{flex:none}
+  .pcap .mono-name{color:var(--terracotta,#C86B4A)}
+  .swrow{display:flex;align-items:center;gap:10px;margin-top:14px}
+  .sw{width:30px;height:30px;border-radius:50%;border:2px solid transparent;padding:0;cursor:pointer;background:linear-gradient(135deg,var(--a) 50%,var(--b) 50%);box-shadow:0 2px 8px -2px rgba(38,48,42,.35);transition:transform .25s var(--ease),border-color .25s}
+  .sw:hover{transform:scale(1.1)}
+  .sw.on{border-color:var(--ink);transform:scale(1.12)}
+  .sw:focus-visible{outline:2px solid var(--olive);outline-offset:2px}
+  .swhint{font-family:var(--mono);font-size:.58rem;letter-spacing:.08em;color:var(--stone);text-transform:uppercase}
+  #styleImg{transition:opacity .3s ease}
   .f1{transform:rotate(-1.2deg)}
   .f2{transform:rotate(1.2deg) translateY(16px)}
   .f1:hover{transform:rotate(0deg) translateY(-4px)}
@@ -292,6 +302,9 @@
     .jsteps{grid-template-columns:1fr 1fr}
     .capcols{grid-template-columns:1fr 1fr}
     .fan{flex-direction:column;gap:16px;margin-top:10px}
+    .stylecol{width:100%}
+    .swhint{flex-basis:100%;margin-top:2px}
+    .swrow{flex-wrap:wrap}
     .print{width:100%!important;transform:none!important}
     .tscene{grid-template-columns:1fr;padding:64px 22px 120px;overflow-y:auto;align-items:start}
     .tprints{height:280px}
@@ -503,7 +516,15 @@
       <p class="muted" style="font-family:var(--mono);font-size:.62rem;margin-top:10px" data-i18n="st_note">carousel &middot; property post &middot; renovation visual &mdash; generated from the listing itself</p>
     </div>
     <div class="fan reveal">
-      <div class="print f1"><img src="assets/v3/studio-post.webp" alt="Property post rendered by the AIVENA engine" width="900" height="1125" loading="lazy" /><div class="pcap"><span data-i18n="st_p1">Property post &middot; real engine render</span></div></div>
+      <div class="stylecol">
+        <div class="print f1"><img id="styleImg" src="assets/v3/style-navy.webp" alt="Property post rendered by the AIVENA engine &mdash; tap a palette to change the style" width="900" height="1125" loading="lazy" /><div class="pcap"><span data-i18n="st_style">One villa &middot; your style</span><span class="mono-name" id="styleName">Navy &amp; Gold</span></div></div>
+        <div class="swrow" role="group" aria-label="Choose a colour scheme">
+          <button class="sw on" data-s="0" style="--a:#0B2545;--b:#C9A45C" aria-label="Navy and Gold"></button>
+          <button class="sw" data-s="1" style="--a:#3D405B;--b:#E07A5F" aria-label="Terracotta"></button>
+          <button class="sw" data-s="2" style="--a:#2F4739;--b:#C98B7A" aria-label="Forest and Blush"></button>
+          <span class="swhint" data-i18n="st_tap">tap a palette &mdash; the whole design follows</span>
+        </div>
+      </div>
       <div class="print f2"><img src="assets/v3/studio-carousel.webp" alt="Carousel cover rendered by the AIVENA engine" width="900" height="1125" loading="lazy" /><div class="pcap"><span data-i18n="st_p2">Carousel cover &middot; real engine render</span></div></div>
     </div>
   </div>
@@ -748,6 +769,7 @@
     st_before: 'ANTES', st_after: 'DESPUÉS',
     st_note: 'carrusel · post · visual de reforma — generados del propio anuncio',
     st_p1: 'Post inmobiliario · render real del motor', st_p2: 'Portada de carrusel · render real del motor',
+    st_style: 'Una villa · tu estilo', st_tap: 'toca una paleta — todo el diseño la sigue',
     rs_h: 'Cada conversación, <span class="it">medida</span>.',
     rs_1: 'primera respuesta en autopilot', rs_2: 'consultas esta semana', rs_3: 'visitas reservadas',
     rs_note: 'Semana ilustrativa del panel piloto. Con aprobación previa, la respuesta sale con tu próximo café — en autopilot, en minutos.',
@@ -1046,6 +1068,35 @@
   wireApprove('#tourApprove');
 
   /* apply initial language */
+  var STYLES = [
+    ['assets/v3/style-navy.webp', 'Navy & Gold'],
+    ['assets/v3/style-terracotta.webp', 'Terracotta'],
+    ['assets/v3/style-forest.webp', 'Forest & Blush']
+  ];
+  var sImg = $('#styleImg'), sName = $('#styleName');
+  if (sImg) {
+    STYLES.forEach(function (st) { var i = new Image(); i.src = st[0]; });
+    var sIdx = 0, sTimer = null, sTouched = false;
+    function setStyle(i) {
+      sIdx = i;
+      sImg.style.opacity = 0;
+      setTimeout(function () { sImg.src = STYLES[i][0]; sImg.style.opacity = 1; }, 220);
+      sName.textContent = STYLES[i][1];
+      document.querySelectorAll('.sw').forEach(function (b, j) { b.classList.toggle('on', j === i); });
+    }
+    document.querySelectorAll('.sw').forEach(function (b) {
+      b.addEventListener('click', function () { sTouched = true; if (sTimer) { clearInterval(sTimer); sTimer = null; } setStyle(+b.dataset.s); });
+    });
+    if (!rm) {
+      var sIO = new IntersectionObserver(function (es) {
+        es.forEach(function (e) {
+          if (e.isIntersecting && !sTouched && !sTimer) sTimer = setInterval(function () { setStyle((sIdx + 1) % 3); }, 3600);
+          if (!e.isIntersecting && sTimer) { clearInterval(sTimer); sTimer = null; }
+        });
+      }, { threshold: 0.4 });
+      sIO.observe(sImg);
+    }
+  }
   if (LANG === 'es') applyLang('es'); else renderDial('approve');
 })();
 </script>

@@ -185,6 +185,31 @@
   .print img{width:100%;height:auto;border-radius:3px;display:block}
   .print .pcap{display:flex;justify-content:space-between;font-family:var(--mono);font-size:.6rem;color:var(--stone);padding-top:8px}
   .stylecol{flex:1;min-width:0;display:flex;flex-direction:column}
+  .ig{background:#fff;border:1px solid #E6DFCE;border-radius:14px;overflow:hidden;box-shadow:var(--shadow-sm)}
+  .ig-h{display:flex;align-items:center;gap:8px;padding:9px 11px}
+  .ig-av{width:28px;height:28px;border-radius:50%;background:#0B2545;color:#F8F5EF;display:grid;place-items:center;font-size:9.5px;font-weight:600;letter-spacing:.04em;flex:none}
+  .ig-id{display:flex;flex-direction:column;line-height:1.25;min-width:0}
+  .ig-id b{font-size:11.5px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ig-id i{font-style:normal;font-size:10px;color:var(--stone)}
+  .ig-dots3{margin-left:auto;color:var(--stone);font-size:14px}
+  .ig-m{position:relative;overflow:hidden}
+  .ig-m > img{width:100%;height:auto;display:block}
+  .ig-track{display:flex;transition:transform .35s var(--ease)}
+  .ig-track img{width:100%;height:auto;flex:0 0 100%;display:block}
+  .ig-cnt{position:absolute;top:8px;right:8px;background:rgba(38,48,42,.72);color:#fff;font-size:10px;border-radius:999px;padding:2px 8px;font-family:var(--mono)}
+  .ig-ar{position:absolute;top:50%;transform:translateY(-50%);width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,.92);border:none;display:grid;place-items:center;cursor:pointer;box-shadow:0 1px 5px rgba(0,0,0,.28);padding:0}
+  .ig-ar svg{fill:none;stroke:#26302A;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+  .ig-ar:active{transform:translateY(-50%) scale(.92)}
+  .ig-pips{display:flex;gap:4px;justify-content:center;padding:7px 0 0}
+  .ig-pips i{width:5px;height:5px;border-radius:50%;background:#D6CDB6;transition:background .2s,transform .2s}
+  .ig-pips i.on{background:var(--olive);transform:scale(1.25)}
+  .ig-acts{display:flex;gap:13px;padding:9px 11px 0;align-items:center}
+  .ig-acts svg{width:21px;height:21px;fill:none;stroke:#26302A;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+  .ig-acts .sp{margin-left:auto}
+  .ig-likes{font-size:11.5px;font-weight:600;padding:7px 11px 0;color:var(--ink)}
+  .ig-cap{font-size:11px;padding:3px 11px 11px;line-height:1.5;color:#3d453d}
+  .ig-cap b{font-weight:600;color:var(--ink)}
+  .ig-tags{color:#38598B}
   .stylecol .print{flex:none}
   .pcap .mono-name{color:var(--terracotta,#C86B4A)}
   .swrow{display:flex;align-items:center;gap:10px;margin-top:14px}
@@ -517,7 +542,18 @@
     </div>
     <div class="fan reveal">
       <div class="stylecol">
-        <div class="print f1"><img id="styleImg" src="assets/v3/style-navy.webp" alt="Property post rendered by the AIVENA engine &mdash; tap a palette to change the style" width="900" height="1125" loading="lazy" /><div class="pcap"><span data-i18n="st_style">One villa &middot; your style</span><span class="mono-name" id="styleName">Navy &amp; Gold</span></div></div>
+        <div class="ig">
+          <div class="ig-h"><span class="ig-av">MC</span><span class="ig-id"><b>mediterraneocostahomes</b><i>Moraira, Alicante</i></span><span class="ig-dots3">&#8943;</span></div>
+          <div class="ig-m"><img id="styleImg" src="assets/v3/style-navy.webp" alt="Property post rendered by the AIVENA engine &mdash; tap a palette to change the style" width="900" height="1125" loading="lazy" /></div>
+          <div class="ig-acts">
+          <svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.9-9.7-9.1C.7 8.6 2.7 5 6.2 5c2.1 0 3.7 1.2 4.6 2.6h2.4C14.1 6.2 15.7 5 17.8 5c3.5 0 5.5 3.6 3.9 6.9C19.5 16.1 12 21 12 21z"/></svg>
+          <svg viewBox="0 0 24 24"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5c-1.6 0-3.1-.4-4.4-1.2L3 20l1.2-5.1A8.5 8.5 0 1 1 21 11.5z"/></svg>
+          <svg viewBox="0 0 24 24"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg>
+          <svg class="sp" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V4a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1z"/></svg>
+        </div>
+          <div class="ig-likes">47 Me gusta</div>
+          <div class="ig-cap"><b>mediterraneocostahomes</b> Villa in Moraira &middot; 4 hab &middot; piscina &middot; <span id="styleName">Navy &amp; Gold</span><br><span class="ig-tags">#CostaBlanca #Moraira #VillaEnVenta</span></div>
+        </div>
         <div class="swrow" role="group" aria-label="Choose a colour scheme">
           <button class="sw on" data-s="0" style="--a:#0B2545;--b:#C9A45C" aria-label="Navy and Gold"></button>
           <button class="sw" data-s="1" style="--a:#3D405B;--b:#E07A5F" aria-label="Terracotta"></button>
@@ -525,7 +561,33 @@
           <span class="swhint" data-i18n="st_tap">tap a palette &mdash; the whole design follows</span>
         </div>
       </div>
-      <div class="print f2"><img src="assets/v3/studio-carousel.webp" alt="Carousel cover rendered by the AIVENA engine" width="900" height="1125" loading="lazy" /><div class="pcap"><span data-i18n="st_p2">Carousel cover &middot; real engine render</span></div></div>
+      <div class="stylecol">
+        <div class="ig">
+          <div class="ig-h"><span class="ig-av">MC</span><span class="ig-id"><b>mediterraneocostahomes</b><i>Moraira, Alicante</i></span><span class="ig-dots3">&#8943;</span></div>
+          <div class="ig-m" id="igCar">
+            <div class="ig-track" id="igTrack">
+              <img src="assets/v3/car-s1.webp" alt="Carousel slide 1 &mdash; cover" width="720" height="900" />
+              <img src="assets/v3/car-s2.webp" alt="Carousel slide 2 &mdash; purchase taxes" width="720" height="900" loading="lazy" />
+              <img src="assets/v3/car-s3.webp" alt="Carousel slide 3 &mdash; notary and registry" width="720" height="900" loading="lazy" />
+              <img src="assets/v3/car-s4.webp" alt="Carousel slide 4 &mdash; annual costs" width="720" height="900" loading="lazy" />
+              <img src="assets/v3/car-s5.webp" alt="Carousel slide 5 &mdash; call to action" width="720" height="900" loading="lazy" />
+            </div>
+            <span class="ig-cnt" id="igCnt">1/5</span>
+            <button class="ig-ar" id="igPrev" style="left:6px" aria-label="Previous slide"><svg viewBox="0 0 24 24" width="12" height="12"><path d="M15 18l-6-6 6-6"/></svg></button>
+            <button class="ig-ar" id="igNext" style="right:6px" aria-label="Next slide"><svg viewBox="0 0 24 24" width="12" height="12"><path d="M9 6l6 6-6 6"/></svg></button>
+          </div>
+          <div class="ig-pips" id="igPips"><i class="on"></i><i></i><i></i><i></i><i></i></div>
+          <div class="ig-acts">
+          <svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.9-9.7-9.1C.7 8.6 2.7 5 6.2 5c2.1 0 3.7 1.2 4.6 2.6h2.4C14.1 6.2 15.7 5 17.8 5c3.5 0 5.5 3.6 3.9 6.9C19.5 16.1 12 21 12 21z"/></svg>
+          <svg viewBox="0 0 24 24"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5c-1.6 0-3.1-.4-4.4-1.2L3 20l1.2-5.1A8.5 8.5 0 1 1 21 11.5z"/></svg>
+          <svg viewBox="0 0 24 24"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg>
+          <svg class="sp" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V4a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1z"/></svg>
+        </div>
+          <div class="ig-likes">63 Me gusta</div>
+          <div class="ig-cap"><b>mediterraneocostahomes</b> Los costes que nadie te cuenta &mdash; gu&iacute;a para compradores<br><span class="ig-tags">#Gu&iacute;aDelComprador #CostaBlanca #ComprarEnEspa&ntilde;a</span></div>
+        </div>
+        <div class="swrow"><span class="swhint" data-i18n="st_swipe">swipe the carousel &mdash; every slide is a real render</span></div>
+      </div>
     </div>
   </div>
 </section>
@@ -770,6 +832,7 @@
     st_note: 'carrusel · post · visual de reforma — generados del propio anuncio',
     st_p1: 'Post inmobiliario · render real del motor', st_p2: 'Portada de carrusel · render real del motor',
     st_style: 'Una villa · tu estilo', st_tap: 'toca una paleta — todo el diseño la sigue',
+    st_swipe: 'desliza el carrusel — cada slide es un render real',
     rs_h: 'Cada conversación, <span class="it">medida</span>.',
     rs_1: 'primera respuesta en autopilot', rs_2: 'consultas esta semana', rs_3: 'visitas reservadas',
     rs_note: 'Semana ilustrativa del panel piloto. Con aprobación previa, la respuesta sale con tu próximo café — en autopilot, en minutos.',
@@ -1095,6 +1158,36 @@
         });
       }, { threshold: 0.4 });
       sIO.observe(sImg);
+    }
+  }
+  var igT = $('#igTrack');
+  if (igT) {
+    var igN = 5, igI = 0, igTimer = null, igTouched = false;
+    function igGo(i) {
+      igI = ((i % igN) + igN) % igN;
+      igT.style.transform = 'translateX(-' + (igI * 100) + '%)';
+      $('#igCnt').textContent = (igI + 1) + '/' + igN;
+      document.querySelectorAll('#igPips i').forEach(function (p, j) { p.classList.toggle('on', j === igI); });
+    }
+    function igStop() { igTouched = true; if (igTimer) { clearInterval(igTimer); igTimer = null; } }
+    $('#igPrev').addEventListener('click', function () { igStop(); igGo(igI - 1); });
+    $('#igNext').addEventListener('click', function () { igStop(); igGo(igI + 1); });
+    var sx = null;
+    var igM = $('#igCar');
+    igM.addEventListener('pointerdown', function (e) { sx = e.clientX; });
+    igM.addEventListener('pointerup', function (e) {
+      if (sx === null) return;
+      var dx = e.clientX - sx; sx = null;
+      if (Math.abs(dx) > 36) { igStop(); igGo(igI + (dx < 0 ? 1 : -1)); }
+    });
+    if (!rm) {
+      var igIO = new IntersectionObserver(function (es) {
+        es.forEach(function (e) {
+          if (e.isIntersecting && !igTouched && !igTimer) igTimer = setInterval(function () { igGo(igI + 1); }, 3000);
+          if (!e.isIntersecting && igTimer) { clearInterval(igTimer); igTimer = null; }
+        });
+      }, { threshold: 0.4 });
+      igIO.observe(igM);
     }
   }
   if (LANG === 'es') applyLang('es'); else renderDial('approve');

@@ -184,6 +184,31 @@
   .print{flex:1;min-width:0;background:#fff;padding:10px 10px 12px;box-shadow:var(--shadow);border-radius:8px;transition:transform .5s var(--ease)}
   .print img{width:100%;height:auto;border-radius:3px;display:block}
   .print .pcap{display:flex;justify-content:space-between;font-family:var(--mono);font-size:.6rem;color:var(--stone);padding-top:8px}
+  .weblist{background:#fff;border:1px solid #E6DFCE;border-radius:14px;overflow:hidden;box-shadow:var(--shadow-sm);margin-top:20px}
+  .wl-bar{display:flex;align-items:center;gap:5px;padding:9px 12px;border-bottom:1px solid #EFE9DA;background:#FBF8F1}
+  .wl-d{width:8px;height:8px;border-radius:50%;background:#E0D8C4}
+  .wl-url{margin-left:8px;flex:1;background:#F1EBDE;border-radius:999px;padding:3px 12px;font-family:var(--mono);font-size:.58rem;color:var(--stone);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .wl-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:11px 14px 9px}
+  .wl-title{font-family:var(--serif);font-size:1.15rem;color:var(--ink)}
+  .wl-specs{display:flex;align-items:center;gap:4px;font-size:.72rem;color:var(--stone);margin-top:2px}
+  .wl-specs svg{width:14px;height:14px;fill:none;stroke:var(--stone);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;margin-right:2px}
+  .wl-price{font-family:var(--serif);font-size:1.05rem;color:var(--olive);white-space:nowrap}
+  .weblist .ba{border-radius:0;margin-top:0;box-shadow:none}
+  .wl-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px;flex-wrap:wrap}
+  .wl-cams{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:.56rem;letter-spacing:.06em;color:var(--stone);text-transform:uppercase}
+  .wl-cams svg{width:15px;height:15px;fill:none;stroke:var(--stone);stroke-width:1.6}
+  .renochips{display:flex;gap:6px}
+  .rc{border:1px solid #D8D0BA;background:#fff;color:#7a8274;border-radius:999px;padding:6px 12px;font-size:.72rem;font-family:Inter,sans-serif;cursor:pointer;transition:all .2s}
+  .rc:hover{border-color:var(--olive)}
+  .rc.on{background:var(--olive);border-color:var(--olive);color:#F6F3EA}
+  .feedbg{position:absolute;inset:0;overflow:hidden;opacity:.09;pointer-events:none;-webkit-mask-image:radial-gradient(90% 90% at 50% 45%,#000 30%,transparent 78%);mask-image:radial-gradient(90% 90% at 50% 45%,#000 30%,transparent 78%)}
+  .feedbg img{position:absolute;width:150px;height:auto;border-radius:10px;transform:rotate(var(--r,0deg))}
+  .feedbg img:nth-child(1){left:2%;top:4%}.feedbg img:nth-child(2){left:20%;bottom:2%}.feedbg img:nth-child(3){left:44%;top:0}.feedbg img:nth-child(4){right:18%;bottom:6%}.feedbg img:nth-child(5){right:2%;top:8%}.feedbg img:nth-child(6){left:63%;top:38%}
+  .fchips{position:absolute;inset:0;pointer-events:none}
+  .fc{position:absolute;display:inline-flex;align-items:center;gap:5px;background:#fff;border:1px solid #EDE6D4;border-radius:999px;padding:5px 10px;font-size:.68rem;font-weight:600;color:var(--ink);box-shadow:0 6px 18px -8px rgba(38,48,42,.3);animation:fcf 7s ease-in-out infinite alternate;animation-delay:var(--d,0s);opacity:.9}
+  .fc svg{width:14px;height:14px;fill:none;stroke:#C86B4A;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  @keyframes fcf{from{transform:translateY(6px)}to{transform:translateY(-8px)}}
+  @media (prefers-reduced-motion: reduce){.fc{animation:none}}
   .stylecol{flex:1;min-width:0;display:flex;flex-direction:column}
   .ig{background:#fff;border:1px solid #E6DFCE;border-radius:14px;overflow:hidden;box-shadow:var(--shadow-sm)}
   .ig-h{display:flex;align-items:center;gap:8px;padding:9px 11px}
@@ -219,6 +244,7 @@
   .sw:focus-visible{outline:2px solid var(--olive);outline-offset:2px}
   .swhint{font-family:var(--mono);font-size:.58rem;letter-spacing:.08em;color:var(--stone);text-transform:uppercase}
   #styleImg{transition:opacity .3s ease}
+  #renoAfter{transition:opacity .25s ease}
   .f1{transform:rotate(-1.2deg)}
   .f2{transform:rotate(1.2deg) translateY(16px)}
   .f1:hover{transform:rotate(0deg) translateY(-4px)}
@@ -327,6 +353,8 @@
     .jsteps{grid-template-columns:1fr 1fr}
     .capcols{grid-template-columns:1fr 1fr}
     .fan{flex-direction:column;gap:16px;margin-top:10px}
+    .fchips{display:none}
+    .feedbg img{width:96px}
     .stylecol{width:100%}
     .swhint{flex-basis:100%;margin-top:2px}
     .swrow{flex-wrap:wrap}
@@ -524,19 +552,42 @@
 <!-- studio -->
 <section class="studio-tab">
   <div class="tex"><img src="assets/v3/brand-texture.webp" alt="" width="1100" height="619" loading="lazy" /></div>
+  <div class="feedbg" aria-hidden="true">
+    <img src="assets/v3/car-s2.webp" alt="" loading="lazy" style="--r:-4deg" /><img src="assets/v3/style-terracotta.webp" alt="" loading="lazy" style="--r:3deg" /><img src="assets/v3/car-s4.webp" alt="" loading="lazy" style="--r:-2deg" /><img src="assets/v3/style-forest.webp" alt="" loading="lazy" style="--r:5deg" /><img src="assets/v3/car-s5.webp" alt="" loading="lazy" style="--r:-5deg" /><img src="assets/v3/style-navy.webp" alt="" loading="lazy" style="--r:2deg" />
+  </div>
+  <div class="fchips" aria-hidden="true">
+    <span class="fc" style="left:56%;top:8%;--d:0s"><svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.9-9.7-9.1C.7 8.6 2.7 5 6.2 5c2.1 0 3.7 1.2 4.6 2.6h2.4C14.1 6.2 15.7 5 17.8 5c3.5 0 5.5 3.6 3.9 6.9C19.5 16.1 12 21 12 21z"/></svg>47</span>
+    <span class="fc" style="right:1.5%;top:17%;--d:2.2s"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5c-1.6 0-3.1-.4-4.4-1.2L3 20l1.2-5.1A8.5 8.5 0 1 1 21 11.5z"/></svg>12</span>
+    <span class="fc" style="left:44%;bottom:7%;--d:1.1s"><svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V4a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1z"/></svg></span>
+  </div>
   <div class="wrap st-in">
     <div class="reveal">
       <div class="scene-h">
         <h2 data-i18n="st_h">The Studio markets what the system <span class="it">sells</span>.</h2>
         <p class="sub" data-i18n="st_sub">On-brand posts, carousels and property cards from your own listings &mdash; and renovation visuals that show what a house could become.</p>
       </div>
-      <div class="ba" id="ba" style="--pos:50%">
-        <img src="assets/v3/reno-before.webp" alt="Empty Mediterranean living room" width="1184" height="888" loading="lazy" />
-        <div class="after"><img src="assets/v3/reno-after.webp" alt="The same room, furnished and staged" width="1184" height="888" loading="lazy" /></div>
-        <span class="balab" style="left:10px" data-i18n="st_before">BEFORE</span>
-        <span class="balab" style="right:10px" data-i18n="st_after">AFTER</span>
-        <div class="handle"></div><div class="knob">&#8596;</div>
-        <input type="range" min="0" max="100" value="50" aria-label="Compare before and after" />
+      <div class="weblist">
+        <div class="wl-bar"><span class="wl-d"></span><span class="wl-d"></span><span class="wl-d"></span><span class="wl-url">mediterraneocostahomes.com/villa-moraira</span></div>
+        <div class="wl-head">
+          <div><div class="wl-title">Villa in Moraira</div><div class="wl-specs"><svg viewBox="0 0 24 24"><path d="M3 18v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6M3 18h18M5 10V6h6v4"/></svg>4 &nbsp;<svg viewBox="0 0 24 24"><path d="M4 12h16v3a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4zM7 12V5a2 2 0 0 1 4 0"/></svg>4 &nbsp;<svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 9h5V4"/></svg>385 m&sup2;</div></div>
+          <div class="wl-price">2.450.000 &euro;</div>
+        </div>
+        <div class="ba" id="ba" style="--pos:50%">
+          <img src="assets/v3/reno-before.webp" alt="Empty Mediterranean living room" width="1184" height="888" loading="lazy" />
+          <div class="after"><img id="renoAfter" src="assets/v3/reno-after.webp" alt="The same room, furnished and staged" width="1184" height="888" loading="lazy" /></div>
+          <span class="balab" style="left:10px" data-i18n="st_before">BEFORE</span>
+          <span class="balab" style="right:10px" data-i18n="st_after">AFTER</span>
+          <div class="handle"></div><div class="knob">&#8596;</div>
+          <input type="range" min="0" max="100" value="50" aria-label="Compare before and after" />
+        </div>
+        <div class="wl-foot">
+          <span class="wl-cams"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.2"/></svg><span data-i18n="st_reno">Renovation preview &mdash; pick a style</span></span>
+          <div class="renochips">
+            <button class="rc on" data-r="reno-after" data-i18n="st_r1">Moderno</button>
+            <button class="rc" data-r="reno-after-med" data-i18n="st_r2">Mediterr&aacute;neo</button>
+            <button class="rc" data-r="reno-after-scandi" data-i18n="st_r3">Escandinavo</button>
+          </div>
+        </div>
       </div>
       <p class="muted" style="font-family:var(--mono);font-size:.62rem;margin-top:10px" data-i18n="st_note">carousel &middot; property post &middot; renovation visual &mdash; generated from the listing itself</p>
     </div>
@@ -833,6 +884,7 @@
     st_p1: 'Post inmobiliario · render real del motor', st_p2: 'Portada de carrusel · render real del motor',
     st_style: 'Una villa · tu estilo', st_tap: 'toca una paleta — todo el diseño la sigue',
     st_swipe: 'desliza el carrusel — cada slide es un render real',
+    st_reno: 'Vista de reforma — elige un estilo', st_r1: 'Moderno', st_r2: 'Mediterráneo', st_r3: 'Escandinavo',
     rs_h: 'Cada conversación, <span class="it">medida</span>.',
     rs_1: 'primera respuesta en autopilot', rs_2: 'consultas esta semana', rs_3: 'visitas reservadas',
     rs_note: 'Semana ilustrativa del panel piloto. Con aprobación previa, la respuesta sale con tu próximo café — en autopilot, en minutos.',
@@ -1159,6 +1211,18 @@
       }, { threshold: 0.4 });
       sIO.observe(sImg);
     }
+  }
+  var renoImg = $('#renoAfter');
+  if (renoImg) {
+    ['assets/v3/reno-after-med.webp', 'assets/v3/reno-after-scandi.webp'].forEach(function (u) { var i = new Image(); i.src = u; });
+    document.querySelectorAll('.rc').forEach(function (b) {
+      b.addEventListener('click', function () {
+        document.querySelectorAll('.rc').forEach(function (x) { x.classList.remove('on'); });
+        b.classList.add('on');
+        renoImg.style.opacity = 0;
+        setTimeout(function () { renoImg.src = 'assets/v3/' + b.dataset.r + '.webp'; renoImg.style.opacity = 1; }, 200);
+      });
+    });
   }
   var igT = $('#igTrack');
   if (igT) {

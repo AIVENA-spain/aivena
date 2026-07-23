@@ -127,7 +127,7 @@ export function deriveSlots(p: DeriveProperty, agency: DeriveAgency, templateId:
       brand: T(agency.name),
     };
   }
-  if (["33", "34", "35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45"].includes(templateId)) {
+  if (["33", "34", "35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46", "47", "48", "49", "50", "51", "52", "53", "54", "55"].includes(templateId)) {
     // The 3-photo family (CC-authored): Azulejos triptych / Postal stamps / Linea architect's sheet.
     // Shared fact language; per-template casing. Missing facts vanish — no orphaned lines.
     const specs = [

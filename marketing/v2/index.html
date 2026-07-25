@@ -209,6 +209,64 @@
   .fc svg{width:14px;height:14px;fill:none;stroke:#C86B4A;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
   @keyframes fcf{from{transform:translateY(6px)}to{transform:translateY(-8px)}}
   @media (prefers-reduced-motion: reduce){.fc{animation:none}}
+  .m-site{display:none}
+  @media(max-width:740px){
+    .d-site{display:none!important}
+    .m-site{display:block;background:#fff}
+    .m-site section{padding:0 22px}
+    .mono-x{font-family:var(--mono);font-size:.56rem;letter-spacing:.1em;color:#9aa094;text-transform:uppercase}
+    .ser-x{font-family:var(--serif);font-weight:400}
+    .ms-hero{padding-top:104px!important;text-align:left}
+    .ms-kick{font-family:var(--mono);font-size:.6rem;letter-spacing:.16em;color:var(--terracotta)}
+    .ms-h{font-family:var(--serif);font-weight:400;font-size:2.5rem;line-height:1.05;margin:12px 0 0;color:var(--ink)}
+    .ms-sub{font-size:.92rem;line-height:1.6;color:#4a5148;margin:14px 0 0}
+    .ms-cta{display:flex;justify-content:center;margin-top:20px;width:100%}
+    .ms-hint{text-align:center;margin-top:14px}
+    .ms-proof{margin-top:34px}
+    .ms-tabs{display:flex;gap:14px;align-items:center}
+    .mlt{border:none;background:none;padding:6px 1px;font-family:var(--mono);font-size:.68rem;letter-spacing:.12em;color:#9aa094;border-bottom:2px solid transparent;cursor:pointer}
+    .mlt.on{color:var(--olive);border-bottom-color:var(--olive)}
+    .ms-tabhint{margin-left:auto;font-family:var(--mono);font-size:.5rem;letter-spacing:.08em;color:#c9c4b4;text-transform:uppercase}
+    .ms-chat{border:1px solid rgba(30,38,32,.14);border-radius:14px;margin-top:12px;padding:13px 14px}
+    .ms-chead{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid rgba(30,38,32,.08);padding-bottom:9px;margin-bottom:11px}
+    .ms-chead b{font-size:.82rem}
+    .ms-chead .mono-x{color:var(--olive)}
+    .ms-in{font-size:.82rem;line-height:1.55;background:#F4F2EA;border-radius:10px 10px 10px 3px;padding:10px 12px;max-width:93%;margin:0;color:#3d453d}
+    .ms-count{display:flex;align-items:center;gap:8px;padding:11px 0}
+    .ms-count span{flex:1;border-top:1px solid rgba(30,38,32,.14)}
+    .ms-count em{font-style:normal;color:var(--olive)}
+    .ms-count b{color:var(--terracotta)}
+    .ms-out{font-size:.82rem;line-height:1.55;border:1px solid rgba(30,38,32,.12);border-radius:10px 10px 3px 10px;padding:10px 12px;margin:0 0 0 7%}
+    .ms-att{display:flex;align-items:center;gap:7px;margin:9px 0 0 7%}
+    .ms-att img{width:34px;height:24px;object-fit:cover;border-radius:3px}
+    .ms-att span{font-size:.7rem;color:#6d746a}
+    .ms-att i{font-style:normal;margin-left:auto;color:#b0b5ab}
+    .ms-stats{margin-top:34px}
+    .ms-stat{display:flex;gap:13px;align-items:baseline;border-top:1px solid rgba(30,38,32,.14);padding:13px 0 5px}
+    .ms-stat b{font-size:2.4rem;line-height:.9}
+    .ms-stat b i{font-style:normal;font-size:1.2rem}
+    .ms-studio{margin-top:36px}
+    .ms-h2{font-family:var(--serif);font-weight:400;font-size:1.55rem;line-height:1.15;margin:0 0 16px}
+    .m-site .weblist{margin-top:0}
+    .m-site .ms-ig{margin-top:18px}
+    .ms-style{margin-top:18px}
+    .ms-style img{width:100%;height:auto;border-radius:12px;border:1px solid rgba(30,38,32,.12);display:block}
+    .ms-style .swrow{margin-top:12px}
+    .ms-modes{margin-top:36px}
+    .ms-mr{display:flex;gap:12px;align-items:center;border-top:1px solid rgba(30,38,32,.12);padding:12px 0;cursor:pointer}
+    .ms-mr span{width:14px;height:2px;background:transparent;flex:none}
+    .ms-mr.on span{background:var(--olive)}
+    .ms-mr b{font-size:.86rem;font-weight:600;color:#8a9086}
+    .ms-mr.on b{color:var(--ink)}
+    .ms-mout{font-size:.8rem;color:#5d6458;line-height:1.6;border-left:2px solid var(--olive);padding-left:12px;margin:10px 0 0}
+    .ms-pilot{background:#1F2721;margin-top:40px;padding:32px 22px 30px!important;color:#EFEAD9}
+    .ms-ph{font-family:var(--serif);font-weight:400;font-size:1.5rem;line-height:1.2;margin:12px 0 0;color:#F6F3EA}
+    .ms-ph .itg{font-style:italic;color:var(--ochre)}
+    .ms-pl{font-size:.78rem;color:#a9ae9f;margin:10px 0 0}
+    .ms-cta2{margin-top:18px;border:1px solid rgba(246,243,234,.25)}
+    .ms-flinks{text-align:center;margin-top:18px;font-size:.72rem;color:#8f958a}
+    .ms-flinks a{color:#b5baa9;text-decoration:none}
+  }
   .stylecol{flex:1;min-width:0;display:flex;flex-direction:column}
   .ig{background:#fff;border:1px solid #E6DFCE;border-radius:14px;overflow:hidden;box-shadow:var(--shadow-sm)}
   .ig-h{display:flex;align-items:center;gap:8px;padding:9px 11px}
@@ -410,6 +468,7 @@
     </div>
   </div>
 </header>
+<div class="d-site">
 
 <!-- hero -->
 <div class="hero" id="top">
@@ -721,6 +780,96 @@
   </div>
 </footer>
 
+</div><!-- /d-site -->
+
+<!-- ═══ MOBILE SITE (compact, ≤740px) ═══ -->
+<div class="m-site">
+  <section class="ms-hero">
+    <div class="ms-kick" data-i18n="hero_kick">THE AI OPERATING SYSTEM FOR REAL ESTATE AGENCIES</div>
+    <h1 class="ms-h" data-i18n="m_h">Work done while you <span class="it">slept</span>.</h1>
+    <p class="ms-sub" data-i18n="m_sub">Enquiries answered in 13 languages, buyers matched to your listings, viewings booked, marketing made &mdash; every send under your control.</p>
+    <a class="btn btn-primary ms-cta" href="mailto:christian@aivena.es?subject=AIVENA%20pilot"><span data-i18n="m_cta">Book a demo</span> &rarr;</a>
+    <div class="ms-hint mono-x" data-i18n="m_see">SEE IT WORK &darr;</div>
+  </section>
+
+  <section class="ms-proof">
+    <div class="ms-tabs"><button class="mlt on" data-l="0">DE</button><button class="mlt" data-l="1">EN</button><button class="mlt" data-l="2">NL</button><button class="mlt" data-l="3">SV</button><span class="ms-tabhint" data-i18n="m_lang">your buyer's language</span></div>
+    <div class="ms-chat" id="msChat">
+      <div class="ms-chead"><b>Anke W.</b><span class="mono-x" id="msChip">GERMAN &middot; DETECTED</span></div>
+      <p class="ms-in" id="msQ1">Guten Abend! Ich habe die Villa in Moraira gesehen&hellip; Budget ~650.000&euro;, 3 Schlafzimmer.</p>
+      <div class="ms-count"><span></span><em class="mono-x">REPLY READY IN <b id="msCt">52</b>S</em><span></span></div>
+      <p class="ms-out" id="msQ2">Guten Abend Frau Weber, die Villa ist noch verf&uuml;gbar &mdash; 3 Schlafzimmer, Pool, 400&nbsp;m zum Meer. W&auml;re Samstag 11:00 m&ouml;glich?</p>
+      <div class="ms-att"><img src="assets/v3/prop-moraira.webp" alt="Villa Moraira" width="900" height="657" /><span data-i18n="m_att">Villa Moraira attached</span><i class="mono-x">ES MIRROR &#10003;</i></div>
+    </div>
+  </section>
+
+  <section class="ms-stats">
+    <div class="ms-stat"><b class="ser-x">52<i>s</i></b><span class="mono-x" data-i18n="m_s1">MEDIAN, ENQUIRY TO READY REPLY &middot; MEASURED LIVE</span></div>
+    <div class="ms-stat"><b class="ser-x">13</b><span class="mono-x" data-i18n="m_s2">LANGUAGES, DETECTED AUTOMATICALLY</span></div>
+    <div class="ms-stat"><b class="ser-x">100%</b><span class="mono-x" data-i18n="m_s3">OF SENDS LOGGED, IN EVERY MODE</span></div>
+  </section>
+
+  <section class="ms-studio">
+    <h2 class="ms-h2" data-i18n="m_st">The Studio markets what the system <span class="it">sells</span>.</h2>
+
+    <div class="weblist">
+      <div class="wl-bar"><span class="wl-d"></span><span class="wl-d"></span><span class="wl-d"></span><span class="wl-url">mediterraneocostahomes.com/villa-moraira</span></div>
+      <div class="wl-head"><div><div class="wl-title">Villa in Moraira</div><div class="wl-specs">4 hab &middot; 4 ba&ntilde;os &middot; 385 m&sup2;</div></div><div class="wl-price">2.450.000 &euro;</div></div>
+      <div class="ba msba" id="msBa" style="--pos:50%">
+        <img src="assets/v3/reno-before.webp" alt="Empty room" width="1184" height="888" loading="lazy" />
+        <div class="after"><img id="msRenoAfter" src="assets/v3/reno-after.webp" alt="Staged room" width="1184" height="888" loading="lazy" /></div>
+        <span class="balab" style="left:8px" data-i18n="st_before">BEFORE</span>
+        <span class="balab" style="right:8px" data-i18n="st_after">AFTER</span>
+        <div class="handle"></div><div class="knob">&#8596;</div>
+        <input type="range" min="0" max="100" value="50" aria-label="Compare before and after" />
+      </div>
+      <div class="wl-foot"><div class="renochips"><button class="rc mrc on" data-r="reno-after" data-i18n="st_r1">Moderno</button><button class="rc mrc" data-r="reno-after-med" data-i18n="st_r2">Mediterr&aacute;neo</button><button class="rc mrc" data-r="reno-after-scandi" data-i18n="st_r3">Escandinavo</button></div></div>
+    </div>
+
+    <div class="ig ms-ig">
+      <div class="ig-h"><span class="ig-av">MC</span><span class="ig-id"><b>mediterraneocostahomes</b><i>Moraira, Alicante</i></span><span class="ig-dots3">&#8943;</span></div>
+      <div class="ig-m" id="msCar">
+        <div class="ig-track" id="msTrack">
+          <img src="assets/v3/car-s1.webp" alt="Carousel slide 1" width="720" height="900" />
+          <img src="assets/v3/car-s2.webp" alt="Carousel slide 2" width="720" height="900" loading="lazy" />
+          <img src="assets/v3/car-s3.webp" alt="Carousel slide 3" width="720" height="900" loading="lazy" />
+          <img src="assets/v3/car-s4.webp" alt="Carousel slide 4" width="720" height="900" loading="lazy" />
+          <img src="assets/v3/car-s5.webp" alt="Carousel slide 5" width="720" height="900" loading="lazy" />
+        </div>
+        <span class="ig-cnt" id="msCnt">1/5</span>
+      </div>
+      <div class="ig-pips" id="msPips"><i class="on"></i><i></i><i></i><i></i><i></i></div>
+      <div class="ig-acts">
+        <svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.9-9.7-9.1C.7 8.6 2.7 5 6.2 5c2.1 0 3.7 1.2 4.6 2.6h2.4C14.1 6.2 15.7 5 17.8 5c3.5 0 5.5 3.6 3.9 6.9C19.5 16.1 12 21 12 21z"/></svg>
+        <svg viewBox="0 0 24 24"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5c-1.6 0-3.1-.4-4.4-1.2L3 20l1.2-5.1A8.5 8.5 0 1 1 21 11.5z"/></svg>
+        <svg viewBox="0 0 24 24"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg>
+        <svg class="sp" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V4a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1z"/></svg>
+      </div>
+      <div class="ig-cap"><b>mediterraneocostahomes</b> Los costes que nadie te cuenta <span class="ig-tags">#CostaBlanca</span></div>
+    </div>
+
+    <div class="ms-style">
+      <img id="msStyleImg" src="assets/v3/style-navy.webp" alt="Template render &mdash; tap a palette to change the style" width="900" height="1125" loading="lazy" />
+      <div class="swrow"><button class="sw msw on" data-s="0" style="--a:#0B2545;--b:#C9A45C" aria-label="Navy and Gold"></button><button class="sw msw" data-s="1" style="--a:#3D405B;--b:#E07A5F" aria-label="Terracotta"></button><button class="sw msw" data-s="2" style="--a:#2F4739;--b:#C98B7A" aria-label="Forest and Blush"></button><span class="swhint" data-i18n="st_tap">tap a palette &mdash; the whole design follows</span></div>
+    </div>
+  </section>
+
+  <section class="ms-modes">
+    <div class="ms-mr" data-m="0"><span></span><b data-i18n="m_m1">Draft only</b></div>
+    <div class="ms-mr on" data-m="1"><span></span><b data-i18n="m_m2">Approval-first &middot; recommended start</b></div>
+    <div class="ms-mr" data-m="2"><span></span><b data-i18n="m_m3">Autopilot &middot; unlocked as trust grows</b></div>
+    <p class="ms-mout" id="msMout" data-i18n="m_mo2">Every reply waits for your tap before it sends. You see everything AIVENA writes.</p>
+  </section>
+
+  <section class="ms-pilot">
+    <div class="ms-kick" style="color:var(--ochre)" data-i18n="pi_kick">PILOT ACCESS NOW OPEN</div>
+    <p class="ms-ph" data-i18n="m_pi">First pilot agency gets <span class="itg">1 year free</span> &mdash; because they help shape the final AIVENA system with us.</p>
+    <p class="ms-pl" data-i18n="m_pil">No fake logos. No inflated claims.</p>
+    <a class="btn btn-primary ms-cta ms-cta2" href="mailto:christian@aivena.es?subject=AIVENA%20pilot"><span data-i18n="m_cta">Book a demo</span> &rarr;</a>
+    <div class="ms-flinks"><a href="/dashboard" data-i18n="nav_login">Log in</a> &middot; <a href="privacy.html" data-i18n="ft_privacy">Privacy</a> &middot; <a href="terms.html" data-i18n="ft_terms">Terms</a> &middot; <a href="cookies.html">Cookies</a> &middot; <a href="contact.html" data-i18n="ft_contact">Contact</a></div>
+  </section>
+</div>
+
 <!-- ═══ TOUR ═══ -->
 <div class="tour" id="tour" role="dialog" aria-modal="true" aria-label="AIVENA product tour">
   <div class="tbar"></div>
@@ -885,6 +1034,10 @@
     st_style: 'Una villa · tu estilo', st_tap: 'toca una paleta — todo el diseño la sigue',
     st_swipe: 'desliza el carrusel — cada slide es un render real',
     st_reno: 'Vista de reforma — elige un estilo', st_r1: 'Moderno', st_r2: 'Mediterráneo', st_r3: 'Escandinavo',
+    m_h: 'Trabajo hecho mientras dormías.', m_sub: 'Consultas respondidas en 13 idiomas, compradores emparejados con tus anuncios, visitas agendadas, marketing creado — cada envío bajo tu control.', m_cta: 'Reserva una demo', m_see: 'MÍRALO FUNCIONAR ↓', m_lang: 'el idioma de tu comprador', m_att: 'Villa Moraira adjunta',
+    m_s1: 'MEDIANA, DE CONSULTA A RESPUESTA LISTA · MEDIDO EN VIVO', m_s2: 'IDIOMAS, DETECTADOS AUTOMÁTICAMENTE', m_s3: 'DE LOS ENVÍOS REGISTRADOS, EN TODOS LOS MODOS',
+    m_st: 'El Studio vende lo que el sistema ofrece.', m_m1: 'Solo borradores', m_m2: 'Aprobación primero · inicio recomendado', m_m3: 'Autopiloto · se desbloquea con la confianza', m_mo2: 'Cada respuesta espera tu toque antes de enviarse. Ves todo lo que AIVENA escribe.',
+    m_pi: 'La primera agencia piloto tiene 1 año gratis — porque nos ayuda a dar forma al sistema final de AIVENA.', m_pil: 'Sin logos falsos. Sin cifras infladas.',
     rs_h: 'Cada conversación, <span class="it">medida</span>.',
     rs_1: 'primera respuesta en autopilot', rs_2: 'consultas esta semana', rs_3: 'visitas reservadas',
     rs_note: 'Semana ilustrativa del panel piloto. Con aprobación previa, la respuesta sale con tu próximo café — en autopilot, en minutos.',
@@ -1221,6 +1374,83 @@
         b.classList.add('on');
         renoImg.style.opacity = 0;
         setTimeout(function () { renoImg.src = 'assets/v3/' + b.dataset.r + '.webp'; renoImg.style.opacity = 1; }, 200);
+      });
+    });
+  }
+  // ---- mobile site ----
+  if ($('#msChat')) {
+    var ML = [
+      ['GERMAN · DETECTED', 'Guten Abend! Ich habe die Villa in Moraira gesehen… Budget ~650.000€, 3 Schlafzimmer.', 'Guten Abend Frau Weber, die Villa ist noch verfügbar — 3 Schlafzimmer, Pool, 400 m zum Meer. Wäre Samstag 11:00 möglich?'],
+      ['ENGLISH · DETECTED', 'Good evening! I saw the villa in Moraira… budget ~€650,000, 3 bedrooms.', 'Good evening Mrs Weber, the villa is still available — 3 bedrooms, pool, 400 m to the sea. Would Saturday 11:00 work?'],
+      ['DUTCH · DETECTED', 'Goedenavond! Ik zag de villa in Moraira… budget ~€650.000, 3 slaapkamers.', 'Goedenavond mevrouw Weber, de villa is nog beschikbaar — 3 slaapkamers, zwembad, 400 m van zee. Zou zaterdag 11:00 uitkomen?'],
+      ['SWEDISH · DETECTED', 'God kväll! Jag såg villan i Moraira… budget ~650 000 €, 3 sovrum.', 'God kväll fru Weber, villan är fortfarande tillgänglig — 3 sovrum, pool, 400 m till havet. Skulle lördag 11:00 passa?']];
+    document.querySelectorAll('.mlt').forEach(function (b) {
+      b.addEventListener('click', function () {
+        document.querySelectorAll('.mlt').forEach(function (x) { x.classList.remove('on'); });
+        b.classList.add('on');
+        var d = ML[+b.dataset.l];
+        $('#msChip').textContent = d[0]; $('#msQ1').textContent = d[1]; $('#msQ2').textContent = d[2];
+      });
+    });
+    var msDone = false, msCt = $('#msCt');
+    new IntersectionObserver(function (es, o) {
+      es.forEach(function (e) {
+        if (e.isIntersecting && !msDone) {
+          msDone = true; msCt.textContent = '0'; var n = 0;
+          var t = setInterval(function () { n += 2; if (n >= 52) { n = 52; clearInterval(t); } msCt.textContent = n; }, 45);
+          o.disconnect();
+        }
+      });
+    }, { threshold: 0.6 }).observe(msCt);
+    var msBa = $('#msBa'), msR = $('input[type=range]', msBa);
+    msR.addEventListener('input', function () { msBa.style.setProperty('--pos', msR.value + '%'); });
+    var msRi = $('#msRenoAfter');
+    document.querySelectorAll('.mrc').forEach(function (b) {
+      b.addEventListener('click', function () {
+        document.querySelectorAll('.mrc').forEach(function (x) { x.classList.remove('on'); });
+        b.classList.add('on');
+        msRi.style.opacity = 0;
+        setTimeout(function () { msRi.src = 'assets/v3/' + b.dataset.r + '.webp'; msRi.style.opacity = 1; }, 200);
+      });
+    });
+    var msT = $('#msTrack'), msI = 0, msTm = null, msTouched = false;
+    function msGo(i) {
+      msI = ((i % 5) + 5) % 5;
+      msT.style.transform = 'translateX(-' + (msI * 100) + '%)';
+      $('#msCnt').textContent = (msI + 1) + '/5';
+      document.querySelectorAll('#msPips i').forEach(function (p, j) { p.classList.toggle('on', j === msI); });
+    }
+    var msx = null, msCarEl = $('#msCar');
+    msCarEl.addEventListener('pointerdown', function (e) { msx = e.clientX; });
+    msCarEl.addEventListener('pointerup', function (e) {
+      if (msx === null) return; var dx = e.clientX - msx; msx = null;
+      if (Math.abs(dx) > 30) { msTouched = true; if (msTm) { clearInterval(msTm); msTm = null; } msGo(msI + (dx < 0 ? 1 : -1)); }
+    });
+    if (!rm) {
+      new IntersectionObserver(function (es) {
+        es.forEach(function (e) {
+          if (e.isIntersecting && !msTouched && !msTm) msTm = setInterval(function () { msGo(msI + 1); }, 3000);
+          if (!e.isIntersecting && msTm) { clearInterval(msTm); msTm = null; }
+        });
+      }, { threshold: 0.4 }).observe(msCarEl);
+    }
+    var msSI = $('#msStyleImg');
+    document.querySelectorAll('.msw').forEach(function (b) {
+      b.addEventListener('click', function () {
+        document.querySelectorAll('.msw').forEach(function (x) { x.classList.remove('on'); });
+        b.classList.add('on');
+        msSI.style.opacity = 0;
+        setTimeout(function () { msSI.src = 'assets/v3/' + ['style-navy', 'style-terracotta', 'style-forest'][+b.dataset.s] + '.webp'; msSI.style.opacity = 1; }, 200);
+      });
+    });
+    msSI.style.transition = 'opacity .25s ease';
+    msRi.style.transition = 'opacity .25s ease';
+    var msMo = ['Nothing sends itself. AIVENA prepares every reply and files it in your inbox — you send manually.', 'Every reply waits for your tap before it sends. You see everything AIVENA writes.', 'Replies within your rules go out on their own — median 52 seconds after the enquiry. Everything else still waits for you.'];
+    document.querySelectorAll('.ms-mr').forEach(function (r) {
+      r.addEventListener('click', function () {
+        document.querySelectorAll('.ms-mr').forEach(function (x) { x.classList.remove('on'); });
+        r.classList.add('on');
+        $('#msMout').textContent = msMo[+r.dataset.m];
       });
     });
   }

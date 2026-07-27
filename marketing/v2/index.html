@@ -210,125 +210,167 @@
   @keyframes fcf{from{transform:translateY(6px)}to{transform:translateY(-8px)}}
   @media (prefers-reduced-motion: reduce){.fc{animation:none}}
   .m-site{display:none}
-  /* CONTRACT (council): no gradients except the single white->oat falloff + photo scrims; no mesh,
-     no glass, no grain, no boxes-grids; text NEVER animates; auto-motion = exactly 3 one-shots. */
+  /* MOBILE V3 CONTRACT (council 2026-07-27): quiet-luxury storytelling — sticky slide-stack.
+     Every .mv is sticky top:0, min-height 100svh, OPAQUE bg; later sections cover earlier
+     (z-index by source order). S5 is the single normal-flow section. ZERO auto animations;
+     the only motion is the scroll-driven rAF fade on the outgoing .mv-in (opacity/translateY/
+     scale — no blur, no transitions, no entrance states, no opacity:0 defaults). No ancestor
+     of .mv may gain overflow/transform/filter/perspective/contain:paint. Serif never bold —
+     bold text is Inter 600. Mono floors: 11px on cream, 12px on ink. Check-green #4A7C59
+     lives ONLY in status/match check rows. */
   @media(max-width:740px){
+    html,body{overflow-x:clip}
     .d-site{display:none!important}
     .cw-launch,.cw-panel{display:none!important}
-    .m-site{display:block;background:#fff}
+    body .hdr{background:#FBF8F1!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;box-shadow:inset 0 -1px 0 rgba(30,38,32,.08)!important}
+    body .hdr .in{padding:9px 16px}
+    .hdr .login-q{display:none}
+    .hdr .btn{box-shadow:none!important}
+    .m-site{display:block}
     .m-site :focus-visible{outline:2px solid var(--olive);outline-offset:2px}
-    .m-site section{padding:0 22px}
-    .mono-x{font-family:var(--mono);font-size:11px;letter-spacing:.09em;color:#5A6157;text-transform:uppercase}
-    .mono-o{font-family:var(--mono);font-size:12px;letter-spacing:.08em;color:var(--ochre)}
-    .terr{color:var(--terracotta)}
-    .ms-hero{padding-top:88px!important}
-    .ms-kick{font-family:var(--mono);font-size:11px;letter-spacing:.15em;color:#5A6157;text-transform:uppercase}
-    .ms-h{font-family:var(--serif);font-weight:400;font-size:2.5rem;line-height:1.05;margin:12px 0 0;color:var(--ink)}
-    .ms-strap{margin-top:10px;color:#5A6157}
-    .ms-cta{display:flex;justify-content:center;margin-top:14px;width:100%}
-    .ms-day{font-size:.8rem;color:#6d746a;text-align:center;margin:10px 0 0;line-height:1.5}
-    .ms-b1{margin-top:20px}
-    .ms-disc{font-size:11px;line-height:1.6;color:#9aa094;border-top:1px solid rgba(30,38,32,.12);border-bottom:1px solid rgba(30,38,32,.12);padding:6px 0;letter-spacing:.05em}
-    .ms-stamp{display:flex;align-items:baseline;gap:10px;margin:12px 0 7px}
-    .ms-stamp b{font-family:var(--serif);font-size:1.35rem;color:var(--ink)}
-    .ms-stamp span{font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:#5A6157;text-transform:uppercase}
-    .ms-stamp.inv b{color:#F2EFE4}
-    .ms-stamp.inv span{color:#B9BFB2;font-size:12px}
-    .ms-tabs{display:flex;gap:14px;align-items:center;margin-top:4px}
-    .mlt{border:none;background:none;padding:6px 1px;font-family:var(--mono);font-size:12px;letter-spacing:.12em;color:#9aa094;border-bottom:2px solid transparent;cursor:pointer}
-    .mlt.on{color:var(--olive);border-bottom-color:var(--olive)}
-    .ms-tabhint{margin-left:auto;font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:#9aa094;text-transform:uppercase}
-    .ms-chat{border:1px solid rgba(30,38,32,.14);border-radius:14px;margin-top:10px;padding:11px 13px}
-    .ms-chead{display:flex;justify-content:space-between;align-items:baseline;padding-bottom:7px}
-    .ms-chead b{font-size:.84rem}
-    .ms-in{font-size:.82rem;line-height:1.55;background:#F4F2EA;border-radius:10px 10px 10px 3px;padding:10px 12px;max-width:93%;margin:0;color:#3d453d}
-    .ms-count{display:flex;align-items:center;gap:8px;padding:11px 0}
-    .ms-count span{flex:1;border-top:1px solid rgba(30,38,32,.14)}
-    .ms-count em{font-style:normal;font-family:var(--mono);font-size:11px;letter-spacing:.09em;color:#5A6157}
-    .ms-count b{color:var(--terracotta)}
-    .ms-out{font-size:.82rem;line-height:1.55;border:1px solid rgba(30,38,32,.12);border-radius:10px 10px 3px 10px;padding:10px 12px;margin:0 0 0 7%}
-    .ms-att{display:flex;align-items:center;gap:7px;margin:9px 0 0 7%}
-    .ms-att img{width:34px;height:24px;object-fit:cover;border-radius:3px}
-    .ms-att span{font-size:.72rem;color:#6d746a}
-    .ms-att i{font-style:normal;margin-left:auto}
-    .ms-b23{margin-top:20px}
-    .ms-ink{background:#1F2721;border-radius:16px;padding:14px 14px 12px;color:#E8E4D6}
-    .ms-ink .mono-x{color:#B9BFB2;font-size:12px}
-    .ms-trow{display:flex;gap:10px;align-items:baseline;padding:4px 0}
-    .ms-trow span{font-size:.82rem;color:#DDD8C6;line-height:1.5}
-    .ms-trow .tkk{display:block}
-    .ms-trow .terr{font-style:normal;font-weight:600;font-size:.8rem}
-    .ms-art{background:#FDFBF5;border-radius:10px;padding:9px 11px;margin:3px 0 5px;color:var(--ink)}
-    .ms-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-    .ms-chips i{font-style:normal;background:#EFE9D8;border-radius:999px;padding:5px 11px;font-size:.78rem;color:#3d453d}
-    .ms-match{display:flex;align-items:center;gap:9px;border-top:1px solid rgba(30,38,32,.09);padding:8px 0;margin-top:8px}
-    .ms-match:first-of-type{border-top:none}
-    .ms-match img{width:44px;height:32px;object-fit:cover;border-radius:5px}
-    .ms-match div{display:flex;flex-direction:column;min-width:0}
-    .ms-match b{font-size:.8rem;color:var(--ink)}
-    .ms-match span{font-size:.7rem;color:#6d746a}
-    .ms-match em{font-style:normal;margin-left:auto;font-family:var(--mono);font-size:.82rem;color:var(--ink);font-weight:600}
-    .ms-gist{font-size:.76rem;color:#B9BFB2;margin-top:8px;line-height:1.5}
-    .ms-b45{margin-top:4px}
-    .ms-day45{border:1px solid rgba(30,38,32,.12);border-radius:12px;padding:10px 12px}
-    .ms-nud{margin-top:8px;max-width:100%}
-    .ms-slip{display:flex;gap:11px;align-items:center;border:1px solid rgba(30,38,32,.12);border-radius:12px;padding:10px 12px}
-    .ms-slip svg{width:22px;height:22px;fill:none;stroke:#5A6157;stroke-width:1.7;flex:none}
-    .ms-slip b{font-size:.82rem;color:var(--ink);display:block}
-    .ms-b6{margin-top:18px}
-    .ms-anexo{display:flex;gap:10px;align-items:flex-start;border:1px dashed rgba(30,38,32,.25);border-radius:10px;padding:8px 11px;background:#FDFBF5}
-    .ms-anexo .clip{width:16px;height:16px;fill:none;stroke:#8B857A;stroke-width:1.8;flex:none;margin-top:2px}
-    .ms-anexo b{display:block;letter-spacing:.1em}
-    .ms-anexo span{font-size:.8rem;color:#4a5148}
-    .ms-rail{position:relative;display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding:0 22px;margin:0 -22px;padding:2px 22px 6px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
-    .ms-rail::-webkit-scrollbar{display:none}
-    .ms-card{flex:0 0 87%;scroll-snap-align:center;scroll-snap-stop:always}
-    .ms2-ig .ig-h{padding:8px 10px}
-    .ms2-ig .ig-cap{padding:3px 10px 9px}
-    .ms-ar{position:absolute;top:50%;transform:translateY(-50%);width:44px;height:44px;border:none;background:transparent;display:grid;place-items:center;cursor:pointer;padding:0}
-    .ms-ar svg{fill:none;stroke:#26302A;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;background:rgba(255,255,255,.92);border-radius:50%;padding:6px;box-shadow:0 1px 5px rgba(0,0,0,.28)}
-    .ig-pips.inner i{background:#D6CDB6}
-    .ig-pips.inner i.on{background:#26302A;transform:none}
-    .ig-pips.outer{padding:0}
-    .ig-pips.outer i{width:6px;height:6px}
-    .ig-pips.outer i.on{background:var(--olive)}
-    .ms-artcard{background:#fff;border:1px solid rgba(30,38,32,.13);border-radius:14px;overflow:hidden}
-    .ms-artcard > img{width:100%;height:auto;display:block}
-    .ms-chiprow{display:flex;gap:8px;align-items:center;padding:8px 11px;flex-wrap:wrap}
-    .swhint2{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:#9aa094;text-transform:uppercase;flex-basis:100%}
-    .ms-renowrap{position:relative}
-    .ms-renowrap > img{width:100%;height:auto;display:block}
-    .ms-bef{position:absolute;top:8px;left:8px;width:88px;border-radius:6px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.35);display:block}
-    .ms-bef img{width:100%;height:auto;display:block}
-    .ms-bef i{position:absolute;left:0;right:0;bottom:0;font-style:normal;font-size:12px;color:#fff;background:rgba(31,39,33,.72);text-align:center;padding:2px 0;letter-spacing:.1em}
-    .ms-railfoot{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:8px}
-    .ms-b78{margin-top:20px;background:linear-gradient(#fff,#F6F3EA 80px);padding-bottom:22px!important}
-    .ms-receipt{background:#fff;border:1px solid rgba(30,38,32,.12);border-top:2px dashed rgba(30,38,32,.3);border-radius:4px 4px 12px 12px;padding:12px 14px}
-    .ms-rrow{display:flex;gap:12px;align-items:baseline;border-top:1px solid rgba(30,38,32,.08);padding:8px 0 3px}
-    .ms-rrow:first-of-type{border-top:none}
-    .ms-rrow b{font-family:var(--serif);font-weight:400;font-size:1.7rem;white-space:nowrap;font-variant-numeric:tabular-nums}
-    .ms-rrow .tick{width:14px;height:14px;fill:none;stroke:var(--terracotta);stroke-width:2.6;vertical-align:baseline}
-    .ms-rrow em{font-style:normal;color:#26302A;font-weight:600}
-    .ms-leg{margin-top:10px;font-size:11px;color:#9aa094;letter-spacing:.05em}
-    .ms-modes2{margin-top:6px}
-    .ms-md{display:flex;gap:12px;align-items:center;border-top:1px solid rgba(30,38,32,.12);padding:10px 0;cursor:pointer}
-    .ms-md input{position:absolute;opacity:0}
-    .ms-md .dot{width:16px;height:16px;border-radius:50%;border:2px solid #B9B4A2;flex:none;transition:border-color .18s,box-shadow .18s}
-    .ms-md input:checked ~ .dot{border-color:var(--olive);box-shadow:inset 0 0 0 4px var(--olive)}
-    .ms-md input:focus-visible ~ .dot{outline:2px solid var(--olive);outline-offset:2px}
-    .ms-md .lb b{font-size:.85rem;font-weight:600;color:#8a9086;display:block}
-    .ms-md .lb i{font-style:normal;font-size:.74rem;color:#9aa094}
-    .ms-md input:checked ~ .lb b{color:var(--ink)}
-    .ms-md input:checked ~ .lb i{color:#5d6458}
-    .ms-pilot{background:#1F2721;margin-top:22px;padding:26px 22px 18px!important;color:#EFEAD9}
-    .ms-pilot .mono-x{color:#B9BFB2;font-size:12px}
-    .ms-pilot .ms-kick{font-size:12px}
-    .ms-ph{font-family:var(--serif);font-weight:400;font-size:1.5rem;line-height:1.2;margin:12px 0 0;color:#F6F3EA}
-    .ms-ph .itg{font-style:italic;color:var(--ochre)}
-    .ms-pl{font-size:.78rem;color:#a9ae9f;margin:10px 0 0}
-    .ms-cta2{margin-top:18px;border:1px solid rgba(246,243,234,.25)}
-    .ms-flinks{text-align:center;margin-top:12px;font-size:.74rem;color:#8f958a}
-    .ms-flinks a{color:#b5baa9;text-decoration:none}
+    .mv{position:sticky;top:0;min-height:100vh;min-height:100svh;background:#FBF8F1;display:flex;flex-direction:column;justify-content:center;padding:70px 24px 26px;box-sizing:border-box}
+    .mv.flow{position:relative;min-height:0;display:block;padding:88px 24px 60px}
+    .s1{z-index:1}.s2{z-index:2}.s3{z-index:3}.s4{z-index:4}.s5{z-index:5}.s6{z-index:6}.s7{z-index:7}.s8{z-index:8}.s9{z-index:9}.s10{z-index:10}
+    .mv.dark{background:#1F2721;color:#EFEAD9}
+    .mv-in{width:100%;max-width:420px;margin:0 auto}
+    .mv-lab{display:flex;align-items:baseline;gap:10px;margin:0 0 14px}
+    .mv-lab b{font-family:var(--serif);font-weight:400;font-size:28px;line-height:1;color:var(--ink)}
+    .mv-lab span{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:#6B7268;text-transform:uppercase}
+    .dark .mv-lab b{color:#F2EFE4}
+    .dark .mv-lab span{color:#B9BFB2;font-size:12px}
+    .mv-h1{font-family:var(--serif);font-weight:400;font-size:clamp(36px,11.2vw,44px);line-height:1.08;color:var(--ink);margin:0}
+    .mv-h1 .it,.mv-h2 .it{font-style:italic;color:var(--olive)}
+    .mv-h2{font-family:var(--serif);font-weight:400;font-size:30px;line-height:1.15;color:var(--ink);margin:0 0 10px}
+    .dark .mv-h2{color:#F6F3EA}
+    .mv-p{font-size:15px;line-height:1.6;color:#6B7268;margin:0}
+    .dark .mv-p{color:#a9ae9f}
+    .mono-t{font-family:var(--mono);font-size:11px;letter-spacing:.09em;color:#6B7268;text-transform:uppercase}
+    .mvc{background:#fff;border:1px solid rgba(30,38,32,.10);border-radius:16px;box-shadow:0 1px 2px rgba(30,38,32,.05),0 8px 24px rgba(30,38,32,.05)}
+    .mvrow{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid rgba(30,38,32,.10);border-radius:14px;box-shadow:0 1px 2px rgba(30,38,32,.04);padding:12px 14px;margin-top:12px}
+    .mvrow .tx{font-size:14.5px;line-height:1.45;color:var(--ink)}
+    .mv-chip{width:40px;height:40px;border-radius:12px;border:1px solid rgba(30,38,32,.10);background:#FBF8F1;display:grid;place-items:center;flex:none}
+    .mv-chip svg{width:20px;height:20px;fill:none;stroke:var(--olive);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+    .mv-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;box-sizing:border-box;background:var(--olive);color:#F7F4EC;border-radius:999px;padding:16px 24px;font-weight:600;font-size:16px;text-decoration:none;margin-top:18px}
+    .dark .mv-btn{background:#55693F;box-shadow:inset 0 0 0 1px rgba(246,241,231,.16)}
+    .mv-ghost{display:flex;align-items:center;justify-content:center;width:100%;box-sizing:border-box;border:1px solid rgba(246,241,231,.35);border-radius:999px;padding:14px 24px;color:#EFEAD9;font-size:15px;text-decoration:none;margin-top:10px}
+    .mv-see{display:block;text-align:center;padding:12px;margin-top:4px;color:var(--ink);font-size:14.5px;text-decoration:none}
+    .mv-link{display:inline-block;padding:12px 2px;color:var(--olive);font-size:14.5px;font-weight:600;text-decoration:none}
+    .s1 .mv-p{margin-top:12px}
+    .mv-trust{margin-top:16px}
+    .mv-trust .mvrow{margin-top:10px;padding:9px 13px}
+    .mv-mono{width:56px;height:56px;border-radius:50%;background:#FBF8F1;border:1px solid rgba(74,93,58,.5);box-shadow:0 0 0 3px #fff,0 0 0 4px rgba(74,93,58,.28);display:grid;place-items:center;font-family:var(--serif);font-size:26px;color:var(--olive);flex:none}
+    .mv-mono.lg{width:120px;height:120px;font-size:54px;box-shadow:0 0 0 4px #fff,0 0 0 5px rgba(74,93,58,.28);margin:4px auto 16px}
+    .mv-chr{margin-top:14px}
+    .mv-chr .tx{font-size:14px;color:#4a5248}
+    .mv-wa{padding:14px;margin-top:4px}
+    .wa-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+    .wa-badge{width:34px;height:34px;flex:none;display:block}
+    .bub{font-size:14.5px;line-height:1.55;color:#333d35;border-radius:12px 12px 12px 4px;background:#F4F1E8;padding:12px 14px;margin:0}
+    .bub.out{background:rgba(37,211,102,.07);border-radius:12px 12px 4px 12px}
+    .bmark{display:block;text-align:right;font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--olive);text-transform:uppercase;margin-bottom:6px}
+    .wa-meta{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13.5px;color:#6B7268}
+    .wa-meta svg{width:17px;height:17px;fill:none;stroke:#6B7268;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;flex:none}
+    .mv-disc{font-size:12.5px;line-height:1.55;color:#8A9086;margin:12px 2px 0}
+    .mv-wc{display:block;width:100%;height:auto;mix-blend-mode:multiply;margin-top:4px;-webkit-mask-image:radial-gradient(130% 115% at 50% 50%,#000 62%,transparent 97%);mask-image:radial-gradient(130% 115% at 50% 50%,#000 62%,transparent 97%)}
+    .att{margin-top:10px}
+    .att img{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:cover;border-radius:10px}
+    .att-c{padding:9px 2px 0}
+    .att-c b{display:block;font-size:14.5px;color:var(--ink);font-weight:600}
+    .att-c span{font-size:13px;color:#6B7268}
+    .mv-meta{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:13.5px;color:#6B7268}
+    .mv-meta svg{width:17px;height:17px;fill:none;stroke:var(--terracotta);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;flex:none}
+    .mv-cal{padding:16px;margin-top:4px}
+    .cal-top{display:flex;align-items:center;gap:12px}
+    .cal-t{display:block;font-family:var(--serif);font-weight:400;font-size:26px;line-height:1.1;color:var(--ink)}
+    .cal-s{font-size:13px;color:#6B7268}
+    .mv-cal hr{border:none;border-top:1px solid rgba(30,38,32,.09);margin:13px 0}
+    .cal-i b{display:block;font-size:15px;font-weight:600;color:var(--ink)}
+    .cal-i span{display:block;font-size:13.5px;color:#6B7268;margin-top:1px}
+    .cal-row{display:flex;align-items:center;justify-content:space-between;font-size:14px;color:var(--ink);padding:5px 0}
+    .cal-row svg{width:19px;height:19px;fill:none;stroke:#4A7C59;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;flex:none}
+    .mv-photo{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:cover;border-radius:14px;margin-top:14px;border:1px solid rgba(30,38,32,.08)}
+    .mvrow.col{flex-direction:column;align-items:stretch;gap:0}
+    .mvrow.col .r{display:flex;align-items:center;gap:12px}
+    .mv-sub{background:#FBF8F1;border:1px solid rgba(30,38,32,.09);border-radius:12px;padding:12px;margin-top:11px}
+    .mv-sub .tag{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:#8A9086;text-transform:uppercase;margin-bottom:7px}
+    .mm-h{display:flex;align-items:baseline;justify-content:space-between}
+    .mm-h b{font-size:14.5px;font-weight:600;color:var(--ink)}
+    .pct{font-size:13px;font-weight:600;color:var(--olive)}
+    .mm-g{display:grid;grid-template-columns:1fr 1fr;gap:5px 10px;margin-top:8px}
+    .mm-g span{display:flex;align-items:center;gap:6px;font-size:12.5px;color:#5d6458}
+    .mm-g svg{width:14px;height:14px;fill:none;stroke:#4A7C59;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+    .mv-alllog{text-align:center;margin-top:18px;font-size:14px;color:var(--ink)}
+    .mv-lock{display:flex;align-items:center;justify-content:center;gap:7px;margin-top:8px;font-size:13px;color:#6B7268}
+    .mv-lock svg{width:15px;height:15px;fill:none;stroke:#6B7268;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;flex:none}
+    .mv-opt{position:relative;display:flex;align-items:center;gap:12px;background:#fff;border:1px solid rgba(30,38,32,.10);border-radius:14px;box-shadow:0 1px 2px rgba(30,38,32,.04);padding:13px 14px;min-height:76px;box-sizing:border-box;margin-top:12px;cursor:pointer}
+    .mv-opt input{position:absolute;opacity:0;pointer-events:none}
+    .mv-opt .olb{flex:1;min-width:0}
+    .mv-opt .olb b{display:block;font-size:15px;font-weight:600;color:var(--ink)}
+    .mv-opt .olb i{font-style:normal;display:block;font-size:13px;line-height:1.45;color:#6B7268;margin-top:2px}
+    .mv-opt .rad{width:20px;height:20px;border-radius:50%;border:2px solid #B9B4A2;flex:none;box-sizing:border-box}
+    .mv-opt.on{border:1.5px solid var(--olive);background:rgba(74,93,58,.04)}
+    .mv-opt.on .rad{border:6px solid var(--olive)}
+    .mv-opt.off{opacity:.55;cursor:default}
+    .mv-opt:has(input:focus-visible){outline:2px solid var(--olive);outline-offset:2px}
+    .mv-opt input:focus-visible ~ .rad{outline:2px solid var(--olive);outline-offset:3px}
+    .mv-stack{position:relative;margin-top:12px;padding-top:14px}
+    .stk{position:absolute;background:#fff;border:1px solid rgba(30,38,32,.10);border-radius:16px;box-shadow:0 1px 2px rgba(30,38,32,.05);height:64px}
+    .stk.b1{left:16px;right:10px;top:0;transform:rotate(-2deg)}
+    .stk.b2{left:6px;right:18px;top:6px;transform:rotate(1.6deg)}
+    .ig-post{position:relative;overflow:hidden}
+    .ig-h2{display:flex;align-items:center;gap:9px;padding:11px 13px}
+    .ig-h2 b{font-size:13.5px;font-weight:600;color:var(--ink)}
+    .ig-h2 .dots{margin-left:auto;color:#9aa094;letter-spacing:2px;font-weight:700}
+    .ig-h2 svg{width:20px;height:20px;display:block}
+    .ig-post > img{display:block;width:100%;height:auto;aspect-ratio:16/10;object-fit:cover}
+    .ig-f{padding:11px 13px}
+    .ig-f b{display:block;font-size:14.5px;font-weight:600;color:var(--ink)}
+    .ig-f span{font-size:12.5px;color:#6B7268}
+    .mv-ch{display:flex;justify-content:space-between;margin-top:16px}
+    .mv-ch .c{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11px;color:#6B7268}
+    .mv-ch .bx{width:40px;height:40px;border-radius:12px;border:1px solid rgba(30,38,32,.10);background:#fff;display:grid;place-items:center}
+    .mv-ch .bx svg{width:20px;height:20px;display:block}
+    .mv-ch .bx svg.ln{fill:none;stroke:var(--olive);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+    .mv-met{display:flex;align-items:center;gap:14px;padding:14px 16px;margin-top:12px}
+    .mv-met .ic{width:44px;height:44px;border-radius:50%;border:1px solid rgba(30,38,32,.12);display:grid;place-items:center;flex:none}
+    .mv-met .ic svg{width:21px;height:21px;fill:none;stroke:var(--ink);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+    .mv-met b{font-family:var(--serif);font-weight:400;font-size:44px;line-height:1;color:var(--ink)}
+    .mv-met .cap{font-size:12.5px;line-height:1.45;color:#6B7268;margin-top:3px}
+    .mv-fine{text-align:center;font-size:13px;color:#8A9086;margin-top:16px}
+    .s9 .mv-in{text-align:center}
+    .s9 .mvrow{text-align:left}
+    .s9 .mv-p{margin-top:10px}
+    .gold{font-style:italic;color:var(--ochre)}
+    .mv-fl{text-align:center;margin-top:22px;font-size:13px;color:#8f958a}
+    .mv-fl a{color:#b5baa9;text-decoration:none;padding:8px 2px}
+    .mv-cop{text-align:center;font-family:var(--mono);font-size:12px;letter-spacing:.08em;color:#7b8177;margin-top:10px}
+  }
+  @media (max-width:740px) and (max-height:700px){
+    .mv{padding-top:62px}
+    .mv-h1{font-size:36px}
+    .mv-h2{font-size:26px}
+    .s1 .mv-p{margin-top:10px;font-size:14px}
+    .mv-trust{margin-top:12px}
+    .mv-trust .mvrow{margin-top:8px;padding:7px 12px}
+    .mv-btn{margin-top:14px;padding:14px 24px}
+    .mv-see{padding:8px;margin-top:2px}
+    .mv-chr{margin-top:8px;padding:8px 12px}
+    .mv-mono{width:48px;height:48px;font-size:22px}
+    .mv-wc{max-height:150px;object-fit:contain}
+    .att img{aspect-ratio:2/1}
+    .mv-photo{aspect-ratio:2/1}
+    .ig-post > img{aspect-ratio:16/9}
+    .mv-mono.lg{width:96px;height:96px;font-size:44px;margin-bottom:12px}
+    .s9 .mvrow{margin-top:8px;padding:7px 12px}
+    .mv-met{padding:11px 14px;margin-top:10px}
+    .mv-met b{font-size:38px}
+    .mv-stack{margin-top:8px}
+    .ig-h2{padding:9px 12px}
+    .ig-f{padding:9px 12px}
+    .mv-ch{margin-top:12px}
+    .mv-ch .bx{width:36px;height:36px}
+    .bub{font-size:14px;padding:10px 12px}
+    .mv-opt{padding:10px 12px;margin-top:9px}
   }
   .stylecol{flex:1;min-width:0;display:flex;flex-direction:column}
   .ig{background:#fff;border:1px solid #E6DFCE;border-radius:14px;overflow:hidden;box-shadow:var(--shadow-sm)}
@@ -519,6 +561,21 @@
 <symbol id="ic-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.4"/><path d="M12 3.2v2.6 M12 18.2v2.6 M3.2 12h2.6 M18.2 12h2.6 M5.9 5.9l1.9 1.9 M16.2 16.2l1.9 1.9 M18.1 5.9l-1.9 1.9 M7.8 16.2l-1.9 1.9"/></symbol>
 <symbol id="ic-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.2"/><path d="M3.8 12h16.4 M12 3.8c3.1 3.4 3.1 13 0 16.4 M12 3.8c-3.1 3.4-3.1 13 0 16.4"/></symbol>
 <symbol id="ic-check" viewBox="0 0 24 24"><path d="M5 12.8l4.4 4.4L19 7.4"/></symbol>
+<symbol id="mv-shield" viewBox="0 0 24 24"><path d="M12 3.5l6.5 2.4v5.2c0 4.4-2.9 7.4-6.5 9.4-3.6-2-6.5-5-6.5-9.4V5.9L12 3.5z M9 12l2.2 2.2 4.3-4.7"/></symbol>
+<symbol id="mv-person" viewBox="0 0 24 24"><circle cx="12" cy="8.2" r="3.4"/><path d="M5.5 20c.8-3.7 3.4-5.5 6.5-5.5s5.7 1.8 6.5 5.5"/></symbol>
+<symbol id="mv-pin" viewBox="0 0 24 24"><path d="M12 21s-6.5-5.3-6.5-10a6.5 6.5 0 1113 0c0 4.7-6.5 10-6.5 10z"/><circle cx="12" cy="10.7" r="2.2"/></symbol>
+<symbol id="mv-at" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.4"/><path d="M15.4 12v1.3a2.5 2.5 0 005 0V12a8.4 8.4 0 10-3.3 6.7"/></symbol>
+<symbol id="mv-bolt" viewBox="0 0 24 24"><path d="M13 3L5.5 13.5H11L10 21l7.5-10.5H12L13 3z"/></symbol>
+<symbol id="mv-coffee" viewBox="0 0 24 24"><path d="M5 9h11v5.5a4.5 4.5 0 01-4.5 4.5h-2A4.5 4.5 0 015 14.5V9z M16 10h1.6a2.2 2.2 0 010 4.4H16 M8 4.5v2.2 M11.5 4v2.7"/></symbol>
+<symbol id="mv-lock" viewBox="0 0 24 24"><rect x="6" y="10.5" width="12" height="9" rx="2"/><path d="M8.5 10.5V8a3.5 3.5 0 017 0v2.5"/><circle cx="12" cy="15" r="1.1"/></symbol>
+<symbol id="mv-mail" viewBox="0 0 24 24"><rect x="3.5" y="6" width="17" height="12" rx="2"/><path d="M4.5 7.5L12 13l7.5-5.5"/></symbol>
+<symbol id="mv-doc" viewBox="0 0 24 24"><path d="M7 3.5h7l4 4v13H7v-17z M14 3.5V8h4 M9.8 12.2h4.4 M9.8 15.6h4.4"/></symbol>
+<symbol id="mv-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="5.8"/><path d="M15.4 15.4L20 20"/></symbol>
+<symbol id="mv-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.2"/><path d="M12 7.6V12l3 2.1"/></symbol>
+<symbol id="mv-translate" viewBox="0 0 24 24"><path d="M3.5 6h9 M8 4v2 M5.5 6c.6 3 2.4 5.6 5.3 7.5 M10.5 6c-.7 2.7-2.6 5.1-5.6 7.2 M13 20l3.7-8.5L20.5 20 M14.3 17h4.9"/></symbol>
+<symbol id="mv-building" viewBox="0 0 24 24"><path d="M5 20V5h9v15 M14 9.5h5V20 M3.5 20h17 M8 8.5h3 M8 11.5h3 M8 14.5h3"/></symbol>
+<symbol id="mv-checkc" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.2"/><path d="M8.4 12.4l2.5 2.5 4.8-5.6"/></symbol>
+<symbol id="mv-clockbolt" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.2"/><path d="M13 7.5l-2.8 4h2.3L11.2 16l3.1-4.4h-2.4L13 7.5z"/></symbol>
 </defs></svg>
 <!-- header -->
 <header class="hdr" id="hdr">
@@ -527,7 +584,7 @@
     <div class="hdr-right">
       <span class="lang-t" id="langToggle" role="button" tabindex="0" aria-label="Change language"><b data-lang-en>EN</b> / <span data-lang-es>ES</span></span>
       <a class="login-q" href="/dashboard" data-i18n="nav_login">Log in</a>
-      <a class="btn btn-primary" style="padding:10px 18px;font-size:.85rem" href="mailto:christian@aivena.es?subject=AIVENA%20pilot" data-i18n="nav_demo">Book a demo</a>
+      <a class="btn btn-primary" style="padding:10px 18px;font-size:.85rem" href="mailto:christian@aivena.es?subject=AIVENA%20demo" data-i18n="nav_demo">Book a demo</a>
     </div>
   </div>
 </header>
@@ -541,7 +598,7 @@
       <h1 data-i18n="hero_h1">Every enquiry handled &mdash; from first message to booked <span class="it">viewing</span>.</h1>
       <p class="h2sub" data-i18n="hero_sub">AIVENA reads every enquiry, understands the buyer, matches your listings, prepares the reply in their language, and keeps follow-ups, viewings and content moving &mdash; at the automation level you choose.</p>
       <div class="ctas">
-        <a class="btn btn-primary" href="mailto:christian@aivena.es?subject=AIVENA%20pilot"><span data-i18n="nav_demo">Book a demo</span> <span class="arr">&rarr;</span></a>
+        <a class="btn btn-primary" href="mailto:christian@aivena.es?subject=AIVENA%20demo"><span data-i18n="nav_demo">Book a demo</span> <span class="arr">&rarr;</span></a>
         <button class="btn btn-ghost" data-tour-open><span class="play-c"><span class="play-t"></span></span> <span data-i18n="cta_tour">See AIVENA in action</span></button>
       </div>
       <div class="h2trust"><span class="dot"></span> <span data-i18n="hero_trust">Pilot access now open &middot; you choose the automation level</span></div>
@@ -790,7 +847,7 @@
       <h2 style="margin-top:10px" data-i18n="pi_h">The first pilot agency gets <span class="it">1 year free</span>.</h2>
       <p class="isub" data-i18n="pi_sub">Because they help shape the final AIVENA system with us. Built with selected real estate agencies. No fake logos. No inflated claims. Just a serious pilot offer.</p>
       <div class="ictas">
-        <a class="btn btn-primary" href="mailto:christian@aivena.es?subject=AIVENA%20pilot"><span data-i18n="nav_demo">Book a demo</span> <span class="arr">&rarr;</span></a>
+        <a class="btn btn-primary" href="mailto:christian@aivena.es?subject=AIVENA%20demo"><span data-i18n="nav_demo">Book a demo</span> <span class="arr">&rarr;</span></a>
         <button class="btn btn-ghost" data-tour-open><span class="play-c"><span class="play-t"></span></span> <span data-i18n="cta_tour">See AIVENA in action</span></button>
       </div>
     </div>
@@ -810,7 +867,7 @@
         <div class="pi"><span class="m">&#10003;</span><span data-i18n="pr_3">A direct line to the team building it &mdash; your feedback shapes the roadmap</span></div>
       </div>
       <div class="pfree" data-i18n="pr_free"><b style="color:var(--ink)">First pilot agency: 1 year free</b> &mdash; because they help shape the final AIVENA system with us.</div>
-      <div style="margin-top:18px"><a class="btn btn-primary" style="width:100%;justify-content:center" href="mailto:christian@aivena.es?subject=AIVENA%20pilot"><span data-i18n="nav_demo">Book a demo</span> <span class="arr">&rarr;</span></a></div>
+      <div style="margin-top:18px"><a class="btn btn-primary" style="width:100%;justify-content:center" href="mailto:christian@aivena.es?subject=AIVENA%20demo"><span data-i18n="nav_demo">Book a demo</span> <span class="arr">&rarr;</span></a></div>
     </div>
     <div class="faq reveal">
       <details><summary data-i18n="fq1">Does AIVENA send messages without me?</summary><div class="fa" data-i18n="fq1a">Only if you tell it to. Every agency chooses its automation level &mdash; most pilots start approval-first, where nothing reaches a client without a one-tap yes. Autopilot unlocks step by step, within rules you set, with every action logged.</div></details>
@@ -837,7 +894,7 @@
 <footer class="sfoot">
   <div class="in">
     <span class="brand" style="font-family:var(--serif);letter-spacing:.2em">AIVENA</span>
-    <span><a href="/dashboard" data-i18n="nav_login">Log in</a> &nbsp;&middot;&nbsp; <a href="mailto:christian@aivena.es?subject=AIVENA%20pilot" data-i18n="nav_demo">Book a demo</a> &nbsp;&middot;&nbsp; <a href="contact.html" data-i18n="ft_contact">Contact</a></span>
+    <span><a href="/dashboard" data-i18n="nav_login">Log in</a> &nbsp;&middot;&nbsp; <a href="mailto:christian@aivena.es?subject=AIVENA%20demo" data-i18n="nav_demo">Book a demo</a> &nbsp;&middot;&nbsp; <a href="contact.html" data-i18n="ft_contact">Contact</a></span>
     <span><a href="privacy.html" data-i18n="ft_privacy">Privacy</a> &nbsp;&middot;&nbsp; <a href="terms.html" data-i18n="ft_terms">Terms</a> &nbsp;&middot;&nbsp; <a href="cookies.html">Cookies</a></span>
     <span class="muted" data-i18n="ft_line">Designed for modern Costa Blanca agencies</span>
   </div>
@@ -845,131 +902,188 @@
 
 </div><!-- /d-site -->
 
-<!-- ═══ MOBILE SITE (case file, ≤740px) ═══ -->
+<!-- ═══ MOBILE SITE (quiet-luxury storytelling v3, ≤740px) ═══ -->
 <div class="m-site">
-  <section class="ms-hero">
-    <div class="ms-kick" data-i18n="hero_kick">THE AI OPERATING SYSTEM FOR REAL ESTATE AGENCIES</div>
-    <h1 class="ms-h" data-i18n="m_h">Work done while you <span class="it">slept</span>.</h1>
-    <div class="ms-strap mono-x" data-i18n="m2_jobs">EIGHT JOBS. ONE SYSTEM.</div>
-    <a class="btn btn-primary ms-cta" href="mailto:christian@aivena.es?subject=AIVENA%20pilot"><span data-i18n="m2_cta">Message us</span> &rarr;</a>
-    <p class="ms-day" data-i18n="m2_day">Day or night, Christian answers you &mdash; a person, not a form.</p>
-  </section>
 
-  <section class="ms-b1">
-    <div class="ms-disc mono-x" data-i18n="m2_demo">DEMONSTRATION CASE &mdash; AGENCY AND CLIENT ARE INVENTED &mdash; TERRACOTTA TIMES ARE MEASURED MEDIANS</div>
-    <div class="ms-stamp"><b>01</b><span data-i18n="m2_c1">AI INBOX &middot; 52 s REPLY</span></div>
-    <div class="ms-tabs"><button class="mlt on" data-l="0">DE</button><button class="mlt" data-l="1">EN</button><button class="mlt" data-l="2">NL</button><button class="mlt" data-l="3">SV</button><span class="ms-tabhint" data-i18n="m_lang">your buyer's language</span></div>
-    <div class="ms-chat" id="msChat">
-      <div class="ms-chead"><b>Anke W.</b><span class="mono-x" id="msChip">GERMAN &middot; DETECTED</span></div>
-      <div class="mono-x" style="margin-bottom:9px">TUE 22:47 &middot; <span data-i18n="m2_off">OFFICE CLOSED</span></div>
-      <p class="ms-in" id="msQ1">Guten Abend! Ich habe die Villa in Moraira gesehen&hellip; Budget ~650.000&euro;, 3 Schlafzimmer.</p>
-      <div class="ms-count"><span></span><em class="mono-x">REPLY READY IN <b id="msCt">52</b>S</em><span></span></div>
-      <p class="ms-out" id="msQ2">Guten Abend Frau Weber, die Villa ist noch verf&uuml;gbar &mdash; 3 Schlafzimmer, Pool, 400&nbsp;m zum Meer. W&auml;re Samstag 11:00 m&ouml;glich?</p>
-      <div class="ms-att"><img src="assets/v3/prop-moraira.webp" alt="Villa Moraira" width="900" height="657" loading="lazy" /><span data-i18n="m_att">Villa Moraira attached</span><i class="mono-x">ES MIRROR &#10003;</i></div>
-    </div>
-  </section>
-
-  <section class="ms-b23">
-    <div class="ms-ink">
-      <div class="ms-trow"><i class="mono-o">22:47:00</i><span data-i18n="m2_t0">the enquiry lands</span></div>
-      <div class="ms-stamp inv"><b>02</b><span data-i18n="m2_c2">CLIENT PROFILE</span></div>
-      <div class="ms-art">
-        <div class="mono-x" style="color:#8a9086">22:47:19 &middot; <span data-i18n="m2_ext">EXTRACTED &amp; REMEMBERED</span></div>
-        <div class="ms-chips"><i>&euro;650k</i><i>Moraira</i><i>3 hab</i><i>Deutsch</i></div>
+  <section class="mv s1">
+    <div class="mv-in">
+      <h1 class="mv-h1" data-i18n="mv_h">Work done while you <span class="it">slept</span>.</h1>
+      <p class="mv-p" data-i18n="mv_sub">AI that answers enquiries, follows up, matches properties and books viewings &mdash; so your agency never misses a client.</p>
+      <div class="mv-trust">
+        <div class="mvrow"><span class="mv-chip"><svg aria-hidden="true" focusable="false"><use href="#mv-shield"/></svg></span><span class="tx" data-i18n="mv_t1">Approval-first by default</span></div>
+        <div class="mvrow"><span class="mv-chip"><svg aria-hidden="true" focusable="false"><use href="#ic-pen"/></svg></span><span class="tx" data-i18n="mv_t2">Every action logged</span></div>
+        <div class="mvrow"><span class="mv-chip"><svg aria-hidden="true" focusable="false"><use href="#mv-person"/></svg></span><span class="tx" data-i18n="mv_t3">Human support from real people</span></div>
       </div>
-      <div class="ms-stamp inv"><b>03</b><span data-i18n="m2_c3">CATALOGUE MATCHES</span></div>
-      <div class="ms-art">
-        <div class="mono-x" style="color:#8a9086">22:47:38 &middot; <span data-i18n="m2_rank">RANKED, WITH REASONS</span></div>
-        <div class="ms-match"><img src="assets/v3/prop-moraira.webp" alt="" width="900" height="657" loading="lazy" /><div><b>Villa &middot; Moraira</b><span data-i18n="m2_r1">price &middot; area &middot; sea views</span></div><em>97%</em></div>
+      <a class="mv-btn" href="mailto:christian@aivena.es?subject=AIVENA%20pilot"><span data-i18n="mv_cta">Message us</span> &rarr;</a>
+      <a class="mv-see" href="#mv2" data-i18n="mv_see">See it work &darr;</a>
+      <div class="mvrow mv-chr"><span class="mv-mono" aria-hidden="true">C</span><span class="tx" data-i18n="mv_chr">Christian answers you &mdash; a person, not a form.</span></div>
+    </div>
+  </section>
+
+  <section class="mv s2" id="mv2">
+    <div class="mv-in">
+      <div class="mv-lab"><b>01</b><span data-i18n="mv_l1">ENQUIRY RECEIVED</span></div>
+      <h2 class="mv-h2" data-i18n="mv_h2a">It starts with a message.</h2>
+      <div class="mvc mv-wa">
+        <div class="wa-h">
+          <svg class="wa-badge" viewBox="0 0 34 34" role="img" aria-label="WhatsApp"><circle cx="17" cy="17" r="17" fill="#25D366"/><path fill="#fff" d="M17 7.5c-5.2 0-9.4 4.2-9.4 9.4 0 1.8.5 3.4 1.4 4.9L7.5 26.5l4.8-1.4c1.4.8 3 1.2 4.7 1.2 5.2 0 9.4-4.2 9.4-9.4S22.2 7.5 17 7.5zm4.9 13.2c-.2.6-1.2 1.1-1.7 1.2-.5.1-1 .2-3.3-.7-2.8-1.1-4.6-4-4.7-4.2-.1-.2-1.1-1.5-1.1-2.9s.7-2 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5s.8 1.9.8 2c.1.1.1.3 0 .5l-.4.6c-.1.2-.3.4-.1.7.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.4 2.4 1.5.3.1.5.1.7-.1l1-1.2c.2-.3.4-.2.7-.1l2 1c.3.1.5.2.5.3.1.2.1.7-.1 1.3z"/></svg>
+          <span class="mono-t">22:47</span>
+        </div>
+        <p class="bub">Guten Abend! Ich habe die Villa in Moraira gesehen. Budget ~650.000&nbsp;&euro;, 3&nbsp;Schlafzimmer. W&auml;re Samstag 11:00 m&ouml;glich?</p>
+        <div class="wa-meta"><svg aria-hidden="true" focusable="false"><use href="#mv-pin"/></svg><span>Moraira, Alicante</span></div>
+        <div class="wa-meta"><svg aria-hidden="true" focusable="false"><use href="#mv-at"/></svg><span data-i18n="mv_det">German detected</span></div>
       </div>
-      <div class="ms-trow"><i class="mono-o">22:47:52</i><span class="tkk"><span data-i18n="m2_t52">draft ready, in German</span> &middot; <b class="terr" data-i18n="m2_med">ready in 52 s &mdash; exactly the median</b></span></div>
-      <div class="ms-gist" data-i18n="m2_gist">ES: &ldquo;La villa sigue disponible &mdash; &iquest;le viene bien el s&aacute;bado a las 11:00?&rdquo;</div>
+      <p class="mv-disc" data-i18n="mv_disc">A demonstration case &mdash; the reply time is our measured median, from enquiry to ready draft.</p>
+      <img class="mv-wc" src="assets/v3/watercolor.webp" alt="" width="900" height="514" loading="lazy" />
     </div>
   </section>
 
-  <section class="ms-b45">
-    <div class="ms-stamp"><b>04</b><span data-i18n="m2_c4">AUTO FOLLOW-UP</span></div>
-    <div class="ms-day45">
-      <div class="mono-x">THU 17:00 &middot; <span data-i18n="m2_quiet">she stopped writing &middot; AIVENA didn&rsquo;t</span></div>
-      <p class="ms-in ms-nud">Hallo Frau Weber! H&auml;tten Sie diese Woche Zeit f&uuml;r eine Besichtigung der Villa?</p>
-    </div>
-    <div class="ms-stamp"><b>05</b><span data-i18n="m2_c5">VIEWING BOOKED</span></div>
-    <div class="ms-slip">
-      <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg>
-      <div><b>S&Aacute;B 11:00 &middot; Villa Moraira &middot; Anke W.</b><span class="mono-x" data-i18n="m2_rem">REMINDER SENT &middot; TEAM CALENDAR</span></div>
+  <section class="mv s3">
+    <div class="mv-in">
+      <div class="mv-lab"><b>02</b><span data-i18n="mv_l2">REPLY READY (52S)</span></div>
+      <h2 class="mv-h2" data-i18n="mv_h2b">The reply is ready in 52 seconds.</h2>
+      <div class="mvc mv-wa">
+        <div class="bub out">
+          <span class="bmark" data-i18n="mv_rdy">22:47:52 &middot; READY</span>
+          Guten Abend Frau Weber, die Villa ist noch verf&uuml;gbar &mdash; 3&nbsp;Schlafzimmer, Pool, 400&nbsp;m zum Meer. W&auml;re Samstag 11:00 m&ouml;glich?
+        </div>
+        <div class="att">
+          <img src="assets/v3/villa-dusk.webp" alt="Villa Moraira at dusk, pool and lit interior" width="720" height="450" loading="lazy" />
+          <div class="att-c"><b>Villa Moraira</b><span data-i18n="mv_spec">&euro;650,000 &middot; 3 Beds &middot; Pool &middot; Sea views</span></div>
+        </div>
+      </div>
+      <div class="mv-meta"><svg aria-hidden="true" focusable="false"><use href="#mv-bolt"/></svg><span data-i18n="mv_med">Reply ready in 52 seconds &mdash; measured median.</span></div>
     </div>
   </section>
 
-  <section class="ms-b6">
-    <div class="ms-anexo">
-      <svg viewBox="0 0 24 24" class="clip"><path d="M21 12.5 12.4 21a5.6 5.6 0 0 1-8-8L13 4.4a3.7 3.7 0 0 1 5.3 5.3L9.7 18.3a1.9 1.9 0 0 1-2.7-2.7l8-8"/></svg>
-      <div><b class="mono-x">ANEXO &middot; <span data-i18n="m2_anx1">THE SAME TUESDAY, 14:00</span></b><span data-i18n="m2_anx2">The post Anke saw? Made here.</span></div>
+  <section class="mv s4">
+    <div class="mv-in">
+      <div class="mv-lab"><b>03</b><span data-i18n="mv_l3">VIEWING BOOKED</span></div>
+      <h2 class="mv-h2" data-i18n="mv_h2c">The viewing is booked.</h2>
+      <div class="mvc mv-cal">
+        <div class="cal-top">
+          <span class="mv-chip"><svg aria-hidden="true" focusable="false"><use href="#ic-cal"/></svg></span>
+          <div><b class="cal-t">S&Aacute;B 11:00</b><span class="cal-s" data-i18n="mv_sat">Saturday 11:00</span></div>
+        </div>
+        <hr />
+        <div class="cal-i"><b>Villa Moraira</b><span>Moraira, Alicante</span><span>Anke W.</span></div>
+        <hr />
+        <div class="cal-row"><span data-i18n="mv_cu">Calendar updated</span><svg aria-hidden="true" focusable="false"><use href="#mv-checkc"/></svg></div>
+        <div class="cal-row"><span data-i18n="mv_rs">Reminder sent</span><svg aria-hidden="true" focusable="false"><use href="#mv-checkc"/></svg></div>
+      </div>
+      <img class="mv-photo" src="assets/v3/pool-sunset.webp" alt="Pool terrace with palms and sea view at golden hour" width="800" height="500" loading="lazy" />
     </div>
-    <div class="ms-stamp"><b>06</b><span data-i18n="m2_c6">STUDIO</span> <i class="mono-x" style="margin-left:auto" data-i18n="m2_swp">SWIPE &middot; 3 DEMOS</i></div>
-    <div class="ms-rail" id="msRail">
-      <div class="ms-card">
-        <div class="ig ms2-ig">
-          <div class="ig-h"><span class="ig-av">MC</span><span class="ig-id"><b>mediterraneocostahomes</b><i>Moraira, Alicante</i></span><span class="ig-dots3">&#8943;</span></div>
-          <div class="ig-m">
-            <div class="ig-track" id="m2Track">
-              <img src="assets/v3/car-s1.webp" alt="Carousel slide 1" width="720" height="900" />
-              <img src="assets/v3/car-s2.webp" alt="Carousel slide 2" width="720" height="900" loading="lazy" />
-              <img src="assets/v3/car-s3.webp" alt="Carousel slide 3" width="720" height="900" loading="lazy" />
-              <img src="assets/v3/car-s4.webp" alt="Carousel slide 4" width="720" height="900" loading="lazy" />
-              <img src="assets/v3/car-s5.webp" alt="Carousel slide 5" width="720" height="900" loading="lazy" />
-            </div>
-            <span class="ig-cnt" id="m2Cnt">1/5</span>
-            <button class="ms-ar" id="m2Prev" style="left:2px" aria-label="Previous slide"><svg viewBox="0 0 24 24" width="13" height="13"><path d="M15 18l-6-6 6-6"/></svg></button>
-            <button class="ms-ar" id="m2Next" style="right:2px" aria-label="Next slide"><svg viewBox="0 0 24 24" width="13" height="13"><path d="M9 6l6 6-6 6"/></svg></button>
+  </section>
+
+  <section class="mv flow s5">
+    <div class="mv-in">
+      <div class="mv-lab"><b>04</b><span data-i18n="mv_l4">HOW IT WORKED</span></div>
+      <h2 class="mv-h2" data-i18n="mv_h2d">Here&rsquo;s what AIVENA handled.</h2>
+      <div class="mvrow"><span class="mv-chip"><svg aria-hidden="true" focusable="false"><use href="#mv-translate"/></svg></span><span class="tx" data-i18n="mv_w1">Detected German and adjusted tone</span></div>
+      <div class="mvrow"><span class="mv-chip"><svg aria-hidden="true" focusable="false"><use href="#mv-doc"/></svg></span><span class="tx" data-i18n="mv_w2">Remembered budget, area and preferences</span></div>
+      <div class="mvrow col">
+        <div class="r"><span class="mv-chip"><svg aria-hidden="true" focusable="false"><use href="#mv-search"/></svg></span><span class="tx" data-i18n="mv_w3">Matched the best property</span></div>
+        <div class="mv-sub">
+          <span class="tag" data-i18n="mv_tag">FROM THE DEMONSTRATION CASE</span>
+          <div class="mm-h"><b>Villa Moraira</b><span class="pct" data-i18n="mv_pct">97% match</span></div>
+          <div class="mm-g">
+            <span><svg aria-hidden="true" focusable="false"><use href="#ic-check"/></svg><span data-i18n="mv_g1">Budget fits</span></span>
+            <span><svg aria-hidden="true" focusable="false"><use href="#ic-check"/></svg><span data-i18n="mv_g2">Area requested</span></span>
+            <span><svg aria-hidden="true" focusable="false"><use href="#ic-check"/></svg><span data-i18n="mv_g3">Sea views</span></span>
+            <span><svg aria-hidden="true" focusable="false"><use href="#ic-check"/></svg><span data-i18n="mv_g4">Available</span></span>
           </div>
-          <div class="ig-pips inner" id="m2Pips"><i class="on"></i><i></i><i></i><i></i><i></i></div>
-          <div class="ig-cap"><b>mediterraneocostahomes</b> Los costes que nadie te cuenta <span class="ig-tags">#CostaBlanca</span></div>
         </div>
       </div>
-      <div class="ms-card">
-        <div class="ms-artcard">
-          <img id="m2Style" src="assets/v3/style-navy.webp" alt="Template render" width="900" height="1125" loading="lazy" />
-          <div class="ms-chiprow"><button class="sw m2sw on" data-s="0" style="--a:#0B2545;--b:#C9A45C" aria-label="Navy and Gold"></button><button class="sw m2sw" data-s="1" style="--a:#3D405B;--b:#E07A5F" aria-label="Terracotta"></button><button class="sw m2sw" data-s="2" style="--a:#2F4739;--b:#C98B7A" aria-label="Forest and Blush"></button><span class="swhint2" data-i18n="st_tap">tap a palette &mdash; the whole design follows</span></div>
-        </div>
+      <div class="mvrow"><span class="mv-chip"><svg aria-hidden="true" focusable="false"><use href="#mv-clock"/></svg></span><span class="tx" data-i18n="mv_w4">Prepared the perfect reply and suggested a time</span></div>
+      <div class="mv-alllog" data-i18n="mv_all">All automatically. All logged.</div>
+      <div class="mv-lock"><svg aria-hidden="true" focusable="false"><use href="#mv-lock"/></svg><span data-i18n="mv_rec">Every action is recorded.</span></div>
+    </div>
+  </section>
+
+  <section class="mv s6">
+    <div class="mv-in">
+      <div class="mv-lab"><b>05</b><span data-i18n="mv_l5">YOU STAY IN CONTROL</span></div>
+      <h2 class="mv-h2" id="mvCtrlH" data-i18n="mv_h2e">You choose how AIVENA works.</h2>
+      <div role="radiogroup" aria-labelledby="mvCtrlH">
+      <label class="mv-opt"><input type="radio" name="mvmode" value="draft" /><span class="mv-chip"><svg aria-hidden="true" focusable="false"><use href="#mv-doc"/></svg></span><span class="olb"><b data-i18n="mv_o1">Draft only</b><i data-i18n="mv_o1b">AIVENA writes. You send.</i></span><span class="rad"></span></label>
+      <label class="mv-opt on"><input type="radio" name="mvmode" value="approval" checked /><span class="mv-chip"><svg aria-hidden="true" focusable="false"><use href="#mv-coffee"/></svg></span><span class="olb"><b data-i18n="mv_o2">Approval-first</b><i data-i18n="mv_o2b">Recommended. Review and approve in one tap.</i></span><span class="rad"></span></label>
+      <label class="mv-opt off"><input type="radio" name="mvmode" value="auto" disabled /><span class="mv-chip"><svg aria-hidden="true" focusable="false"><use href="#ic-cal"/></svg></span><span class="olb"><b data-i18n="mv_o3">Autopilot</b><i data-i18n="mv_o3b">Enable it later when you trust it.</i></span><span class="rad"></span></label>
       </div>
-      <div class="ms-card">
-        <div class="ms-artcard">
-          <div class="wl-bar"><span class="wl-d"></span><span class="wl-d"></span><span class="wl-d"></span><span class="wl-url">mediterraneocostahomes.com/villa-moraira</span></div>
-          <div class="ms-renowrap">
-            <img id="m2Reno" src="assets/v3/reno-m-mod.webp" alt="Staged room" width="800" height="600" loading="lazy" />
-            <span class="ms-bef"><img src="assets/v3/reno-m-bef.webp" alt="Before: empty room" width="800" height="600" loading="lazy" /><i class="mono-x" data-i18n="st_before">BEFORE</i></span>
+      <div class="mv-lock"><svg aria-hidden="true" focusable="false"><use href="#mv-lock"/></svg><span data-i18n="mv_lock">Every message can be reviewed. Every send is logged.</span></div>
+    </div>
+  </section>
+
+  <section class="mv s7">
+    <div class="mv-in">
+      <div class="mv-lab"><b>06</b><span data-i18n="mv_l6">MORE THAN THE INBOX</span></div>
+      <h2 class="mv-h2" data-i18n="mv_h2f">One property. Every channel.</h2>
+      <p class="mv-p" data-i18n="mv_ch">AIVENA turns one listing into content, messages and follow-ups automatically.</p>
+      <div class="mv-stack">
+        <div class="stk b1"></div>
+        <div class="stk b2"></div>
+        <div class="mvc ig-post">
+          <div class="ig-h2">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#C13584" stroke-width="1.8" stroke-linecap="round" role="img" aria-label="Instagram"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="3.8"/><circle cx="17.2" cy="6.8" r="1" fill="#C13584" stroke="none"/></svg>
+            <b>Instagram</b><span class="dots" aria-hidden="true">&middot;&middot;&middot;</span>
           </div>
-          <div class="ms-chiprow"><button class="rc m2rc on" data-r="reno-m-mod" data-i18n="st_r1">Moderno</button><button class="rc m2rc" data-r="reno-m-med" data-i18n="st_r2">Mediterr&aacute;neo</button><button class="rc m2rc" data-r="reno-m-sca" data-i18n="st_r3">Escandinavo</button></div>
+          <img src="assets/v3/villa-dusk.webp" alt="Villa Moraira post image" width="720" height="450" loading="lazy" />
+          <div class="ig-f"><b data-i18n="mv_igt">Villa in Moraira</b><span data-i18n="mv_spec">&euro;650,000 &middot; 3 Beds &middot; Pool &middot; Sea views</span></div>
         </div>
       </div>
-    </div>
-    <div class="ms-railfoot"><div class="ig-pips outer" id="m2Rpips"><i class="on"></i><i></i><i></i></div><span class="mono-x" id="m2Rcnt">1/3</span></div>
-  </section>
-
-  <section class="ms-b78">
-    <div class="ms-stamp"><b>07</b><span data-i18n="m2_c7">ANALYTICS</span></div>
-    <div class="ms-receipt">
-      <div class="mono-x" style="text-align:center;letter-spacing:.2em" data-i18n="m2_log">FROM THE LOG &middot; MON 09:00</div>
-      <div class="ms-rrow"><b class="terr"><i id="m2N1">52</i>&nbsp;s <svg class="tick" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></b><span class="mono-x" data-i18n="m_s1">MEDIAN, ENQUIRY TO READY REPLY &middot; MEASURED LIVE</span></div>
-      <div class="ms-rrow"><b class="terr"><i id="m2N2">13</i> <svg class="tick" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></b><span class="mono-x" data-i18n="m_s2">LANGUAGES, DETECTED AUTOMATICALLY</span></div>
-      <div class="ms-leg mono-x" data-i18n="m2_leg">terracotta + tick = measured live</div>
-    </div>
-    <div class="ms-stamp"><b>08</b><span data-i18n="m2_c8">CONTROL</span></div>
-    <div class="ms-modes2">
-      <label class="ms-md"><input type="radio" name="msmode" value="0" /><span class="dot"></span><span class="lb"><b data-i18n="m2_m1">Draft only</b><i data-i18n="m2_m1b">It writes. You send.</i></span></label>
-      <label class="ms-md"><input type="radio" name="msmode" value="1" checked /><span class="dot"></span><span class="lb"><b data-i18n="m2_m2">Approval-first &middot; recommended start</b><i data-i18n="m2_m2b">One tap over coffee.</i></span></label>
-      <label class="ms-md"><input type="radio" name="msmode" value="2" /><span class="dot"></span><span class="lb"><b data-i18n="m2_m3">Autopilot</b><i data-i18n="m2_m3b">unlocked as trust grows</i></span></label>
-      <div class="mono-x" style="margin-top:10px" data-i18n="m2_log2">100% OF SENDS LOGGED.</div>
+      <div class="mv-ch">
+        <span class="c"><span class="bx"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="#C13584" stroke-width="1.8" stroke-linecap="round"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="3.8"/><circle cx="17.2" cy="6.8" r="1" fill="#C13584" stroke="none"/></svg></span>Instagram</span>
+        <span class="c"><span class="bx"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect x="2.5" y="2.5" width="19" height="19" rx="5" fill="#1877F2"/><path fill="#fff" d="M15.6 12.6l.4-2.5h-2.4V8.5c0-.7.3-1.4 1.4-1.4h1.1V4.9s-1-.2-1.9-.2c-2 0-3.3 1.2-3.3 3.4v1.9H8.7v2.5h2.2V19h2.7v-6.4h2z"/></svg></span>Facebook</span>
+        <span class="c"><span class="bx"><svg aria-hidden="true" focusable="false" viewBox="0 0 34 34"><circle cx="17" cy="17" r="15.5" fill="#25D366"/><path fill="#fff" d="M17 8.4c-4.8 0-8.6 3.8-8.6 8.6 0 1.6.5 3.1 1.3 4.5l-1.4 4.1 4.4-1.3c1.3.7 2.7 1.1 4.3 1.1 4.8 0 8.6-3.8 8.6-8.6S21.8 8.4 17 8.4zm4.5 12.1c-.2.5-1.1 1-1.6 1.1-.4.1-.9.2-3-.6-2.6-1-4.2-3.7-4.3-3.9-.1-.2-1-1.4-1-2.7s.6-1.9.9-2.1c.2-.3.5-.3.6-.3h.5c.1 0 .3 0 .5.5.2.5.7 1.7.8 1.8.1.1.1.3 0 .4l-.4.6c-.1.2-.2.4-.1.6.2.3.7 1.2 1.6 1.9 1.1.9 1.9 1.3 2.2 1.4.3.1.4.1.6-.1l.9-1.1c.2-.2.4-.2.6-.1l1.8.9c.3.1.5.2.5.3.1.2.1.6-.1 1.2z"/></svg></span>WhatsApp</span>
+        <span class="c"><span class="bx"><svg class="ln" aria-hidden="true" focusable="false"><use href="#mv-mail"/></svg></span><span data-i18n="mv_cem">Email</span></span>
+        <span class="c"><span class="bx"><svg class="ln" aria-hidden="true" focusable="false"><use href="#mv-doc"/></svg></span><span data-i18n="mv_cbr">Brochure</span></span>
+      </div>
+      <a class="mv-see" href="#mvNums"><span data-i18n="mv_num">See the numbers</span> &rarr;</a>
     </div>
   </section>
 
-  <section class="ms-pilot">
-    <div class="ms-kick" style="color:var(--ochre)" data-i18n="pi_kick">PILOT ACCESS NOW OPEN</div>
-    <p class="ms-ph" data-i18n="m_pi">First pilot agency gets <span class="itg">1 year free</span> &mdash; because they help shape the final AIVENA system with us.</p>
-    <p class="ms-pl" data-i18n="m_pil">No fake logos. No inflated claims.</p>
-    <a class="btn btn-primary ms-cta ms-cta2" href="mailto:christian@aivena.es?subject=AIVENA%20pilot"><span data-i18n="m2_cta">Message us</span> &rarr;</a>
-    <div class="ms-flinks"><a href="/dashboard" data-i18n="nav_login">Log in</a> &middot; <a href="privacy.html" data-i18n="ft_privacy">Privacy</a> &middot; <a href="terms.html" data-i18n="ft_terms">Terms</a> &middot; <a href="cookies.html">Cookies</a> &middot; <a href="contact.html" data-i18n="ft_contact">Contact</a></div>
+  <section class="mv s8" id="mvNums">
+    <div class="mv-in">
+      <div class="mv-lab"><b>07</b><span data-i18n="mv_l7">MEASURED. NOT EXAGGERATED.</span></div>
+      <h2 class="mv-h2" data-i18n="mv_h2g">Real numbers. Nothing invented.</h2>
+      <div class="mvc mv-met"><span class="ic"><svg aria-hidden="true" focusable="false"><use href="#mv-clockbolt"/></svg></span><div><b>52s</b><div class="cap" data-i18n="mv_m1">Median enquiry-to-ready-reply &middot; measured live</div></div></div>
+      <div class="mvc mv-met"><span class="ic"><svg aria-hidden="true" focusable="false"><use href="#ic-globe"/></svg></span><div><b>13</b><div class="cap" data-i18n="mv_m2">Languages detected automatically</div></div></div>
+      <div class="mvc mv-met"><span class="ic"><svg aria-hidden="true" focusable="false"><use href="#mv-shield"/></svg></span><div><b>100%</b><div class="cap" data-i18n="mv_m3">Every send logged &middot; Nothing is hidden</div></div></div>
+      <div class="mv-fine" data-i18n="mv_fine">No fake logos. No inflated claims. Just real results.</div>
+    </div>
   </section>
+
+  <section class="mv s9">
+    <div class="mv-in">
+      <div class="mv-lab"><b>08</b><span data-i18n="mv_l8">A PERSON, NOT A CHATBOT.</span></div>
+      <h2 class="mv-h2" data-i18n="mv_h2h">Real support from a real person.</h2>
+      <span class="mv-mono lg" aria-hidden="true">C</span>
+      <p class="mv-p" data-i18n="mv_ch2">Christian helps set up AIVENA, trains the system with you and stays your point of contact.</p>
+      <div class="mvrow"><span class="mv-chip"><svg aria-hidden="true" focusable="false"><use href="#mv-person"/></svg></span><span class="tx" data-i18n="mv_s1">Personal onboarding</span></div>
+      <div class="mvrow"><span class="mv-chip"><svg aria-hidden="true" focusable="false"><use href="#mv-shield"/></svg></span><span class="tx" data-i18n="mv_t1">Approval-first by default</span></div>
+      <div class="mvrow"><span class="mv-chip"><svg aria-hidden="true" focusable="false"><use href="#mv-building"/></svg></span><span class="tx" data-i18n="mv_s3">Built for real estate agencies</span></div>
+      <p class="mv-p" style="margin-top:14px" data-i18n="mv_long">We&rsquo;re with you, long term.</p>
+      <a class="mv-link" href="mailto:christian@aivena.es?subject=AIVENA%20pilot"><span data-i18n="mv_msg">Message Christian</span> &rarr;</a>
+    </div>
+  </section>
+
+  <section class="mv dark s10">
+    <div class="mv-in">
+      <div class="mv-lab"><b>09</b><span data-i18n="mv_l9">PILOT ACCESS</span></div>
+      <h2 class="mv-h2" data-i18n="mv_h2i">The first pilot agency gets <em class="gold">1 year free.</em></h2>
+      <p class="mv-p" data-i18n="mv_why">Because they help shape the final AIVENA system with us.</p>
+      <a class="mv-btn" href="mailto:christian@aivena.es?subject=AIVENA%20pilot"><span data-i18n="mv_cta">Message us</span> &rarr;</a>
+      <a class="mv-ghost" href="mailto:christian@aivena.es?subject=AIVENA%20demo" data-i18n="nav_demo">Book a demo</a>
+      <div class="mv-fl">
+        <a href="/dashboard" data-i18n="nav_login">Log in</a> &middot;
+        <a href="privacy.html" data-i18n="ft_privacy">Privacy</a> &middot;
+        <a href="terms.html" data-i18n="ft_terms">Terms</a> &middot;
+        <a href="cookies.html">Cookies</a> &middot;
+        <a href="contact.html" data-i18n="ft_contact">Contact</a>
+      </div>
+      <div class="mv-cop">&copy; 2026 AIVENA</div>
+    </div>
+  </section>
+
 </div>
 
 <!-- ═══ TOUR ═══ -->
@@ -1136,21 +1250,40 @@
     st_style: 'Una villa · tu estilo', st_tap: 'toca una paleta — todo el diseño la sigue',
     st_swipe: 'desliza el carrusel — cada slide es un render real',
     st_reno: 'Vista de reforma — elige un estilo', st_r1: 'Moderno', st_r2: 'Mediterráneo', st_r3: 'Escandinavo',
-    m_h: 'Trabajo hecho mientras dormías.', m_sub: 'Consultas respondidas en 13 idiomas, compradores emparejados con tus anuncios, visitas agendadas, marketing creado — cada envío bajo tu control.', m_cta: 'Reserva una demo', m_see: 'MÍRALO FUNCIONAR ↓', m_lang: 'el idioma de tu comprador', m_att: 'Villa Moraira adjunta',
-    m_s1: 'MEDIANA, DE CONSULTA A RESPUESTA LISTA · MEDIDO EN VIVO', m_s2: 'IDIOMAS, DETECTADOS AUTOMÁTICAMENTE', m_s3: 'DE LOS ENVÍOS REGISTRADOS, EN TODOS LOS MODOS',
-    m_st: 'El Studio vende lo que el sistema ofrece.', m_m1: 'Solo borradores', m_m2: 'Aprobación primero · inicio recomendado', m_m3: 'Autopiloto · se desbloquea con la confianza', m_mo2: 'Cada respuesta espera tu toque antes de enviarse. Ves todo lo que AIVENA escribe.',
-    m_pi: 'La primera agencia piloto tiene 1 año gratis — porque nos ayuda a dar forma al sistema final de AIVENA.', m_pil: 'Sin logos falsos. Sin cifras infladas.',
-    m2_jobs: 'OCHO TRABAJOS. UN SISTEMA.', m2_cta: 'Escríbenos', m2_day: 'De día y de noche, te responde Christian — una persona, no un formulario.',
-    m2_demo: 'CASO DE DEMOSTRACIÓN — AGENCIA Y CLIENTE INVENTADOS — LOS TIEMPOS EN TERRACOTA SON MEDIANAS MEDIDAS',
-    m2_c1: 'BANDEJA IA · RESPUESTA 52 s', m2_off: 'OFICINA CERRADA', m2_t0: 'llega la consulta', m2_c2: 'FICHA DE CLIENTE', m2_ext: 'EXTRAÍDO Y RECORDADO',
-    m2_c3: 'MATCHES DEL CATÁLOGO', m2_rank: 'ORDENADOS, CON RAZONES', m2_r1: 'precio · zona · vistas al mar', m2_r2: 'precio · terraza · vistas al mar',
-    m2_t52: 'borrador listo, en alemán', m2_med: 'lista en 52 s — justo la mediana', m2_gist: 'ES: «La villa sigue disponible — ¿le viene bien el sábado a las 11:00?»',
-    m2_c4: 'SEGUIMIENTO AUTOMÁTICO', m2_quiet: 'ella dejó de escribir · AIVENA no', m2_c5: 'CITA AGENDADA', m2_rem: 'RECORDATORIO ENVIADO · AGENDA DEL EQUIPO',
-    m2_anx1: 'EL MISMO MARTES, 14:00', m2_anx2: '¿El post que vio la compradora? Se hizo aquí.', m2_c6: 'ESTUDIO', m2_swp: 'DESLIZA · 3 DEMOS',
-    m2_c7: 'ANALÍTICA', m2_log: 'DEL REGISTRO · LUN 09:00', m2_ill: 'consultas · matches · visita, una semana tipo', m2_st: '[EJEMPLO ILUSTRATIVO]',
-    m2_leg: 'terracota + tick = medido en vivo',
-    m2_c8: 'CONTROL', m2_m1: 'Solo borradores', m2_m1b: 'Él escribe. Tú envías.', m2_m2: 'Aprobación primero · inicio recomendado', m2_m2b: 'Un toque con el café.',
-    m2_m3: 'Autopiloto', m2_m3b: 'se desbloquea con la confianza', m2_log2: '100% DE ENVÍOS REGISTRADOS.',
+    mv_h: 'Trabajo hecho mientras <span class="it">dormías</span>.',
+    mv_sub: 'IA que responde consultas, hace seguimiento, empareja propiedades y agenda visitas — para que tu agencia nunca pierda un cliente.',
+    mv_t1: 'Aprobación primero, por defecto', mv_t2: 'Cada acción queda registrada', mv_t3: 'Soporte humano de personas reales',
+    mv_cta: 'Escríbenos', mv_see: 'Míralo funcionar ↓',
+    mv_chr: 'Te responde Christian — una persona, no un formulario.',
+    mv_l1: 'CONSULTA RECIBIDA', mv_h2a: 'Todo empieza con un mensaje.',
+    mv_det: 'Alemán detectado',
+    mv_disc: 'Un caso de demostración — el tiempo de respuesta es nuestra mediana medida, de consulta a borrador listo.',
+    mv_l2: 'RESPUESTA LISTA (52 S)', mv_h2b: 'La respuesta está lista en 52 segundos.',
+    mv_rdy: '22:47:52 · LISTA',
+    mv_spec: '€650.000 · 3 dorm. · Piscina · Vistas al mar',
+    mv_med: 'Respuesta lista en 52 segundos — mediana medida.',
+    mv_l3: 'VISITA AGENDADA', mv_h2c: 'La visita queda agendada.',
+    mv_sat: 'Sábado 11:00', mv_cu: 'Agenda actualizada', mv_rs: 'Recordatorio enviado',
+    mv_l4: 'CÓMO LO HIZO', mv_h2d: 'Esto es lo que gestionó AIVENA.',
+    mv_w1: 'Detectó alemán y ajustó el tono', mv_w2: 'Recordó presupuesto, zona y preferencias', mv_w3: 'Emparejó la mejor propiedad', mv_w4: 'Preparó la respuesta perfecta y propuso una hora',
+    mv_tag: 'DEL CASO DE DEMOSTRACIÓN', mv_pct: '97% de coincidencia',
+    mv_g1: 'Encaja el presupuesto', mv_g2: 'Zona solicitada', mv_g3: 'Vistas al mar', mv_g4: 'Disponible',
+    mv_all: 'Todo automático. Todo registrado.', mv_rec: 'Cada acción queda grabada.',
+    mv_l5: 'TÚ TIENES EL CONTROL', mv_h2e: 'Tú eliges cómo trabaja AIVENA.',
+    mv_o1: 'Solo borradores', mv_o1b: 'AIVENA escribe. Tú envías.', mv_o2: 'Aprobación primero', mv_o2b: 'Recomendado. Revisa y aprueba en un toque.', mv_o3: 'Autopiloto', mv_o3b: 'Actívalo más adelante, cuando confíes.',
+    mv_lock: 'Cada mensaje puede revisarse. Cada envío queda registrado.',
+    mv_l6: 'MÁS QUE LA BANDEJA', mv_h2f: 'Una propiedad. Todos los canales.',
+    mv_ch: 'AIVENA convierte un anuncio en contenido, mensajes y seguimientos automáticamente.',
+    mv_igt: 'Villa en Moraira', mv_num: 'Ver los números', mv_cem: 'Email', mv_cbr: 'Folleto',
+    mv_l7: 'MEDIDO. SIN EXAGERAR.', mv_h2g: 'Números reales. Nada inventado.',
+    mv_m1: 'Mediana de consulta a respuesta lista · medido en vivo', mv_m2: 'Idiomas detectados automáticamente', mv_m3: 'Cada envío registrado · Nada se oculta',
+    mv_fine: 'Sin logos falsos. Sin cifras infladas. Solo resultados reales.',
+    mv_l8: 'UNA PERSONA, NO UN CHATBOT.', mv_h2h: 'Soporte real de una persona real.',
+    mv_ch2: 'Christian configura AIVENA contigo, entrena el sistema con tu equipo y sigue siendo tu punto de contacto.',
+    mv_s1: 'Onboarding personal', mv_s3: 'Hecho para agencias inmobiliarias',
+    mv_long: 'Estamos contigo, a largo plazo.', mv_msg: 'Escribe a Christian',
+    mv_l9: 'ACCESO PILOTO', mv_h2i: 'La primera agencia piloto tiene <em class="gold">1 año gratis.</em>',
+    mv_why: 'Porque nos ayuda a dar forma al sistema final de AIVENA.',
     rs_h: 'Cada conversación, <span class="it">medida</span>.',
     rs_1: 'primera respuesta en autopilot', rs_2: 'consultas esta semana', rs_3: 'visitas reservadas',
     rs_note: 'Semana ilustrativa del panel piloto. Con aprobación previa, la respuesta sale con tu próximo café — en autopilot, en minutos.',
@@ -1386,7 +1519,7 @@
     var next = $('#tnext');
     if (i === scenes.length - 1) {
       next.textContent = LANG === 'es' ? 'Reservar demo' : 'Book a demo';
-      next.onclick = function () { location.href = 'mailto:christian@aivena.es?subject=AIVENA%20pilot'; };
+      next.onclick = function () { location.href = 'mailto:christian@aivena.es?subject=AIVENA%20demo'; };
     } else {
       next.innerHTML = '&rarr;';
       next.onclick = function () { go(cur + 1); stopAuto(); };
@@ -1490,139 +1623,43 @@
       });
     });
   }
-  // ---- mobile case file ----
-  if ($('#msChat')) {
-    var ML = [
-      ['GERMAN · DETECTED', 'Guten Abend! Ich habe die Villa in Moraira gesehen… Budget ~650.000€, 3 Schlafzimmer.', 'Guten Abend Frau Weber, die Villa ist noch verfügbar — 3 Schlafzimmer, Pool, 400 m zum Meer. Wäre Samstag 11:00 möglich?'],
-      ['ENGLISH · DETECTED', 'Good evening! I saw the villa in Moraira… budget ~€650,000, 3 bedrooms.', 'Good evening Mrs Weber, the villa is still available — 3 bedrooms, pool, 400 m to the sea. Would Saturday 11:00 work?'],
-      ['DUTCH · DETECTED', 'Goedenavond! Ik zag de villa in Moraira… budget ~€650.000, 3 slaapkamers.', 'Goedenavond mevrouw Weber, de villa is nog beschikbaar — 3 slaapkamers, zwembad, 400 m van zee. Zou zaterdag 11:00 uitkomen?'],
-      ['SWEDISH · DETECTED', 'God kväll! Jag såg villan i Moraira… budget ~650 000 €, 3 sovrum.', 'God kväll fru Weber, villan är fortfarande tillgänglig — 3 sovrum, pool, 400 m till havet. Skulle lördag 11:00 passa?']];
-    document.querySelectorAll('.mlt').forEach(function (b) {
-      b.addEventListener('click', function () {
-        document.querySelectorAll('.mlt').forEach(function (x) { x.classList.remove('on'); });
-        b.classList.add('on');
-        var d = ML[+b.dataset.l];
-        $('#msChip').textContent = d[0]; $('#msQ1').textContent = d[1]; $('#msQ2').textContent = d[2];
+  // ---- mobile v3: quiet-luxury storytelling (council-bound: zero auto animations,
+  // all motion scroll-driven; single rAF, batched reads then writes, passive listeners) ----
+  (function () {
+    if (!document.querySelector('.m-site')) return;
+    // control radios: selection follows the user (Autopilot stays disabled)
+    document.querySelectorAll('.mv-opt input:not([disabled])').forEach(function (r) {
+      r.addEventListener('change', function () {
+        document.querySelectorAll('.mv-opt').forEach(function (l) { l.classList.remove('on'); });
+        if (r.checked) r.closest('.mv-opt').classList.add('on');
       });
     });
-    // AUTO ONE-SHOT 1/3: the 52s counter (static 52 in markup; JS counts up once)
-    var msCt = $('#msCt');
-    if (!rm) {
-      var msDone = false;
-      new IntersectionObserver(function (es, o) {
-        es.forEach(function (e) {
-          if (e.isIntersecting && !msDone) {
-            msDone = true; msCt.textContent = '0'; var n = 0;
-            var t = setInterval(function () { n += 2; if (n >= 52) { n = 52; clearInterval(t); } msCt.textContent = n; }, 45);
-            o.disconnect();
-          }
-        });
-      }, { threshold: 0.6 }).observe(msCt);
+    // outgoing-slide fade: p = clamp01((VH - next.top) / (VH * .9))
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var mq = window.matchMedia('(max-width:740px)');
+    var secs = Array.prototype.slice.call(document.querySelectorAll('.m-site .mv'));
+    if (secs.length < 2) return;
+    var VH = window.innerHeight, tick = false;
+    window.addEventListener('resize', function () { VH = window.innerHeight; }, { passive: true });
+    function frame() {
+      tick = false;
+      if (!mq.matches) return;
+      var tops = [];
+      for (var i = 0; i < secs.length - 1; i++) tops[i] = secs[i + 1].getBoundingClientRect().top;
+      for (var j = 0; j < secs.length - 1; j++) {
+        var p = (VH - tops[j]) / (VH * 0.9);
+        p = p < 0 ? 0 : p > 1 ? 1 : p;
+        var el = secs[j].firstElementChild;
+        if (p > 0) {
+          el.style.opacity = (1 - 0.7 * p).toFixed(3);
+          el.style.transform = 'translateY(' + (-12 * p).toFixed(1) + 'px) scale(' + (1 - 0.015 * p).toFixed(4) + ')';
+        } else if (el.style.opacity !== '') {
+          el.style.opacity = ''; el.style.transform = '';
+        }
+      }
     }
-    // Inner IG carousel: TAP ONLY (council: no pointer delta handlers inside the rail)
-    var m2T = $('#m2Track'), m2I = 0;
-    function m2Go(i) {
-      m2I = Math.max(0, Math.min(4, i));
-      m2T.style.transform = 'translateX(-' + (m2I * 100) + '%)';
-      $('#m2Cnt').textContent = (m2I + 1) + '/5';
-      document.querySelectorAll('#m2Pips i').forEach(function (p, j) { p.classList.toggle('on', j === m2I); });
-    }
-    $('#m2Prev').addEventListener('click', function () { m2Go(m2I - 1); });
-    $('#m2Next').addEventListener('click', function () { m2Go(m2I + 1); });
-    // Outer rail: scroll-driven pips (no scrollend on iOS -> debounced scroll)
-    var rail = $('#msRail'), railTouched = false, railTimer = null, railDeb = null;
-    function railIdx() {
-      var cards = rail.querySelectorAll('.ms-card');
-      var mid = rail.scrollLeft + rail.clientWidth / 2, best = 0, bd = 1e9;
-      cards.forEach(function (c, i) { var cm = c.offsetLeft + c.offsetWidth / 2; var d = Math.abs(cm - mid); if (d < bd) { bd = d; best = i; } });
-      return best;
-    }
-    rail.addEventListener('scroll', function () {
-      clearTimeout(railDeb);
-      railDeb = setTimeout(function () {
-        var i = railIdx();
-        $('#m2Rcnt').textContent = (i + 1) + '/3';
-        document.querySelectorAll('#m2Rpips i').forEach(function (p, j) { p.classList.toggle('on', j === i); });
-      }, 90);
-    }, { passive: true });
-    function railStop() { railTouched = true; if (railTimer) { clearTimeout(railTimer); railTimer = null; } }
-    rail.addEventListener('pointerdown', railStop, { passive: true });
-    rail.addEventListener('touchstart', railStop, { passive: true });
-    // AUTO ONE-SHOT 2/3: single rail pass 1->2->3, then stop forever
-    if (!rm) {
-      var passDone = false;
-      new IntersectionObserver(function (es, o) {
-        es.forEach(function (e) {
-          if (e.isIntersecting && !passDone && !railTouched) {
-            passDone = true; o.disconnect();
-            var cards = rail.querySelectorAll('.ms-card');
-            railTimer = setTimeout(function () {
-              if (railTouched) return;
-              rail.scrollTo({ left: cards[1].offsetLeft - 22, behavior: 'smooth' });
-              railTimer = setTimeout(function () {
-                if (railTouched) return;
-                rail.scrollTo({ left: cards[2].offsetLeft - 22, behavior: 'smooth' });
-              }, 2800);
-            }, 2200);
-          }
-        });
-      }, { threshold: 0.5 }).observe(rail);
-    }
-    // prewarm variants on first rail interaction / idle
-    var warmed = false;
-    function warm() {
-      if (warmed) return; warmed = true;
-      ['style-terracotta', 'style-forest', 'reno-m-med', 'reno-m-sca'].forEach(function (n) { var i = new Image(); i.src = 'assets/v3/' + n + '.webp'; });
-    }
-    rail.addEventListener('pointerdown', warm, { passive: true, once: true });
-    if ('requestIdleCallback' in window) requestIdleCallback(warm, { timeout: 5000 }); else setTimeout(warm, 5000);
-    // decode() before swap (no blank flash)
-    function swapImg(el, src) {
-      var gen = el._swapGen = (el._swapGen || 0) + 1;
-      var img = new Image(); img.src = src;
-      var done = false;
-      var apply = function () { if (done || el._swapGen !== gen) return; done = true; el.src = src; };
-      if (img.decode) img.decode().then(apply).catch(apply);
-      img.onload = apply;
-      setTimeout(apply, 300);
-    }
-    var m2S = $('#m2Style');
-    document.querySelectorAll('.m2sw').forEach(function (b) {
-      b.addEventListener('click', function () {
-        document.querySelectorAll('.m2sw').forEach(function (x) { x.classList.remove('on'); });
-        b.classList.add('on');
-        swapImg(m2S, 'assets/v3/' + ['style-navy', 'style-terracotta', 'style-forest'][+b.dataset.s] + '.webp');
-      });
-    });
-    var m2R = $('#m2Reno');
-    document.querySelectorAll('.m2rc').forEach(function (b) {
-      b.addEventListener('click', function () {
-        document.querySelectorAll('.m2rc').forEach(function (x) { x.classList.remove('on'); });
-        b.classList.add('on');
-        swapImg(m2R, 'assets/v3/' + b.dataset.r + '.webp');
-      });
-    });
-    // AUTO ONE-SHOT 3/3: receipt pair from ONE observer
-    var n1 = $('#m2N1'), n2 = $('#m2N2');
-    if (!rm) {
-      var recDone = false;
-      new IntersectionObserver(function (es, o) {
-        es.forEach(function (e) {
-          if (e.isIntersecting && !recDone) {
-            recDone = true; o.disconnect();
-            var v = 0;
-            n1.textContent = '0'; n2.textContent = '0';
-            var t = setInterval(function () {
-              v += 2;
-              n1.textContent = Math.min(52, v);
-              n2.textContent = Math.min(13, Math.round(v / 4));
-              if (v >= 52) clearInterval(t);
-            }, 42);
-          }
-        });
-      }, { threshold: 0.7 }).observe(n1);
-    }
-  }
+    window.addEventListener('scroll', function () { if (!tick) { tick = true; requestAnimationFrame(frame); } }, { passive: true });
+  })();
   var igT = $('#igTrack');
   if (igT) {
     var igN = 5, igI = 0, igTimer = null, igTouched = false;

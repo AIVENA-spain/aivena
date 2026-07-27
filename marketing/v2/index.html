@@ -238,6 +238,7 @@
     .mv-lab span{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:#6B7268;text-transform:uppercase}
     .dark .mv-lab b{color:#F2EFE4}
     .dark .mv-lab span{color:#B9BFB2;font-size:12px}
+    .mv-kick{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:#6B7268;text-transform:uppercase;margin-bottom:12px}
     .mv-h1{font-family:var(--serif);font-weight:400;font-size:clamp(36px,11.2vw,44px);line-height:1.08;color:var(--ink);margin:0}
     .mv-h1 .it,.mv-h2 .it{font-style:italic;color:var(--olive)}
     .mv-h2{font-family:var(--serif);font-weight:400;font-size:30px;line-height:1.15;color:var(--ink);margin:0 0 10px}
@@ -921,10 +922,11 @@
 
   <section class="mv s1">
     <div class="mv-in">
+      <div class="mv-kick" data-i18n="hero_kick">THE AI OPERATING SYSTEM FOR REAL ESTATE AGENCIES</div>
       <h1 class="mv-h1" data-i18n="mv_h">Work done while you <span class="it">slept</span>.</h1>
       <p class="mv-p" data-i18n="mv_sub">AI that answers enquiries, follows up, matches properties and books viewings &mdash; so your agency never misses a client.</p>
       <div class="mv-trust">
-        <div class="mvrow"><span class="mv-chip"><svg aria-hidden="true" focusable="false"><use href="#mv-shield"/></svg></span><span class="tx" data-i18n="mv_t1">Approval-first by default</span></div>
+        <div class="mvrow"><span class="mv-chip"><svg aria-hidden="true" focusable="false"><use href="#ic-gear"/></svg></span><span class="tx" data-i18n="mv_t0">You choose the automation level</span></div>
         <div class="mvrow"><span class="mv-chip"><svg aria-hidden="true" focusable="false"><use href="#ic-pen"/></svg></span><span class="tx" data-i18n="mv_t2">Every action logged</span></div>
         <div class="mvrow"><span class="mv-chip"><svg aria-hidden="true" focusable="false"><use href="#mv-person"/></svg></span><span class="tx" data-i18n="mv_t3">Human support from real people</span></div>
       </div>
@@ -1018,9 +1020,10 @@
   <section class="mv s6">
     <div class="mv-in">
       <div class="mv-lab"><b>05</b><span data-i18n="mv_l5">YOU STAY IN CONTROL</span></div>
-      <h2 class="mv-h2" id="mvCtrlH" data-i18n="mv_h2e">You choose how AIVENA works.</h2>
+      <h2 class="mv-h2" id="mvCtrlH" data-i18n="mv_h2e">You choose the automation level.</h2>
+      <p class="mv-p" style="margin-bottom:4px" data-i18n="mv_ctl">Start approval-first &mdash; move to autopilot when you&rsquo;re ready.</p>
       <div role="radiogroup" aria-labelledby="mvCtrlH">
-      <label class="mv-opt"><input type="radio" name="mvmode" value="draft" /><span class="mv-chip"><svg aria-hidden="true" focusable="false"><use href="#mv-doc"/></svg></span><span class="olb"><b data-i18n="mv_o1">Draft only</b><i data-i18n="mv_o1b">AIVENA writes. You send.</i></span><span class="rad"></span></label>
+      <label class="mv-opt"><input type="radio" name="mvmode" value="draft" /><span class="mv-chip"><svg aria-hidden="true" focusable="false"><use href="#mv-doc"/></svg></span><span class="olb"><b data-i18n="mv_o1">Draft mode</b><i data-i18n="mv_o1b">AIVENA writes. You send.</i></span><span class="rad"></span></label>
       <label class="mv-opt on"><input type="radio" name="mvmode" value="approval" checked /><span class="mv-chip"><svg aria-hidden="true" focusable="false"><use href="#mv-coffee"/></svg></span><span class="olb"><b data-i18n="mv_o2">Approval-first</b><i data-i18n="mv_o2b">Recommended. Review and approve in one tap.</i></span><span class="rad"></span></label>
       <label class="mv-opt off"><input type="radio" name="mvmode" value="auto" disabled /><span class="mv-chip"><svg aria-hidden="true" focusable="false"><use href="#mv-cal"/></svg></span><span class="olb"><b data-i18n="mv_o3">Autopilot</b><i data-i18n="mv_o3b">Enable it later when you trust it.</i></span><span class="rad"></span></label>
       </div>
@@ -1059,6 +1062,7 @@
     <div class="mv-in">
       <div class="mv-lab"><b>07</b><span data-i18n="mv_lsys">THE FULL SYSTEM</span></div>
       <h2 class="mv-h2" data-i18n="mv_h2sys">Everything AIVENA does.</h2>
+      <p class="mv-p" data-i18n="mv_sysb">One system for the whole agency.</p>
       <div class="fs-grid">
         <div class="fsc lead"><span class="fchip"><svg aria-hidden="true" focusable="false"><use href="#ic-spark"/></svg></span><span class="ftw"><b data-i18n="mv_f6">Studio content</b><i data-i18n="mv_f6b">Posts, carousels, renovation previews</i></span></div>
         <div class="fsc"><span class="fchip"><svg aria-hidden="true" focusable="false"><use href="#ic-inbox"/></svg></span><b data-i18n="mv_f1">WhatsApp AI inbox</b><i data-i18n="mv_f1b">Every reply drafted for your approval</i></div>
@@ -1069,12 +1073,12 @@
         <div class="fsc"><span class="fchip"><svg aria-hidden="true" focusable="false"><use href="#ic-chart"/></svg></span><b data-i18n="mv_f7">Live KPIs</b><i data-i18n="mv_f7b">Reply times, activity, languages &mdash; live</i></div>
         <div class="fsc"><span class="fchip"><svg aria-hidden="true" focusable="false"><use href="#mv-csv"/></svg></span><b data-i18n="mv_f8">Catalogue import (CSV)</b><i data-i18n="mv_f8b">Upload with a staged preview</i></div>
         <div class="fsc"><span class="fchip"><svg aria-hidden="true" focusable="false"><use href="#mv-phone"/></svg></span><b data-i18n="mv_f9">Missed-call text-back</b><i data-i18n="mv_f9b">Missed calls texted back automatically</i><span class="fc-tag" data-i18n="mv_tgp">UNLOCKED DURING THE PILOT</span></div>
-        <div class="fsc"><span class="fchip"><svg aria-hidden="true" focusable="false"><use href="#mv-mic"/></svg></span><b data-i18n="mv_f10">Voice agent</b><i data-i18n="mv_f10b">An AI voice for phone enquiries</i><span class="fc-tag" data-i18n="mv_tgd">IN DEVELOPMENT</span></div>
-        <div class="fsc"><span class="fchip"><svg aria-hidden="true" focusable="false"><use href="#mv-bubble"/></svg></span><b data-i18n="mv_f11">Website chatbot</b><i data-i18n="mv_f11b">Captures enquiries on your website</i><span class="fc-tag" data-i18n="mv_tgd">IN DEVELOPMENT</span></div>
-        <div class="fsc"><span class="fchip"><svg aria-hidden="true" focusable="false"><use href="#mv-valu"/></svg></span><b data-i18n="mv_f12">Valuation tool</b><i data-i18n="mv_f12b">Home valuations for prospective sellers</i><span class="fc-tag" data-i18n="mv_tgd">IN DEVELOPMENT</span></div>
-        <div class="fsc"><span class="fchip"><svg aria-hidden="true" focusable="false"><use href="#mv-cal"/></svg></span><b data-i18n="mv_f13">Google Calendar sync</b><i data-i18n="mv_f13b">Viewings synced to your calendar</i><span class="fc-tag" data-i18n="mv_tgd">IN DEVELOPMENT</span></div>
-        <div class="fsc"><span class="fchip"><svg aria-hidden="true" focusable="false"><use href="#mv-feed"/></svg></span><b data-i18n="mv_f14">Portal feed sync (Kyero)</b><i data-i18n="mv_f14b">Your Kyero feed, imported automatically</i><span class="fc-tag" data-i18n="mv_tgd">IN DEVELOPMENT</span></div>
-        <div class="fsc"><span class="fchip"><svg aria-hidden="true" focusable="false"><use href="#mv-mail"/></svg></span><b data-i18n="mv_f15">Email channel</b><i data-i18n="mv_f15b">Email lands in the same inbox</i><span class="fc-tag" data-i18n="mv_tgd">IN DEVELOPMENT</span></div>
+        <div class="fsc"><span class="fchip"><svg aria-hidden="true" focusable="false"><use href="#mv-mic"/></svg></span><b data-i18n="mv_f10">Voice agent</b><i data-i18n="mv_f10b">An AI voice for phone enquiries</i><span class="fc-tag" data-i18n="mv_tgd">COMING SOON</span></div>
+        <div class="fsc"><span class="fchip"><svg aria-hidden="true" focusable="false"><use href="#mv-bubble"/></svg></span><b data-i18n="mv_f11">Website chatbot</b><i data-i18n="mv_f11b">Captures enquiries on your website</i><span class="fc-tag" data-i18n="mv_tgd">COMING SOON</span></div>
+        <div class="fsc"><span class="fchip"><svg aria-hidden="true" focusable="false"><use href="#mv-valu"/></svg></span><b data-i18n="mv_f12">Valuation tool</b><i data-i18n="mv_f12b">Home valuations for prospective sellers</i><span class="fc-tag" data-i18n="mv_tgd">COMING SOON</span></div>
+        <div class="fsc"><span class="fchip"><svg aria-hidden="true" focusable="false"><use href="#mv-cal"/></svg></span><b data-i18n="mv_f13">Google Calendar sync</b><i data-i18n="mv_f13b">Viewings synced to your calendar</i><span class="fc-tag" data-i18n="mv_tgd">COMING SOON</span></div>
+        <div class="fsc"><span class="fchip"><svg aria-hidden="true" focusable="false"><use href="#mv-feed"/></svg></span><b data-i18n="mv_f14">Portal feed sync (Kyero)</b><i data-i18n="mv_f14b">Your Kyero feed, imported automatically</i><span class="fc-tag" data-i18n="mv_tgd">COMING SOON</span></div>
+        <div class="fsc"><span class="fchip"><svg aria-hidden="true" focusable="false"><use href="#mv-mail"/></svg></span><b data-i18n="mv_f15">Email channel</b><i data-i18n="mv_f15b">Email lands in the same inbox</i><span class="fc-tag" data-i18n="mv_tgd">COMING SOON</span></div>
       </div>
       <p class="fs-note" data-i18n="mv_fsnote">Tagged items aren&rsquo;t sold as finished &mdash; they arrive when they&rsquo;re ready.</p>
     </div>
@@ -1107,7 +1111,7 @@
 
   <section class="mv dark s10">
     <div class="mv-in">
-      <div class="mv-lab"><b>10</b><span data-i18n="mv_l9">PILOT ACCESS</span></div>
+      <div class="mv-lab"><b>10</b><span data-i18n="mv_l9">PILOT ACCESS NOW OPEN</span></div>
       <h2 class="mv-h2" data-i18n="mv_h2i">The first pilot agency gets <em class="gold">1 year free.</em></h2>
       <p class="mv-p" data-i18n="mv_why">Because they help shape the final AIVENA system with us.</p>
       <a class="mv-btn" href="mailto:christian@aivena.es?subject=AIVENA%20pilot"><span data-i18n="mv_cta">Message us</span> &rarr;</a>
@@ -1308,8 +1312,11 @@
     mv_tag: 'DEL CASO DE DEMOSTRACIÓN', mv_pct: '97% de coincidencia',
     mv_g1: 'Encaja el presupuesto', mv_g2: 'Zona solicitada', mv_g3: 'Vistas al mar', mv_g4: 'Disponible',
     mv_all: 'Todo automático. Todo registrado.', mv_rec: 'Cada acción queda grabada.',
-    mv_l5: 'TÚ TIENES EL CONTROL', mv_h2e: 'Tú eliges cómo trabaja AIVENA.',
-    mv_o1: 'Solo borradores', mv_o1b: 'AIVENA escribe. Tú envías.', mv_o2: 'Aprobación primero', mv_o2b: 'Recomendado. Revisa y aprueba en un toque.', mv_o3: 'Autopiloto', mv_o3b: 'Actívalo más adelante, cuando confíes.',
+    mv_l5: 'TÚ TIENES EL CONTROL', mv_h2e: 'Tú eliges el nivel de automatización.',
+    mv_ctl: 'Empieza con aprobación previa — pasa al autopiloto cuando estés listo.',
+    mv_t0: 'Tú eliges el nivel de automatización',
+    mv_sysb: 'Un solo sistema para toda la agencia.',
+    mv_o1: 'Modo borrador', mv_o1b: 'AIVENA escribe. Tú envías.', mv_o2: 'Aprobación primero', mv_o2b: 'Recomendado. Revisa y aprueba en un toque.', mv_o3: 'Autopiloto', mv_o3b: 'Actívalo más adelante, cuando confíes.',
     mv_lock: 'Cada mensaje puede revisarse. Cada envío queda registrado.',
     mv_l6: 'MÁS QUE LA BANDEJA', mv_h2f: 'Una propiedad. Todos los canales.',
     mv_ch: 'Renders reales del motor Studio de AIVENA — desliza.',
@@ -1321,7 +1328,7 @@
     mv_ch2: 'Christian configura AIVENA contigo, entrena el sistema con tu equipo y sigue siendo tu punto de contacto.',
     mv_s1: 'Onboarding personal', mv_s3: 'Hecho para agencias inmobiliarias',
     mv_long: 'Estamos contigo, a largo plazo.', mv_msg: 'Escribe a Christian',
-    mv_l9: 'ACCESO PILOTO', mv_h2i: 'La primera agencia piloto tiene <em class="gold">1 año gratis.</em>',
+    mv_l9: 'ACCESO PILOTO ABIERTO', mv_h2i: 'La primera agencia piloto tiene <em class="gold">1 año gratis.</em>',
     mv_why: 'Porque nos ayuda a dar forma al sistema final de AIVENA.',
     mv_w5: 'Si su interés cambia — nueva zona, nuevo presupuesto — su perfil y sus coincidencias se actualizan. Registrado.',
     mv_lsys: 'EL SISTEMA COMPLETO', mv_h2sys: 'Todo lo que hace AIVENA.',
@@ -1340,7 +1347,7 @@
     mv_f13: 'Sincronización con Google Calendar', mv_f13b: 'Visitas sincronizadas con tu calendario',
     mv_f14: 'Feed de portales (Kyero)', mv_f14b: 'Tu feed, importado automáticamente',
     mv_f15: 'Canal de email', mv_f15b: 'El email, en la misma bandeja',
-    mv_tgp: 'SE ACTIVA DURANTE EL PILOTO', mv_tgd: 'EN DESARROLLO',
+    mv_tgp: 'SE ACTIVA DURANTE EL PILOTO', mv_tgd: 'PRÓXIMAMENTE',
     mv_fsnote: 'Lo etiquetado no se vende como terminado — llega cuando está listo.',
     rs_h: 'Cada conversación, <span class="it">medida</span>.',
     rs_1: 'primera respuesta en autopilot', rs_2: 'consultas esta semana', rs_3: 'visitas reservadas',

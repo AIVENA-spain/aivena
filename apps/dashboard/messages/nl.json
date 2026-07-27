@@ -1306,6 +1306,8 @@
     "recovery_pending_approval": "Wacht op goedkeuring",
     "recovery_waiting_setup": "Wacht op instelling",
     "recovery_no_contact": "Geen nummer",
-    "recovery_opted_out": "Afgemeld"
+    "recovery_opted_out": "Afgemeld",
+    "sendTextBack": "Terugbericht sturen",
+    "sending": "Verzenden…"
   }
 }

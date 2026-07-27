@@ -1306,6 +1306,8 @@
     "recovery_pending_approval": "In attesa di appr.",
     "recovery_waiting_setup": "In attesa di config.",
     "recovery_no_contact": "Nessun numero",
-    "recovery_opted_out": "Disiscritto"
+    "recovery_opted_out": "Disiscritto",
+    "sendTextBack": "Invia risposta",
+    "sending": "Invio…"
   }
 }

@@ -1306,6 +1306,8 @@
     "recovery_pending_approval": "Venter på godkjenning",
     "recovery_waiting_setup": "Venter på oppsett",
     "recovery_no_contact": "Ingen nummer",
-    "recovery_opted_out": "Avmeldt"
+    "recovery_opted_out": "Avmeldt",
+    "sendTextBack": "Send svar",
+    "sending": "Sender…"
   }
 }

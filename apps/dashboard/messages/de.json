@@ -1306,6 +1306,8 @@
     "recovery_pending_approval": "Wartet auf Freigabe",
     "recovery_waiting_setup": "Wartet auf Einrichtung",
     "recovery_no_contact": "Keine Nummer",
-    "recovery_opted_out": "Abgemeldet"
+    "recovery_opted_out": "Abgemeldet",
+    "sendTextBack": "Antwort senden",
+    "sending": "Wird gesendet…"
   }
 }

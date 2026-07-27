@@ -19,7 +19,7 @@
 <style>
   :root{
     --chalk:#FBF8F1; --limestone:#F1EBDE; --olive:#4A5D3A; --olive-deep:#41522F; --sage:#8A9A6B;
-    --terra:#C86B4A; --ochre:#D8A24A; --ink:#26302A; --stone:#6B7268;
+    --terra:#C86B4A;--terracotta:var(--terra); --ochre:#D8A24A; --ink:#26302A; --stone:#6B7268;
     --line:rgba(107,114,104,.18); --card:#FFFDF8;
     --shadow:0 22px 55px -32px rgba(74,93,58,.42);
     --shadow-sm:0 10px 30px -20px rgba(74,93,58,.4);
@@ -210,61 +210,124 @@
   @keyframes fcf{from{transform:translateY(6px)}to{transform:translateY(-8px)}}
   @media (prefers-reduced-motion: reduce){.fc{animation:none}}
   .m-site{display:none}
+  /* CONTRACT (council): no gradients except the single white->oat falloff + photo scrims; no mesh,
+     no glass, no grain, no boxes-grids; text NEVER animates; auto-motion = exactly 3 one-shots. */
   @media(max-width:740px){
     .d-site{display:none!important}
+    .cw-launch,.cw-panel{display:none!important}
     .m-site{display:block;background:#fff}
+    .m-site :focus-visible{outline:2px solid var(--olive);outline-offset:2px}
     .m-site section{padding:0 22px}
-    .mono-x{font-family:var(--mono);font-size:.56rem;letter-spacing:.1em;color:#9aa094;text-transform:uppercase}
-    .ser-x{font-family:var(--serif);font-weight:400}
-    .ms-hero{padding-top:104px!important;text-align:left}
-    .ms-kick{font-family:var(--mono);font-size:.6rem;letter-spacing:.16em;color:var(--terracotta)}
+    .mono-x{font-family:var(--mono);font-size:11px;letter-spacing:.09em;color:#5A6157;text-transform:uppercase}
+    .mono-o{font-family:var(--mono);font-size:12px;letter-spacing:.08em;color:var(--ochre)}
+    .terr{color:var(--terracotta)}
+    .ms-hero{padding-top:88px!important}
+    .ms-kick{font-family:var(--mono);font-size:11px;letter-spacing:.15em;color:#5A6157;text-transform:uppercase}
     .ms-h{font-family:var(--serif);font-weight:400;font-size:2.5rem;line-height:1.05;margin:12px 0 0;color:var(--ink)}
-    .ms-sub{font-size:.92rem;line-height:1.6;color:#4a5148;margin:14px 0 0}
-    .ms-cta{display:flex;justify-content:center;margin-top:20px;width:100%}
-    .ms-hint{text-align:center;margin-top:14px}
-    .ms-proof{margin-top:34px}
-    .ms-tabs{display:flex;gap:14px;align-items:center}
-    .mlt{border:none;background:none;padding:6px 1px;font-family:var(--mono);font-size:.68rem;letter-spacing:.12em;color:#9aa094;border-bottom:2px solid transparent;cursor:pointer}
+    .ms-strap{margin-top:10px;color:#5A6157}
+    .ms-cta{display:flex;justify-content:center;margin-top:14px;width:100%}
+    .ms-day{font-size:.8rem;color:#6d746a;text-align:center;margin:10px 0 0;line-height:1.5}
+    .ms-b1{margin-top:20px}
+    .ms-disc{font-size:11px;line-height:1.6;color:#9aa094;border-top:1px solid rgba(30,38,32,.12);border-bottom:1px solid rgba(30,38,32,.12);padding:6px 0;letter-spacing:.05em}
+    .ms-stamp{display:flex;align-items:baseline;gap:10px;margin:12px 0 7px}
+    .ms-stamp b{font-family:var(--serif);font-size:1.35rem;color:var(--ink)}
+    .ms-stamp span{font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:#5A6157;text-transform:uppercase}
+    .ms-stamp.inv b{color:#F2EFE4}
+    .ms-stamp.inv span{color:#B9BFB2;font-size:12px}
+    .ms-tabs{display:flex;gap:14px;align-items:center;margin-top:4px}
+    .mlt{border:none;background:none;padding:6px 1px;font-family:var(--mono);font-size:12px;letter-spacing:.12em;color:#9aa094;border-bottom:2px solid transparent;cursor:pointer}
     .mlt.on{color:var(--olive);border-bottom-color:var(--olive)}
-    .ms-tabhint{margin-left:auto;font-family:var(--mono);font-size:.5rem;letter-spacing:.08em;color:#c9c4b4;text-transform:uppercase}
-    .ms-chat{border:1px solid rgba(30,38,32,.14);border-radius:14px;margin-top:12px;padding:13px 14px}
-    .ms-chead{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid rgba(30,38,32,.08);padding-bottom:9px;margin-bottom:11px}
-    .ms-chead b{font-size:.82rem}
-    .ms-chead .mono-x{color:var(--olive)}
+    .ms-tabhint{margin-left:auto;font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:#9aa094;text-transform:uppercase}
+    .ms-chat{border:1px solid rgba(30,38,32,.14);border-radius:14px;margin-top:10px;padding:11px 13px}
+    .ms-chead{display:flex;justify-content:space-between;align-items:baseline;padding-bottom:7px}
+    .ms-chead b{font-size:.84rem}
     .ms-in{font-size:.82rem;line-height:1.55;background:#F4F2EA;border-radius:10px 10px 10px 3px;padding:10px 12px;max-width:93%;margin:0;color:#3d453d}
     .ms-count{display:flex;align-items:center;gap:8px;padding:11px 0}
     .ms-count span{flex:1;border-top:1px solid rgba(30,38,32,.14)}
-    .ms-count em{font-style:normal;color:var(--olive)}
+    .ms-count em{font-style:normal;font-family:var(--mono);font-size:11px;letter-spacing:.09em;color:#5A6157}
     .ms-count b{color:var(--terracotta)}
     .ms-out{font-size:.82rem;line-height:1.55;border:1px solid rgba(30,38,32,.12);border-radius:10px 10px 3px 10px;padding:10px 12px;margin:0 0 0 7%}
     .ms-att{display:flex;align-items:center;gap:7px;margin:9px 0 0 7%}
     .ms-att img{width:34px;height:24px;object-fit:cover;border-radius:3px}
-    .ms-att span{font-size:.7rem;color:#6d746a}
-    .ms-att i{font-style:normal;margin-left:auto;color:#b0b5ab}
-    .ms-stats{margin-top:34px}
-    .ms-stat{display:flex;gap:13px;align-items:baseline;border-top:1px solid rgba(30,38,32,.14);padding:13px 0 5px}
-    .ms-stat b{font-size:2.4rem;line-height:.9}
-    .ms-stat b i{font-style:normal;font-size:1.2rem}
-    .ms-studio{margin-top:36px}
-    .ms-h2{font-family:var(--serif);font-weight:400;font-size:1.55rem;line-height:1.15;margin:0 0 16px}
-    .m-site .weblist{margin-top:0}
-    .m-site .ms-ig{margin-top:18px}
-    .ms-style{margin-top:18px}
-    .ms-style img{width:100%;height:auto;border-radius:12px;border:1px solid rgba(30,38,32,.12);display:block}
-    .ms-style .swrow{margin-top:12px}
-    .ms-modes{margin-top:36px}
-    .ms-mr{display:flex;gap:12px;align-items:center;border-top:1px solid rgba(30,38,32,.12);padding:12px 0;cursor:pointer}
-    .ms-mr span{width:14px;height:2px;background:transparent;flex:none}
-    .ms-mr.on span{background:var(--olive)}
-    .ms-mr b{font-size:.86rem;font-weight:600;color:#8a9086}
-    .ms-mr.on b{color:var(--ink)}
-    .ms-mout{font-size:.8rem;color:#5d6458;line-height:1.6;border-left:2px solid var(--olive);padding-left:12px;margin:10px 0 0}
-    .ms-pilot{background:#1F2721;margin-top:40px;padding:32px 22px 30px!important;color:#EFEAD9}
+    .ms-att span{font-size:.72rem;color:#6d746a}
+    .ms-att i{font-style:normal;margin-left:auto}
+    .ms-b23{margin-top:20px}
+    .ms-ink{background:#1F2721;border-radius:16px;padding:14px 14px 12px;color:#E8E4D6}
+    .ms-ink .mono-x{color:#B9BFB2;font-size:12px}
+    .ms-trow{display:flex;gap:10px;align-items:baseline;padding:4px 0}
+    .ms-trow span{font-size:.82rem;color:#DDD8C6;line-height:1.5}
+    .ms-trow .tkk{display:block}
+    .ms-trow .terr{font-style:normal;font-weight:600;font-size:.8rem}
+    .ms-art{background:#FDFBF5;border-radius:10px;padding:9px 11px;margin:3px 0 5px;color:var(--ink)}
+    .ms-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+    .ms-chips i{font-style:normal;background:#EFE9D8;border-radius:999px;padding:5px 11px;font-size:.78rem;color:#3d453d}
+    .ms-match{display:flex;align-items:center;gap:9px;border-top:1px solid rgba(30,38,32,.09);padding:8px 0;margin-top:8px}
+    .ms-match:first-of-type{border-top:none}
+    .ms-match img{width:44px;height:32px;object-fit:cover;border-radius:5px}
+    .ms-match div{display:flex;flex-direction:column;min-width:0}
+    .ms-match b{font-size:.8rem;color:var(--ink)}
+    .ms-match span{font-size:.7rem;color:#6d746a}
+    .ms-match em{font-style:normal;margin-left:auto;font-family:var(--mono);font-size:.82rem;color:var(--ink);font-weight:600}
+    .ms-gist{font-size:.76rem;color:#B9BFB2;margin-top:8px;line-height:1.5}
+    .ms-b45{margin-top:4px}
+    .ms-day45{border:1px solid rgba(30,38,32,.12);border-radius:12px;padding:10px 12px}
+    .ms-nud{margin-top:8px;max-width:100%}
+    .ms-slip{display:flex;gap:11px;align-items:center;border:1px solid rgba(30,38,32,.12);border-radius:12px;padding:10px 12px}
+    .ms-slip svg{width:22px;height:22px;fill:none;stroke:#5A6157;stroke-width:1.7;flex:none}
+    .ms-slip b{font-size:.82rem;color:var(--ink);display:block}
+    .ms-b6{margin-top:18px}
+    .ms-anexo{display:flex;gap:10px;align-items:flex-start;border:1px dashed rgba(30,38,32,.25);border-radius:10px;padding:8px 11px;background:#FDFBF5}
+    .ms-anexo .clip{width:16px;height:16px;fill:none;stroke:#8B857A;stroke-width:1.8;flex:none;margin-top:2px}
+    .ms-anexo b{display:block;letter-spacing:.1em}
+    .ms-anexo span{font-size:.8rem;color:#4a5148}
+    .ms-rail{position:relative;display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding:0 22px;margin:0 -22px;padding:2px 22px 6px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+    .ms-rail::-webkit-scrollbar{display:none}
+    .ms-card{flex:0 0 87%;scroll-snap-align:center;scroll-snap-stop:always}
+    .ms2-ig .ig-h{padding:8px 10px}
+    .ms2-ig .ig-cap{padding:3px 10px 9px}
+    .ms-ar{position:absolute;top:50%;transform:translateY(-50%);width:44px;height:44px;border:none;background:transparent;display:grid;place-items:center;cursor:pointer;padding:0}
+    .ms-ar svg{fill:none;stroke:#26302A;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;background:rgba(255,255,255,.92);border-radius:50%;padding:6px;box-shadow:0 1px 5px rgba(0,0,0,.28)}
+    .ig-pips.inner i{background:#D6CDB6}
+    .ig-pips.inner i.on{background:#26302A;transform:none}
+    .ig-pips.outer{padding:0}
+    .ig-pips.outer i{width:6px;height:6px}
+    .ig-pips.outer i.on{background:var(--olive)}
+    .ms-artcard{background:#fff;border:1px solid rgba(30,38,32,.13);border-radius:14px;overflow:hidden}
+    .ms-artcard > img{width:100%;height:auto;display:block}
+    .ms-chiprow{display:flex;gap:8px;align-items:center;padding:8px 11px;flex-wrap:wrap}
+    .swhint2{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:#9aa094;text-transform:uppercase;flex-basis:100%}
+    .ms-renowrap{position:relative}
+    .ms-renowrap > img{width:100%;height:auto;display:block}
+    .ms-bef{position:absolute;top:8px;left:8px;width:88px;border-radius:6px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.35);display:block}
+    .ms-bef img{width:100%;height:auto;display:block}
+    .ms-bef i{position:absolute;left:0;right:0;bottom:0;font-style:normal;font-size:12px;color:#fff;background:rgba(31,39,33,.72);text-align:center;padding:2px 0;letter-spacing:.1em}
+    .ms-railfoot{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:8px}
+    .ms-b78{margin-top:20px;background:linear-gradient(#fff,#F6F3EA 80px);padding-bottom:22px!important}
+    .ms-receipt{background:#fff;border:1px solid rgba(30,38,32,.12);border-top:2px dashed rgba(30,38,32,.3);border-radius:4px 4px 12px 12px;padding:12px 14px}
+    .ms-rrow{display:flex;gap:12px;align-items:baseline;border-top:1px solid rgba(30,38,32,.08);padding:8px 0 3px}
+    .ms-rrow:first-of-type{border-top:none}
+    .ms-rrow b{font-family:var(--serif);font-weight:400;font-size:1.7rem;white-space:nowrap;font-variant-numeric:tabular-nums}
+    .ms-rrow .tick{width:14px;height:14px;fill:none;stroke:var(--terracotta);stroke-width:2.6;vertical-align:baseline}
+    .ms-rrow em{font-style:normal;color:#26302A;font-weight:600}
+    .ms-leg{margin-top:10px;font-size:11px;color:#9aa094;letter-spacing:.05em}
+    .ms-modes2{margin-top:6px}
+    .ms-md{display:flex;gap:12px;align-items:center;border-top:1px solid rgba(30,38,32,.12);padding:10px 0;cursor:pointer}
+    .ms-md input{position:absolute;opacity:0}
+    .ms-md .dot{width:16px;height:16px;border-radius:50%;border:2px solid #B9B4A2;flex:none;transition:border-color .18s,box-shadow .18s}
+    .ms-md input:checked ~ .dot{border-color:var(--olive);box-shadow:inset 0 0 0 4px var(--olive)}
+    .ms-md input:focus-visible ~ .dot{outline:2px solid var(--olive);outline-offset:2px}
+    .ms-md .lb b{font-size:.85rem;font-weight:600;color:#8a9086;display:block}
+    .ms-md .lb i{font-style:normal;font-size:.74rem;color:#9aa094}
+    .ms-md input:checked ~ .lb b{color:var(--ink)}
+    .ms-md input:checked ~ .lb i{color:#5d6458}
+    .ms-pilot{background:#1F2721;margin-top:22px;padding:26px 22px 18px!important;color:#EFEAD9}
+    .ms-pilot .mono-x{color:#B9BFB2;font-size:12px}
+    .ms-pilot .ms-kick{font-size:12px}
     .ms-ph{font-family:var(--serif);font-weight:400;font-size:1.5rem;line-height:1.2;margin:12px 0 0;color:#F6F3EA}
     .ms-ph .itg{font-style:italic;color:var(--ochre)}
     .ms-pl{font-size:.78rem;color:#a9ae9f;margin:10px 0 0}
     .ms-cta2{margin-top:18px;border:1px solid rgba(246,243,234,.25)}
-    .ms-flinks{text-align:center;margin-top:18px;font-size:.72rem;color:#8f958a}
+    .ms-flinks{text-align:center;margin-top:12px;font-size:.74rem;color:#8f958a}
     .ms-flinks a{color:#b5baa9;text-decoration:none}
   }
   .stylecol{flex:1;min-width:0;display:flex;flex-direction:column}
@@ -782,90 +845,129 @@
 
 </div><!-- /d-site -->
 
-<!-- ═══ MOBILE SITE (compact, ≤740px) ═══ -->
+<!-- ═══ MOBILE SITE (case file, ≤740px) ═══ -->
 <div class="m-site">
   <section class="ms-hero">
     <div class="ms-kick" data-i18n="hero_kick">THE AI OPERATING SYSTEM FOR REAL ESTATE AGENCIES</div>
     <h1 class="ms-h" data-i18n="m_h">Work done while you <span class="it">slept</span>.</h1>
-    <p class="ms-sub" data-i18n="m_sub">Enquiries answered in 13 languages, buyers matched to your listings, viewings booked, marketing made &mdash; every send under your control.</p>
-    <a class="btn btn-primary ms-cta" href="mailto:christian@aivena.es?subject=AIVENA%20pilot"><span data-i18n="m_cta">Book a demo</span> &rarr;</a>
-    <div class="ms-hint mono-x" data-i18n="m_see">SEE IT WORK &darr;</div>
+    <div class="ms-strap mono-x" data-i18n="m2_jobs">EIGHT JOBS. ONE SYSTEM.</div>
+    <a class="btn btn-primary ms-cta" href="mailto:christian@aivena.es?subject=AIVENA%20pilot"><span data-i18n="m2_cta">Message us</span> &rarr;</a>
+    <p class="ms-day" data-i18n="m2_day">Day or night, Christian answers you &mdash; a person, not a form.</p>
   </section>
 
-  <section class="ms-proof">
+  <section class="ms-b1">
+    <div class="ms-disc mono-x" data-i18n="m2_demo">DEMONSTRATION CASE &mdash; AGENCY AND CLIENT ARE INVENTED &mdash; TERRACOTTA TIMES ARE MEASURED MEDIANS</div>
+    <div class="ms-stamp"><b>01</b><span data-i18n="m2_c1">AI INBOX &middot; 52 s REPLY</span></div>
     <div class="ms-tabs"><button class="mlt on" data-l="0">DE</button><button class="mlt" data-l="1">EN</button><button class="mlt" data-l="2">NL</button><button class="mlt" data-l="3">SV</button><span class="ms-tabhint" data-i18n="m_lang">your buyer's language</span></div>
     <div class="ms-chat" id="msChat">
       <div class="ms-chead"><b>Anke W.</b><span class="mono-x" id="msChip">GERMAN &middot; DETECTED</span></div>
+      <div class="mono-x" style="margin-bottom:9px">TUE 22:47 &middot; <span data-i18n="m2_off">OFFICE CLOSED</span></div>
       <p class="ms-in" id="msQ1">Guten Abend! Ich habe die Villa in Moraira gesehen&hellip; Budget ~650.000&euro;, 3 Schlafzimmer.</p>
       <div class="ms-count"><span></span><em class="mono-x">REPLY READY IN <b id="msCt">52</b>S</em><span></span></div>
       <p class="ms-out" id="msQ2">Guten Abend Frau Weber, die Villa ist noch verf&uuml;gbar &mdash; 3 Schlafzimmer, Pool, 400&nbsp;m zum Meer. W&auml;re Samstag 11:00 m&ouml;glich?</p>
-      <div class="ms-att"><img src="assets/v3/prop-moraira.webp" alt="Villa Moraira" width="900" height="657" /><span data-i18n="m_att">Villa Moraira attached</span><i class="mono-x">ES MIRROR &#10003;</i></div>
+      <div class="ms-att"><img src="assets/v3/prop-moraira.webp" alt="Villa Moraira" width="900" height="657" loading="lazy" /><span data-i18n="m_att">Villa Moraira attached</span><i class="mono-x">ES MIRROR &#10003;</i></div>
     </div>
   </section>
 
-  <section class="ms-stats">
-    <div class="ms-stat"><b class="ser-x">52<i>s</i></b><span class="mono-x" data-i18n="m_s1">MEDIAN, ENQUIRY TO READY REPLY &middot; MEASURED LIVE</span></div>
-    <div class="ms-stat"><b class="ser-x">13</b><span class="mono-x" data-i18n="m_s2">LANGUAGES, DETECTED AUTOMATICALLY</span></div>
-    <div class="ms-stat"><b class="ser-x">100%</b><span class="mono-x" data-i18n="m_s3">OF SENDS LOGGED, IN EVERY MODE</span></div>
-  </section>
-
-  <section class="ms-studio">
-    <h2 class="ms-h2" data-i18n="m_st">The Studio markets what the system <span class="it">sells</span>.</h2>
-
-    <div class="weblist">
-      <div class="wl-bar"><span class="wl-d"></span><span class="wl-d"></span><span class="wl-d"></span><span class="wl-url">mediterraneocostahomes.com/villa-moraira</span></div>
-      <div class="wl-head"><div><div class="wl-title">Villa in Moraira</div><div class="wl-specs">4 hab &middot; 4 ba&ntilde;os &middot; 385 m&sup2;</div></div><div class="wl-price">2.450.000 &euro;</div></div>
-      <div class="ba msba" id="msBa" style="--pos:50%">
-        <img src="assets/v3/reno-before.webp" alt="Empty room" width="1184" height="888" loading="lazy" />
-        <div class="after"><img id="msRenoAfter" src="assets/v3/reno-after.webp" alt="Staged room" width="1184" height="888" loading="lazy" /></div>
-        <span class="balab" style="left:8px" data-i18n="st_before">BEFORE</span>
-        <span class="balab" style="right:8px" data-i18n="st_after">AFTER</span>
-        <div class="handle"></div><div class="knob">&#8596;</div>
-        <input type="range" min="0" max="100" value="50" aria-label="Compare before and after" />
+  <section class="ms-b23">
+    <div class="ms-ink">
+      <div class="ms-trow"><i class="mono-o">22:47:00</i><span data-i18n="m2_t0">the enquiry lands</span></div>
+      <div class="ms-stamp inv"><b>02</b><span data-i18n="m2_c2">CLIENT PROFILE</span></div>
+      <div class="ms-art">
+        <div class="mono-x" style="color:#8a9086">22:47:19 &middot; <span data-i18n="m2_ext">EXTRACTED &amp; REMEMBERED</span></div>
+        <div class="ms-chips"><i>&euro;650k</i><i>Moraira</i><i>3 hab</i><i>Deutsch</i></div>
       </div>
-      <div class="wl-foot"><div class="renochips"><button class="rc mrc on" data-r="reno-after" data-i18n="st_r1">Moderno</button><button class="rc mrc" data-r="reno-after-med" data-i18n="st_r2">Mediterr&aacute;neo</button><button class="rc mrc" data-r="reno-after-scandi" data-i18n="st_r3">Escandinavo</button></div></div>
+      <div class="ms-stamp inv"><b>03</b><span data-i18n="m2_c3">CATALOGUE MATCHES</span></div>
+      <div class="ms-art">
+        <div class="mono-x" style="color:#8a9086">22:47:38 &middot; <span data-i18n="m2_rank">RANKED, WITH REASONS</span></div>
+        <div class="ms-match"><img src="assets/v3/prop-moraira.webp" alt="" width="900" height="657" loading="lazy" /><div><b>Villa &middot; Moraira</b><span data-i18n="m2_r1">price &middot; area &middot; sea views</span></div><em>97%</em></div>
+      </div>
+      <div class="ms-trow"><i class="mono-o">22:47:52</i><span class="tkk"><span data-i18n="m2_t52">draft ready, in German</span> &middot; <b class="terr" data-i18n="m2_med">ready in 52 s &mdash; exactly the median</b></span></div>
+      <div class="ms-gist" data-i18n="m2_gist">ES: &ldquo;La villa sigue disponible &mdash; &iquest;le viene bien el s&aacute;bado a las 11:00?&rdquo;</div>
     </div>
+  </section>
 
-    <div class="ig ms-ig">
-      <div class="ig-h"><span class="ig-av">MC</span><span class="ig-id"><b>mediterraneocostahomes</b><i>Moraira, Alicante</i></span><span class="ig-dots3">&#8943;</span></div>
-      <div class="ig-m" id="msCar">
-        <div class="ig-track" id="msTrack">
-          <img src="assets/v3/car-s1.webp" alt="Carousel slide 1" width="720" height="900" />
-          <img src="assets/v3/car-s2.webp" alt="Carousel slide 2" width="720" height="900" loading="lazy" />
-          <img src="assets/v3/car-s3.webp" alt="Carousel slide 3" width="720" height="900" loading="lazy" />
-          <img src="assets/v3/car-s4.webp" alt="Carousel slide 4" width="720" height="900" loading="lazy" />
-          <img src="assets/v3/car-s5.webp" alt="Carousel slide 5" width="720" height="900" loading="lazy" />
+  <section class="ms-b45">
+    <div class="ms-stamp"><b>04</b><span data-i18n="m2_c4">AUTO FOLLOW-UP</span></div>
+    <div class="ms-day45">
+      <div class="mono-x">THU 17:00 &middot; <span data-i18n="m2_quiet">she stopped writing &middot; AIVENA didn&rsquo;t</span></div>
+      <p class="ms-in ms-nud">Hallo Frau Weber! H&auml;tten Sie diese Woche Zeit f&uuml;r eine Besichtigung der Villa?</p>
+    </div>
+    <div class="ms-stamp"><b>05</b><span data-i18n="m2_c5">VIEWING BOOKED</span></div>
+    <div class="ms-slip">
+      <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg>
+      <div><b>S&Aacute;B 11:00 &middot; Villa Moraira &middot; Anke W.</b><span class="mono-x" data-i18n="m2_rem">REMINDER SENT &middot; TEAM CALENDAR</span></div>
+    </div>
+  </section>
+
+  <section class="ms-b6">
+    <div class="ms-anexo">
+      <svg viewBox="0 0 24 24" class="clip"><path d="M21 12.5 12.4 21a5.6 5.6 0 0 1-8-8L13 4.4a3.7 3.7 0 0 1 5.3 5.3L9.7 18.3a1.9 1.9 0 0 1-2.7-2.7l8-8"/></svg>
+      <div><b class="mono-x">ANEXO &middot; <span data-i18n="m2_anx1">THE SAME TUESDAY, 14:00</span></b><span data-i18n="m2_anx2">The post Anke saw? Made here.</span></div>
+    </div>
+    <div class="ms-stamp"><b>06</b><span data-i18n="m2_c6">STUDIO</span> <i class="mono-x" style="margin-left:auto" data-i18n="m2_swp">SWIPE &middot; 3 DEMOS</i></div>
+    <div class="ms-rail" id="msRail">
+      <div class="ms-card">
+        <div class="ig ms2-ig">
+          <div class="ig-h"><span class="ig-av">MC</span><span class="ig-id"><b>mediterraneocostahomes</b><i>Moraira, Alicante</i></span><span class="ig-dots3">&#8943;</span></div>
+          <div class="ig-m">
+            <div class="ig-track" id="m2Track">
+              <img src="assets/v3/car-s1.webp" alt="Carousel slide 1" width="720" height="900" />
+              <img src="assets/v3/car-s2.webp" alt="Carousel slide 2" width="720" height="900" loading="lazy" />
+              <img src="assets/v3/car-s3.webp" alt="Carousel slide 3" width="720" height="900" loading="lazy" />
+              <img src="assets/v3/car-s4.webp" alt="Carousel slide 4" width="720" height="900" loading="lazy" />
+              <img src="assets/v3/car-s5.webp" alt="Carousel slide 5" width="720" height="900" loading="lazy" />
+            </div>
+            <span class="ig-cnt" id="m2Cnt">1/5</span>
+            <button class="ms-ar" id="m2Prev" style="left:2px" aria-label="Previous slide"><svg viewBox="0 0 24 24" width="13" height="13"><path d="M15 18l-6-6 6-6"/></svg></button>
+            <button class="ms-ar" id="m2Next" style="right:2px" aria-label="Next slide"><svg viewBox="0 0 24 24" width="13" height="13"><path d="M9 6l6 6-6 6"/></svg></button>
+          </div>
+          <div class="ig-pips inner" id="m2Pips"><i class="on"></i><i></i><i></i><i></i><i></i></div>
+          <div class="ig-cap"><b>mediterraneocostahomes</b> Los costes que nadie te cuenta <span class="ig-tags">#CostaBlanca</span></div>
         </div>
-        <span class="ig-cnt" id="msCnt">1/5</span>
       </div>
-      <div class="ig-pips" id="msPips"><i class="on"></i><i></i><i></i><i></i><i></i></div>
-      <div class="ig-acts">
-        <svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.9-9.7-9.1C.7 8.6 2.7 5 6.2 5c2.1 0 3.7 1.2 4.6 2.6h2.4C14.1 6.2 15.7 5 17.8 5c3.5 0 5.5 3.6 3.9 6.9C19.5 16.1 12 21 12 21z"/></svg>
-        <svg viewBox="0 0 24 24"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5c-1.6 0-3.1-.4-4.4-1.2L3 20l1.2-5.1A8.5 8.5 0 1 1 21 11.5z"/></svg>
-        <svg viewBox="0 0 24 24"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg>
-        <svg class="sp" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V4a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1z"/></svg>
+      <div class="ms-card">
+        <div class="ms-artcard">
+          <img id="m2Style" src="assets/v3/style-navy.webp" alt="Template render" width="900" height="1125" loading="lazy" />
+          <div class="ms-chiprow"><button class="sw m2sw on" data-s="0" style="--a:#0B2545;--b:#C9A45C" aria-label="Navy and Gold"></button><button class="sw m2sw" data-s="1" style="--a:#3D405B;--b:#E07A5F" aria-label="Terracotta"></button><button class="sw m2sw" data-s="2" style="--a:#2F4739;--b:#C98B7A" aria-label="Forest and Blush"></button><span class="swhint2" data-i18n="st_tap">tap a palette &mdash; the whole design follows</span></div>
+        </div>
       </div>
-      <div class="ig-cap"><b>mediterraneocostahomes</b> Los costes que nadie te cuenta <span class="ig-tags">#CostaBlanca</span></div>
+      <div class="ms-card">
+        <div class="ms-artcard">
+          <div class="wl-bar"><span class="wl-d"></span><span class="wl-d"></span><span class="wl-d"></span><span class="wl-url">mediterraneocostahomes.com/villa-moraira</span></div>
+          <div class="ms-renowrap">
+            <img id="m2Reno" src="assets/v3/reno-m-mod.webp" alt="Staged room" width="800" height="600" loading="lazy" />
+            <span class="ms-bef"><img src="assets/v3/reno-m-bef.webp" alt="Before: empty room" width="800" height="600" loading="lazy" /><i class="mono-x" data-i18n="st_before">BEFORE</i></span>
+          </div>
+          <div class="ms-chiprow"><button class="rc m2rc on" data-r="reno-m-mod" data-i18n="st_r1">Moderno</button><button class="rc m2rc" data-r="reno-m-med" data-i18n="st_r2">Mediterr&aacute;neo</button><button class="rc m2rc" data-r="reno-m-sca" data-i18n="st_r3">Escandinavo</button></div>
+        </div>
+      </div>
     </div>
-
-    <div class="ms-style">
-      <img id="msStyleImg" src="assets/v3/style-navy.webp" alt="Template render &mdash; tap a palette to change the style" width="900" height="1125" loading="lazy" />
-      <div class="swrow"><button class="sw msw on" data-s="0" style="--a:#0B2545;--b:#C9A45C" aria-label="Navy and Gold"></button><button class="sw msw" data-s="1" style="--a:#3D405B;--b:#E07A5F" aria-label="Terracotta"></button><button class="sw msw" data-s="2" style="--a:#2F4739;--b:#C98B7A" aria-label="Forest and Blush"></button><span class="swhint" data-i18n="st_tap">tap a palette &mdash; the whole design follows</span></div>
-    </div>
+    <div class="ms-railfoot"><div class="ig-pips outer" id="m2Rpips"><i class="on"></i><i></i><i></i></div><span class="mono-x" id="m2Rcnt">1/3</span></div>
   </section>
 
-  <section class="ms-modes">
-    <div class="ms-mr" data-m="0"><span></span><b data-i18n="m_m1">Draft only</b></div>
-    <div class="ms-mr on" data-m="1"><span></span><b data-i18n="m_m2">Approval-first &middot; recommended start</b></div>
-    <div class="ms-mr" data-m="2"><span></span><b data-i18n="m_m3">Autopilot &middot; unlocked as trust grows</b></div>
-    <p class="ms-mout" id="msMout" data-i18n="m_mo2">Every reply waits for your tap before it sends. You see everything AIVENA writes.</p>
+  <section class="ms-b78">
+    <div class="ms-stamp"><b>07</b><span data-i18n="m2_c7">ANALYTICS</span></div>
+    <div class="ms-receipt">
+      <div class="mono-x" style="text-align:center;letter-spacing:.2em" data-i18n="m2_log">FROM THE LOG &middot; MON 09:00</div>
+      <div class="ms-rrow"><b class="terr"><i id="m2N1">52</i>&nbsp;s <svg class="tick" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></b><span class="mono-x" data-i18n="m_s1">MEDIAN, ENQUIRY TO READY REPLY &middot; MEASURED LIVE</span></div>
+      <div class="ms-rrow"><b class="terr"><i id="m2N2">13</i> <svg class="tick" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></b><span class="mono-x" data-i18n="m_s2">LANGUAGES, DETECTED AUTOMATICALLY</span></div>
+      <div class="ms-leg mono-x" data-i18n="m2_leg">terracotta + tick = measured live</div>
+    </div>
+    <div class="ms-stamp"><b>08</b><span data-i18n="m2_c8">CONTROL</span></div>
+    <div class="ms-modes2">
+      <label class="ms-md"><input type="radio" name="msmode" value="0" /><span class="dot"></span><span class="lb"><b data-i18n="m2_m1">Draft only</b><i data-i18n="m2_m1b">It writes. You send.</i></span></label>
+      <label class="ms-md"><input type="radio" name="msmode" value="1" checked /><span class="dot"></span><span class="lb"><b data-i18n="m2_m2">Approval-first &middot; recommended start</b><i data-i18n="m2_m2b">One tap over coffee.</i></span></label>
+      <label class="ms-md"><input type="radio" name="msmode" value="2" /><span class="dot"></span><span class="lb"><b data-i18n="m2_m3">Autopilot</b><i data-i18n="m2_m3b">unlocked as trust grows</i></span></label>
+      <div class="mono-x" style="margin-top:10px" data-i18n="m2_log2">100% OF SENDS LOGGED.</div>
+    </div>
   </section>
 
   <section class="ms-pilot">
     <div class="ms-kick" style="color:var(--ochre)" data-i18n="pi_kick">PILOT ACCESS NOW OPEN</div>
     <p class="ms-ph" data-i18n="m_pi">First pilot agency gets <span class="itg">1 year free</span> &mdash; because they help shape the final AIVENA system with us.</p>
     <p class="ms-pl" data-i18n="m_pil">No fake logos. No inflated claims.</p>
-    <a class="btn btn-primary ms-cta ms-cta2" href="mailto:christian@aivena.es?subject=AIVENA%20pilot"><span data-i18n="m_cta">Book a demo</span> &rarr;</a>
+    <a class="btn btn-primary ms-cta ms-cta2" href="mailto:christian@aivena.es?subject=AIVENA%20pilot"><span data-i18n="m2_cta">Message us</span> &rarr;</a>
     <div class="ms-flinks"><a href="/dashboard" data-i18n="nav_login">Log in</a> &middot; <a href="privacy.html" data-i18n="ft_privacy">Privacy</a> &middot; <a href="terms.html" data-i18n="ft_terms">Terms</a> &middot; <a href="cookies.html">Cookies</a> &middot; <a href="contact.html" data-i18n="ft_contact">Contact</a></div>
   </section>
 </div>
@@ -1038,6 +1140,17 @@
     m_s1: 'MEDIANA, DE CONSULTA A RESPUESTA LISTA · MEDIDO EN VIVO', m_s2: 'IDIOMAS, DETECTADOS AUTOMÁTICAMENTE', m_s3: 'DE LOS ENVÍOS REGISTRADOS, EN TODOS LOS MODOS',
     m_st: 'El Studio vende lo que el sistema ofrece.', m_m1: 'Solo borradores', m_m2: 'Aprobación primero · inicio recomendado', m_m3: 'Autopiloto · se desbloquea con la confianza', m_mo2: 'Cada respuesta espera tu toque antes de enviarse. Ves todo lo que AIVENA escribe.',
     m_pi: 'La primera agencia piloto tiene 1 año gratis — porque nos ayuda a dar forma al sistema final de AIVENA.', m_pil: 'Sin logos falsos. Sin cifras infladas.',
+    m2_jobs: 'OCHO TRABAJOS. UN SISTEMA.', m2_cta: 'Escríbenos', m2_day: 'De día y de noche, te responde Christian — una persona, no un formulario.',
+    m2_demo: 'CASO DE DEMOSTRACIÓN — AGENCIA Y CLIENTE INVENTADOS — LOS TIEMPOS EN TERRACOTA SON MEDIANAS MEDIDAS',
+    m2_c1: 'BANDEJA IA · RESPUESTA 52 s', m2_off: 'OFICINA CERRADA', m2_t0: 'llega la consulta', m2_c2: 'FICHA DE CLIENTE', m2_ext: 'EXTRAÍDO Y RECORDADO',
+    m2_c3: 'MATCHES DEL CATÁLOGO', m2_rank: 'ORDENADOS, CON RAZONES', m2_r1: 'precio · zona · vistas al mar', m2_r2: 'precio · terraza · vistas al mar',
+    m2_t52: 'borrador listo, en alemán', m2_med: 'lista en 52 s — justo la mediana', m2_gist: 'ES: «La villa sigue disponible — ¿le viene bien el sábado a las 11:00?»',
+    m2_c4: 'SEGUIMIENTO AUTOMÁTICO', m2_quiet: 'ella dejó de escribir · AIVENA no', m2_c5: 'CITA AGENDADA', m2_rem: 'RECORDATORIO ENVIADO · AGENDA DEL EQUIPO',
+    m2_anx1: 'EL MISMO MARTES, 14:00', m2_anx2: '¿El post que vio la compradora? Se hizo aquí.', m2_c6: 'ESTUDIO', m2_swp: 'DESLIZA · 3 DEMOS',
+    m2_c7: 'ANALÍTICA', m2_log: 'DEL REGISTRO · LUN 09:00', m2_ill: 'consultas · matches · visita, una semana tipo', m2_st: '[EJEMPLO ILUSTRATIVO]',
+    m2_leg: 'terracota + tick = medido en vivo',
+    m2_c8: 'CONTROL', m2_m1: 'Solo borradores', m2_m1b: 'Él escribe. Tú envías.', m2_m2: 'Aprobación primero · inicio recomendado', m2_m2b: 'Un toque con el café.',
+    m2_m3: 'Autopiloto', m2_m3b: 'se desbloquea con la confianza', m2_log2: '100% DE ENVÍOS REGISTRADOS.',
     rs_h: 'Cada conversación, <span class="it">medida</span>.',
     rs_1: 'primera respuesta en autopilot', rs_2: 'consultas esta semana', rs_3: 'visitas reservadas',
     rs_note: 'Semana ilustrativa del panel piloto. Con aprobación previa, la respuesta sale con tu próximo café — en autopilot, en minutos.',
@@ -1350,9 +1463,9 @@
       sImg.style.opacity = 0;
       setTimeout(function () { sImg.src = STYLES[i][0]; sImg.style.opacity = 1; }, 220);
       sName.textContent = STYLES[i][1];
-      document.querySelectorAll('.sw').forEach(function (b, j) { b.classList.toggle('on', j === i); });
+      document.querySelectorAll('.sw:not(.m2sw)').forEach(function (b, j) { b.classList.toggle('on', j === i); });
     }
-    document.querySelectorAll('.sw').forEach(function (b) {
+    document.querySelectorAll('.sw:not(.m2sw)').forEach(function (b) {
       b.addEventListener('click', function () { sTouched = true; if (sTimer) { clearInterval(sTimer); sTimer = null; } setStyle(+b.dataset.s); });
     });
     if (!rm) {
@@ -1377,7 +1490,7 @@
       });
     });
   }
-  // ---- mobile site ----
+  // ---- mobile case file ----
   if ($('#msChat')) {
     var ML = [
       ['GERMAN · DETECTED', 'Guten Abend! Ich habe die Villa in Moraira gesehen… Budget ~650.000€, 3 Schlafzimmer.', 'Guten Abend Frau Weber, die Villa ist noch verfügbar — 3 Schlafzimmer, Pool, 400 m zum Meer. Wäre Samstag 11:00 möglich?'],
@@ -1392,67 +1505,123 @@
         $('#msChip').textContent = d[0]; $('#msQ1').textContent = d[1]; $('#msQ2').textContent = d[2];
       });
     });
-    var msDone = false, msCt = $('#msCt');
-    new IntersectionObserver(function (es, o) {
-      es.forEach(function (e) {
-        if (e.isIntersecting && !msDone) {
-          msDone = true; msCt.textContent = '0'; var n = 0;
-          var t = setInterval(function () { n += 2; if (n >= 52) { n = 52; clearInterval(t); } msCt.textContent = n; }, 45);
-          o.disconnect();
-        }
-      });
-    }, { threshold: 0.6 }).observe(msCt);
-    var msBa = $('#msBa'), msR = $('input[type=range]', msBa);
-    msR.addEventListener('input', function () { msBa.style.setProperty('--pos', msR.value + '%'); });
-    var msRi = $('#msRenoAfter');
-    document.querySelectorAll('.mrc').forEach(function (b) {
-      b.addEventListener('click', function () {
-        document.querySelectorAll('.mrc').forEach(function (x) { x.classList.remove('on'); });
-        b.classList.add('on');
-        msRi.style.opacity = 0;
-        setTimeout(function () { msRi.src = 'assets/v3/' + b.dataset.r + '.webp'; msRi.style.opacity = 1; }, 200);
-      });
-    });
-    var msT = $('#msTrack'), msI = 0, msTm = null, msTouched = false;
-    function msGo(i) {
-      msI = ((i % 5) + 5) % 5;
-      msT.style.transform = 'translateX(-' + (msI * 100) + '%)';
-      $('#msCnt').textContent = (msI + 1) + '/5';
-      document.querySelectorAll('#msPips i').forEach(function (p, j) { p.classList.toggle('on', j === msI); });
-    }
-    var msx = null, msCarEl = $('#msCar');
-    msCarEl.addEventListener('pointerdown', function (e) { msx = e.clientX; });
-    msCarEl.addEventListener('pointerup', function (e) {
-      if (msx === null) return; var dx = e.clientX - msx; msx = null;
-      if (Math.abs(dx) > 30) { msTouched = true; if (msTm) { clearInterval(msTm); msTm = null; } msGo(msI + (dx < 0 ? 1 : -1)); }
-    });
+    // AUTO ONE-SHOT 1/3: the 52s counter (static 52 in markup; JS counts up once)
+    var msCt = $('#msCt');
     if (!rm) {
-      new IntersectionObserver(function (es) {
+      var msDone = false;
+      new IntersectionObserver(function (es, o) {
         es.forEach(function (e) {
-          if (e.isIntersecting && !msTouched && !msTm) msTm = setInterval(function () { msGo(msI + 1); }, 3000);
-          if (!e.isIntersecting && msTm) { clearInterval(msTm); msTm = null; }
+          if (e.isIntersecting && !msDone) {
+            msDone = true; msCt.textContent = '0'; var n = 0;
+            var t = setInterval(function () { n += 2; if (n >= 52) { n = 52; clearInterval(t); } msCt.textContent = n; }, 45);
+            o.disconnect();
+          }
         });
-      }, { threshold: 0.4 }).observe(msCarEl);
+      }, { threshold: 0.6 }).observe(msCt);
     }
-    var msSI = $('#msStyleImg');
-    document.querySelectorAll('.msw').forEach(function (b) {
+    // Inner IG carousel: TAP ONLY (council: no pointer delta handlers inside the rail)
+    var m2T = $('#m2Track'), m2I = 0;
+    function m2Go(i) {
+      m2I = Math.max(0, Math.min(4, i));
+      m2T.style.transform = 'translateX(-' + (m2I * 100) + '%)';
+      $('#m2Cnt').textContent = (m2I + 1) + '/5';
+      document.querySelectorAll('#m2Pips i').forEach(function (p, j) { p.classList.toggle('on', j === m2I); });
+    }
+    $('#m2Prev').addEventListener('click', function () { m2Go(m2I - 1); });
+    $('#m2Next').addEventListener('click', function () { m2Go(m2I + 1); });
+    // Outer rail: scroll-driven pips (no scrollend on iOS -> debounced scroll)
+    var rail = $('#msRail'), railTouched = false, railTimer = null, railDeb = null;
+    function railIdx() {
+      var cards = rail.querySelectorAll('.ms-card');
+      var mid = rail.scrollLeft + rail.clientWidth / 2, best = 0, bd = 1e9;
+      cards.forEach(function (c, i) { var cm = c.offsetLeft + c.offsetWidth / 2; var d = Math.abs(cm - mid); if (d < bd) { bd = d; best = i; } });
+      return best;
+    }
+    rail.addEventListener('scroll', function () {
+      clearTimeout(railDeb);
+      railDeb = setTimeout(function () {
+        var i = railIdx();
+        $('#m2Rcnt').textContent = (i + 1) + '/3';
+        document.querySelectorAll('#m2Rpips i').forEach(function (p, j) { p.classList.toggle('on', j === i); });
+      }, 90);
+    }, { passive: true });
+    function railStop() { railTouched = true; if (railTimer) { clearTimeout(railTimer); railTimer = null; } }
+    rail.addEventListener('pointerdown', railStop, { passive: true });
+    rail.addEventListener('touchstart', railStop, { passive: true });
+    // AUTO ONE-SHOT 2/3: single rail pass 1->2->3, then stop forever
+    if (!rm) {
+      var passDone = false;
+      new IntersectionObserver(function (es, o) {
+        es.forEach(function (e) {
+          if (e.isIntersecting && !passDone && !railTouched) {
+            passDone = true; o.disconnect();
+            var cards = rail.querySelectorAll('.ms-card');
+            railTimer = setTimeout(function () {
+              if (railTouched) return;
+              rail.scrollTo({ left: cards[1].offsetLeft - 22, behavior: 'smooth' });
+              railTimer = setTimeout(function () {
+                if (railTouched) return;
+                rail.scrollTo({ left: cards[2].offsetLeft - 22, behavior: 'smooth' });
+              }, 2800);
+            }, 2200);
+          }
+        });
+      }, { threshold: 0.5 }).observe(rail);
+    }
+    // prewarm variants on first rail interaction / idle
+    var warmed = false;
+    function warm() {
+      if (warmed) return; warmed = true;
+      ['style-terracotta', 'style-forest', 'reno-m-med', 'reno-m-sca'].forEach(function (n) { var i = new Image(); i.src = 'assets/v3/' + n + '.webp'; });
+    }
+    rail.addEventListener('pointerdown', warm, { passive: true, once: true });
+    if ('requestIdleCallback' in window) requestIdleCallback(warm, { timeout: 5000 }); else setTimeout(warm, 5000);
+    // decode() before swap (no blank flash)
+    function swapImg(el, src) {
+      var gen = el._swapGen = (el._swapGen || 0) + 1;
+      var img = new Image(); img.src = src;
+      var done = false;
+      var apply = function () { if (done || el._swapGen !== gen) return; done = true; el.src = src; };
+      if (img.decode) img.decode().then(apply).catch(apply);
+      img.onload = apply;
+      setTimeout(apply, 300);
+    }
+    var m2S = $('#m2Style');
+    document.querySelectorAll('.m2sw').forEach(function (b) {
       b.addEventListener('click', function () {
-        document.querySelectorAll('.msw').forEach(function (x) { x.classList.remove('on'); });
+        document.querySelectorAll('.m2sw').forEach(function (x) { x.classList.remove('on'); });
         b.classList.add('on');
-        msSI.style.opacity = 0;
-        setTimeout(function () { msSI.src = 'assets/v3/' + ['style-navy', 'style-terracotta', 'style-forest'][+b.dataset.s] + '.webp'; msSI.style.opacity = 1; }, 200);
+        swapImg(m2S, 'assets/v3/' + ['style-navy', 'style-terracotta', 'style-forest'][+b.dataset.s] + '.webp');
       });
     });
-    msSI.style.transition = 'opacity .25s ease';
-    msRi.style.transition = 'opacity .25s ease';
-    var msMo = ['Nothing sends itself. AIVENA prepares every reply and files it in your inbox — you send manually.', 'Every reply waits for your tap before it sends. You see everything AIVENA writes.', 'Replies within your rules go out on their own — median 52 seconds after the enquiry. Everything else still waits for you.'];
-    document.querySelectorAll('.ms-mr').forEach(function (r) {
-      r.addEventListener('click', function () {
-        document.querySelectorAll('.ms-mr').forEach(function (x) { x.classList.remove('on'); });
-        r.classList.add('on');
-        $('#msMout').textContent = msMo[+r.dataset.m];
+    var m2R = $('#m2Reno');
+    document.querySelectorAll('.m2rc').forEach(function (b) {
+      b.addEventListener('click', function () {
+        document.querySelectorAll('.m2rc').forEach(function (x) { x.classList.remove('on'); });
+        b.classList.add('on');
+        swapImg(m2R, 'assets/v3/' + b.dataset.r + '.webp');
       });
     });
+    // AUTO ONE-SHOT 3/3: receipt pair from ONE observer
+    var n1 = $('#m2N1'), n2 = $('#m2N2');
+    if (!rm) {
+      var recDone = false;
+      new IntersectionObserver(function (es, o) {
+        es.forEach(function (e) {
+          if (e.isIntersecting && !recDone) {
+            recDone = true; o.disconnect();
+            var v = 0;
+            n1.textContent = '0'; n2.textContent = '0';
+            var t = setInterval(function () {
+              v += 2;
+              n1.textContent = Math.min(52, v);
+              n2.textContent = Math.min(13, Math.round(v / 4));
+              if (v >= 52) clearInterval(t);
+            }, 42);
+          }
+        });
+      }, { threshold: 0.7 }).observe(n1);
+    }
   }
   var igT = $('#igTrack');
   if (igT) {

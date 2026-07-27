@@ -230,7 +230,7 @@
     .m-site :focus-visible{outline:2px solid var(--olive);outline-offset:2px}
     .mv{position:sticky;top:0;min-height:100vh;min-height:100svh;background:#FBF8F1;display:flex;flex-direction:column;justify-content:center;padding:70px 24px 26px;box-sizing:border-box}
     .mv.flow{position:relative;min-height:0;display:block;padding:88px 24px 60px}
-    .s1{z-index:1}.s2{z-index:2}.s3{z-index:3}.s4{z-index:4}.s5{z-index:5}.s6{z-index:6}.s7{z-index:7}.s8{z-index:8}.s9{z-index:9}.s10{z-index:10}
+    .s1{z-index:1}.s2{z-index:2}.s3{z-index:3}.s4{z-index:4}.s5{z-index:5}.s6{z-index:6}.s7{z-index:7}.sfs{z-index:8}.s8{z-index:9}.s9{z-index:10}.s10{z-index:11}
     .mv.dark{background:#1F2721;color:#EFEAD9}
     .mv-in{width:100%;max-width:420px;margin:0 auto}
     .mv-lab{display:flex;align-items:baseline;gap:10px;margin:0 0 14px}
@@ -248,7 +248,7 @@
     .mvc{background:#fff;border:1px solid rgba(30,38,32,.10);border-radius:16px;box-shadow:0 1px 2px rgba(30,38,32,.05),0 8px 24px rgba(30,38,32,.05)}
     .mvrow{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid rgba(30,38,32,.10);border-radius:14px;box-shadow:0 1px 2px rgba(30,38,32,.04);padding:12px 14px;margin-top:12px}
     .mvrow .tx{font-size:14.5px;line-height:1.45;color:var(--ink)}
-    .mv-chip{width:40px;height:40px;border-radius:12px;border:1px solid rgba(30,38,32,.10);background:#FBF8F1;display:grid;place-items:center;flex:none}
+    .mv-chip{width:42px;height:42px;border-radius:13px;border:1px solid rgba(30,38,32,.09);background:#F5F1E6;display:grid;place-items:center;flex:none}
     .mv-chip svg{width:20px;height:20px;fill:none;stroke:var(--olive);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
     .mv-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;box-sizing:border-box;background:var(--olive);color:#F7F4EC;border-radius:999px;padding:16px 24px;font-weight:600;font-size:16px;text-decoration:none;margin-top:18px}
     .dark .mv-btn{background:#55693F;box-shadow:inset 0 0 0 1px rgba(246,241,231,.16)}
@@ -313,19 +313,28 @@
     .mv-opt.off{opacity:.55;cursor:default}
     .mv-opt:has(input:focus-visible){outline:2px solid var(--olive);outline-offset:2px}
     .mv-opt input:focus-visible ~ .rad{outline:2px solid var(--olive);outline-offset:3px}
-    .mv-stack{position:relative;margin-top:12px;padding-top:14px}
-    .stk{position:absolute;background:#fff;border:1px solid rgba(30,38,32,.10);border-radius:16px;box-shadow:0 1px 2px rgba(30,38,32,.05);height:64px}
-    .stk.b1{left:16px;right:10px;top:0;transform:rotate(-2deg)}
-    .stk.b2{left:6px;right:18px;top:6px;transform:rotate(1.6deg)}
-    .ig-post{position:relative;overflow:hidden}
-    .ig-h2{display:flex;align-items:center;gap:9px;padding:11px 13px}
-    .ig-h2 b{font-size:13.5px;font-weight:600;color:var(--ink)}
-    .ig-h2 .dots{margin-left:auto;color:#9aa094;letter-spacing:2px;font-weight:700}
-    .ig-h2 svg{width:20px;height:20px;display:block}
-    .ig-post > img{display:block;width:100%;height:auto;aspect-ratio:16/10;object-fit:cover}
-    .ig-f{padding:11px 13px}
-    .ig-f b{display:block;font-size:14.5px;font-weight:600;color:var(--ink)}
-    .ig-f span{font-size:12.5px;color:#6B7268}
+    .mv-rail{margin:10px -24px 0;padding:0 24px;display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding-left:24px;overscroll-behavior-x:contain;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+    .mv-rail::-webkit-scrollbar{display:none}
+    .mv-rail::after{content:"";flex:0 0 12px}
+    .mv-rail img{flex:0 0 62%;max-width:260px;width:62%;height:auto;aspect-ratio:4/5;object-fit:cover;border-radius:14px;border:1px solid rgba(30,38,32,.08);box-shadow:0 1px 2px rgba(30,38,32,.05);scroll-snap-align:start}
+    .mv-pips{display:flex;justify-content:center;align-items:center;gap:5px;margin-top:8px}
+    .mv-pips i{width:5px;height:5px;border-radius:999px;background:rgba(30,38,32,.18)}
+    .mv-pips i:nth-child(-n+3){border-radius:1.5px}
+    .mv-pips i.g{margin-left:10px}
+    .mv-pips i.on{width:14px;height:5px;background:var(--olive)}
+    .fs-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+    .fsc{background:#fff;border:1px solid rgba(30,38,32,.10);border-radius:14px;box-shadow:0 1px 2px rgba(30,38,32,.04);padding:12px;display:flex;flex-direction:column;min-height:128px}
+    .fsc.lead{grid-column:1/-1;flex-direction:row;align-items:center;gap:12px;min-height:0}
+    .fsc.lead .ftw b,.fsc.lead .ftw i{display:block;margin-top:0}
+    .fsc.lead .ftw b{font-size:14px}
+    .fsc.lead .ftw i{font-size:12.5px;margin-top:2px}
+    .fchip{width:36px;height:36px;border-radius:11px;background:#F5F1E6;border:1px solid rgba(30,38,32,.09);display:grid;place-items:center;flex:none}
+    .fchip svg{width:18px;height:18px;fill:none;stroke:var(--olive);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+    .fsc > b{font-size:13.5px;font-weight:600;color:var(--ink);margin-top:8px;line-height:1.3}
+    .fsc i{font-style:normal}
+    .fsc > i{font-size:12px;line-height:1.4;color:#6B7268;margin-top:2px}
+    .fc-tag{font-family:var(--mono);font-size:11px;letter-spacing:.08em;line-height:1.5;color:#8A9086;text-transform:uppercase;margin-top:auto;padding-top:8px}
+    .fs-note{font-size:12.5px;line-height:1.5;color:#8A9086;margin:14px 2px 0}
     .mv-ch{display:flex;justify-content:space-between;margin-top:16px}
     .mv-ch .c{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11px;color:#6B7268}
     .mv-ch .bx{width:40px;height:40px;border-radius:12px;border:1px solid rgba(30,38,32,.10);background:#fff;display:grid;place-items:center}
@@ -347,6 +356,7 @@
   }
   @media (max-width:740px) and (max-height:700px){
     .mv{padding-top:62px}
+    .mv-chip{width:40px;height:40px}
     .mv-h1{font-size:36px}
     .mv-h2{font-size:26px}
     .s1 .mv-p{margin-top:10px;font-size:14px}
@@ -359,14 +369,10 @@
     .mv-wc{max-height:150px;object-fit:contain}
     .att img{aspect-ratio:2/1}
     .mv-photo{aspect-ratio:2/1}
-    .ig-post > img{aspect-ratio:16/9}
     .mv-mono.lg{width:96px;height:96px;font-size:44px;margin-bottom:12px}
     .s9 .mvrow{margin-top:8px;padding:7px 12px}
     .mv-met{padding:11px 14px;margin-top:10px}
     .mv-met b{font-size:38px}
-    .mv-stack{margin-top:8px}
-    .ig-h2{padding:9px 12px}
-    .ig-f{padding:9px 12px}
     .mv-ch{margin-top:12px}
     .mv-ch .bx{width:36px;height:36px}
     .bub{font-size:14px;padding:10px 12px}
@@ -561,8 +567,8 @@
 <symbol id="ic-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.4"/><path d="M12 3.2v2.6 M12 18.2v2.6 M3.2 12h2.6 M18.2 12h2.6 M5.9 5.9l1.9 1.9 M16.2 16.2l1.9 1.9 M18.1 5.9l-1.9 1.9 M7.8 16.2l-1.9 1.9"/></symbol>
 <symbol id="ic-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.2"/><path d="M3.8 12h16.4 M12 3.8c3.1 3.4 3.1 13 0 16.4 M12 3.8c-3.1 3.4-3.1 13 0 16.4"/></symbol>
 <symbol id="ic-check" viewBox="0 0 24 24"><path d="M5 12.8l4.4 4.4L19 7.4"/></symbol>
-<symbol id="mv-shield" viewBox="0 0 24 24"><path d="M12 3.5l6.5 2.4v5.2c0 4.4-2.9 7.4-6.5 9.4-3.6-2-6.5-5-6.5-9.4V5.9L12 3.5z M9 12l2.2 2.2 4.3-4.7"/></symbol>
-<symbol id="mv-person" viewBox="0 0 24 24"><circle cx="12" cy="8.2" r="3.4"/><path d="M5.5 20c.8-3.7 3.4-5.5 6.5-5.5s5.7 1.8 6.5 5.5"/></symbol>
+<symbol id="mv-shield" viewBox="0 0 24 24"><path d="M12 3.5c1.9 1.1 4.1 1.8 6.5 2v5.4c0 4.5-2.8 7.5-6.5 9.5-3.7-2-6.5-5-6.5-9.5V5.5c2.4-.2 4.6-.9 6.5-2z M9 12.1l2.2 2.2 4.2-4.6"/></symbol>
+<symbol id="mv-person" viewBox="0 0 24 24"><rect x="4" y="4.5" width="16" height="15.5" rx="3"/><circle cx="12" cy="10" r="2.6"/><path d="M7.8 19.5c.6-2.6 2.2-3.9 4.2-3.9s3.6 1.3 4.2 3.9"/></symbol>
 <symbol id="mv-pin" viewBox="0 0 24 24"><path d="M12 21s-6.5-5.3-6.5-10a6.5 6.5 0 1113 0c0 4.7-6.5 10-6.5 10z"/><circle cx="12" cy="10.7" r="2.2"/></symbol>
 <symbol id="mv-at" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.4"/><path d="M15.4 12v1.3a2.5 2.5 0 005 0V12a8.4 8.4 0 10-3.3 6.7"/></symbol>
 <symbol id="mv-bolt" viewBox="0 0 24 24"><path d="M13 3L5.5 13.5H11L10 21l7.5-10.5H12L13 3z"/></symbol>
@@ -572,10 +578,18 @@
 <symbol id="mv-doc" viewBox="0 0 24 24"><path d="M7 3.5h7l4 4v13H7v-17z M14 3.5V8h4 M9.8 12.2h4.4 M9.8 15.6h4.4"/></symbol>
 <symbol id="mv-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="5.8"/><path d="M15.4 15.4L20 20"/></symbol>
 <symbol id="mv-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.2"/><path d="M12 7.6V12l3 2.1"/></symbol>
-<symbol id="mv-translate" viewBox="0 0 24 24"><path d="M3.5 6h9 M8 4v2 M5.5 6c.6 3 2.4 5.6 5.3 7.5 M10.5 6c-.7 2.7-2.6 5.1-5.6 7.2 M13 20l3.7-8.5L20.5 20 M14.3 17h4.9"/></symbol>
+<symbol id="mv-translate" viewBox="0 0 24 24"><path d="M4 10l2.8-6 2.8 6 M4.9 8h3.8"/><circle cx="15.5" cy="15.5" r="5"/><path d="M10.5 15.5h10 M15.5 10.5c1.8 1.5 1.8 8.5 0 10c-1.8-1.5-1.8-8.5 0-10z"/></symbol>
 <symbol id="mv-building" viewBox="0 0 24 24"><path d="M5 20V5h9v15 M14 9.5h5V20 M3.5 20h17 M8 8.5h3 M8 11.5h3 M8 14.5h3"/></symbol>
 <symbol id="mv-checkc" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.2"/><path d="M8.4 12.4l2.5 2.5 4.8-5.6"/></symbol>
 <symbol id="mv-clockbolt" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.2"/><path d="M13 7.5l-2.8 4h2.3L11.2 16l3.1-4.4h-2.4L13 7.5z"/></symbol>
+<symbol id="mv-cal" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M8 3.5v3 M16 3.5v3 M3.5 9.5h17"/><circle cx="15.8" cy="15.3" r="1.1"/></symbol>
+<symbol id="mv-csv" viewBox="0 0 24 24"><rect x="3.5" y="4" width="17" height="11.5" rx="2"/><path d="M3.5 8.3h17 M9.2 4v11.5 M14.8 4v11.5 M12 16.8v3.7 M9.9 18.9l2.1 2.1 2.1-2.1"/></symbol>
+<symbol id="mv-phone" viewBox="0 0 24 24"><path d="M5.2 4.8c.7-.7 1.8-.6 2.4.2l1.4 1.9c.5.7.5 1.6-.1 2.2l-.8.9c.8 1.7 2.3 3.2 4 4l.9-.8c.6-.6 1.5-.6 2.2-.1l1.9 1.4c.8.6.9 1.7.2 2.4l-1 1c-.6.6-1.5.9-2.4.7-5.3-1.2-9.3-5.2-10.5-10.5-.2-.9.1-1.8.7-2.4l1.1-.9z M14.5 9.5l5-5 M19.5 8.3V4.5h-3.8"/></symbol>
+<symbol id="mv-mic" viewBox="0 0 24 24"><rect x="9.5" y="3.5" width="5" height="9.5" rx="2.5"/><path d="M6.5 11.5a5.5 5.5 0 0011 0 M12 17v3 M9.5 20h5"/></symbol>
+<symbol id="mv-bubble" viewBox="0 0 24 24"><path d="M20 13.5a2.5 2.5 0 01-2.5 2.5H11l-4.5 3.5V16H6.5A2.5 2.5 0 014 13.5V7a2.5 2.5 0 012.5-2.5h11A2.5 2.5 0 0120 7v6.5z"/><circle cx="8.8" cy="10.2" r=".9"/><circle cx="12" cy="10.2" r=".9"/><circle cx="15.2" cy="10.2" r=".9"/></symbol>
+<symbol id="mv-valu" viewBox="0 0 24 24"><path d="M4 11.5L12 5l8 6.5 M6.5 10.5v9h11v-9 M9.7 14h4.6 M9.7 16.7h3"/></symbol>
+<symbol id="mv-feed" viewBox="0 0 24 24"><path d="M6 8.6a6.8 6.8 0 0111.6-1.8 M17.9 3.6v3.4h-3.4 M18 15.4a6.8 6.8 0 01-11.6 1.8 M6.1 20.4V17h3.4"/></symbol>
+<symbol id="mv-refresh" viewBox="0 0 24 24"><path d="M18.8 12A6.8 6.8 0 1112 5.2c2.1 0 4 .9 5.2 2.4 M17.6 4.3v3.5h-3.5"/></symbol>
 </defs></svg>
 <!-- header -->
 <header class="hdr" id="hdr">
@@ -962,7 +976,7 @@
       <h2 class="mv-h2" data-i18n="mv_h2c">The viewing is booked.</h2>
       <div class="mvc mv-cal">
         <div class="cal-top">
-          <span class="mv-chip"><svg aria-hidden="true" focusable="false"><use href="#ic-cal"/></svg></span>
+          <span class="mv-chip"><svg aria-hidden="true" focusable="false"><use href="#mv-cal"/></svg></span>
           <div><b class="cal-t">S&Aacute;B 11:00</b><span class="cal-s" data-i18n="mv_sat">Saturday 11:00</span></div>
         </div>
         <hr />
@@ -995,6 +1009,7 @@
         </div>
       </div>
       <div class="mvrow"><span class="mv-chip"><svg aria-hidden="true" focusable="false"><use href="#mv-clock"/></svg></span><span class="tx" data-i18n="mv_w4">Prepared the perfect reply and suggested a time</span></div>
+      <div class="mvrow"><span class="mv-chip"><svg aria-hidden="true" focusable="false"><use href="#mv-refresh"/></svg></span><span class="tx" data-i18n="mv_w5">If her interest shifts &mdash; a new area, a new budget &mdash; her profile and matches update. Logged.</span></div>
       <div class="mv-alllog" data-i18n="mv_all">All automatically. All logged.</div>
       <div class="mv-lock"><svg aria-hidden="true" focusable="false"><use href="#mv-lock"/></svg><span data-i18n="mv_rec">Every action is recorded.</span></div>
     </div>
@@ -1007,7 +1022,7 @@
       <div role="radiogroup" aria-labelledby="mvCtrlH">
       <label class="mv-opt"><input type="radio" name="mvmode" value="draft" /><span class="mv-chip"><svg aria-hidden="true" focusable="false"><use href="#mv-doc"/></svg></span><span class="olb"><b data-i18n="mv_o1">Draft only</b><i data-i18n="mv_o1b">AIVENA writes. You send.</i></span><span class="rad"></span></label>
       <label class="mv-opt on"><input type="radio" name="mvmode" value="approval" checked /><span class="mv-chip"><svg aria-hidden="true" focusable="false"><use href="#mv-coffee"/></svg></span><span class="olb"><b data-i18n="mv_o2">Approval-first</b><i data-i18n="mv_o2b">Recommended. Review and approve in one tap.</i></span><span class="rad"></span></label>
-      <label class="mv-opt off"><input type="radio" name="mvmode" value="auto" disabled /><span class="mv-chip"><svg aria-hidden="true" focusable="false"><use href="#ic-cal"/></svg></span><span class="olb"><b data-i18n="mv_o3">Autopilot</b><i data-i18n="mv_o3b">Enable it later when you trust it.</i></span><span class="rad"></span></label>
+      <label class="mv-opt off"><input type="radio" name="mvmode" value="auto" disabled /><span class="mv-chip"><svg aria-hidden="true" focusable="false"><use href="#mv-cal"/></svg></span><span class="olb"><b data-i18n="mv_o3">Autopilot</b><i data-i18n="mv_o3b">Enable it later when you trust it.</i></span><span class="rad"></span></label>
       </div>
       <div class="mv-lock"><svg aria-hidden="true" focusable="false"><use href="#mv-lock"/></svg><span data-i18n="mv_lock">Every message can be reviewed. Every send is logged.</span></div>
     </div>
@@ -1017,19 +1032,18 @@
     <div class="mv-in">
       <div class="mv-lab"><b>06</b><span data-i18n="mv_l6">MORE THAN THE INBOX</span></div>
       <h2 class="mv-h2" data-i18n="mv_h2f">One property. Every channel.</h2>
-      <p class="mv-p" data-i18n="mv_ch">AIVENA turns one listing into content, messages and follow-ups automatically.</p>
-      <div class="mv-stack">
-        <div class="stk b1"></div>
-        <div class="stk b2"></div>
-        <div class="mvc ig-post">
-          <div class="ig-h2">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#C13584" stroke-width="1.8" stroke-linecap="round" role="img" aria-label="Instagram"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="3.8"/><circle cx="17.2" cy="6.8" r="1" fill="#C13584" stroke="none"/></svg>
-            <b>Instagram</b><span class="dots" aria-hidden="true">&middot;&middot;&middot;</span>
-          </div>
-          <img src="assets/v3/villa-dusk.webp" alt="Villa Moraira post image" width="720" height="450" loading="lazy" />
-          <div class="ig-f"><b data-i18n="mv_igt">Villa in Moraira</b><span data-i18n="mv_spec">&euro;650,000 &middot; 3 Beds &middot; Pool &middot; Sea views</span></div>
-        </div>
+      <p class="mv-p" data-i18n="mv_ch">Real renders from the AIVENA Studio engine &mdash; swipe.</p>
+      <div class="mv-rail" role="group" aria-label="Real Studio renders">
+        <img src="assets/v3/style-navy-m.webp" alt="Real Studio render: Villa in Moraira listing post, navy and gold scheme" width="720" height="900" loading="lazy" decoding="async" />
+        <img src="assets/v3/style-terracotta-m.webp" alt="Real Studio render: the same villa in the terracotta scheme" width="720" height="900" loading="lazy" decoding="async" />
+        <img src="assets/v3/style-forest-m.webp" alt="Real Studio render: the same villa in the forest and blush scheme" width="720" height="900" loading="lazy" decoding="async" />
+        <img src="assets/v3/car-s1.webp" alt="Real Studio carousel cover: Los costes que nadie te cuenta" width="720" height="900" loading="lazy" decoding="async" />
+        <img src="assets/v3/car-s2.webp" alt="Carousel slide: El precio es solo el principio" width="720" height="900" loading="lazy" decoding="async" />
+        <img src="assets/v3/car-s3.webp" alt="Carousel slide: Impuestos de compra" width="720" height="900" loading="lazy" decoding="async" />
+        <img src="assets/v3/car-s4.webp" alt="Carousel slide: Notaria, registro y gestoria" width="720" height="900" loading="lazy" decoding="async" />
+        <img src="assets/v3/car-s5.webp" alt="Carousel slide: contact card" width="720" height="900" loading="lazy" decoding="async" />
       </div>
+      <div class="mv-pips" aria-hidden="true"><i class="on"></i><i></i><i></i><i class="g"></i><i></i><i></i><i></i><i></i></div>
       <div class="mv-ch">
         <span class="c"><span class="bx"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="#C13584" stroke-width="1.8" stroke-linecap="round"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="3.8"/><circle cx="17.2" cy="6.8" r="1" fill="#C13584" stroke="none"/></svg></span>Instagram</span>
         <span class="c"><span class="bx"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect x="2.5" y="2.5" width="19" height="19" rx="5" fill="#1877F2"/><path fill="#fff" d="M15.6 12.6l.4-2.5h-2.4V8.5c0-.7.3-1.4 1.4-1.4h1.1V4.9s-1-.2-1.9-.2c-2 0-3.3 1.2-3.3 3.4v1.9H8.7v2.5h2.2V19h2.7v-6.4h2z"/></svg></span>Facebook</span>
@@ -1041,9 +1055,34 @@
     </div>
   </section>
 
+  <section class="mv flow sfs">
+    <div class="mv-in">
+      <div class="mv-lab"><b>07</b><span data-i18n="mv_lsys">THE FULL SYSTEM</span></div>
+      <h2 class="mv-h2" data-i18n="mv_h2sys">Everything AIVENA does.</h2>
+      <div class="fs-grid">
+        <div class="fsc lead"><span class="fchip"><svg aria-hidden="true" focusable="false"><use href="#ic-spark"/></svg></span><span class="ftw"><b data-i18n="mv_f6">Studio content</b><i data-i18n="mv_f6b">Posts, carousels, renovation previews</i></span></div>
+        <div class="fsc"><span class="fchip"><svg aria-hidden="true" focusable="false"><use href="#ic-inbox"/></svg></span><b data-i18n="mv_f1">WhatsApp AI inbox</b><i data-i18n="mv_f1b">Every reply drafted for your approval</i></div>
+        <div class="fsc"><span class="fchip"><svg aria-hidden="true" focusable="false"><use href="#mv-translate"/></svg></span><b data-i18n="mv_f2">Instant translation</b><i data-i18n="mv_f2b">13 languages, translated both ways</i></div>
+        <div class="fsc"><span class="fchip"><svg aria-hidden="true" focusable="false"><use href="#mv-person"/></svg></span><b data-i18n="mv_f3">Client profiles</b><i data-i18n="mv_f3b">Update themselves from every message</i></div>
+        <div class="fsc"><span class="fchip"><svg aria-hidden="true" focusable="false"><use href="#mv-search"/></svg></span><b data-i18n="mv_f4">Property matching</b><i data-i18n="mv_f4b">Every match explained with reasons</i></div>
+        <div class="fsc"><span class="fchip"><svg aria-hidden="true" focusable="false"><use href="#mv-clock"/></svg></span><b data-i18n="mv_f5">Follow-ups</b><i data-i18n="mv_f5b">Drafted for you; every send approved</i></div>
+        <div class="fsc"><span class="fchip"><svg aria-hidden="true" focusable="false"><use href="#ic-chart"/></svg></span><b data-i18n="mv_f7">Live KPIs</b><i data-i18n="mv_f7b">Reply times, activity, languages &mdash; live</i></div>
+        <div class="fsc"><span class="fchip"><svg aria-hidden="true" focusable="false"><use href="#mv-csv"/></svg></span><b data-i18n="mv_f8">Catalogue import (CSV)</b><i data-i18n="mv_f8b">Upload with a staged preview</i></div>
+        <div class="fsc"><span class="fchip"><svg aria-hidden="true" focusable="false"><use href="#mv-phone"/></svg></span><b data-i18n="mv_f9">Missed-call text-back</b><i data-i18n="mv_f9b">Missed calls texted back automatically</i><span class="fc-tag" data-i18n="mv_tgp">UNLOCKED DURING THE PILOT</span></div>
+        <div class="fsc"><span class="fchip"><svg aria-hidden="true" focusable="false"><use href="#mv-mic"/></svg></span><b data-i18n="mv_f10">Voice agent</b><i data-i18n="mv_f10b">An AI voice for phone enquiries</i><span class="fc-tag" data-i18n="mv_tgd">IN DEVELOPMENT</span></div>
+        <div class="fsc"><span class="fchip"><svg aria-hidden="true" focusable="false"><use href="#mv-bubble"/></svg></span><b data-i18n="mv_f11">Website chatbot</b><i data-i18n="mv_f11b">Captures enquiries on your website</i><span class="fc-tag" data-i18n="mv_tgd">IN DEVELOPMENT</span></div>
+        <div class="fsc"><span class="fchip"><svg aria-hidden="true" focusable="false"><use href="#mv-valu"/></svg></span><b data-i18n="mv_f12">Valuation tool</b><i data-i18n="mv_f12b">Home valuations for prospective sellers</i><span class="fc-tag" data-i18n="mv_tgd">IN DEVELOPMENT</span></div>
+        <div class="fsc"><span class="fchip"><svg aria-hidden="true" focusable="false"><use href="#mv-cal"/></svg></span><b data-i18n="mv_f13">Google Calendar sync</b><i data-i18n="mv_f13b">Viewings synced to your calendar</i><span class="fc-tag" data-i18n="mv_tgd">IN DEVELOPMENT</span></div>
+        <div class="fsc"><span class="fchip"><svg aria-hidden="true" focusable="false"><use href="#mv-feed"/></svg></span><b data-i18n="mv_f14">Portal feed sync (Kyero)</b><i data-i18n="mv_f14b">Your Kyero feed, imported automatically</i><span class="fc-tag" data-i18n="mv_tgd">IN DEVELOPMENT</span></div>
+        <div class="fsc"><span class="fchip"><svg aria-hidden="true" focusable="false"><use href="#mv-mail"/></svg></span><b data-i18n="mv_f15">Email channel</b><i data-i18n="mv_f15b">Email lands in the same inbox</i><span class="fc-tag" data-i18n="mv_tgd">IN DEVELOPMENT</span></div>
+      </div>
+      <p class="fs-note" data-i18n="mv_fsnote">Tagged items aren&rsquo;t sold as finished &mdash; they arrive when they&rsquo;re ready.</p>
+    </div>
+  </section>
+
   <section class="mv s8" id="mvNums">
     <div class="mv-in">
-      <div class="mv-lab"><b>07</b><span data-i18n="mv_l7">MEASURED. NOT EXAGGERATED.</span></div>
+      <div class="mv-lab"><b>08</b><span data-i18n="mv_l7">MEASURED. NOT EXAGGERATED.</span></div>
       <h2 class="mv-h2" data-i18n="mv_h2g">Real numbers. Nothing invented.</h2>
       <div class="mvc mv-met"><span class="ic"><svg aria-hidden="true" focusable="false"><use href="#mv-clockbolt"/></svg></span><div><b>52s</b><div class="cap" data-i18n="mv_m1">Median enquiry-to-ready-reply &middot; measured live</div></div></div>
       <div class="mvc mv-met"><span class="ic"><svg aria-hidden="true" focusable="false"><use href="#ic-globe"/></svg></span><div><b>13</b><div class="cap" data-i18n="mv_m2">Languages detected automatically</div></div></div>
@@ -1054,7 +1093,7 @@
 
   <section class="mv s9">
     <div class="mv-in">
-      <div class="mv-lab"><b>08</b><span data-i18n="mv_l8">A PERSON, NOT A CHATBOT.</span></div>
+      <div class="mv-lab"><b>09</b><span data-i18n="mv_l8">A PERSON, NOT A CHATBOT.</span></div>
       <h2 class="mv-h2" data-i18n="mv_h2h">Real support from a real person.</h2>
       <span class="mv-mono lg" aria-hidden="true">C</span>
       <p class="mv-p" data-i18n="mv_ch2">Christian helps set up AIVENA, trains the system with you and stays your point of contact.</p>
@@ -1068,7 +1107,7 @@
 
   <section class="mv dark s10">
     <div class="mv-in">
-      <div class="mv-lab"><b>09</b><span data-i18n="mv_l9">PILOT ACCESS</span></div>
+      <div class="mv-lab"><b>10</b><span data-i18n="mv_l9">PILOT ACCESS</span></div>
       <h2 class="mv-h2" data-i18n="mv_h2i">The first pilot agency gets <em class="gold">1 year free.</em></h2>
       <p class="mv-p" data-i18n="mv_why">Because they help shape the final AIVENA system with us.</p>
       <a class="mv-btn" href="mailto:christian@aivena.es?subject=AIVENA%20pilot"><span data-i18n="mv_cta">Message us</span> &rarr;</a>
@@ -1273,7 +1312,7 @@
     mv_o1: 'Solo borradores', mv_o1b: 'AIVENA escribe. Tú envías.', mv_o2: 'Aprobación primero', mv_o2b: 'Recomendado. Revisa y aprueba en un toque.', mv_o3: 'Autopiloto', mv_o3b: 'Actívalo más adelante, cuando confíes.',
     mv_lock: 'Cada mensaje puede revisarse. Cada envío queda registrado.',
     mv_l6: 'MÁS QUE LA BANDEJA', mv_h2f: 'Una propiedad. Todos los canales.',
-    mv_ch: 'AIVENA convierte un anuncio en contenido, mensajes y seguimientos automáticamente.',
+    mv_ch: 'Renders reales del motor Studio de AIVENA — desliza.',
     mv_igt: 'Villa en Moraira', mv_num: 'Ver los números', mv_cem: 'Email', mv_cbr: 'Folleto',
     mv_l7: 'MEDIDO. SIN EXAGERAR.', mv_h2g: 'Números reales. Nada inventado.',
     mv_m1: 'Mediana de consulta a respuesta lista · medido en vivo', mv_m2: 'Idiomas detectados automáticamente', mv_m3: 'Cada envío registrado · Nada se oculta',
@@ -1284,6 +1323,25 @@
     mv_long: 'Estamos contigo, a largo plazo.', mv_msg: 'Escribe a Christian',
     mv_l9: 'ACCESO PILOTO', mv_h2i: 'La primera agencia piloto tiene <em class="gold">1 año gratis.</em>',
     mv_why: 'Porque nos ayuda a dar forma al sistema final de AIVENA.',
+    mv_w5: 'Si su interés cambia — nueva zona, nuevo presupuesto — su perfil y sus coincidencias se actualizan. Registrado.',
+    mv_lsys: 'EL SISTEMA COMPLETO', mv_h2sys: 'Todo lo que hace AIVENA.',
+    mv_f1: 'Bandeja IA de WhatsApp', mv_f1b: 'Cada respuesta en borrador; tú apruebas',
+    mv_f2: 'Traducción instantánea', mv_f2b: '13 idiomas, ida y vuelta',
+    mv_f3: 'Perfiles de cliente', mv_f3b: 'Se actualizan solos con cada mensaje',
+    mv_f4: 'Emparejamiento de propiedades', mv_f4b: 'Cada coincidencia, con sus razones',
+    mv_f5: 'Seguimientos', mv_f5b: 'Redactados; tú apruebas cada envío',
+    mv_f6: 'Contenido Studio', mv_f6b: 'Posts, carruseles, reformas virtuales',
+    mv_f7: 'KPIs en vivo', mv_f7b: 'Tiempos de respuesta, actividad, idiomas',
+    mv_f8: 'Importación de catálogo (CSV)', mv_f8b: 'Sube tu catálogo con vista previa',
+    mv_f9: 'Respuesta a llamadas perdidas', mv_f9b: 'Llamadas perdidas, respondidas por mensaje',
+    mv_f10: 'Agente de voz', mv_f10b: 'Una voz IA para las llamadas',
+    mv_f11: 'Chatbot para tu web', mv_f11b: 'Captura consultas en tu web',
+    mv_f12: 'Herramienta de valoración', mv_f12b: 'Valoraciones de vivienda para propietarios',
+    mv_f13: 'Sincronización con Google Calendar', mv_f13b: 'Visitas sincronizadas con tu calendario',
+    mv_f14: 'Feed de portales (Kyero)', mv_f14b: 'Tu feed, importado automáticamente',
+    mv_f15: 'Canal de email', mv_f15b: 'El email, en la misma bandeja',
+    mv_tgp: 'SE ACTIVA DURANTE EL PILOTO', mv_tgd: 'EN DESARROLLO',
+    mv_fsnote: 'Lo etiquetado no se vende como terminado — llega cuando está listo.',
     rs_h: 'Cada conversación, <span class="it">medida</span>.',
     rs_1: 'primera respuesta en autopilot', rs_2: 'consultas esta semana', rs_3: 'visitas reservadas',
     rs_note: 'Semana ilustrativa del panel piloto. Con aprobación previa, la respuesta sale con tu próximo café — en autopilot, en minutos.',
@@ -1634,6 +1692,21 @@
         if (r.checked) r.closest('.mv-opt').classList.add('on');
       });
     });
+    // studio rail pips: passive scroll + debounce (no scrollend on iOS)
+    var rail = document.querySelector('.mv-rail');
+    if (rail) {
+      var pips = document.querySelectorAll('.mv-pips i'), pt = null;
+      rail.addEventListener('scroll', function () {
+        if (pt) clearTimeout(pt);
+        pt = setTimeout(function () {
+          var card = rail.querySelector('img');
+          if (!card) return;
+          var idx = Math.round(rail.scrollLeft / (card.getBoundingClientRect().width + 12));
+          idx = Math.max(0, Math.min(pips.length - 1, idx));
+          for (var i = 0; i < pips.length; i++) pips[i].classList.toggle('on', i === idx);
+        }, 80);
+      }, { passive: true });
+    }
     // outgoing-slide fade: p = clamp01((VH - next.top) / (VH * .9))
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     var mq = window.matchMedia('(max-width:740px)');

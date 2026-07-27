@@ -709,6 +709,71 @@ route.post('/logo', async (c) => {
   }
 });
 
+// GET /api/v1/settings/feed — the agency's property-catalogue feed config (P3-A). Read-only, so
+// canWriteSettings allows any role that can read settings; RLS + the agency GUC fence the row.
+// This is CATALOGUE import config (the agency's own listings), NOT a lead/message channel.
+route.get('/feed', async (c) => {
+  const tx = c.get('tx');
+  try {
+    const result = await tx.execute(sql`
+      SELECT feed_url, sync_interval_hours, sync_enabled, feed_format,
+             last_synced_at, last_sync_status, properties_found_last_run
+        FROM agency_feed_config
+       WHERE agency_id = current_setting('app.current_agency_id', true)
+    `);
+    const rows = result as unknown as Array<Record<string, unknown>>;
+    return c.json({ ok: true, config: rows[0] ?? null });
+  } catch (err) {
+    console.error('[/api/v1/settings/feed] read failed:', err);
+    return c.json({ error: 'Couldn\'t load the feed settings. Please try again.' }, 500);
+  }
+});
+
+// POST /api/v1/settings/feed — save the catalogue feed URL + auto-sync toggle + interval. Upsert
+// (0-or-1 row per agency; UNIQUE(agency_id)). agency_id ALWAYS from the GUC, NEVER the client body.
+// The scheduled pg_cron tick (_property_feed_sync_tick) picks this up and dispatches property-sync,
+// which is dry-run-safe, withdrawal-guarded, and mirrors images to owned storage. Auto-gated to
+// owner/aivena_staff by the router-level route.use('*'); no extra guard needed.
+route.post('/feed', async (c) => {
+  const tx = c.get('tx');
+  const body = await readJson(c);
+
+  const feedUrl = trimOrNull(body.feed_url);
+  // NOTE: feed_url can embed an access token — never log it. Errors below log `err` only (drizzle
+  // binds params, so the URL value is not in the error text).
+  if (!feedUrl || !isHttpUrl(feedUrl)) {
+    return c.json({ error: 'Enter a valid feed URL starting with https://' }, 400);
+  }
+  // Sync cadence: clamp to a sane range so a bad value can never hammer the source (min 1h, max 1 week).
+  const rawHours = typeof body.sync_interval_hours === 'number' ? body.sync_interval_hours : Number(body.sync_interval_hours);
+  const intervalHours = Number.isFinite(rawHours) ? Math.min(168, Math.max(1, Math.trunc(rawHours))) : 6;
+  const syncEnabled = body.sync_enabled !== false; // default ON
+  const feedFormat = 'kyero'; // single supported format in the pilot; ignore anything else the client sends
+
+  try {
+    const result = await tx.execute(sql`
+      INSERT INTO agency_feed_config (agency_id, feed_url, sync_interval_hours, sync_enabled, feed_format, updated_at)
+      VALUES (current_setting('app.current_agency_id', true), ${feedUrl}, ${intervalHours}, ${syncEnabled}, ${feedFormat}, now())
+      ON CONFLICT (agency_id) DO UPDATE
+        SET feed_url            = EXCLUDED.feed_url,
+            sync_interval_hours = EXCLUDED.sync_interval_hours,
+            sync_enabled        = EXCLUDED.sync_enabled,
+            feed_format         = EXCLUDED.feed_format,
+            updated_at          = now()
+      RETURNING feed_url, sync_interval_hours, sync_enabled, feed_format,
+                last_synced_at, last_sync_status, properties_found_last_run
+    `);
+    const rows = result as unknown as Array<Record<string, unknown>>;
+    if (rows.length === 0) {
+      return c.json({ error: 'Couldn\'t save the feed settings for this agency.' }, 404);
+    }
+    return c.json({ ok: true, config: rows[0] });
+  } catch (err) {
+    console.error('[/api/v1/settings/feed] write failed:', err);
+    return c.json({ error: 'Couldn\'t save the feed settings. Please try again — if it keeps happening, contact support.' }, 500);
+  }
+});
+
 // ---------- helpers ----------
 
 async function readJson(c: import('hono').Context): Promise<Record<string, unknown>> {
@@ -729,6 +794,15 @@ function trimOrNull(value: unknown): string | null {
 
 function safeParseJson(text: string): unknown {
   try { return JSON.parse(text); } catch { return text; }
+}
+
+function isHttpUrl(value: string): boolean {
+  try {
+    const u = new URL(value);
+    return u.protocol === 'http:' || u.protocol === 'https:';
+  } catch {
+    return false;
+  }
 }
 
 export default route;

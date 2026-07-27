@@ -345,3 +345,38 @@ export async function resendInvitationAction(
     return actionError("resendInvitationAction", err);
   }
 }
+
+// ---------- property feed (catalogue import config; P3-A) ----------
+// The agency's own property feed → catalogue import + scheduled resync. This is CATALOGUE data
+// (the agency's listings), NOT a lead/message channel — AIVENA never messages portal leads.
+
+export type FeedConfig = {
+  feed_url: string | null;
+  sync_interval_hours: number | null;
+  sync_enabled: boolean | null;
+  feed_format: string | null;
+  last_synced_at: string | null;
+  last_sync_status: string | null;
+  properties_found_last_run: number | null;
+};
+
+export type FeedConfigPayload = {
+  feed_url: string;
+  sync_enabled: boolean;
+  sync_interval_hours: number;
+};
+
+export async function saveFeedConfigAction(
+  payload: FeedConfigPayload,
+): Promise<ActionResult<FeedConfig>> {
+  try {
+    const res = await apiFetch<{ ok: true; config: FeedConfig }>("/api/v1/settings/feed", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    revalidatePath("/settings");
+    return { ok: true, data: res.config };
+  } catch (err) {
+    return actionError("saveFeedConfigAction", err);
+  }
+}

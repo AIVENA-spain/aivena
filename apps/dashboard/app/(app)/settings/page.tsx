@@ -35,6 +35,8 @@ import { LanguagesSection } from "./sections/languages-section";
 import { TeamSection } from "./sections/team-section";
 import { PlanPrefsSection } from "./sections/plan-prefs-section";
 import { CatalogueSection } from "./sections/catalogue-section";
+import { FeedSection } from "./sections/feed-section";
+import type { FeedConfig } from "./section-actions";
 import { isDone } from "./sections/readiness-display";
 import { SettingsCards, FactRow, type SettingsCardDef } from "./settings-cards";
 
@@ -58,11 +60,12 @@ export default async function SettingsPage() {
   const tc = await getTranslations("settings.cards");
   const locale = intlLocaleFor(await getLocale());
 
-  const [settingsRes, prefsRes, readinessRes, ctx] = await Promise.allSettled([
+  const [settingsRes, prefsRes, readinessRes, ctx, feedRes] = await Promise.allSettled([
     apiFetch<SettingsResponse>("/api/v1/settings"),
     apiFetch<PreferencesResponse>("/api/v1/me/preferences"),
     apiFetch<ReadinessResponse>("/api/v1/readiness"),
     getCurrentUserContext(),
+    apiFetch<{ ok: true; config: FeedConfig | null }>("/api/v1/settings/feed"),
   ]);
 
   if (settingsRes.status === "rejected") {
@@ -78,6 +81,11 @@ export default async function SettingsPage() {
   // ChecklistSection. Never block the page on it.
   const readiness = readinessRes.status === "fulfilled" ? readinessRes.value : null;
   if (readinessRes.status === "rejected") logFailure("readiness", readinessRes.reason);
+
+  // Feed config (P3-A) is enhancement, not load-critical: a non-owner gets 403 and a pre-deploy build
+  // gets 404 — either way the feed form seeds empty. Never block the page on it.
+  const feedConfig: FeedConfig | null = feedRes.status === "fulfilled" ? feedRes.value.config : null;
+  if (feedRes.status === "rejected") logFailure("feed", feedRes.reason);
 
   const currentUserId = ctx.status === "fulfilled" && ctx.value ? ctx.value.userId : "";
 
@@ -279,7 +287,12 @@ export default async function SettingsPage() {
           <ArrowRight className="h-3 w-3" aria-hidden />
         </Link>
       ),
-      children: <CatalogueSection items={catalogItems} />,
+      children: (
+        <div className="flex flex-col gap-4">
+          <FeedSection feed={feedConfig} />
+          <CatalogueSection items={catalogItems} />
+        </div>
+      ),
     },
 
     // 4. Team & access — compact count + pilot note.

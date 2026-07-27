@@ -191,6 +191,43 @@ export async function gatherReadinessSignals(tx: Tx): Promise<ReadinessSignals> 
     null,
   );
 
+  // Call forwarding (**61*) — the missed-call recovery setup path (pairs with P2-A). Three HONEST,
+  // real signals, all read-only and tenant-scoped:
+  //   - voiceNumber        = the AIVENA voice DID to forward TO. Resolved the exact way ingest_voice_call
+  //                          resolves the dialled number: provider_accounts.from_number for a live voice
+  //                          provider row. NULL = no number provisioned yet → the step shows "not connected
+  //                          yet, unlocks when the agency phone number is provisioned" (never a faked ready).
+  //   - missedCallObserved = a real forwarded missed call actually reached AIVENA (a voice_calls row with
+  //                          status no_answer/voicemail, or one that already triggered a recovery). This is
+  //                          the honest "verified" signal — never a self-tick.
+  //   - recoveryEnabled    = agency_settings.voice_recovery_whatsapp_enabled (is the WhatsApp text-back armed).
+  const callForwarding = await safe<{ voiceNumber: string | null; missedCallObserved: boolean; recoveryEnabled: boolean } | null>(
+    tx,
+    async (sp) => {
+      const r = await sp.execute(sql`
+        SELECT
+          (SELECT pa.from_number FROM public.provider_accounts pa
+             WHERE pa.agency_id = ${AGENCY_GUC}
+               AND pa.provider_type IN ('voice','vapi','twilio_voice','twilio')
+               AND pa.status <> 'disabled'
+               AND pa.from_number IS NOT NULL
+             LIMIT 1) AS voice_number,
+          EXISTS(SELECT 1 FROM public.voice_calls vc
+             WHERE vc.agency_id = ${AGENCY_GUC}
+               AND (vc.status IN ('no_answer','voicemail') OR vc.recovery_sent = true)) AS missed_call_observed,
+          COALESCE((SELECT ast.voice_recovery_whatsapp_enabled FROM public.agency_settings ast
+                    WHERE ast.agency_id = ${AGENCY_GUC}), false) AS recovery_enabled
+      `);
+      const row = rows<{ voice_number: string | null; missed_call_observed: boolean; recovery_enabled: boolean }>(r)[0];
+      return {
+        voiceNumber: row?.voice_number ?? null,
+        missedCallObserved: row?.missed_call_observed === true,
+        recoveryEnabled: row?.recovery_enabled === true,
+      };
+    },
+    null,
+  );
+
   // Block 3 — WhatsApp readiness: CONSUMED from Chat 3's RPC (not re-derived); degrades to null.
   const waParsed = await safe<WhatsAppSignal | null>(
     tx,
@@ -263,6 +300,7 @@ export async function gatherReadinessSignals(tx: Tx): Promise<ReadinessSignals> 
     consent,
     agreements,
     calendar,
+    callForwarding,
     whatsapp: waParsed,
     pilotStatus,
   };

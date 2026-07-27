@@ -61,6 +61,9 @@ function demoSignals(over: Partial<ReadinessSignals> = {}): ReadinessSignals {
     consent: { count: 1 },
     agreements: { dpaAccepted: false, dpaVersion: null, dpaAcceptedAt: null }, // no recorded DPA → manual attestation required
     calendar: { oauthCount: 0 },
+    // No voice DID provisioned for the demo agency (matches live: provider_accounts has no voice row) →
+    // call-forwarding step reports 'unavailable' honestly.
+    callForwarding: { voiceNumber: null, missedCallObserved: false, recoveryEnabled: false },
     whatsapp: null,
     pilotStatus: 'setup',
     ...over,
@@ -69,7 +72,7 @@ function demoSignals(over: Partial<ReadinessSignals> = {}): ReadinessSignals {
 
 const nullSignals: ReadinessSignals = {
   agency: null, branding: null, settings: null, email: null, team: null,
-  templates: null, properties: null, consent: null, agreements: null, calendar: null, whatsapp: null, pilotStatus: null,
+  templates: null, properties: null, consent: null, agreements: null, calendar: null, callForwarding: null, whatsapp: null, pilotStatus: null,
 };
 
 const byId = (items: ReadinessItem[]) => Object.fromEntries(items.map((i) => [i.id, i]));
@@ -397,5 +400,57 @@ describe('Gap-C — dpa_consent_live signal-backing', () => {
     expect(d.allowed).toBe(false);
     expect(d.missingAttestations).toEqual(expect.arrayContaining(['autonomo_corrected', 'legal_pages_published', 'test_data_cleaned']));
     expect(d.missingAttestations).not.toContain('dpa_consent_live');
+  });
+});
+
+describe('P3-B — call forwarding (**61*) onboarding step', () => {
+  const item = (over: Partial<ReadinessSignals> = {}) =>
+    byId(computeReadiness('demo', demoSignals(over)).items)['onboarding.call_forwarding'];
+
+  it('exists as a step with a signal source (honesty contract)', () => {
+    const it = item();
+    expect(it).toBeDefined();
+    expect(it.label).toBe('Call forwarding (**61*)');
+    expect(it.signal.source.length).toBeGreaterThan(0);
+  });
+
+  it('no voice number provisioned → "unavailable" + "not connected yet" copy (never faked)', () => {
+    const it = item(); // demo has callForwarding.voiceNumber = null
+    expect(it.status).toBe('unavailable');
+    expect(it.uiCopy).toContain('not connected yet');
+    expect(it.uiCopy).toContain('provisioned');
+    expect(it.signal.value).toContain('number_connected=false');
+  });
+
+  it('null signal (read failed) → "unavailable", never ready', () => {
+    expect(item({ callForwarding: null }).status).toBe('unavailable');
+  });
+
+  it('number present, no missed call seen → "live_but_unproven" + the **61* instruction + not-verified', () => {
+    const it = item({ callForwarding: { voiceNumber: '+34865000111', missedCallObserved: false, recoveryEnabled: false } });
+    expect(it.status).toBe('live_but_unproven');
+    expect(it.uiCopy).toContain('**61*+34865000111#');
+    expect(it.uiCopy).toContain('not verified yet');
+    expect(it.signal.value).toContain('number_connected=true (+34865000111)');
+  });
+
+  it('missed call observed but text-back off → still "live_but_unproven", copy says text-back is off', () => {
+    const it = item({ callForwarding: { voiceNumber: '+34865000111', missedCallObserved: true, recoveryEnabled: false } });
+    expect(it.status).toBe('live_but_unproven');
+    expect(it.uiCopy).toContain('text-back is still off');
+    expect(it.signal.value).toContain('missed_call_observed=true');
+  });
+
+  it('number + observed missed call + text-back armed → "ready"', () => {
+    const it = item({ callForwarding: { voiceNumber: '+34865000111', missedCallObserved: true, recoveryEnabled: true } });
+    expect(it.status).toBe('ready');
+    expect(it.uiCopy).toContain('Call forwarding active');
+  });
+
+  it('is display-only (G2) — never a go-live (G1) blocker', () => {
+    const res = computeReadiness('demo', demoSignals());
+    expect(byId(res.items)['onboarding.call_forwarding'].gate).toBe('G2');
+    // unavailable on the demo agency, yet it must NOT appear in the go-live blocker list (that is G1-only).
+    expect(res.goLive.blockedBy).not.toContain('onboarding.call_forwarding');
   });
 });

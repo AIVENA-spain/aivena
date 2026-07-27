@@ -136,6 +136,10 @@ export type ReadinessSignals = {
   /** Gap-C: a real accepted DPA row (agency_agreements). null = read failed → treated as not-accepted. */
   agreements: { dpaAccepted: boolean; dpaVersion: string | null; dpaAcceptedAt: string | null } | null;
   calendar: { oauthCount: number } | null;
+  /** Call forwarding (**61*) missed-call setup (pairs with P2-A). null = read failed → 'unavailable'.
+   *  voiceNumber = the forward-to DID (provider_accounts) or null if none provisioned yet;
+   *  missedCallObserved = a real forwarded missed call reached AIVENA; recoveryEnabled = text-back armed. */
+  callForwarding: { voiceNumber: string | null; missedCallObserved: boolean; recoveryEnabled: boolean } | null;
   /** null = the WhatsApp readiness RPC could not be consumed (not deployed / failed). */
   whatsapp: WhatsAppSignal | null;
   /** agencies.pilot_status (C2); null if unreadable or an unknown value. */
@@ -486,6 +490,47 @@ export function computeReadiness(
     status: calStatus,
     detail: !s.calendar ? 'unavailable' : s.calendar.oauthCount > 0 ? 'OAuth credentials present; watcher not live' : 'Not connected (manual viewing fallback)',
     source: 'agency_oauth_credentials',
+  });
+
+  // Call forwarding (**61*) — missed-call recovery setup path (pairs with P2-A). Display-only (G2, never a
+  // go-live blocker: an agency can go live without missed-call forwarding). Honest by construction:
+  //   - no forward-to number provisioned yet  → 'unavailable' ("unlocks when the phone number is provisioned")
+  //   - number present, no real missed call seen OR text-back not armed → 'live_but_unproven' (in progress)
+  //   - number + a real forwarded missed call observed + text-back armed → 'ready'
+  // The 'observed' signal is a real voice_calls no_answer/voicemail (or a fired recovery), never a self-tick.
+  const cf = s.callForwarding;
+  const cfNumber = cf?.voiceNumber ?? null;
+  const cfHasNumber = has(cfNumber);
+  const cfObserved = cf?.missedCallObserved === true;
+  const cfRecoveryEnabled = cf?.recoveryEnabled === true;
+  const cfStatus: ReadinessStatus =
+    !cf || !cfHasNumber
+      ? 'unavailable'
+      : cfObserved && cfRecoveryEnabled
+        ? 'ready'
+        : 'live_but_unproven';
+  const cfInstruction = cfHasNumber
+    ? `Dial **61*${cfNumber}# on the agency's business mobile to forward missed calls to AIVENA.`
+    : `Once the AIVENA phone number is connected, dial **61*<number># on the agency's business mobile to forward missed calls.`;
+  const cfUiCopy = !cfHasNumber
+    ? `Voice number not connected yet — this unlocks when the agency phone number is provisioned. ${cfInstruction}`
+    : !cfObserved
+      ? `${cfInstruction} Then make one test missed call to confirm it reaches AIVENA — not verified yet.`
+      : !cfRecoveryEnabled
+        ? 'Forwarding confirmed — a missed call reached AIVENA. Automatic WhatsApp text-back is still off (turn on voice recovery to arm it).'
+        : 'Call forwarding active — missed calls reach AIVENA and an automatic WhatsApp text-back is armed.';
+  push({
+    id: 'onboarding.call_forwarding', label: 'Call forwarding (**61*)', area: 'H', gate: 'G2', owner: 'agency',
+    agencyEditable: false, adminApproved: null,
+    status: cfStatus,
+    signal: {
+      source: 'provider_accounts (voice DID = forward-to number) + voice_calls (real missed call observed) + agency_settings.voice_recovery_whatsapp_enabled',
+      value: cf
+        ? `number_connected=${cfHasNumber}${cfHasNumber ? ` (${cfNumber})` : ''} · missed_call_observed=${cfObserved} · recovery_textback_enabled=${cfRecoveryEnabled}`
+        : 'unavailable',
+    },
+    uiCopy: cfUiCopy,
+    blockedBy: [],
   });
 
   // Property feed / catalog.

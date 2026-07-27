@@ -15,7 +15,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%234A5D3A'/%3E%3Ctext x='32' y='43' font-family='Georgia,serif' font-size='34' fill='%23FBF8F1' text-anchor='middle'%3EA%3C/text%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&family=Caveat:wght@500;600&display=swap" rel="stylesheet" />
 <style>
   :root{
     --chalk:#FBF8F1; --limestone:#F1EBDE; --olive:#4A5D3A; --olive-deep:#41522F; --sage:#8A9A6B;
@@ -74,30 +74,76 @@
   .lang-t b{color:var(--ink);font-weight:500}
 
   /* hero */
-  .hero{padding:104px 0 0;background:radial-gradient(110% 70% at 85% -10%, rgba(216,162,74,.1), transparent 55%)}
-  .h2grid{display:grid;grid-template-columns:1.04fr 1fr;gap:36px;align-items:center;max-width:1180px;margin:0 auto;padding:26px 24px 74px}
-  .h2txt h1{font-size:clamp(2.2rem,4.4vw,3.4rem);margin-top:14px}
-  .h2sub{font-size:1rem;font-weight:300;color:#3c463c;max-width:46ch;margin-top:16px}
-  .ctas{display:flex;gap:12px;margin-top:26px;flex-wrap:wrap}
-  .h2trust{margin-top:16px;font-size:.78rem;color:var(--stone);display:flex;gap:8px;align-items:center}
-  .dot{width:7px;height:7px;border-radius:50%;background:var(--ochre);box-shadow:0 0 0 3px rgba(216,162,74,.22);flex:none}
-  .h2vis{position:relative}
-  .h2photo{border-radius:20px;overflow:hidden;box-shadow:var(--shadow);border:5px solid #fff}
-  .h2photo img{width:100%;height:clamp(380px,52vh,540px);object-fit:cover}
-  .h2card{position:absolute;left:-38px;bottom:-34px;width:82%;max-width:410px}
-  .syscard{background:var(--card);border-radius:16px;box-shadow:0 30px 70px -30px rgba(38,48,42,.5);padding:16px;color:var(--ink)}
-  .syscard .step{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px dashed var(--line);opacity:1;transform:none;transition:opacity .5s var(--ease),transform .5s var(--ease)}
-  .syscard .step:last-of-type{border-bottom:none}
-  .syscard.armed .step{opacity:0;transform:translateY(10px)}
-  .syscard.armed .step.on{opacity:1;transform:none}
-  .sic{width:26px;height:26px;border-radius:8px;background:rgba(138,154,107,.16);display:grid;place-items:center;flex:none;color:var(--olive)}
-  .st1{font-size:.74rem;color:#333d33;line-height:1.45}
-  .st1 b{color:var(--ink)}
-  .mthumb{width:44px;height:33px;border-radius:5px;object-fit:cover;flex:none}
+  .hero{padding:96px 0 0;background:var(--chalk);overflow-x:clip}
+  .dnav{display:flex;gap:26px;margin:0 26px;flex:1;justify-content:center}
+  .dnav a{font-size:.85rem;color:#3c463c;text-decoration:none;padding:6px 2px}
+  .dnav a:hover{color:var(--ink)}
+  @media(max-width:1023px){.dnav{display:none}}
+  .dh-grid{display:grid;grid-template-columns:.92fr 1.08fr;gap:20px;align-items:start;max-width:1280px;margin:0 auto;padding:28px 24px 6px}
+  .dh-txt{padding-top:44px;position:relative;z-index:2}
+  .dh-kick{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:.68rem;letter-spacing:.18em;color:#5A6157;text-transform:uppercase}
+  .dh-kick .sprig{width:22px;height:22px;fill:none;stroke:var(--olive);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;flex:none}
+  .dh-txt h1{font-size:clamp(3rem,5.2vw,4.4rem);line-height:1.05;margin-top:18px}
+  .dh-sub{font-size:1.02rem;font-weight:300;color:#3c463c;max-width:46ch;margin-top:20px;line-height:1.65}
+  .dh-auto{display:inline-flex;align-items:center;gap:9px;margin-top:22px;border:1px solid var(--line);border-radius:999px;padding:11px 18px;font-size:.85rem;color:var(--stone);background:rgba(255,255,255,.55)}
+  .dh-auto svg{width:16px;height:16px;fill:none;stroke:var(--olive);stroke-width:1.6;flex:none}
+  .dh-auto b{color:var(--ink);font-weight:600}
+  .dh-auto i{font-style:normal;color:#8a917f}
+  .dh-arr{color:#B9B4A2}
+  .dh-sketch{position:relative;margin-top:30px;display:flex;align-items:flex-end;gap:4px;max-width:380px}
+  .dh-sketch img{width:190px;height:auto;mix-blend-mode:multiply;opacity:.9;flex:none}
+  .dh-hand{font-family:'Caveat',cursive;font-size:1.3rem;line-height:1.1;color:#6b5540;transform:rotate(-3deg);margin-bottom:20px}
+  .dh-harrow{width:34px;height:22px;fill:none;stroke:#6b5540;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;margin-bottom:8px;flex:none}
+  .dh-stage{position:relative;height:800px;z-index:1}
+  .dh-photo{position:absolute;top:8px;right:min(-24px,calc((1232px - 100vw)/2));width:min(42vw,600px);height:min(96%,768px);object-fit:cover;border-radius:230px 0 0 36px;z-index:2}
+  .dh-pol{position:absolute;right:min(2px,calc((1232px - 100vw)/2 + 26px));bottom:30px;width:212px;background:#fff;padding:8px 8px 26px;box-shadow:0 16px 40px -18px rgba(38,48,42,.4);transform:rotate(-4deg);z-index:3}
+  .dh-pol img{display:block;width:100%;height:118px;object-fit:cover}
+  .dh-wash{position:absolute;mix-blend-mode:multiply;pointer-events:none;height:auto}
+  .w-terra{width:400px;right:140px;top:290px;opacity:.8;z-index:1}
+  .w-sand{width:430px;left:-56px;bottom:104px;opacity:.85;z-index:1}
+  .w-leaves{width:320px;left:33%;bottom:-26px;opacity:.95;z-index:4}
+  .dh-thread{position:absolute;inset:0;width:100%;height:100%;z-index:5;pointer-events:none}
+  .dh-thread path{fill:none;stroke:rgba(38,48,42,.5);stroke-width:1.6;stroke-linecap:round}
+  .dh-thread circle{fill:#26302A;opacity:.7}
+  .dh-lab{position:absolute;font-family:'Caveat',cursive;font-size:1.18rem;color:#4a5248;z-index:5;transform:rotate(-4deg)}
+  .l1{left:-8px;top:66px}.l2{left:6px;top:306px}.l3{left:34px;top:512px}.l4{left:118px;bottom:70px}
+  .dhc{position:absolute;background:#fff;border:1px solid rgba(30,38,32,.08);border-radius:14px;box-shadow:0 18px 40px -18px rgba(38,48,42,.28);padding:14px;z-index:6;font-size:.82rem;line-height:1.5;color:#3c463c}
+  .dhc p{margin:0 0 6px}
+  .c1{left:56px;top:10px;width:330px;transform:rotate(-1deg)}
+  .c2{left:88px;top:174px;width:300px;transform:rotate(1.2deg)}
+  .c3{left:124px;top:452px;width:302px;transform:rotate(-1.2deg)}
+  .c4{left:216px;bottom:26px;width:296px;transform:rotate(1deg)}
+  .dhc-h{display:flex;align-items:center;gap:9px;margin-bottom:8px}
+  .dhc-h b{font-size:.85rem;color:var(--ink);font-weight:600}
+  .dhc-h .mut{margin-left:auto}
+  .mut{color:#8a917f;font-size:.74rem}
+  .wa28{width:28px;height:28px;flex:none}
+  .dhc-img{position:relative;border-radius:10px;overflow:hidden;margin-bottom:9px}
+  .dhc-img img{display:block;width:100%;height:150px;object-fit:cover}
+  .heart{position:absolute;top:8px;right:8px;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.92);display:grid;place-items:center}
+  .heart svg{width:15px;height:15px;fill:none;stroke:#C86B4A;stroke-width:1.7}
+  .dhc-t{display:block;font-size:.9rem;color:var(--ink);font-weight:600}
+  .dhc-pr{display:block;font-size:.95rem;color:var(--ink);font-weight:600;margin-top:3px}
+  .dhc-btn{margin-top:10px;background:var(--limestone);border-radius:999px;text-align:center;padding:10px;font-weight:500;font-size:.8rem;color:var(--ink)}
+  .infoc{width:17px;height:17px;fill:none;stroke:#8a917f;stroke-width:1.6;flex:none}
+  .spark{width:14px;height:14px;fill:none;stroke:var(--ochre);stroke-width:1.6;display:inline-block;vertical-align:-2px}
+  .calchip{width:28px;height:28px;border-radius:9px;background:var(--limestone);display:grid;place-items:center;flex:none}
+  .calchip svg{width:15px;height:15px;fill:none;stroke:var(--olive);stroke-width:1.6}
+  .okc{width:19px;height:19px;fill:none;stroke:#4A7C59;stroke-width:1.7;margin-left:auto;flex:none}
+  .dhc-with{display:flex;align-items:center;gap:6px;margin-top:8px}
+  .av{width:24px;height:24px;border-radius:50%;background:var(--limestone);border:1px solid rgba(74,93,58,.3);display:grid;place-items:center;font-size:.62rem;font-weight:600;color:var(--olive)}
+  .av+.av{margin-left:-8px}
+  .dhc-with .mut{margin-right:auto}
+  .dh-band{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;border-top:1px solid var(--line);background:var(--chalk);padding:26px 24px}
+  .dh-bk{font-family:var(--mono);font-size:.68rem;letter-spacing:.2em;color:var(--terracotta);text-transform:uppercase}
+  .dh-bl{font-size:.92rem;color:#3c463c;max-width:64ch}
+  @media(max-width:1199px){
+    .c1{width:300px;left:36px}.c2{width:280px;left:64px}.c3{width:284px;left:96px}.c4{width:280px;left:180px}
+    .w-sand{display:none}
+  }
   .toggle{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:.6rem;letter-spacing:.1em;color:var(--olive);background:rgba(138,154,107,.14);border:1px solid rgba(74,93,58,.25);border-radius:999px;padding:4px 10px}
   .tknob{width:22px;height:12px;border-radius:999px;background:var(--olive);position:relative}
   .tknob::after{content:"";position:absolute;right:2px;top:2px;width:8px;height:8px;border-radius:50%;background:#FBF8F1}
-  .replay{font-family:var(--mono);font-size:.6rem;letter-spacing:.12em;color:var(--stone);text-transform:uppercase;cursor:pointer;border:1px solid var(--line);border-radius:999px;padding:5px 11px;background:var(--card)}
   .replay:hover{color:var(--olive);border-color:var(--olive)}
 
   /* facts */
@@ -514,8 +560,11 @@
 
   /* responsive */
   @media(max-width:920px){
-    .h2grid{grid-template-columns:1fr;padding-bottom:40px}
-    .h2card{position:static;width:100%;max-width:none;margin-top:-46px;padding:0 8px}
+    .dh-grid{grid-template-columns:1fr}
+    .dh-stage{height:600px;margin-top:8px}
+    .dh-thread,.dh-lab,.c3,.c4,.dh-pol,.w-sand,.w-terra{display:none}
+    .dh-photo{width:54vw}
+    .c1{left:8px;top:20px}.c2{left:34px;top:200px}
     .mapnodes{grid-template-columns:repeat(2,1fr);gap:18px 10px}
     .mapline{display:none}
     .langdemo,.st-in{grid-template-columns:1fr}
@@ -549,7 +598,6 @@
   }
   @media (prefers-reduced-motion: reduce){
     *{animation-duration:.01ms!important;transition-duration:.01ms!important}
-    .syscard.armed .step{opacity:1;transform:none}
     .sysmap .mnode,.sysmap .mapline{opacity:1;transform:none}
     .js .reveal{opacity:1;transform:none}
     html{scroll-behavior:auto}
@@ -596,6 +644,12 @@
 <header class="hdr" id="hdr">
   <div class="in">
     <a class="brand" href="#top">AIVENA</a>
+    <nav class="dnav" aria-label="Sections">
+      <a href="#sysmap" data-i18n="nav_p">Product</a>
+      <a href="#journey" data-i18n="nav_j">Journey</a>
+      <a href="#studio" data-i18n="nav_s">Studio</a>
+      <a href="#pricing" data-i18n="nav_pr">Pricing</a>
+    </nav>
     <div class="hdr-right">
       <span class="lang-t" id="langToggle" role="button" tabindex="0" aria-label="Change language"><b data-lang-en>EN</b> / <span data-lang-es>ES</span></span>
       <a class="login-q" href="/dashboard" data-i18n="nav_login">Log in</a>
@@ -607,32 +661,68 @@
 
 <!-- hero -->
 <div class="hero" id="top">
-  <div class="h2grid">
-    <div class="h2txt">
-      <span class="kick" style="letter-spacing:.18em" data-i18n="hero_kick">THE AI OPERATING SYSTEM FOR REAL ESTATE AGENCIES</span>
-      <h1 data-i18n="hero_h1">Every enquiry handled &mdash; from first message to booked <span class="it">viewing</span>.</h1>
-      <p class="h2sub" data-i18n="hero_sub">AIVENA reads every enquiry, understands the buyer, matches your listings, prepares the reply in their language, and keeps follow-ups, viewings and content moving &mdash; at the automation level you choose.</p>
+  <div class="dh-grid">
+    <div class="dh-txt">
+      <span class="dh-kick"><svg class="sprig" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 19.5C10 14 14 9.5 19.5 4.5 M9.5 14.5c-2.4.4-4.3-.5-5.3-2.4 M9.5 14.5c.4-2.4-.5-4.3-2.4-5.3 M14 10c-2.2.4-4-.4-5-2.2 M14 10c.4-2.2-.4-4-2.2-5"/></svg><span data-i18n="hero_kick">THE AI OPERATING SYSTEM FOR REAL ESTATE AGENCIES</span></span>
+      <h1 data-i18n="hero_h1">Your agency&rsquo;s<br /><span class="it">AI teammate</span><br />for every enquiry.</h1>
+      <p class="dh-sub" data-i18n="hero_sub">AIVENA reads enquiries, matches the right listings, drafts multilingual replies, coordinates follow-ups and viewings, and runs at the automation level you choose.</p>
       <div class="ctas">
         <a class="btn btn-primary" href="mailto:christian@aivena.es?subject=AIVENA%20demo"><span data-i18n="nav_demo">Book a demo</span> <span class="arr">&rarr;</span></a>
-        <button class="btn btn-ghost" data-tour-open><span class="play-c"><span class="play-t"></span></span> <span data-i18n="cta_tour">See AIVENA in action</span></button>
+        <button class="btn btn-ghost" data-tour-open><span class="play-c"><span class="play-t"></span></span> <span data-i18n="cta_tour">Watch the tour</span></button>
       </div>
-      <div class="h2trust"><span class="dot"></span> <span data-i18n="hero_trust">Pilot access now open &middot; you choose the automation level</span></div>
+      <div class="dh-auto"><svg aria-hidden="true"><use href="#ic-gear"/></svg><span data-i18n="dh_lvl">Automation level:</span> <b data-i18n="dh_af">approval-first</b> <span class="dh-arr">&#8596;</span> <i data-i18n="dh_ap">autopilot</i></div>
+      <div class="dh-sketch" aria-hidden="true">
+        <img src="assets/v3/ink-church.webp" alt="" width="640" height="467" loading="lazy" />
+        <span class="dh-hand" data-i18n="dh_med">Built for agencies in the Mediterranean</span>
+        <svg class="dh-harrow" viewBox="0 0 40 24"><path d="M3 4c9 10 21 14 33 11 M30 11l7 4-8 3"/></svg>
+      </div>
     </div>
-    <div class="h2vis">
-      <div class="h2photo"><img src="assets/v3/hero.webp" alt="Whitewashed Mediterranean villa terrace with an olive tree" width="1400" height="1120" fetchpriority="high" /></div>
-      <div class="h2card">
-        <div class="syscard" id="heroDemo" role="button" tabindex="0" aria-label="Open the product tour" data-tour-open>
-          <div class="step"><span class="sic"><svg class="i sm"><use href="#ic-inbox"/></svg></span><div class="st1"><b>22:47 &middot; WhatsApp</b> &mdash; "Guten Abend! Ich habe die Villa in Moraira gesehen&hellip; Budget ~650.000&euro;, 3 Schlafzimmer, in Meern&auml;he."</div></div>
-          <div class="step"><span class="sic"><svg class="i sm"><use href="#ic-intel"/></svg></span><div class="st1"><b data-i18n="sc_understood">Understood</b> &mdash; &euro;650k &middot; Moraira &middot; <span data-i18n="sc_bed">3 bed</span> &middot; <span data-i18n="lang_de">German</span></div></div>
-          <div class="step"><span class="sic"><svg class="i sm"><use href="#ic-home"/></svg></span><div class="st1" style="display:flex;gap:9px;align-items:center"><img class="mthumb" src="assets/v3/prop-moraira.webp" alt="" width="88" height="66" loading="lazy" /><span><b>Match 97%</b> &mdash; Villa &middot; 645.000 &euro; &middot; <span data-i18n="sc_sea">400 m to the sea</span></span></div></div>
-          <div class="step"><span class="sic"><svg class="i sm"><use href="#ic-pen"/></svg></span><div class="st1"><b data-i18n="sc_reply">Reply ready, in German</b> &mdash; "&hellip;W&auml;re Samstag 11:00 m&ouml;glich?"</div></div>
-          <div class="step"><span class="sic"><svg class="i sm"><use href="#ic-gear"/></svg></span><div class="st1" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span class="toggle"><span class="tknob"></span> <span data-i18n="mode_approve_u">APPROVAL-FIRST</span></span><span style="color:var(--stone);font-size:.68rem" data-i18n="sc_setting">your setting decides what sends</span></div></div>
-          <div class="step"><span class="sic"><svg class="i sm"><use href="#ic-cal"/></svg></span><div class="st1"><b data-i18n="sc_viewing">Viewing booked</b> &mdash; <span data-i18n="sc_sat">SAT 11:00 &middot; in the team calendar</span></div></div>
-          <div style="display:flex;justify-content:flex-end;padding-top:10px"><span class="replay" id="heroReplay">&#9654; <span data-i18n="sc_replay">replay demo</span></span></div>
-        </div>
+    <div class="dh-stage">
+      <img class="dh-wash w-terra" src="assets/v3/wc-terracotta.webp" alt="" width="800" height="800" loading="lazy" aria-hidden="true" />
+      <img class="dh-wash w-sand" src="assets/v3/wc-sand.webp" alt="" width="900" height="514" loading="lazy" aria-hidden="true" />
+      <img class="dh-photo" src="assets/v3/hero-terrace.webp" alt="Mediterranean terrace with an olive tree overlooking a whitewashed coastal village and the sea" width="1100" height="1507" fetchpriority="high" />
+      <span class="dh-pol" aria-hidden="true"><img src="assets/v3/coastal-town.webp" alt="" width="1100" height="629" loading="lazy" /></span>
+      <img class="dh-wash w-leaves" src="assets/v3/wc-leaves.webp" alt="" width="800" height="800" loading="lazy" aria-hidden="true" />
+      <svg class="dh-thread" viewBox="0 0 460 800" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M60 44 C 18 92, 22 150, 92 186 C 150 214, 38 300, 50 372 C 58 430, 98 442, 126 480 C 148 512, 68 572, 96 624 C 118 668, 190 664, 222 694" vector-effect="non-scaling-stroke"/>
+        <circle cx="60" cy="44" r="3"/><circle cx="92" cy="186" r="3"/><circle cx="126" cy="480" r="3"/><circle cx="222" cy="694" r="3"/>
+      </svg>
+      <span class="dh-lab l1" data-i18n="dh_t1">understood</span>
+      <span class="dh-lab l2" data-i18n="dh_t2">matched</span>
+      <span class="dh-lab l3" data-i18n="dh_t3">drafted</span>
+      <span class="dh-lab l4" data-i18n="dh_t4">booked</span>
+      <div class="dhc c1">
+        <div class="dhc-h"><svg class="wa28" viewBox="0 0 34 34" role="img" aria-label="WhatsApp"><circle cx="17" cy="17" r="17" fill="#25D366"/><path fill="#fff" d="M17 7.5c-5.2 0-9.4 4.2-9.4 9.4 0 1.8.5 3.4 1.4 4.9L7.5 26.5l4.8-1.4c1.4.8 3 1.2 4.7 1.2 5.2 0 9.4-4.2 9.4-9.4S22.2 7.5 17 7.5zm4.9 13.2c-.2.6-1.2 1.1-1.7 1.2-.5.1-1 .2-3.3-.7-2.8-1.1-4.6-4-4.7-4.2-.1-.2-1.1-1.5-1.1-2.9s.7-2 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5s.8 1.9.8 2c.1.1.1.3 0 .5l-.4.6c-.1.2-.3.4-.1.7.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.4 2.4 1.5.3.1.5.1.7-.1l1-1.2c.2-.3.4-.2.7-.1l2 1c.3.1.5.2.5.3.1.2.1.7-.1 1.3z"/></svg><b data-i18n="dh_c1">Buyer enquiry</b><span class="mut" data-i18n="dh_c1t">Today 10:24</span></div>
+        <p data-i18n="dh_c1b">Hi! We&rsquo;re looking for a villa in Moraira with sea view, 3 beds, budget up to &euro;700k. Can you help?</p>
+      </div>
+      <div class="dhc c2">
+        <div class="dhc-h"><b data-i18n="dh_c2">Top match</b><span class="mut" style="color:var(--olive);font-weight:600" data-i18n="dh_c2p">97% match</span></div>
+        <div class="dhc-img"><img src="assets/v3/pool-sunset.webp" alt="Villa Horizonte terrace with pool and sea view" width="800" height="500" loading="lazy" /><span class="heart" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 20s-7.2-4.6-9.2-9.2a5.1 5.1 0 019.2-3 5.1 5.1 0 019.2 3C19.2 15.4 12 20 12 20z"/></svg></span></div>
+        <b class="dhc-t">Villa Horizonte</b>
+        <span class="mut" data-i18n="dh_c2s">Moraira &middot; 3 bed &middot; 2 bath &middot; 180 m&sup2;</span>
+        <b class="dhc-pr">&euro;645,000</b>
+      </div>
+      <div class="dhc c3">
+        <div class="dhc-h"><svg class="infoc" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.4"/><path d="M12 11v5 M12 7.6v.6"/></svg><b data-i18n="dh_c3">Drafted reply</b><span class="mut">EN &#9662;</span></div>
+        <p data-i18n="dh_c3a">Hi! Thanks for your message.</p>
+        <p data-i18n="dh_c3b">I&rsquo;ve found a villa in Moraira that could be perfect for you.</p>
+        <p><span data-i18n="dh_c3c">Would you like me to send more details or schedule a viewing?</span> <svg class="spark" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l1.6 5.2L19 11l-5.4 1.6L12 18l-1.6-5.4L5 11l5.4-1.8L12 4z"/></svg></p>
+        <div class="dhc-btn" aria-hidden="true" data-i18n="dh_c3d">Review &amp; send</div>
+      </div>
+      <div class="dhc c4">
+        <div class="dhc-h"><span class="calchip"><svg aria-hidden="true"><use href="#mv-cal"/></svg></span><b data-i18n="dh_c4">Viewing booked</b><svg class="okc" aria-hidden="true"><use href="#mv-checkc"/></svg></div>
+        <b class="dhc-t" data-i18n="dh_c4t">Sat, 27 Jul &middot; 11:00</b>
+        <span class="mut">Villa Horizonte, Moraira</span>
+        <div class="dhc-with"><span class="mut" data-i18n="dh_c4w">With: Sarah &amp; James</span><span class="av" aria-hidden="true">S</span><span class="av" aria-hidden="true">J</span></div>
       </div>
     </div>
   </div>
+</div>
+
+<!-- pilot band (replaces the mock's banned logo strip) -->
+<div class="dh-band">
+  <span class="dh-bk" data-i18n="dh_bk">PILOT ACCESS NOW OPEN</span>
+  <span class="dh-bl" data-i18n="dh_bl">The first pilot agency gets 1 year free &mdash; because they help shape the final AIVENA system with us.</span>
 </div>
 
 <!-- fact strip -->
@@ -716,7 +806,7 @@
 </section>
 
 <!-- journey -->
-<section>
+<section id="journey">
   <div class="wrap">
     <div class="scene-h reveal">
       <h2 data-i18n="j_h">One enquiry, start to <span class="it">finish</span>.</h2>
@@ -744,7 +834,7 @@
 </section>
 
 <!-- studio -->
-<section class="studio-tab">
+<section id="studio" class="studio-tab">
   <div class="tex"><img src="assets/v3/brand-texture.webp" alt="" width="1100" height="619" loading="lazy" /></div>
   <div class="feedbg" aria-hidden="true">
     <img src="assets/v3/car-s2.webp" alt="" loading="lazy" style="--r:-4deg" /><img src="assets/v3/style-terracotta.webp" alt="" loading="lazy" style="--r:3deg" /><img src="assets/v3/car-s4.webp" alt="" loading="lazy" style="--r:-2deg" /><img src="assets/v3/style-forest.webp" alt="" loading="lazy" style="--r:5deg" /><img src="assets/v3/car-s5.webp" alt="" loading="lazy" style="--r:-5deg" /><img src="assets/v3/style-navy.webp" alt="" loading="lazy" style="--r:2deg" />
@@ -870,7 +960,7 @@
 </div>
 
 <!-- pricing + faq -->
-<section>
+<section id="pricing">
   <div class="wrap">
     <div class="scene-h center reveal" style="max-width:44ch;margin:0 auto"><h2 data-i18n="pr_h">One plan, for <span class="it">now</span>.</h2></div>
     <div class="price reveal">
@@ -1244,10 +1334,23 @@
 
   /* ══ i18n ══ */
   var ES = {
-    nav_login: 'Iniciar sesión', nav_demo: 'Reserva una demo', cta_tour: 'Ver AIVENA en acción',
+    nav_login: 'Iniciar sesión', nav_demo: 'Reserva una demo', cta_tour: 'Ver el tour',
     hero_kick: 'EL SISTEMA OPERATIVO DE IA PARA INMOBILIARIAS',
-    hero_h1: 'Cada consulta resuelta — del primer mensaje a la <span class="it">visita</span> reservada.',
-    hero_sub: 'AIVENA lee cada consulta, entiende al comprador, cruza tu cartera, prepara la respuesta en su idioma y mantiene en marcha seguimientos, visitas y contenido — con el nivel de automatización que tú elijas.',
+    nav_p: 'Producto', nav_j: 'Recorrido', nav_s: 'Studio', nav_pr: 'Precios',
+    dh_lvl: 'Nivel de automatización:', dh_af: 'aprobación previa', dh_ap: 'autopiloto',
+    dh_med: 'Hecho para agencias del Mediterráneo',
+    dh_t1: 'entendida', dh_t2: 'match', dh_t3: 'redactada', dh_t4: 'reservada',
+    dh_c1: 'Consulta de comprador', dh_c1t: 'Hoy 10:24',
+    dh_c1b: '¡Hola! Buscamos una villa en Moraira con vistas al mar, 3 dormitorios, presupuesto hasta 700.000 €. ¿Podéis ayudarnos?',
+    dh_c2: 'Mejor match', dh_c2p: '97% match', dh_c2s: 'Moraira · 3 dorm. · 2 baños · 180 m²',
+    dh_c3: 'Respuesta redactada', dh_c3a: '¡Hola! Gracias por tu mensaje.',
+    dh_c3b: 'He encontrado una villa en Moraira que podría ser perfecta para vosotros.',
+    dh_c3c: '¿Queréis que os envíe más detalles o agendamos una visita?', dh_c3d: 'Revisar y enviar',
+    dh_c4: 'Visita reservada', dh_c4t: 'Sáb, 27 jul · 11:00', dh_c4w: 'Con: Sarah y James',
+    dh_bk: 'ACCESO PILOTO YA ABIERTO',
+    dh_bl: 'La primera agencia piloto tiene 1 año gratis — porque nos ayuda a dar forma al sistema AIVENA definitivo.',
+    hero_h1: 'El <span class="it">compañero de IA</span> de tu agencia, para cada consulta.',
+    hero_sub: 'AIVENA lee las consultas, encuentra los inmuebles adecuados, redacta respuestas multilingües, coordina seguimientos y visitas, y funciona al nivel de automatización que tú eliges.',
     hero_trust: 'Piloto abierto · tú eliges el nivel de automatización',
     sc_understood: 'Entendido', sc_bed: '3 hab', lang_de: 'Alemán', sc_sea: 'a 400 m del mar',
     sc_reply: 'Respuesta lista, en alemán', mode_approve_u: 'APROBACIÓN PREVIA',
@@ -1433,21 +1536,6 @@
   }, { threshold: 0.2, rootMargin: '0px 0px -8% 0px' });
   $$('.reveal').forEach(function (el) { io.observe(el); });
   if (rm) $$('.reveal').forEach(function (el) { el.classList.add('is-live'); });
-
-  /* ══ hero demo ══ */
-  var card = $('#heroDemo');
-  var steps = card ? $$('.step', card) : [];
-  function playHero() {
-    if (!card || rm) return;
-    card.classList.add('armed');
-    steps.forEach(function (s) { s.classList.remove('on'); });
-    var d = [400, 1400, 2400, 3500, 4600, 5600];
-    steps.forEach(function (s, i) { setTimeout(function () { s.classList.add('on'); }, d[i] || 400 + i * 1000); });
-    setTimeout(function () { card.classList.remove('armed'); }, 7200);
-  }
-  var rp = $('#heroReplay');
-  if (rp) rp.addEventListener('click', function (e) { e.stopPropagation(); playHero(); });
-  setTimeout(playHero, 500);
 
   /* ══ system map ══ */
   var map = $('#sysmap');

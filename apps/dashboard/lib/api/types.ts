@@ -246,6 +246,35 @@ export type BookingRow = {
 
 export type BookingsResponse = { bookings: BookingRow[] };
 
+// ── Voice / missed-call recovery (P2-A) ────────────────────────────────────
+// GET /api/v1/voice/recovery-status. Raw prerequisite facts (the dashboard's
+// voice-recovery-model turns these into a readiness headline + missing pieces)
+// plus the recent call log with per-call recovery status.
+export type VoiceRecoveryFacts = {
+  flag_enabled: boolean;
+  template_key: string;
+  auto_toggle: string | null;
+  whatsapp_lane: string;
+  template_approved: boolean;
+  provider_live: boolean;
+};
+export type VoiceCallRow = {
+  id: string;
+  status: string;
+  direction: string | null;
+  from_number: string | null;
+  lead_id: string | null;
+  lead_name: string | null;
+  lead_opt_in: string | null;
+  recovery_sent: boolean;
+  created_at: string;
+  started_at: string | null;
+};
+export type VoiceRecoveryStatusResponse = {
+  readiness: VoiceRecoveryFacts;
+  calls: VoiceCallRow[];
+};
+
 // ── Content library (Studio Library tab) ──────────────────────────────────
 
 export type ContentItemRow = {

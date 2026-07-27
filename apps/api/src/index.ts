@@ -16,6 +16,7 @@ import settingsRoute from './routes/settings';
 import invitationsRoute from './routes/invitations';
 import propertiesRoute from './routes/properties';
 import bookingsRoute from './routes/bookings';
+import voiceRoute from './routes/voice';
 import contentRoute from './routes/content';
 import leadNotesRoute from './routes/lead-notes';
 import leadsRoute from './routes/leads';
@@ -106,6 +107,8 @@ app.route('/api/v1/invitations', invitationsRoute);
 app.route('/api/v1/agencies', propertiesRoute);
 // Bookings / viewings read surface (W11-lite).
 app.route('/api/v1/bookings', bookingsRoute);
+// Voice / missed-call recovery read surface (P2-A) — readiness + call log, no send.
+app.route('/api/v1/voice', voiceRoute);
 // Google Calendar connect / status / disconnect (Packet 2 · L1) — authed agency
 // owner. Inert (503) until the Google secrets are set; no live Google call is made
 // until an agency connects. Manual-task fallback (L3) stays until then.

@@ -8,6 +8,7 @@ export type NavItem = {
     | "operations"
     | "properties"
     | "viewings"
+    | "calls"
     | "performance"
     | "content"
     | "studio"
@@ -21,6 +22,7 @@ export type NavItem = {
     | "operations"
     | "properties"
     | "viewings"
+    | "calls"
     | "performance"
     | "content"
     | "studio"
@@ -52,6 +54,7 @@ export const PRIMARY_NAV: NavItem[] = [
   // line to restore the nav entry if the direction changes.
   { tKey: "properties", href: "/properties", iconName: "properties", roles: ["owner", "agent", "viewer"] },
   { tKey: "viewings", href: "/viewings", iconName: "viewings", roles: ["owner", "agent", "viewer"] },
+  { tKey: "calls", href: "/voice", iconName: "calls", roles: ["owner", "agent", "viewer"] },
   { tKey: "performance", href: "/performance", iconName: "performance", roles: ["owner", "agent", "viewer"] },
   // Content merged into Studio's Library tab (no standalone nav item). /content
   // redirects to /studio.

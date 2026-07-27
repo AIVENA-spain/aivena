@@ -1306,6 +1306,8 @@
     "recovery_pending_approval": "Ждёт подтверждения",
     "recovery_waiting_setup": "Ждёт настройки",
     "recovery_no_contact": "Нет номера",
-    "recovery_opted_out": "Отписался"
+    "recovery_opted_out": "Отписался",
+    "sendTextBack": "Отправить ответ",
+    "sending": "Отправка…"
   }
 }

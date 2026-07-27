@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Check, PhoneMissed, X, Info, ShieldCheck, Clock } from "lucide-react";
+import { Check, PhoneMissed, X, Info, ShieldCheck, Clock, Send } from "lucide-react";
 
 import type { VoiceRecoveryFacts, VoiceCallRow } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
@@ -14,6 +16,16 @@ import {
   type Prereq,
   type CallRecoveryState,
 } from "./voice-recovery-model";
+import { sendRecoveryAction } from "./voice-actions";
+
+// Recovery states where an agent can approve + send a text-back (missed, not yet
+// sent, reachable non-opted-out contact). "waiting_setup" is included so the button
+// is present and, on click, surfaces the exact missing reason (no provider yet).
+const ACTIONABLE: ReadonlySet<CallRecoveryState> = new Set<CallRecoveryState>([
+  "pending_approval",
+  "pending_auto",
+  "waiting_setup",
+]);
 
 export function CallsWorkspace({
   readiness: facts,
@@ -110,7 +122,10 @@ export function CallsWorkspace({
                     <RelativeTime iso={c.started_at ?? c.created_at} />
                   </span>
                   <CallStatusPill status={c.status} t={t} />
-                  <RecoveryPill state={state} t={t} />
+                  <div className="flex flex-col items-start gap-1">
+                    <RecoveryPill state={state} t={t} />
+                    {ACTIONABLE.has(state) ? <RecoveryAction callId={c.id} t={t} /> : null}
+                  </div>
                 </div>
               );
             })}
@@ -187,6 +202,52 @@ function CallStatusPill({ status, t }: { status: string; t: Tr }) {
 type CallStatusKey =
   | "callStatus_ringing" | "callStatus_answered" | "callStatus_no_answer"
   | "callStatus_busy" | "callStatus_failed" | "callStatus_voicemail";
+
+/**
+ * Approval-first "Send text-back" button for a recoverable missed call. On click it
+ * asks the server to enqueue the WhatsApp text-back — which succeeds only when a
+ * live provider + approved template exist; otherwise the server returns the exact
+ * reason (e.g. "WhatsApp sending isn't connected yet") and we show it inline. So the
+ * action is present + honest today, and it sends the moment the provider lands.
+ */
+function RecoveryAction({ callId, t }: { callId: string; t: Tr }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function onSend() {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    const res = await sendRecoveryAction(callId);
+    if (res.ok) {
+      setBusy(false);
+      router.refresh(); // the row's recovery flips to "Sent"
+    } else {
+      setError(res.error);
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col items-start gap-1">
+      <button
+        type="button"
+        onClick={onSend}
+        disabled={busy}
+        className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 py-1 text-[11px] font-medium text-foreground hover:bg-muted disabled:opacity-60"
+      >
+        <Send className="h-3 w-3" aria-hidden />
+        {busy ? t("sending") : t("sendTextBack")}
+      </button>
+      {error ? (
+        <p className="max-w-[220px] text-[11px] leading-snug text-amber-700 dark:text-amber-300">
+          {error}
+        </p>
+      ) : null}
+    </div>
+  );
+}
 
 function RecoveryPill({ state, t }: { state: CallRecoveryState; t: Tr }) {
   if (state === "not_applicable") return <span className="text-[12px] text-muted-foreground">—</span>;

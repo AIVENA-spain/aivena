@@ -1,6 +1,31 @@
 import { Hono } from 'hono';
 import { sql } from 'drizzle-orm';
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// agent_send_voice_recovery `reason` → { friendly message, http status }. Law-2:
+// the raw token never leaves this map. Pure + exported so it's unit-tested with no
+// DB. A missing/unknown reason → the calm generic 500.
+const RECOVERY_SEND_GENERIC =
+  "We couldn't send the text-back right now — please try again, and contact support if it persists.";
+const RECOVERY_REASON_MAP: Record<string, { msg: string; status: 404 | 409 | 422 }> = {
+  call_not_found: { msg: "Couldn't find that call — please refresh and try again.", status: 404 },
+  not_missed: { msg: 'That call was answered — there is no missed-call text-back to send.', status: 422 },
+  already_sent: { msg: 'A text-back has already been sent for this call.', status: 409 },
+  no_contact: { msg: "There's no phone number on this call to text back.", status: 422 },
+  opted_out: { msg: "This contact has opted out of messages, so we can't text them.", status: 422 },
+  no_whatsapp_provider: { msg: "WhatsApp sending isn't connected yet — this will send once it is.", status: 422 },
+  no_template: { msg: "The missed-call text-back message isn't approved yet — this will send once it is.", status: 422 },
+};
+
+export function classifyRecoverySend(
+  reason: unknown,
+): { error: string; status: 404 | 409 | 422 | 500 } {
+  const mapped = typeof reason === 'string' ? RECOVERY_REASON_MAP[reason] : undefined;
+  if (mapped) return { error: mapped.msg, status: mapped.status };
+  return { error: RECOVERY_SEND_GENERIC, status: 500 };
+}
+
 /**
  * Voice / missed-call recovery read surface (P2-A). Read-only. Powers the dashboard
  * "Calls" page: the honest readiness state of the missed-call WhatsApp text-back
@@ -31,12 +56,12 @@ route.get('/recovery-status', async (c) => {
              AND wt.status = 'approved'
              AND COALESCE(btrim(wt.provider_template_id), '') <> ''
         )                                                                          AS template_approved,
-        EXISTS (
-          SELECT 1 FROM provider_accounts pa
-           WHERE pa.agency_id = current_setting('app.current_agency_id', true)
-             AND pa.provider_type = 'twilio_whatsapp'
-             AND COALESCE(pa.status, '') <> 'disabled'
-        )                                                                          AS provider_live
+        -- Provider readiness uses the SAME signal the actual queue-send checks
+        -- (agent_send_voice_recovery / send_reengagement_template) so the card and
+        -- the send can never disagree: a connected Twilio WhatsApp on agency_settings.
+        (s.whatsapp_provider IS NOT DISTINCT FROM 'twilio'
+          AND s.whatsapp_from_number IS NOT NULL
+          AND s.whatsapp_access_token_connected IS TRUE)                           AS provider_live
       FROM agency_settings s
       WHERE s.agency_id = current_setting('app.current_agency_id', true)
     `);
@@ -74,6 +99,38 @@ route.get('/recovery-status', async (c) => {
   } catch (err) {
     console.error('[/voice/recovery-status] read failed:', err);
     return c.json({ error: 'Failed to load call recovery status' }, 500);
+  }
+});
+
+// POST /api/v1/voice/calls/:id/send-recovery — the approval-first "send text-back"
+// action. Calls agent_send_voice_recovery (agent-authorized; NOT the auto flag/K2
+// path). It enqueues the WhatsApp text-back when the provider + template exist, and
+// otherwise returns the exact reason (e.g. no WhatsApp provider yet). It never sends
+// directly — the send_queue drain (n8n/EF) performs the Twilio send.
+route.post('/calls/:id/send-recovery', async (c) => {
+  const tx = c.get('tx');
+  const id = c.req.param('id');
+  if (!UUID_RE.test(id)) {
+    return c.json({ ok: false, error: 'A valid call id is required.' }, 400);
+  }
+  // operatorEmail comes from the verified token, never the client body.
+  const user = c.get('user');
+  const operatorEmail = user?.email ?? null;
+  try {
+    const result = await tx.execute(sql`
+      SELECT public.agent_send_voice_recovery(${id}::uuid, ${operatorEmail}) AS result
+    `);
+    const rows = result as unknown as Array<{ result: { sent?: boolean; reason?: string } }>;
+    const payload = rows[0]?.result ?? {};
+    if (payload.sent === true) {
+      return c.json({ ok: true });
+    }
+    const { error, status } = classifyRecoverySend(payload.reason);
+    if (status === 500) console.error('[/voice send-recovery] unmapped reason:', payload);
+    return c.json({ ok: false, error }, status);
+  } catch (err) {
+    console.error('[/voice send-recovery] failed:', id, err);
+    return c.json({ ok: false, error: RECOVERY_SEND_GENERIC }, 500);
   }
 });
 

@@ -1306,6 +1306,8 @@
     "recovery_pending_approval": "Odottaa hyväksyntää",
     "recovery_waiting_setup": "Odottaa asetuksia",
     "recovery_no_contact": "Ei numeroa",
-    "recovery_opted_out": "Kieltäytynyt"
+    "recovery_opted_out": "Kieltäytynyt",
+    "sendTextBack": "Lähetä vastaus",
+    "sending": "Lähetetään…"
   }
 }

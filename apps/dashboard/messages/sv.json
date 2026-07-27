@@ -1306,6 +1306,8 @@
     "recovery_pending_approval": "Väntar på godkännande",
     "recovery_waiting_setup": "Väntar på konfig.",
     "recovery_no_contact": "Inget nummer",
-    "recovery_opted_out": "Avanmäld"
+    "recovery_opted_out": "Avanmäld",
+    "sendTextBack": "Skicka svar",
+    "sending": "Skickar…"
   }
 }

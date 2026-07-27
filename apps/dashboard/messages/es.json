@@ -1306,6 +1306,8 @@
     "recovery_pending_approval": "Pend. de aprobación",
     "recovery_waiting_setup": "Falta configuración",
     "recovery_no_contact": "Sin número",
-    "recovery_opted_out": "Baja"
+    "recovery_opted_out": "Baja",
+    "sendTextBack": "Enviar respuesta",
+    "sending": "Enviando…"
   }
 }

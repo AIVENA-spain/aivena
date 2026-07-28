@@ -167,8 +167,8 @@
 
   /* journey timeline */
   .jtl-sec{position:relative}
-  .p2-frag{position:absolute;top:-120px;right:0;width:230px;height:520px;object-fit:cover;object-position:62% 40%;border-radius:180px 0 0 24px;z-index:0;pointer-events:none}
-  .jtl{position:relative;margin-top:48px;display:grid;grid-template-columns:repeat(7,1fr);gap:12px;z-index:1}
+  .p2-frag{position:absolute;top:-6px;right:0;width:235px;height:560px;object-fit:cover;object-position:60% 50%;border-radius:170px 0 0 80px;z-index:0;pointer-events:none}
+  .jtl{position:relative;margin-top:48px;display:grid;grid-template-columns:repeat(7,1fr);gap:12px;z-index:1;padding-right:64px}
   .jtl-line{position:absolute;left:-3%;right:-3%;top:26px;width:106%;height:56px;z-index:0;pointer-events:none}
   .jtl-line path{fill:none;stroke:rgba(38,48,42,.45);stroke-width:1.4}
   .jtl-line circle{fill:var(--olive)}
@@ -179,16 +179,16 @@
   .jt-l{display:block;font-family:var(--mono);font-size:.6rem;letter-spacing:.16em;color:var(--ink);text-transform:uppercase;margin-top:4px}
   .jt-c{font-size:.7rem;line-height:1.5;color:var(--stone);margin:6px auto 0;max-width:17ch}
   .jt-art{margin-top:12px;display:flex;justify-content:center}
-  .jt-card{background:#fff;border:1px solid rgba(30,38,32,.08);border-radius:11px;box-shadow:0 10px 26px -14px rgba(38,48,42,.3);padding:9px 11px;font-size:.62rem;line-height:1.45;color:#3c463c;text-align:left;display:flex;align-items:center;gap:8px;max-width:100%}
-  .jt-card b{display:block;font-size:.66rem;color:var(--ink);font-weight:600}
-  .jt-card i{font-style:normal;color:#8a917f}
+  .jt-card{background:#fff;border:1px solid rgba(30,38,32,.08);border-radius:11px;box-shadow:0 10px 26px -14px rgba(38,48,42,.3);padding:9px 11px;font-size:.62rem;line-height:1.45;color:#3c463c;text-align:left;display:flex;align-items:center;gap:8px;max-width:170px}
+  .jt-card b{display:block;font-size:.66rem;color:var(--ink);font-weight:600;white-space:nowrap}
+  .jt-card i{font-style:normal;color:#8a917f;white-space:nowrap}
   .jt-wab{width:26px;height:26px;flex:none}
   .jt-chips{display:flex;flex-direction:column;gap:7px;align-items:center}
   .jt-chip{background:var(--limestone);border-radius:8px;padding:6px 10px;font-size:.62rem;color:#3c463c;white-space:nowrap}
   .jt-chip b{font-weight:600;color:var(--ink)}
-  .jt-prop{display:block;padding:0;overflow:hidden;width:100%;max-width:150px}
+  .jt-prop{display:block;padding:0;overflow:hidden;width:100%;max-width:162px}
   .jt-prop .jp-im{position:relative}
-  .jt-prop img{display:block;width:100%;height:74px;object-fit:cover}
+  .jt-prop img{display:block;width:100%;height:94px;object-fit:cover}
   .jt-prop .jp-h{position:absolute;top:5px;right:5px;width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,.92);display:grid;place-items:center}
   .jt-prop .jp-h svg{width:11px;height:11px;fill:none;stroke:#C86B4A;stroke-width:1.7}
   .jt-prop .jp-t{padding:7px 9px}
@@ -196,16 +196,17 @@
   .jt-prop .jp-t i{display:flex;align-items:center;gap:5px}
   .jp-dot{width:6px;height:6px;border-radius:50%;background:#4A7C59;display:inline-block;flex:none}
   .jt-cal svg{width:17px;height:17px;fill:none;stroke:var(--olive);stroke-width:1.6;flex:none}
-  .jt-photo{position:relative;border-radius:11px;overflow:hidden;box-shadow:0 10px 26px -14px rgba(38,48,42,.3);max-width:150px}
-  .jt-photo img{display:block;width:100%;height:84px;object-fit:cover}
+  .jt-photo{position:relative;border-radius:11px;overflow:hidden;box-shadow:0 10px 26px -14px rgba(38,48,42,.3);width:100%;max-width:158px}
+  .jt-photo img{display:block;width:100%;height:96px;object-fit:cover}
   .jt-photo span{position:absolute;bottom:5px;right:6px;background:rgba(255,255,255,.92);border-radius:6px;font-family:var(--mono);font-size:.56rem;padding:2px 6px;color:var(--ink)}
-  .jt-spark{display:block}
-  .jt-spark svg.sline{width:64px;height:22px;fill:none;stroke:var(--olive);stroke-width:1.6;stroke-linecap:round}
-  .jt-spark .jv{font-family:var(--serif);font-size:1rem;color:var(--ink)}
+  .jt-spark{align-items:flex-end;gap:10px}
+  .jt-spark svg.sline{width:56px;height:26px;fill:none;stroke:var(--olive);stroke-width:1.6;stroke-linecap:round;flex:none;margin-bottom:3px}
+  .jt-spark .jv{display:block;font-family:var(--serif);font-size:1.35rem;line-height:1.1;color:var(--ink);margin-top:2px}
+  .jt-spark b{white-space:nowrap}
 
   /* language demo */
   .langdemo{display:grid;grid-template-columns:.9fr 1.1fr;gap:40px;align-items:center;position:relative}
-  .p2-olive{position:absolute;left:-120px;bottom:-90px;width:300px;height:auto;mix-blend-mode:multiply;opacity:.95;pointer-events:none;z-index:0}
+  .p2-olive{position:absolute;left:-70px;bottom:-130px;width:340px;height:auto;mix-blend-mode:multiply;opacity:.95;pointer-events:none;z-index:0}
   .ld-h{font-size:clamp(1.9rem,3.4vw,2.8rem);line-height:1.12;margin-top:10px}
   .langbtns{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
   .lb{font-family:var(--mono);font-size:.66rem;letter-spacing:.1em;border:1px solid var(--line);border-radius:999px;padding:10px 17px;cursor:pointer;background:var(--card);color:#3c463c;transition:all .2s}
@@ -215,7 +216,8 @@
   .ldc p#draftText{margin:0;font-size:1rem;line-height:1.75;color:#333d33;min-height:96px;transition:opacity .3s}
   .ldc hr{border:none;border-top:1px solid rgba(30,38,32,.1);margin:16px 0 12px}
   .ldc-k2{font-family:var(--mono);font-size:.62rem;letter-spacing:.14em;color:var(--stone);text-transform:uppercase;margin-bottom:10px}
-  .ldc-mir{display:flex;align-items:center;gap:12px;background:var(--limestone);border-radius:12px;padding:13px 16px;font-size:.85rem;color:#3c463c}
+  .ldc-mir{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--limestone);border-radius:12px;padding:13px 16px;font-size:.85rem;color:#3c463c}
+  .mir-t{line-height:1.65}
   .ldc-pg{width:34px;height:34px;border-radius:50%;background:#fff;border:1px solid rgba(30,38,32,.14);display:grid;place-items:center;flex:none}
   .ldc-pg svg{width:17px;height:17px;fill:none;stroke:var(--olive);stroke-width:1.6}
   .draftcard{background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:20px 22px}
@@ -808,7 +810,7 @@
       </div>
       <div class="jt-step">
         <span class="jt-ic"><svg aria-hidden="true"><use href="#mv-cal"/></svg></span>
-        <b class="jt-n">05</b><span class="jt-l" data-i18n="jt5">VIEWINGS &amp; FOLLOW-UPS</span>
+        <b class="jt-n">05</b><span class="jt-l" data-i18n="jt5">VIEWINGS &amp; FOLLOW&#8209;UPS</span>
         <p class="jt-c" data-i18n="jt5c">Schedule, remind and follow up &mdash; approval-first or on autopilot.</p>
         <div class="jt-art"><div class="jt-card jt-cal"><svg aria-hidden="true"><use href="#mv-cal"/></svg><div><b data-i18n="jt5a">Sat 11:00 &middot; Viewing</b><i>Villa Vista, Moraira</i></div></div></div>
       </div>
@@ -816,7 +818,7 @@
         <span class="jt-ic"><svg aria-hidden="true"><use href="#ic-spark"/></svg></span>
         <b class="jt-n">06</b><span class="jt-l">STUDIO</span>
         <p class="jt-c" data-i18n="jt6c">Create content that sells in every language.</p>
-        <div class="jt-art"><div class="jt-photo"><img src="assets/v3/studio-post.webp" alt="Real Studio render" width="1080" height="1080" loading="lazy" /><span>&middot; DE</span></div></div>
+        <div class="jt-art"><div class="jt-photo"><img src="assets/v3/interior-calm.webp" alt="" width="1200" height="800" loading="lazy" /><span>&middot; DE</span></div></div>
       </div>
       <div class="jt-step">
         <span class="jt-ic"><svg aria-hidden="true"><use href="#ic-chart"/></svg></span>
@@ -849,7 +851,7 @@
         <p id="draftText">Guten Abend Frau Weber, die Villa in Moraira ist noch verf&uuml;gbar &mdash; 3 Schlafzimmer, Pool, 400 m zum Meer, 645.000 &euro;. Gerne zeige ich sie Ihnen. W&auml;re Samstag 11:00 m&ouml;glich?</p>
         <hr />
         <div class="ldc-k2" data-i18n="ld_mirror">Mirrored for your team</div>
-        <div class="ldc-mir"><span class="ldc-pg"><svg aria-hidden="true"><use href="#mv-person"/></svg></span><span data-i18n="ld_mir2">Anke replied in German. Translated: Saturday at 11:00 works for her.</span></div>
+        <div class="ldc-mir"><span class="mir-t"><span data-i18n="ld_mir2a">Anke replied in German.</span><br /><span data-i18n="ld_mir2b">Translated: Saturday at 11:00 works for her.</span></span><span class="ldc-pg"><svg aria-hidden="true"><use href="#mv-person"/></svg></span></div>
       </div>
     </div>
   </div>
@@ -1418,7 +1420,7 @@
     jt5: 'VISITAS Y SEGUIMIENTOS', jt5c: 'Agenda, recuerda y hace seguimiento — con aprobación previa o en autopiloto.', jt5a: 'Sáb 11:00 · Visita',
     jt6c: 'Crea contenido que vende, en todos los idiomas.',
     jt7: 'ANALÍTICA', jt7c: 'Mide el rendimiento, mejora los resultados.', jt7a: 'Mediana de borrador',
-    ld_mir2: 'Anke respondió en alemán. Traducción: el sábado a las 11:00 le va bien.',
+    ld_mir2a: 'Anke respondió en alemán.', ld_mir2b: 'Traducción: el sábado a las 11:00 le va bien.',
     nav_p: 'Producto', nav_j: 'Recorrido', nav_s: 'Studio', nav_pr: 'Precios',
     dh_lvl: 'Nivel de automatización:', dh_af: 'aprobación previa', dh_ap: 'autopiloto',
     dh_med: 'Hecho para agencias del Mediterráneo',

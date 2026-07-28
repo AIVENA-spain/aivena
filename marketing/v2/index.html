@@ -138,6 +138,8 @@
   .dh-bk{font-family:var(--mono);font-size:.68rem;letter-spacing:.2em;color:var(--terracotta);text-transform:uppercase}
   .dh-bl{font-size:.92rem;color:#3c463c;max-width:64ch}
   @media(max-width:1199px){
+    .p2-frag{width:160px;height:400px}
+    .jt-c{display:none}
     .c1{width:300px;left:36px}.c2{width:280px;left:64px}.c3{width:284px;left:96px}.c4{width:280px;left:180px}
     .w-sand{display:none}
   }
@@ -148,10 +150,12 @@
 
   /* facts */
   .facts{display:flex;justify-content:center;flex-wrap:wrap;background:var(--chalk);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
-  .fact{padding:18px 30px;text-align:center;border-right:1px dotted var(--line)}
+  .fact{display:flex;align-items:center;gap:13px;padding:22px 34px;text-align:left;border-right:1px solid var(--line)}
   .fact:last-child{border-right:none}
-  .fact .fv{font-family:var(--serif);font-size:1.4rem;color:var(--ink)}
-  .fact .fl{font-family:var(--mono);font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;color:var(--stone);margin-top:3px}
+  .fic{width:44px;height:44px;border-radius:50%;border:1px solid rgba(30,38,32,.16);display:grid;place-items:center;flex:none}
+  .fic svg{width:20px;height:20px;fill:none;stroke:var(--ink);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+  .fact .fv{font-family:var(--serif);font-size:1.55rem;line-height:1.1;color:var(--ink)}
+  .fact .fl{font-size:.72rem;color:var(--stone);margin-top:2px}
 
   /* sections */
   section{padding:88px 0}
@@ -161,25 +165,59 @@
   .center{text-align:center}
   .center .sub{margin-left:auto;margin-right:auto}
 
-  /* system map */
-  .sysmap{position:relative;margin-top:44px}
-  .mapline{position:absolute;left:3%;right:3%;top:36px;height:2px;background:linear-gradient(90deg,var(--olive),var(--sage));opacity:.5;transform:scaleX(0);transform-origin:left;transition:transform 1.4s var(--ease)}
-  .sysmap.live .mapline{transform:scaleX(1)}
-  .mapnodes{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;position:relative}
-  .mnode{text-align:center;padding:0 4px;opacity:0;transform:translateY(12px);transition:opacity .55s var(--ease),transform .55s var(--ease)}
-  .sysmap.live .mnode{opacity:1;transform:none}
-  .mnode .nic{width:46px;height:46px;border-radius:50%;background:var(--card);border:1.5px solid var(--olive);display:grid;place-items:center;margin:14px auto 10px;color:var(--olive);position:relative;z-index:2;box-shadow:0 6px 16px -8px rgba(74,93,58,.4)}
-  .mnode .nl{font-weight:600;font-size:.8rem;color:var(--ink)}
-  .mnode .nd{font-size:.66rem;color:var(--stone);margin-top:3px;line-height:1.4}
-  .mnode .nart{margin-top:9px;display:flex;justify-content:center}
-  .mnode .nart img{width:66px;height:46px;object-fit:cover;border-radius:6px;box-shadow:var(--shadow-sm)}
-  .martxt{font-family:var(--mono);font-size:.56rem;color:var(--olive);background:rgba(138,154,107,.14);border-radius:6px;padding:4px 7px;line-height:1.4}
+  /* journey timeline */
+  .jtl-sec{position:relative}
+  .p2-frag{position:absolute;top:-120px;right:0;width:230px;height:520px;object-fit:cover;object-position:62% 40%;border-radius:180px 0 0 24px;z-index:0;pointer-events:none}
+  .jtl{position:relative;margin-top:48px;display:grid;grid-template-columns:repeat(7,1fr);gap:12px;z-index:1}
+  .jtl-line{position:absolute;left:-3%;right:-3%;top:26px;width:106%;height:56px;z-index:0;pointer-events:none}
+  .jtl-line path{fill:none;stroke:rgba(38,48,42,.45);stroke-width:1.4}
+  .jtl-line circle{fill:var(--olive)}
+  .jt-step{text-align:center;position:relative;z-index:1}
+  .jt-ic{width:58px;height:58px;border-radius:50%;background:var(--card);border:1px solid rgba(30,38,32,.2);display:grid;place-items:center;margin:0 auto;box-shadow:0 8px 20px -12px rgba(38,48,42,.35)}
+  .jt-ic svg{width:23px;height:23px;fill:none;stroke:var(--ink);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+  .jt-n{display:block;font-family:var(--serif);font-weight:400;font-size:1.05rem;color:var(--ink);margin-top:12px}
+  .jt-l{display:block;font-family:var(--mono);font-size:.6rem;letter-spacing:.16em;color:var(--ink);text-transform:uppercase;margin-top:4px}
+  .jt-c{font-size:.7rem;line-height:1.5;color:var(--stone);margin:6px auto 0;max-width:17ch}
+  .jt-art{margin-top:12px;display:flex;justify-content:center}
+  .jt-card{background:#fff;border:1px solid rgba(30,38,32,.08);border-radius:11px;box-shadow:0 10px 26px -14px rgba(38,48,42,.3);padding:9px 11px;font-size:.62rem;line-height:1.45;color:#3c463c;text-align:left;display:flex;align-items:center;gap:8px;max-width:100%}
+  .jt-card b{display:block;font-size:.66rem;color:var(--ink);font-weight:600}
+  .jt-card i{font-style:normal;color:#8a917f}
+  .jt-wab{width:26px;height:26px;flex:none}
+  .jt-chips{display:flex;flex-direction:column;gap:7px;align-items:center}
+  .jt-chip{background:var(--limestone);border-radius:8px;padding:6px 10px;font-size:.62rem;color:#3c463c;white-space:nowrap}
+  .jt-chip b{font-weight:600;color:var(--ink)}
+  .jt-prop{display:block;padding:0;overflow:hidden;width:100%;max-width:150px}
+  .jt-prop .jp-im{position:relative}
+  .jt-prop img{display:block;width:100%;height:74px;object-fit:cover}
+  .jt-prop .jp-h{position:absolute;top:5px;right:5px;width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,.92);display:grid;place-items:center}
+  .jt-prop .jp-h svg{width:11px;height:11px;fill:none;stroke:#C86B4A;stroke-width:1.7}
+  .jt-prop .jp-t{padding:7px 9px}
+  .jt-prop .jp-t b{font-size:.64rem}
+  .jt-prop .jp-t i{display:flex;align-items:center;gap:5px}
+  .jp-dot{width:6px;height:6px;border-radius:50%;background:#4A7C59;display:inline-block;flex:none}
+  .jt-cal svg{width:17px;height:17px;fill:none;stroke:var(--olive);stroke-width:1.6;flex:none}
+  .jt-photo{position:relative;border-radius:11px;overflow:hidden;box-shadow:0 10px 26px -14px rgba(38,48,42,.3);max-width:150px}
+  .jt-photo img{display:block;width:100%;height:84px;object-fit:cover}
+  .jt-photo span{position:absolute;bottom:5px;right:6px;background:rgba(255,255,255,.92);border-radius:6px;font-family:var(--mono);font-size:.56rem;padding:2px 6px;color:var(--ink)}
+  .jt-spark{display:block}
+  .jt-spark svg.sline{width:64px;height:22px;fill:none;stroke:var(--olive);stroke-width:1.6;stroke-linecap:round}
+  .jt-spark .jv{font-family:var(--serif);font-size:1rem;color:var(--ink)}
 
   /* language demo */
-  .langdemo{display:grid;grid-template-columns:.9fr 1.1fr;gap:34px;align-items:center}
-  .langbtns{display:flex;gap:8px;flex-wrap:wrap}
-  .lb{font-family:var(--mono);font-size:.66rem;letter-spacing:.1em;border:1px solid var(--line);border-radius:999px;padding:8px 15px;cursor:pointer;background:var(--card);color:var(--stone);transition:all .2s}
-  .lb.sel{background:var(--ink);color:#F0EDE4;border-color:var(--ink)}
+  .langdemo{display:grid;grid-template-columns:.9fr 1.1fr;gap:40px;align-items:center;position:relative}
+  .p2-olive{position:absolute;left:-120px;bottom:-90px;width:300px;height:auto;mix-blend-mode:multiply;opacity:.95;pointer-events:none;z-index:0}
+  .ld-h{font-size:clamp(1.9rem,3.4vw,2.8rem);line-height:1.12;margin-top:10px}
+  .langbtns{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+  .lb{font-family:var(--mono);font-size:.66rem;letter-spacing:.1em;border:1px solid var(--line);border-radius:999px;padding:10px 17px;cursor:pointer;background:var(--card);color:#3c463c;transition:all .2s}
+  .lb.sel{background:var(--olive);color:#F0EDE4;border-color:var(--olive)}
+  .ldc{background:#fff;border:1px solid rgba(30,38,32,.07);border-radius:16px;box-shadow:0 24px 60px -30px rgba(38,48,42,.35);padding:24px 28px;position:relative;z-index:1}
+  .ldc-k{font-family:var(--mono);font-size:.62rem;letter-spacing:.14em;color:var(--stone);text-transform:uppercase;display:flex;justify-content:space-between;margin-bottom:12px}
+  .ldc p#draftText{margin:0;font-size:1rem;line-height:1.75;color:#333d33;min-height:96px;transition:opacity .3s}
+  .ldc hr{border:none;border-top:1px solid rgba(30,38,32,.1);margin:16px 0 12px}
+  .ldc-k2{font-family:var(--mono);font-size:.62rem;letter-spacing:.14em;color:var(--stone);text-transform:uppercase;margin-bottom:10px}
+  .ldc-mir{display:flex;align-items:center;gap:12px;background:var(--limestone);border-radius:12px;padding:13px 16px;font-size:.85rem;color:#3c463c}
+  .ldc-pg{width:34px;height:34px;border-radius:50%;background:#fff;border:1px solid rgba(30,38,32,.14);display:grid;place-items:center;flex:none}
+  .ldc-pg svg{width:17px;height:17px;fill:none;stroke:var(--olive);stroke-width:1.6}
   .draftcard{background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:20px 22px}
   .draftcard .dk{font-family:var(--mono);font-size:.6rem;letter-spacing:.12em;color:var(--stone);text-transform:uppercase;display:flex;justify-content:space-between;margin-bottom:9px}
   .draftcard p{margin:0;font-size:.92rem;line-height:1.65;color:#333d33;min-height:100px;transition:opacity .3s}
@@ -565,8 +603,8 @@
     .dh-thread,.dh-lab,.c3,.c4,.dh-pol,.w-sand,.w-terra{display:none}
     .dh-photo{width:54vw}
     .c1{left:8px;top:20px}.c2{left:34px;top:200px}
-    .mapnodes{grid-template-columns:repeat(2,1fr);gap:18px 10px}
-    .mapline{display:none}
+    .jtl{grid-template-columns:repeat(2,1fr);gap:22px 10px}
+    .jtl-line,.p2-frag,.p2-olive{display:none}
     .langdemo,.st-in{grid-template-columns:1fr}
     .flowrow{grid-template-columns:1fr 1fr}
     .jsteps{grid-template-columns:1fr 1fr}
@@ -598,7 +636,6 @@
   }
   @media (prefers-reduced-motion: reduce){
     *{animation-duration:.01ms!important;transition-duration:.01ms!important}
-    .sysmap .mnode,.sysmap .mapline{opacity:1;transform:none}
     .js .reveal{opacity:1;transform:none}
     html{scroll-behavior:auto}
   }
@@ -638,6 +675,7 @@
 <symbol id="mv-bubble" viewBox="0 0 24 24"><path d="M20 13.5a2.5 2.5 0 01-2.5 2.5H11l-4.5 3.5V16H6.5A2.5 2.5 0 014 13.5V7a2.5 2.5 0 012.5-2.5h11A2.5 2.5 0 0120 7v6.5z"/><circle cx="8.8" cy="10.2" r=".9"/><circle cx="12" cy="10.2" r=".9"/><circle cx="15.2" cy="10.2" r=".9"/></symbol>
 <symbol id="mv-valu" viewBox="0 0 24 24"><path d="M4 11.5L12 5l8 6.5 M6.5 10.5v9h11v-9 M9.7 14h4.6 M9.7 16.7h3"/></symbol>
 <symbol id="mv-feed" viewBox="0 0 24 24"><path d="M6 8.6a6.8 6.8 0 0111.6-1.8 M17.9 3.6v3.4h-3.4 M18 15.4a6.8 6.8 0 01-11.6 1.8 M6.1 20.4V17h3.4"/></symbol>
+<symbol id="mv-plane" viewBox="0 0 24 24"><path d="M21 4L3.5 10.8l6.2 2.7L12.5 20l3.1-5.6L21 4z M9.7 13.5L21 4"/></symbol>
 <symbol id="mv-refresh" viewBox="0 0 24 24"><path d="M18.8 12A6.8 6.8 0 1112 5.2c2.1 0 4 .9 5.2 2.4 M17.6 4.3v3.5h-3.5"/></symbol>
 </defs></svg>
 <!-- header -->
@@ -727,30 +765,64 @@
 
 <!-- fact strip -->
 <div class="facts">
-  <div class="fact"><div class="fv">24/7</div><div class="fl" data-i18n="fact_1">reads every enquiry</div></div>
-  <div class="fact"><div class="fv">~38 s</div><div class="fl" data-i18n="fact_2">to understood buyer</div></div>
-  <div class="fact"><div class="fv">~5 min</div><div class="fl" data-i18n="fact_3">first reply on autopilot</div></div>
-  <div class="fact"><div class="fv">13</div><div class="fl" data-i18n="fact_4">languages</div></div>
-  <div class="fact"><div class="fv">100%</div><div class="fl" data-i18n="fact_5">of sends logged</div></div>
+  <div class="fact"><span class="fic"><svg aria-hidden="true"><use href="#mv-bubble"/></svg></span><div><div class="fv">24/7</div><div class="fl" data-i18n="fact_1">Reads every enquiry</div></div></div>
+  <div class="fact"><span class="fic"><svg aria-hidden="true"><use href="#mv-clock"/></svg></span><div><div class="fv">~38&#8201;s</div><div class="fl" data-i18n="fact_2">To understand buyer intent</div></div></div>
+  <div class="fact"><span class="fic"><svg aria-hidden="true"><use href="#mv-plane"/></svg></span><div><div class="fv">~5 min</div><div class="fl" data-i18n="fact_3">First reply on autopilot</div></div></div>
+  <div class="fact"><span class="fic"><svg aria-hidden="true"><use href="#ic-globe"/></svg></span><div><div class="fv">13</div><div class="fl" data-i18n="fact_4">Languages</div></div></div>
+  <div class="fact"><span class="fic"><svg aria-hidden="true"><use href="#mv-shield"/></svg></span><div><div class="fv">100%</div><div class="fl" data-i18n="fact_5">Of sends logged</div></div></div>
 </div>
 
-<!-- system map -->
-<section>
+<!-- system map: journey timeline -->
+<section class="jtl-sec">
+  <img class="p2-frag" src="assets/v3/sea-window.webp" alt="" width="820" height="1129" loading="lazy" aria-hidden="true" />
   <div class="wrap">
     <div class="scene-h reveal">
       <h2 data-i18n="map_h">One system behind the whole <span class="it">journey</span>.</h2>
-      <p class="sub" data-i18n="map_sub">Every stage connected &mdash; nothing lives in a separate tool.</p>
+      <p class="sub" data-i18n="map_sub">Every stage of the client journey lives inside one connected system.</p>
     </div>
-    <div class="sysmap" id="sysmap">
-      <div class="mapline"></div>
-      <div class="mapnodes">
-        <div class="mnode"><span class="nic"><svg class="i"><use href="#ic-inbox"/></svg></span><div class="nl" data-i18n="mn1">Enquiries</div><div class="nd" data-i18n="mn1d">WhatsApp &middot; email &middot; web</div><div class="nart"><span class="martxt" data-i18n="mn1a">22:47 &middot; new enquiry</span></div></div>
-        <div class="mnode"><span class="nic"><svg class="i"><use href="#ic-intel"/></svg></span><div class="nl" data-i18n="mn2">Intelligence</div><div class="nd" data-i18n="mn2d">budget &middot; area &middot; language &middot; intent</div><div class="nart"><span class="martxt">&euro;650k &middot; Moraira &middot; DE</span></div></div>
-        <div class="mnode"><span class="nic"><svg class="i"><use href="#ic-home"/></svg></span><div class="nl" data-i18n="mn3">Matching</div><div class="nd" data-i18n="mn3d">your own catalogue, ranked</div><div class="nart"><img src="assets/v3/prop-moraira.webp" alt="" width="132" height="92" loading="lazy" /></div></div>
-        <div class="mnode"><span class="nic"><svg class="i"><use href="#ic-pen"/></svg></span><div class="nl" data-i18n="mn4">Messaging</div><div class="nd" data-i18n="mn4d">drafts in the buyer's language</div><div class="nart"><span class="martxt" data-i18n="mn4a">Draft &middot; German</span></div></div>
-        <div class="mnode"><span class="nic"><svg class="i"><use href="#ic-cal"/></svg></span><div class="nl" data-i18n="mn5">Follow-ups &amp; viewings</div><div class="nd" data-i18n="mn5d">reminders &middot; calendar</div><div class="nart"><span class="martxt" data-i18n="mn5a">SAT 11:00 &middot; viewing</span></div></div>
-        <div class="mnode"><span class="nic"><svg class="i"><use href="#ic-spark"/></svg></span><div class="nl">Studio</div><div class="nd" data-i18n="mn6d">posts &middot; carousels &middot; renovations</div><div class="nart"><img src="assets/v3/studio-post.webp" alt="" width="132" height="92" loading="lazy" /></div></div>
-        <div class="mnode"><span class="nic"><svg class="i"><use href="#ic-chart"/></svg></span><div class="nl" data-i18n="mn7">Analytics</div><div class="nd" data-i18n="mn7d">response times &middot; outcomes</div><div class="nart"><span class="martxt" data-i18n="mn7a">5 min on autopilot</span></div></div>
+    <div class="jtl" id="sysmap">
+      <svg class="jtl-line" viewBox="0 0 1400 56" preserveAspectRatio="none" aria-hidden="true"><path d="M0 30 C 90 12, 190 46, 340 28 S 640 12, 790 28 S 1090 46, 1240 28 S 1350 22, 1386 26"/><circle cx="1386" cy="26" r="4"/></svg>
+      <div class="jt-step">
+        <span class="jt-ic"><svg aria-hidden="true"><use href="#mv-bubble"/></svg></span>
+        <b class="jt-n">01</b><span class="jt-l" data-i18n="jt1">ENQUIRIES</span>
+        <p class="jt-c" data-i18n="jt1c">Capture every message, any channel.</p>
+        <div class="jt-art"><div class="jt-card"><svg class="jt-wab" viewBox="0 0 34 34" role="img" aria-label="WhatsApp"><circle cx="17" cy="17" r="17" fill="#25D366"/><path fill="#fff" d="M17 7.5c-5.2 0-9.4 4.2-9.4 9.4 0 1.8.5 3.4 1.4 4.9L7.5 26.5l4.8-1.4c1.4.8 3 1.2 4.7 1.2 5.2 0 9.4-4.2 9.4-9.4S22.2 7.5 17 7.5zm4.9 13.2c-.2.6-1.2 1.1-1.7 1.2-.5.1-1 .2-3.3-.7-2.8-1.1-4.6-4-4.7-4.2-.1-.2-1.1-1.5-1.1-2.9s.7-2 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5s.8 1.9.8 2c.1.1.1.3 0 .5l-.4.6c-.1.2-.3.4-.1.7.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.4 2.4 1.5.3.1.5.1.7-.1l1-1.2c.2-.3.4-.2.7-.1l2 1c.3.1.5.2.5.3.1.2.1.7-.1 1.3z"/></svg><div><b data-i18n="jt1a">WhatsApp enquiry</b><i>22:47 &middot; <span data-i18n="jt1b">New enquiry</span></i></div></div></div>
+      </div>
+      <div class="jt-step">
+        <span class="jt-ic"><svg aria-hidden="true"><use href="#mv-person"/></svg></span>
+        <b class="jt-n">02</b><span class="jt-l" data-i18n="jt2">INTELLIGENCE</span>
+        <p class="jt-c" data-i18n="jt2c">Understand goals, budget and preferences.</p>
+        <div class="jt-art"><div class="jt-chips"><span class="jt-chip"><b data-i18n="jt2a">Budget</b> &middot; &euro;600k+</span><span class="jt-chip"><b data-i18n="jt2b">Language</b> &middot; DE</span></div></div>
+      </div>
+      <div class="jt-step">
+        <span class="jt-ic"><svg aria-hidden="true"><use href="#ic-home"/></svg></span>
+        <b class="jt-n">03</b><span class="jt-l" data-i18n="jt3">MATCHING</span>
+        <p class="jt-c" data-i18n="jt3c">Find the right homes, ranked for them.</p>
+        <div class="jt-art"><div class="jt-card jt-prop"><div class="jp-im"><img src="assets/v3/prop-moraira.webp" alt="Villa Moraira Vista" width="900" height="659" loading="lazy" /><span class="jp-h" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 20s-7.2-4.6-9.2-9.2a5.1 5.1 0 019.2-3 5.1 5.1 0 019.2 3C19.2 15.4 12 20 12 20z"/></svg></span></div><div class="jp-t"><b>Villa Moraira Vista</b><i>&euro;645,000 &middot; Moraira <span class="jp-dot"></span></i></div></div></div>
+      </div>
+      <div class="jt-step">
+        <span class="jt-ic"><svg aria-hidden="true"><use href="#mv-plane"/></svg></span>
+        <b class="jt-n">04</b><span class="jt-l" data-i18n="jt4">MESSAGING</span>
+        <p class="jt-c" data-i18n="jt4c">Draft replies that feel personal, instantly.</p>
+        <div class="jt-art"><div class="jt-card"><div><b><span data-i18n="jt4a">Draft &middot; German</span> &#9998;</b><i>Guten Abend Frau Weber&hellip;</i></div></div></div>
+      </div>
+      <div class="jt-step">
+        <span class="jt-ic"><svg aria-hidden="true"><use href="#mv-cal"/></svg></span>
+        <b class="jt-n">05</b><span class="jt-l" data-i18n="jt5">VIEWINGS &amp; FOLLOW-UPS</span>
+        <p class="jt-c" data-i18n="jt5c">Schedule, remind and follow up &mdash; approval-first or on autopilot.</p>
+        <div class="jt-art"><div class="jt-card jt-cal"><svg aria-hidden="true"><use href="#mv-cal"/></svg><div><b data-i18n="jt5a">Sat 11:00 &middot; Viewing</b><i>Villa Vista, Moraira</i></div></div></div>
+      </div>
+      <div class="jt-step">
+        <span class="jt-ic"><svg aria-hidden="true"><use href="#ic-spark"/></svg></span>
+        <b class="jt-n">06</b><span class="jt-l">STUDIO</span>
+        <p class="jt-c" data-i18n="jt6c">Create content that sells in every language.</p>
+        <div class="jt-art"><div class="jt-photo"><img src="assets/v3/studio-post.webp" alt="Real Studio render" width="1080" height="1080" loading="lazy" /><span>&middot; DE</span></div></div>
+      </div>
+      <div class="jt-step">
+        <span class="jt-ic"><svg aria-hidden="true"><use href="#ic-chart"/></svg></span>
+        <b class="jt-n">07</b><span class="jt-l" data-i18n="jt7">ANALYTICS</span>
+        <p class="jt-c" data-i18n="jt7c">Measure performance, improve outcomes.</p>
+        <div class="jt-art"><div class="jt-card jt-spark"><div><b data-i18n="jt7a">Median draft</b><span class="jv">52&#8201;s</span></div><svg class="sline" viewBox="0 0 64 22" aria-hidden="true"><path d="M2 16 C 10 14, 16 18, 24 12 S 40 14, 48 8 S 58 6, 62 4"/></svg></div></div>
       </div>
     </div>
   </div>
@@ -760,21 +832,24 @@
 <section style="padding-top:0">
   <div class="wrap">
     <div class="langdemo">
+      <img class="p2-olive" src="assets/v3/wc-olive.webp" alt="" width="640" height="640" loading="lazy" aria-hidden="true" />
       <div class="reveal">
-        <span class="kick" data-i18n="ld_kick">TRY IT &middot; MULTILINGUAL</span>
-        <h2 style="font-size:clamp(1.4rem,2.6vw,1.9rem);margin-top:8px" data-i18n="ld_h">The same reply, in <span class="it">her</span> language.</h2>
-        <p class="sub" style="margin-top:10px" data-i18n="ld_sub">AIVENA drafts in the buyer's language and mirrors it in yours. Tap a language.</p>
-        <div class="langbtns" style="margin-top:16px">
+        <span class="kick" style="color:var(--terracotta)" data-i18n="ld_kick">TRY IT &middot; MULTILINGUAL</span>
+        <h2 class="ld-h" data-i18n="ld_h">The same reply, <span class="it">in her language</span>.</h2>
+        <p class="sub" style="margin-top:12px" data-i18n="ld_sub">AIVENA drafts in the buyer&rsquo;s language and mirrors it for your team.</p>
+        <div class="langbtns">
           <span class="lb sel" data-l="de">DE &middot; Deutsch</span>
           <span class="lb" data-l="en">EN &middot; English</span>
           <span class="lb" data-l="nl">NL &middot; Nederlands</span>
           <span class="lb" data-l="sv">SV &middot; Svenska</span>
         </div>
       </div>
-      <div class="draftcard reveal">
-        <div class="dk"><span><span data-i18n="ld_draft">Draft</span> &middot; <span id="langName">German</span></span><span data-i18n="ld_for">for Anke</span></div>
+      <div class="ldc reveal">
+        <div class="ldc-k"><span><span data-i18n="ld_draft">Draft</span> &middot; <span id="langName">German</span></span><span data-i18n="ld_for">For Anke</span></div>
         <p id="draftText">Guten Abend Frau Weber, die Villa in Moraira ist noch verf&uuml;gbar &mdash; 3 Schlafzimmer, Pool, 400 m zum Meer, 645.000 &euro;. Gerne zeige ich sie Ihnen. W&auml;re Samstag 11:00 m&ouml;glich?</p>
-        <div class="dk" style="margin-top:10px;margin-bottom:0"><span data-i18n="ld_mirror">Spanish mirror for your team</span><span>&#10003;</span></div>
+        <hr />
+        <div class="ldc-k2" data-i18n="ld_mirror">Mirrored for your team</div>
+        <div class="ldc-mir"><span class="ldc-pg"><svg aria-hidden="true"><use href="#mv-person"/></svg></span><span data-i18n="ld_mir2">Anke replied in German. Translated: Saturday at 11:00 works for her.</span></div>
       </div>
     </div>
   </div>
@@ -1336,6 +1411,14 @@
   var ES = {
     nav_login: 'Iniciar sesión', nav_demo: 'Reserva una demo', cta_tour: 'Ver el tour',
     hero_kick: 'EL SISTEMA OPERATIVO DE IA PARA INMOBILIARIAS',
+    jt1: 'CONSULTAS', jt1c: 'Captura cada mensaje, de cualquier canal.', jt1a: 'Consulta de WhatsApp', jt1b: 'Nueva consulta',
+    jt2: 'INTELIGENCIA', jt2c: 'Entiende objetivos, presupuesto y preferencias.', jt2a: 'Presupuesto', jt2b: 'Idioma',
+    jt3: 'MATCHING', jt3c: 'Encuentra las viviendas adecuadas, ordenadas para cada cliente.',
+    jt4: 'MENSAJES', jt4c: 'Redacta respuestas personales, al instante.', jt4a: 'Borrador · Alemán',
+    jt5: 'VISITAS Y SEGUIMIENTOS', jt5c: 'Agenda, recuerda y hace seguimiento — con aprobación previa o en autopiloto.', jt5a: 'Sáb 11:00 · Visita',
+    jt6c: 'Crea contenido que vende, en todos los idiomas.',
+    jt7: 'ANALÍTICA', jt7c: 'Mide el rendimiento, mejora los resultados.', jt7a: 'Mediana de borrador',
+    ld_mir2: 'Anke respondió en alemán. Traducción: el sábado a las 11:00 le va bien.',
     nav_p: 'Producto', nav_j: 'Recorrido', nav_s: 'Studio', nav_pr: 'Precios',
     dh_lvl: 'Nivel de automatización:', dh_af: 'aprobación previa', dh_ap: 'autopiloto',
     dh_med: 'Hecho para agencias del Mediterráneo',
@@ -1356,9 +1439,9 @@
     sc_reply: 'Respuesta lista, en alemán', mode_approve_u: 'APROBACIÓN PREVIA',
     sc_setting: 'tu configuración decide qué se envía', sc_viewing: 'Visita reservada',
     sc_sat: 'SÁB 11:00 · en la agenda del equipo', sc_replay: 'repetir demo',
-    fact_1: 'lee cada consulta', fact_2: 'hasta entender al comprador', fact_3: 'primera respuesta en autopilot', fact_4: 'idiomas', fact_5: 'de envíos registrados',
+    fact_1: 'Lee cada consulta', fact_2: 'Para entender la intención del comprador', fact_3: 'Primera respuesta en autopiloto', fact_4: 'Idiomas', fact_5: 'De los envíos registrados',
     map_h: 'Un solo sistema detrás de todo el <span class="it">recorrido</span>.',
-    map_sub: 'Cada etapa conectada — nada vive en una herramienta aparte.',
+    map_sub: 'Cada etapa del recorrido del cliente vive en un solo sistema conectado.',
     mn1: 'Consultas', mn1d: 'WhatsApp · email · web', mn1a: '22:47 · nueva consulta',
     mn2: 'Inteligencia', mn2d: 'presupuesto · zona · idioma · intención',
     mn3: 'Matching', mn3d: 'tu propia cartera, ordenada',
@@ -1367,9 +1450,9 @@
     mn6d: 'posts · carruseles · reformas',
     mn7: 'Analítica', mn7d: 'tiempos de respuesta · resultados', mn7a: '5 min en autopilot',
     ld_kick: 'PRUÉBALO · MULTILINGÜE',
-    ld_h: 'La misma respuesta, en <span class="it">su</span> idioma.',
-    ld_sub: 'AIVENA redacta en el idioma del comprador y te lo refleja en el tuyo. Toca un idioma.',
-    ld_draft: 'Borrador', ld_for: 'para Anke', ld_mirror: 'Espejo en español para tu equipo',
+    ld_h: 'La misma respuesta, <span class="it">en su idioma</span>.',
+    ld_sub: 'AIVENA redacta en el idioma del comprador y la refleja para tu equipo.',
+    ld_draft: 'Borrador', ld_for: 'Para Anke', ld_mirror: 'Reflejado para tu equipo',
     au_h: 'Automatiza a tu <span class="it">ritmo</span>.',
     au_sub: 'Empieza con aprobación previa. Pasa a autopilot cuando estés listo. Tú eliges el nivel — por canal, por paso.',
     mode_draft: 'Solo borrador', mode_approve: 'Aprobación previa', mode_auto: 'Autopilot',

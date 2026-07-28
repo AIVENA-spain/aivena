@@ -159,7 +159,9 @@
 
   /* journey timeline */
   .jtl-sec{position:relative;padding:46px 0 30px}
-  .p2-frag{position:absolute;top:-12px;right:0;width:235px;height:610px;object-fit:cover;object-position:center;border-radius:190px 0 0 130px;z-index:0;pointer-events:none}
+  .jtl-sec .scene-h{text-align:center;position:relative;z-index:1}
+  .jtl-sec .scene-h .sub{margin-left:auto;margin-right:auto}
+  .p2-frag{position:absolute;top:-16px;right:0;width:410px;height:565px;object-fit:cover;object-position:center;z-index:0;pointer-events:none}
   .jtl{position:relative;margin-top:28px;display:grid;grid-template-columns:repeat(7,1fr);gap:12px;z-index:1;padding-right:80px}
   .jtl-line{position:absolute;left:calc(50% - 50vw);top:0;width:100vw;height:62px;z-index:0;pointer-events:none}
   .jtl-line path{fill:none;stroke:rgba(38,48,42,.55);stroke-width:1.4}
@@ -759,7 +761,7 @@
 
 <!-- system map: journey timeline -->
 <section class="jtl-sec">
-  <img class="p2-frag" src="assets/v3/stone-arch.webp" alt="" width="517" height="1344" aria-hidden="true" />
+  <img class="p2-frag" src="assets/v3/stone-arch.webp" alt="" width="612" height="843" aria-hidden="true" />
   <div class="wrap">
     <div class="scene-h reveal">
       <h2 data-i18n="map_h">One system behind the whole <span class="it">journey</span>.</h2>

@@ -138,8 +138,7 @@
   .dh-bk{font-family:var(--mono);font-size:.68rem;letter-spacing:.2em;color:var(--terracotta);text-transform:uppercase}
   .dh-bl{font-size:.92rem;color:#3c463c;max-width:64ch}
   @media(max-width:1199px){
-    .p2-frag{width:160px;height:400px}
-    .jt-c{display:none}
+    .p2-frag{width:100px;height:480px}
     .c1{width:300px;left:36px}.c2{width:280px;left:64px}.c3{width:284px;left:96px}.c4{width:280px;left:180px}
     .w-sand{display:none}
   }
@@ -149,8 +148,8 @@
   .replay:hover{color:var(--olive);border-color:var(--olive)}
 
   /* facts */
-  .facts{display:flex;justify-content:center;flex-wrap:wrap;background:var(--chalk);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
-  .fact{display:flex;align-items:center;gap:13px;padding:22px 34px;text-align:left;border-right:1px solid var(--line)}
+  .facts{display:flex;justify-content:center;flex-wrap:wrap;background:var(--chalk);max-width:1360px;margin:6px auto 0;padding:0 24px}
+  .fact{display:flex;align-items:center;gap:13px;padding:22px 20px;text-align:left;border-right:1px solid var(--line);flex:1;min-width:0}
   .fact:last-child{border-right:none}
   .fic{width:44px;height:44px;border-radius:50%;border:1px solid rgba(30,38,32,.16);display:grid;place-items:center;flex:none}
   .fic svg{width:20px;height:20px;fill:none;stroke:var(--ink);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
@@ -167,17 +166,18 @@
 
   /* journey timeline */
   .jtl-sec{position:relative}
-  .p2-frag{position:absolute;top:-6px;right:0;width:235px;height:560px;object-fit:cover;object-position:60% 50%;border-radius:170px 0 0 80px;z-index:0;pointer-events:none}
-  .jtl{position:relative;margin-top:48px;display:grid;grid-template-columns:repeat(7,1fr);gap:12px;z-index:1;padding-right:64px}
-  .jtl-line{position:absolute;left:-3%;right:-3%;top:26px;width:106%;height:56px;z-index:0;pointer-events:none}
-  .jtl-line path{fill:none;stroke:rgba(38,48,42,.45);stroke-width:1.4}
+  .p2-frag{position:absolute;top:-104px;right:0;width:125px;height:600px;object-fit:cover;object-position:64% 50%;border-radius:110px 0 0 90px;z-index:0;pointer-events:none}
+  .jtl{position:relative;margin-top:48px;display:grid;grid-template-columns:repeat(7,1fr);gap:12px;z-index:1}
+  .jtl-line{position:absolute;left:calc(50% - 50vw);top:0;width:100vw;height:62px;z-index:0;pointer-events:none}
+  .jtl-line path{fill:none;stroke:rgba(38,48,42,.55);stroke-width:1.4}
   .jtl-line circle{fill:var(--olive)}
   .jt-step{text-align:center;position:relative;z-index:1}
-  .jt-ic{width:58px;height:58px;border-radius:50%;background:var(--card);border:1px solid rgba(30,38,32,.2);display:grid;place-items:center;margin:0 auto;box-shadow:0 8px 20px -12px rgba(38,48,42,.35)}
-  .jt-ic svg{width:23px;height:23px;fill:none;stroke:var(--ink);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+  .jt-ic{width:62px;height:62px;border-radius:50%;background:var(--card);border:1px solid rgba(30,38,32,.2);display:grid;place-items:center;margin:0 auto;box-shadow:0 8px 20px -12px rgba(38,48,42,.35)}
+  .jt-ic svg{width:24px;height:24px;fill:none;stroke:var(--ink);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
   .jt-n{display:block;font-family:var(--serif);font-weight:400;font-size:1.05rem;color:var(--ink);margin-top:12px}
-  .jt-l{display:block;font-family:var(--mono);font-size:.6rem;letter-spacing:.16em;color:var(--ink);text-transform:uppercase;margin-top:4px}
-  .jt-c{font-size:.7rem;line-height:1.5;color:var(--stone);margin:6px auto 0;max-width:17ch}
+  .jt-l{display:block;font-family:var(--mono);font-size:.58rem;letter-spacing:.13em;color:var(--ink);text-transform:uppercase;margin-top:4px}
+  @media(min-width:1280px){.jt-l{white-space:nowrap}}
+  .jt-c{font-size:.7rem;line-height:1.5;color:var(--stone);margin:6px auto 0;max-width:20ch}
   .jt-art{margin-top:12px;display:flex;justify-content:center}
   .jt-card{background:#fff;border:1px solid rgba(30,38,32,.08);border-radius:11px;box-shadow:0 10px 26px -14px rgba(38,48,42,.3);padding:9px 11px;font-size:.62rem;line-height:1.45;color:#3c463c;text-align:left;display:flex;align-items:center;gap:8px;max-width:170px}
   .jt-card b{display:block;font-size:.66rem;color:var(--ink);font-weight:600;white-space:nowrap}
@@ -206,7 +206,7 @@
 
   /* language demo */
   .langdemo{display:grid;grid-template-columns:.9fr 1.1fr;gap:40px;align-items:center;position:relative}
-  .p2-olive{position:absolute;left:-70px;bottom:-130px;width:340px;height:auto;mix-blend-mode:multiply;opacity:.95;pointer-events:none;z-index:0}
+  .p2-olive{position:absolute;left:calc(50% - 50vw + 6px);bottom:-120px;width:310px;height:auto;mix-blend-mode:multiply;opacity:.95;pointer-events:none;z-index:0}
   .ld-h{font-size:clamp(1.9rem,3.4vw,2.8rem);line-height:1.12;margin-top:10px}
   .langbtns{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
   .lb{font-family:var(--mono);font-size:.66rem;letter-spacing:.1em;border:1px solid var(--line);border-radius:999px;padding:10px 17px;cursor:pointer;background:var(--card);color:#3c463c;transition:all .2s}
@@ -783,7 +783,7 @@
       <p class="sub" data-i18n="map_sub">Every stage of the client journey lives inside one connected system.</p>
     </div>
     <div class="jtl" id="sysmap">
-      <svg class="jtl-line" viewBox="0 0 1400 56" preserveAspectRatio="none" aria-hidden="true"><path d="M0 30 C 90 12, 190 46, 340 28 S 640 12, 790 28 S 1090 46, 1240 28 S 1350 22, 1386 26"/><circle cx="1386" cy="26" r="4"/></svg>
+      <svg class="jtl-line" viewBox="0 0 1440 62" preserveAspectRatio="none" aria-hidden="true"><path d="M0 36 C 120 20, 240 46, 400 31 S 700 18, 860 33 S 1150 46, 1290 30 S 1390 27, 1414 29"/><circle cx="1414" cy="29" r="4"/></svg>
       <div class="jt-step">
         <span class="jt-ic"><svg aria-hidden="true"><use href="#mv-bubble"/></svg></span>
         <b class="jt-n">01</b><span class="jt-l" data-i18n="jt1">ENQUIRIES</span>

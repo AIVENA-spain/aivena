@@ -148,13 +148,6 @@
   .replay:hover{color:var(--olive);border-color:var(--olive)}
 
   /* facts */
-  .facts{display:flex;justify-content:center;flex-wrap:wrap;background:var(--chalk);max-width:1360px;margin:2px auto 0;padding:0 24px}
-  .fact{display:flex;align-items:center;gap:13px;padding:10px 20px;text-align:left;border-right:1px solid var(--line);flex:1;min-width:0;position:relative;z-index:1}
-  .fact:last-child{border-right:none}
-  .fic{width:44px;height:44px;border-radius:50%;border:1px solid rgba(30,38,32,.16);display:grid;place-items:center;flex:none}
-  .fic svg{width:20px;height:20px;fill:none;stroke:var(--ink);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
-  .fact .fv{font-family:var(--serif);font-size:1.55rem;line-height:1.1;color:var(--ink)}
-  .fact .fl{font-size:.72rem;color:var(--stone);margin-top:2px}
 
   /* sections */
   section{padding:88px 0}
@@ -165,9 +158,9 @@
   .center .sub{margin-left:auto;margin-right:auto}
 
   /* journey timeline */
-  .jtl-sec{position:relative;padding:38px 0 28px}
-  .p2-frag{position:absolute;top:-96px;right:0;width:345px;height:571px;object-fit:cover;object-position:center;z-index:0;pointer-events:none}
-  .jtl{position:relative;margin-top:28px;display:grid;grid-template-columns:repeat(7,1fr);gap:12px;z-index:1}
+  .jtl-sec{position:relative;padding:46px 0 30px}
+  .p2-frag{position:absolute;top:-12px;right:0;width:235px;height:610px;object-fit:cover;object-position:center;border-radius:190px 0 0 130px;z-index:0;pointer-events:none}
+  .jtl{position:relative;margin-top:28px;display:grid;grid-template-columns:repeat(7,1fr);gap:12px;z-index:1;padding-right:80px}
   .jtl-line{position:absolute;left:calc(50% - 50vw);top:0;width:100vw;height:62px;z-index:0;pointer-events:none}
   .jtl-line path{fill:none;stroke:rgba(38,48,42,.55);stroke-width:1.4}
   .jtl-line circle{fill:var(--olive)}
@@ -621,7 +614,6 @@
     .tscene{grid-template-columns:1fr;padding:64px 22px 120px;overflow-y:auto;align-items:start}
     .tprints{height:280px}
     section{padding:64px 0}
-    .facts .fact{padding:12px 16px}
     .hero{padding-top:96px}
   }
   @media(max-width:560px){
@@ -765,18 +757,9 @@
   <span class="dh-bl" data-i18n="dh_bl">The first pilot agency gets 1 year free &mdash; because they help shape the final AIVENA system with us.</span>
 </div>
 
-<!-- fact strip -->
-<div class="facts">
-  <div class="fact"><span class="fic"><svg aria-hidden="true"><use href="#mv-bubble"/></svg></span><div><div class="fv">24/7</div><div class="fl" data-i18n="fact_1">Reads every enquiry</div></div></div>
-  <div class="fact"><span class="fic"><svg aria-hidden="true"><use href="#mv-clock"/></svg></span><div><div class="fv">~38&#8201;s</div><div class="fl" data-i18n="fact_2">To understand buyer intent</div></div></div>
-  <div class="fact"><span class="fic"><svg aria-hidden="true"><use href="#mv-plane"/></svg></span><div><div class="fv">~5 min</div><div class="fl" data-i18n="fact_3">First reply on autopilot</div></div></div>
-  <div class="fact"><span class="fic"><svg aria-hidden="true"><use href="#ic-globe"/></svg></span><div><div class="fv">13</div><div class="fl" data-i18n="fact_4">Languages</div></div></div>
-  <div class="fact"><span class="fic"><svg aria-hidden="true"><use href="#mv-shield"/></svg></span><div><div class="fv">100%</div><div class="fl" data-i18n="fact_5">Of sends logged</div></div></div>
-</div>
-
 <!-- system map: journey timeline -->
 <section class="jtl-sec">
-  <img class="p2-frag" src="assets/v3/stone-arch.webp" alt="" width="728" height="1204" aria-hidden="true" />
+  <img class="p2-frag" src="assets/v3/stone-arch.webp" alt="" width="517" height="1344" aria-hidden="true" />
   <div class="wrap">
     <div class="scene-h reveal">
       <h2 data-i18n="map_h">One system behind the whole <span class="it">journey</span>.</h2>

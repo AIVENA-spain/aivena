@@ -149,7 +149,7 @@
 
   /* facts */
   .facts{display:flex;justify-content:center;flex-wrap:wrap;background:var(--chalk);max-width:1360px;margin:2px auto 0;padding:0 24px}
-  .fact{display:flex;align-items:center;gap:13px;padding:15px 20px;text-align:left;border-right:1px solid var(--line);flex:1;min-width:0}
+  .fact{display:flex;align-items:center;gap:13px;padding:10px 20px;text-align:left;border-right:1px solid var(--line);flex:1;min-width:0}
   .fact:last-child{border-right:none}
   .fic{width:44px;height:44px;border-radius:50%;border:1px solid rgba(30,38,32,.16);display:grid;place-items:center;flex:none}
   .fic svg{width:20px;height:20px;fill:none;stroke:var(--ink);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
@@ -165,9 +165,9 @@
   .center .sub{margin-left:auto;margin-right:auto}
 
   /* journey timeline */
-  .jtl-sec{position:relative;padding:52px 0 42px}
+  .jtl-sec{position:relative;padding:38px 0 28px}
   .p2-frag{position:absolute;top:-96px;right:0;width:150px;height:600px;object-fit:cover;object-position:50% 46%;border-radius:120px 0 0 100px;z-index:0;pointer-events:none}
-  .jtl{position:relative;margin-top:38px;display:grid;grid-template-columns:repeat(7,1fr);gap:12px;z-index:1}
+  .jtl{position:relative;margin-top:28px;display:grid;grid-template-columns:repeat(7,1fr);gap:12px;z-index:1}
   .jtl-line{position:absolute;left:calc(50% - 50vw);top:0;width:100vw;height:62px;z-index:0;pointer-events:none}
   .jtl-line path{fill:none;stroke:rgba(38,48,42,.55);stroke-width:1.4}
   .jtl-line circle{fill:var(--olive)}
@@ -177,8 +177,8 @@
   .jt-n{display:block;font-family:var(--serif);font-weight:400;font-size:1.05rem;color:var(--ink);margin-top:12px}
   .jt-l{display:block;font-family:var(--mono);font-size:.58rem;letter-spacing:.13em;color:var(--ink);text-transform:uppercase;margin-top:4px}
   @media(min-width:1280px){.jt-l{white-space:nowrap}}
-  .jt-c{font-size:.7rem;line-height:1.5;color:var(--stone);margin:6px auto 0;max-width:20ch}
-  .jt-art{margin-top:12px;display:flex;justify-content:center}
+  .jt-c{font-size:.7rem;line-height:1.5;color:var(--stone);margin:6px auto 0;max-width:24ch}
+  .jt-art{margin-top:10px;display:flex;justify-content:center}
   .jt-card{background:#fff;border:1px solid rgba(30,38,32,.08);border-radius:11px;box-shadow:0 10px 26px -14px rgba(38,48,42,.3);padding:9px 11px;font-size:.62rem;line-height:1.45;color:#3c463c;text-align:left;display:flex;align-items:center;gap:8px;max-width:170px}
   .jt-card b{display:block;font-size:.66rem;color:var(--ink);font-weight:600;white-space:nowrap}
   .jt-card i{font-style:normal;color:#8a917f;white-space:nowrap}
@@ -206,7 +206,7 @@
 
   /* language demo */
   .langdemo{display:grid;grid-template-columns:.9fr 1.1fr;gap:40px;align-items:center;position:relative}
-  .p2-olive{position:absolute;left:calc(50% - 50vw + 6px);bottom:-120px;width:310px;height:auto;mix-blend-mode:multiply;opacity:.95;pointer-events:none;z-index:0}
+  .p2-olive{position:absolute;left:calc(50% - 50vw - 10px);bottom:-150px;width:290px;height:auto;mix-blend-mode:multiply;opacity:.95;pointer-events:none;z-index:0}
   .ld-h{font-size:clamp(1.9rem,3.4vw,2.8rem);line-height:1.12;margin-top:10px}
   .langbtns{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
   .lb{font-family:var(--mono);font-size:.66rem;letter-spacing:.1em;border:1px solid var(--line);border-radius:999px;padding:10px 17px;cursor:pointer;background:var(--card);color:#3c463c;transition:all .2s}
@@ -783,7 +783,7 @@
       <p class="sub" data-i18n="map_sub">Every stage of the client journey lives inside one connected system.</p>
     </div>
     <div class="jtl" id="sysmap">
-      <svg class="jtl-line" viewBox="0 0 1440 62" preserveAspectRatio="none" aria-hidden="true"><path d="M0 36 C 120 20, 240 46, 400 31 S 700 18, 860 33 S 1150 46, 1290 30 S 1390 27, 1414 29"/><circle cx="1414" cy="29" r="4"/></svg>
+      <svg class="jtl-line" viewBox="0 0 1440 62" preserveAspectRatio="none" aria-hidden="true"><path d="M0 34 C 120 26, 240 40, 400 31 S 700 24, 860 33 S 1150 40, 1290 30 S 1390 28, 1414 29"/><circle cx="1414" cy="29" r="4"/></svg>
       <div class="jt-step">
         <span class="jt-ic"><svg aria-hidden="true"><use href="#mv-bubble"/></svg></span>
         <b class="jt-n">01</b><span class="jt-l" data-i18n="jt1">ENQUIRIES</span>

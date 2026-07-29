@@ -170,7 +170,8 @@
   .jtl-sec .scene-h .sub{font-size:1rem;margin-top:8px}
   .jtl-sec .scene-h{text-align:center;position:relative;z-index:1}
   .jtl-sec .scene-h .sub{margin-left:auto;margin-right:auto}
-  .p2-bg{position:absolute;left:calc(50% - 50vw);top:-86px;width:calc(100vw + 320px);height:920px;object-fit:cover;object-position:0% 50%;z-index:0;pointer-events:none}
+  .p2-scene{position:relative}
+  .p2-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;z-index:0;pointer-events:none}
   .jtl{position:relative;margin-top:20px;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:14px;z-index:1;padding-right:84px}
   .jtl-line{position:absolute;left:calc(50% - 50vw);top:0;width:100vw;height:66px;z-index:0;pointer-events:none}
   .jtl-line path{fill:none;stroke:rgba(58,66,54,.5);stroke-width:1.4}
@@ -771,6 +772,9 @@
   <span class="dh-bl" data-i18n="dh_bl">The first pilot agency gets 1 year free &mdash; because they help shape the final AIVENA system with us.</span>
 </div>
 
+<!-- journey scene: one background image, UI on top -->
+<div class="p2-scene">
+<img class="p2-bg" src="assets/v3/aivena-journey-background.webp" alt="" aria-hidden="true" />
 <!-- kpi band -->
 <div class="facts">
   <div class="fact"><span class="fic"><svg aria-hidden="true"><use href="#mv-bubble"/></svg></span><div><div class="fv">24/7</div><div class="fl" data-i18n="fact_1">Reads every enquiry</div></div></div>
@@ -782,7 +786,6 @@
 
 <!-- system map: journey timeline -->
 <section class="jtl-sec">
-  <img class="p2-bg" src="assets/v3/wall-scene.webp" alt="" width="1344" height="768" aria-hidden="true" />
   <div class="wrap">
     <div class="scene-h reveal">
       <h2 data-i18n="map_h">One system behind the whole <span class="it">journey</span>.</h2>
@@ -862,6 +865,7 @@
     </div>
   </div>
 </section>
+</div><!-- /p2-scene -->
 
 <!-- automation -->
 <section class="lim">

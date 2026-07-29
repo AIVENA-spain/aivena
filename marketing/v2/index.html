@@ -157,15 +157,8 @@
   .center{text-align:center}
   .center .sub{margin-left:auto;margin-right:auto}
 
-  .facts{display:flex;justify-content:center;flex-wrap:wrap;background:transparent;max-width:1380px;margin:0 auto;padding:0 24px;position:relative;z-index:2}
-  .fact{display:flex;align-items:center;gap:14px;padding:9px 26px;text-align:left;flex:1;min-width:0;position:relative;z-index:1}
-  .fact:not(:last-child)::after{content:"";position:absolute;right:0;top:50%;transform:translateY(-50%);height:32px;width:1px;background:rgba(30,38,32,.06)}
-  .fic{width:42px;height:42px;border-radius:50%;border:1px solid rgba(30,38,32,.13);display:grid;place-items:center;flex:none}
-  .fic svg{width:19px;height:19px;fill:none;stroke:var(--ink);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
-  .fact .fv{font-family:var(--serif);font-size:1.5rem;line-height:1.1;color:var(--ink)}
-  .fact .fl{font-size:.74rem;color:var(--stone);margin-top:2px}
   /* journey timeline */
-  .jtl-sec{position:relative;padding:16px 0 10px}
+  .jtl-sec{position:relative;padding:48px 0 10px}
   .jtl-sec .scene-h h2{font-size:clamp(2rem,3.2vw,2.7rem);line-height:1.12}
   .jtl-sec .scene-h .sub{font-size:1rem;margin-top:8px}
   .jtl-sec .scene-h{text-align:center;position:relative;z-index:1}
@@ -177,11 +170,12 @@
   .jtl-line path{fill:none;stroke:rgba(58,66,54,.5);stroke-width:1.4}
   .jtl-line circle{fill:var(--olive)}
   .jt-step{text-align:center;position:relative;z-index:1}
-  .jt-ic{width:64px;height:64px;border-radius:50%;background:var(--card);border:1px solid rgba(30,38,32,.22);display:grid;place-items:center;margin:0 auto;box-shadow:0 8px 18px -12px rgba(38,48,42,.26)}
-  .jt-ic svg{width:25px;height:25px;fill:none;stroke:var(--ink);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
-  .jt-n{display:block;font-family:var(--serif);font-weight:400;font-size:1.05rem;color:var(--ink);margin-top:9px}
-  .jt-l{display:block;font-family:var(--mono);font-size:.63rem;letter-spacing:.18em;color:var(--ink);text-transform:uppercase;margin-top:7px}
+  .jt-ic{width:74px;height:74px;border-radius:50%;background:#fff;border:1.5px solid rgba(30,38,32,.32);display:grid;place-items:center;margin:0 auto;box-shadow:0 16px 30px -14px rgba(38,48,42,.38)}
+  .jt-ic svg{width:29px;height:29px;fill:none;stroke:var(--ink);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+  .jt-n{display:block;font-family:var(--serif);font-weight:400;font-size:1.35rem;color:var(--ink);margin-top:10px}
+  .jt-l{display:block;font-family:var(--mono);font-size:.7rem;font-weight:500;letter-spacing:.15em;color:var(--ink);text-transform:uppercase;margin-top:7px}
   @media(min-width:1280px){.jt-l{white-space:nowrap;overflow:visible}}
+  @media(min-width:1280px) and (max-width:1439px){.jt-l{font-size:.65rem;letter-spacing:.13em}}
   .jt-c{font-size:.7rem;line-height:1.48;color:var(--stone);margin:5px auto 0;max-width:24ch}
   .jt-art{margin-top:12px;display:flex;justify-content:center}
   .jt-card{background:#fff;border:1px solid rgba(30,38,32,.08);border-radius:13px;box-shadow:0 14px 34px -18px rgba(38,48,42,.34);padding:13px 15px;font-size:.72rem;line-height:1.55;color:#3c463c;text-align:left;display:flex;align-items:center;gap:10px;max-width:210px}
@@ -775,15 +769,6 @@
 <!-- journey scene: one background image, UI on top -->
 <div class="p2-scene">
 <img class="p2-bg" src="assets/v3/aivena-journey-background.webp" alt="" aria-hidden="true" />
-<!-- kpi band -->
-<div class="facts">
-  <div class="fact"><span class="fic"><svg aria-hidden="true"><use href="#mv-bubble"/></svg></span><div><div class="fv">24/7</div><div class="fl" data-i18n="fact_1">Reads every enquiry</div></div></div>
-  <div class="fact"><span class="fic"><svg aria-hidden="true"><use href="#mv-clock"/></svg></span><div><div class="fv">~38&#8201;s</div><div class="fl" data-i18n="fact_2">To understand buyer intent</div></div></div>
-  <div class="fact"><span class="fic"><svg aria-hidden="true"><use href="#mv-plane"/></svg></span><div><div class="fv">~5 min</div><div class="fl" data-i18n="fact_3">First reply on autopilot</div></div></div>
-  <div class="fact"><span class="fic"><svg aria-hidden="true"><use href="#ic-globe"/></svg></span><div><div class="fv">13</div><div class="fl" data-i18n="fact_4">Languages</div></div></div>
-  <div class="fact"><span class="fic"><svg aria-hidden="true"><use href="#mv-shield"/></svg></span><div><div class="fv">100%</div><div class="fl" data-i18n="fact_5">Of sends logged</div></div></div>
-</div>
-
 <!-- system map: journey timeline -->
 <section class="jtl-sec">
   <div class="wrap">

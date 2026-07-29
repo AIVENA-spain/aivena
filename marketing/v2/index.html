@@ -170,7 +170,7 @@
   .jtl-sec .scene-h .sub{font-size:1rem;margin-top:8px}
   .jtl-sec .scene-h{text-align:center;position:relative;z-index:1}
   .jtl-sec .scene-h .sub{margin-left:auto;margin-right:auto}
-  .p2-frag{position:absolute;top:-8px;right:0;width:430px;height:660px;object-fit:cover;object-position:center;z-index:0;pointer-events:none}
+  .p2-bg{position:absolute;left:calc(50% - 50vw);top:-86px;width:calc(100vw + 320px);height:920px;object-fit:cover;object-position:0% 50%;z-index:0;pointer-events:none}
   .jtl{position:relative;margin-top:20px;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:14px;z-index:1;padding-right:84px}
   .jtl-line{position:absolute;left:calc(50% - 50vw);top:0;width:100vw;height:66px;z-index:0;pointer-events:none}
   .jtl-line path{fill:none;stroke:rgba(58,66,54,.5);stroke-width:1.4}
@@ -210,6 +210,7 @@
 
   /* language demo */
   .langdemo{display:grid;grid-template-columns:.88fr 1.12fr;gap:52px;align-items:center;position:relative}
+  .langdemo > .reveal{position:relative;z-index:1}
   .p2-olive{position:absolute;left:calc(50% - 50vw - 16px);bottom:-120px;width:340px;height:auto;mix-blend-mode:multiply;opacity:.92;pointer-events:none;z-index:0}
   .ld-h{font-size:clamp(2.1rem,3.6vw,2.9rem);line-height:1.15;margin-top:12px}
   .langbtns{display:flex;gap:12px;flex-wrap:wrap;margin-top:24px}
@@ -221,7 +222,9 @@
   .ldc hr{border:none;border-top:1px solid rgba(30,38,32,.1);margin:11px 0 9px}
   .ldc-k2{font-family:var(--mono);font-size:.62rem;letter-spacing:.14em;color:var(--stone);text-transform:uppercase;margin-bottom:10px}
   .ldc-mir{display:flex;align-items:center;justify-content:space-between;gap:14px;background:#F0E9D5;border-radius:14px;padding:13px 17px;font-size:.88rem;color:#3c463c}
-  .mir-t{line-height:1.65}
+  .mir-t{line-height:1.65;flex:1}
+  .mir-ic{width:36px;height:36px;border-radius:50%;background:#fff;border:1px solid rgba(30,38,32,.12);display:grid;place-items:center;flex:none}
+  .mir-ic svg{width:17px;height:17px;fill:none;stroke:var(--olive);stroke-width:1.6}
   .ldc-av{width:48px;height:48px;border-radius:50%;overflow:hidden;flex:none;border:2px solid #fff;box-shadow:0 4px 12px -4px rgba(38,48,42,.3)}
   .ldc-av img{display:block;width:100%;height:100%;object-fit:cover}
   .draftcard{background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:20px 22px}
@@ -779,7 +782,7 @@
 
 <!-- system map: journey timeline -->
 <section class="jtl-sec">
-  <img class="p2-frag" src="assets/v3/stone-arch.webp" alt="" width="703" height="1078" aria-hidden="true" />
+  <img class="p2-bg" src="assets/v3/wall-scene.webp" alt="" width="1344" height="768" aria-hidden="true" />
   <div class="wrap">
     <div class="scene-h reveal">
       <h2 data-i18n="map_h">One system behind the whole <span class="it">journey</span>.</h2>
@@ -854,7 +857,7 @@
         <p id="draftText">Guten Abend Frau Weber, die Villa in Moraira ist noch verf&uuml;gbar &mdash; 3 Schlafzimmer, Pool, 400 m zum Meer, 645.000 &euro;. Gerne zeige ich sie Ihnen. W&auml;re Samstag 11:00 m&ouml;glich?</p>
         <hr />
         <div class="ldc-k2" data-i18n="ld_mirror">Mirrored for your team</div>
-        <div class="ldc-mir"><span class="mir-t"><span data-i18n="ld_mir2a">Hi Anke, the German version is ready.</span><br /><span data-i18n="ld_mir2b">I have a proposed time for Saturday at 11:00.</span></span><span class="ldc-av" aria-hidden="true"><img src="assets/v3/avatar-anke.webp" alt="" width="200" height="200" loading="lazy" /></span></div>
+        <div class="ldc-mir"><span class="mir-ic" aria-hidden="true"><svg><use href="#mv-person"/></svg></span><span class="mir-t"><span data-i18n="ld_mir2a">Hi Anke, the German version is ready.</span><br /><span data-i18n="ld_mir2b">I have a proposed time for Saturday at 11:00.</span></span><span class="ldc-av" aria-hidden="true"><img src="assets/v3/avatar-anke.webp" alt="" width="200" height="200" loading="lazy" /></span></div>
       </div>
     </div>
   </div>

@@ -1309,5 +1309,23 @@
     "recovery_opted_out": "Opted out",
     "sendTextBack": "Send text-back",
     "sending": "Sending…"
+  },
+  "reverseProspect": {
+    "title": "Matching buyers",
+    "loading": "Finding matching buyers…",
+    "empty": "No existing buyers match this listing yet.",
+    "unknownBuyer": "Unknown buyer",
+    "fit_strong": "Strong fit",
+    "fit_good": "Good fit",
+    "fit_fair": "Possible fit",
+    "reason_budget": "Within budget",
+    "reason_area": "Area matches",
+    "reason_open_area": "Open to this area",
+    "reason_beds": "Bedrooms fit",
+    "reason_baths": "Bathrooms fit",
+    "reason_type": "Property type",
+    "draftOutreach": "Draft outreach",
+    "drafting": "Drafting…",
+    "drafted": "Draft in Inbox"
   }
 }

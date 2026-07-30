@@ -1309,5 +1309,23 @@
     "recovery_opted_out": "Afgemeld",
     "sendTextBack": "Terugbericht sturen",
     "sending": "Verzenden…"
+  },
+  "reverseProspect": {
+    "title": "Passende kopers",
+    "loading": "Passende kopers zoeken…",
+    "empty": "Nog geen bestaande kopers passen bij deze woning.",
+    "unknownBuyer": "Onbekende koper",
+    "fit_strong": "Sterke match",
+    "fit_good": "Goede match",
+    "fit_fair": "Mogelijke match",
+    "reason_budget": "Binnen budget",
+    "reason_area": "Gebied komt overeen",
+    "reason_open_area": "Open voor dit gebied",
+    "reason_beds": "Slaapkamers passen",
+    "reason_baths": "Badkamers passen",
+    "reason_type": "Type woning",
+    "draftOutreach": "Bericht opstellen",
+    "drafting": "Opstellen…",
+    "drafted": "Concept in inbox"
   }
 }

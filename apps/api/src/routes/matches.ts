@@ -35,6 +35,55 @@ route.get('/', async (c) => {
   }
 });
 
+// GET /property/:propertyId/buyers — reverse prospecting (P2-G): the agency's
+// existing buyer leads this LISTING matches, hard-gated then similarity-ranked via
+// match_leads_for_property (RLS-fenced). Read-only. Empty array = no good matches.
+route.get('/property/:propertyId/buyers', async (c) => {
+  const tx = c.get('tx');
+  const propertyId = c.req.param('propertyId');
+  if (!UUID_RE.test(propertyId)) {
+    return c.json({ ok: false, error: 'A valid property id is required.' }, 400);
+  }
+  try {
+    const result = await tx.execute(
+      sql`SELECT * FROM public.match_leads_for_property(${propertyId}::uuid, 10)`,
+    );
+    const rows = result as unknown as Array<Record<string, unknown>>;
+    return c.json({ ok: true, data: rows });
+  } catch (err) {
+    console.error('[matches/reverse] read failed:', err);
+    return c.json({ ok: false, error: FRIENDLY }, 500);
+  }
+});
+
+// POST /property/:propertyId/prospect/:leadId — draft approval-first outreach about
+// this listing to a matched buyer (create_reverse_prospect_task). Creates a pending
+// suggested_reply Inbox task; NEVER sends. Friendly reasons; raw tokens never leak.
+route.post('/property/:propertyId/prospect/:leadId', async (c) => {
+  const tx = c.get('tx');
+  const propertyId = c.req.param('propertyId');
+  const leadId = c.req.param('leadId');
+  if (!UUID_RE.test(propertyId) || !UUID_RE.test(leadId)) {
+    return c.json({ ok: false, error: 'Valid property and buyer ids are required.' }, 400);
+  }
+  try {
+    const result = await tx.execute(
+      sql`SELECT public.create_reverse_prospect_task(${leadId}::uuid, ${propertyId}::uuid) AS result`,
+    );
+    const rows = result as unknown as Array<{ result: { ok?: boolean; error?: string } }>;
+    const payload = rows[0]?.result ?? {};
+    if (payload.ok === true) return c.json({ ok: true });
+    const REASONS: Record<string, string> = {
+      lead_not_found: "Couldn't find that buyer — please refresh and try again.",
+      property_not_found: "Couldn't find that listing — please refresh and try again.",
+    };
+    return c.json({ ok: false, error: REASONS[payload.error ?? ''] ?? FRIENDLY }, 422);
+  } catch (err) {
+    console.error('[matches/prospect] failed:', err);
+    return c.json({ ok: false, error: FRIENDLY }, 500);
+  }
+});
+
 // GET /:leadId/explanation?propertyId=<uuid> — honest "why matched" per-dimension
 // + per-feature explanation for a lead's matches (Day-2 Client Intelligence).
 // Read-only via dashboard_match_explanation (SECURITY INVOKER, STABLE), which is

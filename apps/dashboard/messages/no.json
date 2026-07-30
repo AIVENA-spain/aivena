@@ -1309,5 +1309,23 @@
     "recovery_opted_out": "Avmeldt",
     "sendTextBack": "Send svar",
     "sending": "Sender…"
+  },
+  "reverseProspect": {
+    "title": "Matchende kjøpere",
+    "loading": "Finner matchende kjøpere…",
+    "empty": "Ingen eksisterende kjøpere matcher denne boligen ennå.",
+    "unknownBuyer": "Ukjent kjøper",
+    "fit_strong": "Sterk match",
+    "fit_good": "Godt match",
+    "fit_fair": "Mulig match",
+    "reason_budget": "Innenfor budsjett",
+    "reason_area": "Område matcher",
+    "reason_open_area": "Åpen for dette området",
+    "reason_beds": "Soverom passer",
+    "reason_baths": "Bad passer",
+    "reason_type": "Boligtype",
+    "draftOutreach": "Lag utkast",
+    "drafting": "Lager utkast…",
+    "drafted": "Utkast i innboks"
   }
 }

@@ -1309,5 +1309,23 @@
     "recovery_opted_out": "Désinscrit",
     "sendTextBack": "Envoyer la réponse",
     "sending": "Envoi…"
+  },
+  "reverseProspect": {
+    "title": "Acheteurs correspondants",
+    "loading": "Recherche d'acheteurs correspondants…",
+    "empty": "Aucun acheteur existant ne correspond encore à ce bien.",
+    "unknownBuyer": "Acheteur inconnu",
+    "fit_strong": "Forte correspondance",
+    "fit_good": "Bonne correspondance",
+    "fit_fair": "Correspondance possible",
+    "reason_budget": "Dans le budget",
+    "reason_area": "Zone correspond",
+    "reason_open_area": "Ouvert à cette zone",
+    "reason_beds": "Chambres correspondent",
+    "reason_baths": "Salles de bain correspondent",
+    "reason_type": "Type de bien",
+    "draftOutreach": "Rédiger un message",
+    "drafting": "Rédaction…",
+    "drafted": "Brouillon dans la boîte"
   }
 }

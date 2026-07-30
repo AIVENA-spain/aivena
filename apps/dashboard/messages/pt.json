@@ -1309,5 +1309,23 @@
     "recovery_opted_out": "Cancelado",
     "sendTextBack": "Enviar resposta",
     "sending": "A enviar…"
+  },
+  "reverseProspect": {
+    "title": "Compradores compatíveis",
+    "loading": "A procurar compradores compatíveis…",
+    "empty": "Ainda nenhum comprador existente corresponde a este imóvel.",
+    "unknownBuyer": "Comprador desconhecido",
+    "fit_strong": "Forte correspondência",
+    "fit_good": "Boa correspondência",
+    "fit_fair": "Correspondência possível",
+    "reason_budget": "Dentro do orçamento",
+    "reason_area": "Zona corresponde",
+    "reason_open_area": "Aberto a esta zona",
+    "reason_beds": "Quartos compatíveis",
+    "reason_baths": "Casas de banho compatíveis",
+    "reason_type": "Tipo de imóvel",
+    "draftOutreach": "Rascunhar mensagem",
+    "drafting": "A rascunhar…",
+    "drafted": "Rascunho na caixa"
   }
 }

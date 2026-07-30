@@ -6,10 +6,15 @@ import {
   Bath,
   BedDouble,
   Building2,
+  Check,
+  ChevronDown,
+  Loader2,
   MapPin,
   Plus,
   Ruler,
   Search,
+  Send,
+  Users,
   X,
 } from "lucide-react";
 
@@ -19,11 +24,23 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { FilterBar, FilterSearch } from "@/components/ui/filter-bar";
 import { formatArea, formatPrice } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import type { Tone } from "@/lib/ui-tone";
 import type { PropertyRow } from "@/lib/api/types";
 
 import { PropertyImportPanel } from "./import-panel";
 import { expandSearchTerms } from "./town-aliases";
+import {
+  getMatchingBuyersAction,
+  draftProspectAction,
+} from "./reverse-prospect-actions";
+import {
+  buyerMatchReasons,
+  fitLabel,
+  buyerName,
+  type MatchingBuyer,
+  type BuyerReason,
+} from "./reverse-prospect-model";
 
 /**
  * Properties — first-class catalog page (§5.17). Premium card grid of the
@@ -349,9 +366,178 @@ function PropertyCard({
           </span>
         </div>
       </div>
+
+      {/* Reverse prospecting (P2-G): existing buyers this listing matches. */}
+      <MatchingBuyers propertyId={p.id} propertyTitle={p.title} />
     </article>
   );
 }
+
+/**
+ * "Matching buyers" — reverse prospecting on a listing. Collapsed by default;
+ * expanding fetches the agency's existing buyers this property matches (hard-gated
+ * + similarity-ranked server-side) and shows honest reasons + an approval-first
+ * "Draft outreach" per buyer. The draft creates a pending Inbox task — never sends.
+ * If nothing matches, it says so honestly rather than forcing weak buyers.
+ */
+function MatchingBuyers({
+  propertyId,
+  propertyTitle,
+}: {
+  propertyId: string;
+  propertyTitle: string;
+}) {
+  const t = useTranslations("reverseProspect");
+  const [open, setOpen] = useState(false);
+  const [state, setState] = useState<
+    | { kind: "idle" }
+    | { kind: "loading" }
+    | { kind: "ready"; buyers: MatchingBuyer[] }
+    | { kind: "error"; message: string }
+  >({ kind: "idle" });
+
+  async function toggle() {
+    const next = !open;
+    setOpen(next);
+    if (next && state.kind === "idle") {
+      setState({ kind: "loading" });
+      const res = await getMatchingBuyersAction(propertyId);
+      setState(
+        res.ok
+          ? { kind: "ready", buyers: res.data }
+          : { kind: "error", message: res.error },
+      );
+    }
+  }
+
+  const count = state.kind === "ready" ? state.buyers.length : null;
+
+  return (
+    <div className="border-t border-border">
+      <button
+        type="button"
+        onClick={toggle}
+        aria-expanded={open}
+        className="flex w-full items-center justify-between gap-2 px-4 py-2.5 text-[12.5px] font-medium text-muted-foreground hover:bg-muted/40 hover:text-foreground"
+      >
+        <span className="inline-flex items-center gap-1.5">
+          <Users className="h-3.5 w-3.5" aria-hidden />
+          {t("title")}
+          {count != null ? (
+            <span className="rounded-full bg-brand-soft px-1.5 py-0.5 text-[10px] font-semibold text-brand">
+              {count}
+            </span>
+          ) : null}
+        </span>
+        <ChevronDown className={cn("h-4 w-4 transition-transform", open && "rotate-180")} aria-hidden />
+      </button>
+
+      {open ? (
+        <div className="px-4 pb-3">
+          {state.kind === "loading" ? (
+            <p className="flex items-center gap-1.5 py-2 text-[12px] text-muted-foreground">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> {t("loading")}
+            </p>
+          ) : state.kind === "error" ? (
+            <p className="py-2 text-[12px] text-amber-700 dark:text-amber-300">{state.message}</p>
+          ) : state.kind === "ready" && state.buyers.length === 0 ? (
+            <p className="py-2 text-[12px] leading-snug text-muted-foreground">{t("empty")}</p>
+          ) : state.kind === "ready" ? (
+            <ul className="flex flex-col gap-2">
+              {state.buyers.map((b) => (
+                <BuyerRow key={b.lead_id} buyer={b} propertyId={propertyId} propertyTitle={propertyTitle} t={t} />
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function BuyerRow({
+  buyer,
+  propertyId,
+  propertyTitle,
+  t,
+}: {
+  buyer: MatchingBuyer;
+  propertyId: string;
+  propertyTitle: string;
+  t: ReturnType<typeof useTranslations<"reverseProspect">>;
+}) {
+  const [status, setStatus] = useState<"idle" | "drafting" | "drafted" | "error">("idle");
+  const [error, setError] = useState<string | null>(null);
+  const reasons = buyerMatchReasons(buyer);
+  const fit = fitLabel(buyer.similarity);
+
+  async function onDraft() {
+    if (status === "drafting" || status === "drafted") return;
+    setStatus("drafting");
+    setError(null);
+    const res = await draftProspectAction(propertyId, buyer.lead_id);
+    if (res.ok) setStatus("drafted");
+    else {
+      setError(res.error);
+      setStatus("error");
+    }
+  }
+
+  return (
+    <li className="rounded-lg border border-border bg-card p-2.5">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <div className="flex items-center gap-1.5">
+            <span className="truncate text-[12.5px] font-medium text-foreground">
+              {buyerName(buyer, t("unknownBuyer"))}
+            </span>
+            <span
+              className={cn(
+                "rounded-full px-1.5 py-0.5 text-[10px] font-medium",
+                fit === "strong"
+                  ? "bg-brand-soft text-brand"
+                  : "bg-muted text-muted-foreground",
+              )}
+            >
+              {t(("fit_" + fit) as "fit_strong" | "fit_good" | "fit_fair")}
+            </span>
+          </div>
+          <div className="mt-1 flex flex-wrap gap-1">
+            {reasons.map((r) => (
+              <span
+                key={r}
+                className="inline-flex items-center gap-1 rounded-full bg-muted px-1.5 py-0.5 text-[10.5px] text-muted-foreground"
+              >
+                <Check className="h-2.5 w-2.5 text-brand" aria-hidden />
+                {t(("reason_" + r) as ReasonKey)}
+              </span>
+            ))}
+          </div>
+        </div>
+        {status === "drafted" ? (
+          <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-brand-soft px-2 py-1 text-[11px] font-medium text-brand">
+            <Check className="h-3 w-3" aria-hidden /> {t("drafted")}
+          </span>
+        ) : (
+          <button
+            type="button"
+            onClick={onDraft}
+            disabled={status === "drafting"}
+            className="inline-flex shrink-0 items-center gap-1 rounded-md border border-border bg-card px-2 py-1 text-[11px] font-medium text-foreground hover:bg-muted disabled:opacity-60"
+          >
+            <Send className="h-3 w-3" aria-hidden />
+            {status === "drafting" ? t("drafting") : t("draftOutreach")}
+          </button>
+        )}
+      </div>
+      {error ? <p className="mt-1 text-[11px] text-amber-700 dark:text-amber-300">{error}</p> : null}
+    </li>
+  );
+}
+
+type ReasonKey =
+  | "reason_budget" | "reason_area" | "reason_open_area"
+  | "reason_beds" | "reason_baths" | "reason_type";
 
 /**
  * External CRM thumbnail with graceful degradation: arbitrary external hosts

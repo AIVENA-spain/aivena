@@ -43,11 +43,16 @@ export type CaptureInput = {
   budgetMax: number | null; location: string | null; bedroomsMin: number | null;
   propertyType: string | null; transcript: Array<{ direction: string; content: string }> | null;
   pageUrl: string | null; referrer: string | null;
+  // Consent v1 (Packet-1 canonical): the EXACT localized notice + checkbox label
+  // the visitor saw, stored verbatim in consent_log.consent_text; consentMethod
+  // encodes language + version (e.g. 'explicit_checkbox|es|v1').
+  consentText: string | null; consentMethod: string | null;
 };
 
 // ── Slice 2 (/message) — a single conversational turn ────────────────────────
 export type MessageInput = {
   sessionToken: string; message: string; consent: boolean; language: string | null;
+  consentText: string | null; consentMethod: string | null;
 };
 
 /** Pure validation for POST /:agencySlug/message. The widget owns the
@@ -67,6 +72,8 @@ export function validateMessage(
       message,
       consent: body.consent === true,
       language: str(body.language, 8),
+      consentText: str(body.consentText, CAP.text),
+      consentMethod: str(body.consentMethod, CAP.short),
     },
   };
 }
@@ -103,6 +110,7 @@ export function validateContact(body: Record<string, unknown>): { ok: true; inpu
       budgetMax: num(body.budgetMax), location: str(body.location, CAP.short), bedroomsMin: int(body.bedroomsMin),
       propertyType: str(body.propertyType, CAP.short), transcript,
       pageUrl: str(ctx.pageUrl ?? body.pageUrl, CAP.text), referrer: str(ctx.referrer ?? body.referrer, CAP.text),
+      consentText: str(body.consentText, CAP.text), consentMethod: str(body.consentMethod, CAP.short),
     },
   };
 }

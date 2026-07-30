@@ -1,5 +1,6 @@
--- Amanda slice 2 — append a conversational message + merge qualification.
--- ADDITIVE, DRAFT: NOT applied to prod until slice-2 is approved for deploy.
+-- Amanda Phase A — append a conversational message + merge qualification.
+-- ADDITIVE. Approved for Phase A (test-gated widget, 2026-07-30). Applied alongside
+-- the amanda_capture_lead consent_log upgrade.
 --
 -- The PUBLIC /chat/:agencySlug/message route calls this with NO user/agency
 -- context, so (like amanda_capture_lead) it is SECURITY DEFINER: it resolves the

@@ -3,7 +3,7 @@ import { sql } from 'drizzle-orm';
 import { createHash } from 'node:crypto';
 import { db } from '../../../../packages/db/client';
 import { validateContact, validateMessage, mapCaptureError, createRateLimiter } from './chat-lib';
-import { parseMessage, replyForCollected, type Collected } from './amanda-flow';
+import { parseMessage, classifyIntent, turnReply, type Collected } from './amanda-flow';
 
 /**
  * Amanda web-chat — PUBLIC (unauthenticated) capture endpoints. Mounted at /chat
@@ -12,11 +12,24 @@ import { parseMessage, replyForCollected, type Collected } from './amanda-flow';
  * all writes go through the SECURITY DEFINER `amanda_capture_lead` RPC, which
  * resolves the agency + sets the RLS GUC itself.
  *
- * Slice 1: POST /chat/:agencySlug/contact — a structured contact capture becomes
- * a real lead (channel=website / source=aivena_website / source_type=website_chat)
- * + a website conversation + a dashboard task, visible in the existing Inbox /
- * Tasks / ClientIntelligence with property matches. NO LLM, NO provider/WhatsApp
- * send, NO live message — pure data capture.
+ * Phase A (test-gated, no public exposure):
+ *  - POST /chat/:agencySlug/message — one DETERMINISTIC turn (NO LLM). Appends the
+ *    visitor's message, merges parsed qualification, and returns an intent-routed
+ *    reply. Intent seam (classifyIntent): 'qualify' advances the funnel; a
+ *    'property_question' or 'human_request' is NEVER answered with invented facts —
+ *    Amanda defers to an agent and moves to capturing contact (Phase B slots a real
+ *    catalogue-grounded answer onto the property branch). Response envelope
+ *    { reply, messageType, attachments } is extensible for that.
+ *  - POST /chat/:agencySlug/contact — a structured contact capture becomes a real
+ *    lead (channel=website) + a website conversation + a dashboard task, visible in
+ *    the existing Inbox / Tasks / ClientIntelligence. NO LLM, NO provider/WhatsApp
+ *    send, NO live message — pure data capture.
+ *
+ * Consent v1 (Packet-1 canonical): the widget shows the Art. 50 AI disclosure
+ * before the first reply (a UI event, not logged — no lead yet) and an explicit
+ * unticked checkbox at contact capture. On capture, amanda_capture_lead writes a
+ * consent_log row (event_type=chatbot_data_consent) with the verbatim consent_text
+ * ONLY after the lead exists — never a fake lead just to log a disclosure.
  *
  * Production-safe guards: consent required, input validated + length-capped, a
  * basic in-memory rate limit, IP is HASHED (never stored/logged raw), and the
@@ -24,9 +37,12 @@ import { parseMessage, replyForCollected, type Collected } from './amanda-flow';
  */
 const route = new Hono();
 
-// Slice-1 safety: only is_test agencies may be captured to until the widget
-// launches. Flip to false (per-agency enablement) when going live.
+// Phase-A safety: only is_test agencies may be captured to until go-live.
+// Flip to false (per-agency enablement) when going live — a separate approval.
 const REQUIRE_TEST_AGENCY = true;
+
+// Identifies the writer of a consent_log row (Packet-1 consent_log.recorded_by).
+const CONSENT_RECORDED_BY = 'amanda_chat_capture';
 
 const allowRequest = createRateLimiter(8, 60_000);
 
@@ -52,6 +68,11 @@ function ipHashOf(c: import('hono').Context): string {
   return createHash('sha256').update(raw).digest('hex').slice(0, 32); // hashed — raw IP never stored/logged
 }
 
+function userAgentOf(c: import('hono').Context): string | null {
+  const ua = (c.req.header('user-agent') ?? '').trim();
+  return ua ? ua.slice(0, 400) : null;
+}
+
 async function readBody(c: import('hono').Context): Promise<Record<string, unknown>> {
   try {
     const raw = await c.req.json();
@@ -61,7 +82,7 @@ async function readBody(c: import('hono').Context): Promise<Record<string, unkno
   }
 }
 
-// POST /chat/:agencySlug/contact — capture → lead + conversation + task.
+// POST /chat/:agencySlug/contact — capture → lead + conversation + task + consent_log.
 route.post('/:agencySlug/contact', async (c) => {
   const slug = c.req.param('agencySlug');
   if (!slug || slug.length > 100) return c.json({ ok: false, error: 'This chat is not available.' }, 404);
@@ -74,6 +95,7 @@ route.post('/:agencySlug/contact', async (c) => {
   const parsed = validateContact(await readBody(c));
   if (!parsed.ok) return c.json({ ok: false, error: parsed.error }, 400);
   const v = parsed.input;
+  const userAgent = userAgentOf(c);
 
   try {
     await db.execute(sql`
@@ -81,7 +103,8 @@ route.post('/:agencySlug/contact', async (c) => {
         ${slug}, ${v.sessionToken}, ${v.name}, ${v.email}, ${v.phone}, ${true},
         ${v.language}, ${v.intent}, ${v.budget}, ${v.budgetMax}, ${v.location}, ${v.bedroomsMin},
         ${v.propertyType}, ${v.transcript ? JSON.stringify(v.transcript) : null}::jsonb,
-        ${v.pageUrl}, ${v.referrer}, ${ipHash}, ${REQUIRE_TEST_AGENCY}
+        ${v.pageUrl}, ${v.referrer}, ${ipHash}, ${REQUIRE_TEST_AGENCY},
+        ${v.consentText}, ${v.consentMethod}, ${userAgent}, ${CONSENT_RECORDED_BY}
       )
     `);
     // No internal ids returned to the public caller.
@@ -98,10 +121,10 @@ route.post('/:agencySlug/contact', async (c) => {
   }
 });
 
-// POST /chat/:agencySlug/message — Slice 2: one rules-based conversational turn
-// (NO LLM). Appends the visitor's message + merges parsed qualification, returns a
-// deterministic next prompt, and — only when contact is present AND consent is
-// given — hands off to the existing amanda_capture_lead to materialise the lead.
+// POST /chat/:agencySlug/message — one rules-based conversational turn (NO LLM).
+// Appends the visitor's message + merged qualification, returns an intent-routed
+// deterministic reply, and — only when contact is present AND consent is given —
+// hands off to amanda_capture_lead to materialise the lead + consent_log.
 // is_test-gated; no provider/send; no automation.
 route.post('/:agencySlug/message', async (c) => {
   const slug = c.req.param('agencySlug');
@@ -115,6 +138,7 @@ route.post('/:agencySlug/message', async (c) => {
   const parsed = validateMessage(await readBody(c));
   if (!parsed.ok) return c.json({ ok: false, error: parsed.error }, 400);
   const v = parsed.input;
+  const userAgent = userAgentOf(c);
 
   try {
     // 1) Parse light facts; append the visitor's inbound message + merge the patch.
@@ -127,9 +151,12 @@ route.post('/:agencySlug/message', async (c) => {
     `);
     const collected = ((inbound as unknown as Array<{ collected: Record<string, unknown> }>)[0]?.collected ?? {}) as Collected;
 
-    // 2) Deterministic reply (no LLM) from the server-merged state.
+    // 2) Intent-routed deterministic reply (no LLM) from the server-merged state.
+    //    Phase B replaces the 'property_question' branch inside turnReply with a
+    //    catalogue-grounded answer + attachments; the route contract stays the same.
+    const intent = classifyIntent(v.message);
     const addedNothing = Object.keys(patch).length === 0;
-    const { reply, readyToCapture } = replyForCollected(collected, addedNothing, v.language ?? undefined);
+    const { reply, messageType, readyToCapture, awaitingContact } = turnReply(collected, addedNothing, intent, v.language ?? undefined);
 
     // 3) Append Amanda's outbound reply.
     await db.execute(sql`
@@ -146,15 +173,15 @@ route.post('/:agencySlug/message', async (c) => {
           ${slug}, ${v.sessionToken}, ${collected.name ?? null}, ${collected.email ?? null}, ${collected.phone ?? null}, ${true},
           ${v.language}, ${collected.intent ?? null}, ${null}, ${collected.budgetMax ?? null},
           ${collected.location ?? null}, ${collected.bedroomsMin ?? null}, ${collected.propertyType ?? null},
-          ${null}::jsonb, ${null}, ${null}, ${ipHash}, ${REQUIRE_TEST_AGENCY}
+          ${null}::jsonb, ${null}, ${null}, ${ipHash}, ${REQUIRE_TEST_AGENCY},
+          ${v.consentText}, ${v.consentMethod}, ${userAgent}, ${CONSENT_RECORDED_BY}
         )
       `);
       captured = true;
     }
 
-    // Return the deterministic next prompt + the visitor's own collected facts
-    // (no internal ids). `captured` tells the widget the lead was materialised.
-    return c.json({ ok: true, reply, collected, captured });
+    // Extensible envelope (Phase B adds property_answer + attachments). No internal ids.
+    return c.json({ ok: true, reply, messageType, attachments: [], collected, captured, awaitingContact });
   } catch (err) {
     const pg = asPgError(err);
     if (pg && pg.code === 'P0001') {

@@ -187,6 +187,27 @@ var SUPPORTED = Object.keys(L);
 
 /* ───────────────────────── setup ───────────────────────── */
 var EF_URL = "https://atminvhrybxegpdtnnpl.supabase.co/functions/v1/property-valuation";
+
+/* LAUNCH GATE (2026-07-31): public valuation capture is not approved for
+   launch. The form is hidden and submit is a no-op until this is flipped to
+   true WITH Christian's explicit launch approval. The Edge Function has the
+   same gate server-side, so flipping this alone does not open capture. */
+var LAUNCHED = false;
+var CS = {
+en:"Online valuations aren't available yet. Please contact the agency directly and they will prepare your valuation personally.",
+es:"Las valoraciones online aún no están disponibles. Contacta directamente con la agencia y prepararán tu valoración personalmente.",
+de:"Online-Bewertungen sind noch nicht verfügbar. Bitte kontaktieren Sie die Agentur direkt – sie erstellt Ihre Bewertung persönlich.",
+nl:"Online waarderingen zijn nog niet beschikbaar. Neem rechtstreeks contact op met het makelaarskantoor; zij stellen uw waardering persoonlijk op.",
+fr:"Les estimations en ligne ne sont pas encore disponibles. Contactez directement l'agence : elle préparera votre estimation personnellement.",
+pl:"Wyceny online nie są jeszcze dostępne. Skontaktuj się bezpośrednio z agencją — przygotuje wycenę osobiście.",
+sv:"Onlinevärderingar är inte tillgängliga ännu. Kontakta mäklaren direkt så tar de fram din värdering personligen.",
+no:"Verdivurdering på nett er ikke tilgjengelig ennå. Kontakt megleren direkte, så utarbeider de verdivurderingen din personlig.",
+da:"Onlinevurderinger er ikke tilgængelige endnu. Kontakt mægleren direkte, så udarbejder de din vurdering personligt.",
+fi:"Verkkoarviot eivät ole vielä saatavilla. Ota yhteyttä välittäjään suoraan, niin he laativat arvion henkilökohtaisesti.",
+ru:"Онлайн-оценка пока недоступна. Свяжитесь с агентством напрямую — они подготовят оценку лично.",
+it:"Le valutazioni online non sono ancora disponibili. Contatta direttamente l'agenzia: prepareranno la tua valutazione personalmente.",
+pt:"As avaliações online ainda não estão disponíveis. Contacte diretamente a agência e prepararão a sua avaliação pessoalmente."
+};
 var q = new URLSearchParams(location.search);
 var agencyId = q.get("agency") || "";
 var agencyName = (q.get("name") || "").slice(0, 80);
@@ -268,12 +289,20 @@ var f = el("f"), err = el("err"), go = el("go");
 function showErr(msg){ err.textContent = msg; err.classList.add("show"); reportHeight(); }
 function clearErr(){ err.classList.remove("show"); }
 
+/* Coming-soon state: hide the form entirely, no data can be entered. */
+if (!LAUNCHED) {
+  f.style.display = "none";
+  setText("t-sub", CS[lang] || CS.en);
+  reportHeight();
+}
+
 var EUR = new Intl.NumberFormat(lang === "en" ? "en-IE" : lang, {
   style: "currency", currency: "EUR", maximumFractionDigits: 0
 });
 
 f.addEventListener("submit", function (ev) {
   ev.preventDefault();
+  if (!LAUNCHED) return;
   clearErr();
 
   var municipality = el("municipality").value.trim();

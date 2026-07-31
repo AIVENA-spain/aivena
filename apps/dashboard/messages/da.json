@@ -1309,5 +1309,23 @@
     "recovery_opted_out": "Frameldt",
     "sendTextBack": "Send svar",
     "sending": "Sender…"
+  },
+  "reverseProspect": {
+    "title": "Matchende købere",
+    "loading": "Finder matchende købere…",
+    "empty": "Ingen eksisterende købere matcher endnu denne bolig.",
+    "unknownBuyer": "Ukendt køber",
+    "fit_strong": "Stærkt match",
+    "fit_good": "Godt match",
+    "fit_fair": "Muligt match",
+    "reason_budget": "Inden for budget",
+    "reason_area": "Område matcher",
+    "reason_open_area": "Åben for dette område",
+    "reason_beds": "Soveværelser passer",
+    "reason_baths": "Badeværelser passer",
+    "reason_type": "Boligtype",
+    "draftOutreach": "Udkast til besked",
+    "drafting": "Udarbejder…",
+    "drafted": "Udkast i indbakke"
   }
 }

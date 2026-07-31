@@ -107,36 +107,68 @@ export function hasContact(c: Collected): boolean {
 }
 
 type Lang = 'en' | 'es';
-const LANG: Record<Lang, Record<Step | 'ready' | 'deflect' | 'greeting', string>> = {
+type CopyKey = Step | 'ready' | 'deflect' | 'greeting' | 'property_defer' | 'human_defer';
+const LANG: Record<Lang, Record<CopyKey, string>> = {
   en: {
-    greeting: "Hi! I'm Amanda. I can help you find a property — are you looking to buy, or to sell?",
+    // Phase A is capture-only: Amanda gathers what the visitor is after and
+    // connects them to an agent. It does NOT claim to answer property questions
+    // or share listing info (that is Phase B, property-aware Q&A — not built).
+    greeting: "Hi! To connect you with the right agent, may I ask a couple of quick questions? Are you looking to buy, or to sell?",
     intent: 'Are you looking to buy, or to sell?',
     location: 'Which area are you interested in?',
     budget: "What's your budget (roughly)?",
     bedrooms: 'How many bedrooms do you need?',
     type: 'What type of property — apartment, villa, townhouse?',
-    contact: 'Great — what\'s the best email or phone number to send you matches?',
-    ready: "Perfect, thank you! An agent will be in touch shortly with matching properties.",
+    contact: 'Great — what\'s the best email or phone number for an agent to reach you?',
+    ready: "Perfect, thank you! An agent will be in touch shortly to help with your search.",
     deflect: "I'll pass that to an agent. Meanwhile, what's the best email or phone to reach you?",
+    // Phase A: a property question is NOT answered (no invented facts). Amanda is
+    // honest that a team member will follow up, and moves to capturing contact.
+    property_defer: "That's a great question — I'll make sure an agent gets back to you on it. What's the best email or phone to reach you?",
+    human_defer: "Of course — I'll pass you to the team. What's the best email or phone for them to reach you?",
   },
   es: {
-    greeting: '¡Hola! Soy Amanda. Puedo ayudarte a encontrar una propiedad — ¿quieres comprar o vender?',
-    intent: '¿Quieres comprar o vender?',
-    location: '¿Qué zona te interesa?',
-    budget: '¿Cuál es tu presupuesto (aproximado)?',
-    bedrooms: '¿Cuántos dormitorios necesitas?',
+    greeting: '¡Hola! Para conectarle con el agente adecuado, ¿puedo hacerle un par de preguntas rápidas? ¿Busca comprar o vender?',
+    intent: '¿Busca comprar o vender?',
+    location: '¿Qué zona le interesa?',
+    budget: '¿Cuál es su presupuesto (aproximado)?',
+    bedrooms: '¿Cuántos dormitorios necesita?',
     type: '¿Qué tipo de propiedad — apartamento, villa, adosado?',
-    contact: 'Genial — ¿cuál es el mejor email o teléfono para enviarte opciones?',
-    ready: '¡Perfecto, gracias! Un agente te contactará en breve con propiedades.',
-    deflect: 'Se lo paso a un agente. Mientras, ¿cuál es el mejor email o teléfono para contactarte?',
+    contact: 'Genial — ¿cuál es el mejor email o teléfono para que un agente le contacte?',
+    ready: '¡Perfecto, gracias! Un agente le contactará en breve para ayudarle con su búsqueda.',
+    deflect: 'Se lo paso a un agente. Mientras, ¿cuál es el mejor email o teléfono para contactarle?',
+    property_defer: 'Muy buena pregunta — me aseguraré de que un agente le responda. ¿Cuál es el mejor email o teléfono para contactarle?',
+    human_defer: 'Por supuesto — le paso con el equipo. ¿Cuál es el mejor email o teléfono para que le contacten?',
   },
 };
 const pickLang = (lang?: string): Lang => (lang === 'es' ? 'es' : 'en');
 
-/** Canned reply for a step (or the ready/deflect states), in en/es with en fallback. */
-export function replyFor(key: Step | 'ready' | 'deflect' | 'greeting', lang?: string): string {
+/** Canned reply for a step (or the ready/deflect/defer states), in en/es with en fallback. */
+export function replyFor(key: CopyKey, lang?: string): string {
   return LANG[pickLang(lang)][key];
 }
+
+/**
+ * Coarse per-turn intent — the forward-compat seam for Phase B. Phase A only acts
+ * on 'qualify' (advance the funnel); 'property_question' and 'human_request' both
+ * safely defer to an agent + capture contact (NO invented answers). Phase B slots
+ * a real property-answer handler onto the 'property_question' branch without
+ * touching the qualify flow. Deterministic; human request wins if ambiguous.
+ */
+export type Intent = 'qualify' | 'property_question' | 'human_request';
+const HUMAN_RE = /\b(human|real person|speak to (someone|a person|an agent)|talk to (someone|a person|an agent)|call me|agent please)\b/i;
+const PROPERTY_Q_RE = /\b(do you have|are there|any (propert|home|villa|apartment|flat|house)|how much|price of|what.?s the price|cost of|available|availability|listing|ref(erence)?\s*#?\s*\w|more (info|details|photos|pictures)|can i see|show me|square met|m2|garden|pool)\b/i;
+export function classifyIntent(message: string): Intent {
+  if (typeof message !== 'string' || !message.trim()) return 'qualify';
+  const m = message.toLowerCase();
+  if (HUMAN_RE.test(m)) return 'human_request';
+  if (PROPERTY_Q_RE.test(m)) return 'property_question';
+  return 'qualify';
+}
+
+/** Message-type tag on Amanda's reply — the extensible envelope Phase B reuses
+ *  (e.g. Phase B adds 'property_answer' + an attachments payload). */
+export type MessageType = 'prompt' | 'ready' | 'deflect' | 'property_defer' | 'human_defer';
 
 export type AdvanceResult = {
   collected: Collected;
@@ -173,12 +205,41 @@ export function replyForCollected(
   collected: Collected,
   addedNothing: boolean,
   lang?: string,
-): { reply: string; step: Step | 'ready'; readyToCapture: boolean } {
+): { reply: string; step: Step | 'ready'; readyToCapture: boolean; messageType: MessageType } {
   const step = nextStep(collected);
-  if (step === 'ready') return { reply: replyFor('ready', lang), step, readyToCapture: true };
+  if (step === 'ready') return { reply: replyFor('ready', lang), step, readyToCapture: true, messageType: 'ready' };
   const someProgress = Object.values(collected).some((v) => v !== undefined);
   if (addedNothing && step !== 'contact' && someProgress) {
-    return { reply: replyFor('deflect', lang), step, readyToCapture: false };
+    return { reply: replyFor('deflect', lang), step, readyToCapture: false, messageType: 'deflect' };
   }
-  return { reply: replyFor(step, lang), step, readyToCapture: hasContact(collected) };
+  return { reply: replyFor(step, lang), step, readyToCapture: hasContact(collected), messageType: 'prompt' };
+}
+
+/**
+ * One conversational turn, intent-routed — the single entry the /message route
+ * uses. Phase A honours three intents; only 'qualify' advances the funnel. A
+ * property question or a human request is NEVER answered with invented facts —
+ * Amanda defers to an agent and moves to capturing contact (readyToCapture once
+ * contact is present, so the route can hand off to amanda_capture_lead when the
+ * visitor has consented). Phase B replaces the 'property_question' branch with a
+ * real, catalogue-grounded answer + attachments; nothing else here changes.
+ */
+export function turnReply(
+  collected: Collected,
+  addedNothing: boolean,
+  intent: Intent,
+  lang?: string,
+): { reply: string; messageType: MessageType; readyToCapture: boolean; awaitingContact: boolean } {
+  const have = hasContact(collected);
+  if (intent === 'human_request') {
+    return { reply: replyFor('human_defer', lang), messageType: 'human_defer', readyToCapture: have, awaitingContact: !have };
+  }
+  if (intent === 'property_question') {
+    return { reply: replyFor('property_defer', lang), messageType: 'property_defer', readyToCapture: have, awaitingContact: !have };
+  }
+  const r = replyForCollected(collected, addedNothing, lang);
+  // The widget reveals the contact card (notice + unticked consent checkbox) when
+  // Amanda is asking for contact and we don't have it yet.
+  const awaitingContact = !have && (r.step === 'contact' || r.messageType === 'deflect');
+  return { reply: r.reply, messageType: r.messageType, readyToCapture: r.readyToCapture, awaitingContact };
 }

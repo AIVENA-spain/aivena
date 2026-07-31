@@ -1309,5 +1309,23 @@
     "recovery_opted_out": "Avanmäld",
     "sendTextBack": "Skicka svar",
     "sending": "Skickar…"
+  },
+  "reverseProspect": {
+    "title": "Matchande köpare",
+    "loading": "Söker matchande köpare…",
+    "empty": "Inga befintliga köpare matchar den här bostaden ännu.",
+    "unknownBuyer": "Okänd köpare",
+    "fit_strong": "Stark matchning",
+    "fit_good": "Bra matchning",
+    "fit_fair": "Möjlig matchning",
+    "reason_budget": "Inom budget",
+    "reason_area": "Område matchar",
+    "reason_open_area": "Öppen för detta område",
+    "reason_beds": "Sovrum matchar",
+    "reason_baths": "Badrum matchar",
+    "reason_type": "Bostadstyp",
+    "draftOutreach": "Skapa utkast",
+    "drafting": "Skapar…",
+    "drafted": "Utkast i inkorg"
   }
 }

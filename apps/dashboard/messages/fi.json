@@ -1309,5 +1309,23 @@
     "recovery_opted_out": "Kieltäytynyt",
     "sendTextBack": "Lähetä vastaus",
     "sending": "Lähetetään…"
+  },
+  "reverseProspect": {
+    "title": "Sopivat ostajat",
+    "loading": "Etsitään sopivia ostajia…",
+    "empty": "Yksikään nykyinen ostaja ei vielä vastaa tätä kohdetta.",
+    "unknownBuyer": "Tuntematon ostaja",
+    "fit_strong": "Vahva osuma",
+    "fit_good": "Hyvä osuma",
+    "fit_fair": "Mahdollinen osuma",
+    "reason_budget": "Budjetissa",
+    "reason_area": "Alue täsmää",
+    "reason_open_area": "Avoin tälle alueelle",
+    "reason_beds": "Makuuhuoneet sopivat",
+    "reason_baths": "Kylpyhuoneet sopivat",
+    "reason_type": "Kohteen tyyppi",
+    "draftOutreach": "Luonnostele viesti",
+    "drafting": "Luonnostellaan…",
+    "drafted": "Luonnos saapuneissa"
   }
 }

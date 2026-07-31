@@ -1309,5 +1309,23 @@
     "recovery_opted_out": "Zrezygnował",
     "sendTextBack": "Wyślij odpowiedź",
     "sending": "Wysyłanie…"
+  },
+  "reverseProspect": {
+    "title": "Pasujący kupujący",
+    "loading": "Szukanie pasujących kupujących…",
+    "empty": "Żaden istniejący kupujący nie pasuje jeszcze do tej oferty.",
+    "unknownBuyer": "Nieznany kupujący",
+    "fit_strong": "Silne dopasowanie",
+    "fit_good": "Dobre dopasowanie",
+    "fit_fair": "Możliwe dopasowanie",
+    "reason_budget": "W budżecie",
+    "reason_area": "Obszar pasuje",
+    "reason_open_area": "Otwarty na ten obszar",
+    "reason_beds": "Sypialnie pasują",
+    "reason_baths": "Łazienki pasują",
+    "reason_type": "Typ nieruchomości",
+    "draftOutreach": "Utwórz wiadomość",
+    "drafting": "Tworzenie…",
+    "drafted": "Wersja robocza w skrzynce"
   }
 }

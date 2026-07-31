@@ -1309,5 +1309,23 @@
     "recovery_opted_out": "Disiscritto",
     "sendTextBack": "Invia risposta",
     "sending": "Invio…"
+  },
+  "reverseProspect": {
+    "title": "Acquirenti compatibili",
+    "loading": "Ricerca acquirenti compatibili…",
+    "empty": "Nessun acquirente esistente corrisponde ancora a questo immobile.",
+    "unknownBuyer": "Acquirente sconosciuto",
+    "fit_strong": "Ottima corrispondenza",
+    "fit_good": "Buona corrispondenza",
+    "fit_fair": "Possibile corrispondenza",
+    "reason_budget": "Nel budget",
+    "reason_area": "Zona corrisponde",
+    "reason_open_area": "Aperto a questa zona",
+    "reason_beds": "Camere compatibili",
+    "reason_baths": "Bagni compatibili",
+    "reason_type": "Tipo di immobile",
+    "draftOutreach": "Bozza messaggio",
+    "drafting": "In bozza…",
+    "drafted": "Bozza nella posta"
   }
 }

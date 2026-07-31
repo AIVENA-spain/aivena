@@ -1309,5 +1309,23 @@
     "recovery_opted_out": "Abgemeldet",
     "sendTextBack": "Antwort senden",
     "sending": "Wird gesendet…"
+  },
+  "reverseProspect": {
+    "title": "Passende Käufer",
+    "loading": "Passende Käufer werden gesucht…",
+    "empty": "Noch passt kein vorhandener Käufer zu dieser Immobilie.",
+    "unknownBuyer": "Unbekannter Käufer",
+    "fit_strong": "Starke Übereinstimmung",
+    "fit_good": "Gute Übereinstimmung",
+    "fit_fair": "Mögliche Übereinstimmung",
+    "reason_budget": "Im Budget",
+    "reason_area": "Gebiet passt",
+    "reason_open_area": "Offen für dieses Gebiet",
+    "reason_beds": "Schlafzimmer passen",
+    "reason_baths": "Bäder passen",
+    "reason_type": "Immobilientyp",
+    "draftOutreach": "Nachricht entwerfen",
+    "drafting": "Wird entworfen…",
+    "drafted": "Entwurf im Posteingang"
   }
 }

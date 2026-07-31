@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import {
   parseMessage, mergeCollected, nextStep, hasContact, advance, replyFor,
-  replyForCollected, STEP_ORDER, type Collected,
+  replyForCollected, classifyIntent, turnReply, STEP_ORDER, type Collected,
 } from './amanda-flow';
 
 describe('replyForCollected — reply from already-merged state (used by the /message route)', () => {
   it('fresh session (nothing collected/added) asks the first question, not a deflect', () => {
-    expect(replyForCollected({}, true)).toEqual({ reply: replyFor('intent'), step: 'intent', readyToCapture: false });
+    expect(replyForCollected({}, true)).toEqual({ reply: replyFor('intent'), step: 'intent', readyToCapture: false, messageType: 'prompt' });
   });
   it('mid-flow with nothing added deflects to contact', () => {
     const r = replyForCollected({ intent: 'buyer', location: 'Denia' }, true);
@@ -18,7 +18,7 @@ describe('replyForCollected — reply from already-merged state (used by the /me
   });
   it('all qualification + contact → ready + readyToCapture', () => {
     const full: Collected = { intent: 'buyer', location: 'Denia', budgetMax: 300000, bedroomsMin: 2, propertyType: 'apartment', email: 'x@y.com' };
-    expect(replyForCollected(full, false)).toEqual({ reply: replyFor('ready'), step: 'ready', readyToCapture: true });
+    expect(replyForCollected(full, false)).toEqual({ reply: replyFor('ready'), step: 'ready', readyToCapture: true, messageType: 'ready' });
   });
   it('matches advance() (single source of truth)', () => {
     const a = advance({ intent: 'buyer' }, 'in Torrevieja', 'es');
@@ -125,5 +125,55 @@ describe('hasContact', () => {
     expect(hasContact({ email: 'a@b.com' })).toBe(true);
     expect(hasContact({ phone: '+34600111222' })).toBe(true);
     expect(hasContact({ intent: 'buyer' })).toBe(false);
+  });
+});
+
+describe('classifyIntent — the Phase-B forward-compat seam', () => {
+  it('defaults to qualify for ordinary answers', () => {
+    expect(classifyIntent('a 2 bed apartment in Denia')).toBe('qualify');
+    expect(classifyIntent('buying')).toBe('qualify');
+    expect(classifyIntent('')).toBe('qualify');
+  });
+  it('detects a property question', () => {
+    expect(classifyIntent('do you have any villas with a pool?')).toBe('property_question');
+    expect(classifyIntent('how much is the one in Javea?')).toBe('property_question');
+    expect(classifyIntent('is it still available?')).toBe('property_question');
+  });
+  it('a human request wins over a property question', () => {
+    expect(classifyIntent('can I speak to a person please')).toBe('human_request');
+    expect(classifyIntent('I want a human, do you have villas')).toBe('human_request');
+  });
+});
+
+describe('turnReply — Phase A never answers property questions (no invented facts)', () => {
+  it('a property question defers to an agent + moves to contact, not an answer', () => {
+    const r = turnReply({ intent: 'buyer' }, false, 'property_question');
+    expect(r.messageType).toBe('property_defer');
+    expect(r.reply).toBe(replyFor('property_defer'));
+    expect(r.awaitingContact).toBe(true);       // asks for contact
+    expect(r.readyToCapture).toBe(false);        // no contact yet
+  });
+  it('a human request defers to the team + asks for contact', () => {
+    const r = turnReply({}, false, 'human_request', 'es');
+    expect(r.messageType).toBe('human_defer');
+    expect(r.reply).toBe(replyFor('human_defer', 'es'));
+    expect(r.awaitingContact).toBe(true);
+  });
+  it('property/human deferral captures once contact is already present', () => {
+    const r = turnReply({ email: 'x@y.com' }, false, 'property_question');
+    expect(r.readyToCapture).toBe(true);
+    expect(r.awaitingContact).toBe(false);
+  });
+  it('qualify path signals awaitingContact only at the contact step', () => {
+    expect(turnReply({ intent: 'buyer' }, false, 'qualify').awaitingContact).toBe(false);
+    const atContact = turnReply(
+      { intent: 'buyer', location: 'Denia', budgetMax: 300000, bedroomsMin: 2, propertyType: 'villa' },
+      false, 'qualify',
+    );
+    expect(atContact.awaitingContact).toBe(true);
+    expect(atContact.messageType).toBe('prompt');
+  });
+  it('carries a messageType on every turn (extensible envelope)', () => {
+    expect(turnReply({}, true, 'qualify').messageType).toBe('prompt');
   });
 });

@@ -1309,5 +1309,23 @@
     "recovery_opted_out": "Baja",
     "sendTextBack": "Enviar respuesta",
     "sending": "Enviando…"
+  },
+  "reverseProspect": {
+    "title": "Compradores que encajan",
+    "loading": "Buscando compradores que encajan…",
+    "empty": "Todavía ningún comprador existente encaja con esta propiedad.",
+    "unknownBuyer": "Comprador desconocido",
+    "fit_strong": "Encaje fuerte",
+    "fit_good": "Buen encaje",
+    "fit_fair": "Encaje posible",
+    "reason_budget": "Dentro del presupuesto",
+    "reason_area": "Zona coincide",
+    "reason_open_area": "Abierto a esta zona",
+    "reason_beds": "Dormitorios encajan",
+    "reason_baths": "Baños encajan",
+    "reason_type": "Tipo de propiedad",
+    "draftOutreach": "Redactar mensaje",
+    "drafting": "Redactando…",
+    "drafted": "Borrador en la bandeja"
   }
 }

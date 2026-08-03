@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex,nofollow,noarchive" />
+<title>Costa Vista Estates — Demo</title>
+<style>
+  :root { --ink:#1e2a24; --muted:#6b7770; --line:#e7ebe8; --brand:#0b7c3a; --sand:#f6f4ee; --sea:#0e5a6e; }
+  * { box-sizing:border-box; }
+  html,body { margin:0; font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; color:var(--ink); background:#fff; }
+  a { color:inherit; }
+  .demo-banner { background:#fff6e6; color:#7a4d00; border-bottom:1px solid #ffe0a3; font-size:12.5px; text-align:center; padding:6px 12px; }
+  .demo-banner b { font-weight:700; }
+  header { display:flex; align-items:center; justify-content:space-between; padding:16px 28px; border-bottom:1px solid var(--line); position:sticky; top:0; background:#fff; z-index:5; }
+  .logo { display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:-.02em; font-size:19px; }
+  .logo .mark { width:30px; height:30px; border-radius:8px; background:linear-gradient(135deg,var(--sea),var(--brand)); }
+  .logo .tag { font-size:10px; font-weight:700; color:#fff; background:var(--muted); border-radius:5px; padding:1px 6px; letter-spacing:.06em; }
+  nav a { margin-left:22px; text-decoration:none; color:var(--muted); font-size:14px; font-weight:500; }
+  .hero { position:relative; padding:72px 28px 84px; background:linear-gradient(180deg,#eef4f2, #f6f4ee); text-align:center; overflow:hidden; }
+  .hero h1 { font-size:clamp(30px,5vw,52px); line-height:1.05; margin:0 0 14px; letter-spacing:-.02em; }
+  .hero h1 .it { font-style:italic; color:var(--sea); }
+  .hero p { font-size:18px; color:var(--muted); max-width:620px; margin:0 auto 26px; }
+  .search { display:flex; gap:8px; max-width:560px; margin:0 auto; background:#fff; border:1px solid var(--line); border-radius:12px; padding:8px; box-shadow:0 8px 30px rgba(14,90,110,.08); }
+  .search input { flex:1; border:0; padding:10px 12px; font-size:15px; outline:none; }
+  .search button { background:var(--brand); color:#fff; border:0; border-radius:9px; padding:10px 18px; font-weight:600; cursor:pointer; }
+  .section { padding:52px 28px; max-width:1080px; margin:0 auto; }
+  .section h2 { font-size:26px; letter-spacing:-.01em; margin:0 0 4px; }
+  .section .sub { color:var(--muted); margin:0 0 24px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:18px; }
+  .card { border:1px solid var(--line); border-radius:14px; overflow:hidden; background:#fff; }
+  .card .ph { height:150px; background:linear-gradient(135deg,#cfe0dc,#e7ded0); position:relative; }
+  .card .ph .price { position:absolute; left:10px; bottom:10px; background:#fff; border-radius:8px; padding:3px 9px; font-weight:700; font-size:14px; }
+  .card .b { padding:12px 14px; }
+  .card .t { font-weight:600; font-size:14px; margin-bottom:2px; }
+  .card .m { color:var(--muted); font-size:12.5px; }
+  .contact { background:var(--sand); }
+  .contact .box { max-width:560px; margin:0 auto; background:#fff; border:1px solid var(--line); border-radius:14px; padding:22px; }
+  .contact label { display:block; font-size:13px; color:var(--muted); margin:10px 0 4px; }
+  .contact input, .contact textarea { width:100%; border:1px solid var(--line); border-radius:9px; padding:10px; font-size:14px; }
+  .contact .btn { margin-top:14px; background:var(--sea); color:#fff; border:0; border-radius:9px; padding:11px 18px; font-weight:600; cursor:not-allowed; opacity:.6; }
+  .contact .note { font-size:11.5px; color:var(--muted); margin-top:8px; }
+  footer { border-top:1px solid var(--line); color:var(--muted); font-size:13px; text-align:center; padding:26px; }
+  /* Amanda bubble */
+  #amanda-launch { position:fixed; right:20px; bottom:20px; z-index:50; width:58px; height:58px; border-radius:50%; border:0; background:var(--brand); color:#fff; box-shadow:0 10px 30px rgba(11,124,58,.35); cursor:pointer; font-size:24px; }
+  #amanda-panel { position:fixed; right:20px; bottom:88px; z-index:50; width:min(420px,calc(100vw - 40px)); display:none; box-shadow:0 20px 50px rgba(0,0,0,.18); border-radius:16px; overflow:hidden; background:#fff; }
+  #amanda-panel.open { display:block; }
+  #amanda-frame { width:100%; height:600px; border:0; display:block; background:#fff; }
+</style>
+</head>
+<body>
+  <div class="demo-banner"><b>INTERNAL DEMO</b> — “Costa Vista Estates” is a fictional agency for previewing AIVENA’s Amanda assistant. Not a real company. Not public. Test data only.</div>
+
+  <header>
+    <div class="logo"><span class="mark"></span> Costa&nbsp;Vista&nbsp;Estates <span class="tag">DEMO</span></div>
+    <nav><a href="#properties">Properties</a><a href="#sell">Sell</a><a href="#contact">Contact</a></nav>
+  </header>
+
+  <section class="hero">
+    <h1>Find your place in the <span class="it">Costa Blanca</span> sun.</h1>
+    <p>Villas, apartments and townhouses along the coast — with a team that answers in your language.</p>
+    <form class="search" onsubmit="return openAmanda(event)">
+      <input id="heroQ" type="text" placeholder="e.g. 2-bed apartment in Torrevieja under €200k" />
+      <button type="submit">Search</button>
+    </form>
+  </section>
+
+  <section class="section" id="properties">
+    <h2>Featured properties</h2>
+    <p class="sub">A selection from our current listings. <em>(Visual sample — ask Amanda for live matches.)</em></p>
+    <div class="grid" id="grid"></div>
+  </section>
+
+  <section class="section contact" id="sell">
+    <div class="box">
+      <h2 style="margin-top:0">What’s your home worth?</h2>
+      <p class="sub" style="margin-bottom:6px">Request a free valuation from our team.</p>
+      <label>Your name</label><input type="text" disabled placeholder="Jane Doe" />
+      <label>Email</label><input type="email" disabled placeholder="jane@example.com" />
+      <label>Property address</label><input type="text" disabled placeholder="Calle …, Torrevieja" />
+      <button class="btn" type="button" disabled title="Disabled in demo">Request valuation</button>
+      <div class="note">Visual only — this form is disabled in the demo and submits nothing.</div>
+    </div>
+  </section>
+
+  <section class="section" id="contact">
+    <h2>Talk to us</h2>
+    <p class="sub">Questions about a property or the area? Our assistant Amanda is bottom-right — ask away.</p>
+  </section>
+
+  <footer>© Costa Vista Estates (fictional demo) · Powered by AIVENA · Internal preview — noindex, not for distribution.</footer>
+
+  <!-- Amanda — the real widget, embedded like a customer-facing site chatbot -->
+  <button id="amanda-launch" type="button" aria-label="Chat with Amanda" onclick="toggleAmanda()">💬</button>
+  <div id="amanda-panel" role="dialog" aria-label="Amanda chat">
+    <iframe id="amanda-frame" title="Amanda"
+      src="/widget/amanda.html?agency=test-agency&api=/api&name=Costa%20Vista%20Estates&lang=en"></iframe>
+  </div>
+
+<script>
+  // Visual-only featured grid (fictional sample — the LIVE listings appear as Amanda's cards).
+  var SAMPLE = [
+    ["2-bed apartment near the beach, Torrevieja","Apartment · 2 bed · 1 bath · 70 m²","€128,000"],
+    ["2-bed apartment with sea views, Torrevieja","Apartment · 2 bed · 2 bath · 78 m²","€165,000"],
+    ["3-bed villa in Villamartín, Orihuela Costa","Villa · 3 bed · 2 bath · 120 m²","€385,000"],
+    ["3-bed townhouse with communal pool","Townhouse · 3 bed · 2 bath · 95 m²","€295,000"],
+    ["Detached villa with private pool, Albir","Villa · 3 bed · 3 bath · 160 m²","€495,000"],
+    ["2-bed ático with large terrace, La Mata","Penthouse · 2 bed · 2 bath · 82 m²","€175,000"]
+  ];
+  var grid = document.getElementById("grid");
+  SAMPLE.forEach(function (s) {
+    var el = document.createElement("div"); el.className = "card";
+    el.innerHTML = '<div class="ph"><span class="price"></span></div><div class="b"><div class="t"></div><div class="m"></div></div>';
+    el.querySelector(".price").textContent = s[2];
+    el.querySelector(".t").textContent = s[0];
+    el.querySelector(".m").textContent = s[1];
+    grid.appendChild(el);
+  });
+
+  var panel = document.getElementById("amanda-panel");
+  var frame = document.getElementById("amanda-frame");
+  function toggleAmanda() { panel.classList.toggle("open"); }
+  function openAmanda(e) { if (e) e.preventDefault(); panel.classList.add("open"); return false; }
+
+  // Resize the Amanda iframe to its content (the widget posts its height).
+  window.addEventListener("message", function (ev) {
+    var d = ev.data;
+    if (d && d.type === "aivena-amanda-height" && typeof d.height === "number") {
+      frame.style.height = Math.max(360, Math.min(680, Math.ceil(d.height))) + "px";
+    }
+  });
+</script>
+</body>
+</html>

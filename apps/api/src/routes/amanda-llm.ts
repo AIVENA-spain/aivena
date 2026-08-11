@@ -9,6 +9,26 @@ import {
 /** Amanda Phase D — the network/key side (see amanda-llm-lib.ts for the rules). */
 export type { ListingForLlm, LlmAnswer } from './amanda-llm-lib';
 
+/** TEMPORARY leak-safe diagnostic v2 — runs the REAL groundedListingAnswer against
+ *  a fixed MCH-001-style listing and reports the outcome. NEVER exposes the key. */
+export async function diagnoseLlm2(): Promise<Record<string, unknown>> {
+  const out: Record<string, unknown> = {};
+  const key = await getLlmKey();
+  out.keyLen = key ? key.length : 0;
+  out.overrideEnvSet = Boolean(process.env.AMANDA_ANTHROPIC_API_KEY?.trim());
+  const listing: ListingForLlm = {
+    ref: 'MCH-001', title: '2-bedroom apartment near Playa del Cura, Torrevieja',
+    propertyType: 'apartment', price: 128000, currency: 'EUR', bedrooms: 2, bathrooms: 1,
+    areaSqm: 65, locationCity: 'Torrevieja',
+    features: ['communal pool', 'near beach', 'recently refurbished', 'south facing'],
+    description: 'Cosy 2-bedroom apartment 350 metres from Playa del Cura. South-facing, recently refurbished kitchen, communal pool. Walking distance to Habaneras shopping centre and the Friday market.',
+  };
+  const r = await groundedListingAnswer({ agencyName: 'test-agency', listing, question: 'how far is it from the beach, and are there shops nearby?', lang: 'en' });
+  out.ok = r.ok;
+  if (r.ok) out.answerPreview = r.answer.slice(0, 120);
+  return out;
+}
+
 // ── Key resolution — VAULT-FIRST, cached with periodic re-check ──────────────
 // The deliberate Amanda key lives in the Supabase Vault (ANTHROPIC_API_KEY secret,
 // read via the single-purpose _get_amanda_llm_key()). We do NOT read the generic

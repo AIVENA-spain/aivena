@@ -29,25 +29,38 @@ async function getLlmKey(): Promise<string | null> {
   return cachedKey;
 }
 
-/** One Anthropic call with its own timeout. Returns the first text block, or null. */
+/** One Anthropic call with its own timeout. Returns the first text block, or null.
+ *  NO `temperature` — Claude Sonnet 5 / Opus 5 reject any non-default sampling
+ *  param with a 400. `disableThinking` keeps the whole max_tokens budget for the
+ *  answer (adaptive thinking would otherwise eat it) — accepted on Sonnet 5; the
+ *  verifier (Haiku) omits it, since Haiku doesn't think by default. */
 async function callClaude(
   key: string,
   model: string,
   system: string,
   user: string,
   timeoutMs: number,
+  disableThinking: boolean,
 ): Promise<string | null> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
+    const body: Record<string, unknown> = {
+      model,
+      max_tokens: 512,
+      system,
+      messages: [{ role: 'user', content: user }],
+    };
+    if (disableThinking) body.thinking = { type: 'disabled' };
     const resp = await fetch(ANTHROPIC_URL, {
       method: 'POST',
       signal: controller.signal,
       headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-      body: JSON.stringify({ model, max_tokens: 300, temperature: 0, system, messages: [{ role: 'user', content: user }] }),
+      body: JSON.stringify(body),
     });
     if (!resp.ok) {
-      console.error('[amanda-llm] api error:', resp.status);
+      const detail = await resp.text().catch(() => '');
+      console.error('[amanda-llm] api error:', resp.status, detail.slice(0, 200));
       return null;
     }
     const data = (await resp.json()) as { content?: Array<{ type: string; text?: string }> };
@@ -78,7 +91,7 @@ export async function groundedListingAnswer(args: {
   // Gate 1 — answer + structured self-report.
   const { system, user } = buildGroundedPrompt(args);
   const answerModel = process.env.AMANDA_LLM_MODEL?.trim() || DEFAULT_MODEL;
-  const rawAnswer = await callClaude(key, answerModel, system, user, TIMEOUT_MS);
+  const rawAnswer = await callClaude(key, answerModel, system, user, TIMEOUT_MS, true);
   if (rawAnswer === null) return { ok: false };
   const parsed = parseLlmAnswer(rawAnswer);
   if (!parsed || !parsed.grounded || parsed.needsTeam || !parsed.answer) return { ok: false };
@@ -92,7 +105,7 @@ export async function groundedListingAnswer(args: {
   // Gate 3 — independent verifier: is EVERY property claim supported by the data?
   const verifierModel = process.env.AMANDA_VERIFIER_MODEL?.trim() || VERIFIER_MODEL;
   const vp = buildVerifierPrompt({ listing: args.listing, answer: parsed.answer });
-  const rawVerdict = await callClaude(key, verifierModel, vp.system, vp.user, VERIFIER_TIMEOUT_MS);
+  const rawVerdict = await callClaude(key, verifierModel, vp.system, vp.user, VERIFIER_TIMEOUT_MS, false);
   if (rawVerdict === null || !parseVerdict(rawVerdict)) {
     console.error('[amanda-llm] verifier rejected or was unavailable');
     return { ok: false };

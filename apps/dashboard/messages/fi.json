@@ -1327,5 +1327,16 @@
     "draftOutreach": "Luonnostele viesti",
     "drafting": "Luonnostellaan…",
     "drafted": "Luonnos saapuneissa"
+  },
+  "handoffs": {
+    "title": "Tarvitsee ihmisen",
+    "unknownVisitor": "Sivuston kävijä",
+    "waiting": "odottaa",
+    "claimedBy": "Käsittelijä: {agent}",
+    "claim": "Otan tämän",
+    "release": "Takaisin avustajalle",
+    "aiMutedNote": "Avustaja on tauolla näiden asiakkaiden osalta — ihmisen on vastattava. Ota tehtävä ja ota yhteyttä asiakkaaseen (WhatsApp/puhelin/sähköposti). \"Takaisin avustajalle\" poistaa tauon.",
+    "notifTitle": "{name} haluaa puhua ihmiselle",
+    "notifBody": "Avaa saapuneet ottaaksesi keskustelun."
   }
 }

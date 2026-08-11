@@ -1327,5 +1327,16 @@
     "draftOutreach": "Lag utkast",
     "drafting": "Lager utkast…",
     "drafted": "Utkast i innboks"
+  },
+  "handoffs": {
+    "title": "Trenger et menneske",
+    "unknownVisitor": "Nettstedsbesøkende",
+    "waiting": "venter",
+    "claimedBy": "Håndteres av {agent}",
+    "claim": "Jeg tar den",
+    "release": "Tilbake til assistenten",
+    "aiMutedNote": "Assistenten er satt på pause for disse kundene — en person må svare. Ta den og kontakt kunden (WhatsApp/telefon/e-post). \"Tilbake til assistenten\" opphever pausen.",
+    "notifTitle": "{name} vil snakke med et menneske",
+    "notifBody": "Åpne innboksen for å ta samtalen."
   }
 }

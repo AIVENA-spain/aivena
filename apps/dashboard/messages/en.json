@@ -1327,5 +1327,16 @@
     "draftOutreach": "Draft outreach",
     "drafting": "Drafting…",
     "drafted": "Draft in Inbox"
+  },
+  "handoffs": {
+    "title": "Needs a human",
+    "unknownVisitor": "Website visitor",
+    "waiting": "waiting",
+    "claimedBy": "Being handled by {agent}",
+    "claim": "I'll take it",
+    "release": "Back to assistant",
+    "aiMutedNote": "The assistant is paused for these clients — a person must reply. Claim one, then contact the client (WhatsApp/phone/email). \"Back to assistant\" un-pauses it.",
+    "notifTitle": "{name} wants to talk to a person",
+    "notifBody": "Open the Inbox to claim the conversation."
   }
 }

@@ -1327,5 +1327,16 @@
     "draftOutreach": "Nachricht entwerfen",
     "drafting": "Wird entworfen…",
     "drafted": "Entwurf im Posteingang"
+  },
+  "handoffs": {
+    "title": "Braucht einen Menschen",
+    "unknownVisitor": "Website-Besucher",
+    "waiting": "wartet",
+    "claimedBy": "Wird bearbeitet von {agent}",
+    "claim": "Ich übernehme",
+    "release": "Zurück an den Assistenten",
+    "aiMutedNote": "Der Assistent ist für diese Kunden pausiert — eine Person muss antworten. Übernehmen und den Kunden kontaktieren (WhatsApp/Telefon/E-Mail). \"Zurück an den Assistenten\" hebt die Pause auf.",
+    "notifTitle": "{name} möchte mit einer Person sprechen",
+    "notifBody": "Posteingang öffnen, um das Gespräch zu übernehmen."
   }
 }

@@ -1327,5 +1327,16 @@
     "draftOutreach": "Utwórz wiadomość",
     "drafting": "Tworzenie…",
     "drafted": "Wersja robocza w skrzynce"
+  },
+  "handoffs": {
+    "title": "Potrzebuje człowieka",
+    "unknownVisitor": "Odwiedzający stronę",
+    "waiting": "czeka",
+    "claimedBy": "Obsługuje: {agent}",
+    "claim": "Zajmę się tym",
+    "release": "Wróć do asystenta",
+    "aiMutedNote": "Asystent jest wstrzymany dla tych klientów — odpowiedzieć musi człowiek. Przejmij zgłoszenie i skontaktuj się z klientem (WhatsApp/telefon/e-mail). \"Wróć do asystenta\" wznawia asystenta.",
+    "notifTitle": "{name} chce rozmawiać z człowiekiem",
+    "notifBody": "Otwórz skrzynkę, aby przejąć rozmowę."
   }
 }

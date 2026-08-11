@@ -110,6 +110,13 @@ route.post('/:agencySlug/contact', async (c) => {
         SELECT * FROM public.amanda_tag_viewing_request(${slug}, ${v.sessionToken}, ${v.viewingRef}, ${REQUIRE_TEST_AGENCY})
       `);
     }
+    // Human request → flag the lead needs-human (AI muted until an agent releases)
+    // + realtime dashboard alert. NO send — the team contacts the visitor.
+    if (v.human && v.sessionToken) {
+      await db.execute(sql`
+        SELECT * FROM public.amanda_tag_human_request(${slug}, ${v.sessionToken}, ${REQUIRE_TEST_AGENCY})
+      `);
+    }
     return c.json({ ok: true });
   } catch (err) {
     const pg = asPgError(err);
@@ -157,6 +164,9 @@ route.post('/:agencySlug/message', async (c) => {
     let readyToCapture: boolean;
     let viewing = false;
     let viewingRef: string | null = null;
+    // Amanda Live L1: the visitor asked for a PERSON this turn — after capture we
+    // flag the lead needs-human (AI muted until an agent releases) + alert agents.
+    const humanRequested = intent === 'human_request';
 
     if (intent === 'property_question') {
       // Phase B: answer from the VERIFIED catalogue — never invent.
@@ -229,9 +239,14 @@ route.post('/:agencySlug/message', async (c) => {
           SELECT * FROM public.amanda_tag_viewing_request(${slug}, ${v.sessionToken}, ${viewingRef}, ${REQUIRE_TEST_AGENCY})
         `);
       }
+      if (humanRequested) {
+        await db.execute(sql`
+          SELECT * FROM public.amanda_tag_human_request(${slug}, ${v.sessionToken}, ${REQUIRE_TEST_AGENCY})
+        `);
+      }
     }
 
-    return c.json({ ok: true, reply, messageType, attachments, collected, captured, awaitingContact, viewing, viewingRef });
+    return c.json({ ok: true, reply, messageType, attachments, collected, captured, awaitingContact, viewing, viewingRef, human: humanRequested });
   } catch (err) {
     const pg = asPgError(err);
     if (pg && pg.code === 'P0001') {

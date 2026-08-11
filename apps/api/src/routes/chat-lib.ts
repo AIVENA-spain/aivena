@@ -50,6 +50,9 @@ export type CaptureInput = {
   // Phase B: this capture is a viewing REQUEST (tag the Inbox task, never book);
   // viewingRef = the specific listing external_id, or null for a general viewing.
   viewing: boolean; viewingRef: string | null;
+  // Amanda Live L1: the visitor asked for a PERSON — flags the lead needs-human
+  // (AI muted until an agent releases) + fires the realtime dashboard alert.
+  human: boolean;
 };
 
 // ── Slice 2 (/message) — a single conversational turn ────────────────────────
@@ -115,6 +118,7 @@ export function validateContact(body: Record<string, unknown>): { ok: true; inpu
       pageUrl: str(ctx.pageUrl ?? body.pageUrl, CAP.text), referrer: str(ctx.referrer ?? body.referrer, CAP.text),
       consentText: str(body.consentText, CAP.text), consentMethod: str(body.consentMethod, CAP.short),
       viewing: body.viewing === true, viewingRef: str(body.viewingRef, CAP.short),
+      human: body.human === true,
     },
   };
 }

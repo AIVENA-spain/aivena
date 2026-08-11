@@ -1327,5 +1327,16 @@
     "draftOutreach": "Rédiger un message",
     "drafting": "Rédaction…",
     "drafted": "Brouillon dans la boîte"
+  },
+  "handoffs": {
+    "title": "Demande une personne",
+    "unknownVisitor": "Visiteur du site",
+    "waiting": "attend",
+    "claimedBy": "Pris en charge par {agent}",
+    "claim": "Je m'en occupe",
+    "release": "Rendre à l'assistant",
+    "aiMutedNote": "L'assistant est en pause pour ces clients — une personne doit répondre. Prenez-le en charge puis contactez le client (WhatsApp/téléphone/email). \"Rendre à l'assistant\" réactive l'assistant.",
+    "notifTitle": "{name} veut parler à une personne",
+    "notifBody": "Ouvrez la boîte pour prendre la conversation."
   }
 }

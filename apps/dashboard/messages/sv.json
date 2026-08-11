@@ -1327,5 +1327,16 @@
     "draftOutreach": "Skapa utkast",
     "drafting": "Skapar…",
     "drafted": "Utkast i inkorg"
+  },
+  "handoffs": {
+    "title": "Behöver en människa",
+    "unknownVisitor": "Webbplatsbesökare",
+    "waiting": "väntar",
+    "claimedBy": "Hanteras av {agent}",
+    "claim": "Jag tar den",
+    "release": "Tillbaka till assistenten",
+    "aiMutedNote": "Assistenten är pausad för dessa kunder — en människa måste svara. Ta den och kontakta kunden (WhatsApp/telefon/e-post). \"Tillbaka till assistenten\" häver pausen.",
+    "notifTitle": "{name} vill prata med en människa",
+    "notifBody": "Öppna inkorgen för att ta samtalet."
   }
 }

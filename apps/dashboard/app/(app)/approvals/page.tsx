@@ -2,9 +2,10 @@ import { getLocale } from "next-intl/server";
 
 import { apiFetch, ApiError } from "@/lib/api/client";
 import { PageLoadError } from "@/components/shell/page-error";
-import type { InboxResponse, SettingsResponse } from "@/lib/api/types";
+import type { InboxResponse, MeResponse, SettingsResponse } from "@/lib/api/types";
 
 import { InboxWorkspace } from "./inbox-workspace";
+import { HandoffQueue } from "./handoff-queue";
 
 /**
  * Build an author_user_id → email map from the team read-contract so notes can
@@ -49,15 +50,20 @@ export default async function InboxPage({
   let rows: InboxResponse["rows"] = [];
   let loadFailed = false;
   let authors: Record<string, string> = {};
+  // Amanda Live L1: the realtime "Needs a human" queue subscribes to the agency's
+  // private channel — best-effort (a missing agency id just hides the panel).
+  let agencyId: string | null = null;
 
   try {
     // Inbox is the critical load; the author map is best-effort alongside it.
-    const [res, authorMap] = await Promise.all([
+    const [res, authorMap, me] = await Promise.all([
       apiFetch<InboxResponse>("/api/v1/overview/inbox?limit=100&days=30"),
       getAuthorMap(),
+      apiFetch<MeResponse>("/api/v1/me").catch(() => null),
     ]);
     rows = res.rows;
     authors = authorMap;
+    agencyId = me?.activeAgency?.agencyId ?? null;
   } catch (err) {
     loadFailed = true;
     const detail =
@@ -74,12 +80,15 @@ export default async function InboxPage({
   }
 
   return (
-    <InboxWorkspace
-      locale={locale}
-      rows={rows}
-      initialTaskId={lead}
-      initialLeadId={leadId}
-      authors={authors}
-    />
+    <>
+      {agencyId ? <HandoffQueue agencyId={agencyId} /> : null}
+      <InboxWorkspace
+        locale={locale}
+        rows={rows}
+        initialTaskId={lead}
+        initialLeadId={leadId}
+        authors={authors}
+      />
+    </>
   );
 }

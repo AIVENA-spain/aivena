@@ -1327,5 +1327,16 @@
     "draftOutreach": "Redactar mensaje",
     "drafting": "Redactando…",
     "drafted": "Borrador en la bandeja"
+  },
+  "handoffs": {
+    "title": "Necesita una persona",
+    "unknownVisitor": "Visitante de la web",
+    "waiting": "esperando",
+    "claimedBy": "Atendido por {agent}",
+    "claim": "Lo atiendo yo",
+    "release": "Devolver al asistente",
+    "aiMutedNote": "El asistente está en pausa para estos clientes — debe responder una persona. Atiéndalo y contacte al cliente (WhatsApp/teléfono/email). \"Devolver al asistente\" reactiva la pausa.",
+    "notifTitle": "{name} quiere hablar con una persona",
+    "notifBody": "Abra la bandeja para atender la conversación."
   }
 }

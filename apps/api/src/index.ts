@@ -22,6 +22,7 @@ import leadNotesRoute from './routes/lead-notes';
 import leadsRoute from './routes/leads';
 import conversationsRoute from './routes/conversations';
 import matchesRoute from './routes/matches';
+import handoffsRoute from './routes/handoffs';
 import whatsappRoute from './routes/whatsapp';
 import readinessRoute from './routes/readiness';
 import operationsRoute from './routes/operations';
@@ -124,6 +125,8 @@ app.route('/api/v1/leads', leadsRoute);
 app.route('/api/v1/conversations', conversationsRoute);
 // Matches (W20) — read-only reverse-prospecting via two SECURITY INVOKER RPCs.
 app.route('/api/v1/matches', matchesRoute);
+// Human handoffs (Amanda Live L1) — the "Needs a human" queue + claim/release.
+app.route('/api/v1/handoffs', handoffsRoute);
 // WhatsApp re-engagement — closed-window template send (send_reengagement_template).
 app.route('/api/v1/whatsapp', whatsappRoute);
 // Go-live readiness (Phase 1, read-only) — per-item/provider/gate status computed

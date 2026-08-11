@@ -1327,5 +1327,16 @@
     "draftOutreach": "Rascunhar mensagem",
     "drafting": "A rascunhar…",
     "drafted": "Rascunho na caixa"
+  },
+  "handoffs": {
+    "title": "Precisa de uma pessoa",
+    "unknownVisitor": "Visitante do site",
+    "waiting": "à espera",
+    "claimedBy": "A ser tratado por {agent}",
+    "claim": "Eu trato disto",
+    "release": "Devolver ao assistente",
+    "aiMutedNote": "O assistente está em pausa para estes clientes — uma pessoa tem de responder. Assuma e contacte o cliente (WhatsApp/telefone/email). \"Devolver ao assistente\" retoma o assistente.",
+    "notifTitle": "{name} quer falar com uma pessoa",
+    "notifBody": "Abra a caixa de entrada para assumir a conversa."
   }
 }

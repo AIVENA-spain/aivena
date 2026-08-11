@@ -125,7 +125,7 @@ const LANG: Record<Lang, Record<CopyKey, string>> = {
     // Phase A: a property question is NOT answered (no invented facts). Amanda is
     // honest that a team member will follow up, and moves to capturing contact.
     property_defer: "That's a great question — I'll make sure an agent gets back to you on it. What's the best email or phone to reach you?",
-    human_defer: "Of course — I'll pass you to the team. What's the best email or phone for them to reach you?",
+    human_defer: "Of course — leave me your WhatsApp number (or email) and the team will get back to you as soon as they can. You're welcome to keep asking me things in the meantime.",
   },
   es: {
     greeting: '¡Hola! Para conectarle con el agente adecuado, ¿puedo hacerle un par de preguntas rápidas? ¿Busca comprar o vender?',
@@ -138,7 +138,7 @@ const LANG: Record<Lang, Record<CopyKey, string>> = {
     ready: '¡Perfecto, gracias! Un agente le contactará en breve para ayudarle con su búsqueda.',
     deflect: 'Se lo paso a un agente. Mientras, ¿cuál es el mejor email o teléfono para contactarle?',
     property_defer: 'Muy buena pregunta — me aseguraré de que un agente le responda. ¿Cuál es el mejor email o teléfono para contactarle?',
-    human_defer: 'Por supuesto — le paso con el equipo. ¿Cuál es el mejor email o teléfono para que le contacten?',
+    human_defer: 'Por supuesto — déjeme su número de WhatsApp (o email) y el equipo le responderá lo antes posible. Mientras tanto, puede seguir preguntándome lo que quiera.',
   },
 };
 const pickLang = (lang?: string): Lang => (lang === 'es' ? 'es' : 'en');

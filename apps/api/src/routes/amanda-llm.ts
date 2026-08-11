@@ -9,55 +9,18 @@ import {
 /** Amanda Phase D — the network/key side (see amanda-llm-lib.ts for the rules). */
 export type { ListingForLlm, LlmAnswer } from './amanda-llm-lib';
 
-/** TEMPORARY leak-safe diagnostic — reports only what the runtime sees (booleans,
- *  lengths, HTTP status, Anthropic error type). NEVER the key or any content.
- *  Remove after diagnosis. */
-export async function diagnoseLlm(): Promise<Record<string, unknown>> {
-  const out: Record<string, unknown> = {};
-  out.envKeyPresent = Boolean(process.env.ANTHROPIC_API_KEY?.trim());
-  out.disabledFlag = process.env.AMANDA_LLM_DISABLED === 'true';
-  let key: string | null = null;
-  try {
-    const res = await db.execute(sql`SELECT public._get_amanda_llm_key() AS k`);
-    out.dbResultIsArray = Array.isArray(res);
-    out.dbResultKeys = res && typeof res === 'object' ? Object.keys(res as object).slice(0, 5) : null;
-    const asArr = res as unknown as Array<{ k: string | null }>;
-    const viaArr = asArr?.[0]?.k ?? null;
-    const viaRows = (res as unknown as { rows?: Array<{ k: string | null }> })?.rows?.[0]?.k ?? null;
-    key = viaArr ?? viaRows ?? null;
-    out.keyLen = key ? key.length : 0;
-    out.readVia = viaArr ? 'array' : viaRows ? 'rows' : 'none';
-  } catch (err) {
-    out.dbError = err instanceof Error ? err.message.slice(0, 120) : String(err).slice(0, 120);
-  }
-  if (!key) { out.canCall = false; return out; }
-  try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 8000);
-    const resp = await fetch(ANTHROPIC_URL, {
-      method: 'POST', signal: controller.signal,
-      headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-      body: JSON.stringify({ model: DEFAULT_MODEL, max_tokens: 16, thinking: { type: 'disabled' }, messages: [{ role: 'user', content: 'Say OK.' }] }),
-    });
-    clearTimeout(timer);
-    out.anthropicStatus = resp.status;
-    if (!resp.ok) {
-      const j = (await resp.json().catch(() => ({}))) as { error?: { type?: string } };
-      out.anthropicErrorType = j?.error?.type ?? 'unknown';
-    }
-  } catch (err) {
-    out.fetchError = err instanceof Error ? `${err.name}: ${err.message.slice(0, 120)}` : String(err).slice(0, 120);
-  }
-  return out;
-}
-
-// ── Key resolution (env → vault RPC), cached with periodic re-check ──────────
+// ── Key resolution — VAULT-FIRST, cached with periodic re-check ──────────────
+// The deliberate Amanda key lives in the Supabase Vault (ANTHROPIC_API_KEY secret,
+// read via the single-purpose _get_amanda_llm_key()). We do NOT read the generic
+// process.env.ANTHROPIC_API_KEY — Railway already carries a platform-wide one (for
+// Studio) that collided with Amanda and shadowed the vault key. An Amanda-specific
+// env var can still override for local/testing without colliding.
 let cachedKey: string | null | undefined;
 let cachedAt = 0;
 async function getLlmKey(): Promise<string | null> {
   if (process.env.AMANDA_LLM_DISABLED === 'true') return null;
-  const envKey = process.env.ANTHROPIC_API_KEY?.trim();
-  if (envKey) return envKey;
+  const override = process.env.AMANDA_ANTHROPIC_API_KEY?.trim();
+  if (override) return override;
   const now = Date.now();
   if (cachedKey !== undefined && now - cachedAt < 5 * 60_000) return cachedKey;
   try {

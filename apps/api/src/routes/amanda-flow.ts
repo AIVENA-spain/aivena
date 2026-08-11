@@ -55,17 +55,27 @@ export function parseMessage(message: string): Partial<Collected> {
   if (/\b(sell|selling|vender|venta|list my|valuation|tasación|tasacion)\b/i.test(low)) out.intent = 'seller';
   else if (/\b(buy|buying|looking for|comprar|busco|interested in|rent)\b/i.test(low)) out.intent = 'buyer';
 
-  // budget: "€350k", "350k", "350000", "350.000", "up to 400"
-  const budget = low.match(/(?:€|eur|up to|hasta|budget|presupuesto)?\s*([0-9][0-9.,]{2,})\s*(k|mil|000)?/i);
+  // budget: "€350k", "350k", "350000", "350.000", "500 000", "up to 400"
+  // A detected phone number is stripped first so "+34 600 111 222" can never be
+  // read as a budget; then space/dot/comma thousands separators are collapsed.
+  const phoneRaw = m.replace(m.match(EMAIL_RE)?.[0] ?? '', '').match(PHONE_RE)?.[0] ?? '';
+  // Only strip a GENUINE phone ('+' prefix or >=9 digits) — "300.000" / "1 200 000"
+  // are prices, not phones (the <=100M cap below backstops anything weird).
+  const phoneSpan = phoneRaw && (/^\s*\+/.test(phoneRaw) || phoneRaw.replace(/\D/g, '').length >= 9) ? phoneRaw : '';
+  const forBudget = (phoneSpan ? low.replace(phoneSpan.toLowerCase(), ' ') : low)
+    .replace(/(\d)[ .,](?=\d{3}(?:\D|$))/g, '$1');
+  const budget = forBudget.match(/(?:€|eur|up to|hasta|budget|presupuesto)?\s*([0-9][0-9.,]{2,})\s*(k|mil|000)?/i);
   if (budget) {
     let n = parseFloat(budget[1].replace(/[.,](?=\d{3}\b)/g, '').replace(',', '.'));
     if (budget[2] && /k|mil/i.test(budget[2])) n *= 1000;
-    if (Number.isFinite(n) && n >= 1000) out.budgetMax = Math.round(n);
+    if (Number.isFinite(n) && n >= 1000 && n <= 100_000_000) out.budgetMax = Math.round(n);
   }
 
-  // bedrooms: "2 bed", "2 bedrooms", "2 dormitorios", "2 hab"
+  // bedrooms: "2 bed", "2 bedrooms", "2 dormitorios", "2 hab" — and a BARE "3"
+  // (the natural answer to "How many bedrooms?"; the funnel has no other 1-9 ask).
   const beds = low.match(/\b([1-9])\s*(?:\+)?\s*(bed|bedroom|dorm|dormitor|hab)\b/i);
   if (beds) out.bedroomsMin = parseInt(beds[1], 10);
+  else if (/^[1-9]\+?$/.test(low.trim())) out.bedroomsMin = parseInt(low.trim(), 10);
 
   // property type
   for (const [re, t] of TYPES) if (re.test(low)) { out.propertyType = t; break; }
@@ -155,7 +165,7 @@ export function replyFor(key: CopyKey, lang?: string): string {
  */
 export type Intent = 'qualify' | 'property_question' | 'human_request';
 const HUMAN_RE = /\b(human|real person|speak to (someone|a person|an agent)|talk to (someone|a person|an agent)|call me|agent please)\b/i;
-const PROPERTY_Q_RE = /\b(do you have|are there|any (propert|home|villa|apartment|flat|house)|how much|price of|what.?s the price|cost of|available|availability|listing|ref(erence)?\s*#?\s*\w|more (info|details|photos|pictures)|can i see|show me|square met|m2|garden|pool)\b/i;
+const PROPERTY_Q_RE = /\b(do you have|are there|(any|some) (propert|home|villa|apartment|flat|house)|rec+om+end|suggest|recomiende?|sugiere?|propert(y|ies) (in|near|around|available)|how much|price of|what.?s the price|cost of|available|availability|listing|ref(erence)?\s*#?\s*\w|more (info|details|photos|pictures)|can i see|show me|square met|m2|garden|pool)\b/i;
 // ANSWER-FIRST (Christian, 2026-08-11): referring back to a listing ("the one in…",
 // "that villa", "more about", "pictures/photos", "how do I find it") is a property
 // question — answer it, never fall into a contact-grabbing deflect.

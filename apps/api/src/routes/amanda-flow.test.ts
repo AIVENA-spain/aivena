@@ -42,10 +42,19 @@ describe('parseMessage — deterministic light parsing', () => {
     expect(p.intent).toBe('seller');
     expect(p.propertyType).toBe('villa');
   });
-  it('parses plain and dotted budgets', () => {
+  it('parses plain, dotted, and SPACE-separated budgets', () => {
     expect(parseMessage('budget 400000').budgetMax).toBe(400000);
     expect(parseMessage('hasta 300.000').budgetMax).toBe(300000);
     expect(parseMessage('around 250k').budgetMax).toBe(250000);
+    expect(parseMessage('around 500 000 euro').budgetMax).toBe(500000);   // Christian's live bug
+    expect(parseMessage('1 200 000').budgetMax).toBe(1200000);
+  });
+  it('a phone number is never read as a budget', () => {
+    expect(parseMessage('call me on +34 600 111 222').budgetMax).toBeUndefined();
+  });
+  it('a bare number answers the bedrooms question', () => {
+    expect(parseMessage('3').bedroomsMin).toBe(3);                        // Christian's live bug
+    expect(parseMessage('300').bedroomsMin).toBeUndefined();              // not a bedroom count
   });
   it('extracts email + phone but not small numbers as phone', () => {
     const p = parseMessage('reach me at jane@example.com or +34 600 111 222');
@@ -137,6 +146,11 @@ describe('classifyIntent — the Phase-B forward-compat seam', () => {
   it('ANSWER-FIRST: a criteria statement is a search, not a questionnaire', () => {
     expect(classifyIntent('a 2 bed apartment in Denia')).toBe('property_question');
     expect(classifyIntent('2-bed apartment in Torrevieja under 200k')).toBe('property_question');
+  });
+  it('ANSWER-FIRST: recommend/suggest (typo-tolerant) is a property question', () => {
+    expect(classifyIntent('hello can you reccomend me some properties in torrevieja')).toBe('property_question');
+    expect(classifyIntent('can you recommend me some properties in torrevieja')).toBe('property_question');
+    expect(classifyIntent('suggest something near the beach')).toBe('property_question');
   });
   it('ANSWER-FIRST: referring back to a listing is a property question', () => {
     expect(classifyIntent('tell me more about the one in playa del cura')).toBe('property_question');

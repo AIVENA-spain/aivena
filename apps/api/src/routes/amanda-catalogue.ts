@@ -37,6 +37,7 @@ export type PropertyRow = {
   location_region: string | null;
   source_url: string | null;
   images?: unknown;
+  features?: unknown;
 };
 
 /** The safe card the widget renders (no agency_id / embedding / raw_payload / lat-lng). */
@@ -53,6 +54,7 @@ export type PropertyCard = {
   locationCity: string | null;
   url: string | null;
   image: string | null;
+  features: string[];
 };
 
 const REF_RE = /\b([A-Za-z][A-Za-z0-9]{1,5}-[A-Za-z0-9]{1,6})\b/;
@@ -123,7 +125,39 @@ export function toPropertyCard(row: PropertyRow, image: string | null): Property
     locationCity: row.location_city ?? null,
     url: row.source_url ?? null,
     image: image ?? null,
+    features: humanizeFeatures(row.features),
   };
+}
+
+/** Agency-entered feature tags, humanized verbatim ("communal_pool" → "communal
+ *  pool") — never invented, capped at 6. */
+export function humanizeFeatures(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((f): f is string => typeof f === 'string' && f.trim().length > 0)
+    .slice(0, 6)
+    .map((f) => f.replace(/_/g, ' ').trim().toLowerCase());
+}
+
+// Follow-ups about the listing just shown ("the property", "its features", "is
+// there a link", "can I see it online") — resolved via the session's lastRef.
+const FOLLOWUP_RE = /\b((the|that|this) (propert\w*|one|listing|apartment|villa|house|flat)|fea\w*tur\w*|amenit\w*|link|url|website|see (it|this|that) online|its price|how (big|large))\b/i;
+export function isFollowUpAboutLast(message: string): boolean {
+  return typeof message === 'string' && FOLLOWUP_RE.test(message);
+}
+
+/** Templated answer about ONE known listing: verbatim features + where the full
+ *  listing lives (the card's View details link). Never free-form. */
+export function aboutListingReply(ref: string, features: string[], lang?: string): string {
+  const es = pick(lang) === 'es';
+  if (features.length > 0) {
+    return es
+      ? `Sobre ${ref} — características: ${features.join(', ')}. Toque «Ver detalles» en la ficha para abrir el anuncio completo online.`
+      : `About ${ref} — features: ${features.join(', ')}. Tap 'View details' on the card to open the full listing online.`;
+  }
+  return es
+    ? `Aquí tiene ${ref} de nuevo — toque «Ver detalles» en la ficha para abrir el anuncio completo online, con fotos y descripción.`
+    : `Here's ${ref} again — tap 'View details' on the card to open the full listing online, with photos and the full description.`;
 }
 
 /** Cap enforced everywhere: never show more than 3 cards in one answer. */

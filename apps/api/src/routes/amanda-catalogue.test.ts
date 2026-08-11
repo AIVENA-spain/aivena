@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   parseListingRef, parseSearchPhrase, wantsViewing, buildSearchFilters, toPropertyCard,
+  humanizeFeatures, isFollowUpAboutLast, aboutListingReply,
   searchReply, specificReply, viewingReply, MAX_CARDS, type PropertyRow,
 } from './amanda-catalogue';
 
@@ -68,6 +69,7 @@ describe('toPropertyCard — safe shape only', () => {
       type: 'property', ref: 'MCH-006', title: '3-bed villa', propertyType: 'villa',
       price: 385000, currency: 'EUR', bedrooms: 3, bathrooms: 2, areaSqm: 120,
       locationCity: 'Orihuela Costa', url: 'https://x/y', image: 'https://img/1.jpg',
+      features: [],
     });
     // no internal keys leaked
     expect(Object.keys(c)).not.toContain('agency_id');
@@ -76,6 +78,28 @@ describe('toPropertyCard — safe shape only', () => {
   });
   it('null image when none vetted', () => {
     expect(toPropertyCard(row, null).image).toBeNull();
+  });
+});
+
+describe('conversation context — follow-ups about the last listing', () => {
+  it("detects Christian's exact follow-up (typo included)", () => {
+    expect(isFollowUpAboutLast('what is the best feautures of the property and is there a link to that property so i can see it online?')).toBe(true);
+    expect(isFollowUpAboutLast('what are its features?')).toBe(true);
+    expect(isFollowUpAboutLast('is there a link?')).toBe(true);
+    expect(isFollowUpAboutLast('how big is it?')).toBe(true);
+  });
+  it('does not fire on a fresh search', () => {
+    expect(isFollowUpAboutLast('do you have any villas?')).toBe(false);
+    expect(isFollowUpAboutLast('2-bed apartment in torrevieja')).toBe(false);
+  });
+  it('humanizes agency feature tags verbatim (never invents)', () => {
+    expect(humanizeFeatures(['communal_pool', 'near_beach', 'south_facing'])).toEqual(['communal pool', 'near beach', 'south facing']);
+    expect(humanizeFeatures(null)).toEqual([]);
+    expect(humanizeFeatures([1, '', 'ok'])).toEqual(['ok']);
+  });
+  it('aboutListingReply: features when present, honest link-pointer when not', () => {
+    expect(aboutListingReply('MCH-001', ['communal pool', 'near beach'])).toMatch(/features: communal pool, near beach/);
+    expect(aboutListingReply('MCH-001', [])).toMatch(/photos and the full description/);
   });
 });
 

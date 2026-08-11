@@ -6,6 +6,7 @@ import { validateContact, validateMessage, mapCaptureError, createRateLimiter } 
 import { parseMessage, classifyIntent, turnReply, hasContact, type Collected } from './amanda-flow';
 import {
   buildSearchFilters, wantsViewing, toPropertyCard, searchReply, specificReply, viewingReply,
+  isFollowUpAboutLast, aboutListingReply,
   type PropertyRow, type PropertyCard,
 } from './amanda-catalogue';
 import { usablePhotos } from '../lib/property-images';
@@ -171,15 +172,18 @@ route.post('/:agencySlug/message', async (c) => {
     if (intent === 'property_question') {
       // Phase B: answer from the VERIFIED catalogue — never invent.
       const filters = buildSearchFilters(collected, v.message);
+      // Conversation context: the listing shown last turn ("the property", "it").
+      const lastRef = collected.lastRef ?? null;
       if (wantsViewing(v.message)) {
         viewing = true;
-        viewingRef = filters.ref;                       // specific listing, or null (general)
+        // "I'd like to view it" resolves to the listing under discussion.
+        viewingRef = filters.ref ?? lastRef;            // specific listing, or null (general)
         reply = viewingReply(have, lang);
         messageType = 'viewing_request';
         awaitingContact = !have;
         readyToCapture = have;
-        if (filters.ref) {
-          const rows = await searchProperties(slug, v.sessionToken, { ref: filters.ref }, 1);
+        if (viewingRef) {
+          const rows = await searchProperties(slug, v.sessionToken, { ref: viewingRef }, 1);
           if (rows[0]) attachments = [cardOf(rows[0])];  // show what they're asking to view
         }
       } else if (filters.ref) {
@@ -197,6 +201,20 @@ route.post('/:agencySlug/message', async (c) => {
           awaitingContact = !have;
           readyToCapture = have;
         }
+      } else if (!filters.q && lastRef && isFollowUpAboutLast(v.message)) {
+        // "What are its features? Is there a link?" → answer about the listing
+        // just shown (verbatim features + the card's View-details link).
+        const rows = await searchProperties(slug, v.sessionToken, { ref: lastRef }, 1);
+        if (rows[0]) {
+          const card = cardOf(rows[0]);
+          attachments = [card];
+          reply = aboutListingReply(lastRef, card.features, lang);
+        } else {
+          reply = specificReply(false, lastRef, lang);
+        }
+        messageType = 'property_answer';
+        awaitingContact = false;
+        readyToCapture = false;
       } else {
         // Criteria search — up to 3 active listings; zero → honest defer + capture.
         const rows = await searchProperties(slug, v.sessionToken, filters, 3);
@@ -214,10 +232,14 @@ route.post('/:agencySlug/message', async (c) => {
       readyToCapture = t.readyToCapture;
     }
 
-    // 2) Append Amanda's outbound reply.
+    // 2) Append Amanda's outbound reply. When exactly ONE listing was shown, its
+    //    ref becomes the session's lastRef (volatile — newest wins in the RPC), so
+    //    the next "the property / features / link / view it" resolves to it.
+    const shownRef = attachments.length === 1 ? attachments[0].ref : null;
+    const outPatch = shownRef ? JSON.stringify({ lastRef: shownRef }) : '{}';
     await db.execute(sql`
       SELECT * FROM public.amanda_append_message(
-        ${slug}, ${v.sessionToken}, ${'outbound'}, ${reply}, ${'{}'}::jsonb, ${REQUIRE_TEST_AGENCY}
+        ${slug}, ${v.sessionToken}, ${'outbound'}, ${reply}, ${outPatch}::jsonb, ${REQUIRE_TEST_AGENCY}
       )
     `);
 

@@ -21,6 +21,8 @@ export type Collected = {
   name?: string;
   email?: string;
   phone?: string;
+  /** Volatile context: the listing just shown (newest wins in the RPC merge). */
+  lastRef?: string;
 };
 
 export type Step = 'intent' | 'location' | 'budget' | 'bedrooms' | 'type' | 'contact';

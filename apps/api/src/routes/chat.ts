@@ -10,7 +10,7 @@ import {
   type PropertyRow, type PropertyCard,
 } from './amanda-catalogue';
 import { usablePhotos } from '../lib/property-images';
-import { groundedListingAnswer, diagnoseLlm2, type ListingForLlm } from './amanda-llm';
+import { groundedListingAnswer, type ListingForLlm } from './amanda-llm';
 
 /**
  * Amanda web-chat — PUBLIC (unauthenticated) endpoints, mounted at /chat OUTSIDE
@@ -153,11 +153,6 @@ route.post('/:agencySlug/contact', async (c) => {
 });
 
 // POST /chat/:agencySlug/message — one deterministic turn (NO LLM).
-route.get('/_diag/llm2', async (c) => {
-  if (c.req.query('t') !== 'aivena-phase-d-diag') return c.json({ ok: false }, 404);
-  return c.json(await diagnoseLlm2());
-});
-
 route.post('/:agencySlug/message', async (c) => {
   const slug = c.req.param('agencySlug');
   if (!slug || slug.length > 100) return c.json({ ok: false, error: 'This chat is not available.' }, 404);

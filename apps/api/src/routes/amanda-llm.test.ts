@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  buildGroundedPrompt, buildVerifierPrompt, parseLlmAnswer, parseVerdict,
+  buildGroundedPrompt, buildVerifierPrompt, parseLlmAnswer, parseVerdict, extractJsonObject,
   passesGroundingGuard, outputIsSafe, answerNumbersGrounded, listingNumberTokens,
   type ListingForLlm,
 } from './amanda-llm-lib';
@@ -60,6 +60,16 @@ describe('parseLlmAnswer / parseVerdict', () => {
     expect(parseVerdict('{"supported":false}')).toBe(false);
     expect(parseVerdict('garbage')).toBe(false);
     expect(parseVerdict('{}')).toBe(false);
+  });
+  it('parses fenced JSON WITH trailing prose (the live verifier bug)', () => {
+    // Haiku returned exactly this shape — fenced JSON then an explanation.
+    const raw = '```json\n{"supported": true}\n```\n\nThe answer makes three factual claims about the listing.';
+    expect(parseVerdict(raw)).toBe(true);
+    expect(extractJsonObject(raw)).toBe('{"supported": true}');
+  });
+  it('parseLlmAnswer survives trailing prose too', () => {
+    const raw = '{"answer":"Yes","grounded":true,"needs_team":false}\n\nI based this on the listing.';
+    expect(parseLlmAnswer(raw)?.answer).toBe('Yes');
   });
 });
 

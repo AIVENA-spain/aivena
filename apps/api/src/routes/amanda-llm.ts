@@ -9,45 +9,6 @@ import {
 /** Amanda Phase D — the network/key side (see amanda-llm-lib.ts for the rules). */
 export type { ListingForLlm, LlmAnswer } from './amanda-llm-lib';
 
-/** TEMPORARY leak-safe diagnostic v2 — runs the REAL groundedListingAnswer against
- *  a fixed MCH-001-style listing and reports the outcome. NEVER exposes the key. */
-export async function diagnoseLlm2(): Promise<Record<string, unknown>> {
-  const out: Record<string, unknown> = {};
-  const key = await getLlmKey();
-  out.keyLen = key ? key.length : 0;
-  out.overrideEnvSet = Boolean(process.env.AMANDA_ANTHROPIC_API_KEY?.trim());
-  const listing: ListingForLlm = {
-    ref: 'MCH-001', title: '2-bedroom apartment near Playa del Cura, Torrevieja',
-    propertyType: 'apartment', price: 128000, currency: 'EUR', bedrooms: 2, bathrooms: 1,
-    areaSqm: 65, locationCity: 'Torrevieja',
-    features: ['communal pool', 'near beach', 'recently refurbished', 'south facing'],
-    description: 'Cosy 2-bedroom apartment 350 metres from Playa del Cura. South-facing, recently refurbished kitchen, communal pool. Walking distance to Habaneras shopping centre and the Friday market.',
-  };
-  if (!key) { out.step = 'no-key'; return out; }
-  const q = 'how far is it from the beach, and are there shops nearby?';
-  const { system, user } = buildGroundedPrompt({ agencyName: 'test-agency', listing, question: q, lang: 'en' });
-  const answerModel = process.env.AMANDA_LLM_MODEL?.trim() || DEFAULT_MODEL;
-  const rawAnswer = await callClaude(key, answerModel, system, user, TIMEOUT_MS, true);
-  out.answerModel = answerModel;
-  out.rawAnswerNull = rawAnswer === null;
-  if (rawAnswer === null) { out.step = 'answer-call-null'; return out; }
-  out.rawAnswerPreview = rawAnswer.slice(0, 140);
-  const parsed = parseLlmAnswer(rawAnswer);
-  out.parsedNull = parsed === null;
-  if (parsed) { out.grounded = parsed.grounded; out.needsTeam = parsed.needsTeam; out.answerEmpty = !parsed.answer; }
-  if (!parsed || !parsed.grounded || parsed.needsTeam || !parsed.answer) { out.step = 'gate1-selfreport'; return out; }
-  out.guardPass = passesGroundingGuard(parsed.answer, listing);
-  if (!out.guardPass) { out.step = 'gate2-guard'; return out; }
-  const verifierModel = process.env.AMANDA_VERIFIER_MODEL?.trim() || VERIFIER_MODEL;
-  const vp = buildVerifierPrompt({ listing, answer: parsed.answer });
-  const rawVerdict = await callClaude(key, verifierModel, vp.system, vp.user, VERIFIER_TIMEOUT_MS, false);
-  out.verifierModel = verifierModel;
-  out.rawVerdictNull = rawVerdict === null;
-  if (rawVerdict !== null) { out.rawVerdictPreview = rawVerdict.slice(0, 80); out.verdictSupported = parseVerdict(rawVerdict); }
-  out.step = (rawVerdict !== null && parseVerdict(rawVerdict)) ? 'ALL-PASS' : 'gate3-verifier';
-  return out;
-}
-
 // ── Key resolution — VAULT-FIRST, cached with periodic re-check ──────────────
 // The deliberate Amanda key lives in the Supabase Vault (ANTHROPIC_API_KEY secret,
 // read via the single-purpose _get_amanda_llm_key()). We do NOT read the generic

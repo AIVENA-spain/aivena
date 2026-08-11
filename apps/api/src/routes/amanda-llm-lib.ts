@@ -98,11 +98,32 @@ export function buildVerifierPrompt(args: { listing: ListingForLlm; answer: stri
   return { system, user };
 }
 
-/** Pure: parse + validate the ANSWER model's JSON (tolerates code fences). */
+/** Pure: extract the FIRST balanced {...} object from model text — robust to code
+ *  fences AND trailing prose (models often append an explanation after the JSON). */
+export function extractJsonObject(raw: string): string | null {
+  if (typeof raw !== 'string') return null;
+  const start = raw.indexOf('{');
+  if (start < 0) return null;
+  let depth = 0, inStr = false, esc = false;
+  for (let i = start; i < raw.length; i++) {
+    const ch = raw[i];
+    if (inStr) {
+      if (esc) esc = false;
+      else if (ch === '\\') esc = true;
+      else if (ch === '"') inStr = false;
+    } else if (ch === '"') inStr = true;
+    else if (ch === '{') depth++;
+    else if (ch === '}') { depth--; if (depth === 0) return raw.slice(start, i + 1); }
+  }
+  return null;
+}
+
+/** Pure: parse + validate the ANSWER model's JSON (robust to fences + trailing prose). */
 export function parseLlmAnswer(raw: string): { answer: string; grounded: boolean; needsTeam: boolean } | null {
+  const obj = extractJsonObject(raw);
+  if (!obj) return null;
   try {
-    const stripped = raw.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
-    const j = JSON.parse(stripped) as Record<string, unknown>;
+    const j = JSON.parse(obj) as Record<string, unknown>;
     if (typeof j.answer !== 'string' || typeof j.grounded !== 'boolean') return null;
     return { answer: j.answer.trim(), grounded: j.grounded, needsTeam: j.needs_team === true };
   } catch {
@@ -112,9 +133,10 @@ export function parseLlmAnswer(raw: string): { answer: string; grounded: boolean
 
 /** Pure: parse the verifier verdict. Anything unparseable → not supported (fail-safe). */
 export function parseVerdict(raw: string): boolean {
+  const obj = extractJsonObject(raw);
+  if (!obj) return false;
   try {
-    const stripped = raw.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
-    const j = JSON.parse(stripped) as Record<string, unknown>;
+    const j = JSON.parse(obj) as Record<string, unknown>;
     return j.supported === true;
   } catch {
     return false;

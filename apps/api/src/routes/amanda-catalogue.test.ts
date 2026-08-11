@@ -87,7 +87,7 @@ describe('templated replies — never free-form', () => {
   });
   it('searchReply: counts and offers a viewing, not a claim', () => {
     expect(searchReply(3, false)).toMatch(/3 listings that match/i);
-    expect(searchReply(1, false)).toMatch(/1 listing/i);
+    expect(searchReply(1, false)).toMatch(/a listing that matches/i);
     expect(searchReply(3, true)).toMatch(/There are more/i);
   });
   it('specificReply: not-found is honest + offers the team', () => {

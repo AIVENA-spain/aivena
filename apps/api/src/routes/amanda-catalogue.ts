@@ -148,7 +148,9 @@ export function searchReply(count: number, truncated: boolean, lang?: string): s
     : '';
   return es
     ? `Aquí tiene ${count} que encajan. Pregúnteme por cualquiera de ellas, o pida una visita cuando quiera.${more}`
-    : `Here ${count === 1 ? 'is 1 listing' : `are ${count} listings`} that match. Ask me about any of them, or say the word if you'd like a viewing.${more}`;
+    : count === 1
+      ? `Here's a listing that matches. Ask me anything about it, or say the word if you'd like a viewing.${more}`
+      : `Here are ${count} listings that match. Ask me about any of them, or say the word if you'd like a viewing.${more}`;
 }
 
 /** Templated reply for a specific-listing lookup. `found` false → defer to the team. */

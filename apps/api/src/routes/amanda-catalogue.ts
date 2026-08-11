@@ -13,6 +13,7 @@ import type { Collected } from './amanda-flow';
 
 export type SearchFilters = {
   ref: string | null;           // a specific listing reference (external_id / id), if asked
+  q: string | null;             // free-text phrase ("the one in playa del cura") — title/city match
   location: string | null;
   propertyType: string | null;
   bedroomsMin: number | null;
@@ -55,6 +56,19 @@ export type PropertyCard = {
 };
 
 const REF_RE = /\b([A-Za-z][A-Za-z0-9]{1,5}-[A-Za-z0-9]{1,6})\b/;
+// "the one in playa del cura" / "that villa near la mata" → a title/city phrase the
+// zone tables may not know. Captured verbatim (trimmed) for a title ILIKE match.
+const PHRASE_RE = /\b(?:the ones?|that (?:property|listing|one|apartment|villa|house|flat))\s+(?:in|at|near|on|with)\s+([a-zA-Z\u00c0-\u017f][a-zA-Z\u00c0-\u017f' -]{2,40})/i;
+
+/** Extract a free-text referring phrase for title/city matching ("playa del cura"). */
+export function parseSearchPhrase(message: string): string | null {
+  if (typeof message !== 'string') return null;
+  const m = message.match(PHRASE_RE);
+  if (!m) return null;
+  // Trim trailing filler that often follows the place phrase.
+  const q = m[1].replace(/\s+(and|please|thanks?|que|por favor)\b.*$/i, '').trim();
+  return q.length >= 3 ? q : null;
+}
 const VIEWING_RE =
   /\b(viewing|book a (viewing|visit)|arrange a (viewing|visit)|schedule a (viewing|visit)|come and see|see it in person|visita|agendar (una )?visita|concertar (una )?visita|cita para ver)\b/i;
 
@@ -78,6 +92,7 @@ export function wantsViewing(message: string): boolean {
 export function buildSearchFilters(collected: Collected, message: string): SearchFilters {
   return {
     ref: parseListingRef(message),
+    q: parseSearchPhrase(message),
     location: collected.location?.trim() || null,
     propertyType: collected.propertyType?.trim() || null,
     bedroomsMin: collected.bedroomsMin ?? null,
@@ -125,15 +140,15 @@ export function searchReply(count: number, truncated: boolean, lang?: string): s
   const es = pick(lang) === 'es';
   if (count === 0) {
     return es
-      ? 'No tengo ahora mismo una propiedad activa que encaje con eso. Le paso sus criterios a un agente — ¿cuál es el mejor email o teléfono para contactarle?'
-      : "I don't have an active listing matching that right now. I'll pass your criteria to an agent — what's the best email or phone to reach you?";
+      ? 'Ahora mismo no tengo una propiedad activa que encaje con eso. Si quiere, déjeme su WhatsApp o email y el equipo estará atento por usted.'
+      : "I don't have an active listing matching that just now. If you'd like, leave your WhatsApp number or email and the team will keep an eye out for you.";
   }
   const more = truncated
-    ? (es ? ' Hay más; un agente puede enviarle el resto.' : ' There are more — an agent can send you the rest.')
+    ? (es ? ' Hay más; el equipo puede enviarle el resto.' : ' There are more — the team can send you the rest.')
     : '';
   return es
-    ? `Aquí tiene ${count} que encajan. Un agente puede darle más detalles o concertar una visita.${more}`
-    : `Here ${count === 1 ? 'is 1 listing' : `are ${count} listings`} that match. An agent can tell you more or arrange a viewing.${more}`;
+    ? `Aquí tiene ${count} que encajan. Pregúnteme por cualquiera de ellas, o pida una visita cuando quiera.${more}`
+    : `Here ${count === 1 ? 'is 1 listing' : `are ${count} listings`} that match. Ask me about any of them, or say the word if you'd like a viewing.${more}`;
 }
 
 /** Templated reply for a specific-listing lookup. `found` false → defer to the team. */
@@ -141,8 +156,8 @@ export function specificReply(found: boolean, ref: string, lang?: string): strin
   const es = pick(lang) === 'es';
   if (!found) {
     return es
-      ? `No encuentro una propiedad activa con la referencia ${ref}. Le paso su pregunta a un agente — ¿cuál es el mejor email o teléfono para contactarle?`
-      : `I couldn't find an active listing with reference ${ref}. I'll pass your question to an agent — what's the best email or phone to reach you?`;
+      ? `No encuentro una propiedad activa con la referencia ${ref}. Si quiere, déjeme su WhatsApp o email y el equipo lo comprobará.`
+      : `I can't see an active listing with reference ${ref}. If you'd like, leave your WhatsApp number or email and the team will double-check for you.`;
   }
   return es ? `Esto es lo que tengo sobre ${ref}:` : `Here's what I have on ${ref}:`;
 }
@@ -152,8 +167,8 @@ export function viewingReply(haveContact: boolean, lang?: string): string {
   const es = pick(lang) === 'es';
   if (haveContact) {
     return es
-      ? 'Perfecto — paso su solicitud de visita a un agente, que confirmará la fecha con usted. No se agenda nada automáticamente.'
-      : "Great — I'll pass your viewing request to an agent, who will confirm a time with you. Nothing is booked automatically.";
+      ? 'Perfecto — paso su solicitud de visita al equipo, que confirmará la fecha con usted. No se agenda nada automáticamente.'
+      : "Great — I'll pass your viewing request to the team, and they'll confirm a time with you. Nothing is booked automatically.";
   }
   return es
     ? 'Con gusto — ¿cuál es el mejor email o teléfono para que un agente confirme la visita?'

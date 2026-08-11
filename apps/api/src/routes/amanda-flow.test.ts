@@ -129,10 +129,19 @@ describe('hasContact', () => {
 });
 
 describe('classifyIntent — the Phase-B forward-compat seam', () => {
-  it('defaults to qualify for ordinary answers', () => {
-    expect(classifyIntent('a 2 bed apartment in Denia')).toBe('qualify');
+  it('single funnel answers stay qualify; empty stays qualify', () => {
     expect(classifyIntent('buying')).toBe('qualify');
+    expect(classifyIntent('Torrevieja')).toBe('qualify');
     expect(classifyIntent('')).toBe('qualify');
+  });
+  it('ANSWER-FIRST: a criteria statement is a search, not a questionnaire', () => {
+    expect(classifyIntent('a 2 bed apartment in Denia')).toBe('property_question');
+    expect(classifyIntent('2-bed apartment in Torrevieja under 200k')).toBe('property_question');
+  });
+  it('ANSWER-FIRST: referring back to a listing is a property question', () => {
+    expect(classifyIntent('tell me more about the one in playa del cura')).toBe('property_question');
+    expect(classifyIntent('i need to see pictures, how do i find that property?')).toBe('property_question');
+    expect(classifyIntent('can i see photos of that villa?')).toBe('property_question');
   });
   it('detects a property question', () => {
     expect(classifyIntent('do you have any villas with a pool?')).toBe('property_question');

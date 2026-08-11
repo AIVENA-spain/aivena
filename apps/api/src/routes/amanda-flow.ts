@@ -110,10 +110,8 @@ type Lang = 'en' | 'es';
 type CopyKey = Step | 'ready' | 'deflect' | 'greeting' | 'property_defer' | 'human_defer';
 const LANG: Record<Lang, Record<CopyKey, string>> = {
   en: {
-    // Phase A is capture-only: Amanda gathers what the visitor is after and
-    // connects them to an agent. It does NOT claim to answer property questions
-    // or share listing info (that is Phase B, property-aware Q&A — not built).
-    greeting: "Hi! To connect you with the right agent, may I ask a couple of quick questions? Are you looking to buy, or to sell?",
+    // ANSWER-FIRST: warm, honest, invites a real question. No live-agent promise.
+    greeting: "Hi! Ask me anything about our properties or the area — or just tell me what you're looking for.",
     intent: 'Are you looking to buy, or to sell?',
     location: 'Which area are you interested in?',
     budget: "What's your budget (roughly)?",
@@ -121,14 +119,14 @@ const LANG: Record<Lang, Record<CopyKey, string>> = {
     type: 'What type of property — apartment, villa, townhouse?',
     contact: 'Great — what\'s the best email or phone number for an agent to reach you?',
     ready: "Perfect, thank you! An agent will be in touch shortly to help with your search.",
-    deflect: "I'll pass that to an agent. Meanwhile, what's the best email or phone to reach you?",
-    // Phase A: a property question is NOT answered (no invented facts). Amanda is
-    // honest that a team member will follow up, and moves to capturing contact.
-    property_defer: "That's a great question — I'll make sure an agent gets back to you on it. What's the best email or phone to reach you?",
+    deflect: "Sorry — I didn't quite catch that. Ask me about any of our properties or areas, or just tell me what you're looking for.",
+    // Used only when the catalogue genuinely can't answer: honest, offers (not
+    // demands) the team's follow-up.
+    property_defer: "Good question — that's one for the team. If you'd like, leave your WhatsApp number or email and they'll get back to you.",
     human_defer: "Of course — leave me your WhatsApp number (or email) and the team will get back to you as soon as they can. You're welcome to keep asking me things in the meantime.",
   },
   es: {
-    greeting: '¡Hola! Para conectarle con el agente adecuado, ¿puedo hacerle un par de preguntas rápidas? ¿Busca comprar o vender?',
+    greeting: '¡Hola! Pregúnteme lo que quiera sobre nuestras propiedades o la zona — o dígame qué está buscando.',
     intent: '¿Busca comprar o vender?',
     location: '¿Qué zona le interesa?',
     budget: '¿Cuál es su presupuesto (aproximado)?',
@@ -136,8 +134,8 @@ const LANG: Record<Lang, Record<CopyKey, string>> = {
     type: '¿Qué tipo de propiedad — apartamento, villa, adosado?',
     contact: 'Genial — ¿cuál es el mejor email o teléfono para que un agente le contacte?',
     ready: '¡Perfecto, gracias! Un agente le contactará en breve para ayudarle con su búsqueda.',
-    deflect: 'Se lo paso a un agente. Mientras, ¿cuál es el mejor email o teléfono para contactarle?',
-    property_defer: 'Muy buena pregunta — me aseguraré de que un agente le responda. ¿Cuál es el mejor email o teléfono para contactarle?',
+    deflect: 'Perdone — no le he entendido bien. Pregúnteme por cualquiera de nuestras propiedades o zonas, o dígame qué está buscando.',
+    property_defer: 'Buena pregunta — eso es para el equipo. Si quiere, déjeme su WhatsApp o email y le responderán.',
     human_defer: 'Por supuesto — déjeme su número de WhatsApp (o email) y el equipo le responderá lo antes posible. Mientras tanto, puede seguir preguntándome lo que quiera.',
   },
 };
@@ -158,11 +156,28 @@ export function replyFor(key: CopyKey, lang?: string): string {
 export type Intent = 'qualify' | 'property_question' | 'human_request';
 const HUMAN_RE = /\b(human|real person|speak to (someone|a person|an agent)|talk to (someone|a person|an agent)|call me|agent please)\b/i;
 const PROPERTY_Q_RE = /\b(do you have|are there|any (propert|home|villa|apartment|flat|house)|how much|price of|what.?s the price|cost of|available|availability|listing|ref(erence)?\s*#?\s*\w|more (info|details|photos|pictures)|can i see|show me|square met|m2|garden|pool)\b/i;
+// ANSWER-FIRST (Christian, 2026-08-11): referring back to a listing ("the one in…",
+// "that villa", "more about", "pictures/photos", "how do I find it") is a property
+// question — answer it, never fall into a contact-grabbing deflect.
+const PROPERTY_REF_RE = /\b(the ones? (in|at|near|with|on)|that (propert|listing|apartment|villa|house|flat|one)|(tell me )?more about|pictures?|photos?|see (it|them)|view details|how (do|can) i (find|see|view))\b/i;
+
+/**
+ * ANSWER-FIRST doctrine: a message that simply STATES criteria ("2-bed apartment
+ * in Torrevieja under 200k") deserves listings, not a questionnaire. Two or more
+ * parsed criteria = treat it as a search; a single one-word funnel answer
+ * ("Torrevieja") still advances the qualify flow naturally.
+ */
+function statesSearchCriteria(message: string): boolean {
+  const p = parseMessage(message);
+  const n = [p.location, p.propertyType, p.budgetMax, p.bedroomsMin].filter((v) => v !== undefined).length;
+  return n >= 2;
+}
+
 export function classifyIntent(message: string): Intent {
   if (typeof message !== 'string' || !message.trim()) return 'qualify';
   const m = message.toLowerCase();
   if (HUMAN_RE.test(m)) return 'human_request';
-  if (PROPERTY_Q_RE.test(m)) return 'property_question';
+  if (PROPERTY_Q_RE.test(m) || PROPERTY_REF_RE.test(m) || statesSearchCriteria(m)) return 'property_question';
   return 'qualify';
 }
 
@@ -240,6 +255,8 @@ export function turnReply(
   const r = replyForCollected(collected, addedNothing, lang);
   // The widget reveals the contact card (notice + unticked consent checkbox) when
   // Amanda is asking for contact and we don't have it yet.
-  const awaitingContact = !have && (r.step === 'contact' || r.messageType === 'deflect');
+  // Deflect is a helpful re-prompt, not a contact ask — only the natural end of
+  // the funnel reveals the contact card (answer-first doctrine).
+  const awaitingContact = !have && r.step === 'contact';
   return { reply: r.reply, messageType: r.messageType, readyToCapture: r.readyToCapture, awaitingContact };
 }

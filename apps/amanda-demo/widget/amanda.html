@@ -252,6 +252,13 @@
     var wrap = document.createElement("div"); wrap.className = "pcards"; wrap.setAttribute("data-testid", "property-cards");
     cards.slice(0, 3).forEach(function (c) {
       var el = document.createElement("div"); el.className = "pcard";
+      if (c.url && c.url !== "#") {
+        el.style.cursor = "pointer";
+        el.addEventListener("click", function (ev) {
+          if (ev.target && ev.target.tagName === "A") return;   // the link handles itself
+          window.open(c.url, "_blank", "noopener");
+        });
+      }
       if (c.image) { var th = document.createElement("div"); th.className = "thumb"; th.style.backgroundImage = "url('" + encodeURI(c.image) + "')"; el.appendChild(th); }
       var pc = document.createElement("div"); pc.className = "pc";
       var pt = document.createElement("div"); pt.className = "pt"; pt.textContent = c.title || c.ref || "Property"; pc.appendChild(pt);
@@ -262,6 +269,11 @@
       if (c.bathrooms != null) meta.push(c.bathrooms + (LANG === "es" ? " baños" : " bath"));
       if (c.areaSqm != null) meta.push(c.areaSqm + " m²");
       var pm = document.createElement("div"); pm.className = "pm"; pm.textContent = meta.join(" · "); pc.appendChild(pm);
+      if (c.features && c.features.length) {
+        var pf = document.createElement("div"); pf.className = "pm"; pf.style.marginTop = "2px";
+        pf.textContent = "✓ " + c.features.slice(0, 4).join(" · ");
+        pc.appendChild(pf);
+      }
       if (c.price != null) { var pp = document.createElement("div"); pp.className = "pp"; pp.textContent = fmtPrice(c.price, c.currency); pc.appendChild(pp); }
       if (c.url && c.url !== "#") { var a = document.createElement("a"); a.className = "pv"; a.href = c.url; a.target = "_blank"; a.rel = "noopener"; a.textContent = LANG === "es" ? "Ver detalles" : "View details"; pc.appendChild(a); }
       el.appendChild(pc); wrap.appendChild(el);

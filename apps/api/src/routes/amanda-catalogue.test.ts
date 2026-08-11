@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   parseListingRef, parseSearchPhrase, wantsViewing, buildSearchFilters, toPropertyCard,
-  humanizeFeatures, isFollowUpAboutLast, aboutListingReply,
+  humanizeFeatures, isFollowUpAboutLast, listingDetailReply,
   searchReply, specificReply, viewingReply, MAX_CARDS, type PropertyRow,
 } from './amanda-catalogue';
 
@@ -82,11 +82,14 @@ describe('toPropertyCard — safe shape only', () => {
 });
 
 describe('conversation context — follow-ups about the last listing', () => {
-  it("detects Christian's exact follow-up (typo included)", () => {
+  it("detects Christian's exact follow-ups (typos included)", () => {
     expect(isFollowUpAboutLast('what is the best feautures of the property and is there a link to that property so i can see it online?')).toBe(true);
+    expect(isFollowUpAboutLast('yes tell me more about it please')).toBe(true);   // live miss #2
+    expect(isFollowUpAboutLast('yes the one in playa del cura. can you tell me more about it?')).toBe(true);
     expect(isFollowUpAboutLast('what are its features?')).toBe(true);
     expect(isFollowUpAboutLast('is there a link?')).toBe(true);
     expect(isFollowUpAboutLast('how big is it?')).toBe(true);
+    expect(isFollowUpAboutLast('more info?')).toBe(true);
   });
   it('does not fire on a fresh search', () => {
     expect(isFollowUpAboutLast('do you have any villas?')).toBe(false);
@@ -97,9 +100,17 @@ describe('conversation context — follow-ups about the last listing', () => {
     expect(humanizeFeatures(null)).toEqual([]);
     expect(humanizeFeatures([1, '', 'ok'])).toEqual(['ok']);
   });
-  it('aboutListingReply: features when present, honest link-pointer when not', () => {
-    expect(aboutListingReply('MCH-001', ['communal pool', 'near beach'])).toMatch(/features: communal pool, near beach/);
-    expect(aboutListingReply('MCH-001', [])).toMatch(/photos and the full description/);
+  it('listingDetailReply: actually TELLS about the listing (all verbatim fields)', () => {
+    const card: import('./amanda-catalogue').PropertyCard = { type: 'property', ref: 'MCH-001', title: '2-bedroom apartment near Playa del Cura, Torrevieja',
+      propertyType: 'apartment', price: 128000, currency: 'EUR', bedrooms: 2, bathrooms: 1, areaSqm: 65,
+      locationCity: 'Torrevieja', url: 'https://x', image: null, features: ['communal pool', 'near beach'] };
+    const r = listingDetailReply(card);
+    expect(r).toMatch(/2-bedroom apartment near Playa del Cura/);
+    expect(r).toMatch(/2 bedrooms, 1 bathrooms, 65 m², €128,000/);
+    expect(r).toMatch(/Features: communal pool, near beach/);
+    expect(r).toMatch(/arrange a viewing/i);
+    // missing fields are omitted, never invented
+    expect(listingDetailReply({ ...card, bathrooms: null, features: [] })).not.toMatch(/bathrooms|Features/);
   });
 });
 

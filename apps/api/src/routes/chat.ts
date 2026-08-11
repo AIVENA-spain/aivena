@@ -6,7 +6,7 @@ import { validateContact, validateMessage, mapCaptureError, createRateLimiter } 
 import { parseMessage, classifyIntent, turnReply, hasContact, type Collected } from './amanda-flow';
 import {
   buildSearchFilters, wantsViewing, toPropertyCard, searchReply, specificReply, viewingReply,
-  isFollowUpAboutLast, aboutListingReply,
+  isFollowUpAboutLast, listingDetailReply,
   type PropertyRow, type PropertyCard,
 } from './amanda-catalogue';
 import { usablePhotos } from '../lib/property-images';
@@ -190,8 +190,9 @@ route.post('/:agencySlug/message', async (c) => {
         // Specific-listing lookup — active only; missing/inactive → defer to an agent.
         const rows = await searchProperties(slug, v.sessionToken, { ref: filters.ref }, 1);
         if (rows[0]) {
-          reply = specificReply(true, filters.ref, lang);
-          attachments = [cardOf(rows[0])];
+          const card = cardOf(rows[0]);
+          attachments = [card];
+          reply = listingDetailReply(card, lang);
           messageType = 'property_answer';
           awaitingContact = false;
           readyToCapture = false;
@@ -201,17 +202,16 @@ route.post('/:agencySlug/message', async (c) => {
           awaitingContact = !have;
           readyToCapture = have;
         }
-      } else if (!filters.q && lastRef && isFollowUpAboutLast(v.message)) {
-        // "What are its features? Is there a link?" → answer about the listing
-        // just shown (verbatim features + the card's View-details link).
+      } else if (
+        !filters.q && lastRef && isFollowUpAboutLast(v.message)
+        // A message that states NEW criteria is a new search, not a follow-up.
+        && patch.location === undefined && patch.propertyType === undefined
+        && patch.budgetMax === undefined && patch.bedroomsMin === undefined
+      ) {
+        // "Tell me more about it" → actually TELL them (verbatim facts in prose);
+        // the card is already on screen, so no re-send.
         const rows = await searchProperties(slug, v.sessionToken, { ref: lastRef }, 1);
-        if (rows[0]) {
-          const card = cardOf(rows[0]);
-          attachments = [card];
-          reply = aboutListingReply(lastRef, card.features, lang);
-        } else {
-          reply = specificReply(false, lastRef, lang);
-        }
+        reply = rows[0] ? listingDetailReply(cardOf(rows[0]), lang) : specificReply(false, lastRef, lang);
         messageType = 'property_answer';
         awaitingContact = false;
         readyToCapture = false;
@@ -219,7 +219,7 @@ route.post('/:agencySlug/message', async (c) => {
         // Criteria search — up to 3 active listings; zero → honest defer + capture.
         const rows = await searchProperties(slug, v.sessionToken, filters, 3);
         attachments = rows.map(cardOf);
-        reply = searchReply(rows.length, false, lang);
+        reply = attachments.length === 1 ? listingDetailReply(attachments[0], lang) : searchReply(rows.length, false, lang);
         messageType = 'property_answer';
         awaitingContact = rows.length === 0 ? !have : false;
         readyToCapture = rows.length === 0 ? have : false;

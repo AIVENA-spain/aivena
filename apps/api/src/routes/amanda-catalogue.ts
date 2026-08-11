@@ -141,23 +141,30 @@ export function humanizeFeatures(raw: unknown): string[] {
 
 // Follow-ups about the listing just shown ("the property", "its features", "is
 // there a link", "can I see it online") — resolved via the session's lastRef.
-const FOLLOWUP_RE = /\b((the|that|this) (propert\w*|one|listing|apartment|villa|house|flat)|fea\w*tur\w*|amenit\w*|link|url|website|see (it|this|that) online|its price|how (big|large))\b/i;
+const FOLLOWUP_RE = /\b((the|that|this) (propert\w*|one|listing|apartment|villa|house|flat)|tell me more|more (about|info|information|details?|pictures?|photos?)|about (it|this|that)|fea\w*tur\w*|amenit\w*|link|url|website|see (it|this|that) online|its price|how (big|large)|cu(e|é)ntame m(a|á)s|m(a|á)s (info\w*|detalles))\b/i;
 export function isFollowUpAboutLast(message: string): boolean {
   return typeof message === 'string' && FOLLOWUP_RE.test(message);
 }
 
-/** Templated answer about ONE known listing: verbatim features + where the full
- *  listing lives (the card's View details link). Never free-form. */
-export function aboutListingReply(ref: string, features: string[], lang?: string): string {
+/** A real "let me tell you about it" answer for ONE known listing — every value is
+ *  a verbatim card field composed into a template sentence. Never free-form, never
+ *  invented; missing fields are simply omitted. */
+export function listingDetailReply(card: PropertyCard, lang?: string): string {
   const es = pick(lang) === 'es';
-  if (features.length > 0) {
-    return es
-      ? `Sobre ${ref} — características: ${features.join(', ')}. Toque «Ver detalles» en la ficha para abrir el anuncio completo online.`
-      : `About ${ref} — features: ${features.join(', ')}. Tap 'View details' on the card to open the full listing online.`;
-  }
+  const bits: string[] = [];
+  if (card.bedrooms != null) bits.push(es ? `${card.bedrooms} dormitorios` : `${card.bedrooms} bedrooms`);
+  if (card.bathrooms != null) bits.push(es ? `${card.bathrooms} baños` : `${card.bathrooms} bathrooms`);
+  if (card.areaSqm != null) bits.push(`${card.areaSqm} m²`);
+  if (card.price != null) bits.push(`€${Math.round(card.price).toLocaleString(es ? 'es-ES' : 'en-GB')}`);
+  const facts = bits.join(', ');
+  const name = card.title || card.ref || (es ? 'esta propiedad' : 'this property');
+  const feat = card.features.length > 0
+    ? (es ? ` Características: ${card.features.join(', ')}.` : ` Features: ${card.features.join(', ')}.`)
+    : '';
+  const where = card.locationCity ? (es ? ` en ${card.locationCity}` : ` in ${card.locationCity}`) : '';
   return es
-    ? `Aquí tiene ${ref} de nuevo — toque «Ver detalles» en la ficha para abrir el anuncio completo online, con fotos y descripción.`
-    : `Here's ${ref} again — tap 'View details' on the card to open the full listing online, with photos and the full description.`;
+    ? `${name}${where} — ${facts}.${feat} Toque «Ver detalles» en la ficha para ver el anuncio completo con fotos. ¿Quiere organizar una visita?`
+    : `${name}${where} — ${facts}.${feat} Tap 'View details' on the card to see the full listing with photos. Would you like to arrange a viewing?`;
 }
 
 /** Cap enforced everywhere: never show more than 3 cards in one answer. */

@@ -146,6 +146,54 @@ export function isFollowUpAboutLast(message: string): boolean {
   return typeof message === 'string' && FOLLOWUP_RE.test(message);
 }
 
+// "Is it modern? Does it have a pool? Which way does it face?" — a question about
+// the CONDITION/ATTRIBUTES of the listing under discussion.
+const LISTING_Q_RE = /\b(is|does|has|was|are|did|will|would) (it|this|that|the (propert\w*|apartment|villa|house|flat|one))\b/i;
+export function isListingQuestion(message: string): boolean {
+  return typeof message === 'string' && LISTING_Q_RE.test(message);
+}
+
+// Topic → feature-tag keywords: what the agency's own tags can genuinely answer.
+const TOPIC_KEYWORDS: Array<[RegExp, RegExp]> = [
+  [/modern|renovat|refurbish|reform|condition|new|old|dated/i, /refurbish|renovat|reform|new build|modern|character/i],
+  [/facing|orientation|sun|sunny|light/i, /facing|orientation|sunny/i],
+  [/pool|swim/i, /pool/i],
+  [/garden|outdoor|terrace|balcon|yard/i, /garden|terrace|balcon|patio/i],
+  [/parking|garage|car/i, /parking|garage/i],
+  [/lift|elevator/i, /lift|elevator/i],
+  [/beach|sea|coast/i, /beach|sea|front ?line/i],
+  [/golf/i, /golf/i],
+  [/furnish/i, /furnish/i],
+  [/gated|secure|security/i, /gated|security/i],
+  [/quiet|noise|noisy/i, /quiet/i],
+  [/rent|rental|invest/i, /rental/i],
+  [/centre|center|central|amenities|shops|walk/i, /centre|central|amenities|walking/i],
+];
+
+/** What the listing's own tags say about the visitor's question — verbatim matches
+ *  only, or null when the data genuinely doesn't cover it (never guess). */
+export function featuresAnswering(question: string, features: string[]): string[] | null {
+  const hits = new Set<string>();
+  for (const [qRe, fRe] of TOPIC_KEYWORDS) {
+    if (qRe.test(question)) for (const f of features) if (fRe.test(f)) hits.add(f);
+  }
+  return hits.size > 0 ? [...hits] : null;
+}
+
+/** Warm, honest answer to a condition question: what the listing SAYS, or an honest
+ *  "it doesn't say — the team will know". Never a guess, never a brush-off. */
+export function listingConditionReply(matched: string[] | null, lang?: string): string {
+  const es = pick(lang) === 'es';
+  if (matched && matched.length > 0) {
+    return es
+      ? `Buena pregunta — según el anuncio: ${matched.join(', ')}. Más allá de lo publicado no quiero adivinar, pero el equipo se lo puede confirmar encantado. ¿Quiere que les pregunte?`
+      : `Good question — according to the listing: ${matched.join(', ')}. Beyond what's published I don't want to guess, but the team can happily confirm the details. Want me to ask them for you?`;
+  }
+  return es
+    ? `Buena pregunta — el anuncio no lo especifica y prefiero no adivinar. El equipo lo sabrá seguro; déjeme su WhatsApp o email y le responden.`
+    : `Good question — the listing doesn't say, and I'd rather not guess. The team will know for sure though — leave me your WhatsApp number or email and they'll get back to you.`;
+}
+
 /** A real "let me tell you about it" answer for ONE known listing — every value is
  *  a verbatim card field composed into a template sentence. Never free-form, never
  *  invented; missing fields are simply omitted. */

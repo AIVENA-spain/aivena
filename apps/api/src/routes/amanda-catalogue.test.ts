@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   parseListingRef, parseSearchPhrase, wantsViewing, buildSearchFilters, toPropertyCard,
-  humanizeFeatures, isFollowUpAboutLast, listingDetailReply,
+  humanizeFeatures, isFollowUpAboutLast, listingDetailReply, isListingQuestion, featuresAnswering, listingConditionReply,
   searchReply, specificReply, viewingReply, MAX_CARDS, type PropertyRow,
 } from './amanda-catalogue';
 
@@ -112,6 +112,31 @@ describe('conversation context — follow-ups about the last listing', () => {
     expect(r).toMatch(/arrange a viewing/i);
     // missing fields are omitted, never invented
     expect(listingDetailReply({ ...card, bathrooms: null, features: [] })).not.toMatch(/bathrooms|Features/);
+  });
+});
+
+describe('condition questions about the listing under discussion', () => {
+  it("detects Christian's exact question", () => {
+    expect(isListingQuestion('is it modern? does it need renovation?')).toBe(true);
+    expect(isListingQuestion('does it have a pool?')).toBe(true);
+    expect(isListingQuestion('which way is it facing? is it sunny?')).toBe(true);
+    expect(isListingQuestion('do you have any villas?')).toBe(false);
+  });
+  it('answers from the listing tags when they cover the topic', () => {
+    const feats = ['communal pool', 'near beach', 'recently refurbished', 'south facing'];
+    expect(featuresAnswering('is it modern? does it need renovation?', feats)).toEqual(['recently refurbished']);
+    expect(featuresAnswering('does it have a pool?', feats)).toEqual(['communal pool']);
+    expect(featuresAnswering('is it sunny?', feats)).toEqual(['south facing']);
+  });
+  it('returns null when the data genuinely does not cover it — never a guess', () => {
+    expect(featuresAnswering('is it noisy at night?', ['communal pool'])).toBeNull();
+    expect(featuresAnswering('is the community fee high?', ['near beach'])).toBeNull();
+  });
+  it('replies warmly: verbatim tags when known, honest team-handover when not', () => {
+    expect(listingConditionReply(['recently refurbished'])).toMatch(/according to the listing: recently refurbished/);
+    expect(listingConditionReply(['recently refurbished'])).toMatch(/don't want to guess/);
+    expect(listingConditionReply(null)).toMatch(/the listing doesn't say/i);
+    expect(listingConditionReply(null)).toMatch(/team will know/i);
   });
 });
 

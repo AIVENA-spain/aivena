@@ -6,7 +6,7 @@ import { validateContact, validateMessage, mapCaptureError, createRateLimiter } 
 import { parseMessage, classifyIntent, turnReply, hasContact, type Collected } from './amanda-flow';
 import {
   buildSearchFilters, wantsViewing, toPropertyCard, searchReply, specificReply, viewingReply,
-  isFollowUpAboutLast, listingDetailReply,
+  isFollowUpAboutLast, listingDetailReply, isListingQuestion, featuresAnswering, listingConditionReply,
   type PropertyRow, type PropertyCard,
 } from './amanda-catalogue';
 import { usablePhotos } from '../lib/property-images';
@@ -156,7 +156,13 @@ route.post('/:agencySlug/message', async (c) => {
     `);
     const collected = ((inbound as unknown as Array<{ collected: Record<string, unknown> }>)[0]?.collected ?? {}) as Collected;
     const have = hasContact(collected);
-    const intent = classifyIntent(v.message);
+    let intent = classifyIntent(v.message);
+    // "Is it modern? Does it need renovation?" only means something when a listing
+    // is under discussion — with context it's a property question, answered from
+    // the listing's own data (route-level: the pure classifier can't see lastRef).
+    if (intent === 'qualify' && collected.lastRef && isListingQuestion(v.message)) {
+      intent = 'property_question';
+    }
 
     let reply: string;
     let messageType: string;
@@ -203,18 +209,28 @@ route.post('/:agencySlug/message', async (c) => {
           readyToCapture = have;
         }
       } else if (
-        !filters.q && lastRef && isFollowUpAboutLast(v.message)
+        !filters.q && lastRef && (isFollowUpAboutLast(v.message) || isListingQuestion(v.message))
         // A message that states NEW criteria is a new search, not a follow-up.
         && patch.location === undefined && patch.propertyType === undefined
         && patch.budgetMax === undefined && patch.bedroomsMin === undefined
       ) {
         // "Tell me more about it" → actually TELL them (verbatim facts in prose);
-        // the card is already on screen, so no re-send.
+        // the card is already on screen, so no re-send. A condition question
+        // ("is it modern?") answers from the listing's own tags — or says
+        // honestly that the listing doesn't say.
         const rows = await searchProperties(slug, v.sessionToken, { ref: lastRef }, 1);
-        reply = rows[0] ? listingDetailReply(cardOf(rows[0]), lang) : specificReply(false, lastRef, lang);
+        if (rows[0] && isListingQuestion(v.message)) {
+          const card = cardOf(rows[0]);
+          const matched = featuresAnswering(v.message, card.features);
+          reply = listingConditionReply(matched, lang);
+          awaitingContact = matched ? false : !have;
+          readyToCapture = matched ? false : have;
+        } else {
+          reply = rows[0] ? listingDetailReply(cardOf(rows[0]), lang) : specificReply(false, lastRef, lang);
+          awaitingContact = false;
+          readyToCapture = false;
+        }
         messageType = 'property_answer';
-        awaitingContact = false;
-        readyToCapture = false;
       } else {
         // Criteria search — up to 3 active listings; zero → honest defer + capture.
         const rows = await searchProperties(slug, v.sessionToken, filters, 3);

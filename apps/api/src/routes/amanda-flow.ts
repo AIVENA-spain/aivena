@@ -168,7 +168,7 @@ const LANG: Record<Lang, Record<CopyKey, string>> = {
     type: 'What type of property — apartment, villa, townhouse?',
     contact: 'Great — what\'s the best email or phone number for an agent to reach you?',
     ready: "Perfect, thank you! An agent will be in touch shortly to help with your search.",
-    deflect: "Sorry — I didn't quite catch that. Ask me about any of our properties or areas, or just tell me what you're looking for.",
+    deflect: "Hmm, I didn't quite get that — but I'm happy to help! Ask me about any of our properties or the area, or just tell me what you're looking for.",
     // Used only when the catalogue genuinely can't answer: honest, offers (not
     // demands) the team's follow-up.
     property_defer: "Good question — that's one for the team. If you'd like, leave your WhatsApp number or email and they'll get back to you.",
@@ -187,7 +187,7 @@ const LANG: Record<Lang, Record<CopyKey, string>> = {
     type: '¿Qué tipo de propiedad — apartamento, villa, adosado?',
     contact: 'Genial — ¿cuál es el mejor email o teléfono para que un agente le contacte?',
     ready: '¡Perfecto, gracias! Un agente le contactará en breve para ayudarle con su búsqueda.',
-    deflect: 'Perdone — no le he entendido bien. Pregúnteme por cualquiera de nuestras propiedades o zonas, o dígame qué está buscando.',
+    deflect: '¡Uy, no le he entendido bien — pero encantada de ayudar! Pregúnteme por cualquiera de nuestras propiedades o la zona, o dígame qué está buscando.',
     property_defer: 'Buena pregunta — eso es para el equipo. Si quiere, déjeme su WhatsApp o email y le responderán.',
     location_seller: 'Encantada de ayudarle — ¿dónde está la propiedad que quiere vender?',
     type_seller: '¿Y qué tipo de propiedad es — apartamento, villa, adosado?',

@@ -30,14 +30,29 @@ export const STEP_ORDER: Step[] = ['intent', 'location', 'budget', 'bedrooms', '
 const EMAIL_RE = /[^\s@]+@[^\s@]+\.[^\s@]+/;
 const PHONE_RE = /\+?[0-9][0-9 ().-]{6,19}/;
 
-/** Small seed town list (the real build reuses properties/town-aliases). */
+/** Town list baked from the live area_zone_alias + area_zone_city reference tables
+ *  (2026-08-11) plus common Costa Blanca extras. Matched longest-first so
+ *  "guardamar del segura" wins over "guardamar". */
 const TOWNS = [
-  'torrevieja', 'orihuela', 'guardamar', 'la mata', 'punta prima', 'villamartin',
-  'alicante', 'benidorm', 'javea', 'moraira', 'calpe', 'denia', 'altea', 'marbella',
-  'estepona', 'mijas', 'fuengirola', 'san javier', 'murcia', 'cartagena',
+  'acequion', 'agua marina', 'aguamarina', 'aguas nuevas', 'benijofar', 'blue lagoon',
+  'cabo roig', 'campoamor', 'cinuelica', 'ciudad quesada', 'dehesa de campoamor',
+  'dona pepa', 'el chaparral', 'el mojon', 'el moncayo', 'el raso', 'els secans',
+  'formentera del segura', 'guardamar del segura', 'guardamar', 'la florida',
+  'la herrada', 'la marina', 'la marquesa golf', 'la mata', 'la regia', 'la siesta',
+  'la zenia', 'las filipinas', 'las higuericas', 'las ramblas', 'lo pepin', 'lo romero',
+  'lomas de cabo roig', 'los altos', 'los balcones', 'los dolses', 'los locos',
+  'los naufragos', 'mil palmeras', 'montemar', 'montezenia', 'nueva torrevieja',
+  'orihuela costa', 'orihuela', 'pilar de la horadada', 'pinar de campoverde',
+  'playa del cura', 'playa flamenca', 'playa de los locos', 'playa los locos',
+  'playa los naufragos', 'punta prima', 'quesada', 'rojales', 'san luis',
+  'san miguel de salinas', 'san miguel', 'torre de la horadada', 'torre horadada',
+  'torreblanca', 'torrevieja', 'villamartin',
+  'alicante', 'benidorm', 'javea', 'moraira', 'calpe', 'denia', 'altea', 'albir',
+  'marbella', 'estepona', 'mijas', 'fuengirola', 'san javier', 'murcia', 'cartagena',
 ];
+const TOWNS_SORTED = [...TOWNS].sort((a, b) => b.length - a.length);
 const TYPES: Array<[RegExp, string]> = [
-  [/\b(apartment|piso|flat|apartamento)\b/i, 'apartment'],
+  [/\b(apartments?|pisos?|flats?|apartamentos?|wohnung(en)?|appartements?|leilighet(er)?|l(ä|a)genhet(er)?)\b/i, 'apartment'],
   [/\b(villa|chalet|detached)\b/i, 'villa'],
   [/\b(townhouse|bungalow|adosad|quad)\b/i, 'townhouse'],
   [/\b(penthouse|ático|atico)\b/i, 'penthouse'],
@@ -52,7 +67,7 @@ export function parseMessage(message: string): Partial<Collected> {
   const low = m.toLowerCase();
 
   // intent
-  if (/\b(sell|selling|vender|venta|list my|valuation|tasación|tasacion)\b/i.test(low)) out.intent = 'seller';
+  if (/\b(sell|selling|vender|vendo|venta|list my|valuation|valoraci(o|ó)n|tasaci(o|ó)n|value my|worth)\b/i.test(low)) out.intent = 'seller';
   else if (/\b(buy|buying|looking for|comprar|busco|interested in|rent)\b/i.test(low)) out.intent = 'buyer';
 
   // budget: "€350k", "350k", "350000", "350.000", "500 000", "up to 400"
@@ -64,11 +79,25 @@ export function parseMessage(message: string): Partial<Collected> {
   const phoneSpan = phoneRaw && (/^\s*\+/.test(phoneRaw) || phoneRaw.replace(/\D/g, '').length >= 9) ? phoneRaw : '';
   const forBudget = (phoneSpan ? low.replace(phoneSpan.toLowerCase(), ' ') : low)
     .replace(/(\d)[ .,](?=\d{3}(?:\D|$))/g, '$1');
-  const budget = forBudget.match(/(?:€|eur|up to|hasta|budget|presupuesto)?\s*([0-9][0-9.,]{2,})\s*(k|mil|000)?/i);
-  if (budget) {
-    let n = parseFloat(budget[1].replace(/[.,](?=\d{3}\b)/g, '').replace(',', '.'));
-    if (budget[2] && /k|mil/i.test(budget[2])) n *= 1000;
+  // "between 100k and 200k" → the UPPER bound is the cap; "over / at least /
+  // minimum 300k" states a FLOOR — never misread it as a cap (no filter is better
+  // than a wrong one); "1.5 million" works too.
+  const applyBudget = (numStr: string, mult: string | undefined) => {
+    let n = parseFloat(numStr.replace(/[.,](?=\d{3}\b)/g, '').replace(',', '.'));
+    if (mult) {
+      const mm = mult.toLowerCase();
+      if (/^mill/.test(mm) || mm === 'm') n *= 1_000_000;
+      else if (mm === 'k' || mm === 'mil') n *= 1000;
+    }
     if (Number.isFinite(n) && n >= 1000 && n <= 100_000_000) out.budgetMax = Math.round(n);
+  };
+  const between = forBudget.match(/between\s+[0-9][0-9.,]*\s*(?:k|mil)?\s+and\s+([0-9][0-9.,]*)\s*(million(?:es)?|mill(?:ó|o)ne?s?|mil|k|m\b|000)?/i);
+  const floorOnly = /\b(over|above|more than|at least|min(?:imum)?|desde|a partir de|m(?:á|a)s de)\b\s*(€|eur)?\s*[0-9]/i.test(forBudget);
+  if (between) {
+    applyBudget(between[1], between[2]);
+  } else if (!floorOnly) {
+    const budget = forBudget.match(/(?:€|eur|up to|hasta|budget|presupuesto)?\s*([0-9][0-9.,]{2,}|[0-9](?:\.[0-9])?(?=\s*mill))\s*(million(?:es)?|mill(?:ó|o)ne?s?|mil|k|m\b|000)?/i);
+    if (budget) applyBudget(budget[1], budget[2]);
   }
 
   // bedrooms: "2 bed", "2 bedrooms", "2 dormitorios", "2 hab" — and a BARE "3"
@@ -81,7 +110,7 @@ export function parseMessage(message: string): Partial<Collected> {
   for (const [re, t] of TYPES) if (re.test(low)) { out.propertyType = t; break; }
 
   // location (first matching seed town)
-  for (const town of TOWNS) if (low.includes(town)) { out.location = town.replace(/\b\w/g, (c) => c.toUpperCase()); break; }
+  for (const town of TOWNS_SORTED) if (low.includes(town)) { out.location = town.replace(/\b\w/g, (c) => c.toUpperCase()); break; }
 
   // contact
   const email = m.match(EMAIL_RE);
@@ -105,6 +134,13 @@ export function mergeCollected(prev: Collected, patch: Partial<Collected>): Coll
 export function nextStep(c: Collected): Step | 'ready' {
   if (c.intent === undefined) return 'intent';
   if (c.location === undefined) return 'location';
+  if (c.intent === 'seller') {
+    // A seller is telling us about THEIR property — budget/bedroom questions
+    // would be nonsense. Location → type → contact.
+    if (c.propertyType === undefined) return 'type';
+    if (!c.email && !c.phone) return 'contact';
+    return 'ready';
+  }
   if (c.budgetMax === undefined) return 'budget';
   if (c.bedroomsMin === undefined) return 'bedrooms';
   if (c.propertyType === undefined) return 'type';
@@ -117,7 +153,8 @@ export function hasContact(c: Collected): boolean {
 }
 
 type Lang = 'en' | 'es';
-type CopyKey = Step | 'ready' | 'deflect' | 'greeting' | 'property_defer' | 'human_defer';
+type CopyKey = Step | 'ready' | 'deflect' | 'greeting' | 'property_defer' | 'human_defer'
+  | 'location_seller' | 'type_seller' | 'contact_seller' | 'ready_seller';
 const LANG: Record<Lang, Record<CopyKey, string>> = {
   en: {
     // ANSWER-FIRST: warm, honest, invites a real question. No live-agent promise.
@@ -133,6 +170,10 @@ const LANG: Record<Lang, Record<CopyKey, string>> = {
     // Used only when the catalogue genuinely can't answer: honest, offers (not
     // demands) the team's follow-up.
     property_defer: "Good question — that's one for the team. If you'd like, leave your WhatsApp number or email and they'll get back to you.",
+    location_seller: "Happy to help with that — where is the property you're thinking of selling?",
+    type_seller: 'And what type of property is it — apartment, villa, townhouse?',
+    contact_seller: "Thanks! Leave your WhatsApp number or email and the team will get back to you about a valuation.",
+    ready_seller: 'Perfect, thank you! The team will be in touch about your property soon.',
     human_defer: "Of course — leave me your WhatsApp number (or email) and the team will get back to you as soon as they can. You're welcome to keep asking me things in the meantime.",
   },
   es: {
@@ -146,6 +187,10 @@ const LANG: Record<Lang, Record<CopyKey, string>> = {
     ready: '¡Perfecto, gracias! Un agente le contactará en breve para ayudarle con su búsqueda.',
     deflect: 'Perdone — no le he entendido bien. Pregúnteme por cualquiera de nuestras propiedades o zonas, o dígame qué está buscando.',
     property_defer: 'Buena pregunta — eso es para el equipo. Si quiere, déjeme su WhatsApp o email y le responderán.',
+    location_seller: 'Encantada de ayudarle — ¿dónde está la propiedad que quiere vender?',
+    type_seller: '¿Y qué tipo de propiedad es — apartamento, villa, adosado?',
+    contact_seller: 'Gracias. Déjeme su WhatsApp o email y el equipo le contactará sobre la valoración.',
+    ready_seller: '¡Perfecto, gracias! El equipo le contactará pronto sobre su propiedad.',
     human_defer: 'Por supuesto — déjeme su número de WhatsApp (o email) y el equipo le responderá lo antes posible. Mientras tanto, puede seguir preguntándome lo que quiera.',
   },
 };
@@ -163,13 +208,26 @@ export function replyFor(key: CopyKey, lang?: string): string {
  * a real property-answer handler onto the 'property_question' branch without
  * touching the qualify flow. Deterministic; human request wins if ambiguous.
  */
-export type Intent = 'qualify' | 'property_question' | 'human_request';
+export type Intent = 'qualify' | 'property_question' | 'human_request' | 'team_question';
 const HUMAN_RE = /\b(human|real person|speak to (someone|a person|an agent)|talk to (someone|a person|an agent)|call me|agent please)\b/i;
 const PROPERTY_Q_RE = /\b(do you have|are there|(any|some) (propert|home|villa|apartment|flat|house)|rec+om+end|suggest|recomiende?|sugiere?|propert(y|ies) (in|near|around|available)|how much|price of|what.?s the price|cost of|available|availability|listing|ref(erence)?\s*#?\s*\w|more (info|details|photos|pictures)|can i see|show me|square met|m2|garden|pool)\b/i;
 // ANSWER-FIRST (Christian, 2026-08-11): referring back to a listing ("the one in…",
 // "that villa", "more about", "pictures/photos", "how do I find it") is a property
 // question — answer it, never fall into a contact-grabbing deflect.
-const PROPERTY_REF_RE = /\b(the ones? (in|at|near|with|on)|that (propert|listing|apartment|villa|house|flat|one)|(tell me )?more about|pictures?|photos?|see (it|them)|view details|how (do|can) i (find|see|view))\b/i;
+const PROPERTY_REF_RE = /\b(the ones? (in|at|near|with|on)|that (propert|listing|apartment|villa|house|flat|one)|(tell me|more) about|pictures?|photos?|see (it|them)|view details|how (do|can) i (find|see|view))\b/i;
+// A listing-reference token (letters-dash-digits, e.g. mch-011) is ALWAYS a
+// property question, whatever the phrasing.
+const REF_LIKE_RE = /\b[A-Za-z][A-Za-z0-9]{1,5}-[A-Za-z0-9]*\d[A-Za-z0-9]*\b/;
+// Search-y phrasings the criteria counter alone misses ("im looking for a cheap
+// apartment", "apartments near the beach", "got any bargains?", "cheapest…").
+const SEARCH_HINT_RE = /\b((i'?m|we'?re|im)?\s*(looking|searching) for|we (want|need)|i (want|need) (a|an|some)|(something|anything) (in|near|around|under|below|for|up to|over|cheap)|got any|(you have|have you got) (any|some|a |an |villas|apartments|flats|houses|propert)|cheapest|most expensive|barat[oa]|(villas?|apartments?|flats?|houses?|penthouses?|townhouses?|propert(y|ies)|homes?|pisos?)\s+(near|by|close to|with|in|on|under|over|from|between|for sale)|beachfront|seafront|sea ?views?|first ?line|frontline)\b/i;
+// Viewing phrasings must also route into the property branch (where the viewing
+// capture lives): "I'd like to view MCH-003", "can we visit the villa saturday?".
+const VIEWING_HINT_RE = /\b(viewing|book a visit|arrange a visit|(would like|like|want|love) to (view|visit|see)|can (i|we) (view|visit)|visit (the|it|your|on|this)|come and see|visita)\b/i;
+// Honest boundary: topics the catalogue can NEVER answer (legal / tax / mortgage /
+// area-life / rentals) go straight to the team — never a nonsense listing search.
+const TEAM_TOPIC_RE = /\b(nie|foreigners?|extranjeros?|tax(es)?|impuestos?|mortgages?|hipotecas?|lawyers?|abogad\w*|notar\w*|schools?|colegios?|escuelas?|hospitals?|healthcare|sanidad|visas?|residenc\w*|golden visa|yields?|paperwork|process of buying|how long does|safe|crime|insurance|seguros?|utilities|community fees|ibi|for rent|to rent|rent out|rentals?|long[- ]term|alquiler\w*)\b/i;
+const SELLER_RE = /\b(sell(ing)?|vender|vendo|list my|valuation|valoraci(o|ó)n|tasaci(o|ó)n|value my|worth)\b/i;
 
 /**
  * ANSWER-FIRST doctrine: a message that simply STATES criteria ("2-bed apartment
@@ -187,7 +245,12 @@ export function classifyIntent(message: string): Intent {
   if (typeof message !== 'string' || !message.trim()) return 'qualify';
   const m = message.toLowerCase();
   if (HUMAN_RE.test(m)) return 'human_request';
-  if (PROPERTY_Q_RE.test(m) || PROPERTY_REF_RE.test(m) || statesSearchCriteria(m)) return 'property_question';
+  if (TEAM_TOPIC_RE.test(m)) return 'team_question';
+  if (SELLER_RE.test(m)) return 'qualify';   // seller funnel (seller-aware questions)
+  if (PROPERTY_Q_RE.test(m) || PROPERTY_REF_RE.test(m) || REF_LIKE_RE.test(message)
+      || SEARCH_HINT_RE.test(m) || VIEWING_HINT_RE.test(m) || statesSearchCriteria(m)) {
+    return 'property_question';
+  }
   return 'qualify';
 }
 
@@ -232,12 +295,17 @@ export function replyForCollected(
   lang?: string,
 ): { reply: string; step: Step | 'ready'; readyToCapture: boolean; messageType: MessageType } {
   const step = nextStep(collected);
-  if (step === 'ready') return { reply: replyFor('ready', lang), step, readyToCapture: true, messageType: 'ready' };
+  const seller = collected.intent === 'seller';
+  if (step === 'ready') {
+    return { reply: replyFor(seller ? 'ready_seller' : 'ready', lang), step, readyToCapture: true, messageType: 'ready' };
+  }
   const someProgress = Object.values(collected).some((v) => v !== undefined);
   if (addedNothing && step !== 'contact' && someProgress) {
     return { reply: replyFor('deflect', lang), step, readyToCapture: false, messageType: 'deflect' };
   }
-  return { reply: replyFor(step, lang), step, readyToCapture: hasContact(collected), messageType: 'prompt' };
+  const key = seller && (step === 'location' || step === 'type' || step === 'contact')
+    ? (`${step}_seller` as CopyKey) : step;
+  return { reply: replyFor(key, lang), step, readyToCapture: hasContact(collected), messageType: 'prompt' };
 }
 
 /**
@@ -259,7 +327,7 @@ export function turnReply(
   if (intent === 'human_request') {
     return { reply: replyFor('human_defer', lang), messageType: 'human_defer', readyToCapture: have, awaitingContact: !have };
   }
-  if (intent === 'property_question') {
+  if (intent === 'property_question' || intent === 'team_question') {
     return { reply: replyFor('property_defer', lang), messageType: 'property_defer', readyToCapture: have, awaitingContact: !have };
   }
   const r = replyForCollected(collected, addedNothing, lang);

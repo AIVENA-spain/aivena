@@ -70,7 +70,7 @@ export function parseSearchPhrase(message: string): string | null {
   return q.length >= 3 ? q : null;
 }
 const VIEWING_RE =
-  /\b(viewing|book a (viewing|visit)|arrange a (viewing|visit)|schedule a (viewing|visit)|come and see|see it in person|visita|agendar (una )?visita|concertar (una )?visita|cita para ver)\b/i;
+  /\b(viewing|book a (viewing|visit)|arrange a (viewing|visit)|schedule a (viewing|visit)|(would like|like|want|love) to (view|visit)|can (i|we) (view|visit)|visit (the|it|your|on|this)|come and see|see it in person|visita|agendar (una )?visita|concertar (una )?visita|cita para ver)\b/i;
 
 /** Extract a specific listing reference from a free-text message (external_id-style). */
 export function parseListingRef(message: string): string | null {

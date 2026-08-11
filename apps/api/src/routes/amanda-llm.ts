@@ -23,9 +23,28 @@ export async function diagnoseLlm2(): Promise<Record<string, unknown>> {
     features: ['communal pool', 'near beach', 'recently refurbished', 'south facing'],
     description: 'Cosy 2-bedroom apartment 350 metres from Playa del Cura. South-facing, recently refurbished kitchen, communal pool. Walking distance to Habaneras shopping centre and the Friday market.',
   };
-  const r = await groundedListingAnswer({ agencyName: 'test-agency', listing, question: 'how far is it from the beach, and are there shops nearby?', lang: 'en' });
-  out.ok = r.ok;
-  if (r.ok) out.answerPreview = r.answer.slice(0, 120);
+  if (!key) { out.step = 'no-key'; return out; }
+  const q = 'how far is it from the beach, and are there shops nearby?';
+  const { system, user } = buildGroundedPrompt({ agencyName: 'test-agency', listing, question: q, lang: 'en' });
+  const answerModel = process.env.AMANDA_LLM_MODEL?.trim() || DEFAULT_MODEL;
+  const rawAnswer = await callClaude(key, answerModel, system, user, TIMEOUT_MS, true);
+  out.answerModel = answerModel;
+  out.rawAnswerNull = rawAnswer === null;
+  if (rawAnswer === null) { out.step = 'answer-call-null'; return out; }
+  out.rawAnswerPreview = rawAnswer.slice(0, 140);
+  const parsed = parseLlmAnswer(rawAnswer);
+  out.parsedNull = parsed === null;
+  if (parsed) { out.grounded = parsed.grounded; out.needsTeam = parsed.needsTeam; out.answerEmpty = !parsed.answer; }
+  if (!parsed || !parsed.grounded || parsed.needsTeam || !parsed.answer) { out.step = 'gate1-selfreport'; return out; }
+  out.guardPass = passesGroundingGuard(parsed.answer, listing);
+  if (!out.guardPass) { out.step = 'gate2-guard'; return out; }
+  const verifierModel = process.env.AMANDA_VERIFIER_MODEL?.trim() || VERIFIER_MODEL;
+  const vp = buildVerifierPrompt({ listing, answer: parsed.answer });
+  const rawVerdict = await callClaude(key, verifierModel, vp.system, vp.user, VERIFIER_TIMEOUT_MS, false);
+  out.verifierModel = verifierModel;
+  out.rawVerdictNull = rawVerdict === null;
+  if (rawVerdict !== null) { out.rawVerdictPreview = rawVerdict.slice(0, 80); out.verdictSupported = parseVerdict(rawVerdict); }
+  out.step = (rawVerdict !== null && parseVerdict(rawVerdict)) ? 'ALL-PASS' : 'gate3-verifier';
   return out;
 }
 

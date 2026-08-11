@@ -31,6 +31,14 @@ const route = new Hono();
 const REQUIRE_TEST_AGENCY = true;              // Phase A/B stay is_test-only until go-live.
 const CONSENT_RECORDED_BY = 'amanda_chat_capture';
 const allowRequest = createRateLimiter(8, 60_000);
+// Phase D cost backstops (LLM calls cost money). Per-session fairness cap AND a
+// per-instance global circuit-breaker so a spoofed X-Forwarded-For (which the
+// general limiter keys on) can never run up an unbounded Anthropic bill.
+const allowLlmSession = createRateLimiter(15, 60_000);
+const allowLlmGlobal = createRateLimiter(240, 60_000);
+function llmBudgetAvailable(sessionToken: string, now: number): boolean {
+  return allowLlmGlobal('all', now) && allowLlmSession(sessionToken, now);
+}
 
 type PgErrorShape = { code: string; message: string };
 function asPgError(err: unknown): PgErrorShape | null {
@@ -235,9 +243,12 @@ route.post('/:agencySlug/message', async (c) => {
         const rows = await searchProperties(slug, v.sessionToken, { ref: lastRef }, 1);
         if (rows[0]) {
           const card = cardOf(rows[0]);
-          const llm = await groundedListingAnswer({
-            agencyName: slug, listing: listingForLlm(rows[0], card), question: v.message, lang,
-          });
+          // LLM path is cost-gated; over budget → deterministic reply (never an error).
+          const llm = llmBudgetAvailable(v.sessionToken, Date.now())
+            ? await groundedListingAnswer({
+                agencyName: slug, listing: listingForLlm(rows[0], card), question: v.message, lang,
+              })
+            : ({ ok: false } as const);
           if (llm.ok) {
             reply = llm.answer;
             awaitingContact = false;

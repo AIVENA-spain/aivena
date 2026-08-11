@@ -106,7 +106,8 @@ describe('conversation context — follow-ups about the last listing', () => {
       locationCity: 'Torrevieja', url: 'https://x', image: null, features: ['communal pool', 'near beach'] };
     const r = listingDetailReply(card);
     expect(r).toMatch(/2-bedroom apartment near Playa del Cura/);
-    expect(r).toMatch(/2 bedrooms, 1 bathrooms, 65 m², €128,000/);
+    expect(r).toMatch(/2 bedrooms, 1 bathroom, 65 m², €128,000/);
+    expect(r).not.toMatch(/Torrevieja in Torrevieja/);   // no city duplication
     expect(r).toMatch(/Features: communal pool, near beach/);
     expect(r).toMatch(/arrange a viewing/i);
     // missing fields are omitted, never invented

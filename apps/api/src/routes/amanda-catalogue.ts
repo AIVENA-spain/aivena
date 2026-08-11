@@ -152,8 +152,8 @@ export function isFollowUpAboutLast(message: string): boolean {
 export function listingDetailReply(card: PropertyCard, lang?: string): string {
   const es = pick(lang) === 'es';
   const bits: string[] = [];
-  if (card.bedrooms != null) bits.push(es ? `${card.bedrooms} dormitorios` : `${card.bedrooms} bedrooms`);
-  if (card.bathrooms != null) bits.push(es ? `${card.bathrooms} baños` : `${card.bathrooms} bathrooms`);
+  if (card.bedrooms != null) bits.push(es ? `${card.bedrooms} dormitorio${card.bedrooms === 1 ? '' : 's'}` : `${card.bedrooms} bedroom${card.bedrooms === 1 ? '' : 's'}`);
+  if (card.bathrooms != null) bits.push(es ? `${card.bathrooms} baño${card.bathrooms === 1 ? '' : 's'}` : `${card.bathrooms} bathroom${card.bathrooms === 1 ? '' : 's'}`);
   if (card.areaSqm != null) bits.push(`${card.areaSqm} m²`);
   if (card.price != null) bits.push(`€${Math.round(card.price).toLocaleString(es ? 'es-ES' : 'en-GB')}`);
   const facts = bits.join(', ');
@@ -161,7 +161,9 @@ export function listingDetailReply(card: PropertyCard, lang?: string): string {
   const feat = card.features.length > 0
     ? (es ? ` Características: ${card.features.join(', ')}.` : ` Features: ${card.features.join(', ')}.`)
     : '';
-  const where = card.locationCity ? (es ? ` en ${card.locationCity}` : ` in ${card.locationCity}`) : '';
+  // Skip the "in {city}" suffix when the title already names the city.
+  const cityInTitle = card.locationCity && (card.title ?? '').toLowerCase().includes(card.locationCity.toLowerCase());
+  const where = card.locationCity && !cityInTitle ? (es ? ` en ${card.locationCity}` : ` in ${card.locationCity}`) : '';
   return es
     ? `${name}${where} — ${facts}.${feat} Toque «Ver detalles» en la ficha para ver el anuncio completo con fotos. ¿Quiere organizar una visita?`
     : `${name}${where} — ${facts}.${feat} Tap 'View details' on the card to see the full listing with photos. Would you like to arrange a viewing?`;

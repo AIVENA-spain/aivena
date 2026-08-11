@@ -93,8 +93,9 @@
       contactNotice: "To reply and follow up, " + esc(A) + " (with AIVENA as data processor) will process the details you share. Legal basis: your consent. We don't sell your data or share it for third parties' own purposes. Withdraw consent or exercise your rights (access, rectification, erasure, objection, portability, restriction) at privacy@aivena.es.",
       checkbox: "I accept that " + A + " processes the details I share to reply to my enquiry and follow up.",
       name: "Name", email: "Email", phone: "Phone",
-      submit: "Send to agent",
-      done: "Thank you! An agent will be in touch shortly.",
+      submit: "Send to the team",
+      done: "Thank you! The team will be in touch shortly.",
+      doneHuman: "Thanks — the team will message you on WhatsApp as soon as they can. I'm still here if you'd like to keep looking meanwhile.",
       err: "Sorry — something went wrong. Please try again.",
       needField: "Please add an email or phone."
     },
@@ -110,8 +111,9 @@
       contactNotice: "Para responderle y hacer seguimiento, " + esc(A) + " (con AIVENA como encargado del tratamiento) tratará los datos que comparta. Base jurídica: su consentimiento. No vendemos sus datos ni los cedemos para fines propios de terceros. Puede retirar su consentimiento o ejercer sus derechos (acceso, rectificación, supresión, oposición, portabilidad y limitación) en privacy@aivena.es.",
       checkbox: "Acepto que " + A + " trate los datos que comparto para responder a mi consulta y hacer seguimiento.",
       name: "Nombre", email: "Email", phone: "Teléfono",
-      submit: "Enviar al agente",
-      done: "¡Gracias! Un agente le contactará en breve.",
+      submit: "Enviar al equipo",
+      done: "¡Gracias! El equipo le contactará en breve.",
+      doneHuman: "Gracias — el equipo le escribirá por WhatsApp lo antes posible. Sigo aquí por si quiere seguir mirando mientras tanto.",
       err: "Lo sentimos — algo salió mal. Inténtelo de nuevo.",
       needField: "Añada un email o teléfono."
     }
@@ -125,6 +127,7 @@
   var collected = {};
   var contactShown = false;
   var pendingViewing = { active: false, ref: null };  // set when Amanda asks for contact to confirm a viewing
+  var pendingHuman = false;                            // set when the visitor asks for a person (AI pauses after capture)
   var DEMO_CARDS = [
     { type:'property', ref:'MCH-001', title:'2-bedroom apartment near Playa del Cura, Torrevieja', propertyType:'apartment', price:128000, currency:'EUR', bedrooms:2, bathrooms:1, areaSqm:70, locationCity:'Torrevieja', url:'#', image:null },
     { type:'property', ref:'MCH-002', title:'2-bedroom apartment with sea views, Torrevieja', propertyType:'apartment', price:165000, currency:'EUR', bedrooms:2, bathrooms:2, areaSqm:78, locationCity:'Torrevieja', url:'#', image:null },
@@ -170,6 +173,7 @@
       if (r.reply) botMsg(r.reply);
       if (r.attachments && r.attachments.length) renderCards(r.attachments);
       if (r.messageType === "viewing_request") pendingViewing = { active: true, ref: r.viewingRef || null };
+      if (r.messageType === "human_defer" || r.human === true) pendingHuman = true;
       if (r.awaitingContact && !contactShown) showContactCard();
       if (r.captured) done();
     }).catch(function () { botMsg(T.err); });
@@ -214,7 +218,7 @@
         consentText: CONSENT_TEXT, consentMethod: CONSENT_METHOD,
         name: fName.value.trim() || null, email: fEmail.value.trim() || null, phone: fPhone.value.trim() || null,
         context: { pageUrl: document.referrer || location.href, referrer: document.referrer || "" },
-        viewing: pendingViewing.active, viewingRef: pendingViewing.ref
+        viewing: pendingViewing.active, viewingRef: pendingViewing.ref, human: pendingHuman
       });
       if (DEMO) { card.remove(); done(); return; }
       postJSON(API + "/chat/" + encodeURIComponent(AGENCY) + "/contact", body).then(function (r) {
@@ -258,7 +262,7 @@
   }
   function botMsg(t) { var d = document.createElement("div"); d.className = "m bot"; d.textContent = t; msgs.appendChild(d); scroll(); }
   function meMsg(t) { var d = document.createElement("div"); d.className = "m me"; d.textContent = t; msgs.appendChild(d); scroll(); }
-  function done() { var d = document.createElement("div"); d.className = "ok"; d.textContent = T.done; msgs.appendChild(d); inp.disabled = true; sendBtn.disabled = true; scroll(); }
+  function done() { var d = document.createElement("div"); d.className = "ok"; d.textContent = pendingHuman ? T.doneHuman : T.done; msgs.appendChild(d); if (!pendingHuman) { inp.disabled = true; sendBtn.disabled = true; } scroll(); }
   function scroll() { window.scrollTo(0, document.body.scrollHeight); postHeight(); }
   function postHeight() {
     try {

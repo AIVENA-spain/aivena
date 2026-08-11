@@ -10,6 +10,7 @@ import {
   type PropertyRow, type PropertyCard,
 } from './amanda-catalogue';
 import { usablePhotos } from '../lib/property-images';
+import { groundedListingAnswer, type ListingForLlm } from './amanda-llm';
 
 /**
  * Amanda web-chat — PUBLIC (unauthenticated) endpoints, mounted at /chat OUTSIDE
@@ -78,6 +79,19 @@ async function searchProperties(slug: string, sessionToken: string | null, filte
 function cardOf(row: PropertyRow): PropertyCard {
   const usable = usablePhotos((row as { images?: unknown }).images);
   return toPropertyCard(row, usable[0] ?? null);
+}
+// The grounding corpus for the Phase-D LLM: the card's verbatim fields + the
+// listing's public description. Nothing else ever reaches the model.
+function listingForLlm(row: PropertyRow, card: PropertyCard): ListingForLlm {
+  return {
+    ref: card.ref, title: card.title, propertyType: card.propertyType,
+    price: card.price, currency: card.currency, bedrooms: card.bedrooms,
+    bathrooms: card.bathrooms, areaSqm: card.areaSqm, locationCity: card.locationCity,
+    features: card.features,
+    description: typeof (row as { description?: unknown }).description === 'string'
+      ? ((row as { description?: string }).description as string).slice(0, 4000)
+      : null,
+  };
 }
 
 // POST /chat/:agencySlug/contact — capture → lead + conversation + task + consent_log.
@@ -214,19 +228,32 @@ route.post('/:agencySlug/message', async (c) => {
         && patch.location === undefined && patch.propertyType === undefined
         && patch.budgetMax === undefined && patch.bedroomsMin === undefined
       ) {
-        // "Tell me more about it" → actually TELL them (verbatim facts in prose);
-        // the card is already on screen, so no re-send. A condition question
-        // ("is it modern?") answers from the listing's own tags — or says
-        // honestly that the listing doesn't say.
+        // A question about the listing under discussion. Phase D: Claude answers
+        // it grounded EXCLUSIVELY in this listing's verbatim data (description +
+        // facts + tags); ungrounded/team/failed answers fall back to the
+        // deterministic honest replies. The card is on screen — no re-send.
         const rows = await searchProperties(slug, v.sessionToken, { ref: lastRef }, 1);
-        if (rows[0] && isListingQuestion(v.message)) {
+        if (rows[0]) {
           const card = cardOf(rows[0]);
-          const matched = featuresAnswering(v.message, card.features);
-          reply = listingConditionReply(matched, lang);
-          awaitingContact = matched ? false : !have;
-          readyToCapture = matched ? false : have;
+          const llm = await groundedListingAnswer({
+            agencyName: slug, listing: listingForLlm(rows[0], card), question: v.message, lang,
+          });
+          if (llm.ok) {
+            reply = llm.answer;
+            awaitingContact = false;
+            readyToCapture = false;
+          } else if (isListingQuestion(v.message)) {
+            const matched = featuresAnswering(v.message, card.features);
+            reply = listingConditionReply(matched, lang);
+            awaitingContact = matched ? false : !have;
+            readyToCapture = matched ? false : have;
+          } else {
+            reply = listingDetailReply(card, lang);
+            awaitingContact = false;
+            readyToCapture = false;
+          }
         } else {
-          reply = rows[0] ? listingDetailReply(cardOf(rows[0]), lang) : specificReply(false, lastRef, lang);
+          reply = specificReply(false, lastRef, lang);
           awaitingContact = false;
           readyToCapture = false;
         }

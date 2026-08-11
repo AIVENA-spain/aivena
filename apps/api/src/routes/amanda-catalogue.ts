@@ -38,6 +38,7 @@ export type PropertyRow = {
   source_url: string | null;
   images?: unknown;
   features?: unknown;
+  description?: string | null;
 };
 
 /** The safe card the widget renders (no agency_id / embedding / raw_payload / lat-lng). */

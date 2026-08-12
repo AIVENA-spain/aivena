@@ -97,11 +97,11 @@ async function callClaudeAnswer(key: string, model: string, system: string, user
         headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
         body: JSON.stringify({
           model,
-          max_tokens: 4096,
+          max_tokens: 1500,
           system,
           messages,
           output_config: { effort: 'low' },   // faster: less deliberation, still searches
-          tools: [{ type: 'web_search_20260209', name: 'web_search', max_uses: 2 }],
+          tools: [{ type: 'web_search_20260209', name: 'web_search', max_uses: 1 }],
         }),
       });
       if (!resp.ok) {

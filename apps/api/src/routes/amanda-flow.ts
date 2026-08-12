@@ -75,7 +75,7 @@ export function parseMessage(message: string): Partial<Collected> {
 
   // intent
   if (/\b(sell|selling|vender|vendo|venta|list my|valuation|valoraci(o|ó)n|tasaci(o|ó)n|value my|worth)\b/i.test(low)) out.intent = 'seller';
-  else if (/\b(buy|buying|looking for|just looking|browsing|comprar|busco|interested in|rent)\b/i.test(low)) out.intent = 'buyer';
+  else if (/\b(buy|buying|looking for|just looking|browsing|comprar|busco|(solo )?(estoy )?mirando|ojeando|interested in|rent)\b/i.test(low)) out.intent = 'buyer';
 
   // budget: "€350k", "350k", "350000", "350.000", "500 000", "up to 400"
   // A detected phone number is stripped first so "+34 600 111 222" can never be

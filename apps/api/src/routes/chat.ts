@@ -222,9 +222,12 @@ route.post('/:agencySlug/message', async (c) => {
     // asks for a person. This ends the brittle "did a regex match?" misrouting.
     // Reference to one of SEVERAL shown cards ("the top one", "the one in Cabo Roig"):
     // re-run the deterministic search to get the exact set on screen, then resolve.
+    // Attempt resolution on EVERY positional/location reference — even when a listing
+    // is already pinned — so "the second one" after "the top one" re-points instead of
+    // sticking. Falls back to the pinned lastRef when the reference doesn't single out a card.
     let activeRef = lastRef;
     let resolvedViaReference = false;
-    if (activeRef === null && !browse && !humanRequested && !isNewSearch && !answeringSpecifics
+    if (!browse && !humanRequested && !isNewSearch && !answeringSpecifics
         && isReferenceFollowup(v.message)) {
       const shown = await searchProperties(slug, v.sessionToken, buildSearchFilters(collected, ''), 3);
       const idx = resolveReference(v.message, shown.map((r) => ({ title: (r as { title?: string | null }).title ?? null, city: (r as { location_city?: string | null }).location_city ?? null })));

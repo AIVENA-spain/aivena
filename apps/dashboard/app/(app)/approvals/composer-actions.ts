@@ -1,7 +1,7 @@
 "use server";
 
 import { apiFetch, ApiError } from "@/lib/api/client";
-import type { WhatsappState } from "@/lib/api/types";
+import type { ContactReadiness, WhatsappState } from "@/lib/api/types";
 
 /**
  * Composer server actions — thin proxies onto the Hono API for the persistent
@@ -16,9 +16,7 @@ const GENERIC =
   "Something went wrong sending that — please try again, and contact support if it keeps happening.";
 
 type Ok<T> = { ok: true; data: T };
-/** `windowClosed` is set when a send was rejected because the WhatsApp 24h
- *  window has closed — the composer flips to the re-engage affordance. */
-type Err = { ok: false; error: string; windowClosed?: boolean };
+type Err = { ok: false; error: string };
 
 /** Pending suggested-reply task for the open conversation (null when none). */
 export type PendingSuggestion = {
@@ -35,20 +33,15 @@ export type PendingSuggestion = {
 export type ComposerState = {
   pending: PendingSuggestion | null;
   whatsapp: WhatsappState | null;
+  /** Deterministic contact truth (get_lead_contact_readiness). Null when the
+   *  lookup failed or the lead isn't WhatsApp — the composer fails CLOSED for
+   *  the check-in affordance on null (never fail-open into a doomed send). */
+  readiness: ContactReadiness | null;
 };
 
-/** The API tags a closed-window rejection with this stable code in the body. */
-function isWindowClosed(err: unknown): boolean {
-  return (
-    err instanceof ApiError &&
-    err.status === 422 &&
-    typeof err.body === "object" &&
-    err.body !== null &&
-    (err.body as { code?: unknown }).code === "whatsapp_window_closed"
-  );
-}
-
-/** Map a thrown error to a friendly string: API 4xx text passes through, else generic. */
+/** Map a thrown error to a friendly string: API 4xx text passes through, else generic.
+ *  (The composer refetches state after EVERY failed attempt now, so the old
+ *  windowClosed-specific error flag is gone — re-gating happens on fresh truth.) */
 function toErr(scope: string, err: unknown): Err {
   const detail =
     err instanceof ApiError
@@ -58,7 +51,7 @@ function toErr(scope: string, err: unknown): Err {
         : String(err);
   console.error(`[composer] ${scope} failed:`, detail);
   if (err instanceof ApiError && err.status < 500 && err.message) {
-    return { ok: false, error: err.message, windowClosed: isWindowClosed(err) };
+    return { ok: false, error: err.message };
   }
   return { ok: false, error: GENERIC };
 }
@@ -85,19 +78,32 @@ export async function getComposerStateAction(
     }
 
     let whatsapp: WhatsappState | null = null;
+    let readiness: ContactReadiness | null = null;
     if ((channel ?? "").toLowerCase() === "whatsapp") {
-      try {
-        const res = await apiFetch<{ ok: boolean; data: WhatsappState | null }>(
+      const [wa, cr] = await Promise.allSettled([
+        apiFetch<{ ok: boolean; data: WhatsappState | null }>(
           `/api/v1/leads/${encodeURIComponent(leadId)}/whatsapp-state`,
-        );
-        whatsapp = res.data ?? null;
-      } catch (err) {
+        ),
+        apiFetch<{ ok: boolean; data: ContactReadiness | null }>(
+          `/api/v1/leads/${encodeURIComponent(leadId)}/contact-readiness`,
+        ),
+      ]);
+      if (wa.status === "fulfilled") {
+        whatsapp = wa.value.data ?? null;
+      } else {
         // Degrade gracefully — the window banner is best-effort.
-        console.error("[composer] whatsapp-state failed:", err);
+        console.error("[composer] whatsapp-state failed:", wa.reason);
+      }
+      if (cr.status === "fulfilled") {
+        readiness = cr.value.data ?? null;
+      } else {
+        // Null readiness → the composer fails closed on the check-in
+        // affordance ("can't verify"); the next 18s poll retries.
+        console.error("[composer] contact-readiness failed:", cr.reason);
       }
     }
 
-    return { ok: true, data: { pending, whatsapp } };
+    return { ok: true, data: { pending, whatsapp, readiness } };
   } catch (err) {
     return toErr("state", err);
   }

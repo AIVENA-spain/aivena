@@ -275,6 +275,31 @@ route.get('/:leadId/whatsapp-state', async (c) => {
   }
 });
 
+// GET /:leadId/contact-readiness — get_lead_contact_readiness (SECURITY INVOKER; runs under
+// the same agency + role tx context, so RLS fences the lead to the caller's agency). The
+// deterministic per-lead contact truth: window state, opt-in, provider, phone, approved
+// template languages, last failed send + reason, and a recommended_action + blocked_reason
+// the UI must obey BEFORE showing/enabling any send or check-in action. Read-only; the
+// dashboard treats a failure here as "cannot verify" and fails CLOSED for the check-in
+// affordance (never fail-open into a send that would fail).
+route.get('/:leadId/contact-readiness', async (c) => {
+  const tx = c.get('tx');
+  const leadId = c.req.param('leadId');
+  if (!UUID_RE.test(leadId)) {
+    return c.json({ ok: false, error: 'A valid lead id is required.' }, 400);
+  }
+  try {
+    const result = await tx.execute(sql`
+      SELECT public.get_lead_contact_readiness(${leadId}::uuid) AS readiness
+    `);
+    const rows = result as unknown as Array<{ readiness: unknown }>;
+    return c.json({ ok: true, data: rows[0]?.readiness ?? null });
+  } catch (err) {
+    console.error('[leads/contact-readiness] failed:', leadId, err);
+    return c.json({ ok: false, error: GENERIC }, 500);
+  }
+});
+
 // The only editable buyer-preference keys. The RPC is authoritative — this list is a friendly
 // early 400 so an obviously-wrong body never reaches the DB. Mirrors the RPC whitelist exactly.
 export const EDITABLE_PREF_KEYS = [

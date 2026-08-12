@@ -89,9 +89,9 @@
       "copy": "Kopiëren",
       "copied": "Gekopieerd",
       "openInInbox": "Openen in inbox",
-      "windowClosedNotice": "Het WhatsApp-antwoordvenster is gesloten. Open de inbox om een goedgekeurd check-inbericht te sturen.",
+      "windowClosedNotice": "Het WhatsApp-antwoordvenster is gesloten. Open de inbox om de beschikbare contactopties te bekijken.",
       "previousSuggestion": "Vorige suggestie (venster gesloten)",
-      "reengage": "Open inbox voor check-in",
+      "reengage": "Openen in inbox",
       "previousDraft": "Vorig WhatsApp-concept",
       "leadScore": "Leadscore",
       "leadTypeDefault": "Koper",
@@ -151,7 +151,10 @@
       "failedWindow": "Didn't send — outside WhatsApp's 24-hour reply window.",
       "failedGeneric": "Didn't send. Please try again, and contact support if it keeps happening.",
       "sending": "Sending…",
-      "notDelivered": "Not delivered"
+      "notDelivered": "Not delivered",
+      "failedTemplateLanguage": "Didn't send — there's no approved check-in template in the buyer's language yet. Retrying won't help until the template is approved.",
+      "failedTemplateMissing": "Didn't send — the check-in template isn't approved yet. Retrying won't help until it is approved.",
+      "failedProvider": "Didn't send — WhatsApp isn't fully set up for this agency."
     },
     "summary": {
       "h": "Leadsamenvatting",
@@ -258,7 +261,16 @@
       "reengagePreviewLabel": "Check-in message",
       "reengageSend": "Send check-in message",
       "reengageSent": "Check-in sent — we'll let you know when they reply.",
-      "reengageNoPreview": "An approved check-in message will be sent to re-open the conversation."
+      "reengageNoPreview": "An approved check-in message will be sent to re-open the conversation.",
+      "checkinUnavailableTitle": "Check-in not available",
+      "checkinNoTemplate": "There's no approved {language} check-in template yet, so a check-in can't be sent to {name} — sending would fail. Ask AIVENA to get the {language} template approved, or wait until {name} replies.",
+      "checkinUnregistered": "The check-in template isn't activated for this agency yet, so a check-in can't be sent. Contact AIVENA to activate it, or wait until {name} replies.",
+      "checkinOptedOut": "{name} has opted out of WhatsApp messages. Nothing can be sent to them on WhatsApp.",
+      "checkinProvider": "WhatsApp isn't fully set up for this agency yet, so nothing can be sent. Finish the WhatsApp setup first.",
+      "checkinPhone": "{name} has no valid international phone number on file, so WhatsApp can't be sent. Fix the phone number on the lead first.",
+      "checkinUnverified": "Couldn't check whether a check-in can be sent right now. It will retry automatically in a moment.",
+      "checkinCooldown": "A check-in was already sent in the last 7 days. The next one is possible after {date} — or wait until {name} replies.",
+      "lastCheckinFailed": "Last check-in failed: {reason}"
     },
     "composer": {
       "placeholder": "Schrijf een bericht…",

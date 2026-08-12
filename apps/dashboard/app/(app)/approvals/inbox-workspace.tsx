@@ -57,6 +57,7 @@ import {
   type PendingSuggestion,
 } from "./composer-actions";
 import { ClientIntelligence } from "./client-intelligence";
+import { deriveContactGate, gateBlocksAllSends } from "./contact-gate";
 import { getLeadMatchesAction } from "@/app/(app)/matches/matches-actions";
 import {
   buildAlternativesBlock,
@@ -187,9 +188,9 @@ function languageLabel(code: string | null): string {
 // Readable language names for the "Translated from {lang}" label. (The label
 // key itself is localized in messages/*; these names get keyed in the i18n pass.)
 const LANG_NAME: Record<string, string> = {
-  es: "Spanish", en: "English", no: "Norwegian", sv: "Swedish", da: "Danish",
-  de: "German", nl: "Dutch", fr: "French", it: "Italian", pt: "Portuguese",
-  ru: "Russian", pl: "Polish", fi: "Finnish",
+  es: "Spanish", en: "English", no: "Norwegian", nb: "Norwegian", sv: "Swedish",
+  da: "Danish", de: "German", nl: "Dutch", fr: "French", it: "Italian",
+  pt: "Portuguese", ru: "Russian", pl: "Polish", fi: "Finnish",
 };
 function languageName(code: string | null): string {
   if (!code) return "the buyer's language";
@@ -1486,12 +1487,22 @@ function ThreadBubble({
   const [showOriginal, setShowOriginal] = useState(false);
   const primary = hasTranslation && !showOriginal ? translated : original;
 
-  // Friendly, code-free reason for a non-delivered send (Law-2). The 24h-window
-  // rejection gets its own line; everything else is the generic retry copy.
+  // Friendly, code-free reason for a non-delivered send (Law-2). Permanent
+  // configuration gaps get honest "retrying won't help" copy — NEVER the
+  // generic "please try again" line (the 2026-08-12 check-in incident: a
+  // missing-language template rendered as a retryable error). The generic
+  // line remains only for genuinely unknown/transient failures.
   const reasonText = failed
     ? failureReason === "twilio_error_63016"
       ? t("failedWindow")
-      : t("failedGeneric")
+      : failureReason === "template_language_not_approved"
+        ? t("failedTemplateLanguage")
+        : failureReason === "template_not_approved" ||
+            failureReason === "template_no_content_sid"
+          ? t("failedTemplateMissing")
+          : failureReason === "whatsapp_not_configured"
+            ? t("failedProvider")
+            : t("failedGeneric")
     : null;
 
   const metaLabel = inbound
@@ -1624,6 +1635,7 @@ function Composer({
 
   const pending = pollState?.pending ?? null;
   const whatsapp = pollState?.whatsapp ?? null;
+  const readiness = pollState?.readiness ?? null;
 
   // WhatsApp window is closed only when the RPC positively says so. Email never
   // has window logic. `window_open` is the single source of truth.
@@ -1636,12 +1648,23 @@ function Composer({
     : null;
   const name = leadName?.trim() || tWindow("thisBuyer");
 
+  // Deterministic contact gate (get_lead_contact_readiness) — decides which
+  // action the composer may OFFER. The window flag still decides freeform
+  // legality; the gate decides whether the check-in is real, and whether
+  // anything at all may be sent (opt-out / provider / phone gates).
+  const gate = deriveContactGate(readiness, windowClosed, isWhatsapp);
+  const checkinOffered = gate.kind === "checkin" || gate.kind === "checkin_cooldown";
+  // Exact last-failure line (spec: show the REAL reason, as text, never markup).
+  const lastFailedReason = readiness?.ok ? (readiness.last_failed_reason ?? null) : null;
+
   // Plain, proactive explanation for the closed 24h window (Item 4 — Christian's
   // "the UI didn't feel clear"). Dynamic: names the buyer + when they last wrote.
+  // Only promises a check-in when one can actually send (the gate says so) —
+  // never "send the approved check-in below" for a check-in that would fail.
   const windowTitle = neverMessaged ? "No WhatsApp chat yet" : "WhatsApp window closed";
   const windowBody = neverMessaged
-    ? `${name} hasn't messaged you on WhatsApp yet, so WhatsApp won't allow a normal message. To reach ${name}, send the approved check-in below.`
-    : `${name} last replied ${relTime ?? "a while ago"}. WhatsApp only allows normal replies within 24 hours of the buyer's message. To contact ${name} now, use the approved check-in below — or wait until they reply.`;
+    ? `${name} hasn't messaged you on WhatsApp yet, so WhatsApp won't allow a normal message.${checkinOffered ? ` To reach ${name}, send the approved check-in below.` : ""}`
+    : `${name} last replied ${relTime ?? "a while ago"}. WhatsApp only allows normal replies within 24 hours of the buyer's message.${checkinOffered ? ` To contact ${name} now, use the approved check-in below — or wait until they reply.` : ""}`;
 
   // Refetch the composer state. We keep the latest-call guard in a ref so a
   // slow earlier poll can't overwrite a newer one's result.
@@ -1666,11 +1689,12 @@ function Composer({
     };
   }, [refetch]);
 
-  // Once the WhatsApp window is known-closed, fetch the rendered preview of the
-  // approved re-engagement template (what the buyer will receive). Fetched once;
+  // Once a check-in is actually offerable (gate-verified), fetch the rendered
+  // preview of the approved re-engagement template (what the buyer will
+  // receive). Never fetched for a check-in that can't send. Fetched once;
   // null body → the affordance shows a calm fallback, never an empty box.
   useEffect(() => {
-    if (!windowClosed || reengagePreviewLoaded) return;
+    if (!windowClosed || !checkinOffered || reengagePreviewLoaded) return;
     let alive = true;
     void getReengagePreviewAction(leadId).then((res) => {
       if (!alive) return;
@@ -1680,7 +1704,7 @@ function Composer({
     return () => {
       alive = false;
     };
-  }, [windowClosed, reengagePreviewLoaded, leadId]);
+  }, [windowClosed, checkinOffered, reengagePreviewLoaded, leadId]);
 
   // Sync rule — reconcile the textarea against the freshly-polled pending task.
   useEffect(() => {
@@ -1730,7 +1754,15 @@ function Composer({
   }, [pending, isWhatsapp, suggestedSubject]);
 
   const trimmed = text.trim();
-  const sendDisabled = busy || windowClosed || trimmed.length === 0;
+  // A gate that blocks ALL sends (opted-out / provider / phone) disables the
+  // freeform Send even with an open window — the pipeline would refuse it.
+  const gateBlocked = gateBlocksAllSends(gate);
+  // First-poll race: on a freshly opened WhatsApp thread nothing has been
+  // fetched yet (pollState null ≠ fetch failed) — hold Send until the first
+  // truth lands (sub-second) so a gated lead can't be messaged in the gap.
+  const readinessPending = isWhatsapp && pollState === null;
+  const sendDisabled =
+    busy || windowClosed || gateBlocked || readinessPending || trimmed.length === 0;
 
   async function handleSend() {
     if (sendDisabled) return; // double-submit + state guard
@@ -1762,16 +1794,17 @@ function Composer({
     } else {
       setError(res.error);
       setBusy(false); // keep the text so the operator can retry
-      // Defensive catch: the window closed between the last poll and this send.
-      // Re-poll so windowClosed flips true → the composer swaps to the
-      // re-engage affordance instead of leaving a dead error.
-      if (res.windowClosed) void refetch();
+      // Refetch readiness + window state after ANY failed attempt so the
+      // composer re-gates on fresh truth (e.g. the window closed, or a gate
+      // flipped, between the last poll and this send).
+      void refetch();
     }
   }
 
-  /** Send the approved re-engagement template to re-open a closed window. */
+  /** Send the approved re-engagement template to re-open a closed window.
+   *  Gate-guarded: only callable when readiness says the check-in can work. */
   async function handleReengage() {
-    if (reengaging || reengaged) return;
+    if (reengaging || reengaged || gate.kind !== "checkin") return;
     setReengaging(true);
     setError(null);
     const res = await reengageAction(leadId);
@@ -1779,10 +1812,12 @@ function Composer({
       setReengaged(true);
       setReengaging(false);
       setError(null);
+      void refetch(); // fresh readiness (e.g. cooldown now active)
       onActionDone(); // reconcile the thread → the queued template bubble appears
     } else {
       setError(res.error);
       setReengaging(false);
+      void refetch(); // re-gate on fresh truth after a refused attempt
     }
   }
 
@@ -1873,10 +1908,17 @@ function Composer({
 
       {windowClosed ? (
         /* CLOSED WINDOW — a freeform reply is illegal until the buyer messages
-           again; the only WhatsApp-legal action is the approved re-engagement
-           template. Replace the freeform composer with it. */
+           again. What replaces the composer is decided by the deterministic
+           contact gate: the check-in affordance ONLY when readiness says the
+           template send can actually work; otherwise the honest reason (the
+           2026-08-12 rule: never offer an action that cannot work, never say
+           "try again" for a permanent configuration gap). */
         <div className="flex flex-col gap-3">
-          {reengaged ? (
+          {/* The "sent" confirmation yields to fresh truth: if readiness later
+              reports the queued check-in FAILED (gate flips to blocked), the
+              honest reason panel — with the exact failure — replaces it. A
+              failed send must never keep rendering as sent. */}
+          {reengaged && gate.kind !== "blocked" ? (
             <div className="flex items-start gap-1.5 rounded-[13px] border border-brand/20 bg-brand-soft/50 p-3 text-[12.5px] text-foreground">
               <MessageCircle
                 className="mt-px h-3.5 w-3.5 shrink-0 text-brand"
@@ -1884,6 +1926,54 @@ function Composer({
                 strokeWidth={2}
               />
               <span>{tWindow("reengageSent")}</span>
+            </div>
+          ) : gate.kind === "blocked" || gate.kind === "unverified" ? (
+            /* Check-in cannot send (or can't be verified) — no send button at
+               all. The reason renders as plain text (never markup); the exact
+               last failure reason is surfaced verbatim as a text node. */
+            <div className="rounded-md border border-amber-500/20 bg-amber-500/[0.045] px-3.5 py-2.5">
+              <div className="mb-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-amber-600 dark:text-amber-300/90">
+                <AlertTriangle className="h-3 w-3" aria-hidden strokeWidth={1.75} />
+                {tWindow("checkinUnavailableTitle")}
+              </div>
+              <p className="text-[12.5px] leading-[1.55] text-muted-foreground">
+                {gate.kind === "unverified"
+                  ? tWindow("checkinUnverified")
+                  : gate.reason === "no_template"
+                    ? tWindow("checkinNoTemplate", {
+                        language: languageName(gate.language || null),
+                        name,
+                      })
+                    : gate.reason === "template_unregistered"
+                      ? tWindow("checkinUnregistered", { name })
+                      : gate.reason === "opted_out"
+                        ? tWindow("checkinOptedOut", { name })
+                        : gate.reason === "provider"
+                          ? tWindow("checkinProvider")
+                          : tWindow("checkinPhone", { name })}
+              </p>
+              {lastFailedReason ? (
+                <p className="mt-1.5 font-mono text-[10.5px] text-amber-700 dark:text-amber-300">
+                  {tWindow("lastCheckinFailed", { reason: lastFailedReason })}
+                </p>
+              ) : null}
+              {/* Dismissing a pending suggestion is not a contact action — it
+                  must stay available even when every send is gated, or the
+                  stale AI draft lingers on a lead that can't be messaged. */}
+              {isSuggested ? (
+                <div className="mt-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="gap-1.5 text-muted-foreground hover:text-foreground"
+                    disabled={busy}
+                    onClick={handleDismiss}
+                  >
+                    <X className="h-3.5 w-3.5" aria-hidden />
+                    {busy ? t("dismissing") : t("dismiss")}
+                  </Button>
+                </div>
+              ) : null}
             </div>
           ) : (
             <>
@@ -1899,6 +1989,23 @@ function Composer({
                   {reengagePreview ?? tWindow("reengageNoPreview")}
                 </p>
               </div>
+              {gate.kind === "checkin_cooldown" ? (
+                /* Template + registration are fine — only the 7-day courtesy
+                   cooldown blocks. Honest date, disabled button. */
+                <p className="text-[12px] leading-[1.5] text-muted-foreground">
+                  {tWindow("checkinCooldown", {
+                    date: gate.until
+                      ? format.dateTime(new Date(gate.until), {
+                          day: "numeric",
+                          month: "short",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
+                      : "—",
+                    name,
+                  })}
+                </p>
+              ) : null}
               {error ? (
                 <div
                   role="alert"
@@ -1911,7 +2018,7 @@ function Composer({
                 <Button
                   type="button"
                   className="gap-1.5"
-                  disabled={reengaging}
+                  disabled={reengaging || gate.kind !== "checkin"}
                   onClick={handleReengage}
                 >
                   <MessageCircle className="h-3.5 w-3.5" aria-hidden />
@@ -1935,6 +2042,18 @@ function Composer({
         </div>
       ) : (
         <>
+      {/* Open window but a hard gate (opted-out / provider / phone) forbids
+          sending — the pipeline would refuse, so Send is disabled with the
+          true reason instead of failing after the click. */}
+      {gateBlocked && gate.kind === "blocked" ? (
+        <div className="mb-2.5 rounded-md border border-amber-500/20 bg-amber-500/[0.045] px-3 py-2 text-[12.5px] leading-[1.55] text-muted-foreground">
+          {gate.reason === "opted_out"
+            ? tWindow("checkinOptedOut", { name })
+            : gate.reason === "provider"
+              ? tWindow("checkinProvider")
+              : tWindow("checkinPhone", { name })}
+        </div>
+      ) : null}
       {/* State label — SUGGESTED shows the AI tag (reused styling); FREEFORM
           shows nothing special. */}
       {isSuggested ? (

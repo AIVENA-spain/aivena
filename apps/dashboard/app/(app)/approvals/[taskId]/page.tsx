@@ -69,6 +69,11 @@ function ThreadEntry({
   bcp47Locale: string;
 }) {
   const inbound = msg.direction === "inbound";
+  // Honest delivery truth (2026-08-12): a failed/undelivered outbound must
+  // never render identically to a sent one — same rule as the Inbox thread.
+  const s = (msg.status ?? "").toLowerCase();
+  const failed = !inbound && (s === "failed" || s === "undelivered" || s === "cancelled");
+  const queued = !inbound && s === "queued";
   // Inbound: prefer the server-cleaned body (quote chain / footer stripped);
   // outbound is dashboard-composed and never quoted, so it renders raw content.
   const body = inbound ? (msg.bodyClean ?? msg.content) : msg.content;
@@ -77,17 +82,26 @@ function ThreadEntry({
       className={
         inbound
           ? "rounded-md border border-border bg-card px-3 py-2"
-          : "rounded-md border border-foreground bg-foreground px-3 py-2 text-background"
+          : failed
+            ? "rounded-md border border-amber-500/50 bg-amber-500/10 px-3 py-2 text-foreground"
+            : queued
+              ? "rounded-md border border-foreground/40 bg-foreground/60 px-3 py-2 text-background"
+              : "rounded-md border border-foreground bg-foreground px-3 py-2 text-background"
       }
     >
       <div
         className={
           "mb-1 flex items-center justify-between text-[10px] font-medium uppercase tracking-wide " +
-          (inbound ? "text-muted-foreground" : "text-background/70")
+          (inbound
+            ? "text-muted-foreground"
+            : failed
+              ? "text-amber-700 dark:text-amber-300"
+              : "text-background/70")
         }
       >
         <span>
           {inbound ? buyerLabel : agencyLabel} · {msg.messageType}
+          {failed ? " · not delivered" : queued ? " · sending" : ""}
         </span>
         <span>
           {new Date(msg.createdAt).toLocaleString(bcp47Locale, {
@@ -101,7 +115,7 @@ function ThreadEntry({
       <div
         className={
           "whitespace-pre-wrap text-sm leading-relaxed " +
-          (inbound ? "text-foreground" : "text-background")
+          (inbound || failed ? "text-foreground" : "text-background")
         }
       >
         {body ?? <span className="italic opacity-70">{emptyLabel}</span>}

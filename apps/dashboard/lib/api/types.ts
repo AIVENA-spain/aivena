@@ -445,6 +445,47 @@ export type WhatsappState = {
   failed_messages: WhatsappFailedMessage[];
 };
 
+/**
+ * Deterministic per-lead contact readiness (get_lead_contact_readiness RPC via
+ * `GET /api/v1/leads/:leadId/contact-readiness`). The single source of truth the
+ * composer must obey BEFORE showing/enabling any send or check-in action — it
+ * mirrors every live send gate (opt-out, provider, phone E.164, 24h window,
+ * strict-language approved templates, registration, 7-day re-engage cooldown),
+ * so the UI can never recommend an action the pipeline would refuse. `ok:false`
+ * means lead_not_found (incl. cross-agency: indistinguishable). `explanation`,
+ * `blocked_reason`, and `last_failed_reason` are rendered as TEXT ONLY — never
+ * innerHTML — because they can embed lead-influenced strings.
+ */
+export type ContactReadiness = {
+  ok: boolean;
+  error?: string;
+  version?: string;
+  checked_at?: string;
+  template_key?: string;
+  lead_id?: string;
+  agency_id?: string;
+  lead_language?: string | null;
+  lead_language_normalized?: string;
+  opt_in_status?: string | null;
+  channel?: string | null;
+  whatsapp_window?: { state: string; open: boolean; expires_at: string | null };
+  last_inbound_at?: string | null;
+  last_successful_outbound_at?: string | null;
+  last_failed_outbound_at?: string | null;
+  last_failed_reason?: string | null;
+  provider?: { ready: boolean; state: string };
+  normal_reply_allowed?: boolean;
+  template_checkin_required?: boolean;
+  approved_template_in_lead_language?: boolean;
+  approved_template_languages?: string[];
+  recommended_action?: string;
+  blocked_reason?: string | null;
+  explanation?: string;
+  phone_valid?: boolean;
+  template_registered_for_agency?: boolean;
+  reengagement_cooldown_until?: string | null;
+};
+
 export type TaskDetailResponse = {
   task: {
     id: string;

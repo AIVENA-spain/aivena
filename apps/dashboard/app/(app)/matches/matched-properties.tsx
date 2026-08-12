@@ -46,7 +46,8 @@ export function MatchedProperties({
   leadId,
   leadName,
   onSuggested,
-  windowClosed = false,
+  suggestDisabled = false,
+  suggestReason = null,
   refreshKey,
   basedOn,
 }: {
@@ -55,8 +56,14 @@ export function MatchedProperties({
   leadName?: string | null;
   /** Called with the new suggestion task id after a successful suggest. */
   onSuggested?: (taskId: string) => void;
-  /** True only when the WhatsApp 24h window is known-closed → gate Suggest. */
-  windowClosed?: boolean;
+  /** Suggest is disabled: window closed, a hard gate forbids all contact, or
+   *  contact is still being verified. Readiness-derived (the parent, which owns
+   *  the gate, computes it) — never the window boolean alone. */
+  suggestDisabled?: boolean;
+  /** Pre-localized, readiness-derived reason the Suggest button is disabled
+   *  (null when it is enabled). Computed by the parent so this component holds
+   *  no gate logic; rendered as a plain text node. */
+  suggestReason?: string | null;
   /**
    * Changes whenever the conversation does (e.g. message count). Re-fetches the
    * matches so the rail can't sit on a cached list. NOTE: this fixes the UI-cache
@@ -104,7 +111,7 @@ export function MatchedProperties({
   const firstName = leadName?.trim().split(/\s+/)[0] || "this buyer";
 
   async function handleSuggest() {
-    if (windowClosed) return; // gated — never bypass the closed window
+    if (suggestDisabled) return; // gated — never bypass a readiness block
     setPosting(true);
     setSuggestError(null);
     const res = await suggestPropertiesAction(leadId);
@@ -253,15 +260,15 @@ export function MatchedProperties({
                   type="button"
                   size="sm"
                   className="w-full"
-                  disabled={posting || windowClosed}
+                  disabled={posting || suggestDisabled}
                   onClick={handleSuggest}
-                  title={windowClosed ? tIntel("suggestGated") : undefined}
+                  title={suggestReason ?? undefined}
                 >
                   {posting ? t("suggesting") : t("suggestToLead", { name: firstName })}
                 </Button>
-                {windowClosed ? (
+                {suggestReason ? (
                   <p className="text-[11px] text-amber-700 dark:text-amber-300">
-                    {tIntel("suggestGated")}
+                    {suggestReason}
                   </p>
                 ) : null}
                 {suggestError ? (

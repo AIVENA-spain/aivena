@@ -13,14 +13,30 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-import type { InboxRow, LeadIntel, WhatsappState } from "@/lib/api/types";
+import type {
+  ContactReadiness,
+  InboxRow,
+  LeadIntel,
+  WhatsappState,
+} from "@/lib/api/types";
 import { cn } from "@/lib/utils";
 import { RelativeTime } from "@/components/ui/relative-time";
 import { langLabel, typeLabel } from "@/app/(app)/matches/_shared";
 import { LeadNotes } from "./lead-notes";
 import { MatchedProperties } from "@/app/(app)/matches/matched-properties";
-import { getLeadIntelAction, getLeadWhatsappStateAction } from "./lead-intel-actions";
+import {
+  getLeadIntelAction,
+  getLeadWhatsappStateAction,
+  getLeadContactReadinessAction,
+} from "./lead-intel-actions";
 import { nextActionBullets } from "./client-intelligence-lib";
+import {
+  contactBlockNotice,
+  deriveContactGate,
+  gateBlocksAllSends,
+  languageName,
+  type ContactBlockNotice,
+} from "./contact-gate";
 import { BuyerProfileEdit } from "./buyer-profile-edit";
 import type { EditablePrefs } from "./buyer-profile-edit-model";
 
@@ -64,6 +80,13 @@ export function ClientIntelligence({
   const [wa, setWa] = useState<WaState>(
     isWhatsapp ? { kind: "loading" } : { kind: "off" },
   );
+  // Deterministic contact readiness — the same truth the composer obeys, so the
+  // right panel can never recommend a WhatsApp action that can't work. null =
+  // not-yet-loaded OR failed; `readinessResolved` distinguishes the two so a
+  // still-loading fetch is never mistaken for a failure (fail-closed only after
+  // it actually resolves).
+  const [readiness, setReadiness] = useState<ContactReadiness | null>(null);
+  const [readinessResolved, setReadinessResolved] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -99,13 +122,24 @@ export function ClientIntelligence({
   useEffect(() => {
     if (!isWhatsapp) {
       setWa({ kind: "off" });
+      setReadiness(null);
+      setReadinessResolved(false);
       return;
     }
     let alive = true;
     setWa({ kind: "loading" });
+    setReadiness(null);
+    setReadinessResolved(false);
     getLeadWhatsappStateAction(lead.leadId).then((res) => {
       if (!alive) return;
       setWa(res.ok ? { kind: "ready", data: res.data } : { kind: "error" });
+    });
+    getLeadContactReadinessAction(lead.leadId).then((res) => {
+      if (!alive) return;
+      // Fail closed: any failure leaves readiness null → gate = unverified,
+      // but only ONCE resolved (so a normal load never flashes "couldn't verify").
+      setReadiness(res.ok ? res.data : null);
+      setReadinessResolved(true);
     });
     return () => {
       alive = false;
@@ -118,6 +152,42 @@ export function ClientIntelligence({
   // Authoritative window read — true only when we KNOW it is closed.
   const windowOpen = wa.kind === "ready" && wa.data ? wa.data.window_open : null;
   const windowClosed = isWhatsapp && windowOpen === false;
+
+  // The readiness-derived contact gate — drives the Next-best-action override
+  // and the Suggest gate so both obey get_lead_contact_readiness (never the
+  // stale recommended_channel / window boolean alone).
+  const waReady = wa.kind === "ready" || wa.kind === "error";
+  // Trust the gate only once BOTH truths (window + readiness) have resolved.
+  // The composer loads them atomically; here they are two independent fetches,
+  // so until both land we must not flash the stale "Manual WhatsApp call" line
+  // NOR a false "couldn't verify". Non-WhatsApp leads have no gate → resolved.
+  const contactResolved = !isWhatsapp || (waReady && readinessResolved);
+  const gate = deriveContactGate(readiness, windowClosed, isWhatsapp);
+  const langName = languageName(readiness?.lead_language_normalized ?? lead.language);
+  const block: ContactBlockNotice =
+    isWhatsapp && contactResolved ? contactBlockNotice(gate, langName) : null;
+  // Suppress the stored recommended-channel line while contact is unresolved (so
+  // it can't flash for a lead that turns out blocked) or when a block is shown.
+  const suppressChannel = isWhatsapp && (!contactResolved || block != null);
+  const firstName = (lead.fullName ?? "").trim().split(/\s+/)[0] || "this buyer";
+  // Suggest fails CLOSED: disabled until contact resolves, then when the window
+  // is closed OR any hard gate forbids all contact (opted-out/provider/phone)
+  // even with the window open.
+  const suggestDisabled =
+    isWhatsapp && (!contactResolved || windowClosed || gateBlocksAllSends(gate));
+  // Truthful disabled-Suggest reason, computed here (the gate lives here):
+  //  unresolved → "checking"; hard/no-template/unverified block → its reason;
+  //  cooldown → the cooldown note (a check-in can't be sent NOW); else the
+  //  window-closed "send a check-in to reopen" note (only when one truly can).
+  const suggestReason: string | null = !suggestDisabled
+    ? null
+    : !contactResolved
+      ? t("suggestChecking")
+      : block
+        ? t(block.suggestKey, { language: block.language, code: block.code, name: firstName })
+        : gate.kind === "checkin_cooldown"
+          ? t("suggestBlockCooldown", { name: firstName })
+          : t("suggestGated");
 
   // Panel order (Chat-2 acceptance §8): Buyer Profile · Next Best Action ·
   // Matched + Why · Notes · Follow-up · Conversation.
@@ -143,14 +213,21 @@ export function ClientIntelligence({
         t={t}
         onEdited={() => setEditVersion((v) => v + 1)}
       />
-      <NextBestAction data={data} loading={loading} t={t} />
+      <NextBestAction
+        data={data}
+        loading={loading}
+        t={t}
+        block={block}
+        suppressChannel={suppressChannel}
+      />
 
       <MatchedProperties
         key={"m-" + lead.leadId}
         leadId={lead.leadId}
         leadName={lead.fullName}
         onSuggested={onSuggested}
-        windowClosed={windowClosed}
+        suggestDisabled={suggestDisabled}
+        suggestReason={suggestReason}
         // Re-fetch when a NEW buyer message arrives OR the agent edits the profile
         // (both change the recommendation basis) — kills UI-cache staleness.
         refreshKey={`${lead.latestInboundAt ?? ""}:${editVersion}`}
@@ -389,16 +466,28 @@ function NextBestAction({
   data,
   loading,
   t,
+  block,
+  suppressChannel,
 }: {
   data: LeadIntel | null;
   loading: boolean;
   t: Tr;
+  /** When set, contact is blocked/unverified per readiness — suppress the
+   *  (misleading) recommended contact channel and show the honest reason. */
+  block: ContactBlockNotice;
+  /** True while contact is unresolved OR blocked — the stored recommended
+   *  channel ("Manual WhatsApp call") must not show until we KNOW it can work. */
+  suppressChannel: boolean;
 }) {
-  const channel = friendlyChannel(data?.recommended_channel ?? null);
+  // Suppress the stored `recommended_channel` whenever contact is unresolved or
+  // blocked — it would otherwise imply an available action that can't happen.
+  // The reasoning bullets are about the buyer's preferences (not a contact
+  // method), so they stay.
+  const channel = suppressChannel ? null : friendlyChannel(data?.recommended_channel ?? null);
   // Bug 2: drop stale "no budget info" clauses when the lead's budget IS known,
   // so Next-best-action can't contradict the Budget row shown above.
   const bullets = nextActionBullets(data?.reasoning_summary ?? null, data?.budget_extracted ?? null);
-  const hasAny = !!channel || bullets.length > 0 || !!data?.next_action;
+  const hasAny = !!block || !!channel || bullets.length > 0 || !!data?.next_action;
 
   return (
     <Section icon={Zap} title={t("nextActionHeading")}>
@@ -408,6 +497,16 @@ function NextBestAction({
         <p className="text-[12px] text-muted-foreground">{t("noAction")}</p>
       ) : (
         <ul className="flex flex-col gap-1 text-[12.5px] leading-snug">
+          {block ? (
+            // Honest, readiness-derived block — rendered as a TEXT node (never
+            // markup), interpolations are a language name + short code.
+            <li className="flex items-start gap-2.5">
+              <span className="mt-[5px] h-2 w-2 shrink-0 rounded-full bg-amber-500" aria-hidden />
+              <span className="font-medium text-amber-700 dark:text-amber-300">
+                {t(block.contactKey, { language: block.language, code: block.code })}
+              </span>
+            </li>
+          ) : null}
           {channel ? (
             <li className="flex items-start gap-2.5">
               <span className="mt-[6px] h-2 w-2 shrink-0 rounded-full bg-brand" aria-hidden />

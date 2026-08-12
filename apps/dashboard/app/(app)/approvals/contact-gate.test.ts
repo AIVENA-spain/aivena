@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { deriveContactGate, gateBlocksAllSends } from "./contact-gate";
+import {
+  contactBlockNotice,
+  deriveContactGate,
+  gateBlocksAllSends,
+  languageName,
+} from "./contact-gate";
 import type { ContactReadiness } from "@/lib/api/types";
 
 /**
@@ -202,5 +207,62 @@ describe("deriveContactGate — edges", () => {
 
   it("non-WhatsApp channels are untouched", () => {
     expect(deriveContactGate(MARTE, true, false)).toEqual({ kind: "normal" });
+  });
+});
+
+describe("contactBlockNotice — right-panel truth (Next-best-action + Suggest)", () => {
+  it("Marte: no-template block names the language + code so both surfaces read truthfully", () => {
+    const gate = deriveContactGate(MARTE, true, true);
+    const notice = contactBlockNotice(gate, languageName(MARTE.lead_language_normalized));
+    expect(notice).toEqual({
+      contactKey: "contactBlockNoTemplate",
+      suggestKey: "suggestBlockNoTemplate",
+      language: "Norwegian",
+      code: "nb",
+    });
+  });
+
+  it("opted-out lead blocks contact with the opt-out reason", () => {
+    const notice = contactBlockNotice(deriveContactGate(OPTED_OUT, false, true), "English");
+    expect(notice?.contactKey).toBe("contactBlockOptedOut");
+    expect(notice?.suggestKey).toBe("suggestBlockOptedOut");
+  });
+
+  it("provider-missing blocks contact with the provider reason", () => {
+    const notice = contactBlockNotice(deriveContactGate(PROVIDER_MISSING, true, true), "English");
+    expect(notice?.contactKey).toBe("contactBlockProvider");
+  });
+
+  it("invalid-phone blocks contact with the phone reason", () => {
+    const notice = contactBlockNotice(deriveContactGate(SARAH, true, true), "English");
+    expect(notice?.contactKey).toBe("contactBlockPhone");
+  });
+
+  it("unverified readiness → block notice (never a fabricated recommendation)", () => {
+    expect(contactBlockNotice(deriveContactGate(null, true, true), "English")?.contactKey).toBe(
+      "contactBlockUnverified",
+    );
+  });
+
+  it("a sendable check-in is NOT a block — panel keeps its normal recommendation", () => {
+    expect(contactBlockNotice(deriveContactGate(CHECKIN_OK, true, true), "English")).toBeNull();
+  });
+
+  it("cooldown is NOT a hard block — panel routes it to its own honest 'sent recently' copy, not a block notice", () => {
+    // contactBlockNotice returns null for cooldown so the right panel keeps a
+    // manual-contact recommendation; the Suggest button shows suggestBlockCooldown
+    // (a check-in can't be sent NOW), never "send a check-in to reopen".
+    expect(contactBlockNotice(deriveContactGate(COOLDOWN, true, true), "English")).toBeNull();
+  });
+
+  it("window open is NOT a block", () => {
+    expect(contactBlockNotice(deriveContactGate(WINDOW_OPEN, false, true), "English")).toBeNull();
+  });
+
+  it("languageName maps nb → Norwegian, unknown → upper code, empty → generic", () => {
+    expect(languageName("nb")).toBe("Norwegian");
+    expect(languageName("no")).toBe("Norwegian");
+    expect(languageName("xx")).toBe("XX");
+    expect(languageName(null)).toBe("the lead's language");
   });
 });

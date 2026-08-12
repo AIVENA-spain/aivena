@@ -1,7 +1,12 @@
 "use server";
 
 import { apiFetch, ApiError } from "@/lib/api/client";
-import type { LeadIntel, LeadIntelResponse, WhatsappState } from "@/lib/api/types";
+import type {
+  ContactReadiness,
+  LeadIntel,
+  LeadIntelResponse,
+  WhatsappState,
+} from "@/lib/api/types";
 
 /**
  * Lead-intel server action — thin proxy onto GET /api/v1/leads/:leadId/intel,
@@ -62,5 +67,32 @@ export async function getLeadWhatsappStateAction(
           : String(err);
     console.error("[lead-intel] whatsapp-state load failed:", detail);
     return { ok: false, error: "Couldn't load the conversation status." };
+  }
+}
+
+/**
+ * Deterministic contact readiness (get_lead_contact_readiness) for the right
+ * panel — so its Next-best-action and the Suggest button obey the same truth as
+ * the composer. Never recomputed client-side. Null data / failure → the panel
+ * fails CLOSED (treats contact as unverified), never fabricating an available
+ * action. Same RPC the composer consults.
+ */
+export async function getLeadContactReadinessAction(
+  leadId: string,
+): Promise<Ok<ContactReadiness | null> | Err> {
+  try {
+    const res = await apiFetch<{ ok: boolean; data: ContactReadiness | null }>(
+      `/api/v1/leads/${encodeURIComponent(leadId)}/contact-readiness`,
+    );
+    return { ok: true, data: res.data ?? null };
+  } catch (err) {
+    const detail =
+      err instanceof ApiError
+        ? `${err.status} ${err.message}`
+        : err instanceof Error
+          ? err.message
+          : String(err);
+    console.error("[lead-intel] contact-readiness load failed:", detail);
+    return { ok: false, error: "Couldn't verify contact status." };
   }
 }

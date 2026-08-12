@@ -30,7 +30,7 @@ const route = new Hono();
 
 const REQUIRE_TEST_AGENCY = true;              // Phase A/B stay is_test-only until go-live.
 const CONSENT_RECORDED_BY = 'amanda_chat_capture';
-const allowRequest = createRateLimiter(8, 60_000);
+const allowRequest = createRateLimiter(20, 60_000);
 // Phase D cost backstops (LLM calls cost money). Per-session fairness cap AND a
 // per-instance global circuit-breaker so a spoofed X-Forwarded-For (which the
 // general limiter keys on) can never run up an unbounded Anthropic bill.
@@ -300,7 +300,7 @@ route.post('/:agencySlug/message', async (c) => {
       funnelExtra = interpretFunnelAnswer(stepBefore, v.message, patch);
       Object.assign(collected, funnelExtra);
       const addedNothing = Object.keys(patch).length === 0 && Object.keys(funnelExtra).length === 0;
-      const t = turnReply(collected, addedNothing, intent, lang);
+      const t = turnReply(collected, addedNothing, answeringSpecifics ? 'qualify' : intent, lang);
       reply = t.reply;
       messageType = t.messageType;
       awaitingContact = t.awaitingContact;

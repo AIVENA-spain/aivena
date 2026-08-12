@@ -22,6 +22,7 @@
   .typing { display:inline-flex; gap:4px; padding:10px 12px; background:var(--bot); border-radius:12px; border-bottom-left-radius:4px; }
   .typing i { width:6px; height:6px; border-radius:50%; background:#9aa39d; animation:tp 1.1s infinite ease-in-out; }
   .typing i:nth-child(2){ animation-delay:.15s } .typing i:nth-child(3){ animation-delay:.3s }
+  .typing-label { font-size:11.5px; color:#8a938c; align-self:flex-end; font-style:italic; }
   @keyframes tp { 0%,60%,100%{ transform:translateY(0); opacity:.5 } 30%{ transform:translateY(-4px); opacity:1 } }
   .hd .who { font-weight:600; font-size:14px; }
   .hd .sub { font-size:11px; color:var(--muted); }
@@ -107,6 +108,8 @@
       submit: "Send to the team",
       done: "Thank you! The team will be in touch shortly.",
       doneHuman: "Thanks — the team will message you on WhatsApp as soon as they can. I'm still here if you'd like to keep looking meanwhile.",
+      checking: "checking that for you…",
+      stillChecking: "one moment, still looking it up…",
       err: "Sorry — something went wrong. Please try again.",
       needField: "Please add an email or phone."
     },
@@ -125,6 +128,8 @@
       submit: "Enviar al equipo",
       done: "¡Gracias! El equipo le contactará en breve.",
       doneHuman: "Gracias — el equipo le escribirá por WhatsApp lo antes posible. Sigo aquí por si quiere seguir mirando mientras tanto.",
+      checking: "lo estoy comprobando…",
+      stillChecking: "un momento, sigo mirándolo…",
       err: "Lo sentimos — algo salió mal. Inténtelo de nuevo.",
       needField: "Añada un email o teléfono."
     }
@@ -291,15 +296,23 @@
     var d = document.createElement("div"); d.className = "m bot"; d.textContent = t;
     row.appendChild(av); row.appendChild(d); msgs.appendChild(row); scroll();
   }
-  var typingEl = null;
+  var typingEl = null, typingTimers = [], typingLabel = null;
   function showTyping() {
     if (typingEl) return;
     typingEl = document.createElement("div"); typingEl.className = "brow";
     var av = document.createElement("span"); av.className = "avatar sm"; av.textContent = "A"; av.setAttribute("aria-hidden", "true");
     var t = document.createElement("div"); t.className = "typing"; t.innerHTML = "<i></i><i></i><i></i>";
-    typingEl.appendChild(av); typingEl.appendChild(t); msgs.appendChild(typingEl); scroll();
+    typingLabel = document.createElement("span"); typingLabel.className = "typing-label";
+    typingEl.appendChild(av); typingEl.appendChild(t); typingEl.appendChild(typingLabel);
+    msgs.appendChild(typingEl); scroll();
+    // Escalate the label so a longer wait clearly reads as "she's checking", not stuck.
+    typingTimers.push(setTimeout(function () { if (typingLabel) { typingLabel.textContent = T.checking; scroll(); } }, 2200));
+    typingTimers.push(setTimeout(function () { if (typingLabel) { typingLabel.textContent = T.stillChecking; scroll(); } }, 9000));
   }
-  function hideTyping() { if (typingEl) { typingEl.remove(); typingEl = null; } }
+  function hideTyping() {
+    typingTimers.forEach(clearTimeout); typingTimers = []; typingLabel = null;
+    if (typingEl) { typingEl.remove(); typingEl = null; }
+  }
   function meMsg(t) { var d = document.createElement("div"); d.className = "m me"; d.textContent = t; msgs.appendChild(d); scroll(); }
   function done() { var d = document.createElement("div"); d.className = "ok"; d.textContent = pendingHuman ? T.doneHuman : T.done; msgs.appendChild(d); if (!pendingHuman) { inp.disabled = true; sendBtn.disabled = true; } scroll(); }
   function scroll() { window.scrollTo(0, document.body.scrollHeight); postHeight(); }

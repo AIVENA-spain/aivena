@@ -101,7 +101,9 @@ async function callClaudeAnswer(key: string, model: string, system: string, user
           system,
           messages,
           output_config: { effort: 'low' },   // faster: less deliberation, still searches
-          tools: [{ type: 'web_search_20260209', name: 'web_search', max_uses: 1 }],
+          // Basic web search (no slow dynamic-filtering/code-exec step) — accepted on
+          // Sonnet 5 and noticeably faster than web_search_20260209.
+          tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 1 }],
         }),
       });
       if (!resp.ok) {

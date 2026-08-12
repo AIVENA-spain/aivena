@@ -26,8 +26,9 @@ export const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
 export const DEFAULT_MODEL = 'claude-sonnet-5';
 export const VERIFIER_MODEL = 'claude-haiku-4-5-20251001';
 export const TIMEOUT_MS = 9_000;
+export const ANSWER_TIMEOUT_MS = 26_000;   // the answer call may run a web search (slow)
 export const VERIFIER_TIMEOUT_MS = 6_000;
-const MAX_ANSWER_CHARS = 600;
+const MAX_ANSWER_CHARS = 700;
 
 export type ListingForLlm = {
   ref: string | null;
@@ -71,7 +72,7 @@ export function buildGroundedPrompt(args: {
     ``,
     `TWO KINDS OF KNOWLEDGE — keep them separate:`,
     `A) PROPERTY FACTS about this specific unit — price, size, number of bedrooms/bathrooms, features, condition, orientation, and this unit's or community's rules (pet policy, fees). Use ONLY what is in DATA. NEVER invent, guess, or adjust a property fact or number. If DATA doesn't contain it, say so warmly and offer to have the team confirm — do not make it up.`,
-    `B) THE AREA & LIFESTYLE — the town, neighbourhood, beaches, family-friendliness, general amenities and vibe of the location in DATA. Here you MAY share genuinely well-known, general local knowledge to help the visitor picture life there, like a good local agent would. Keep it general and honest ("the area is popular with families", "it's a short walk to the seafront"); do not invent specific named schools, exact distances, or precise figures — for those, invite the team. Never state an area detail as if it were a verified fact about the unit.`,
+    `B) THE AREA & LIFESTYLE — the town, neighbourhood, beaches, family-friendliness, schools, transport, amenities and vibe of the location in DATA. Here you are a knowledgeable local agent. You have a web_search tool: when a visitor asks about the area and an accurate, specific answer would help, SEARCH the web to check real, current local information before answering — do not rely on memory for specific claims (blue-flag status, named beaches/schools, distances, what's nearby). Use at most 1–2 focused searches, then answer warmly in your own words. NEVER use web_search to find facts about THIS property (price, size, rooms, features, its rules) — those come ONLY from DATA. If something specific still isn't clear, say so honestly and offer the team.`,
     ``,
     `CONVERSATION: If the visitor makes small talk, says they'd like to keep chatting, or asks something vague, respond warmly and steer gently back to how you can help with this property or the area. Legal, tax, mortgage, or price-negotiation questions: hand warmly to the team.`,
     ``,

@@ -2,7 +2,7 @@ import { sql } from 'drizzle-orm';
 import { db } from '../../../../packages/db/client';
 import {
   buildGroundedPrompt, buildVerifierPrompt, parseLlmAnswer, parseVerdict, passesGroundingGuard,
-  ANTHROPIC_URL, DEFAULT_MODEL, VERIFIER_MODEL, TIMEOUT_MS, VERIFIER_TIMEOUT_MS,
+  ANTHROPIC_URL, DEFAULT_MODEL, VERIFIER_MODEL, ANSWER_TIMEOUT_MS, VERIFIER_TIMEOUT_MS,
   type ListingForLlm, type LlmAnswer,
 } from './amanda-llm-lib';
 
@@ -79,9 +79,57 @@ async function callClaude(
 }
 
 /**
+ * The ANSWER call — Sonnet 5 with the server-side web_search tool so Amanda can
+ * research the AREA before answering. Adaptive thinking is left ON (omitted): with
+ * thinking disabled, Sonnet 5 can emit a tool call as plain text and the search
+ * never runs. Handles pause_turn (server hit the tool-loop cap) by resuming, and
+ * returns the FINAL text block (after any search results). Its own long timeout.
+ */
+async function callClaudeAnswer(key: string, model: string, system: string, user: string): Promise<string | null> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ANSWER_TIMEOUT_MS);
+  try {
+    let messages: Array<{ role: string; content: unknown }> = [{ role: 'user', content: user }];
+    for (let i = 0; i < 3; i++) {
+      const resp = await fetch(ANTHROPIC_URL, {
+        method: 'POST',
+        signal: controller.signal,
+        headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+        body: JSON.stringify({
+          model,
+          max_tokens: 4096,
+          system,
+          messages,
+          tools: [{ type: 'web_search_20260209', name: 'web_search', max_uses: 3 }],
+        }),
+      });
+      if (!resp.ok) {
+        const detail = await resp.text().catch(() => '');
+        console.error('[amanda-llm] answer api error:', resp.status, detail.slice(0, 200));
+        return null;
+      }
+      const data = (await resp.json()) as { stop_reason?: string; content?: Array<{ type: string; text?: string }> };
+      if (data.stop_reason === 'pause_turn' && data.content) {
+        // Server paused mid-tool-loop — resume by echoing the assistant turn back.
+        messages = [{ role: 'user', content: user }, { role: 'assistant', content: data.content }];
+        continue;
+      }
+      const texts = (data.content ?? []).filter((c) => c.type === 'text' && typeof c.text === 'string');
+      return texts.length ? (texts[texts.length - 1].text as string) : null;   // the final answer, after any search
+    }
+    return null;
+  } catch (err) {
+    console.error('[amanda-llm] answer call failed:', err instanceof Error ? err.message : String(err));
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/**
  * Warm agent answer about ONE listing (property facts grounded in DATA; area/
- * lifestyle from general local knowledge). Two safety gates protect against
- * invented PROPERTY facts before the text is shown:
+ * lifestyle from general local knowledge, web-researched when helpful). Two safety
+ * gates protect against invented PROPERTY facts before the text is shown:
  *   (1) deterministic guard — output safety + property-fact numeric grounding;
  *   (2) independent verifier — no invented property-specific claim (area talk OK).
  * Any failure / missing key → {ok:false} and the caller uses the deterministic reply.
@@ -97,7 +145,7 @@ export async function groundedListingAnswer(args: {
 
   const { system, user } = buildGroundedPrompt(args);
   const answerModel = process.env.AMANDA_LLM_MODEL?.trim() || DEFAULT_MODEL;
-  const rawAnswer = await callClaude(key, answerModel, system, user, TIMEOUT_MS, true);
+  const rawAnswer = await callClaudeAnswer(key, answerModel, system, user);
   if (rawAnswer === null) return { ok: false };
   const parsed = parseLlmAnswer(rawAnswer);
   if (!parsed) return { ok: false };

@@ -18,7 +18,8 @@ describe('buildGroundedPrompt — strict grounding + injection hardening', () =>
     expect(system).toMatch(/warm, professional real-estate agent/i);
     expect(system).toMatch(/NEVER invent, guess, or adjust a property fact/i);
     expect(system).toMatch(/THE AREA & LIFESTYLE/i);
-    expect(system).toMatch(/general local knowledge/i);
+    expect(system).toMatch(/web_search tool/i);
+    expect(system).toMatch(/NEVER use web_search to find facts about THIS property/i);
     expect(system).toMatch(/needs_team/);
   });
   it('frames visitor text as untrusted and forbids markup/links', () => {
@@ -110,7 +111,7 @@ describe('outputIsSafe — no markup, links, prompt-leak, or oversize', () => {
     expect(outputIsSafe('[click](https://evil.example)')).toBe(false);
     expect(outputIsSafe('visit www.evil.example')).toBe(false);
     expect(outputIsSafe('my system prompt says listing_data...')).toBe(false);
-    expect(outputIsSafe('x'.repeat(700))).toBe(false);
+    expect(outputIsSafe('x'.repeat(800))).toBe(false);
   });
 });
 

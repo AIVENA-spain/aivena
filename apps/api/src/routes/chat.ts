@@ -105,6 +105,23 @@ function listingForLlm(row: PropertyRow, card: PropertyCard): ListingForLlm {
   };
 }
 
+// A single property to introduce (a search that matched exactly one, or a named-ref
+// lookup): prefer a warm, grounded LLM intro — the SAME voice as "tell me about it" —
+// so the tone never flips to the robotic "Tap 'View details'" template mid-chat. Falls
+// back to that template only when the LLM is over-budget or unavailable.
+async function warmListingIntro(
+  slug: string, sessionToken: string, row: PropertyRow, card: PropertyCard, lang: string | undefined,
+): Promise<string> {
+  if (llmBudgetAvailable(sessionToken, Date.now())) {
+    const llm = await groundedListingAnswer({
+      agencyName: slug, listing: listingForLlm(row, card),
+      question: 'Give a warm, brief introduction to this property.', lang,
+    });
+    if (llm.ok) return llm.answer;
+  }
+  return listingDetailReply(card, lang);
+}
+
 // POST /chat/:agencySlug/contact — capture → lead + conversation + task + consent_log.
 route.post('/:agencySlug/contact', async (c) => {
   const slug = c.req.param('agencySlug');
@@ -293,7 +310,7 @@ route.post('/:agencySlug/message', async (c) => {
         if (rows[0]) {
           const card = cardOf(rows[0]);
           attachments = [card];
-          reply = listingDetailReply(card, lang);
+          reply = await warmListingIntro(slug, v.sessionToken, rows[0], card, lang);
           messageType = 'property_answer';
           awaitingContact = false;
           readyToCapture = false;
@@ -307,7 +324,9 @@ route.post('/:agencySlug/message', async (c) => {
         // Criteria search — up to 3 active listings; zero → honest defer + capture.
         const rows = await searchProperties(slug, v.sessionToken, filters, 3);
         attachments = rows.map(cardOf);
-        reply = attachments.length === 1 ? listingDetailReply(attachments[0], lang) : searchReply(rows.length, false, lang);
+        reply = attachments.length === 1
+          ? await warmListingIntro(slug, v.sessionToken, rows[0], attachments[0], lang)
+          : searchReply(rows.length, false, lang);
         messageType = 'property_answer';
         awaitingContact = rows.length === 0 ? !have : false;
         readyToCapture = rows.length === 0 ? have : false;

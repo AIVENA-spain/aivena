@@ -79,10 +79,12 @@ async function callClaude(
 }
 
 /**
- * Grounded answer about ONE listing. Passes THREE gates before returning text:
- *   (1) model self-report grounded/non-team/non-empty, (2) deterministic guard
- *   (output safety + numeric grounding), (3) independent verifier fact-check.
- * Any miss → {ok:false} and the caller uses the deterministic honest reply.
+ * Warm agent answer about ONE listing (property facts grounded in DATA; area/
+ * lifestyle from general local knowledge). Two safety gates protect against
+ * invented PROPERTY facts before the text is shown:
+ *   (1) deterministic guard — output safety + property-fact numeric grounding;
+ *   (2) independent verifier — no invented property-specific claim (area talk OK).
+ * Any failure / missing key → {ok:false} and the caller uses the deterministic reply.
  */
 export async function groundedListingAnswer(args: {
   agencyName: string;
@@ -93,21 +95,20 @@ export async function groundedListingAnswer(args: {
   const key = await getLlmKey();
   if (!key) return { ok: false };
 
-  // Gate 1 — answer + structured self-report.
   const { system, user } = buildGroundedPrompt(args);
   const answerModel = process.env.AMANDA_LLM_MODEL?.trim() || DEFAULT_MODEL;
   const rawAnswer = await callClaude(key, answerModel, system, user, TIMEOUT_MS, true);
   if (rawAnswer === null) return { ok: false };
   const parsed = parseLlmAnswer(rawAnswer);
-  if (!parsed || !parsed.grounded || parsed.needsTeam || !parsed.answer) return { ok: false };
+  if (!parsed) return { ok: false };
 
-  // Gate 2 — deterministic: no unsafe output, no ungrounded numbers.
+  // Gate 1 — deterministic: no unsafe output, no invented property-fact numbers.
   if (!passesGroundingGuard(parsed.answer, args.listing)) {
     console.error('[amanda-llm] deterministic guard rejected an answer');
     return { ok: false };
   }
 
-  // Gate 3 — independent verifier: is EVERY property claim supported by the data?
+  // Gate 2 — independent verifier: no invented PROPERTY-specific fact (area OK).
   const verifierModel = process.env.AMANDA_VERIFIER_MODEL?.trim() || VERIFIER_MODEL;
   const vp = buildVerifierPrompt({ listing: args.listing, answer: parsed.answer });
   const rawVerdict = await callClaude(key, verifierModel, vp.system, vp.user, VERIFIER_TIMEOUT_MS, false);
@@ -116,5 +117,5 @@ export async function groundedListingAnswer(args: {
     return { ok: false };
   }
 
-  return { ok: true, answer: parsed.answer };
+  return { ok: true, answer: parsed.answer, needsTeam: parsed.needsTeam };
 }

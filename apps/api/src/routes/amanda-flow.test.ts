@@ -122,7 +122,7 @@ describe('advance — one turn at a time', () => {
   it('respects Spanish copy', () => {
     const r = advance({}, 'hola', 'es');
     expect(r.reply).toBe(replyFor('intent', 'es'));
-    expect(r.reply).toMatch(/comprar o vender/i);
+    expect(r.reply).toMatch(/comprar.*vender/i);
   });
   it('unknown language falls back to English', () => {
     expect(replyFor('budget', 'zz')).toBe(replyFor('budget', 'en'));

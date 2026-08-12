@@ -6,7 +6,7 @@ import { validateContact, validateMessage, mapCaptureError, createRateLimiter } 
 import { parseMessage, classifyIntent, turnReply, hasContact, type Collected } from './amanda-flow';
 import {
   buildSearchFilters, wantsViewing, toPropertyCard, searchReply, specificReply, viewingReply,
-  isFollowUpAboutLast, listingDetailReply, isListingQuestion, featuresAnswering, listingConditionReply,
+  listingDetailReply, isListingQuestion, featuresAnswering, listingConditionReply,
   type PropertyRow, type PropertyCard,
 } from './amanda-catalogue';
 import { usablePhotos } from '../lib/property-images';
@@ -95,6 +95,8 @@ function listingForLlm(row: PropertyRow, card: PropertyCard): ListingForLlm {
     ref: card.ref, title: card.title, propertyType: card.propertyType,
     price: card.price, currency: card.currency, bedrooms: card.bedrooms,
     bathrooms: card.bathrooms, areaSqm: card.areaSqm, locationCity: card.locationCity,
+    locationRegion: typeof (row as { location_region?: unknown }).location_region === 'string'
+      ? (row as { location_region?: string }).location_region as string : null,
     features: card.features,
     description: typeof (row as { description?: unknown }).description === 'string'
       ? ((row as { description?: string }).description as string).slice(0, 4000)
@@ -178,13 +180,7 @@ route.post('/:agencySlug/message', async (c) => {
     `);
     const collected = ((inbound as unknown as Array<{ collected: Record<string, unknown> }>)[0]?.collected ?? {}) as Collected;
     const have = hasContact(collected);
-    let intent = classifyIntent(v.message);
-    // "Is it modern? Does it need renovation?" only means something when a listing
-    // is under discussion — with context it's a property question, answered from
-    // the listing's own data (route-level: the pure classifier can't see lastRef).
-    if (intent === 'qualify' && collected.lastRef && isListingQuestion(v.message)) {
-      intent = 'property_question';
-    }
+    const intent = classifyIntent(v.message);
 
     let reply: string;
     let messageType: string;
@@ -197,25 +193,68 @@ route.post('/:agencySlug/message', async (c) => {
     // flag the lead needs-human (AI muted until an agent releases) + alert agents.
     const humanRequested = intent === 'human_request';
 
-    if (intent === 'property_question') {
-      // Phase B: answer from the VERIFIED catalogue — never invent.
-      const filters = buildSearchFilters(collected, v.message);
-      // Conversation context: the listing shown last turn ("the property", "it").
-      const lastRef = collected.lastRef ?? null;
+    const filters = buildSearchFilters(collected, v.message);
+    const lastRef = collected.lastRef ?? null;
+    // A message counts as a NEW search (breaks out of the current property) only when
+    // it states >=2 fresh criteria, or names a DIFFERENT listing reference.
+    const newCriteria = [patch.location, patch.propertyType, patch.budgetMax, patch.bedroomsMin]
+      .filter((x) => x !== undefined).length;
+    const isNewSearch = newCriteria >= 2 || (filters.ref !== null && filters.ref !== lastRef);
+    // ANSWER-FIRST (Christian, 2026-08-12): once a property is on screen, the warm
+    // LLM agent owns the whole conversation — property questions, AREA/lifestyle
+    // questions, and small talk — UNLESS the visitor clearly starts a new search or
+    // asks for a person. This ends the brittle "did a regex match?" misrouting.
+    const inListingChat = lastRef !== null && !humanRequested && !isNewSearch;
+
+    if (inListingChat && wantsViewing(v.message)) {
+      viewing = true;
+      viewingRef = filters.ref ?? lastRef;
+      reply = viewingReply(have, lang);
+      messageType = 'viewing_request';
+      awaitingContact = !have;
+      readyToCapture = have;
+      const rows = await searchProperties(slug, v.sessionToken, { ref: viewingRef }, 1);
+      if (rows[0]) attachments = [cardOf(rows[0])];
+    } else if (inListingChat) {
+      // The warm agent answers about the listing on screen: property facts grounded
+      // in the data, area/lifestyle from general local knowledge, chit-chat handled
+      // gracefully. LLM failure / over-budget → deterministic honest fallback.
+      const rows = await searchProperties(slug, v.sessionToken, { ref: lastRef }, 1);
+      const card = rows[0] ? cardOf(rows[0]) : null;
+      const llm = card && llmBudgetAvailable(v.sessionToken, Date.now())
+        ? await groundedListingAnswer({ agencyName: slug, listing: listingForLlm(rows[0], card), question: v.message, lang })
+        : ({ ok: false } as const);
+      messageType = 'property_answer';
+      if (llm.ok) {
+        reply = llm.answer;
+        // Show the contact form ONLY when the agent decided the team is the next
+        // step (legal/viewing/property-specific unknown) — never force it otherwise.
+        awaitingContact = llm.needsTeam && !have;
+        readyToCapture = llm.needsTeam && have;
+      } else if (card && isListingQuestion(v.message)) {
+        const matched = featuresAnswering(v.message, card.features);
+        reply = listingConditionReply(matched, lang);
+        awaitingContact = matched ? false : !have;
+        readyToCapture = matched ? false : have;
+      } else {
+        reply = card ? listingDetailReply(card, lang) : specificReply(false, lastRef, lang);
+        awaitingContact = false;
+        readyToCapture = false;
+      }
+    } else if (intent === 'property_question') {
+      // Fresh search / specific-listing lookup / viewing request (no listing on screen yet).
       if (wantsViewing(v.message)) {
         viewing = true;
-        // "I'd like to view it" resolves to the listing under discussion.
-        viewingRef = filters.ref ?? lastRef;            // specific listing, or null (general)
+        viewingRef = filters.ref ?? lastRef;
         reply = viewingReply(have, lang);
         messageType = 'viewing_request';
         awaitingContact = !have;
         readyToCapture = have;
         if (viewingRef) {
           const rows = await searchProperties(slug, v.sessionToken, { ref: viewingRef }, 1);
-          if (rows[0]) attachments = [cardOf(rows[0])];  // show what they're asking to view
+          if (rows[0]) attachments = [cardOf(rows[0])];
         }
       } else if (filters.ref) {
-        // Specific-listing lookup — active only; missing/inactive → defer to an agent.
         const rows = await searchProperties(slug, v.sessionToken, { ref: filters.ref }, 1);
         if (rows[0]) {
           const card = cardOf(rows[0]);
@@ -230,45 +269,6 @@ route.post('/:agencySlug/message', async (c) => {
           awaitingContact = !have;
           readyToCapture = have;
         }
-      } else if (
-        !filters.q && lastRef && (isFollowUpAboutLast(v.message) || isListingQuestion(v.message))
-        // A message that states NEW criteria is a new search, not a follow-up.
-        && patch.location === undefined && patch.propertyType === undefined
-        && patch.budgetMax === undefined && patch.bedroomsMin === undefined
-      ) {
-        // A question about the listing under discussion. Phase D: Claude answers
-        // it grounded EXCLUSIVELY in this listing's verbatim data (description +
-        // facts + tags); ungrounded/team/failed answers fall back to the
-        // deterministic honest replies. The card is on screen — no re-send.
-        const rows = await searchProperties(slug, v.sessionToken, { ref: lastRef }, 1);
-        if (rows[0]) {
-          const card = cardOf(rows[0]);
-          // LLM path is cost-gated; over budget → deterministic reply (never an error).
-          const llm = llmBudgetAvailable(v.sessionToken, Date.now())
-            ? await groundedListingAnswer({
-                agencyName: slug, listing: listingForLlm(rows[0], card), question: v.message, lang,
-              })
-            : ({ ok: false } as const);
-          if (llm.ok) {
-            reply = llm.answer;
-            awaitingContact = false;
-            readyToCapture = false;
-          } else if (isListingQuestion(v.message)) {
-            const matched = featuresAnswering(v.message, card.features);
-            reply = listingConditionReply(matched, lang);
-            awaitingContact = matched ? false : !have;
-            readyToCapture = matched ? false : have;
-          } else {
-            reply = listingDetailReply(card, lang);
-            awaitingContact = false;
-            readyToCapture = false;
-          }
-        } else {
-          reply = specificReply(false, lastRef, lang);
-          awaitingContact = false;
-          readyToCapture = false;
-        }
-        messageType = 'property_answer';
       } else {
         // Criteria search — up to 3 active listings; zero → honest defer + capture.
         const rows = await searchProperties(slug, v.sessionToken, filters, 3);

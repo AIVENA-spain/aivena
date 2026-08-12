@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   parseListingRef, parseSearchPhrase, wantsViewing, buildSearchFilters, toPropertyCard,
   humanizeFeatures, isFollowUpAboutLast, listingDetailReply, isListingQuestion, featuresAnswering, listingConditionReply, isBrowseRequest,
-  isReferenceFollowup, resolveReference,
+  isReferenceFollowup, resolveReference, isGeneralQuestion,
   searchReply, specificReply, viewingReply, MAX_CARDS, type PropertyRow,
 } from './amanda-catalogue';
 
@@ -154,6 +154,41 @@ describe('resolveReference — pick one of several shown cards', () => {
     expect(isReferenceFollowup('the top one')).toBe(true);
     expect(isReferenceFollowup('tell me more about the one in cabo roig')).toBe(true);
     expect(isReferenceFollowup('do you have any villas?')).toBe(false);
+  });
+  it('resolves a distinctive property TYPE among shown cards', () => {
+    const typed = [
+      { title: '3-bedroom townhouse with communal pool, Cabo Roig', city: 'Orihuela Costa', type: 'Townhouse' },
+      { title: '3-bedroom villa in Villamartín, Orihuela Costa', city: 'Orihuela Costa', type: 'Villa' },
+    ];
+    expect(resolveReference('tell me about the townhouse one', typed)).toBe(0);
+    expect(resolveReference('and the villa?', typed)).toBe(1);
+  });
+  it('type reference is null when more than one card shares that type', () => {
+    const twoVillas = [
+      { title: 'Villa in Villamartín', city: 'Orihuela Costa', type: 'Villa' },
+      { title: 'Luxury villa in Campoamor', city: 'Orihuela Costa', type: 'Villa' },
+    ];
+    expect(resolveReference('the villa one', twoVillas)).toBeNull();       // ambiguous type
+    expect(resolveReference('the campoamor one', twoVillas)).toBe(1);       // but a distinctive token still resolves
+  });
+  it('isReferenceFollowup accepts an adjective before the type ("the luxury villa")', () => {
+    expect(isReferenceFollowup('and the luxury villa?')).toBe(true);
+    expect(isReferenceFollowup('tell me about the penthouse')).toBe(true);
+  });
+});
+
+describe('isGeneralQuestion — area/general questions with no property in view', () => {
+  it('accepts genuine area/general questions', () => {
+    expect(isGeneralQuestion('is la mata a nice area to live?')).toBe(true);
+    expect(isGeneralQuestion('whats there to do around ciudad quesada')).toBe(true);
+    expect(isGeneralQuestion('are the beaches nearby')).toBe(true);
+    expect(isGeneralQuestion('how is the weather in winter')).toBe(true);
+  });
+  it('rejects short funnel tokens and bare location answers', () => {
+    expect(isGeneralQuestion('buy')).toBe(false);
+    expect(isGeneralQuestion('torrevieja')).toBe(false);
+    expect(isGeneralQuestion('yes please')).toBe(false);
+    expect(isGeneralQuestion('2')).toBe(false);
   });
 });
 

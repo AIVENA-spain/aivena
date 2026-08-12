@@ -7,11 +7,11 @@ import { parseMessage, classifyIntent, turnReply, hasContact, nextStep, interpre
 import {
   buildSearchFilters, wantsViewing, toPropertyCard, searchReply, specificReply, viewingReply,
   listingDetailReply, isListingQuestion, featuresAnswering, listingConditionReply, isBrowseRequest,
-  isReferenceFollowup, resolveReference,
+  isReferenceFollowup, resolveReference, isGeneralQuestion,
   type PropertyRow, type PropertyCard,
 } from './amanda-catalogue';
 import { usablePhotos } from '../lib/property-images';
-import { groundedListingAnswer, type ListingForLlm } from './amanda-llm';
+import { groundedListingAnswer, generalAgentAnswer, type ListingForLlm } from './amanda-llm';
 
 /**
  * Amanda web-chat — PUBLIC (unauthenticated) endpoints, mounted at /chat OUTSIDE
@@ -230,7 +230,7 @@ route.post('/:agencySlug/message', async (c) => {
     if (!browse && !humanRequested && !isNewSearch && !answeringSpecifics
         && isReferenceFollowup(v.message)) {
       const shown = await searchProperties(slug, v.sessionToken, buildSearchFilters(collected, ''), 3);
-      const idx = resolveReference(v.message, shown.map((r) => ({ title: (r as { title?: string | null }).title ?? null, city: (r as { location_city?: string | null }).location_city ?? null })));
+      const idx = resolveReference(v.message, shown.map((r) => ({ title: (r as { title?: string | null }).title ?? null, city: (r as { location_city?: string | null }).location_city ?? null, type: (r as { property_type?: string | null }).property_type ?? null })));
       if (idx !== null && shown[idx]) { activeRef = (shown[idx] as { external_id?: string | null }).external_id ?? null; resolvedViaReference = true; }
     }
     // A positional reference ("the top one") is a POINTER, not a question about the
@@ -313,22 +313,41 @@ route.post('/:agencySlug/message', async (c) => {
         readyToCapture = rows.length === 0 ? have : false;
       }
     } else {
-      // Step-contextual interpretation: yes/no to "may I ask a few questions?",
-      // bare numbers to the room question just asked, free text to "anything
-      // specific?". Merged locally for THIS reply + persisted via the outbound patch.
-      funnelExtra = interpretFunnelAnswer(stepBefore, v.message, patch);
-      Object.assign(collected, funnelExtra);
-      const addedNothing = Object.keys(patch).length === 0 && Object.keys(funnelExtra).length === 0;
-      const t = turnReply(collected, addedNothing, answeringSpecifics ? 'qualify' : intent, lang);
-      reply = t.reply;
-      messageType = t.messageType;
-      awaitingContact = t.awaitingContact;
-      readyToCapture = t.readyToCapture;
-      // Funnel complete (or permission declined) → SHOW the narrowed matches as cards.
-      if (t.messageType === 'matches' || t.messageType === 'browse') {
-        const rows = await searchProperties(slug, v.sessionToken, buildSearchFilters(collected, ''), 3);
-        attachments = rows.map(cardOf);
-        if (attachments.length === 0) reply = searchReply(0, false, lang);
+      // GENERAL / AREA question with no property in view (e.g. "is la mata a nice area
+      // to live?") — the warm agent answers it (web-researched) instead of dropping into
+      // the buy/sell greeting. Only when we're NOT mid-funnel expecting a specific answer
+      // (location/rooms/budget), not a team/legal topic, and the LLM is available; any
+      // miss falls straight through to the deterministic funnel below.
+      const funnelExpectsAnswer = stepBefore === 'location' || stepBefore === 'bedrooms'
+        || stepBefore === 'bathrooms' || stepBefore === 'budget';
+      const general = (intent === 'qualify' && !humanRequested && !answeringSpecifics
+        && !funnelExpectsAnswer && isGeneralQuestion(v.message)
+        && llmBudgetAvailable(v.sessionToken, Date.now()))
+        ? await generalAgentAnswer({ agencyName: slug, question: v.message, lang })
+        : ({ ok: false } as const);
+      if (general.ok) {
+        reply = general.answer;
+        messageType = 'property_answer';
+        awaitingContact = general.needsTeam && !have;
+        readyToCapture = general.needsTeam && have;
+      } else {
+        // Step-contextual interpretation: yes/no to "may I ask a few questions?",
+        // bare numbers to the room question just asked, free text to "anything
+        // specific?". Merged locally for THIS reply + persisted via the outbound patch.
+        funnelExtra = interpretFunnelAnswer(stepBefore, v.message, patch);
+        Object.assign(collected, funnelExtra);
+        const addedNothing = Object.keys(patch).length === 0 && Object.keys(funnelExtra).length === 0;
+        const t = turnReply(collected, addedNothing, answeringSpecifics ? 'qualify' : intent, lang);
+        reply = t.reply;
+        messageType = t.messageType;
+        awaitingContact = t.awaitingContact;
+        readyToCapture = t.readyToCapture;
+        // Funnel complete (or permission declined) → SHOW the narrowed matches as cards.
+        if (t.messageType === 'matches' || t.messageType === 'browse') {
+          const rows = await searchProperties(slug, v.sessionToken, buildSearchFilters(collected, ''), 3);
+          attachments = rows.map(cardOf);
+          if (attachments.length === 0) reply = searchReply(0, false, lang);
+        }
       }
     }
 

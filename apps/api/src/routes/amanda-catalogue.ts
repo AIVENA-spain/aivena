@@ -98,6 +98,22 @@ export function isBrowseRequest(message: string): boolean {
   return typeof message === 'string' && BROWSE_RE.test(message);
 }
 
+// A GENERAL / area question with no property in view — town/neighbourhood/lifestyle/
+// market talk the warm agent should answer (web-researched), NOT funnel intro.
+const GENERAL_Q_RE = /\b(areas?|neighbou?rhood|town|village|city|nearby|near\s?by|close to|walking distance|beach|beaches|school|schools|restaurant|restaurants|bars?|shops?|shopping|airport|golf|amenit|safe|safety|crime|quiet|lively|busy|nice place|good place|good area|best area|like living|live there|to live|whats it like|what is it like|worth|invest|expensive|cheap|affordable|weather|climate|community|expat|expats|commute|transport|market|prices? in|typical)\b/i;
+
+/** True when the message reads like a genuine general/area question the agent should
+ *  ANSWER (vs a short funnel token like "buy" or a location answer like "torrevieja").
+ *  Requires either a question shape or an area keyword, and ≥3 words. */
+export function isGeneralQuestion(message: string): boolean {
+  if (typeof message !== 'string') return false;
+  const m = message.trim();
+  if (m.length < 5 || m.split(/\s+/).length < 3) return false;
+  const questionShape = /\?\s*$/.test(m)
+    || /^(is|are|was|were|whats|what'?s|what|how|where|which|why|do you|does|can you|could you|would you|should i|tell me|is there|are there)\b/i.test(m);
+  return questionShape || GENERAL_Q_RE.test(m);
+}
+
 // ── Resolving a reference to one of SEVERAL shown cards (Christian, 2026-08-12) ──
 // "the top one", "the first / second / last one", "the one in Cabo Roig" (typo-
 // tolerant). The route re-runs the (deterministic) search to get the exact set on
@@ -120,14 +136,46 @@ const GENERIC_TOKENS = new Set([
 export function isReferenceFollowup(message: string): boolean {
   if (typeof message !== 'string') return false;
   return /\b(first|1st|second|2nd|third|3rd|top|middle|last|bottom|final)\b/i.test(message)
-    || /\b(that|this|the) (one|propert|listing|apartment|villa|house|flat|townhouse)/i.test(message)
+    // "that/this/the [adjective] one|villa|penthouse…" — an optional adjective lets
+    // "the luxury villa" / "the townhouse one" count as references too.
+    || /\b(that|this|the) (\w+\s+)?(one|propert|listing|apartment|villa|penthouse|atico|house|flat|townhouse|bungalow|chalet|duplex)/i.test(message)
     || /\bthe ones? (in|at|near|on|with)\b/i.test(message)
     || /\b(more about|tell me about)\b/i.test(message);
 }
 
+/** Collapse a property_type (or a type word in a message) to a canonical bucket, so
+ *  "the townhouse one" matches an item whose type is "Townhouse"/"adosado", etc. */
+function canonType(raw: string | null): string {
+  const t = _norm(raw ?? '');
+  if (/penthouse|atico/.test(t)) return 'penthouse';
+  if (/townhouse|adosado|terraced/.test(t)) return 'townhouse';
+  if (/bungalow/.test(t)) return 'bungalow';
+  if (/duplex/.test(t)) return 'duplex';
+  if (/chalet/.test(t)) return 'chalet';
+  if (/villa|detached/.test(t)) return 'villa';
+  if (/apartment|apartamento|flat|piso|studio/.test(t)) return 'apartment';
+  return t;
+}
+/** The property TYPE a reference message asks for ("the townhouse one" → townhouse). */
+function requestedType(message: string): string | null {
+  const t = ` ${_norm(message)} `;
+  if (/ penthouse | atico /.test(t)) return 'penthouse';
+  if (/ townhouse | adosado /.test(t)) return 'townhouse';
+  if (/ bungalow /.test(t)) return 'bungalow';
+  if (/ duplex /.test(t)) return 'duplex';
+  if (/ chalet /.test(t)) return 'chalet';
+  if (/ villa /.test(t)) return 'villa';
+  if (/ apartment | apartamento | flat | piso /.test(t)) return 'apartment';
+  return null;
+}
+
 /** Map a reference message to an index into the shown items, or null if unclear.
- *  items are in the order shown (index 0 = top card). */
-export function resolveReference(message: string, items: Array<{ title: string | null; city: string | null }>): number | null {
+ *  items are in the order shown (index 0 = top card). Resolution order: ordinal →
+ *  distinctive location token → distinctive property TYPE. */
+export function resolveReference(
+  message: string,
+  items: Array<{ title: string | null; city: string | null; type?: string | null }>,
+): number | null {
   if (!Array.isArray(items) || items.length === 0 || typeof message !== 'string') return null;
   const n = ` ${_norm(message)} `;
   // Ordinals.
@@ -144,6 +192,13 @@ export function resolveReference(message: string, items: Array<{ title: string |
     for (const t of tokensPerItem[i]) {
       if (count.get(t) === 1 && n.includes(t)) return i;   // distinctive + present in message
     }
+  }
+  // Distinctive property-TYPE match: "the townhouse one" resolves when exactly ONE
+  // shown card is that type (type words are otherwise excluded from location matching).
+  const want = requestedType(message);
+  if (want) {
+    const hits = items.map((it, i) => ({ i, t: canonType(it.type ?? null) })).filter((x) => x.t === want);
+    if (hits.length === 1) return hits[0].i;
   }
   return null;
 }

@@ -1,7 +1,8 @@
 import { sql } from 'drizzle-orm';
 import { db } from '../../../../packages/db/client';
 import {
-  buildGroundedPrompt, buildVerifierPrompt, parseLlmAnswer, parseVerdict, passesGroundingGuard,
+  buildGroundedPrompt, buildGeneralPrompt, buildVerifierPrompt, parseLlmAnswer, parseVerdict,
+  passesGroundingGuard, outputIsSafe,
   ANTHROPIC_URL, DEFAULT_MODEL, VERIFIER_MODEL, ANSWER_TIMEOUT_MS, VERIFIER_TIMEOUT_MS,
   type ListingForLlm, type LlmAnswer,
 } from './amanda-llm-lib';
@@ -168,5 +169,34 @@ export async function groundedListingAnswer(args: {
     return { ok: false };
   }
 
+  return { ok: true, answer: parsed.answer, needsTeam: parsed.needsTeam };
+}
+
+/**
+ * Warm agent answer to a GENERAL question when NO specific property is in view —
+ * area/town/lifestyle/market talk (web-researched when helpful), or a warm nudge to
+ * share what they're looking for. There is no listing to ground against, so only the
+ * deterministic output-safety gate applies (no invented links/HTML/oversize/leak);
+ * the prompt forbids inventing a specific property/price. Any failure / missing key →
+ * {ok:false} and the caller falls back to the deterministic funnel greeting.
+ */
+export async function generalAgentAnswer(args: {
+  agencyName: string;
+  question: string;
+  lang: string | undefined;
+}): Promise<LlmAnswer> {
+  const key = await getLlmKey();
+  if (!key) return { ok: false };
+
+  const { system, user } = buildGeneralPrompt(args);
+  const answerModel = process.env.AMANDA_LLM_MODEL?.trim() || DEFAULT_MODEL;
+  const rawAnswer = await callClaudeAnswer(key, answerModel, system, user);
+  if (rawAnswer === null) return { ok: false };
+  const parsed = parseLlmAnswer(rawAnswer);
+  if (!parsed) return { ok: false };
+  if (!outputIsSafe(parsed.answer)) {
+    console.error('[amanda-llm] general answer failed output safety');
+    return { ok: false };
+  }
   return { ok: true, answer: parsed.answer, needsTeam: parsed.needsTeam };
 }

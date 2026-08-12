@@ -26,7 +26,7 @@ export const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
 export const DEFAULT_MODEL = 'claude-sonnet-5';
 export const VERIFIER_MODEL = 'claude-haiku-4-5-20251001';
 export const TIMEOUT_MS = 9_000;
-export const ANSWER_TIMEOUT_MS = 26_000;   // the answer call may run a web search (slow)
+export const ANSWER_TIMEOUT_MS = 42_000;   // the answer call may run a web search (slow)
 export const VERIFIER_TIMEOUT_MS = 6_000;
 const MAX_ANSWER_CHARS = 700;
 

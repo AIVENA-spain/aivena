@@ -100,7 +100,8 @@ async function callClaudeAnswer(key: string, model: string, system: string, user
           max_tokens: 4096,
           system,
           messages,
-          tools: [{ type: 'web_search_20260209', name: 'web_search', max_uses: 3 }],
+          output_config: { effort: 'low' },   // faster: less deliberation, still searches
+          tools: [{ type: 'web_search_20260209', name: 'web_search', max_uses: 2 }],
         }),
       });
       if (!resp.ok) {

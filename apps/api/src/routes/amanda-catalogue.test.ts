@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   parseListingRef, parseSearchPhrase, wantsViewing, buildSearchFilters, toPropertyCard,
   humanizeFeatures, isFollowUpAboutLast, listingDetailReply, isListingQuestion, featuresAnswering, listingConditionReply, isBrowseRequest,
+  isReferenceFollowup, resolveReference,
   searchReply, specificReply, viewingReply, MAX_CARDS, type PropertyRow,
 } from './amanda-catalogue';
 
@@ -127,6 +128,32 @@ describe('isBrowseRequest — "show me a few" always means cards', () => {
     expect(isBrowseRequest('is it near the beach?')).toBe(false);
     expect(isBrowseRequest('tell me more about it')).toBe(false);
     expect(isBrowseRequest('is the area good for kids?')).toBe(false);
+  });
+});
+
+describe('resolveReference — pick one of several shown cards', () => {
+  const shown = [
+    { title: '3-bedroom townhouse with communal pool, Cabo Roig', city: 'Orihuela Costa' },
+    { title: '3-bedroom villa in Villamartín, Orihuela Costa', city: 'Orihuela Costa' },
+  ];
+  it('resolves ordinals', () => {
+    expect(resolveReference('tell me more about the top one', shown)).toBe(0);
+    expect(resolveReference('the first one', shown)).toBe(0);
+    expect(resolveReference('the second one please', shown)).toBe(1);
+    expect(resolveReference('the last one', shown)).toBe(1);
+  });
+  it('resolves a distinctive location, typo-tolerant', () => {
+    expect(resolveReference('tell me more about the one in cabo roigç', shown)).toBe(0); // typo → Cabo Roig
+    expect(resolveReference('the villamartin one', shown)).toBe(1);
+  });
+  it('null when ambiguous or shared-only tokens (Orihuela Costa is in both)', () => {
+    expect(resolveReference('the one in orihuela costa', shown)).toBeNull();
+    expect(resolveReference('what about it?', shown)).toBeNull();
+  });
+  it('isReferenceFollowup detects references', () => {
+    expect(isReferenceFollowup('the top one')).toBe(true);
+    expect(isReferenceFollowup('tell me more about the one in cabo roig')).toBe(true);
+    expect(isReferenceFollowup('do you have any villas?')).toBe(false);
   });
 });
 

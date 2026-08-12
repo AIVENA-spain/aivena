@@ -98,6 +98,56 @@ export function isBrowseRequest(message: string): boolean {
   return typeof message === 'string' && BROWSE_RE.test(message);
 }
 
+// ── Resolving a reference to one of SEVERAL shown cards (Christian, 2026-08-12) ──
+// "the top one", "the first / second / last one", "the one in Cabo Roig" (typo-
+// tolerant). The route re-runs the (deterministic) search to get the exact set on
+// screen, then this maps the message to an index. Pure + unit-tested.
+const _norm = (x: string): string =>
+  x.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')   // strip accents (roigç→roigc)
+    .replace(/[^a-z0-9]+/g, ' ').trim();
+// Property words carry no location signal — excluded from phrase matching.
+const GENERIC_TOKENS = new Set([
+  'apartment','apartments','villa','villas','townhouse','townhouses','penthouse','bungalow',
+  'house','houses','flat','flats','home','homes','property','properties','bedroom','bedrooms',
+  'bathroom','bathrooms','communal','pool','garden','gardens','near','beach','with','sea','view',
+  'views','gated','community','solarium','terrace','terraces','golf','private','semi','detached',
+  'city','centre','center','interior','patio','character','amenities','apartamento','adosado','the','one',
+]);
+
+/** Does this message look like a reference to a shown listing (ordinal / "that one"
+ *  / "the one in X")? Used to decide whether to attempt reference resolution. */
+export function isReferenceFollowup(message: string): boolean {
+  if (typeof message !== 'string') return false;
+  return /\b(first|1st|second|2nd|third|3rd|top|middle|last|bottom|final)\b/i.test(message)
+    || /\b(that|this|the) (one|propert|listing|apartment|villa|house|flat|townhouse)/i.test(message)
+    || /\bthe ones? (in|at|near|on|with)\b/i.test(message)
+    || /\b(more about|tell me about)\b/i.test(message);
+}
+
+/** Map a reference message to an index into the shown items, or null if unclear.
+ *  items are in the order shown (index 0 = top card). */
+export function resolveReference(message: string, items: Array<{ title: string | null; city: string | null }>): number | null {
+  if (!Array.isArray(items) || items.length === 0 || typeof message !== 'string') return null;
+  const n = ` ${_norm(message)} `;
+  // Ordinals.
+  if (/\b(last|bottom|final)\b/.test(n)) return items.length - 1;
+  if (/\b(first|1st|top|number one)\b/.test(n)) return 0;
+  if (/\b(second|2nd|middle)\b/.test(n) && items.length >= 2) return 1;
+  if (/\b(third|3rd)\b/.test(n) && items.length >= 3) return 2;
+  // Distinctive-location match: a token that appears in exactly ONE item's label.
+  const tokensPerItem = items.map((it) =>
+    new Set(_norm(`${it.title ?? ''} ${it.city ?? ''}`).split(' ').filter((t) => t.length >= 4 && !GENERIC_TOKENS.has(t))));
+  const count = new Map<string, number>();
+  for (const set of tokensPerItem) for (const t of set) count.set(t, (count.get(t) ?? 0) + 1);
+  for (let i = 0; i < tokensPerItem.length; i++) {
+    for (const t of tokensPerItem[i]) {
+      if (count.get(t) === 1 && n.includes(t)) return i;   // distinctive + present in message
+    }
+  }
+  return null;
+}
+
 /** Does the visitor want to arrange a viewing? (Captured as a request, never booked.) */
 export function wantsViewing(message: string): boolean {
   return typeof message === 'string' && VIEWING_RE.test(message);

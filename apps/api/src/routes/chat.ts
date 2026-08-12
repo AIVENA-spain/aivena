@@ -7,6 +7,7 @@ import { parseMessage, classifyIntent, turnReply, hasContact, nextStep, interpre
 import {
   buildSearchFilters, wantsViewing, toPropertyCard, searchReply, specificReply, viewingReply,
   listingDetailReply, isListingQuestion, featuresAnswering, listingConditionReply, isBrowseRequest,
+  isReferenceFollowup, resolveReference,
   type PropertyRow, type PropertyCard,
 } from './amanda-catalogue';
 import { usablePhotos } from '../lib/property-images';
@@ -219,7 +220,16 @@ route.post('/:agencySlug/message', async (c) => {
     // LLM agent owns the whole conversation — property questions, AREA/lifestyle
     // questions, and small talk — UNLESS the visitor clearly starts a new search or
     // asks for a person. This ends the brittle "did a regex match?" misrouting.
-    const inListingChat = lastRef !== null && !humanRequested && !isNewSearch && !answeringSpecifics;
+    // Reference to one of SEVERAL shown cards ("the top one", "the one in Cabo Roig"):
+    // re-run the deterministic search to get the exact set on screen, then resolve.
+    let activeRef = lastRef;
+    if (activeRef === null && !browse && !humanRequested && !isNewSearch && !answeringSpecifics
+        && isReferenceFollowup(v.message)) {
+      const shown = await searchProperties(slug, v.sessionToken, buildSearchFilters(collected, ''), 3);
+      const idx = resolveReference(v.message, shown.map((r) => ({ title: (r as { title?: string | null }).title ?? null, city: (r as { location_city?: string | null }).location_city ?? null })));
+      if (idx !== null && shown[idx]) activeRef = (shown[idx] as { external_id?: string | null }).external_id ?? null;
+    }
+    const inListingChat = activeRef !== null && !humanRequested && !isNewSearch && !answeringSpecifics;
 
     if (inListingChat && wantsViewing(v.message)) {
       viewing = true;
@@ -234,7 +244,7 @@ route.post('/:agencySlug/message', async (c) => {
       // The warm agent answers about the listing on screen: property facts grounded
       // in the data, area/lifestyle from general local knowledge, chit-chat handled
       // gracefully. LLM failure / over-budget → deterministic honest fallback.
-      const rows = await searchProperties(slug, v.sessionToken, { ref: lastRef }, 1);
+      const rows = await searchProperties(slug, v.sessionToken, { ref: activeRef }, 1);
       const card = rows[0] ? cardOf(rows[0]) : null;
       const llm = card && llmBudgetAvailable(v.sessionToken, Date.now())
         ? await groundedListingAnswer({ agencyName: slug, listing: listingForLlm(rows[0], card), question: v.message, lang })
@@ -252,7 +262,7 @@ route.post('/:agencySlug/message', async (c) => {
         awaitingContact = matched ? false : !have;
         readyToCapture = matched ? false : have;
       } else {
-        reply = card ? listingDetailReply(card, lang) : specificReply(false, lastRef, lang);
+        reply = card ? listingDetailReply(card, lang) : specificReply(false, activeRef ?? "", lang);
         awaitingContact = false;
         readyToCapture = false;
       }
@@ -316,7 +326,9 @@ route.post('/:agencySlug/message', async (c) => {
     // 2) Append Amanda's outbound reply. When exactly ONE listing was shown, its
     //    ref becomes the session's lastRef (volatile — newest wins in the RPC), so
     //    the next "the property / features / link / view it" resolves to it.
-    const shownRef = attachments.length === 1 ? attachments[0].ref : null;
+    // Pin lastRef: a single shown card, OR the reference we just resolved+answered.
+    const shownRef = attachments.length === 1 ? attachments[0].ref
+      : (inListingChat && activeRef ? activeRef : null);
     const outPatch = JSON.stringify({ ...funnelExtra, ...(shownRef ? { lastRef: shownRef } : {}) });
     await db.execute(sql`
       SELECT * FROM public.amanda_append_message(

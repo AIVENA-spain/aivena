@@ -349,11 +349,15 @@
       .then(function (res) { return res.json().catch(function () { return { ok: false }; }); });
   }
   function getSession() {
+    // A fresh chat window = a fresh conversation. The widget shows a new greeting
+    // on every load and does NOT restore the old transcript, so reusing a stored
+    // session would give Amanda memory the visitor can't see (she'd reference a
+    // property from a conversation that's no longer on screen). New session per
+    // load; proper returning-visitor continuity (restore the transcript) is a
+    // deliberate future feature, not an accident.
     try {
-      var k = "aivena_amanda_" + AGENCY, v = sessionStorage.getItem(k);
-      if (!v) { v = (crypto.randomUUID && crypto.randomUUID()) || String(Date.now()) + Math.random().toString(16).slice(2); sessionStorage.setItem(k, v); }
-      return v;
-    } catch (e) { return String(Date.now()); }
+      return (crypto.randomUUID && crypto.randomUUID()) || String(Date.now()) + Math.random().toString(16).slice(2);
+    } catch (e) { return String(Date.now()) + Math.random().toString(16).slice(2); }
   }
   function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
   function escAttr(s) { return esc(s); }

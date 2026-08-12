@@ -6,7 +6,7 @@ import { validateContact, validateMessage, mapCaptureError, createRateLimiter } 
 import { parseMessage, classifyIntent, turnReply, hasContact, type Collected } from './amanda-flow';
 import {
   buildSearchFilters, wantsViewing, toPropertyCard, searchReply, specificReply, viewingReply,
-  listingDetailReply, isListingQuestion, featuresAnswering, listingConditionReply,
+  listingDetailReply, isListingQuestion, featuresAnswering, listingConditionReply, isBrowseRequest,
   type PropertyRow, type PropertyCard,
 } from './amanda-catalogue';
 import { usablePhotos } from '../lib/property-images';
@@ -199,7 +199,10 @@ route.post('/:agencySlug/message', async (c) => {
     // it states >=2 fresh criteria, or names a DIFFERENT listing reference.
     const newCriteria = [patch.location, patch.propertyType, patch.budgetMax, patch.bedroomsMin]
       .filter((x) => x !== undefined).length;
-    const isNewSearch = newCriteria >= 2 || (filters.ref !== null && filters.ref !== lastRef);
+    // "Show me a few / what else do you have / some options" is ALWAYS a browse
+    // request → cards, even mid-listing-chat (Christian, 2026-08-12).
+    const browse = isBrowseRequest(v.message);
+    const isNewSearch = newCriteria >= 2 || (filters.ref !== null && filters.ref !== lastRef) || browse;
     // ANSWER-FIRST (Christian, 2026-08-12): once a property is on screen, the warm
     // LLM agent owns the whole conversation — property questions, AREA/lifestyle
     // questions, and small talk — UNLESS the visitor clearly starts a new search or
@@ -241,7 +244,7 @@ route.post('/:agencySlug/message', async (c) => {
         awaitingContact = false;
         readyToCapture = false;
       }
-    } else if (intent === 'property_question') {
+    } else if (intent === 'property_question' || browse) {
       // Fresh search / specific-listing lookup / viewing request (no listing on screen yet).
       if (wantsViewing(v.message)) {
         viewing = true;

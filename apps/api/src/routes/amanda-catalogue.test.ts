@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   parseListingRef, parseSearchPhrase, wantsViewing, buildSearchFilters, toPropertyCard,
-  humanizeFeatures, isFollowUpAboutLast, listingDetailReply, isListingQuestion, featuresAnswering, listingConditionReply,
+  humanizeFeatures, isFollowUpAboutLast, listingDetailReply, isListingQuestion, featuresAnswering, listingConditionReply, isBrowseRequest,
   searchReply, specificReply, viewingReply, MAX_CARDS, type PropertyRow,
 } from './amanda-catalogue';
 
@@ -112,6 +112,21 @@ describe('conversation context — follow-ups about the last listing', () => {
     expect(r).toMatch(/arrange a viewing/i);
     // missing fields are omitted, never invented
     expect(listingDetailReply({ ...card, bathrooms: null, features: [] })).not.toMatch(/bathrooms|Features/);
+  });
+});
+
+describe('isBrowseRequest — "show me a few" always means cards', () => {
+  it("detects Christian's exact browse request + variants", () => {
+    expect(isBrowseRequest('yes please show me a few in the torrevieja area')).toBe(true);
+    expect(isBrowseRequest('show me some options')).toBe(true);
+    expect(isBrowseRequest('what else do you have?')).toBe(true);
+    expect(isBrowseRequest('do you have similar properties?')).toBe(true);
+    expect(isBrowseRequest('anything else in la zenia?')).toBe(true);
+  });
+  it('does NOT fire on questions about the current listing', () => {
+    expect(isBrowseRequest('is it near the beach?')).toBe(false);
+    expect(isBrowseRequest('tell me more about it')).toBe(false);
+    expect(isBrowseRequest('is the area good for kids?')).toBe(false);
   });
 });
 

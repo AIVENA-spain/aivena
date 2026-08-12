@@ -86,6 +86,17 @@ export function parseListingRef(message: string): string | null {
   return /\d/.test(ref) ? ref : null;
 }
 
+// A BROWSE request — the visitor wants to SEE listings (cards), whatever else is
+// on screen: "show me a few", "what else do you have", "some options", "similar
+// properties", "more properties in X". Always wins over the current-listing chat.
+const BROWSE_RE = /\b(show (me|us)|see) (a few|some|more|other|a couple|others?)\b|\ba few (more )?(propert|place|option|apartment|villa|flat|home)|\bsome (option|propert|place|apartment|villa|flat|home)|\b(any|some|more|other)thing else\b|\bwhat else\b|\bother (propert|option|place|listing|apartment|villa)|\bsimilar (propert|option|place|listing|one)|\bmore (propert|listing|option|place)|\bm(a|á)s (opciones|propiedades|pisos|casas)|\botras propiedades\b/i;
+
+/** Pure: does this message ask to BROWSE listings (→ cards, breaks out of any
+ *  current-listing conversation)? */
+export function isBrowseRequest(message: string): boolean {
+  return typeof message === 'string' && BROWSE_RE.test(message);
+}
+
 /** Does the visitor want to arrange a viewing? (Captured as a request, never booked.) */
 export function wantsViewing(message: string): boolean {
   return typeof message === 'string' && VIEWING_RE.test(message);

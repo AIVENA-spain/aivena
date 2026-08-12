@@ -23,6 +23,10 @@
   .typing i { width:6px; height:6px; border-radius:50%; background:#9aa39d; animation:tp 1.1s infinite ease-in-out; }
   .typing i:nth-child(2){ animation-delay:.15s } .typing i:nth-child(3){ animation-delay:.3s }
   .typing-label { font-size:11.5px; color:#8a938c; align-self:flex-end; font-style:italic; }
+  .chips { display:flex; flex-wrap:wrap; gap:8px; padding:2px 0 4px 31px; }
+  .chip { background:#fff; border:1.5px solid var(--brand); color:var(--brand); border-radius:999px;
+          padding:7px 14px; font-size:13px; font-weight:600; cursor:pointer; transition:background .15s, color .15s; }
+  .chip:hover { background:var(--brand); color:#fff; }
   @keyframes tp { 0%,60%,100%{ transform:translateY(0); opacity:.5 } 30%{ transform:translateY(-4px); opacity:1 } }
   .hd .who { font-weight:600; font-size:14px; }
   .hd .sub { font-size:11px; color:var(--muted); }
@@ -98,7 +102,8 @@
       sub: "AI assistant · automated system — not a person",
       disclosure: "You're chatting with <b>" + esc(A) + "</b>'s AI assistant — an automated system, not a person. A team member can take over at any time; just ask.",
       notice: 'By chatting here you agree that ' + esc(A) + ' (with AIVENA as data processor) may process this conversation to help with your enquiry. See the <a href="' + escAttr(PRIVACY) + '" target="_blank" rel="noopener">Privacy Policy</a>.',
-      greeting: "Hi, welcome to " + A + "! I'm Amanda — I'd love to help you find the right place on the Costa Blanca. What are you looking for, or shall I show you a few of our properties?",
+      greeting: "Hi, welcome to " + A + "! I'm Amanda, and helping people find their place in the sun is my favourite thing to do. So I can point you the right way — are you looking to buy, thinking of selling, or just browsing for now?",
+      chipBuy: "I'm looking to buy", chipSell: "I'm thinking of selling", chipLook: "Just looking for now",
       placeholder: "Type a message…",
       send: "Send",
       cardTitle: "Share your contact details",
@@ -118,7 +123,8 @@
       sub: "Asistente de IA · sistema automatizado — no es una persona",
       disclosure: "Está hablando con el asistente de IA de <b>" + esc(A) + "</b>, un sistema automatizado, no una persona. Un miembro del equipo puede intervenir en cualquier momento; solo tiene que pedirlo.",
       notice: 'Al chatear aquí, acepta que ' + esc(A) + ' (con AIVENA como encargado del tratamiento) pueda tratar esta conversación para atender su consulta. Consulte la <a href="' + escAttr(PRIVACY) + '" target="_blank" rel="noopener">Política de Privacidad</a>.',
-      greeting: "¡Hola, bienvenido/a a " + A + "! Soy Amanda y estaré encantada de ayudarle a encontrar su sitio en la Costa Blanca. ¿Qué está buscando, o le enseño algunas de nuestras propiedades?",
+      greeting: "¡Hola, bienvenido/a a " + A + "! Soy Amanda, y ayudar a la gente a encontrar su sitio al sol es lo que más me gusta. Para orientarle bien — ¿busca comprar, está pensando en vender, o solo está mirando por ahora?",
+      chipBuy: "Busco comprar", chipSell: "Estoy pensando en vender", chipLook: "Solo estoy mirando",
       placeholder: "Escriba un mensaje…",
       send: "Enviar",
       cardTitle: "Comparta sus datos de contacto",
@@ -165,6 +171,18 @@
   if (DEMO) document.getElementById("demoTag").outerHTML = '<span class="demo-tag">demo</span>';
 
   botMsg(T.greeting);
+  var chipsEl = null;
+  function showChips() {
+    chipsEl = document.createElement("div"); chipsEl.className = "chips";
+    [T.chipBuy, T.chipSell, T.chipLook].forEach(function (label) {
+      var b = document.createElement("button"); b.type = "button"; b.className = "chip"; b.textContent = label;
+      b.addEventListener("click", function () { submitMessage(label); });
+      chipsEl.appendChild(b);
+    });
+    msgs.appendChild(chipsEl); scroll();
+  }
+  function hideChips() { if (chipsEl) { chipsEl.remove(); chipsEl = null; } }
+  showChips();
   if (Q.get("demo") === "contact") showContactCard();
   if (Q.get("demo") === "cards") {
     botMsg(LANG === "es" ? "Aquí tiene 3 que encajan. Un agente puede darle más detalles o concertar una visita."
@@ -178,8 +196,12 @@
   function onSend() {
     var text = (inp.value || "").trim();
     if (!text) return;
-    meMsg(text);
     inp.value = "";
+    submitMessage(text);
+  }
+  function submitMessage(text) {
+    hideChips();
+    meMsg(text);
     if (DEMO) { demoReply(text); return; }
     showTyping();
     postJSON(API + "/chat/" + encodeURIComponent(AGENCY) + "/message", {

@@ -18,6 +18,11 @@ export type Collected = {
   budgetMax?: number;
   bedroomsMin?: number;
   propertyType?: string;
+  bathroomsMin?: number;
+  /** Free-text "anything specific you'd love" answer (for the team, not a filter). */
+  specifics?: string;
+  /** Did the visitor agree to a few qualifying questions? Asked ONCE, politely. */
+  qualPermission?: 'granted' | 'declined';
   name?: string;
   email?: string;
   phone?: string;
@@ -25,9 +30,9 @@ export type Collected = {
   lastRef?: string;
 };
 
-export type Step = 'intent' | 'location' | 'budget' | 'bedrooms' | 'type' | 'contact';
-/** Qualification asked before contact; contact is always last. */
-export const STEP_ORDER: Step[] = ['intent', 'location', 'budget', 'bedrooms', 'type', 'contact'];
+export type Step = 'intent' | 'permission' | 'location' | 'bedrooms' | 'bathrooms' | 'budget' | 'specifics' | 'type' | 'contact';
+/** Buyer funnel (permission-first; ends by SHOWING matches, never a contact wall). */
+export const STEP_ORDER: Step[] = ['intent', 'permission', 'location', 'bedrooms', 'bathrooms', 'budget', 'specifics'];
 
 const EMAIL_RE = /[^\s@]+@[^\s@]+\.[^\s@]+/;
 const PHONE_RE = /\+?[0-9][0-9 ().-]{6,19}/;
@@ -70,7 +75,7 @@ export function parseMessage(message: string): Partial<Collected> {
 
   // intent
   if (/\b(sell|selling|vender|vendo|venta|list my|valuation|valoraci(o|ó)n|tasaci(o|ó)n|value my|worth)\b/i.test(low)) out.intent = 'seller';
-  else if (/\b(buy|buying|looking for|comprar|busco|interested in|rent)\b/i.test(low)) out.intent = 'buyer';
+  else if (/\b(buy|buying|looking for|just looking|browsing|comprar|busco|interested in|rent)\b/i.test(low)) out.intent = 'buyer';
 
   // budget: "€350k", "350k", "350000", "350.000", "500 000", "up to 400"
   // A detected phone number is stripped first so "+34 600 111 222" can never be
@@ -103,10 +108,12 @@ export function parseMessage(message: string): Partial<Collected> {
   }
 
   // bedrooms: "2 bed", "2 bedrooms", "2 dormitorios", "2 hab" — and a BARE "3"
-  // (the natural answer to "How many bedrooms?"; the funnel has no other 1-9 ask).
+  // (bare numbers are resolved to the ASKED step by interpretFunnelAnswer).
   const beds = low.match(/\b([1-9])\s*(?:\+)?\s*(bed|bedroom|dorm|dormitor|hab)\b/i);
   if (beds) out.bedroomsMin = parseInt(beds[1], 10);
-  else if (/^[1-9]\+?$/.test(low.trim())) out.bedroomsMin = parseInt(low.trim(), 10);
+  // bathrooms: "2 bath", "2 bathrooms", "2 baños"
+  const baths = low.match(/\b([1-9])\s*(?:\+)?\s*(bath|bathroom|ba(ñ|n)o)/i);
+  if (baths) out.bathroomsMin = parseInt(baths[1], 10);
 
   // property type
   for (const [re, t] of TYPES) if (re.test(low)) { out.propertyType = t; break; }
@@ -132,22 +139,26 @@ export function mergeCollected(prev: Collected, patch: Partial<Collected>): Coll
   return out;
 }
 
-/** The next thing to ask: the first missing qualification, then contact. */
-export function nextStep(c: Collected): Step | 'ready' {
+/** The next thing to ask. Buyer funnel is PERMISSION-FIRST (Christian, 2026-08-12):
+ *  intent → may-I-ask? → area → bedrooms → bathrooms → budget → anything-specific →
+ *  'matches' (route SHOWS the narrowed cards). Declined permission → 'browse'
+ *  (route shows cards immediately, no interrogation). Sellers keep their own path. */
+export function nextStep(c: Collected): Step | 'ready' | 'matches' | 'browse' {
   if (c.intent === undefined) return 'intent';
-  if (c.location === undefined) return 'location';
   if (c.intent === 'seller') {
-    // A seller is telling us about THEIR property — budget/bedroom questions
-    // would be nonsense. Location → type → contact.
+    if (c.location === undefined) return 'location';
     if (c.propertyType === undefined) return 'type';
     if (!c.email && !c.phone) return 'contact';
     return 'ready';
   }
-  if (c.budgetMax === undefined) return 'budget';
+  if (c.qualPermission === undefined) return 'permission';
+  if (c.qualPermission === 'declined') return 'browse';
+  if (c.location === undefined) return 'location';
   if (c.bedroomsMin === undefined) return 'bedrooms';
-  if (c.propertyType === undefined) return 'type';
-  if (!c.email && !c.phone) return 'contact';
-  return 'ready';
+  if (c.bathroomsMin === undefined) return 'bathrooms';
+  if (c.budgetMax === undefined) return 'budget';
+  if (c.specifics === undefined) return 'specifics';
+  return 'matches';
 }
 
 export function hasContact(c: Collected): boolean {
@@ -155,19 +166,24 @@ export function hasContact(c: Collected): boolean {
 }
 
 type Lang = 'en' | 'es';
-type CopyKey = Step | 'ready' | 'deflect' | 'greeting' | 'property_defer' | 'human_defer'
+type CopyKey = Step | 'ready' | 'matches' | 'browse' | 'deflect' | 'greeting' | 'property_defer' | 'human_defer'
   | 'location_seller' | 'type_seller' | 'contact_seller' | 'ready_seller';
 const LANG: Record<Lang, Record<CopyKey, string>> = {
   en: {
     // Warm local agent voice — inviting, never a form.
     greeting: "Hi, welcome! I'm Amanda — I'd love to help you find the right place on the Costa Blanca. What are you looking for, or would you like me to show you a few of our properties?",
-    intent: "Lovely to meet you! Are you looking to buy a place, or thinking of selling one?",
+    intent: "Lovely to meet you! Are you looking to buy, thinking of selling, or just having a look around?",
+    permission: "Wonderful! To find you the best matches, may I ask a few quick questions — bedrooms, budget, that kind of thing? Or I can simply show you some properties now.",
     location: "Great — which area or town are you drawn to?",
-    budget: "Perfect. Roughly what budget are you working with?",
     bedrooms: "Got it. How many bedrooms would you ideally like?",
+    bathrooms: "And how many bathrooms would suit you?",
+    budget: "Perfect. Roughly what budget are you working with?",
+    specifics: "Nearly there — is there anything specific you'd love? A pool, sea views, a garden… anything at all.",
     type: "And what kind of place feels right — an apartment, a villa, a townhouse?",
     contact: "Wonderful — what's the best WhatsApp number or email so the team can send you the best matches?",
     ready: "Perfect, thank you! The team will be in touch very soon with places I think you'll love.",
+    matches: "Perfect, thank you! Here's what I'd pick for you — take a look, and ask me anything about any of them.",
+    browse: "Of course! Here are a few lovely ones to browse — or just tell me what you fancy and I'll narrow it down.",
     deflect: "Sorry, I didn't quite catch that — but I'm here to help! Ask me anything about our properties or the area, or just tell me what you have in mind.",
     // Used only when a question genuinely needs a person (legal/tax/etc.).
     property_defer: "Good question — that one's best for the team, who'll give you the full picture. If you'd like, leave your WhatsApp number or email and they'll get straight back to you.",
@@ -179,13 +195,18 @@ const LANG: Record<Lang, Record<CopyKey, string>> = {
   },
   es: {
     greeting: "¡Hola, bienvenido/a! Soy Amanda y estaré encantada de ayudarle a encontrar su sitio en la Costa Blanca. ¿Qué está buscando, o prefiere que le enseñe algunas de nuestras propiedades?",
-    intent: "¡Un placer! ¿Busca comprar una vivienda, o está pensando en vender una?",
+    intent: "¡Un placer! ¿Busca comprar, está pensando en vender, o solo está mirando?",
+    permission: "¡Estupendo! Para encontrarle lo que mejor le encaje, ¿puedo hacerle unas preguntas rápidas — dormitorios, presupuesto y poco más? O si lo prefiere, le enseño algunas propiedades ya.",
     location: "Genial — ¿qué zona o pueblo le atrae?",
-    budget: "Perfecto. ¿Con qué presupuesto está trabajando, más o menos?",
     bedrooms: "Entendido. ¿Cuántos dormitorios le gustaría idealmente?",
+    bathrooms: "¿Y cuántos baños le vendrían bien?",
+    budget: "Perfecto. ¿Con qué presupuesto está trabajando, más o menos?",
+    specifics: "Ya casi — ¿hay algo especial que le encantaría? Piscina, vistas al mar, jardín… lo que sea.",
     type: "¿Y qué tipo de vivienda le encaja — un apartamento, una villa, un adosado?",
     contact: "Estupendo — ¿cuál es el mejor WhatsApp o email para que el equipo le envíe las mejores opciones?",
     ready: "¡Perfecto, gracias! El equipo le contactará muy pronto con lugares que creo que le encantarán.",
+    matches: "¡Perfecto, gracias! Esto es lo que yo le enseñaría — eche un vistazo y pregúnteme lo que quiera.",
+    browse: "¡Claro! Aquí tiene algunas para ir mirando — o dígame qué le apetece y se lo afino.",
     deflect: "Perdone, no le he entendido bien — ¡pero estoy aquí para ayudar! Pregúnteme lo que quiera sobre nuestras propiedades o la zona, o dígame qué tiene en mente.",
     property_defer: "Buena pregunta — esa la ve mejor el equipo, que le dará todos los detalles. Si quiere, déjeme su WhatsApp o email y le responderán enseguida.",
     location_seller: "Encantada de ayudarle — ¿dónde está la propiedad que quiere vender?",
@@ -257,12 +278,12 @@ export function classifyIntent(message: string): Intent {
 
 /** Message-type tag on Amanda's reply — the extensible envelope Phase B reuses
  *  (e.g. Phase B adds 'property_answer' + an attachments payload). */
-export type MessageType = 'prompt' | 'ready' | 'deflect' | 'property_defer' | 'human_defer';
+export type MessageType = 'prompt' | 'ready' | 'matches' | 'browse' | 'deflect' | 'property_defer' | 'human_defer';
 
 export type AdvanceResult = {
   collected: Collected;
   reply: string;
-  step: Step | 'ready';
+  step: Step | 'ready' | 'matches' | 'browse';
   readyToCapture: boolean;
   parsed: Partial<Collected>;
 };
@@ -294,19 +315,56 @@ export function replyForCollected(
   collected: Collected,
   addedNothing: boolean,
   lang?: string,
-): { reply: string; step: Step | 'ready'; readyToCapture: boolean; messageType: MessageType } {
+): { reply: string; step: Step | 'ready' | 'matches' | 'browse'; readyToCapture: boolean; messageType: MessageType } {
   const step = nextStep(collected);
   const seller = collected.intent === 'seller';
   if (step === 'ready') {
     return { reply: replyFor(seller ? 'ready_seller' : 'ready', lang), step, readyToCapture: true, messageType: 'ready' };
   }
+  // Funnel complete (or permission declined) → the route SHOWS property cards.
+  if (step === 'matches') return { reply: replyFor('matches', lang), step, readyToCapture: false, messageType: 'matches' };
+  if (step === 'browse') return { reply: replyFor('browse', lang), step, readyToCapture: false, messageType: 'browse' };
   const someProgress = Object.values(collected).some((v) => v !== undefined);
-  if (addedNothing && step !== 'contact' && someProgress) {
+  // At the permission step an unclear answer re-asks the question, never deflects.
+  if (addedNothing && step !== 'contact' && step !== 'permission' && someProgress) {
     return { reply: replyFor('deflect', lang), step, readyToCapture: false, messageType: 'deflect' };
   }
   const key = seller && (step === 'location' || step === 'type' || step === 'contact')
     ? (`${step}_seller` as CopyKey) : step;
   return { reply: replyFor(key, lang), step, readyToCapture: hasContact(collected), messageType: 'prompt' };
+}
+
+const YES_RE = /\b(yes|yeah|yep|sure|ok(ay)?|of course|go ahead|sounds good|why not|fine|si|s(í|i) claro|claro|vale|por supuesto|adelante)\b/i;
+const NO_RE = /\b(no|nope|nah|rather not|not now|just show|skip|prefiero no|mejor no|ens(é|e)ñame)\b/i;
+const NOTHING_RE = /^(no|nope|nothing|nothing special|not really|that's all|thats all|im good|i'm good|nada|nada m(á|a)s|eso es todo)\.?$/i;
+
+/**
+ * Pure: interpret this turn's message IN THE CONTEXT of the question just asked —
+ * things a context-free parser can't resolve. Returns extra Collected facts:
+ *   permission: yes/no (criteria in the answer imply yes); bedrooms/bathrooms: a
+ *   bare number answers the ASKED room question; specifics: the text IS the answer
+ *   ('none' when they say nothing special).
+ */
+export function interpretFunnelAnswer(
+  stepBefore: Step | 'ready' | 'matches' | 'browse',
+  message: string,
+  patch: Partial<Collected>,
+): Partial<Collected> {
+  const out: Partial<Collected> = {};
+  const m = (message || '').trim();
+  if (stepBefore === 'permission') {
+    const hasCriteria = patch.location !== undefined || patch.bedroomsMin !== undefined
+      || patch.bathroomsMin !== undefined || patch.budgetMax !== undefined || patch.propertyType !== undefined;
+    if (hasCriteria || YES_RE.test(m)) out.qualPermission = 'granted';
+    else if (NO_RE.test(m)) out.qualPermission = 'declined';
+  } else if (stepBefore === 'bedrooms' && /^[1-9]\+?$/.test(m)) {
+    out.bedroomsMin = parseInt(m, 10);
+  } else if (stepBefore === 'bathrooms' && /^[1-9]\+?$/.test(m)) {
+    out.bathroomsMin = parseInt(m, 10);
+  } else if (stepBefore === 'specifics' && m) {
+    out.specifics = NOTHING_RE.test(m) ? 'none' : m.slice(0, 200);
+  }
+  return out;
 }
 
 /**

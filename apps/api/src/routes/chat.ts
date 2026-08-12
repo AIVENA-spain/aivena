@@ -3,7 +3,7 @@ import { sql } from 'drizzle-orm';
 import { createHash } from 'node:crypto';
 import { db } from '../../../../packages/db/client';
 import { validateContact, validateMessage, mapCaptureError, createRateLimiter } from './chat-lib';
-import { parseMessage, classifyIntent, turnReply, hasContact, type Collected } from './amanda-flow';
+import { parseMessage, classifyIntent, turnReply, hasContact, nextStep, interpretFunnelAnswer, type Collected } from './amanda-flow';
 import {
   buildSearchFilters, wantsViewing, toPropertyCard, searchReply, specificReply, viewingReply,
   listingDetailReply, isListingQuestion, featuresAnswering, listingConditionReply, isBrowseRequest,
@@ -192,6 +192,7 @@ route.post('/:agencySlug/message', async (c) => {
     // Amanda Live L1: the visitor asked for a PERSON this turn — after capture we
     // flag the lead needs-human (AI muted until an agent releases) + alert agents.
     const humanRequested = intent === 'human_request';
+    let funnelExtra: Partial<Collected> = {};
 
     const filters = buildSearchFilters(collected, v.message);
     const lastRef = collected.lastRef ?? null;
@@ -282,18 +283,31 @@ route.post('/:agencySlug/message', async (c) => {
         readyToCapture = rows.length === 0 ? have : false;
       }
     } else {
-      const t = turnReply(collected, Object.keys(patch).length === 0, intent, lang);
+      // Step-contextual interpretation: yes/no to "may I ask a few questions?",
+      // bare numbers to the room question just asked, free text to "anything
+      // specific?". Merged locally for THIS reply + persisted via the outbound patch.
+      const stepBefore = nextStep(collected);
+      funnelExtra = interpretFunnelAnswer(stepBefore, v.message, patch);
+      Object.assign(collected, funnelExtra);
+      const addedNothing = Object.keys(patch).length === 0 && Object.keys(funnelExtra).length === 0;
+      const t = turnReply(collected, addedNothing, intent, lang);
       reply = t.reply;
       messageType = t.messageType;
       awaitingContact = t.awaitingContact;
       readyToCapture = t.readyToCapture;
+      // Funnel complete (or permission declined) → SHOW the narrowed matches as cards.
+      if (t.messageType === 'matches' || t.messageType === 'browse') {
+        const rows = await searchProperties(slug, v.sessionToken, buildSearchFilters(collected, ''), 3);
+        attachments = rows.map(cardOf);
+        if (attachments.length === 0) reply = searchReply(0, false, lang);
+      }
     }
 
     // 2) Append Amanda's outbound reply. When exactly ONE listing was shown, its
     //    ref becomes the session's lastRef (volatile — newest wins in the RPC), so
     //    the next "the property / features / link / view it" resolves to it.
     const shownRef = attachments.length === 1 ? attachments[0].ref : null;
-    const outPatch = shownRef ? JSON.stringify({ lastRef: shownRef }) : '{}';
+    const outPatch = JSON.stringify({ ...funnelExtra, ...(shownRef ? { lastRef: shownRef } : {}) });
     await db.execute(sql`
       SELECT * FROM public.amanda_append_message(
         ${slug}, ${v.sessionToken}, ${'outbound'}, ${reply}, ${outPatch}::jsonb, ${REQUIRE_TEST_AGENCY}

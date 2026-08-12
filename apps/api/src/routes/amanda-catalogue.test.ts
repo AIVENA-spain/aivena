@@ -46,12 +46,12 @@ describe('buildSearchFilters', () => {
     );
     expect(f).toEqual({
       ref: 'MCH-006', q: null, location: 'Denia', propertyType: 'villa',
-      bedroomsMin: 3, budgetMax: 400000, openToAdjacent: false,
+      bedroomsMin: 3, bathroomsMin: null, budgetMax: 400000, openToAdjacent: false,
     });
   });
   it('leaves unset fields null (never invented)', () => {
     const f = buildSearchFilters({ intent: 'buyer' }, 'looking to buy');
-    expect(f).toEqual({ ref: null, q: null, location: null, propertyType: null, bedroomsMin: null, budgetMax: null, openToAdjacent: false });
+    expect(f).toEqual({ ref: null, q: null, location: null, propertyType: null, bedroomsMin: null, bathroomsMin: null, budgetMax: null, openToAdjacent: false });
   });
 });
 

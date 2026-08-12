@@ -17,6 +17,7 @@ export type SearchFilters = {
   location: string | null;
   propertyType: string | null;
   bedroomsMin: number | null;
+  bathroomsMin: number | null;
   budgetMax: number | null;
   openToAdjacent: boolean;      // widen to adjacent zones (conservative default: false)
 };
@@ -110,6 +111,7 @@ export function buildSearchFilters(collected: Collected, message: string): Searc
     location: collected.location?.trim() || null,
     propertyType: collected.propertyType?.trim() || null,
     bedroomsMin: collected.bedroomsMin ?? null,
+    bathroomsMin: collected.bathroomsMin ?? null,
     budgetMax: collected.budgetMax ?? null,
     openToAdjacent: false,
   };

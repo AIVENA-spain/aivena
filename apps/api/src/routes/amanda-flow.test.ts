@@ -1,24 +1,36 @@
 import { describe, it, expect } from 'vitest';
 import {
   parseMessage, mergeCollected, nextStep, hasContact, advance, replyFor,
-  replyForCollected, classifyIntent, turnReply, STEP_ORDER, type Collected,
+  replyForCollected, classifyIntent, turnReply, interpretFunnelAnswer, STEP_ORDER, type Collected,
 } from './amanda-flow';
 
 describe('replyForCollected — reply from already-merged state (used by the /message route)', () => {
   it('fresh session (nothing collected/added) asks the first question, not a deflect', () => {
     expect(replyForCollected({}, true)).toEqual({ reply: replyFor('intent'), step: 'intent', readyToCapture: false, messageType: 'prompt' });
   });
-  it('mid-flow with nothing added deflects to contact', () => {
-    const r = replyForCollected({ intent: 'buyer', location: 'Denia' }, true);
-    expect(r.reply).toBe(replyFor('deflect'));
+  it('buyer intent → asks PERMISSION before any questions (never deflects there)', () => {
+    const r = replyForCollected({ intent: 'buyer' }, true);
+    expect(r.step).toBe('permission');
+    expect(r.reply).toBe(replyFor('permission'));
+  });
+  it('permission granted → walks area → bedrooms → bathrooms → budget → specifics', () => {
+    expect(replyForCollected({ intent: 'buyer', qualPermission: 'granted' }, false).step).toBe('location');
+    expect(replyForCollected({ intent: 'buyer', qualPermission: 'granted', location: 'Denia' }, false).step).toBe('bedrooms');
+    expect(replyForCollected({ intent: 'buyer', qualPermission: 'granted', location: 'Denia', bedroomsMin: 2 }, false).step).toBe('bathrooms');
+    expect(replyForCollected({ intent: 'buyer', qualPermission: 'granted', location: 'Denia', bedroomsMin: 2, bathroomsMin: 1 }, false).step).toBe('budget');
+    expect(replyForCollected({ intent: 'buyer', qualPermission: 'granted', location: 'Denia', bedroomsMin: 2, bathroomsMin: 1, budgetMax: 300000 }, false).step).toBe('specifics');
+  });
+  it('funnel complete → matches (route shows CARDS, no contact wall)', () => {
+    const full: Collected = { intent: 'buyer', qualPermission: 'granted', location: 'Denia', budgetMax: 300000, bedroomsMin: 2, bathroomsMin: 1, specifics: 'pool' };
+    const r = replyForCollected(full, false);
+    expect(r.step).toBe('matches');
+    expect(r.messageType).toBe('matches');
     expect(r.readyToCapture).toBe(false);
   });
-  it('asks the next missing field when facts were added', () => {
-    expect(replyForCollected({ intent: 'buyer', location: 'Denia' }, false).step).toBe('budget');
-  });
-  it('all qualification + contact → ready + readyToCapture', () => {
-    const full: Collected = { intent: 'buyer', location: 'Denia', budgetMax: 300000, bedroomsMin: 2, propertyType: 'apartment', email: 'x@y.com' };
-    expect(replyForCollected(full, false)).toEqual({ reply: replyFor('ready'), step: 'ready', readyToCapture: true, messageType: 'ready' });
+  it('permission declined → browse (route shows cards immediately)', () => {
+    const r = replyForCollected({ intent: 'buyer', qualPermission: 'declined' }, false);
+    expect(r.step).toBe('browse');
+    expect(r.messageType).toBe('browse');
   });
   it('matches advance() (single source of truth)', () => {
     const a = advance({ intent: 'buyer' }, 'in Torrevieja', 'es');
@@ -52,9 +64,21 @@ describe('parseMessage — deterministic light parsing', () => {
   it('a phone number is never read as a budget', () => {
     expect(parseMessage('call me on +34 600 111 222').budgetMax).toBeUndefined();
   });
-  it('a bare number answers the bedrooms question', () => {
-    expect(parseMessage('3').bedroomsMin).toBe(3);                        // Christian's live bug
+  it('bare numbers resolve to the ASKED step via interpretFunnelAnswer', () => {
+    expect(interpretFunnelAnswer('bedrooms', '3', {}).bedroomsMin).toBe(3);
+    expect(interpretFunnelAnswer('bathrooms', '2', {}).bathroomsMin).toBe(2);
     expect(parseMessage('300').bedroomsMin).toBeUndefined();              // not a bedroom count
+  });
+  it('interpretFunnelAnswer: permission yes/no/implicit; specifics free text', () => {
+    expect(interpretFunnelAnswer('permission', 'yes please', {}).qualPermission).toBe('granted');
+    expect(interpretFunnelAnswer('permission', 'no, just show me', {}).qualPermission).toBe('declined');
+    expect(interpretFunnelAnswer('permission', '2 beds in torrevieja', { bedroomsMin: 2, location: 'Torrevieja' }).qualPermission).toBe('granted');
+    expect(interpretFunnelAnswer('permission', 'hmm maybe', {}).qualPermission).toBeUndefined();
+    expect(interpretFunnelAnswer('specifics', 'a pool and sea views please', {}).specifics).toBe('a pool and sea views please');
+    expect(interpretFunnelAnswer('specifics', 'nothing special', {}).specifics).toBe('none');
+  });
+  it('parses bathrooms from text', () => {
+    expect(parseMessage('2 bathrooms please').bathroomsMin).toBe(2);
   });
   it('extracts email + phone but not small numbers as phone', () => {
     const p = parseMessage('reach me at jane@example.com or +34 600 111 222');
@@ -75,19 +99,29 @@ describe('mergeCollected — never overwrites a set field', () => {
   });
 });
 
-describe('nextStep — asks the first missing qualification, contact last, then ready', () => {
-  it('walks the step order', () => {
+describe('nextStep — permission-first buyer funnel ending in matches', () => {
+  it('walks the buyer step order', () => {
     let c: Collected = {};
     expect(nextStep(c)).toBe('intent');
-    c = mergeCollected(c, { intent: 'buyer' });   expect(nextStep(c)).toBe('location');
-    c = mergeCollected(c, { location: 'Javea' });  expect(nextStep(c)).toBe('budget');
-    c = mergeCollected(c, { budgetMax: 400000 });  expect(nextStep(c)).toBe('bedrooms');
-    c = mergeCollected(c, { bedroomsMin: 3 });     expect(nextStep(c)).toBe('type');
-    c = mergeCollected(c, { propertyType: 'villa' }); expect(nextStep(c)).toBe('contact');
-    c = mergeCollected(c, { email: 'x@y.com' });   expect(nextStep(c)).toBe('ready');
+    c = mergeCollected(c, { intent: 'buyer' });          expect(nextStep(c)).toBe('permission');
+    c = mergeCollected(c, { qualPermission: 'granted' }); expect(nextStep(c)).toBe('location');
+    c = mergeCollected(c, { location: 'Javea' });         expect(nextStep(c)).toBe('bedrooms');
+    c = mergeCollected(c, { bedroomsMin: 3 });            expect(nextStep(c)).toBe('bathrooms');
+    c = mergeCollected(c, { bathroomsMin: 2 });           expect(nextStep(c)).toBe('budget');
+    c = mergeCollected(c, { budgetMax: 400000 });         expect(nextStep(c)).toBe('specifics');
+    c = mergeCollected(c, { specifics: 'pool' });         expect(nextStep(c)).toBe('matches');
   });
-  it('STEP_ORDER ends with contact', () => {
-    expect(STEP_ORDER[STEP_ORDER.length - 1]).toBe('contact');
+  it('declined permission goes straight to browse', () => {
+    expect(nextStep({ intent: 'buyer', qualPermission: 'declined' })).toBe('browse');
+  });
+  it('STEP_ORDER ends with specifics (matches follow; no contact wall)', () => {
+    expect(STEP_ORDER[STEP_ORDER.length - 1]).toBe('specifics');
+  });
+  it('seller path unchanged: location → type → contact → ready', () => {
+    expect(nextStep({ intent: 'seller' })).toBe('location');
+    expect(nextStep({ intent: 'seller', location: 'Denia' })).toBe('type');
+    expect(nextStep({ intent: 'seller', location: 'Denia', propertyType: 'villa' })).toBe('contact');
+    expect(nextStep({ intent: 'seller', location: 'Denia', propertyType: 'villa', phone: '+34600111222' })).toBe('ready');
   });
 });
 
@@ -98,26 +132,27 @@ describe('advance — one turn at a time', () => {
     expect(r.reply).toBe(replyFor('intent'));
     expect(r.readyToCapture).toBe(false);
   });
-  it('advances to the next question as facts arrive', () => {
-    const r = advance({ intent: 'buyer' }, 'looking in Torrevieja');
+  it('advances through the granted funnel as facts arrive', () => {
+    const r = advance({ intent: 'buyer', qualPermission: 'granted' }, 'looking in Torrevieja');
     expect(r.collected.location).toBe('Torrevieja');
-    expect(r.step).toBe('budget');
-    expect(r.reply).toBe(replyFor('budget'));
+    expect(r.step).toBe('bedrooms');
+    expect(r.reply).toBe(replyFor('bedrooms'));
   });
-  it('mid-flow message that adds nothing deflects to contact', () => {
-    const r = advance({ intent: 'buyer', location: 'Denia' }, 'not sure honestly');
+  it('mid-funnel message that adds nothing deflects helpfully', () => {
+    const r = advance({ intent: 'buyer', qualPermission: 'granted', location: 'Denia' }, 'not sure honestly');
     expect(r.reply).toBe(replyFor('deflect'));
     expect(r.readyToCapture).toBe(false);
   });
-  it('once contact is present it signals readyToCapture', () => {
+  it('completed funnel reaches matches (cards shown by the route)', () => {
     const r = advance(
-      { intent: 'buyer', location: 'Denia', budgetMax: 300000, bedroomsMin: 2, propertyType: 'apartment' },
-      'my email is buyer@example.com',
+      { intent: 'buyer', qualPermission: 'granted', location: 'Denia', budgetMax: 300000, bedroomsMin: 2, bathroomsMin: 1 },
+      'a pool would be lovely',
     );
-    expect(r.collected.email).toBe('buyer@example.com');
-    expect(r.step).toBe('ready');
-    expect(r.readyToCapture).toBe(true);
-    expect(r.reply).toBe(replyFor('ready'));
+    // parseMessage stores nothing for that message; specifics is route-interpreted —
+    // simulate the granted state directly:
+    const done = replyForCollected({ intent: 'buyer', qualPermission: 'granted', location: 'Denia', budgetMax: 300000, bedroomsMin: 2, bathroomsMin: 1, specifics: 'pool' }, false);
+    expect(done.step).toBe('matches');
+    expect(r.step).toBe('specifics');
   });
   it('respects Spanish copy', () => {
     const r = advance({}, 'hola', 'es');
@@ -187,10 +222,10 @@ describe('turnReply — Phase A never answers property questions (no invented fa
     expect(r.readyToCapture).toBe(true);
     expect(r.awaitingContact).toBe(false);
   });
-  it('qualify path signals awaitingContact only at the contact step', () => {
+  it('qualify path signals awaitingContact only at the (seller) contact step', () => {
     expect(turnReply({ intent: 'buyer' }, false, 'qualify').awaitingContact).toBe(false);
     const atContact = turnReply(
-      { intent: 'buyer', location: 'Denia', budgetMax: 300000, bedroomsMin: 2, propertyType: 'villa' },
+      { intent: 'seller', location: 'Denia', propertyType: 'villa' },
       false, 'qualify',
     );
     expect(atContact.awaitingContact).toBe(true);

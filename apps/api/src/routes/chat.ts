@@ -193,6 +193,13 @@ route.post('/:agencySlug/message', async (c) => {
     // flag the lead needs-human (AI muted until an agent releases) + alert agents.
     const humanRequested = intent === 'human_request';
     let funnelExtra: Partial<Collected> = {};
+    // The funnel step being ANSWERED = the step before THIS message's facts merged.
+    // (The RPC already merged this turn's patch, so subtract freshly-added keys.)
+    const prevCollected: Collected = { ...collected };
+    for (const k of Object.keys(patch) as Array<keyof Collected>) {
+      if (prevCollected[k] !== undefined && prevCollected[k] === patch[k]) delete prevCollected[k];
+    }
+    const stepBefore = nextStep(prevCollected);
 
     const filters = buildSearchFilters(collected, v.message);
     const lastRef = collected.lastRef ?? null;
@@ -203,12 +210,16 @@ route.post('/:agencySlug/message', async (c) => {
     // "Show me a few / what else do you have / some options" is ALWAYS a browse
     // request → cards, even mid-listing-chat (Christian, 2026-08-12).
     const browse = isBrowseRequest(v.message);
+    // At the "anything specific?" step, property-flavoured words (pool, sea views,
+    // garden) are the ANSWER to the question — route them into the funnel, not a
+    // fresh search (browse and human requests still win).
+    const answeringSpecifics = stepBefore === 'specifics' && !browse && !humanRequested && !wantsViewing(v.message);
     const isNewSearch = newCriteria >= 2 || (filters.ref !== null && filters.ref !== lastRef) || browse;
     // ANSWER-FIRST (Christian, 2026-08-12): once a property is on screen, the warm
     // LLM agent owns the whole conversation — property questions, AREA/lifestyle
     // questions, and small talk — UNLESS the visitor clearly starts a new search or
     // asks for a person. This ends the brittle "did a regex match?" misrouting.
-    const inListingChat = lastRef !== null && !humanRequested && !isNewSearch;
+    const inListingChat = lastRef !== null && !humanRequested && !isNewSearch && !answeringSpecifics;
 
     if (inListingChat && wantsViewing(v.message)) {
       viewing = true;
@@ -245,7 +256,7 @@ route.post('/:agencySlug/message', async (c) => {
         awaitingContact = false;
         readyToCapture = false;
       }
-    } else if (intent === 'property_question' || browse) {
+    } else if ((intent === 'property_question' || browse) && !answeringSpecifics) {
       // Fresh search / specific-listing lookup / viewing request (no listing on screen yet).
       if (wantsViewing(v.message)) {
         viewing = true;
@@ -286,7 +297,6 @@ route.post('/:agencySlug/message', async (c) => {
       // Step-contextual interpretation: yes/no to "may I ask a few questions?",
       // bare numbers to the room question just asked, free text to "anything
       // specific?". Merged locally for THIS reply + persisted via the outbound patch.
-      const stepBefore = nextStep(collected);
       funnelExtra = interpretFunnelAnswer(stepBefore, v.message, patch);
       Object.assign(collected, funnelExtra);
       const addedNothing = Object.keys(patch).length === 0 && Object.keys(funnelExtra).length === 0;

@@ -223,12 +223,18 @@ route.post('/:agencySlug/message', async (c) => {
     // Reference to one of SEVERAL shown cards ("the top one", "the one in Cabo Roig"):
     // re-run the deterministic search to get the exact set on screen, then resolve.
     let activeRef = lastRef;
+    let resolvedViaReference = false;
     if (activeRef === null && !browse && !humanRequested && !isNewSearch && !answeringSpecifics
         && isReferenceFollowup(v.message)) {
       const shown = await searchProperties(slug, v.sessionToken, buildSearchFilters(collected, ''), 3);
       const idx = resolveReference(v.message, shown.map((r) => ({ title: (r as { title?: string | null }).title ?? null, city: (r as { location_city?: string | null }).location_city ?? null })));
-      if (idx !== null && shown[idx]) activeRef = (shown[idx] as { external_id?: string | null }).external_id ?? null;
+      if (idx !== null && shown[idx]) { activeRef = (shown[idx] as { external_id?: string | null }).external_id ?? null; resolvedViaReference = true; }
     }
+    // A positional reference ("the top one") is a POINTER, not a question about the
+    // property — neutralize the ordinal so the LLM doesn't read "top" as a feature.
+    const llmQuestion = resolvedViaReference
+      ? v.message.replace(/\b(the |that )?(top|first|1st|second|2nd|third|3rd|last|bottom|final)(\s+(one|listing|property|apartment|villa|house|flat|townhouse))?\b/gi, 'this property')
+      : v.message;
     const inListingChat = activeRef !== null && !humanRequested && !isNewSearch && !answeringSpecifics;
 
     if (inListingChat && wantsViewing(v.message)) {
@@ -247,7 +253,7 @@ route.post('/:agencySlug/message', async (c) => {
       const rows = await searchProperties(slug, v.sessionToken, { ref: activeRef }, 1);
       const card = rows[0] ? cardOf(rows[0]) : null;
       const llm = card && llmBudgetAvailable(v.sessionToken, Date.now())
-        ? await groundedListingAnswer({ agencyName: slug, listing: listingForLlm(rows[0], card), question: v.message, lang })
+        ? await groundedListingAnswer({ agencyName: slug, listing: listingForLlm(rows[0], card), question: llmQuestion, lang })
         : ({ ok: false } as const);
       messageType = 'property_answer';
       if (llm.ok) {

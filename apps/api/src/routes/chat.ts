@@ -3,7 +3,7 @@ import { sql } from 'drizzle-orm';
 import { createHash } from 'node:crypto';
 import { db } from '../../../../packages/db/client';
 import { validateContact, validateMessage, mapCaptureError, createRateLimiter } from './chat-lib';
-import { parseMessage, classifyIntent, turnReply, hasContact, nextStep, interpretFunnelAnswer, type Collected } from './amanda-flow';
+import { parseMessage, classifyIntent, turnReply, hasContact, nextStep, interpretFunnelAnswer, replyFor, type Collected } from './amanda-flow';
 import {
   buildSearchFilters, wantsViewing, toPropertyCard, searchReply, specificReply, viewingReply,
   listingDetailReply, isListingQuestion, featuresAnswering, listingConditionReply, isBrowseRequest,
@@ -320,9 +320,10 @@ route.post('/:agencySlug/message', async (c) => {
       // miss falls straight through to the deterministic funnel below.
       const funnelExpectsAnswer = stepBefore === 'location' || stepBefore === 'bedrooms'
         || stepBefore === 'bathrooms' || stepBefore === 'budget';
-      const general = (intent === 'qualify' && !humanRequested && !answeringSpecifics
+      const attemptedGeneral = intent === 'qualify' && !humanRequested && !answeringSpecifics
         && !funnelExpectsAnswer && isGeneralQuestion(v.message)
-        && llmBudgetAvailable(v.sessionToken, Date.now()))
+        && llmBudgetAvailable(v.sessionToken, Date.now());
+      const general = attemptedGeneral
         ? await generalAgentAnswer({ agencyName: slug, question: v.message, lang })
         : ({ ok: false } as const);
       if (general.ok) {
@@ -330,6 +331,14 @@ route.post('/:agencySlug/message', async (c) => {
         messageType = 'property_answer';
         awaitingContact = general.needsTeam && !have;
         readyToCapture = general.needsTeam && have;
+      } else if (attemptedGeneral) {
+        // We tried to answer an area/general question but the model couldn't this
+        // moment (timeout / over-budget / failed a safety gate). NEVER fall back to
+        // the cold greeting — that reads as a memory reset. Warm bridge instead.
+        reply = replyFor('area_bridge', lang);
+        messageType = 'prompt';
+        awaitingContact = false;
+        readyToCapture = false;
       } else {
         // Step-contextual interpretation: yes/no to "may I ask a few questions?",
         // bare numbers to the room question just asked, free text to "anything

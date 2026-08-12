@@ -2,7 +2,7 @@ import { sql } from 'drizzle-orm';
 import { db } from '../../../../packages/db/client';
 import {
   buildGroundedPrompt, buildGeneralPrompt, buildVerifierPrompt, parseLlmAnswer, parseVerdict,
-  passesGroundingGuard, outputIsSafe,
+  passesGroundingGuard, outputIsSafe, GENERAL_MAX_ANSWER_CHARS,
   ANTHROPIC_URL, DEFAULT_MODEL, VERIFIER_MODEL, ANSWER_TIMEOUT_MS, VERIFIER_TIMEOUT_MS,
   type ListingForLlm, type LlmAnswer,
 } from './amanda-llm-lib';
@@ -194,7 +194,7 @@ export async function generalAgentAnswer(args: {
   if (rawAnswer === null) return { ok: false };
   const parsed = parseLlmAnswer(rawAnswer);
   if (!parsed) return { ok: false };
-  if (!outputIsSafe(parsed.answer)) {
+  if (!outputIsSafe(parsed.answer, GENERAL_MAX_ANSWER_CHARS)) {
     console.error('[amanda-llm] general answer failed output safety');
     return { ok: false };
   }

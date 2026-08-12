@@ -167,7 +167,7 @@ export function hasContact(c: Collected): boolean {
 
 type Lang = 'en' | 'es';
 type CopyKey = Step | 'ready' | 'matches' | 'browse' | 'deflect' | 'greeting' | 'property_defer' | 'human_defer'
-  | 'location_seller' | 'type_seller' | 'contact_seller' | 'ready_seller';
+  | 'area_bridge' | 'location_seller' | 'type_seller' | 'contact_seller' | 'ready_seller';
 const LANG: Record<Lang, Record<CopyKey, string>> = {
   en: {
     // Warm local agent voice — inviting, never a form.
@@ -185,6 +185,9 @@ const LANG: Record<Lang, Record<CopyKey, string>> = {
     matches: "Perfect, thank you! Here's what I'd pick for you — take a look, and ask me anything about any of them.",
     browse: "Of course! Here are a few lovely ones to browse — or just tell me what you fancy and I'll narrow it down.",
     deflect: "Sorry, I didn't quite catch that — but I'm here to help! Ask me anything about our properties or the area, or just tell me what you have in mind.",
+    // Warm bridge when an area/general answer couldn't be produced this moment —
+    // acknowledges the question so it never reads as a cold restart.
+    area_bridge: "I'd love to help you get a feel for the area! While I gather my thoughts on that — are you looking to buy, or just exploring the coast for now?",
     // Used only when a question genuinely needs a person (legal/tax/etc.).
     property_defer: "Good question — that one's best for the team, who'll give you the full picture. If you'd like, leave your WhatsApp number or email and they'll get straight back to you.",
     location_seller: "Happy to help you with that — whereabouts is the property you're thinking of selling?",
@@ -208,6 +211,7 @@ const LANG: Record<Lang, Record<CopyKey, string>> = {
     matches: "¡Perfecto, gracias! Esto es lo que yo le enseñaría — eche un vistazo y pregúnteme lo que quiera.",
     browse: "¡Claro! Aquí tiene algunas para ir mirando — o dígame qué le apetece y se lo afino.",
     deflect: "Perdone, no le he entendido bien — ¡pero estoy aquí para ayudar! Pregúnteme lo que quiera sobre nuestras propiedades o la zona, o dígame qué tiene en mente.",
+    area_bridge: "¡Me encantaría ayudarle a hacerse una idea de la zona! Mientras lo preparo — ¿está buscando comprar, o de momento solo explorando la costa?",
     property_defer: "Buena pregunta — esa la ve mejor el equipo, que le dará todos los detalles. Si quiere, déjeme su WhatsApp o email y le responderán enseguida.",
     location_seller: "Encantada de ayudarle — ¿dónde está la propiedad que quiere vender?",
     type_seller: "¿Y qué tipo de propiedad es — un apartamento, una villa, un adosado?",
@@ -248,7 +252,11 @@ const SEARCH_HINT_RE = /\b((i'?m|we'?re|im)?\s*(looking|searching) for|we (want|
 const VIEWING_HINT_RE = /\b(viewing|book a visit|arrange a visit|(would like|like|want|love) to (view|visit|see)|can (i|we) (view|visit)|visit (the|it|your|on|this)|come and see|visita)\b/i;
 // Honest boundary: topics the catalogue can NEVER answer (legal / tax / mortgage /
 // area-life / rentals) go straight to the team — never a nonsense listing search.
-const TEAM_TOPIC_RE = /\b(nie|foreigners?|extranjeros?|tax(es)?|impuestos?|mortgages?|hipotecas?|lawyers?|abogad\w*|notar\w*|schools?|colegios?|escuelas?|hospitals?|healthcare|sanidad|visas?|residenc\w*|golden visa|yields?|paperwork|process of buying|how long does|safe|crime|insurance|seguros?|utilities|community fees|ibi|for rent|to rent|rent out|rentals?|long[- ]term|alquiler\w*)\b/i;
+// TEAM = genuinely legal / tax / financial / rental topics only. Pure AREA topics
+// (safe, crime, schools, hospitals, healthcare, utilities) were REMOVED 2026-08-12:
+// they are exactly what the web-searching area agent answers well — deflecting them
+// to the team made real area questions ("is X safe to buy?") a dead end.
+const TEAM_TOPIC_RE = /\b(nie|foreigners?|extranjeros?|tax(es)?|impuestos?|mortgages?|hipotecas?|lawyers?|abogad\w*|notar\w*|visas?|residenc\w*|golden visa|yields?|paperwork|process of buying|how long does|insurance|seguros?|community fees|ibi|for rent|to rent|rent out|rentals?|long[- ]term|alquiler\w*)\b/i;
 const SELLER_RE = /\b(sell(ing)?|vender|vendo|list my|valuation|valoraci(o|ó)n|tasaci(o|ó)n|value my|worth)\b/i;
 
 /**

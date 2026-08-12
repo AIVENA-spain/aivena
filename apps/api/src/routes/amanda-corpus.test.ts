@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { classifyIntent, parseMessage } from './amanda-flow';
-import { wantsViewing, parseListingRef } from './amanda-catalogue';
+import { wantsViewing, parseListingRef, isGeneralQuestion } from './amanda-catalogue';
 
 /**
  * Behavioral corpus — the ANSWER-FIRST contract, frozen as tests (2026-08-11).
@@ -61,14 +61,30 @@ describe('corpus: sellers get the seller funnel (never buy listings)', () => {
   });
 });
 
-describe('corpus: unanswerable topics go honestly to the team', () => {
-  it('legal/tax/mortgage/area-life/rentals → team_question', () => {
+describe('corpus: genuinely legal/financial/rental topics go honestly to the team', () => {
+  it('legal/tax/mortgage/rentals → team_question', () => {
     expectIntent([
       'can foreigners buy property in spain?', 'do i need an NIE number?',
-      'what are the property taxes here?', 'is torrevieja a safe area?',
-      'are there international schools nearby?', 'can you help me get a mortgage?',
+      'what are the property taxes here?', 'can you help me get a mortgage?',
       'what is the rental yield like?', 'apartments for rent long term', 'do you rent out flats?',
     ], 'team_question');
+  });
+});
+
+describe('corpus: AREA-life questions reach the area agent, not the team (2026-08-12)', () => {
+  it('safe/quality-of-area questions → qualify (routed to the web-searching area agent)', () => {
+    // These were previously (wrongly) deflected to the team. They are exactly what
+    // the area agent answers well — so they must classify as qualify, and read as a
+    // general question the route hands to generalAgentAnswer. (Phrasings that trip the
+    // property-search classifier, e.g. "are there schools nearby?", legitimately go to
+    // search instead — that's a separate branch, not the team dead-end.)
+    const msgs = [
+      'is torrevieja a safe area?', 'is la mata a nice place to live?',
+      'what is albir like for families?', 'is villamartin good for retirees?',
+      'how safe is orihuela costa?',
+    ];
+    expectIntent(msgs, 'qualify');
+    for (const m of msgs) expect(isGeneralQuestion(m), `"${m}"`).toBe(true);
   });
 });
 

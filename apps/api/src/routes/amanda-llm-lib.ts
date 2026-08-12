@@ -29,6 +29,9 @@ export const TIMEOUT_MS = 9_000;
 export const ANSWER_TIMEOUT_MS = 42_000;   // the answer call may run a web search (slow)
 export const VERIFIER_TIMEOUT_MS = 6_000;
 const MAX_ANSWER_CHARS = 450;
+// Area/general answers (no listing) may run a little longer — a web-researched
+// neighbourhood answer needs more room than a tight one-line property fact.
+export const GENERAL_MAX_ANSWER_CHARS = 700;
 
 export type ListingForLlm = {
   ref: string | null;
@@ -187,9 +190,11 @@ export function listingNumberTokens(listing: ListingForLlm): Set<string> {
   return set;
 }
 
-/** Pure: output safety — reject markup, links, prompt-leak, or oversize answers. */
-export function outputIsSafe(answer: string): boolean {
-  if (!answer || answer.length > MAX_ANSWER_CHARS) return false;
+/** Pure: output safety — reject markup, links, prompt-leak, or oversize answers.
+ *  `maxLen` defaults to the tight listing-reply cap; area/general answers pass a more
+ *  generous limit (a web-researched area answer needs more room than a one-line fact). */
+export function outputIsSafe(answer: string, maxLen: number = MAX_ANSWER_CHARS): boolean {
+  if (!answer || answer.length > maxLen) return false;
   if (/<[a-z/!]/i.test(answer)) return false;                       // HTML-ish
   if (/javascript:|data:text|vbscript:/i.test(answer)) return false;
   if (/\]\(\s*https?:|https?:\/\/|www\./i.test(answer)) return false; // links (the card carries the real URL)

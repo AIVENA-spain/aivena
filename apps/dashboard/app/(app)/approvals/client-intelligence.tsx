@@ -1,26 +1,33 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useNow, useTranslations } from "next-intl";
 import {
-  User,
-  Zap,
-  CalendarClock,
+  Sparkles,
+  RefreshCw,
   MessageCircle,
   Lock,
+  Wallet,
+  Gauge,
+  Flame,
+  CalendarClock,
+  MapPin,
+  BedDouble,
+  Bath,
+  Home,
+  Languages,
   Pencil,
-  RefreshCw,
+  Wrench,
+  ChevronDown,
+  Send,
+  Check,
   type LucideIcon,
 } from "lucide-react";
 
-import type {
-  ContactReadiness,
-  InboxRow,
-  LeadIntel,
-  WhatsappState,
-} from "@/lib/api/types";
+import type { ContactReadiness, InboxRow, LeadIntel } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
 import { RelativeTime } from "@/components/ui/relative-time";
+import { Button } from "@/components/ui/button";
 import { langLabel, typeLabel } from "@/app/(app)/matches/_shared";
 import { LeadNotes } from "./lead-notes";
 import { MatchedProperties } from "@/app/(app)/matches/matched-properties";
@@ -28,37 +35,34 @@ import {
   getLeadIntelAction,
   getLeadWhatsappStateAction,
   getLeadContactReadinessAction,
+  getLeadBriefSummaryAction,
+  requestTemplateAction,
 } from "./lead-intel-actions";
-import { nextActionBullets } from "./client-intelligence-lib";
+import { BuyerProfileEdit } from "./buyer-profile-edit";
+import type { EditablePrefs } from "./buyer-profile-edit-model";
 import {
   contactBlockNotice,
   deriveContactGate,
   gateBlocksAllSends,
   languageName,
   type ContactBlockNotice,
+  type ContactGate,
 } from "./contact-gate";
-import { BuyerProfileEdit } from "./buyer-profile-edit";
-import type { EditablePrefs } from "./buyer-profile-edit-model";
 
 /**
- * Client Intelligence — the right third column of /approvals (Day-2). A wide,
- * grouped panel: header + window pill · Buyer Profile (2-col label/value rows) ·
- * Next Best Action (bullets) · Matched Property + Why (side-by-side) · Notes ·
- * Follow-up · Conversation. Buyer-profile / next-action / follow-up come from the
- * read-only /leads/:leadId/intel contract; the WhatsApp window comes straight
- * from dashboard_lead_whatsapp_state (window_open is authoritative — never
- * recomputed). Day-3 fields (motivation/objections/best angle) are omitted here.
+ * AIVENA Brief — the right column of /approvals. A calm decision panel (not a
+ * CRM data dump), in this order: natural summary → contactability → recommended
+ * next step → buyer profile (tiles) → top match + why → notes/follow-up →
+ * technical details. Every contactability/next-step statement obeys the same
+ * get_lead_contact_readiness truth the composer does; the summary is generated
+ * server-side (LLM-primary, deterministic-fallback, grounded on facts only).
  */
 type IntelState =
   | { kind: "loading" }
   | { kind: "error"; message: string }
   | { kind: "ready"; data: LeadIntel };
 
-type WaState =
-  | { kind: "off" }
-  | { kind: "loading" }
-  | { kind: "error" }
-  | { kind: "ready"; data: WhatsappState | null };
+type WaOpen = boolean | null;
 
 export function ClientIntelligence({
   lead,
@@ -71,114 +75,91 @@ export function ClientIntelligence({
 }) {
   const t = useTranslations("inbox.intel");
   const [intel, setIntel] = useState<IntelState>({ kind: "loading" });
-  // Bumped after an agent edits the buyer profile — re-fetches intel AND re-runs
-  // the match panel (the edit re-embeds + re-matches server-side, so the
-  // recommendations refresh honestly rather than showing the pre-edit set).
   const [editVersion, setEditVersion] = useState(0);
 
   const isWhatsapp = (lead.channel ?? "").toLowerCase().includes("whatsapp");
-  const [wa, setWa] = useState<WaState>(
-    isWhatsapp ? { kind: "loading" } : { kind: "off" },
-  );
-  // Deterministic contact readiness — the same truth the composer obeys, so the
-  // right panel can never recommend a WhatsApp action that can't work. null =
-  // not-yet-loaded OR failed; `readinessResolved` distinguishes the two so a
-  // still-loading fetch is never mistaken for a failure (fail-closed only after
-  // it actually resolves).
+  const [waOpen, setWaOpen] = useState<WaOpen>(null);
+  const [waResolved, setWaResolved] = useState(false);
   const [readiness, setReadiness] = useState<ContactReadiness | null>(null);
   const [readinessResolved, setReadinessResolved] = useState(false);
+  const [summary, setSummary] = useState<string | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [briefVersion, setBriefVersion] = useState(0);
 
+  // Intel (buyer profile + follow-up) — reloads after a profile edit.
   useEffect(() => {
     let alive = true;
-    const load = (showLoading: boolean) => {
-      if (showLoading) setIntel({ kind: "loading" });
-      getLeadIntelAction(lead.leadId).then((res) => {
-        if (!alive) return;
-        setIntel(
-          res.ok
-            ? { kind: "ready", data: res.data }
-            : { kind: "error", message: res.error },
-        );
-      });
-    };
-    load(true);
-    // A new inbound triggers the LLM intent extraction, which writes the profile
-    // update + `preferences_update_summary` a few SECONDS later (async EF). If the
-    // message is fresh, re-poll once (no loading flash) so the "updated from their
-    // message" note + refreshed matches appear without a manual reload.
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const inboundAgeMs = lead.latestInboundAt
-      ? Date.now() - new Date(lead.latestInboundAt).getTime()
-      : Infinity;
-    if (inboundAgeMs < 60_000) {
-      timer = setTimeout(() => load(false), 6_000);
-    }
+    setIntel({ kind: "loading" });
+    getLeadIntelAction(lead.leadId).then((res) => {
+      if (!alive) return;
+      setIntel(res.ok ? { kind: "ready", data: res.data } : { kind: "error", message: res.error });
+    });
     return () => {
       alive = false;
-      if (timer) clearTimeout(timer);
     };
-  }, [lead.leadId, editVersion, lead.latestInboundAt]);
+  }, [lead.leadId, editVersion]);
 
+  // WhatsApp window + deterministic readiness — two fetches; the gate is trusted
+  // only once BOTH resolve (never flash a stale/false state).
   useEffect(() => {
     if (!isWhatsapp) {
-      setWa({ kind: "off" });
+      setWaOpen(null);
+      setWaResolved(true);
       setReadiness(null);
-      setReadinessResolved(false);
+      setReadinessResolved(true);
       return;
     }
     let alive = true;
-    setWa({ kind: "loading" });
-    setReadiness(null);
+    setWaResolved(false);
     setReadinessResolved(false);
     getLeadWhatsappStateAction(lead.leadId).then((res) => {
       if (!alive) return;
-      setWa(res.ok ? { kind: "ready", data: res.data } : { kind: "error" });
+      setWaOpen(res.ok && res.data ? res.data.window_open : null);
+      setWaResolved(true);
     });
     getLeadContactReadinessAction(lead.leadId).then((res) => {
       if (!alive) return;
-      // Fail closed: any failure leaves readiness null → gate = unverified,
-      // but only ONCE resolved (so a normal load never flashes "couldn't verify").
       setReadiness(res.ok ? res.data : null);
       setReadinessResolved(true);
     });
     return () => {
       alive = false;
     };
-  }, [lead.leadId, isWhatsapp]);
+    // latestInboundAt in deps: when a new buyer message arrives the window/gate
+    // can flip open, so refetch rather than drift stale vs the composer.
+  }, [lead.leadId, isWhatsapp, lead.latestInboundAt]);
+
+  // Brief summary (LLM-primary, deterministic fallback server-side). Refetched on
+  // lead change, on profile edit, and on the "Refresh brief" button.
+  useEffect(() => {
+    let alive = true;
+    setSummary(null);
+    setSummaryLoading(true);
+    getLeadBriefSummaryAction(lead.leadId).then((res) => {
+      if (!alive) return;
+      setSummary(res.ok ? res.data.summary : null);
+      setSummaryLoading(false);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [lead.leadId, editVersion, briefVersion]);
 
   const data = intel.kind === "ready" ? intel.data : null;
   const loading = intel.kind === "loading";
 
-  // Authoritative window read — true only when we KNOW it is closed.
-  const windowOpen = wa.kind === "ready" && wa.data ? wa.data.window_open : null;
-  const windowClosed = isWhatsapp && windowOpen === false;
-
-  // The readiness-derived contact gate — drives the Next-best-action override
-  // and the Suggest gate so both obey get_lead_contact_readiness (never the
-  // stale recommended_channel / window boolean alone).
-  const waReady = wa.kind === "ready" || wa.kind === "error";
-  // Trust the gate only once BOTH truths (window + readiness) have resolved.
-  // The composer loads them atomically; here they are two independent fetches,
-  // so until both land we must not flash the stale "Manual WhatsApp call" line
-  // NOR a false "couldn't verify". Non-WhatsApp leads have no gate → resolved.
-  const contactResolved = !isWhatsapp || (waReady && readinessResolved);
+  const windowClosed = isWhatsapp && waOpen === false;
+  const contactResolved = !isWhatsapp || (waResolved && readinessResolved);
   const gate = deriveContactGate(readiness, windowClosed, isWhatsapp);
   const langName = languageName(readiness?.lead_language_normalized ?? lead.language);
+  const firstName = (lead.fullName ?? "").trim().split(/\s+/)[0] || "this buyer";
   const block: ContactBlockNotice =
     isWhatsapp && contactResolved ? contactBlockNotice(gate, langName) : null;
-  // Suppress the stored recommended-channel line while contact is unresolved (so
-  // it can't flash for a lead that turns out blocked) or when a block is shown.
-  const suppressChannel = isWhatsapp && (!contactResolved || block != null);
-  const firstName = (lead.fullName ?? "").trim().split(/\s+/)[0] || "this buyer";
-  // Suggest fails CLOSED: disabled until contact resolves, then when the window
-  // is closed OR any hard gate forbids all contact (opted-out/provider/phone)
-  // even with the window open.
+
+  // Suggest fails closed until contact resolves, then when the window is closed
+  // or a hard gate forbids all contact.
   const suggestDisabled =
     isWhatsapp && (!contactResolved || windowClosed || gateBlocksAllSends(gate));
-  // Truthful disabled-Suggest reason, computed here (the gate lives here):
-  //  unresolved → "checking"; hard/no-template/unverified block → its reason;
-  //  cooldown → the cooldown note (a check-in can't be sent NOW); else the
-  //  window-closed "send a check-in to reopen" note (only when one truly can).
   const suggestReason: string | null = !suggestDisabled
     ? null
     : !contactResolved
@@ -189,125 +170,394 @@ export function ClientIntelligence({
           ? t("suggestBlockCooldown", { name: firstName })
           : t("suggestGated");
 
-  // Panel order (Chat-2 acceptance §8): Buyer Profile · Next Best Action ·
-  // Matched + Why · Notes · Follow-up · Conversation.
   return (
-    <div className="@container flex flex-col gap-2.5">
-      {/* Panel header + window pill */}
-      <div className="flex items-center justify-between gap-2">
-        <h2 className="text-[16px] font-semibold tracking-tight text-foreground">
-          {t("clientIntelligence")}
-        </h2>
-        {windowClosed ? (
-          <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10.5px] font-medium text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
-            <Lock className="h-3 w-3" aria-hidden />
-            {t("windowClosedPill")}
-          </span>
-        ) : null}
-      </div>
+    <div className="@container flex flex-col gap-3">
+      <BriefHeader t={t} onRefresh={() => setBriefVersion((v) => v + 1)} />
 
-      <BuyerProfile
+      <SummaryCard summary={summary} loading={summaryLoading} t={t} />
+
+      {isWhatsapp ? (
+        <ContactabilityCard
+          gate={gate}
+          block={block}
+          windowClosed={windowClosed}
+          resolved={contactResolved}
+          lastInboundAt={lead.latestInboundAt ?? readiness?.last_inbound_at ?? null}
+          langName={langName}
+          t={t}
+        />
+      ) : null}
+
+      {isWhatsapp && contactResolved ? (
+        <NextStepCard
+          gate={gate}
+          leadId={lead.leadId}
+          firstName={firstName}
+          langName={langName}
+          t={t}
+        />
+      ) : null}
+
+      <BuyerTiles
         lead={lead}
         data={data}
         loading={loading}
         t={t}
         onEdited={() => setEditVersion((v) => v + 1)}
       />
-      <NextBestAction
-        data={data}
-        loading={loading}
-        t={t}
-        block={block}
-        suppressChannel={suppressChannel}
-      />
 
-      <MatchedProperties
-        key={"m-" + lead.leadId}
-        leadId={lead.leadId}
-        leadName={lead.fullName}
-        onSuggested={onSuggested}
-        suggestDisabled={suggestDisabled}
-        suggestReason={suggestReason}
-        // Re-fetch when a NEW buyer message arrives OR the agent edits the profile
-        // (both change the recommendation basis) — kills UI-cache staleness.
-        refreshKey={`${lead.latestInboundAt ?? ""}:${editVersion}`}
-        // The stored preference the engine actually keyed these to — shown so a
-        // recommendation that predates a newer buyer request can't read as current.
-        basedOn={data?.location_interest_extracted ?? null}
-      />
+      <section className="flex flex-col gap-2 rounded-2xl border border-border bg-card p-3.5">
+        <MatchedProperties
+          key={"m-" + lead.leadId}
+          leadId={lead.leadId}
+          leadName={lead.fullName}
+          onSuggested={onSuggested}
+          suggestDisabled={suggestDisabled}
+          suggestReason={suggestReason}
+          refreshKey={`${lead.latestInboundAt ?? ""}:${editVersion}`}
+          basedOn={data?.location_interest_extracted ?? null}
+        />
+      </section>
 
-      {/* Lower compact sections, side-by-side when the panel is wide enough.
-          Notes gets the most room (it has the composer), per the mockup. */}
-      <div className="grid items-start gap-x-5 gap-y-0 @[440px]:grid-cols-[1.3fr_0.85fr_1fr]">
+      <div className="grid items-start gap-3 @[440px]:grid-cols-2">
         <LeadNotes key={lead.leadId} leadId={lead.leadId} authors={authors} />
         <FollowUp data={data} loading={loading} t={t} />
-        <Conversation lead={lead} t={t} windowOpen={windowOpen} />
       </div>
+
+      {isWhatsapp ? (
+        <TechnicalDetails lead={lead} readiness={readiness} waOpen={waOpen} t={t} />
+      ) : null}
     </div>
   );
 }
 
 type Tr = ReturnType<typeof useTranslations>;
 
-// ── small presentational primitives ────────────────────────────────────────
+// ── header ──────────────────────────────────────────────────────────────────
 
-function SectionHeader({ icon: Icon, title }: { icon: LucideIcon; title: string }) {
+function BriefHeader({ t, onRefresh }: { t: Tr; onRefresh: () => void }) {
   return (
-    <h3 className="flex items-center gap-2 text-[14px] font-semibold tracking-[-0.01em] text-foreground">
-      <Icon className="h-4 w-4 text-muted-foreground" aria-hidden />
-      {title}
-    </h3>
-  );
-}
-
-function Section({
-  icon,
-  title,
-  children,
-}: {
-  icon: LucideIcon;
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="flex flex-col gap-2 border-t border-border pt-3">
-      <SectionHeader icon={icon} title={title} />
-      {children}
-    </section>
-  );
-}
-
-/** Bulleted label/value row (green dot · label · value), value "—" when null. */
-function BulletRow({
-  label,
-  value,
-  loading,
-  hint,
-}: {
-  label: string;
-  value: string | null;
-  loading?: boolean;
-  hint?: string | null;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-2 text-[12px] leading-none">
-      <span className="flex shrink-0 items-center gap-1.5 text-muted-foreground">
-        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-brand" aria-hidden />
-        {label}
-      </span>
-      {loading ? (
-        <span className="inline-block h-3 w-16 animate-pulse rounded bg-muted" />
-      ) : (
-        <span className="min-w-0 truncate text-right font-semibold text-foreground">
-          {value ?? "—"}
-          {hint ? <span className="ml-1 font-normal text-muted-foreground">{hint}</span> : null}
+    <div className="flex items-start justify-between gap-2">
+      <div className="flex items-start gap-2">
+        <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-brand-soft text-brand">
+          <Sparkles className="h-4 w-4" aria-hidden strokeWidth={2} />
         </span>
-      )}
+        <div>
+          <h2 className="text-[16px] font-semibold tracking-tight text-foreground">
+            {t("aivenaBrief")}
+          </h2>
+          <p className="text-[11.5px] text-muted-foreground">{t("briefSubtitle")}</p>
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={onRefresh}
+        className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-[11.5px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+      >
+        <RefreshCw className="h-3.5 w-3.5" aria-hidden />
+        {t("refreshBrief")}
+      </button>
     </div>
   );
 }
 
-// ── value formatters (honest: null → null, caller renders "—") ──────────────
+// ── 1. summary (green) ──────────────────────────────────────────────────────
+
+function SummaryCard({ summary, loading, t }: { summary: string | null; loading: boolean; t: Tr }) {
+  if (loading) {
+    return (
+      <div className="rounded-2xl border border-emerald-500/15 bg-emerald-500/[0.05] p-3.5">
+        <div className="flex flex-col gap-2">
+          <div className="h-3 w-full animate-pulse rounded bg-emerald-500/15" />
+          <div className="h-3 w-4/5 animate-pulse rounded bg-emerald-500/15" />
+          <p className="text-[11px] text-emerald-700/70 dark:text-emerald-300/70">{t("summarizing")}</p>
+        </div>
+      </div>
+    );
+  }
+  if (!summary) return null;
+  return (
+    <div className="rounded-2xl border border-emerald-500/15 bg-emerald-500/[0.05] p-3.5">
+      {/* Plain text node — the summary is server-generated + guarded, never markup. */}
+      <p className="text-[13px] leading-[1.55] text-foreground">{summary}</p>
+    </div>
+  );
+}
+
+// ── 2. contactability (pink when blocked, amber when reopenable, green when open) ──
+
+function closedSinceLabel(iso: string | null, now: Date, t: Tr): string | null {
+  if (!iso) return null;
+  const ms = now.getTime() - new Date(iso).getTime();
+  if (!Number.isFinite(ms) || ms < 0) return null;
+  const days = Math.floor(ms / 86_400_000);
+  if (days >= 14) return t("closedSinceWeeks", { n: Math.floor(days / 7) });
+  if (days >= 1) return t("closedSinceDays", { n: days });
+  return t("closedSinceToday");
+}
+
+function ContactabilityCard({
+  gate,
+  block,
+  windowClosed,
+  resolved,
+  lastInboundAt,
+  langName,
+  t,
+}: {
+  gate: ContactGate;
+  block: ContactBlockNotice;
+  /** The single window truth from the parent (from waOpen) — same source the
+   *  gate/Suggest use, so this card can never diverge from them. */
+  windowClosed: boolean;
+  resolved: boolean;
+  lastInboundAt: string | null;
+  langName: string;
+  t: Tr;
+}) {
+  const now = useNow();
+  const blocked = block != null;
+  const cooldown = gate.kind === "checkin_cooldown";
+  // Neutral until BOTH truths resolve; then block→pink, closed→amber, open→green.
+  const tone: "muted" | "block" | "warn" | "ok" = !resolved
+    ? "muted"
+    : blocked
+      ? "block"
+      : windowClosed
+        ? "warn"
+        : "ok";
+
+  const box =
+    tone === "block"
+      ? "border-rose-500/20 bg-rose-500/[0.06]"
+      : tone === "warn"
+        ? "border-amber-500/20 bg-amber-500/[0.05]"
+        : tone === "ok"
+          ? "border-emerald-500/15 bg-emerald-500/[0.05]"
+          : "border-border bg-muted/40";
+  const iconWrap =
+    tone === "block"
+      ? "bg-rose-500/15 text-rose-600 dark:text-rose-300"
+      : tone === "warn"
+        ? "bg-amber-500/15 text-amber-600 dark:text-amber-300"
+        : tone === "ok"
+          ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-300"
+          : "bg-muted text-muted-foreground";
+
+  const statusLine = !resolved
+    ? t("contactChecking")
+    : windowClosed
+      ? t("statusWindowClosed")
+      : t("statusWindowOpen");
+  // Sub-line consumes the GATE (not a re-derived boolean) so cooldown, template
+  // gaps, and reopenable states each read truthfully.
+  const subLine = !resolved
+    ? null
+    : blocked
+      ? block!.code
+        ? t("subNoTemplate", { language: langName })
+        : subForReason(gate, t)
+      : cooldown
+        ? t("subCooldown")
+        : windowClosed
+          ? t("subCheckinReopen")
+          : t("subReplyNow");
+
+  const bullets: string[] = [];
+  if (blocked) {
+    const since = closedSinceLabel(lastInboundAt, now, t);
+    if (windowClosed && since) bullets.push(since);
+    const reasonBullet = whyBullet(gate, langName, t);
+    if (reasonBullet) bullets.push(reasonBullet);
+  }
+
+  return (
+    <div className={cn("rounded-2xl border p-3.5", box)}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-start gap-2.5">
+          <span className={cn("mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg", iconWrap)}>
+            {tone === "ok" ? (
+              <MessageCircle className="h-4 w-4" aria-hidden strokeWidth={2} />
+            ) : (
+              <Lock className="h-4 w-4" aria-hidden strokeWidth={2} />
+            )}
+          </span>
+          <div className="min-w-0">
+            <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+              {t("contactability")}
+            </div>
+            <div className="text-[13.5px] font-semibold text-foreground">{statusLine}</div>
+            {subLine ? <div className="text-[12px] leading-snug text-muted-foreground">{subLine}</div> : null}
+          </div>
+        </div>
+        {bullets.length > 0 ? (
+          <div className="hidden max-w-[46%] shrink-0 flex-col gap-1 @[380px]:flex">
+            <div className="text-[10px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">{t("whyCantSend")}</div>
+            {bullets.map((b, i) => (
+              <div key={i} className="flex items-start gap-1.5 text-[11.5px] leading-snug text-muted-foreground">
+                <span className="mt-[5px] h-1.5 w-1.5 shrink-0 rounded-full bg-muted-foreground/40" aria-hidden />
+                <span>{b}</span>
+              </div>
+            ))}
+          </div>
+        ) : null}
+      </div>
+      {bullets.length > 0 ? (
+        <div className="mt-2 flex flex-col gap-1 @[380px]:hidden">
+          <div className="text-[10px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">{t("whyCantSend")}</div>
+          {bullets.map((b, i) => (
+            <div key={i} className="flex items-start gap-1.5 text-[11.5px] leading-snug text-muted-foreground">
+              <span className="mt-[5px] h-1.5 w-1.5 shrink-0 rounded-full bg-muted-foreground/40" aria-hidden />
+              <span>{b}</span>
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function subForReason(gate: ContactGate, t: Tr): string | null {
+  if (gate.kind !== "blocked") return null;
+  switch (gate.reason) {
+    case "opted_out":
+      return t("subOptedOut");
+    case "provider":
+      return t("subProvider");
+    case "phone":
+      return t("subPhone");
+    case "template_unregistered":
+      return t("subUnregistered");
+    default:
+      return null;
+  }
+}
+
+function whyBullet(gate: ContactGate, langName: string, t: Tr): string | null {
+  if (gate.kind === "unverified") return t("whyUnverified");
+  if (gate.kind !== "blocked") return null;
+  switch (gate.reason) {
+    case "no_template":
+      return t("whyNoTemplate", { language: langName });
+    case "template_unregistered":
+      return t("whyUnregistered");
+    case "opted_out":
+      return t("whyOptedOut");
+    case "provider":
+      return t("whyProvider");
+    case "phone":
+      return t("whyPhone");
+    default:
+      return null;
+  }
+}
+
+// ── 3. recommended next step (cream) ─────────────────────────────────────────
+
+function NextStepCard({
+  gate,
+  leadId,
+  firstName,
+  langName,
+  t,
+}: {
+  gate: ContactGate;
+  leadId: string;
+  firstName: string;
+  langName: string;
+  t: Tr;
+}) {
+  const [requesting, setRequesting] = useState(false);
+  const [requested, setRequested] = useState<"done" | "already" | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const isTemplateGap =
+    gate.kind === "blocked" && (gate.reason === "no_template" || gate.reason === "template_unregistered");
+
+  const { title, hint } = nextStepCopy(gate, firstName, langName, t);
+  if (!title) return null;
+
+  async function handleRequest() {
+    if (requesting || requested) return;
+    setRequesting(true);
+    setError(null);
+    const res = await requestTemplateAction(leadId);
+    if (res.ok) setRequested(res.data.deduped ? "already" : "done");
+    else setError(res.error);
+    setRequesting(false);
+  }
+
+  return (
+    <div className="rounded-2xl border border-amber-500/15 bg-amber-500/[0.045] p-3.5">
+      <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-amber-700 dark:text-amber-300/90">
+        {t("recommendedNextStep")}
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="min-w-0">
+          <div className="text-[13.5px] font-semibold text-foreground">{title}</div>
+          {hint ? <p className="mt-0.5 text-[12px] leading-snug text-muted-foreground">{hint}</p> : null}
+        </div>
+        {isTemplateGap ? (
+          requested ? (
+            <div className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500/10 px-2.5 py-1.5 text-[12px] font-medium text-emerald-700 dark:text-emerald-300">
+              <Check className="h-3.5 w-3.5" aria-hidden strokeWidth={2.5} />
+              {requested === "already" ? t("requestTemplateAlready") : t("requestTemplateDone")}
+            </div>
+          ) : (
+            <Button type="button" size="sm" className="shrink-0 gap-1.5" disabled={requesting} onClick={handleRequest}>
+              <Send className="h-3.5 w-3.5" aria-hidden />
+              {requesting ? t("requesting") : t("requestTemplate")}
+            </Button>
+          )
+        ) : null}
+      </div>
+      {error ? (
+        <p role="alert" className="mt-1.5 text-[11.5px] text-rose-700 dark:text-rose-300">
+          {error}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+function nextStepCopy(
+  gate: ContactGate,
+  firstName: string,
+  langName: string,
+  t: Tr,
+): { title: string | null; hint: string | null } {
+  switch (gate.kind) {
+    case "normal":
+      return { title: t("stepReply", { name: firstName }), hint: t("stepReplyHint") };
+    case "checkin":
+      return { title: t("stepCheckin"), hint: t("stepCheckinHint", { name: firstName }) };
+    case "checkin_cooldown":
+      return { title: t("stepWait", { name: firstName }), hint: null };
+    case "unverified":
+      return { title: null, hint: null };
+    case "blocked":
+      switch (gate.reason) {
+        case "no_template":
+        case "template_unregistered":
+          return {
+            title: t("stepGetApproval", { language: langName }),
+            hint: t("stepGetApprovalHint", { name: firstName }),
+          };
+        case "opted_out":
+          return { title: t("stepOptedOut"), hint: null };
+        case "provider":
+          return { title: t("stepProvider"), hint: null };
+        case "phone":
+          return { title: t("stepPhone", { name: firstName }), hint: null };
+        default:
+          return { title: null, hint: null };
+      }
+    default:
+      return { title: null, hint: null };
+  }
+}
+
+// ── 4. buyer profile tiles ───────────────────────────────────────────────────
 
 function fmtEur(n: number | string | null): string | null {
   if (n == null) return null;
@@ -330,36 +580,23 @@ function titleCaseWord(s: string | null): string | null {
   return w ? w.charAt(0).toUpperCase() + w.slice(1) : null;
 }
 
-/** "manual_whatsapp_call" → "Manual WhatsApp call" (WhatsApp casing preserved). */
-function friendlyChannel(slug: string | null): string | null {
-  if (!slug) return null;
-  const known: Record<string, string> = {
-    manual_whatsapp_call: "Manual WhatsApp call",
-    whatsapp: "WhatsApp",
-    email: "Email",
-    phone_call: "Phone call",
-    call: "Call",
-  };
-  if (known[slug]) return known[slug];
-  return slug
-    .split(/[_\s]+/)
-    .filter(Boolean)
-    .map((w, i) =>
-      w.toLowerCase() === "whatsapp"
-        ? "WhatsApp"
-        : i === 0
-          ? w.charAt(0).toUpperCase() + w.slice(1)
-          : w,
-    )
-    .join(" ");
+function Tile({ icon: Icon, label, value, loading }: { icon: LucideIcon; label: string; value: string | null; loading?: boolean }) {
+  return (
+    <div className="flex flex-col gap-1 rounded-xl border border-border bg-card px-2.5 py-2">
+      <div className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.04em] text-muted-foreground">
+        <Icon className="h-3 w-3" aria-hidden strokeWidth={2} />
+        {label}
+      </div>
+      {loading ? (
+        <span className="h-3.5 w-14 animate-pulse rounded bg-muted" />
+      ) : (
+        <div className="truncate text-[13px] font-semibold text-foreground">{value ?? "—"}</div>
+      )}
+    </div>
+  );
 }
 
-// reasonBullets + the budget-contradiction guard now live in
-// ./client-intelligence-lib (pure + unit-tested) — see nextActionBullets.
-
-// ── 1. Buyer Profile (2-col label/value rows) ────────────────────────────────
-
-function BuyerProfile({
+function BuyerTiles({
   lead,
   data,
   loading,
@@ -370,10 +607,11 @@ function BuyerProfile({
   data: LeadIntel | null;
   loading: boolean;
   t: Tr;
-  /** Called after a successful preference edit so the parent refreshes matches. */
   onEdited: () => void;
 }) {
   const [editing, setEditing] = useState(false);
+  const isBuyer = (lead.leadType ?? "buyer").toLowerCase() !== "seller";
+  const canEdit = isBuyer && !loading && data != null;
 
   const scoreVal =
     lead.score != null
@@ -383,11 +621,6 @@ function BuyerProfile({
       : lead.temperature
         ? titleCaseWord(lead.temperature.replace(/_/g, " "))
         : null;
-
-  // Preferences are editable on BUYER leads only (the RPC rejects sellers). Wait for
-  // the intel to load so the form pre-fills from real saved values, not blanks.
-  const isBuyer = (lead.leadType ?? "buyer").toLowerCase() !== "seller";
-  const canEdit = isBuyer && !loading && data != null;
 
   const original: EditablePrefs = {
     location_interest_extracted: data?.location_interest_extracted ?? null,
@@ -399,9 +632,9 @@ function BuyerProfile({
   };
 
   return (
-    <section className="flex flex-col gap-2 border-t border-border pt-3">
+    <section className="flex flex-col gap-2">
       <div className="flex items-center justify-between gap-2">
-        <SectionHeader icon={User} title={t("buyerProfileHeading")} />
+        <h3 className="text-[13.5px] font-semibold tracking-tight text-foreground">{t("buyerProfileHeading")}</h3>
         {canEdit && !editing ? (
           <button
             type="button"
@@ -414,20 +647,6 @@ function BuyerProfile({
         ) : null}
       </div>
 
-      {/* Honest transparency: the saved search was derived from a buyer message
-          (deterministic today, the LLM intent path once enabled) — never a silent
-          change. Summary + when; Edit above corrects it if the read was wrong. */}
-      {!editing && data?.preferences_updated_from_message_at ? (
-        <div className="flex items-start gap-1.5 rounded-md bg-brand-soft/50 px-2 py-1 text-[11px] leading-snug text-muted-foreground">
-          <RefreshCw className="mt-[1px] h-3 w-3 shrink-0 text-brand" aria-hidden />
-          <span>
-            {data.preferences_update_summary?.trim() || t("updatedFromMessage")}
-            {" · "}
-            <RelativeTime iso={data.preferences_updated_from_message_at} />
-          </span>
-        </div>
-      ) : null}
-
       {editing ? (
         <BuyerProfileEdit
           leadId={lead.leadId}
@@ -439,131 +658,45 @@ function BuyerProfile({
           onCancel={() => setEditing(false)}
         />
       ) : (
-        <div className="grid gap-x-8 gap-y-1 @[320px]:grid-cols-2">
-          <div className="flex flex-col gap-1">
-            <BulletRow label={t("type")} value={lead.leadType ? typeLabel(lead.leadType) : null} />
-            <BulletRow label={t("score")} value={scoreVal} />
-            <BulletRow label={t("urgency")} value={titleCaseWord(data?.urgency ?? null)} loading={loading} />
-            <BulletRow label={t("timeframe")} value={titleCaseWord(data?.timeframe ?? null)} loading={loading} />
-          </div>
-          <div className="flex flex-col gap-1">
-            <BulletRow label={t("budget")} value={fmtEur(data?.budget_extracted ?? null)} loading={loading} />
-            <BulletRow label={t("location")} value={data?.location_interest_extracted ?? null} loading={loading} />
-            <BulletRow label={t("bedrooms")} value={fmtBedrooms(data?.bedrooms_min ?? null, data?.bedrooms_max ?? null)} loading={loading} />
-            <BulletRow label={t("bathrooms")} value={fmtBathrooms(data?.bathrooms_min ?? null)} loading={loading} />
-            <BulletRow label={t("propertyType")} value={data?.property_type_pref ? typeLabel(data.property_type_pref) : null} loading={loading} />
-            <BulletRow label={t("language")} value={langLabel(lead.language)} />
-          </div>
+        <div className="grid grid-cols-2 gap-2 @[360px]:grid-cols-3">
+          <Tile icon={Wallet} label={t("budget")} value={fmtEur(data?.budget_extracted ?? null)} loading={loading} />
+          <Tile icon={Gauge} label={t("score")} value={scoreVal} />
+          <Tile icon={Flame} label={t("urgency")} value={titleCaseWord(data?.urgency ?? null)} loading={loading} />
+          <Tile icon={CalendarClock} label={t("timeframe")} value={titleCaseWord(data?.timeframe ?? null)} loading={loading} />
+          <Tile icon={MapPin} label={t("location")} value={data?.location_interest_extracted ?? null} loading={loading} />
+          <Tile icon={BedDouble} label={t("bedrooms")} value={fmtBedrooms(data?.bedrooms_min ?? null, data?.bedrooms_max ?? null)} loading={loading} />
+          <Tile icon={Bath} label={t("bathrooms")} value={fmtBathrooms(data?.bathrooms_min ?? null)} loading={loading} />
+          <Tile icon={Home} label={t("propertyType")} value={data?.property_type_pref ? typeLabel(data.property_type_pref) : null} loading={loading} />
+          <Tile icon={Languages} label={t("language")} value={langLabel(lead.language)} />
         </div>
       )}
     </section>
   );
 }
 
-// ── 2. Next Best Action (bullets) ────────────────────────────────────────────
+// ── 5. follow-up (compact) ───────────────────────────────────────────────────
 
-function NextBestAction({
-  data,
-  loading,
-  t,
-  block,
-  suppressChannel,
-}: {
-  data: LeadIntel | null;
-  loading: boolean;
-  t: Tr;
-  /** When set, contact is blocked/unverified per readiness — suppress the
-   *  (misleading) recommended contact channel and show the honest reason. */
-  block: ContactBlockNotice;
-  /** True while contact is unresolved OR blocked — the stored recommended
-   *  channel ("Manual WhatsApp call") must not show until we KNOW it can work. */
-  suppressChannel: boolean;
-}) {
-  // Suppress the stored `recommended_channel` whenever contact is unresolved or
-  // blocked — it would otherwise imply an available action that can't happen.
-  // The reasoning bullets are about the buyer's preferences (not a contact
-  // method), so they stay.
-  const channel = suppressChannel ? null : friendlyChannel(data?.recommended_channel ?? null);
-  // Bug 2: drop stale "no budget info" clauses when the lead's budget IS known,
-  // so Next-best-action can't contradict the Budget row shown above.
-  const bullets = nextActionBullets(data?.reasoning_summary ?? null, data?.budget_extracted ?? null);
-  const hasAny = !!block || !!channel || bullets.length > 0 || !!data?.next_action;
-
-  return (
-    <Section icon={Zap} title={t("nextActionHeading")}>
-      {loading ? (
-        <div className="h-3.5 w-44 animate-pulse rounded bg-muted" />
-      ) : !hasAny ? (
-        <p className="text-[12px] text-muted-foreground">{t("noAction")}</p>
-      ) : (
-        <ul className="flex flex-col gap-1 text-[12.5px] leading-snug">
-          {block ? (
-            // Honest, readiness-derived block — rendered as a TEXT node (never
-            // markup), interpolations are a language name + short code.
-            <li className="flex items-start gap-2.5">
-              <span className="mt-[5px] h-2 w-2 shrink-0 rounded-full bg-amber-500" aria-hidden />
-              <span className="font-medium text-amber-700 dark:text-amber-300">
-                {t(block.contactKey, { language: block.language, code: block.code })}
-              </span>
-            </li>
-          ) : null}
-          {channel ? (
-            <li className="flex items-start gap-2.5">
-              <span className="mt-[6px] h-2 w-2 shrink-0 rounded-full bg-brand" aria-hidden />
-              <span className="text-foreground">
-                <span className="font-semibold">{t("recommended")}:</span> {channel}
-              </span>
-            </li>
-          ) : null}
-          {bullets.map((b, i) => (
-            <li key={i} className="flex items-start gap-2.5">
-              <span className="mt-[6px] h-2 w-2 shrink-0 rounded-full bg-brand" aria-hidden />
-              <span className="text-muted-foreground">{b}</span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </Section>
-  );
-}
-
-// ── 5. Tasks / Follow-up (read-only) ─────────────────────────────────────────
-
-function FollowUp({
-  data,
-  loading,
-  t,
-}: {
-  data: LeadIntel | null;
-  loading: boolean;
-  t: Tr;
-}) {
+function FollowUp({ data, loading, t }: { data: LeadIntel | null; loading: boolean; t: Tr }) {
   const paused = data?.followup_paused === true;
   const next = data?.next_followup_at ?? null;
-
   return (
-    <Section icon={CalendarClock} title={t("followUpHeading")}>
+    <section className="flex flex-col gap-2 rounded-2xl border border-border bg-card p-3.5">
+      <h3 className="flex items-center gap-2 text-[13.5px] font-semibold tracking-tight text-foreground">
+        <CalendarClock className="h-4 w-4 text-muted-foreground" aria-hidden />
+        {t("followUpHeading")}
+      </h3>
       {loading ? (
         <div className="h-3.5 w-28 animate-pulse rounded bg-muted" />
       ) : (
         <ul className="flex flex-col gap-1.5 text-[12px]">
           <li className="flex items-baseline gap-2 leading-tight">
-            <span
-              className={cn(
-                "mt-1 h-1.5 w-1.5 shrink-0 rounded-full",
-                paused ? "bg-amber-500" : "bg-brand",
-              )}
-              aria-hidden
-            />
+            <span className={cn("mt-1 h-1.5 w-1.5 shrink-0 rounded-full", paused ? "bg-amber-500" : "bg-brand")} aria-hidden />
             <span className={paused ? "text-muted-foreground" : "text-foreground"}>
               {paused ? t("followUpPaused") : t("followUpActive")}
             </span>
           </li>
           <li className="flex items-baseline gap-2 leading-tight">
-            <span
-              className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-muted-foreground/40"
-              aria-hidden
-            />
+            <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-muted-foreground/40" aria-hidden />
             <span className="text-muted-foreground">
               {next ? (
                 <>
@@ -576,64 +709,75 @@ function FollowUp({
           </li>
         </ul>
       )}
-    </Section>
+    </section>
   );
 }
 
-// ── 6. Conversation / WhatsApp status ────────────────────────────────────────
+// ── 6. technical details (collapsible) ───────────────────────────────────────
 
-function Conversation({
+function TechnicalDetails({
   lead,
+  readiness,
+  waOpen,
   t,
-  windowOpen,
 }: {
   lead: InboxRow;
+  readiness: ContactReadiness | null;
+  waOpen: WaOpen;
   t: Tr;
-  /** From dashboard_lead_whatsapp_state; null when not WhatsApp / unknown. */
-  windowOpen: boolean | null;
 }) {
-  const isWhatsapp = (lead.channel ?? "").toLowerCase().includes("whatsapp");
+  const [open, setOpen] = useState(false);
+  const failReason = readiness?.ok ? (readiness.last_failed_reason ?? null) : null;
   return (
-    <Section icon={MessageCircle} title={t("conversationHeading")}>
-      <div className="flex flex-col gap-1.5 text-[11.5px] leading-none">
-        <div className="flex items-baseline justify-between gap-2">
-          <span className="shrink-0 text-muted-foreground">{t("channel")}</span>
-          <span className="truncate font-medium text-foreground">
-            {friendlyChannel(lead.channel ?? null) ?? "—"}
-          </span>
-        </div>
-        {isWhatsapp ? (
-          <div className="flex items-baseline justify-between gap-2">
-            <span className="shrink-0 text-muted-foreground">{t("whatsappWindow")}</span>
-            <span
-              className={cn(
-                "font-medium",
-                windowOpen === false
-                  ? "text-amber-700 dark:text-amber-400"
-                  : windowOpen
-                    ? "text-brand"
-                    : "text-foreground",
-              )}
-            >
-              {windowOpen == null ? "—" : windowOpen ? t("windowOpen") : t("windowClosed")}
+    <section className="rounded-2xl border border-border bg-card">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="flex w-full items-center justify-between gap-2 px-3.5 py-2.5 text-left"
+      >
+        <span className="flex min-w-0 items-center gap-2">
+          <Wrench className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
+          <span className="text-[12.5px] font-medium text-foreground">{t("technicalDetails")}</span>
+          {failReason ? (
+            <span className="hidden truncate font-mono text-[10px] text-amber-700 dark:text-amber-300 @[380px]:inline">
+              {t("lastCheckinFailedShort", { reason: failReason })}
             </span>
-          </div>
-        ) : null}
-        <div className="flex items-baseline justify-between gap-2">
-          <span className="shrink-0 text-muted-foreground">{t("lastInbound")}</span>
-          <span className="font-medium text-foreground">
-            {lead.latestInboundAt ? <RelativeTime iso={lead.latestInboundAt} /> : "—"}
-          </span>
-        </div>
-        <div className="flex items-baseline justify-between gap-2">
-          <span className="shrink-0 text-muted-foreground">{t("lastOutbound")}</span>
-          <span className="font-medium text-foreground">
-            {lead.lastOutboundAt ? <RelativeTime iso={lead.lastOutboundAt} /> : "—"}
-          </span>
-        </div>
-      </div>
-      {/* The authoritative 24h SEND gate stays in the composer (centre pane);
-          this read-only mirror uses the same RPC. */}
-    </Section>
+          ) : null}
+        </span>
+        <ChevronDown className={cn("h-4 w-4 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")} aria-hidden />
+      </button>
+      {open ? (
+        <dl className="grid grid-cols-1 gap-1.5 border-t border-border px-3.5 py-2.5 text-[11.5px]">
+          <Row label={t("whatsappWindow")} value={waOpen == null ? "—" : waOpen ? t("windowOpen") : t("windowClosed")} />
+          <RowTime label={t("lastInbound")} iso={lead.latestInboundAt ?? readiness?.last_inbound_at ?? null} />
+          <RowTime label={t("lastOutbound")} iso={lead.lastOutboundAt ?? readiness?.last_successful_outbound_at ?? null} />
+          {failReason ? (
+            <div className="flex items-baseline justify-between gap-2">
+              <dt className="shrink-0 text-muted-foreground">{t("lastCheckinFailedLabel")}</dt>
+              {/* text node — the raw code is shown deliberately, only in this drawer */}
+              <dd className="truncate text-right font-mono text-[10.5px] text-amber-700 dark:text-amber-300">{failReason}</dd>
+            </div>
+          ) : null}
+        </dl>
+      ) : null}
+    </section>
+  );
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-baseline justify-between gap-2">
+      <dt className="shrink-0 text-muted-foreground">{label}</dt>
+      <dd className="truncate text-right font-medium text-foreground">{value}</dd>
+    </div>
+  );
+}
+function RowTime({ label, iso }: { label: string; iso: string | null }) {
+  return (
+    <div className="flex items-baseline justify-between gap-2">
+      <dt className="shrink-0 text-muted-foreground">{label}</dt>
+      <dd className="truncate text-right font-medium text-foreground">{iso ? <RelativeTime iso={iso} /> : "—"}</dd>
+    </div>
   );
 }

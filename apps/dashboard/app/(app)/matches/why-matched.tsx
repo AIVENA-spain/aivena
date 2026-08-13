@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { Check } from "lucide-react";
 
 import type {
   MatchDimension,
@@ -164,13 +165,21 @@ export function WhyMatched({
     <ul className="flex flex-col gap-1.5">
       {rows.map((r, i) => (
         <li key={i} className="flex items-start gap-2.5">
-          <span
-            className={cn(
-              "mt-[6px] h-2 w-2 shrink-0 rounded-full",
-              TONE_DOT[r.tone],
-            )}
-            aria-hidden
-          />
+          {r.tone === "positive" ? (
+            <Check
+              className="mt-[2px] h-3.5 w-3.5 shrink-0 text-emerald-600 dark:text-emerald-400"
+              strokeWidth={2.5}
+              aria-hidden
+            />
+          ) : (
+            <span
+              className={cn(
+                "mt-[6px] h-2 w-2 shrink-0 rounded-full",
+                TONE_DOT[r.tone],
+              )}
+              aria-hidden
+            />
+          )}
           <span className="text-[12.5px] leading-snug">
             <span className={cn("font-medium", TONE_TEXT[r.tone])}>{r.text}</span>
             {r.contrast ? (

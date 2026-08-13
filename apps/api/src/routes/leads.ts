@@ -1,5 +1,13 @@
 import { Hono } from 'hono';
 import { sql } from 'drizzle-orm';
+import { getLeadSummary } from './lead-summary';
+import {
+  contactabilitySentence,
+  formatBathrooms,
+  formatBedrooms,
+  languageDisplayName,
+  type LeadFacts,
+} from './lead-summary-lib';
 
 /**
  * Leads — write-side actions that go through SECURITY DEFINER RPCs (which read
@@ -296,6 +304,109 @@ route.get('/:leadId/contact-readiness', async (c) => {
     return c.json({ ok: true, data: rows[0]?.readiness ?? null });
   } catch (err) {
     console.error('[leads/contact-readiness] failed:', leadId, err);
+    return c.json({ ok: false, error: GENERIC }, 500);
+  }
+});
+
+// GET /:leadId/brief-summary — the AIVENA Brief natural-language summary.
+// LLM-primary (grounded strictly on the lead's structured facts + the
+// deterministic contactability truth), deterministic-fallback. READ-ONLY: it
+// selects a few lead columns + calls get_lead_contact_readiness; it never writes.
+route.get('/:leadId/brief-summary', async (c) => {
+  const tx = c.get('tx');
+  const leadId = c.req.param('leadId');
+  if (!UUID_RE.test(leadId)) {
+    return c.json({ ok: false, error: 'A valid lead id is required.' }, 400);
+  }
+  try {
+    const result = await tx.execute(sql`
+      SELECT l.agency_id,
+             l.full_name,
+             l.language,
+             l.channel,
+             l.temperature,
+             l.score,
+             l.budget_extracted,
+             l.location_interest_extracted,
+             l.bedrooms_min,
+             l.bedrooms_max,
+             l.bathrooms_min,
+             l.property_type_pref,
+             l.urgency,
+             l.timeframe,
+             public.get_lead_contact_readiness(l.id) AS readiness
+        FROM public.leads l
+       WHERE l.id = ${leadId}::uuid
+         AND l.agency_id = current_setting('app.current_agency_id', true)
+    `);
+    const rows = result as unknown as Array<Record<string, unknown>>;
+    if (rows.length === 0) {
+      return c.json({ ok: false, error: "Couldn't load this lead's details." }, 404);
+    }
+    const r = rows[0];
+    const readiness = (r.readiness ?? null) as {
+      recommended_action?: string | null;
+      lead_language_normalized?: string | null;
+      whatsapp_window?: { state?: string | null } | null;
+      last_failed_reason?: string | null;
+    } | null;
+    const facts: LeadFacts = {
+      first_name: r.full_name ? String(r.full_name).trim().split(/\s+/)[0] : null,
+      language: languageDisplayName(r.language as string | null),
+      temperature: (r.temperature as string | null) ?? null,
+      score: r.score != null ? Number(r.score) : null,
+      property_type: (r.property_type_pref as string | null) ?? null,
+      bedrooms: formatBedrooms(
+        r.bedrooms_min != null ? Number(r.bedrooms_min) : null,
+        r.bedrooms_max != null ? Number(r.bedrooms_max) : null,
+      ),
+      bathrooms: formatBathrooms(r.bathrooms_min != null ? Number(r.bathrooms_min) : null),
+      budget_eur: r.budget_extracted != null ? Number(r.budget_extracted) : null,
+      location: (r.location_interest_extracted as string | null) ?? null,
+      urgency: (r.urgency as string | null) ?? null,
+      timeframe: (r.timeframe as string | null) ?? null,
+      // Only make a WhatsApp contactability claim for WhatsApp leads — the panel
+      // hides all WhatsApp cards for other channels, so the summary must too.
+      contactability:
+        (r.channel ?? "").toString().toLowerCase().includes("whatsapp")
+          ? contactabilitySentence(readiness)
+          : "",
+    };
+    const out = await getLeadSummary(String(r.agency_id), facts);
+    return c.json({ ok: true, data: { summary: out.summary, source: out.source } });
+  } catch (err) {
+    console.error('[leads/brief-summary] failed:', leadId, err);
+    return c.json({ ok: false, error: GENERIC }, 500);
+  }
+});
+
+// POST /:leadId/request-template — record an INTERNAL request that the AIVENA
+// team approve the lead-language check-in template. SAFE: the RPC writes only
+// dashboard_tasks + lead_events (both agency-RLS-fenced) and NEVER touches
+// Twilio/Meta or any template/provider state. Deduplicated server-side so
+// repeated clicks are a no-op.
+route.post('/:leadId/request-template', async (c) => {
+  const tx = c.get('tx');
+  const leadId = c.req.param('leadId');
+  if (!UUID_RE.test(leadId)) {
+    return c.json({ ok: false, error: 'A valid lead id is required.' }, 400);
+  }
+  try {
+    const result = await tx.execute(sql`
+      SELECT public.request_template_approval(${leadId}::uuid) AS result
+    `);
+    const rows = result as unknown as Array<{ result: { ok?: boolean; error?: string; deduped?: boolean } }>;
+    const payload = rows[0]?.result ?? {};
+    if (payload.ok === true) {
+      return c.json({ ok: true, deduped: payload.deduped === true });
+    }
+    const REASONS: Record<string, string> = {
+      lead_not_found: 'Something went wrong — please refresh and try again.',
+      not_applicable: 'A template request isn’t needed for this lead right now.',
+    };
+    return c.json({ ok: false, error: REASONS[payload.error ?? ''] ?? GENERIC }, 422);
+  } catch (err) {
+    console.error('[leads/request-template] failed:', leadId, err);
     return c.json({ ok: false, error: GENERIC }, 500);
   }
 });

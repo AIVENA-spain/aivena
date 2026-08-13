@@ -96,3 +96,61 @@ export async function getLeadContactReadinessAction(
     return { ok: false, error: "Couldn't verify contact status." };
   }
 }
+
+export type BriefSummary = { summary: string; source: "llm" | "deterministic" };
+
+/**
+ * The AIVENA Brief natural-language summary (LLM-primary, deterministic
+ * fallback — grounded strictly on the lead's structured facts + contactability
+ * truth). Read-only. On failure the caller shows a calm loading/empty state
+ * rather than fabricating a summary.
+ */
+export async function getLeadBriefSummaryAction(
+  leadId: string,
+): Promise<Ok<BriefSummary> | Err> {
+  try {
+    const res = await apiFetch<{ ok: boolean; data: BriefSummary }>(
+      `/api/v1/leads/${encodeURIComponent(leadId)}/brief-summary`,
+    );
+    return { ok: true, data: res.data };
+  } catch (err) {
+    const detail =
+      err instanceof ApiError
+        ? `${err.status} ${err.message}`
+        : err instanceof Error
+          ? err.message
+          : String(err);
+    console.error("[lead-intel] brief-summary load failed:", detail);
+    return { ok: false, error: "Couldn't load the brief summary." };
+  }
+}
+
+/**
+ * Record an internal request that the AIVENA team approve this lead's
+ * check-in template. SAFE: the API writes only an internal task/event and never
+ * submits anything to Meta/Twilio. `deduped` is true when a request was already
+ * pending (repeated clicks are a no-op).
+ */
+export async function requestTemplateAction(
+  leadId: string,
+): Promise<Ok<{ deduped: boolean }> | Err> {
+  try {
+    const res = await apiFetch<{ ok: boolean; deduped?: boolean }>(
+      `/api/v1/leads/${encodeURIComponent(leadId)}/request-template`,
+      { method: "POST", body: JSON.stringify({}) },
+    );
+    return { ok: true, data: { deduped: res.deduped === true } };
+  } catch (err) {
+    const detail =
+      err instanceof ApiError
+        ? `${err.status} ${err.message}`
+        : err instanceof Error
+          ? err.message
+          : String(err);
+    console.error("[lead-intel] request-template failed:", detail);
+    if (err instanceof ApiError && err.status < 500 && err.message) {
+      return { ok: false, error: err.message };
+    }
+    return { ok: false, error: "Couldn't send the request — please try again." };
+  }
+}

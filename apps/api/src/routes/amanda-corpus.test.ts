@@ -27,6 +27,18 @@ describe('corpus: search phrasings → property_question', () => {
       'cheapest apartment you have?', 'hello can you reccomend me some properties in torrevieja',
     ], 'property_question');
   });
+  it('a search CUE + a named type routes to search — incl. bare "any <type>?" (2026-08-20)', () => {
+    // "any townhouses?" (no "do you have") used to fall through to the greeting.
+    expectIntent([
+      'any townhouses?', 'got penthouses?', 'show me chalets', 'any bungalows available?',
+      'do you have any townhouses?', 'looking for a townhouse',
+    ], 'property_question');
+  });
+  it('a bare type answer is NOT a search — the seller/type funnel step still works', () => {
+    // A seller answering "what kind of property is it?" with a lone type must stay in
+    // the funnel, never trigger a buyer search.
+    expectIntent(['a villa', 'townhouse', 'apartment', 'an apartment'], 'qualify');
+  });
 });
 
 describe('corpus: refs + referring expressions → property_question', () => {

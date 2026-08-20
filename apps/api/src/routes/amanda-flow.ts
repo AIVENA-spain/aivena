@@ -274,6 +274,15 @@ function statesSearchCriteria(message: string): boolean {
   return n >= 2;
 }
 
+// A search CUE ("any/some/got/show/looking…") next to a named property type is a
+// search — "any townhouses?", "got penthouses?", "show me chalets". Deliberately
+// EXCLUDES a bare "a villa" / lone "townhouse" so a seller answering the type step
+// isn't misrouted into a buyer search (Christian, 2026-08-20).
+const TYPE_SEARCH_CUE = /\b(any|some|got|show|looking|searching|available)\b|\bdo you (have|got)\b|\bhave you got\b/i;
+function namesTypeInSearchContext(message: string): boolean {
+  return TYPE_SEARCH_CUE.test(message) && parseMessage(message).propertyType !== undefined;
+}
+
 export function classifyIntent(message: string): Intent {
   if (typeof message !== 'string' || !message.trim()) return 'qualify';
   const m = message.toLowerCase();
@@ -281,7 +290,8 @@ export function classifyIntent(message: string): Intent {
   if (TEAM_TOPIC_RE.test(m)) return 'team_question';
   if (SELLER_RE.test(m)) return 'qualify';   // seller funnel (seller-aware questions)
   if (PROPERTY_Q_RE.test(m) || PROPERTY_REF_RE.test(m) || REF_LIKE_RE.test(message)
-      || SEARCH_HINT_RE.test(m) || VIEWING_HINT_RE.test(m) || statesSearchCriteria(m)) {
+      || SEARCH_HINT_RE.test(m) || VIEWING_HINT_RE.test(m) || statesSearchCriteria(m)
+      || namesTypeInSearchContext(m)) {
     return 'property_question';
   }
   return 'qualify';

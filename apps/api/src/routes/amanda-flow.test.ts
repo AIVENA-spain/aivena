@@ -54,6 +54,16 @@ describe('parseMessage — deterministic light parsing', () => {
     expect(p.intent).toBe('seller');
     expect(p.propertyType).toBe('villa');
   });
+  it('extracts a property TYPE from a PLURAL search phrase (Christian 2026-08-20)', () => {
+    // "do you have any penthouses?" must extract 'penthouse' — else the search runs
+    // type-less and returns the cheapest listings of any kind.
+    expect(parseMessage('do you have any penthouses?').propertyType).toBe('penthouse');
+    expect(parseMessage('do you have any villas?').propertyType).toBe('villa');
+    expect(parseMessage('any townhouses near the beach?').propertyType).toBe('townhouse');
+    expect(parseMessage('show me some apartments').propertyType).toBe('apartment');
+    expect(parseMessage('do you have aticos?').propertyType).toBe('penthouse');
+    expect(parseMessage('chalets in albir').propertyType).toBe('villa');
+  });
   it('parses plain, dotted, and SPACE-separated budgets', () => {
     expect(parseMessage('budget 400000').budgetMax).toBe(400000);
     expect(parseMessage('hasta 300.000').budgetMax).toBe(300000);

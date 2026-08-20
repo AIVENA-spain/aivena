@@ -58,12 +58,15 @@ const TOWNS = [
   'marbella', 'estepona', 'mijas', 'fuengirola', 'san javier', 'murcia', 'cartagena',
 ];
 const TOWNS_SORTED = [...TOWNS].sort((a, b) => b.length - a.length);
+// Every alternative accepts a PLURAL (villas, penthouses, townhouses…) — a search
+// like "do you have any penthouses?" must still extract the type, or it silently
+// falls through to a type-less search (Christian, 2026-08-20).
 const TYPES: Array<[RegExp, string]> = [
   [/\b(apartments?|pisos?|flats?|apartamentos?|wohnung(en)?|appartements?|leilighet(er)?|l(ä|a)genhet(er)?)\b/i, 'apartment'],
-  [/\b(villa|chalet|detached)\b/i, 'villa'],
-  [/\b(townhouse|bungalow|adosad|quad)\b/i, 'townhouse'],
-  [/\b(penthouse|ático|atico)\b/i, 'penthouse'],
-  [/\b(plot|land|terreno)\b/i, 'plot'],
+  [/\b(villas?|chalets?|detached)\b/i, 'villa'],
+  [/\b(townhouses?|bungalows?|adosados?|quad)\b/i, 'townhouse'],
+  [/\b(penthouses?|áticos?|aticos?)\b/i, 'penthouse'],
+  [/\b(plots?|land|terrenos?)\b/i, 'plot'],
 ];
 
 /** Parse light structured facts from a free-text message (deterministic). */

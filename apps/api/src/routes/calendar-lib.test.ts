@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import {
   parseGoogleTokenResponse, buildCalendarEvent, classifyGoogleStatus,
-  syncOneBooking, type SyncBookingDeps,
+  shouldSkipCalendarSync, syncOneBooking, type SyncBookingDeps,
 } from './calendar-lib';
 
 describe('parseGoogleTokenResponse', () => {
@@ -47,6 +47,23 @@ describe('classifyGoogleStatus', () => {
     expect(classifyGoogleStatus(400)).toBe('permanent');
     expect(classifyGoogleStatus(401)).toBe('permanent');
     expect(classifyGoogleStatus(404)).toBe('permanent');
+  });
+});
+
+describe('shouldSkipCalendarSync — cancelled/no-show viewings never get an event', () => {
+  it('skips cancelled + no_show', () => {
+    expect(shouldSkipCalendarSync('cancelled')).toBe(true);
+    expect(shouldSkipCalendarSync('no_show')).toBe(true);
+  });
+  it('syncs every live booking status', () => {
+    expect(shouldSkipCalendarSync('requested')).toBe(false);
+    expect(shouldSkipCalendarSync('confirmed')).toBe(false);
+    expect(shouldSkipCalendarSync('rescheduled')).toBe(false);
+    expect(shouldSkipCalendarSync('completed')).toBe(false);
+  });
+  it('does not skip when the status is unknown (missing context row)', () => {
+    expect(shouldSkipCalendarSync(null)).toBe(false);
+    expect(shouldSkipCalendarSync(undefined)).toBe(false);
   });
 });
 

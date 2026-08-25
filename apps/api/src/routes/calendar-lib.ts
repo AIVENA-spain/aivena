@@ -71,6 +71,17 @@ export function buildCalendarEvent(b: BookingForEvent): GoogleEvent {
   return ev;
 }
 
+// ── Cancelled-skip decision (worker wiring) ──────────────────────────────────
+/**
+ * True when a claimed booking must NOT get a calendar event — the viewing is
+ * not happening. The claim RPC picks rows by calendar_sync_status alone, so a
+ * booking cancelled AFTER enqueue is still claimed; the worker checks the live
+ * booking status and marks those not_required instead of creating a ghost event.
+ */
+export function shouldSkipCalendarSync(bookingStatus: string | null | undefined): boolean {
+  return bookingStatus === 'cancelled' || bookingStatus === 'no_show';
+}
+
 // ── Error classification (retry vs give up) ──────────────────────────────────
 export type SyncOutcome = 'transient' | 'permanent';
 /** Map an HTTP status from Google to a retry decision. 429 + 5xx = transient. */

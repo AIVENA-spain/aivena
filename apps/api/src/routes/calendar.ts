@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { sql } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
-import { db } from '../../../../packages/db/client';
+import { db, withAgency } from '../../../../packages/db/client';
 import { signState, verifyState, buildConsentUrl, buildTokenExchangeRequest } from './calendar-oauth-lib';
 import { parseGoogleTokenResponse } from './calendar-lib';
 
@@ -22,7 +22,7 @@ const PROVIDER = 'google_calendar';
 const STATE_TTL_SEC = 600;
 const dashboardUrl = () => (process.env.DASHBOARD_URL || 'https://aivena.es/dashboard').replace(/\/$/, '');
 
-function googleConfig(): { clientId: string; clientSecret: string; redirectUri: string; stateSecret: string } | null {
+export function googleConfig(): { clientId: string; clientSecret: string; redirectUri: string; stateSecret: string } | null {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
   const redirectUri = process.env.GOOGLE_OAUTH_REDIRECT_URI;
@@ -103,6 +103,33 @@ publicCalendarRoute.get('/google/callback', async (c) => {
         ${parsed.scopes}::text[], ${null}, ${null}
       )
     `);
+    // Reset-on-connect: while the calendar was disconnected, new viewings were
+    // enqueued as not_required (L2 gate) and earlier syncs may have given up
+    // (failed_permanent). Now that a credential exists, re-queue this agency's
+    // FUTURE, still-happening bookings so the worker pushes them; attempts reset
+    // so a failed_permanent booking gets a fresh retry budget. Runs inside
+    // withAgency (the HMAC-verified state carries the agency id) — bookings has
+    // FORCED agency-scoped RLS, so a bare db.execute would match zero rows.
+    // Best-effort — a re-queue hiccup must not turn a successful connect into
+    // an error redirect.
+    try {
+      await withAgency(v.payload.agencyId, async (tx) => {
+        await tx.execute(sql`
+          UPDATE public.bookings
+          SET calendar_sync_status = 'pending',
+              calendar_sync_attempts = 0,
+              calendar_sync_last_error = NULL,
+              calendar_sync_next_retry_at = NULL,
+              updated_at = now()
+          WHERE agency_id = ${v.payload.agencyId}
+            AND calendar_sync_status IN ('not_required', 'failed_permanent')
+            AND scheduled_at > now()
+            AND status NOT IN ('cancelled'::public.booking_status, 'no_show'::public.booking_status)
+        `);
+      });
+    } catch (err) {
+      console.error('[calendar/callback] reset-on-connect re-queue failed', err instanceof Error ? err.message : 'error');
+    }
     return done('connected');
   } catch (err) {
     console.error('[calendar/callback] failed', err instanceof Error ? err.message : 'error');

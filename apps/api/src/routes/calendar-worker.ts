@@ -1,27 +1,44 @@
 import { sql } from 'drizzle-orm';
-import { db } from '../../../../packages/db/client';
+import { db, withAgency } from '../../../../packages/db/client';
 import { buildRefreshRequest, isExpiring } from './calendar-oauth-lib';
 import {
-  buildCalendarEvent, parseGoogleTokenResponse, syncOneBooking,
+  buildCalendarEvent, parseGoogleTokenResponse, shouldSkipCalendarSync, syncOneBooking,
   type SyncBookingDeps, type BookingForEvent,
 } from './calendar-lib';
 
 /**
- * DRAFT Google Calendar sync worker (Packet 2 · L1). NOT scheduled/enabled
- * anywhere — nothing calls pollCalendarSyncs (watcher enablement is gated). It is
- * doubly inert: returns early without the Google secrets. When enabled (prod +
- * secrets), it claims pending syncs via the existing RPC, pushes each confirmed
- * viewing to Google Calendar, and marks the booking synced/failed via the
- * existing mark_* RPCs. The per-booking branching lives in the unit-tested
- * syncOneBooking(); all real Google IO is fetch(), only exercised when enabled.
- * Never invents a booking.
+ * Google Calendar sync worker (Packet 2 · L2 wiring). Scheduled from index.ts
+ * (every 5 minutes, gated on googleConfig()) — it replaces the abandoned n8n
+ * watcher path, which never refreshed tokens. Doubly inert: returns early
+ * without the Google secrets. Each tick claims pending syncs via the existing
+ * RPC (FOR UPDATE SKIP LOCKED — safe across instances), enriches them with the
+ * booking status + property title + agent name the claim payload doesn't carry,
+ * skips cancelled/no-show viewings (→ not_required, never a ghost event), and
+ * pushes the rest to Google Calendar, marking synced/failed via the existing
+ * mark_* RPCs. The per-booking branching lives in the unit-tested
+ * syncOneBooking(); all real Google IO is fetch(). Never invents a booking.
+ *
+ * RLS: bookings has FORCED agency-scoped row security and aivena_app does not
+ * bypass it, so every per-agency read/write below runs inside withAgency (each
+ * mark is its own short transaction — none is held open across Google IO). The
+ * mark + context queries are therefore RLS-correct as-is; ONLY the cross-agency
+ * claim RPC (SECURITY INVOKER, sees zero rows as aivena_app) still needs a
+ * SECURITY DEFINER migration before the worker moves real rows — see the
+ * wiring report / parking lot.
  */
 const PROVIDER = 'google_calendar';
 const GOOGLE_EVENTS_URL = 'https://www.googleapis.com/calendar/v3/calendars/primary/events';
+const TRANSIENT_BACKOFF_SEC = 300;
 
 type ClaimedRow = {
   booking_id: string; agency_id: string; scheduled_at: string;
   duration_minutes: number; location: string | null; lead_full_name: string | null;
+};
+
+/** Per-booking context the claim RPC doesn't return: live booking status
+ *  (cancelled/no_show ⇒ skip) + property title + agent name for the event body. */
+type BookingContextRow = {
+  booking_id: string; booking_status: string; agent_name: string | null; property_title: string | null;
 };
 
 export async function pollCalendarSyncs(limit = 10): Promise<{ processed: number }> {
@@ -33,9 +50,67 @@ export async function pollCalendarSyncs(limit = 10): Promise<{ processed: number
     SELECT booking_id, agency_id, scheduled_at, duration_minutes, location, lead_full_name
     FROM public.pick_and_claim_pending_calendar_syncs(${limit})
   `)) as unknown as ClaimedRow[];
+  if (claimed.length === 0) return { processed: 0 };
 
-  const deps: SyncBookingDeps = {
-    getAccessToken: (agencyId) => getFreshAccessToken(agencyId, clientId, clientSecret),
+  // Group by agency so every follow-up read/write runs agency-scoped (RLS).
+  const byAgency = new Map<string, ClaimedRow[]>();
+  for (const row of claimed) {
+    const list = byAgency.get(row.agency_id) ?? [];
+    list.push(row);
+    byAgency.set(row.agency_id, list);
+  }
+
+  for (const [agencyId, rows] of byAgency) {
+    // One context lookup per agency batch (bookings → properties). If it fails,
+    // the claimed rows must NOT stay stranded in 'syncing' (the claim RPC never
+    // re-picks that status) — put them back on the retry path and move on.
+    let context: Map<string, BookingContextRow>;
+    try {
+      context = await fetchBookingContext(agencyId, rows.map((r) => r.booking_id));
+    } catch (err) {
+      console.error('[calendar/worker] context lookup failed — re-queueing agency batch as transient', agencyId, err instanceof Error ? err.message : 'error');
+      for (const row of rows) await safeMarkTransient(agencyId, row.booking_id, 'context_lookup_failed');
+      continue;
+    }
+
+    const deps = depsFor(agencyId, clientId, clientSecret);
+    for (const row of rows) {
+      const ctx = context.get(row.booking_id);
+      try {
+        if (shouldSkipCalendarSync(ctx?.booking_status)) {
+          // Cancelled/no-show after enqueue: release the claimed row to
+          // not_required instead of creating an event for a dead viewing.
+          await withAgency(agencyId, async (tx) => {
+            await tx.execute(sql`SELECT public.mark_booking_calendar_not_required(${row.booking_id}::uuid)`);
+          });
+          continue;
+        }
+        const b: BookingForEvent = {
+          scheduledAt: typeof row.scheduled_at === 'string' ? row.scheduled_at : new Date(row.scheduled_at).toISOString(),
+          durationMinutes: row.duration_minutes,
+          location: row.location,
+          leadName: row.lead_full_name,
+          propertyTitle: ctx?.property_title ?? null,
+          agentName: ctx?.agent_name ?? null,
+        };
+        await syncOneBooking({ bookingId: row.booking_id, agencyId: row.agency_id, event: buildCalendarEvent(b) }, deps);
+      } catch (err) {
+        // A thrown row (network blip mid-refresh, DB hiccup) must not abort the
+        // rest of the batch NOR strand this booking in 'syncing' — best-effort
+        // transient mark keeps it on the retry path.
+        console.error('[calendar/worker] booking sync threw', row.booking_id, err instanceof Error ? err.message : 'error');
+        await safeMarkTransient(agencyId, row.booking_id, 'worker_exception');
+      }
+    }
+  }
+  return { processed: claimed.length };
+}
+
+/** The injectable IO for syncOneBooking, agency-scoped: each mark_* runs in its
+ *  own short withAgency transaction (RLS) — never held open across Google IO. */
+function depsFor(agencyId: string, clientId: string, clientSecret: string): SyncBookingDeps {
+  return {
+    getAccessToken: (aid) => getFreshAccessToken(aid, clientId, clientSecret),
     insertEvent: async (accessToken, event) => {
       const resp = await fetch(GOOGLE_EVENTS_URL, {
         method: 'POST',
@@ -46,26 +121,45 @@ export async function pollCalendarSyncs(limit = 10): Promise<{ processed: number
       try { eventId = ((await resp.json()) as { id?: string }).id ?? null; } catch { /* body may be empty on error */ }
       return { status: resp.status, eventId };
     },
-    markSynced: async (id, eventId) => { await db.execute(sql`SELECT public.mark_booking_calendar_synced(${id}::uuid, ${eventId})`); },
-    markTransient: async (id, err) => { await db.execute(sql`SELECT public.mark_booking_calendar_failed_transient(${id}::uuid, ${err}, ${300})`); },
-    markPermanent: async (id, err) => { await db.execute(sql`SELECT public.mark_booking_calendar_failed_permanent(${id}::uuid, ${err}, ${'google_permanent'})`); },
+    markSynced: async (id, eventId) => {
+      await withAgency(agencyId, async (tx) => { await tx.execute(sql`SELECT public.mark_booking_calendar_synced(${id}::uuid, ${eventId})`); });
+    },
+    markTransient: async (id, err) => {
+      await withAgency(agencyId, async (tx) => { await tx.execute(sql`SELECT public.mark_booking_calendar_failed_transient(${id}::uuid, ${err}, ${TRANSIENT_BACKOFF_SEC})`); });
+    },
+    markPermanent: async (id, err) => {
+      await withAgency(agencyId, async (tx) => { await tx.execute(sql`SELECT public.mark_booking_calendar_failed_permanent(${id}::uuid, ${err}, ${'google_permanent'})`); });
+    },
   };
-
-  for (const row of claimed) {
-    const b: BookingForEvent = {
-      scheduledAt: typeof row.scheduled_at === 'string' ? row.scheduled_at : new Date(row.scheduled_at).toISOString(),
-      durationMinutes: row.duration_minutes,
-      location: row.location,
-      leadName: row.lead_full_name,
-      propertyTitle: null, // property title lookup added at wiring-approval
-      agentName: null,
-    };
-    await syncOneBooking({ bookingId: row.booking_id, agencyId: row.agency_id, event: buildCalendarEvent(b) }, deps);
-  }
-  return { processed: claimed.length };
 }
 
-/** Read the agency's Google cred; refresh the access token if it's expiring. */
+/** Batch lookup of booking status + agent name + property title, agency-scoped (RLS). */
+async function fetchBookingContext(agencyId: string, bookingIds: string[]): Promise<Map<string, BookingContextRow>> {
+  const rows = await withAgency(agencyId, async (tx) =>
+    (await tx.execute(sql`
+      SELECT b.id AS booking_id, b.status::text AS booking_status, b.agent_name, p.title AS property_title
+      FROM public.bookings b
+      LEFT JOIN public.properties p ON p.id = b.property_id
+      WHERE b.id = ANY(${bookingIds}::uuid[])
+    `)) as unknown as BookingContextRow[],
+  );
+  return new Map(rows.map((r) => [r.booking_id, r]));
+}
+
+/** Best-effort transient re-queue — a failure here only logs (the row is retried
+ *  once the DB recovers; nothing else can be done from a worker tick). */
+async function safeMarkTransient(agencyId: string, bookingId: string, err: string): Promise<void> {
+  try {
+    await withAgency(agencyId, async (tx) => {
+      await tx.execute(sql`SELECT public.mark_booking_calendar_failed_transient(${bookingId}::uuid, ${err}, ${TRANSIENT_BACKOFF_SEC})`);
+    });
+  } catch (markErr) {
+    console.error('[calendar/worker] transient re-queue failed', bookingId, markErr instanceof Error ? markErr.message : 'error');
+  }
+}
+
+/** Read the agency's Google cred; refresh the access token if it's expiring.
+ *  Uses the SECURITY DEFINER credential RPCs — no agency context needed. */
 async function getFreshAccessToken(agencyId: string, clientId: string, clientSecret: string): Promise<string | null> {
   const rows = (await db.execute(sql`
     SELECT * FROM public.get_agency_oauth_credential(${agencyId}, ${PROVIDER})

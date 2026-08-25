@@ -380,3 +380,30 @@ export async function saveFeedConfigAction(
     return actionError("saveFeedConfigAction", err);
   }
 }
+
+// ---------- Google Calendar connect / disconnect (Packet 2 · L2) ----------
+// Thin proxies onto the calendar OAuth endpoints. Connect returns the Google
+// consent URL for the browser to navigate to (the API signs the state with the
+// authed agency id); disconnect revokes via the SECURITY DEFINER revoke RPC.
+
+export async function getCalendarConnectUrlAction(): Promise<ActionResult<{ url: string }>> {
+  try {
+    const res = await apiFetch<{ ok: true; url: string }>("/api/v1/calendar/google/connect");
+    return { ok: true, data: { url: res.url } };
+  } catch (err) {
+    return actionError("getCalendarConnectUrlAction", err);
+  }
+}
+
+export async function disconnectCalendarAction(): Promise<ActionResult<{ ok: true }>> {
+  try {
+    await apiFetch<{ ok: true }>("/api/v1/calendar/google/disconnect", {
+      method: "POST",
+      body: "{}",
+    });
+    revalidatePath("/settings");
+    return { ok: true, data: { ok: true } };
+  } catch (err) {
+    return actionError("disconnectCalendarAction", err);
+  }
+}

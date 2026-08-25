@@ -33,7 +33,8 @@ import imagesRoute from './routes/images';
 import studioWizardRoute from './routes/studio-wizard';
 import adminRoute from './routes/admin';
 import chatRoute from './routes/chat';
-import { apiCalendarRoute, publicCalendarRoute } from './routes/calendar';
+import { apiCalendarRoute, publicCalendarRoute, googleConfig } from './routes/calendar';
+import { pollCalendarSyncs } from './routes/calendar-worker';
 
 Sentry.init({
   dsn: env.SENTRY_DSN,
@@ -179,5 +180,32 @@ const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 serve({ fetch: app.fetch, port: PORT }, () => {
   logger.info('AIVENA API running', { port: PORT });
 });
+
+// Google Calendar sync worker (Packet 2 · L2 wiring) — replaces the abandoned
+// n8n watcher path (which never refreshed tokens). Scheduled ONLY when the
+// Google env config is present (same googleConfig() gate as the routes) — with
+// no secrets nothing starts and pollCalendarSyncs stays uncalled, exactly as
+// before. First tick ~30s after boot, then every 5 minutes. Safe to run on
+// multiple instances: the claim RPC uses FOR UPDATE SKIP LOCKED. A tick must
+// never crash the process — each one is fully caught.
+const CALENDAR_SYNC_FIRST_TICK_MS = 30_000;
+const CALENDAR_SYNC_INTERVAL_MS = 5 * 60_000;
+if (googleConfig() !== null) {
+  const calendarTick = async () => {
+    try {
+      await pollCalendarSyncs();
+    } catch (err) {
+      console.error('[calendar/worker] tick failed', err instanceof Error ? err.message : 'error');
+    }
+  };
+  setTimeout(() => {
+    void calendarTick();
+    setInterval(() => { void calendarTick(); }, CALENDAR_SYNC_INTERVAL_MS);
+  }, CALENDAR_SYNC_FIRST_TICK_MS);
+  logger.info('Calendar sync worker scheduled', {
+    firstTickMs: CALENDAR_SYNC_FIRST_TICK_MS,
+    intervalMs: CALENDAR_SYNC_INTERVAL_MS,
+  });
+}
 
 export default app;

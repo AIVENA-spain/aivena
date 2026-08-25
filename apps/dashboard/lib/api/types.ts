@@ -839,6 +839,20 @@ export type ReadinessResponse = {
   goLive: { eligible: boolean; scope: string; blockedBy: string[]; note: string };
 };
 
+// --- Google Calendar connect (Packet 2 · L1/L2) ------------------------------
+
+/** GET /api/v1/calendar/status — the agency's Google Calendar connection. */
+export type CalendarStatusResponse = {
+  ok: boolean;
+  /** True only when a stored credential is 'active' (the CHECK-valid connected status). */
+  connected: boolean;
+  status: string;
+  accountEmail: string | null;
+  expiresAt: string | null;
+  /** False while the API has no Google OAuth config — connect is not offered. */
+  configured: boolean;
+};
+
 // --- Command center / operations (F1 + F2 + F4) — read-only ops surface ------
 
 export type OpsProviderState =

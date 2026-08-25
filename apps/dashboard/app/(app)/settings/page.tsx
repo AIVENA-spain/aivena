@@ -22,6 +22,7 @@ import type {
   ReadinessResponse,
   PropertiesResponse,
   WorkingHours,
+  CalendarStatusResponse,
 } from "@/lib/api/types";
 
 import { StatusDot, StatusTag } from "./accordion";
@@ -30,6 +31,7 @@ import { ChecklistSection } from "./sections/checklist-section";
 import { SetupProgressSection } from "./sections/setup-progress-section";
 import { BrandingSection } from "./sections/branding-section";
 import { AiSection } from "./sections/ai-section";
+import { CalendarResultBanner } from "./sections/calendar-section";
 import { ChannelsSection } from "./sections/channels-section";
 import { LanguagesSection } from "./sections/languages-section";
 import { TeamSection } from "./sections/team-section";
@@ -54,18 +56,26 @@ const FALLBACK_PREFERENCES: PreferencesResponse = { uiLanguage: "en", messageLan
  * provider, or readiness logic changes. Honest by construction: every status
  * and fact comes from the same live signals the old accordions showed.
  */
-export default async function SettingsPage() {
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ calendar?: string }>;
+}) {
   const t = await getTranslations("settings");
   const ta = await getTranslations("settings.accordion");
   const tc = await getTranslations("settings.cards");
   const locale = intlLocaleFor(await getLocale());
+  // Calendar OAuth round-trip result — the API callback redirects here with
+  // ?calendar=connected|error; the banner scrubs the param client-side.
+  const { calendar: calendarResult } = await searchParams;
 
-  const [settingsRes, prefsRes, readinessRes, ctx, feedRes] = await Promise.allSettled([
+  const [settingsRes, prefsRes, readinessRes, ctx, feedRes, calendarRes] = await Promise.allSettled([
     apiFetch<SettingsResponse>("/api/v1/settings"),
     apiFetch<PreferencesResponse>("/api/v1/me/preferences"),
     apiFetch<ReadinessResponse>("/api/v1/readiness"),
     getCurrentUserContext(),
     apiFetch<{ ok: true; config: FeedConfig | null }>("/api/v1/settings/feed"),
+    apiFetch<CalendarStatusResponse>("/api/v1/calendar/status"),
   ]);
 
   if (settingsRes.status === "rejected") {
@@ -86,6 +96,12 @@ export default async function SettingsPage() {
   // gets 404 — either way the feed form seeds empty. Never block the page on it.
   const feedConfig: FeedConfig | null = feedRes.status === "fulfilled" ? feedRes.value.config : null;
   if (feedRes.status === "rejected") logFailure("feed", feedRes.reason);
+
+  // Calendar connection (L2) is enhancement, not load-critical: a pre-deploy
+  // build gets 404 — the card then shows an honest "status unavailable" state.
+  const calendarStatus: CalendarStatusResponse | null =
+    calendarRes.status === "fulfilled" ? calendarRes.value : null;
+  if (calendarRes.status === "rejected") logFailure("calendar-status", calendarRes.reason);
 
   const currentUserId = ctx.status === "fulfilled" && ctx.value ? ctx.value.userId : "";
 
@@ -227,6 +243,7 @@ export default async function SettingsPage() {
               fromEmail={settings.profile.from_email}
               replyTo={settings.profile.reply_to}
               providers={readiness?.providers}
+              calendarStatus={calendarStatus}
             />
           </div>
           <div className="border-t border-border/60 pt-5">
@@ -371,6 +388,11 @@ export default async function SettingsPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-[980px] flex-col gap-3">
+      {/* Calendar OAuth result — one-shot banner after the Google round-trip. */}
+      {calendarResult === "connected" || calendarResult === "error" ? (
+        <CalendarResultBanner result={calendarResult} />
+      ) : null}
+
       {/* Setup health — readiness-driven when available, else the settings-
           derived checklist as a graceful fallback. */}
       {readiness ? (

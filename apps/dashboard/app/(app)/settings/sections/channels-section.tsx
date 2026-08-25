@@ -2,22 +2,24 @@
 
 import { useCallback, useId, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
-import { Mail, MessageSquare, CalendarDays, Sparkles } from "lucide-react";
+import { Mail, MessageSquare, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { saveIdentityAction } from "../section-actions";
+import { CalendarSection } from "./calendar-section";
 import { ProviderCards } from "./provider-cards";
-import type { SettingsResponse, ReadinessProviderState } from "@/lib/api/types";
+import type { SettingsResponse, ReadinessProviderState, CalendarStatusResponse } from "@/lib/api/types";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
  * Channels & sending identity — accordion body. Channel rows are READ-ONLY
- * status (no Connect buttons — none have a live agency-facing connect path):
- * Email = domain verified, WhatsApp = connected · replies off, Calendar/Social
- * = coming soon. Reply-to is the one editable control (POST /identity →
+ * status: Email = domain verified, WhatsApp = connected · replies off, Social
+ * = coming soon. Google Calendar is the one channel with a live agency-facing
+ * connect path (Packet 2 · L2) — the CalendarSection card below the rows.
+ * Reply-to is the one editable control (POST /identity →
  * agency_email_config.reply_to).
  */
 type Status = "verified" | "repliesOff" | "comingSoon";
@@ -28,6 +30,7 @@ export function ChannelsSection({
   fromEmail,
   replyTo: initialReplyTo,
   providers,
+  calendarStatus,
 }: {
   channels: SettingsResponse["channels"];
   sendingDomain: string;
@@ -36,6 +39,8 @@ export function ChannelsSection({
   /** Live provider readiness (D3) from GET /api/v1/readiness; falls back to the
    *  static rows below when readiness can't load (e.g. non-owner 403). */
   providers?: ReadinessProviderState[];
+  /** Google Calendar connection from GET /api/v1/calendar/status (soft-fail null). */
+  calendarStatus: CalendarStatusResponse | null;
 }) {
   const t = useTranslations("settings.channels");
   const ti = useTranslations("settings.identity");
@@ -87,13 +92,8 @@ export function ChannelsSection({
             sub={t("whatsappSub")}
             status={whatsappStatus}
           />
-          <Row
-            icon={<CalendarDays className="h-4 w-4" />}
-            iconCls="bg-blue-500/12 text-blue-600 dark:text-blue-300"
-            name={t("calendar")}
-            sub={t("calendarSub")}
-            status="comingSoon"
-          />
+          {/* Calendar row intentionally absent here — the CalendarSection card
+              below is the live status + connect control (L2). */}
           <Row
             icon={<Sparkles className="h-4 w-4" />}
             iconCls="bg-purple-500/15 text-purple-600 dark:text-purple-300"
@@ -103,6 +103,11 @@ export function ChannelsSection({
           />
         </>
       )}
+
+      {/* Google Calendar — the one channel with a live connect path (L2). */}
+      <div className="mt-3 border-t border-border/60 pt-4">
+        <CalendarSection status={calendarStatus} />
+      </div>
 
       {/* Reply-to — the one editable control (sending domain stays read-only) */}
       <div className="mt-3 flex flex-col gap-2 border-t border-border/60 pt-4">

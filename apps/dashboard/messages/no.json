@@ -715,6 +715,26 @@
       "pillRepliesOff": "Replies off",
       "replyToHint": "Client replies to your emails land here."
     },
+    "calendar": {
+      "title": "Google Calendar",
+      "subtitle": "Confirmed viewings are added to your Google Calendar automatically.",
+      "pillConnected": "Connected",
+      "pillNotConnected": "Not connected",
+      "statusUnavailable": "We couldn't check your calendar connection just now. Refresh the page to try again.",
+      "notConfigured": "Calendar connections aren't available on this AIVENA yet. We'll let you know when they open up.",
+      "connectedAs": "Connected as {email}",
+      "connectedNoEmail": "Your Google Calendar is connected.",
+      "connectBtn": "Connect Google Calendar",
+      "connectingBtn": "Opening Google…",
+      "disconnectBtn": "Disconnect",
+      "disconnectConfirmText": "Disconnect Google Calendar? New viewings will stop appearing in your calendar until you reconnect.",
+      "disconnectConfirmBtn": "Yes, disconnect",
+      "disconnectCancelBtn": "Cancel",
+      "disconnectingBtn": "Disconnecting…",
+      "disconnectedNote": "Google Calendar disconnected.",
+      "bannerConnected": "Google Calendar is connected. New confirmed viewings will be added to your calendar automatically.",
+      "bannerError": "We couldn't connect your Google Calendar. Please try again, and contact support if it keeps happening."
+    },
     "team": {
       "title": "Team og tilgang",
       "subtitle": "Hvem som kan logge inn, og hva de kan gjøre.",

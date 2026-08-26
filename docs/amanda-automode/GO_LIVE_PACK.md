@@ -45,7 +45,7 @@ Demo script: Christian messages the test agency number → Amanda answers proper
 questions (grounded) → "is the price negotiable?" → ticket appears on /tasks (+
 amanda_questions row) → viewing offered with two explicit slots → Christian
 confirms → booking lands in bookings + Google Calendar (existing sync) →
-send_queue freeform relays ride the LIVE executor (opt-out/window law enforced there).
+send_queue freeform relays ride the LIVE executor (opt-out law there; the engine pre-checks the 24h window at enqueue).
 DEPENDENCY TO VERIFY on first demo: the n8n Send-Pusher drains engine-authored
 freeform rows the same as approval-authored ones (same table, same shape,
 requested_by='amanda_engine').
@@ -68,6 +68,21 @@ escalation calibration. Promotion to 'approval' = engine becomes the drafter.
    templates may already cover 2/3/5 — AUDIT the live 13-language set first and only create
    what's genuinely missing; never duplicate an approved template.)
 7. Agent-facing ticket templates (ES/EN only, P2 ping spine): question ping + reminder + confirmation.
+
+## Review status + rollout laws (added after the 43-agent adversarial verify pass)
+The P0 build was adversarially reviewed (4 lenses, every finding independently
+verified against code AND the live DB): 39 findings raised, 38 confirmed, ALL 38
+fixed in commit 8f01fac (findings JSON: docs/amanda-automode/v1.3_p0_code_review.json).
+Laws that came out of it:
+- **ROLLOUT ORDER IS LAW:** Railway `AMANDA_ENGINE_ENABLED=true` BEFORE any agency's
+  amanda_mode leaves off/shadow — EF v3 suppresses W4C for approval+ agencies, so
+  flipping an agency first = nobody drafts (silent zero-draft state).
+- The one-tap booking EXECUTE endpoint does not exist yet (P2): below FULL mode a
+  buyer-confirmed booking files an `amanda_booking_confirm` task (visible on /tasks)
+  and the agent books via /viewings; FULL mode books autonomously (P0.5 demo path).
+- The full atomic send gate (window/mute/disclosure re-check at the moment of send)
+  moves INTO whatsapp-send-execute before P2 assisted-auto; today the engine
+  pre-checks the 24h window at enqueue and the executor enforces opt-out.
 
 ## What stays OFF regardless (standing orders intact)
 Valuation gate untouched · no real-lead traffic in FULL mode (test agency only until P2/P3 gates) ·

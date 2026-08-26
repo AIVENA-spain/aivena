@@ -19,10 +19,18 @@ Track (is_test agencies, FULL mode) → P1 SHADOW → P2 → P3.
   (+ CAPTURE_NOTES.md media audit — voice notes are currently stored but silently
   skipped by the AI path; fixed by the planned v3 outbox+Media-Law changes).
 
-## Next (in order)
-1. Golden-suite harness skeleton (25–30 core scenarios, one command, test agency).
-2. Turn orchestrator: debounce → conversation lease → agentic loop (sonnet-5) →
-   gates → mode dispatch → send. The web-Amanda brain (`routes/amanda-llm.ts`)
-   is the promotion source.
-3. Inbound EF v3 prepared in-repo (outbox insert + media persistence) — deploy gated.
-4. P0.5: is_test full-loop demo with seeded slots + Christian's phone.
+## State (P0 CODE-COMPLETE, 2026-08-26 late)
+Everything above plus: validators/datetime/lead-state/confirmation law,
+agentic loop + tools + prompt + gates (typed grounding), turn orchestrator,
+db backends + processTurnDb, EF v3 proposed, golden suite (32 scenarios, one
+command: `npx vitest run apps/api/src/amanda-engine/golden/`), 411 tests green.
+Adversarially reviewed (43 agents, 4 lenses + per-finding verification vs the
+LIVE DB): 38/38 confirmed findings fixed (docs/amanda-automode/v1.3_p0_code_review.json).
+
+## Next (all approval-gated — see docs/amanda-automode/GO_LIVE_PACK.md)
+1. Apply the P0 migration (dry-runs in the pack) → 2. Deploy EF v3 →
+3. Railway AMANDA_ENGINE_ENABLED=true (ROLLOUT ORDER IS LAW — env before any
+   agency leaves off/shadow) → 4. P0.5 full-mode demo on the is_test agency →
+5. P1 SHADOW per real agency → 6. Meta template submissions.
+P2 build starts with: one-tap booking execute endpoint, ping spine v0, atomic
+send gate inside whatsapp-send-execute, STT/vision Media Law v1.

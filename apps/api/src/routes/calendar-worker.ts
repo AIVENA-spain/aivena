@@ -179,7 +179,7 @@ async function getFreshAccessToken(agencyId: string, clientId: string, clientSec
     SELECT * FROM public.store_agency_oauth_credential(
       ${agencyId}, ${PROVIDER}, ${parsed.accessToken}, ${parsed.refreshToken},
       ${parsed.tokenType}, ${new Date(parsed.expiresAtMs).toISOString()}::timestamptz,
-      ${parsed.scopes}::text[], ${null}, ${null}
+      string_to_array(nullif(${parsed.scopes.join(',')}, ''), ','), ${null}, ${null}
     )
   `);
   return parsed.accessToken;

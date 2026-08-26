@@ -110,7 +110,7 @@ publicCalendarRoute.get('/google/callback', async (c) => {
       SELECT * FROM public.store_agency_oauth_credential(
         ${v.payload.agencyId}, ${PROVIDER}, ${parsed.accessToken}, ${parsed.refreshToken},
         ${parsed.tokenType}, ${new Date(parsed.expiresAtMs).toISOString()}::timestamptz,
-        ${parsed.scopes}::text[], ${null}, ${null}
+        string_to_array(nullif(${parsed.scopes.join(',')}, ''), ','), ${null}, ${null}
       )
     `);
     // Reset-on-connect: while the calendar was disconnected, new viewings were
@@ -142,7 +142,11 @@ publicCalendarRoute.get('/google/callback', async (c) => {
     }
     return done('connected');
   } catch (err) {
-    console.error('[calendar/callback] failed', err instanceof Error ? err.message : 'error');
+    // NEVER log the full drizzle message here — on a failed query it embeds the
+    // bind params, which for this call include OAuth tokens. Cause/first line only.
+    const causeMsg = (err as { cause?: { message?: string } })?.cause?.message;
+    const firstLine = err instanceof Error ? err.message.split('\n')[0].slice(0, 300) : 'error';
+    console.error('[calendar/callback] failed', causeMsg ?? firstLine);
     return done('error');
   }
 });

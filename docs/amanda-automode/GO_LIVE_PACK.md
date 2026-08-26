@@ -55,19 +55,20 @@ Per-agency: amanda_mode='shadow' → engine runs silently on real inbound (zero
 effects — structurally), W4C keeps drafting; turn_usage accumulates real cost +
 escalation calibration. Promotion to 'approval' = engine becomes the drafter.
 
-## Meta templates to submit (Step 6, own approval — English masters below, the
-## 12-language versions go through the proven translation pipeline first)
-1. `amanda_answer_relay_v1` (UTILITY) — §3b window-expired relay:
-   "Hi {{1}}, about {{2}}: I checked with the office — {{3}}. Reply here if you'd like to talk it through."
-2. `viewing_confirm_v1` (UTILITY): "Hi {{1}}, your viewing of {{2}} is set for {{3}}. Reply CHANGE if you need another time."
-3. `viewing_reminder_daybefore_v1` (UTILITY): "Hi {{1}}, a reminder: your viewing of {{2}} is tomorrow at {{3}}. See you there! Reply CHANGE if you need another time."
-4. `viewing_morning_of_v1` (UTILITY): "Hi {{1}}, see you today at {{3}} for {{2}}. {{4}} will meet you there."
-5. `post_viewing_followup_v1` (UTILITY): "Hi {{1}}, thanks for visiting {{2}} today. How did it feel? I'd love to hear your impressions."
-6. `first_touch_lead_v1` (UTILITY): "Hi {{1}}, thanks for your enquiry about {{2}} — I'm Amanda from {{3}}. What would you like to know?"
-   (NOTE: existing approved viewing_confirmation/viewing_reminder/viewing_followup/missed_call_recovery
-   templates may already cover 2/3/5 — AUDIT the live 13-language set first and only create
-   what's genuinely missing; never duplicate an approved template.)
-7. Agent-facing ticket templates (ES/EN only, P2 ping spine): question ping + reminder + confirmation.
+## Meta templates — AUDITED against the live approved set (read-only, 2026-08-26)
+The live 13-language approved set ALREADY covers most of the viewing lifecycle —
+reuse, never duplicate:
+- viewing confirm → **viewing_confirmation_v1** (approved, 13 langs; vars {{1}} name {{2}} agency {{3}} date {{4}} time {{5}} property) ✓
+- day-before reminder → **viewing_reminder_v1** (approved, 13 langs) ✓
+- post-viewing follow-up → **viewing_followup_v1** (approved, 13 langs) ✓
+- missed-call first touch → **missed_call_recovery_v1** (approved, 13 langs) ✓
+
+GENUINELY NEW (submit at build start of their phase; English masters below, 12-language
+versions through the proven translation pipeline + Christian's line-by-line review first):
+1. `amanda_answer_relay_v1` (UTILITY, needed by P2 ask-agency relay): "Hi {{1}}, about {{2}}: I checked with the office — {{3}}. Reply here if you'd like to talk it through."
+2. `first_touch_lead_v1` (UTILITY, needed by the P2 entry kit): "Hi {{1}}, thanks for your enquiry about {{2}} — I'm Amanda from {{3}}. What would you like to know?"
+3. Optional: `viewing_morning_of_v1` (UTILITY, morning-of logistics — the approved reminder is day-before only): "Hi {{1}}, see you today at {{3}} for {{2}}. {{4}} will meet you there."
+4. Agent-facing ticket templates (ES/EN only, P2 ping spine): question ping + reminder + confirmation.
 
 ## Review status + rollout laws (added after the 43-agent adversarial verify pass)
 The P0 build was adversarially reviewed (4 lenses, every finding independently

@@ -38,8 +38,15 @@ export type BookingForEvent = {
   durationMinutes: number;
   location: string | null;
   leadName: string | null;
+  leadPhone: string | null;
+  leadEmail: string | null;
+  leadLanguage: string | null;
   propertyTitle: string | null;
+  propertyRef: string | null;   // catalogue external_id (e.g. IC-26537)
+  propertyZone: string | null;  // district from the import (no street addresses exist yet)
+  propertyCity: string | null;
   agentName: string | null;
+  notes: string | null;         // the booking's own notes
 };
 export type GoogleEvent = {
   summary: string;
@@ -47,6 +54,7 @@ export type GoogleEvent = {
   location?: string;
   start: { dateTime: string };
   end: { dateTime: string };
+  reminders?: { useDefault: boolean; overrides: Array<{ method: 'popup' | 'email'; minutes: number }> };
 };
 
 /** Deterministic event body from a confirmed viewing. No network. */
@@ -54,20 +62,34 @@ export function buildCalendarEvent(b: BookingForEvent): GoogleEvent {
   const startMs = new Date(b.scheduledAt).getTime();
   const dur = Number.isFinite(b.durationMinutes) && b.durationMinutes > 0 ? b.durationMinutes : 60;
   const endMs = startMs + dur * 60_000;
-  const who = b.leadName?.trim() || 'Buyer';
-  const what = b.propertyTitle?.trim();
+  const t = (v: string | null | undefined): string | null => (v?.trim() ? v.trim() : null);
+  const who = t(b.leadName) ?? 'Buyer';
+  const what = t(b.propertyTitle);
+  // Best available place line: the booking's own free-text location wins (the
+  // agent typed the actual meeting point); otherwise district + city from the
+  // catalogue. The catalogue holds NO street addresses yet — when that field
+  // lands, it slots in here ahead of zone/city.
+  const area = [t(b.propertyZone), t(b.propertyCity)].filter(Boolean).join(', ');
+  const place = t(b.location) ?? (area || null);
   const ev: GoogleEvent = {
     summary: what ? `Viewing: ${what} — ${who}` : `Viewing — ${who}`,
     description: [
       `Lead: ${who}`,
-      what ? `Property: ${what}` : null,
-      b.agentName?.trim() ? `Agent: ${b.agentName.trim()}` : null,
+      t(b.leadPhone) ? `Phone: ${t(b.leadPhone)}` : null,
+      t(b.leadEmail) ? `Email: ${t(b.leadEmail)}` : null,
+      t(b.leadLanguage) ? `Language: ${t(b.leadLanguage)}` : null,
+      what ? `Property: ${what}${t(b.propertyRef) ? ` (${t(b.propertyRef)})` : ''}` : null,
+      area ? `Area: ${area}` : null,
+      t(b.agentName) ? `Agent: ${t(b.agentName)}` : null,
+      t(b.notes) ? `Notes: ${t(b.notes)}` : null,
       'Booked via AIVENA.',
     ].filter(Boolean).join('\n'),
     start: { dateTime: new Date(startMs).toISOString() },
     end: { dateTime: new Date(endMs).toISOString() },
+    // Two agent-facing reminders (Christian, 2026-08-26): 24 h + 2 h before.
+    reminders: { useDefault: false, overrides: [{ method: 'popup', minutes: 1440 }, { method: 'popup', minutes: 120 }] },
   };
-  if (b.location?.trim()) ev.location = b.location.trim();
+  if (place) ev.location = place;
   return ev;
 }
 

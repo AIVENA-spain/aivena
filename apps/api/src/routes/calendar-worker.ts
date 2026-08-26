@@ -38,7 +38,9 @@ type ClaimedRow = {
 /** Per-booking context the claim RPC doesn't return: live booking status
  *  (cancelled/no_show ⇒ skip) + property title + agent name for the event body. */
 type BookingContextRow = {
-  booking_id: string; booking_status: string; agent_name: string | null; property_title: string | null;
+  booking_id: string; booking_status: string; agent_name: string | null; notes: string | null;
+  property_title: string | null; property_ref: string | null; property_zone: string | null; property_city: string | null;
+  lead_phone: string | null; lead_email: string | null; lead_language: string | null;
 };
 
 /** Fire-and-forget nudge: run one sync pass NOW (booking created/rescheduled).
@@ -100,8 +102,15 @@ export async function pollCalendarSyncs(limit = 10): Promise<{ processed: number
           durationMinutes: row.duration_minutes,
           location: row.location,
           leadName: row.lead_full_name,
+          leadPhone: ctx?.lead_phone ?? null,
+          leadEmail: ctx?.lead_email ?? null,
+          leadLanguage: ctx?.lead_language ?? null,
           propertyTitle: ctx?.property_title ?? null,
+          propertyRef: ctx?.property_ref ?? null,
+          propertyZone: ctx?.property_zone ?? null,
+          propertyCity: ctx?.property_city ?? null,
           agentName: ctx?.agent_name ?? null,
+          notes: ctx?.notes ?? null,
         };
         await syncOneBooking({ bookingId: row.booking_id, agencyId: row.agency_id, event: buildCalendarEvent(b) }, deps);
       } catch (err) {
@@ -147,9 +156,13 @@ function depsFor(agencyId: string, clientId: string, clientSecret: string): Sync
 async function fetchBookingContext(agencyId: string, bookingIds: string[]): Promise<Map<string, BookingContextRow>> {
   const rows = await withAgency(agencyId, async (tx) =>
     (await tx.execute(sql`
-      SELECT b.id AS booking_id, b.status::text AS booking_status, b.agent_name, p.title AS property_title
+      SELECT b.id AS booking_id, b.status::text AS booking_status, b.agent_name, b.notes,
+             p.title AS property_title, p.external_id AS property_ref,
+             p.raw_payload->>'zone' AS property_zone, p.location_city AS property_city,
+             l.phone AS lead_phone, l.email AS lead_email, l.language AS lead_language
       FROM public.bookings b
       LEFT JOIN public.properties p ON p.id = b.property_id
+      LEFT JOIN public.leads l ON l.id = b.lead_id
       WHERE b.id = ANY(string_to_array(${bookingIds.join(',')}, ',')::uuid[])
     `)) as unknown as BookingContextRow[],
   );

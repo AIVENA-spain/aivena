@@ -20,11 +20,17 @@ describe('parseGoogleTokenResponse', () => {
   });
 });
 
+const emptyEventExtras = {
+  leadPhone: null, leadEmail: null, leadLanguage: null,
+  propertyRef: null, propertyZone: null, propertyCity: null, notes: null,
+};
+
 describe('buildCalendarEvent — deterministic event body', () => {
   it('builds summary/description/times/location from a booking', () => {
     const ev = buildCalendarEvent({
       scheduledAt: '2026-08-01T10:00:00.000Z', durationMinutes: 45,
       location: 'Calle Mayor 1', leadName: 'Jane Buyer', propertyTitle: 'Sea-view apartment', agentName: 'Ana',
+      ...emptyEventExtras,
     });
     expect(ev.summary).toBe('Viewing: Sea-view apartment — Jane Buyer');
     expect(ev.start.dateTime).toBe('2026-08-01T10:00:00.000Z');
@@ -33,10 +39,27 @@ describe('buildCalendarEvent — deterministic event body', () => {
     expect(ev.description).toMatch(/Ana/);
   });
   it('handles missing property/lead + bad duration', () => {
-    const ev = buildCalendarEvent({ scheduledAt: '2026-08-01T10:00:00.000Z', durationMinutes: 0, location: null, leadName: null, propertyTitle: null, agentName: null });
+    const ev = buildCalendarEvent({ scheduledAt: '2026-08-01T10:00:00.000Z', durationMinutes: 0, location: null, leadName: null, propertyTitle: null, agentName: null, ...emptyEventExtras });
     expect(ev.summary).toBe('Viewing — Buyer');
     expect(ev.end.dateTime).toBe('2026-08-01T11:00:00.000Z'); // defaults to 60 min
     expect(ev.location).toBeUndefined();
+  });
+  it('sets the 24h + 2h agent reminders on every event', () => {
+    const ev = buildCalendarEvent({ scheduledAt: '2026-08-01T10:00:00.000Z', durationMinutes: 30, location: null, leadName: null, propertyTitle: null, agentName: null, ...emptyEventExtras });
+    expect(ev.reminders).toEqual({ useDefault: false, overrides: [{ method: 'popup', minutes: 1440 }, { method: 'popup', minutes: 120 }] });
+  });
+  it('falls back to zone+city as the place and enriches the notes when the booking has no location', () => {
+    const ev = buildCalendarEvent({
+      scheduledAt: '2026-08-01T10:00:00.000Z', durationMinutes: 45,
+      location: null, leadName: 'Jane Buyer', propertyTitle: 'Sea-view apartment', agentName: null,
+      leadPhone: '+47 900 00 000', leadEmail: 'jane@example.com', leadLanguage: 'nb',
+      propertyRef: 'IC-26537', propertyZone: 'Playa del Cura', propertyCity: 'Torrevieja', notes: 'Bring keys',
+    });
+    expect(ev.location).toBe('Playa del Cura, Torrevieja');
+    expect(ev.description).toContain('Phone: +47 900 00 000');
+    expect(ev.description).toContain('Property: Sea-view apartment (IC-26537)');
+    expect(ev.description).toContain('Area: Playa del Cura, Torrevieja');
+    expect(ev.description).toContain('Notes: Bring keys');
   });
 });
 

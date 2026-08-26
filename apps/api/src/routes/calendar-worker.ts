@@ -150,7 +150,7 @@ async function fetchBookingContext(agencyId: string, bookingIds: string[]): Prom
       SELECT b.id AS booking_id, b.status::text AS booking_status, b.agent_name, p.title AS property_title
       FROM public.bookings b
       LEFT JOIN public.properties p ON p.id = b.property_id
-      WHERE b.id = ANY(${bookingIds}::uuid[])
+      WHERE b.id = ANY(string_to_array(${bookingIds.join(',')}, ',')::uuid[])
     `)) as unknown as BookingContextRow[],
   );
   return new Map(rows.map((r) => [r.booking_id, r]));

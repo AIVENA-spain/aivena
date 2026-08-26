@@ -39,6 +39,7 @@ type ClaimedRow = {
  *  (cancelled/no_show ⇒ skip) + property title + agent name for the event body. */
 type BookingContextRow = {
   booking_id: string; booking_status: string; agent_name: string | null; notes: string | null;
+  external_calendar_id: string | null;
   property_title: string | null; property_ref: string | null; property_zone: string | null; property_city: string | null;
   lead_phone: string | null; lead_email: string | null; lead_language: string | null;
 };
@@ -112,7 +113,10 @@ export async function pollCalendarSyncs(limit = 10): Promise<{ processed: number
           agentName: ctx?.agent_name ?? null,
           notes: ctx?.notes ?? null,
         };
-        await syncOneBooking({ bookingId: row.booking_id, agencyId: row.agency_id, event: buildCalendarEvent(b) }, deps);
+        await syncOneBooking({
+          bookingId: row.booking_id, agencyId: row.agency_id, event: buildCalendarEvent(b),
+          existingEventId: ctx?.external_calendar_id ?? null,   // present ⇒ reschedule: PATCH, don't duplicate
+        }, deps);
       } catch (err) {
         // A thrown row (network blip mid-refresh, DB hiccup) must not abort the
         // rest of the batch NOR strand this booking in 'syncing' — best-effort
@@ -140,6 +144,16 @@ function depsFor(agencyId: string, clientId: string, clientSecret: string): Sync
       try { eventId = ((await resp.json()) as { id?: string }).id ?? null; } catch { /* body may be empty on error */ }
       return { status: resp.status, eventId };
     },
+    updateEvent: async (accessToken, eventId, event) => {
+      const resp = await fetch(`${GOOGLE_EVENTS_URL}/${encodeURIComponent(eventId)}`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(event),
+      });
+      let id: string | null = null;
+      try { id = ((await resp.json()) as { id?: string }).id ?? null; } catch { /* body may be empty on error */ }
+      return { status: resp.status, eventId: id };
+    },
     markSynced: async (id, eventId) => {
       await withAgency(agencyId, async (tx) => { await tx.execute(sql`SELECT public.mark_booking_calendar_synced(${id}::uuid, ${eventId})`); });
     },
@@ -152,11 +166,50 @@ function depsFor(agencyId: string, clientId: string, clientSecret: string): Sync
   };
 }
 
+/** Cancel-side cleanup: delete the booking's Google event (fire-and-forget from
+ *  the cancel route — NEVER throws). 404/410 count as success (already gone).
+ *  On success the booking is released to not_required with the event id cleared,
+ *  so a later un-cancel/re-queue would create a fresh event cleanly. */
+export async function deleteCalendarEventForBooking(bookingId: string, agencyId: string): Promise<void> {
+  try {
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    if (!clientId || !clientSecret) return;   // calendar not configured — nothing to clean
+    const rows = await withAgency(agencyId, async (tx) =>
+      (await tx.execute(sql`SELECT external_calendar_id FROM public.bookings WHERE id = ${bookingId}::uuid`)) as unknown as Array<{ external_calendar_id: string | null }>,
+    );
+    const eventId = rows[0]?.external_calendar_id;
+    if (!eventId) return;                     // never synced — nothing in Google
+    const token = await getFreshAccessToken(agencyId, clientId, clientSecret);
+    if (!token) return;
+    const resp = await fetch(`${GOOGLE_EVENTS_URL}/${encodeURIComponent(eventId)}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (resp.ok || resp.status === 404 || resp.status === 410) {
+      await withAgency(agencyId, async (tx) => {
+        await tx.execute(sql`
+          UPDATE public.bookings
+          SET calendar_sync_status = 'not_required', external_calendar_id = NULL,
+              calendar_sync_last_error = 'viewing_cancelled', calendar_sync_next_retry_at = NULL,
+              updated_at = now()
+          WHERE id = ${bookingId}::uuid
+        `);
+      });
+    } else {
+      console.error('[calendar/worker] event delete failed', bookingId, resp.status);
+    }
+  } catch (err) {
+    console.error('[calendar/worker] event delete threw', bookingId, err instanceof Error ? err.message.split('\n')[0].slice(0, 200) : 'error');
+  }
+}
+
 /** Batch lookup of booking status + agent name + property title, agency-scoped (RLS). */
 async function fetchBookingContext(agencyId: string, bookingIds: string[]): Promise<Map<string, BookingContextRow>> {
   const rows = await withAgency(agencyId, async (tx) =>
     (await tx.execute(sql`
       SELECT b.id AS booking_id, b.status::text AS booking_status, b.agent_name, b.notes,
+             b.external_calendar_id,
              p.title AS property_title, p.external_id AS property_ref,
              p.raw_payload->>'zone' AS property_zone, p.location_city AS property_city,
              l.phone AS lead_phone, l.email AS lead_email, l.language AS lead_language

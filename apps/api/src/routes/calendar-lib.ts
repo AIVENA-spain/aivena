@@ -113,12 +113,14 @@ export function classifyGoogleStatus(status: number): SyncOutcome {
 }
 
 // ── Injectable per-booking sync orchestrator (testable with mocks) ───────────
-export type SyncBookingInput = { bookingId: string; agencyId: string; event: GoogleEvent };
+export type SyncBookingInput = { bookingId: string; agencyId: string; event: GoogleEvent; existingEventId?: string | null };
 export type SyncBookingDeps = {
   /** Fresh access token for the agency (refresh handled by the caller/helper). */
   getAccessToken: (agencyId: string) => Promise<string | null>;
   /** POST the event to Google; returns { status, eventId? }. */
   insertEvent: (accessToken: string, event: GoogleEvent) => Promise<{ status: number; eventId?: string | null }>;
+  /** PATCH an existing event (reschedule) — same return shape. */
+  updateEvent: (accessToken: string, eventId: string, event: GoogleEvent) => Promise<{ status: number; eventId?: string | null }>;
   markSynced: (bookingId: string, eventId: string) => Promise<void>;
   markTransient: (bookingId: string, error: string) => Promise<void>;
   markPermanent: (bookingId: string, error: string) => Promise<void>;
@@ -136,7 +138,22 @@ export async function syncOneBooking(input: SyncBookingInput, deps: SyncBookingD
     await deps.markPermanent(input.bookingId, 'no_calendar_credential');
     return { bookingId: input.bookingId, result: 'permanent' };
   }
-  const { status, eventId } = await deps.insertEvent(token, input.event);
+  // A booking that already synced carries its Google event id — a re-queue then
+  // means RESCHEDULE: PATCH the existing event (never create a duplicate). If
+  // Google says the event is gone (deleted by hand in the calendar), fall back
+  // to creating a fresh one.
+  let status: number;
+  let eventId: string | null | undefined;
+  if (input.existingEventId) {
+    ({ status, eventId } = await deps.updateEvent(token, input.existingEventId, input.event));
+    if (status === 404 || status === 410) {
+      ({ status, eventId } = await deps.insertEvent(token, input.event));
+    } else if (status >= 200 && status < 300 && !eventId) {
+      eventId = input.existingEventId;
+    }
+  } else {
+    ({ status, eventId } = await deps.insertEvent(token, input.event));
+  }
   if (status >= 200 && status < 300 && eventId) {
     await deps.markSynced(input.bookingId, eventId);
     return { bookingId: input.bookingId, result: 'synced' };

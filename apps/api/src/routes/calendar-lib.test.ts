@@ -95,6 +95,7 @@ describe('syncOneBooking — orchestration with mocked IO (no live Google)', () 
     return {
       getAccessToken: vi.fn().mockResolvedValue('AT'),
       insertEvent: vi.fn().mockResolvedValue({ status: 200, eventId: 'evt_1' }),
+      updateEvent: vi.fn().mockResolvedValue({ status: 200, eventId: 'evt_up' }),
       markSynced: vi.fn().mockResolvedValue(undefined),
       markTransient: vi.fn().mockResolvedValue(undefined),
       markPermanent: vi.fn().mockResolvedValue(undefined),
@@ -117,6 +118,26 @@ describe('syncOneBooking — orchestration with mocked IO (no live Google)', () 
     const d = mkDeps({ insertEvent: vi.fn().mockResolvedValue({ status: 400 }) });
     expect((await syncOneBooking(input, d)).result).toBe('permanent');
     expect(d.markPermanent).toHaveBeenCalled();
+  });
+  it('existing event id → PATCH path, never a duplicate insert', async () => {
+    const d = mkDeps();
+    const r = await syncOneBooking({ ...input, existingEventId: 'evt_old' }, d);
+    expect(r.result).toBe('synced');
+    expect(d.updateEvent).toHaveBeenCalledWith('AT', 'evt_old', input.event);
+    expect(d.insertEvent).not.toHaveBeenCalled();
+    expect(d.markSynced).toHaveBeenCalledWith('b1', 'evt_up');
+  });
+  it('PATCH 2xx without a body keeps the known event id', async () => {
+    const d = mkDeps({ updateEvent: vi.fn().mockResolvedValue({ status: 204, eventId: null }) });
+    await syncOneBooking({ ...input, existingEventId: 'evt_old' }, d);
+    expect(d.markSynced).toHaveBeenCalledWith('b1', 'evt_old');
+  });
+  it('PATCH 404 (event deleted in Google by hand) falls back to a fresh insert', async () => {
+    const d = mkDeps({ updateEvent: vi.fn().mockResolvedValue({ status: 404 }) });
+    const r = await syncOneBooking({ ...input, existingEventId: 'evt_gone' }, d);
+    expect(r.result).toBe('synced');
+    expect(d.insertEvent).toHaveBeenCalled();
+    expect(d.markSynced).toHaveBeenCalledWith('b1', 'evt_1');
   });
   it('no credential → permanent (no_calendar_credential), never calls Google', async () => {
     const d = mkDeps({ getAccessToken: vi.fn().mockResolvedValue(null) });

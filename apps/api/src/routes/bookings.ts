@@ -113,7 +113,7 @@ async function readJson(c: import('hono').Context): Promise<Record<string, unkno
   }
 }
 
-import { nudgeCalendarSync } from './calendar-worker';
+import { nudgeCalendarSync, deleteCalendarEventForBooking } from './calendar-worker';
 
 const str = (v: unknown): string | null =>
   typeof v === 'string' && v.trim() ? v.trim() : null;
@@ -176,6 +176,8 @@ route.post('/:id/cancel', async (c) => {
       SELECT * FROM cancel_viewing(${id}::uuid, ${str(b.reason)})
     `);
     const rows = result as unknown as Array<{ booking_id: string; cancelled_sends: number }>;
+    // Fire-and-forget: remove the synced Google event (never blocks the cancel).
+    void deleteCalendarEventForBooking(id, c.get('agencyId') as string);
     return c.json({ ok: true, bookingId: rows[0]?.booking_id, cancelledSends: rows[0]?.cancelled_sends ?? 0 });
   } catch (err) {
     return viewingError(c, err, 'cancel');

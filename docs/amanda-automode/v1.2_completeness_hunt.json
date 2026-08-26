@@ -1,0 +1,756 @@
+{
+  "summary": "Five fresh lenses hunt for what is MISSING from (or over-built in) the Amanda auto-mode design, then a value judge filters",
+  "agentCount": 6,
+  "logs": [
+    "34 candidate additions, 40 cut/defer proposals from 5 lenses"
+  ],
+  "result": {
+    "lens_verdicts": [
+      {
+        "lens": "competitor-sota",
+        "verdict": "The conversational core is genuinely state-of-the-art — grounding gates, the ask-agency back-office ladder, the ping spine, and the anti-pushiness send-path are ahead of anything Structurely, Ylopo, or the Spanish WhatsApp-bot field ships, and nothing there needs re-litigating. The real gap is funnel-shaped: the design perfects the MIDDLE of the funnel and is silent at both ends. It never initiates (no speed-to-lead first touch for form/web/import leads — the single most-proven stat in this market: 5-minute contact ≈ 21-100x conversion), and it stops at the booking (no confirm/remind/post-viewing loop, while unreminded viewing no-shows run 25-40% and interactive reminders cut them roughly in half). The one change that matters most: the viewing lifecycle (addition 1) — it directly multiplies the product's own declared money metric, viewings that actually happen, for days of work on machinery the design already builds, and its templates must enter the 13-language Meta pipeline immediately or P2 will stall on Meta's clock. Close behind: ship the property-alert opt-in so the 2-nudge dormancy law doesn't permanently forfeit the 6-18-month buyers this market is made of — it is the only long-horizon channel the design's own compliance rules allow, and today it has no capture mechanism and no delivery date. With those two plus first-touch, Amanda covers the whole funnel and the plan is, honestly, near-optimal for its goal; the remaining upside is operational (knowledge flywheel compounding) rather than architectural. Key sources: growthpulsemedia.co.za WhatsApp real-estate guide, happilee.io/kommunicate no-show data, structurely.com + arahi.ai case studies (RE/MAX 5%→15%), ylopo.com raiya behavioral nurture, tubot.es Spanish-market 2025 guide (Aedas 'Lara': 2,200 convos → 50 visits → 2 sales), devcommx.com + aisdr.com AI-SDR stats, callsphere.ai/builts.ai on Fin's 67%-claimed vs ~38%-measured resolution, intellicon.io on WhatsApp quality-rating failure modes, conferbot.com on Meta's Jan-2026 WhatsApp AI policy."
+      },
+      {
+        "lens": "conversion-maximizer",
+        "verdict": "The plan is near-optimal as a SAFE conversation machine — the chassis, escalation, and tone law should not be touched — but it is not yet a CONVERSION machine: it defines exhaustively how Amanda answers and behaves, and almost nowhere when she advances the sale. Booking exists as a capability, not a strategy — nothing says when to propose a viewing, nothing protects a booked viewing from no-show, nothing happens after a viewing, and nothing measures the funnel. The single most important change is adding the viewing-first layer (proposal policy + confirmation/outcome lifecycle + post-viewing choreography, additions 1-3) so every conversation is deliberately steered toward a booked, attended, followed-up viewing; with trip-mode (4) as the market-defining move for international buyers, it converts the safety investment into revenue. Total incremental effort is roughly 3-4 weeks spread across P1-P3, almost all of it riding machinery the design already specifies (ping spine, template pipeline, scheduler worker, lead-state, pending_action) — high leverage, low structural risk. Key sources: lead-response research (https://greetnow.com/blog/lead-response-time-statistics, https://agentzap.ai/blog/real-estate-lead-statistics), reminder/no-show RCT data (https://www.amjmed.com/article/S0002-9343(10)00108-7/fulltext, https://www.dialoghealth.com/post/patient-appointment-reminder-statistics), Costa Blanca viewing-trip and video-viewing practice (https://www.masainternational.com/viewing-trips, https://www.thinkspain.com/information/buying-in-spain/spanish-property-viewing-trips-why-they-are-important-and-how-to-prepare-for-them, https://www.martin-realestate.com/news/buy-spanish-property-from-abroad-how-to-secure-your-spanish-home-with-professional-video-viewings)."
+      },
+      {
+        "lens": "learning-flywheel",
+        "verdict": "The plan is near-optimal at what it aims to be — a safe, honest, transactionally-bulletproof conversational agent; after two adversarial passes there is nothing structural left to fix in the chassis. What it lacks is the second axis the reviews never targeted: it does not get smarter. Today the doc has exactly one closing loop (per-ticket save-as-knowledge) and one aggregate stat (approved-unchanged %); everything else — viewing outcomes, edit diffs, behavior-outcome correlation, ticket clusters, rejection reasons, guide gaps — is either never captured or captured and never mined. The single change that matters most is the day-one logging pack (additions 1–5's P0/P1 halves: outcome columns, turn_events with version stamps, draft/final diff storage, ticket question_category, rejection reasons — ~3–4 days total inside builds already happening), because this data is physically unrecoverable later: shadow traffic, the approval-mode edit stream, and early tickets are one-time windows, and the approval-mode window in particular closes forever as agencies climb the dial. Ship the logging with P1, close the loops after launch, and in six months AIVENA is not the same product with more uptime — it answers more, tickets less, sounds like each agency, and tells owners what stock to go win. Skip it and month six looks exactly like week one, just busier."
+      },
+      {
+        "lens": "cold-completeness",
+        "verdict": "The plan is near-optimal for what it covers — the conversation engine between 'buyer writes' and 'viewing booked' is hardened to an unusually high standard, and a cold read found nothing inside that core worth reopening. Its holes are all at the edges the adversarial reviews never aimed at: nothing on how conversations START (entry points — the volume multiplier on every other number in the doc), nothing after 'viewing booked' (reminders, no-shows, post-viewing debrief — where viewings convert to offers), nothing for the non-buyer traffic the same number will receive (vendor leads = agency gold, today a dead-end), 'delete my data' typed into the chat is not an intent, and there is no retention schedule, no backup/restore word, no offboarding wind-down, and no incident runbook for a solo non-coder on-call. The single change that matters most: close the funnel — add the conversation entry kit and the viewing outcome loop — because Amanda's success is measured in viewings attended, and the current plan perfects only the conversation between two ends it doesn't yet own. Everything proposed slots into existing phases without moving a single gate; the only P1 additions are cheap floor/classifier items that shadow mode will calibrate for free."
+      },
+      {
+        "lens": "lean-cutter",
+        "verdict": "The plan's architecture is genuinely near-optimal — the chassis (LLM-proposes/code-disposes, tool-layer modes, deterministic send gate) survived two red teams and should not be touched. What is NOT optimal is its sequencing for a solo non-coder with zero live traffic: as phased, the founder's dream demo (a real end-to-end booking) only exists at P3, the 'must not fail' booking machinery is live-proven LAST on a real pilot agency, and the DPA chain blocks all visible progress. The single change that matters most is the P0.5 Live Demo Track: full loop in FULL mode on the is_test agency (his own phone, no DPA dependency, mode enforcement already makes this one flag). It delivers the demo in roughly build-days 8–10 instead of months out, burns in the transactional machinery for the entire P1–P2 period, doubles as the sales demo and the §6 sandbox, and lets Christian's legal work run in parallel instead of on the critical path. The leanest credible P0–P1 is: lean P0 core (schema, outbox, tool-layer modes, media law v0, harness skeleton — ~4–6d) → P0.5 demo (sonnet loop + gates + real booking on test agency — ~3–4d) → P1 shadow on real inbound (drafter swap + metering + alerts + 25–30-scenario suite — ~2–3d): ~10–13 build days total, versus ~25–30+ days if the doc is built in document order (full ping spine, tone state machine, STT, episodic memory, 100-conversation suite first). Net: roughly 12–18 build days deferred behind evidence triggers, zero safety architecture removed, and every deferred item kept in the doc with an objective 'build-when' condition so nothing is lost — it just waits for the reality it is designed for.\""
+      }
+    ],
+    "additions": [
+      {
+        "lens": "competitor-sota",
+        "title": "Viewing lifecycle: confirm → remind → post-viewing follow-up (the design books a viewing and then goes silent)",
+        "why_it_matters": "This is the single largest measurable gap. The design's money metric is viewings booked, but a booked viewing is not a happened viewing: industry data puts unreminded viewing no-show rates at 25-40%, and interactive WhatsApp reminders with Confirm/Reschedule buttons cut no-shows 40-60% (growthpulsemedia.co.za real-estate guide: three-message flow drops no-shows to 8-12%; happilee.io/kommunicate cite 40-50% reductions). Every recovered no-show is a viewing Amanda already earned. The post-viewing message is equally decisive for AIVENA's buyer type — international buyers on compressed viewing trips: ~3h after the slot, Amanda asks how it went, captures the objection or the heat into lead-state, and proposes the next step (second viewing, similar property, or files 'wants to make an offer' as a P1-HOT ticket). Competitors (Structurely, Ylopo raiya) all close this loop; the design has zero post-booking machinery. Bonus: the post-viewing exchange legitimately reopens the 24h window at the exact moment intent peaks.",
+        "concrete_design": "Three new automated message classes riding existing machinery: (1) T-24h utility template with Confirm / Reschedule quick-reply buttons (postback = pending_action pattern from §4; Reschedule flows into the existing reschedule_viewing tool); (2) day-of T-2h reminder with the property location pin + agent first name; (3) post-viewing follow-up ~3h after slot end (skipped if the agent already messaged) — one open question, answer parsed into lead-state, outcome surfaced in the §6 daily digest, offer-intent routed to the §3b/§3c ladder as P1 HOT. Declared cancellations free the slot and trigger the §4 mid-conversation update path. Add show-rate (viewings attended / booked) to the §7 SLA metrics — it becomes the marketing stat next to median-answer-time. CRITICAL sequencing: these are 2-3 new utility templates × 13 languages — they must join the §8 P2 template-coverage audit NOW because Meta approval latency is on Meta's clock.",
+        "phase_fit": "Templates: into the P2 template audit immediately (P0/P1 paperwork). Reminder scheduler + post-viewing turn: P2 (it reuses the §3b-spine 1-minute worker and pending_action patterns; works fine in ASSISTED as one-tap drafts). Show-rate metric: P2 dashboard.",
+        "effort": "Small-to-moderate: ~2-4 days engine work on top of the ping-spine worker + template pipeline runs. No new architecture."
+      },
+      {
+        "lens": "competitor-sota",
+        "title": "Speed-to-lead first touch: Amanda opens the WhatsApp conversation for leads that did not arrive via WhatsApp",
+        "why_it_matters": "The design is entirely reactive — it answers inbound WhatsApp and nothing else. But the single most-replicated stat in this market is first-touch speed: contact inside 5 minutes makes a lead up to 21x-100x more likely to convert to a qualified conversation (cited across Ylopo, Tubot's 2025 Spanish-market guide, AI-SDR industry reports; a 60-second response lifts conversion ~391% per devcommx/landbase AI-SDR stats). AIVENA already generates non-WhatsApp leads — web-Amanda chats that capture a phone, website contact forms, CSV-imported portal leads, and (post-launch) the valuation widget — and today every one of them waits for a human. Spanish competitor bots (Tubot, Aizua, dinnia-class products) lead with exactly this: 'responde en menos de 2 minutos a cualquier solicitud, en cualquier idioma.' Aedas Homes' 'Lara' case: 2,200 conversations → 50 scheduled visits → 2 homes sold, from instant first-response. Without this, Amanda's brilliance only reaches leads who happened to start on WhatsApp.",
+        "concrete_design": "A lead-created trigger (website form / web-Amanda phone capture / manual add — NOT bulk CSV, see cuts) enqueues a first-touch job: within ~2 min during buyer daytime, Amanda sends an approved utility template in the lead's language referencing their actual enquiry ('You asked about the 3-bed villa in San Javier — I can answer questions or set up a viewing. Reply here.'), with the AI-disclosure line since it is the first bot message (§5 requires this anyway). Reply lands in the normal inbound pipeline. Guardrails all exist already: consent_service captured at the form (text version logged per §5), utility-not-marketing template classification, one template send + at most one follow-up nudge if no reply (then stop — no cold drip), executor's window/opt-out/disclosure gate unchanged. One new template class → 13-language pipeline NOW.",
+        "phase_fit": "P2 (needs disclosure infra + DPA from the P1 gate, and the template audit). Shadow-testable in P1 as drafts on the test agency. Template into the pipeline now.",
+        "effort": "Moderate: ~3-5 days — new trigger source + first-touch job + consent plumbing verification on the form paths. The conversation engine itself needs nothing new."
+      },
+      {
+        "lens": "competitor-sota",
+        "title": "In-conversation opt-in for the property-alert stream — the only long-horizon nurture channel the design's own rules permit, so it must actually ship",
+        "why_it_matters": "The design (correctly, per Christian's anti-pushiness law) caps re-engagement at 2 lifetime nudges then goes dormant-forever. But AIVENA's buyers are holiday/retirement purchasers with 6-18 month cycles, and the entire competitor field's proven revenue engine is long-horizon nurture: Structurely's 12-month cadence is its differentiator (RE/MAX case: appointment conversion 5%→15%, another client +233%), Ylopo's behavioral listing alerts are its core product, and AI reactivation campaigns book 2-5% of dormant databases into appointments. The design already contains the compliant answer — the consented property-alerts stream (≤1/week, §10) — but it is (a) blocked on the marketing-consent flow, which is listed as blocking 'proactive property-push only' and can silently slip forever, and (b) has no capture mechanism: nowhere does Amanda ever ASK for the opt-in. Without this, every cooled lead is permanently forfeited after nudge #2, and AIVENA loses precisely the slow-cycle buyers who make up this market. This converts 'not pushy' from a revenue sacrifice into a consent-clean subscription.",
+        "concrete_design": "(1) A natural opt-in moment, offered max once per conversation at a contextually earned point (after a match discussion or in the sign-off message: 'Want me to send you new listings that fit what you're looking for? Max one a week, stop anytime') — an interactive button tap = consent_marketing with text version/language/timestamp per the §5 consent split. (2) The alert job: new/price-dropped catalogue property matching lead-state (and passing rejected_property_ids) → one property-card message, ≤1/week, opt-out honored by the existing executor gate. (3) Dormant leads WITH the opt-in keep receiving alerts — dormancy stops conversation, not the subscription — and any reply instantly reactivates the full engine. (4) Reframe Christian-owned item #3 from 'decision' to 'P2-blocking deliverable' with the prepared consent copy for sign-off.",
+        "phase_fit": "Opt-in capture + consent recording: P2. Alert scheduler: P2/P3. Explicitly gated on Christian item #3 — this addition exists to force that item onto the critical path.",
+        "effort": "Moderate: consent copy (13 langs) + button flow ~2 days; matcher-to-message job ~2-3 days (matching engine already exists)."
+      },
+      {
+        "lens": "competitor-sota",
+        "title": "Outbound rich media: property cards with photos and viewing location pins (Amanda currently replies in text only)",
+        "why_it_matters": "§1 handles inbound media thoroughly but Amanda's outbound is implicitly text-only. For international buyers shopping holiday homes, the photo IS the product: every serious WhatsApp real-estate deployment (WATI, Kommo carousel case studies, all Spanish inmobiliaria bots) sends property cards — hero image + price + 3 facts + link — because a text-only description of a villa cannot compete with a rival agency's agent who sends 5 photos. WhatsApp property carousels/interactive cards are standard-issue in 2026 and free-form media inside the 24h session costs nothing extra. Same for viewings: a location pin + 'here's where to park' in the T-2h reminder is the difference between found-it and no-show for a foreign buyer navigating Costa Blanca urbanizations. This is table-stakes engagement the design simply never specifies.",
+        "concrete_design": "A send_property_card tool in the §1 toolset: deterministic renderer (never model-composed) pulls hero image + as-listed price + key facts from the catalogue row; model chooses WHEN to send, code decides WHAT it contains — so grounding gates are untouched. Cap 1-3 cards per suggestion turn; card sends count as the suggestion for rejected_property_ids purposes. Location-pin message type for confirmed viewings. HARD DEPENDENCY to flag: the catalog image layer is ~60% hotlinked from montinmo (catalog data-layer audit) — cards must only use owned/mirrored images, so the image-mirroring backfill graduates from parked to a real P2 prerequisite for this feature.",
+        "phase_fit": "P2 (in-session media needs no templates; ASSISTED mode shows the card in the draft). Image-mirroring prerequisite scheduled with it.",
+        "effort": "Small for the tool (~2 days); the honest cost is the image-mirroring backfill (separate, already-scoped Packet-3 work) — without it, ship cards only for owned-image properties."
+      },
+      {
+        "lens": "competitor-sota",
+        "title": "Resolution-rate metric + weekly knowledge-gap mining (Intercom Fin's actual lesson)",
+        "why_it_matters": "Fin — the best-performing support agent in the market — shows two things: (a) the headline number that sells and steers the product is RESOLUTION RATE (Intercom's 67% claim, backed by a $1M performance guarantee at a 65% floor; real-world deployments start near 38% and climb), and (b) the climb comes from systematically mining what the bot could NOT answer and feeding it back as knowledge — 'performance tracks knowledge-base quality.' The design has the atoms (cannot_answer tool, amanda_question tickets, one-tap save-as-knowledge, 'one trust number') but no defined resolution metric and only a per-ticket reactive flywheel — nothing surfaces patterns. A weekly clustered view ('9 leads asked about community fees this month — add one answer and Amanda handles the next ones herself') is what makes agencies invest in their knowledge box, which is what makes Amanda visibly smarter every week — the compounding trust loop that converts dial promotions from a leap of faith into an obvious yes. It is also AIVENA's future sales stat: 'Amanda instantly resolves X% of buyer questions.'",
+        "concrete_design": "(1) Define resolution rate now: fact-bearing buyer turns answered directly (no ticket, no handoff) / all fact-bearing turns — computable from existing P1 telemetry (turn classifier + tool calls), tracked per agency; make it the §6 daily-digest 'one trust number' and a §8 promotion-gate input. (2) Weekly job: embed + cluster the month's amanda_question texts and cannot_answer reasons (embedding infra exists — lead embeddings), render top-5 recurring gaps in the dashboard with a prefilled knowledge draft each, one tap through the existing §5 save-time screen. (3) Track per-gap: tickets avoided after the knowledge was added — visible payoff.",
+        "phase_fit": "Metric definition: P1 (it is just a query over telemetry the design already collects). Gap-mining view: P2/P3 — needs real ticket volume to cluster.",
+        "effort": "Small: metric ~1 day; clustering job + dashboard card ~2-3 days on existing embedding plumbing."
+      },
+      {
+        "lens": "conversion-maximizer",
+        "title": "Viewing-proposal policy — define WHEN Amanda offers the viewing (the plan never says)",
+        "why_it_matters": "The entire product ROI is viewings booked, yet the design specifies every safety rail around book_viewing and never the trigger for proposing one — as written, Amanda waits to be asked, which is the single biggest funnel leak. Real-estate conversion data: 78% of buyers end up working with whoever engages them decisively first, and each minute of drift costs qualification odds (MIT/InsideSales 21x-within-5-minutes effect) — see https://greetnow.com/blog/lead-response-time-statistics and https://agentzap.ai/blog/real-estate-lead-statistics. A concrete two-slot proposal ('Saturday 11:00 or Tuesday 17:00?') is the classic alternative-choice close and is NOT pushy under §10 — it is one question, contextually earned.",
+        "concrete_design": "Deterministic viewing-readiness score in the turn loop (mirrors the §10 disengagement machine): signals = 2+ substantive questions on one property, budget/area fit confirmed in lead_state, stated timeline, 'we'll be in Spain in October', price question answered. Score crosses threshold → the system prompt is instructed to propose a viewing THIS turn with exactly two concrete slots from propose_viewing_slots, assumptive-choice phrasing, one interrogative sentence (obeys the question-discipline law). Blocked when: already proposed this property (deterministic once-per-property flag in lead_state, like the never-re-ask rule), cooling/dormant state, or open blocking ticket. Shadow (P1) measures proposal precision — % of proposals a human agent would also have made — as a promotion metric next to the false-block budget. Add 3 golden-suite scenarios: readiness reached → proposal fires; proposal declined → never re-proposed for that property; premature proposal suppressed.",
+        "phase_fit": "P1 (scorer + prompt doctrine + golden scenarios, measured in shadow); live behavior lands with P2 auto-replies",
+        "effort": "Low-medium: 3-4 days (scorer is the same pattern as the disengagement state machine; no new infra)"
+      },
+      {
+        "lens": "conversion-maximizer",
+        "title": "Viewing lifecycle: confirmation, day-before reminder, and outcome capture (no-show machinery)",
+        "why_it_matters": "The design books viewings but never protects them: no buyer-facing confirmation, no day-before touch, no attended/no-show record. Healthcare RCT literature (best proxy): reminders cut non-attendance by a weighted mean 34%, SMS specifically 38% relative reduction (18.1%→11.2%) — https://www.amjmed.com/article/S0002-9343(10)00108-7/fulltext, https://www.dialoghealth.com/post/patient-appointment-reminder-statistics. International buyers booking days ahead across time zones are peak no-show risk; a no-show burns the agent's afternoon and the agency's trust in Amanda. Outcome capture is also the prerequisite for addition #3 and #6.",
+        "concrete_design": "Scheduler rungs on the viewing row (same fire-time-checked worker as the §3b-spine ladder): T-24h confirmation via approved utility template with WhatsApp interactive buttons [Confirm] [Reschedule] (postback = viewing_id, reusing the §4 pending_action button pattern); tap Reschedule → reschedule_viewing flow with fresh slots. Unconfirmed by T-4h → ping-spine alert to the owning agent ('unconfirmed viewing at 17:00 — call?'). Morning-of message: location pin, agent first name, parking note (from per-property constraints). Post-slot: viewing.outcome field {attended|no_show|cancelled}, set by one-tap in the dashboard/digest or inferred from Amanda's post-viewing exchange. These are transaction-triggered service messages — explicitly exempt from the 2-lifetime-nudge cap and the 20-min scheduler refusal (enumerated exemption, see cuts list). The confirmation + morning-of templates join the §8 P2-gate 13-language template audit NOW (Meta latency is on Meta's clock — the doc's own rule).",
+        "phase_fit": "P2 (templates must be submitted during P1; rungs ride the already-designed 1-minute worker)",
+        "effort": "Low-medium: 4-5 days engine-side + the template pipeline run"
+      },
+      {
+        "lens": "conversion-maximizer",
+        "title": "Post-viewing follow-up choreography — harvest the most expensive event in the funnel",
+        "why_it_matters": "A viewing is the costliest, highest-intent moment AIVENA ever creates, and the design does nothing after it: no feedback ask, no routing of 'it was too small', no next-step close. Top-agent practice is same-day/next-morning follow-up; without it the lead cools exactly at peak intent and the agency learns nothing. Feedback is also the raw material for future vendor reporting (a listing-retention weapon) and for the matching engine (structured deal-breakers).",
+        "concrete_design": "Viewing outcome=attended → engine event schedules ONE follow-up (T+3h if daytime, else next morning, buyer's language): 'How did Casa X feel?' — one question, obeys §10. Reply parsed into structured feedback on the viewing row + lead_state: deal-breakers (too small, wrong area → rejected_properties + adjusted must-haves) vs fixables (price → auto-files an ask_agency ticket 'buyer felt price high — any flexibility?'; condition → agent note). Positive sentiment → next-step close: offer second viewing or, on offer language, the already-designed §3c HOT handoff ('I'll pass that to María right now'). No reply → exactly one re-ask 48h later, then stop (does not consume the value-nudge cap — transaction-triggered, enumerated exemption). Golden scenarios: 'too small' → larger match proposed, original property never re-pitched; 'loved it' → second-viewing/offer path; silence → one re-ask then silence.",
+        "phase_fit": "P2 as approval-first drafts (agent sees the feedback loop working), auto in P3",
+        "effort": "Medium: ~1 week (event + parse-to-lead-state + playbook routes + golden scenarios)"
+      },
+      {
+        "lens": "conversion-maximizer",
+        "title": "Trip-mode for international buyers — the market-defining differentiator",
+        "why_it_matters": "This is how Costa Blanca internationals actually buy: a 3-5 day trip viewing 6-10 properties, then decide (the region's own agencies run this as their core playbook — https://www.masainternational.com/viewing-trips, https://www.thinkspain.com/information/buying-in-spain/spanish-property-viewing-trips-why-they-are-important-and-how-to-prepare-for-them). The buyer's flight home is a REAL deadline — honest urgency that passes §10's banned-pattern screen ('the Thursday slot is the last one before you fly Saturday' is fact, not fake scarcity). An AI that orchestrates a whole trip's itinerary in the buyer's language is a capability no small agency has and no competitor offers; it converts one visit into 5+ viewings instead of 1.",
+        "concrete_design": "Phase A (nearly free): trip_dates {arrival, departure, confirmed?} as a first-class intel slot in the §1 lead-state — asked once, naturally ('when are you next in Spain?'), via the existing slow-drip discipline; once known, the viewing-proposal policy (#1) and re-engagement whitelist become trip-aware ('you arrive on the 12th — shall I line up Casa X for that week?'). Phase B: multi-viewing itinerary — Amanda proposes 2-4 viewings across trip days from the shortlist (slot-hold rows already support this), grouped as a dashboard 'viewing trip' object (lead, dates, viewings, map order) so the agent sees the whole trip; travel-time sanity check between same-day viewings (simple zone/km heuristic, not routing API). Pre-trip readiness line for offer-speed: one platform-authored, 13-language 'buying in Spain' snippet (NIE, reservation deposit norms) offered once — grounded content, not advice, broker/lawyer-referral rider per §3a.",
+        "phase_fit": "Phase A (trip_dates slot + trip-aware proposals) in P1 — it is just lead-state + prompt; Phase B (itinerary object + multi-booking) in P3/post-launch when FULL-AUTO booking is proven",
+        "effort": "Phase A: 1-2 days. Phase B: medium-high, 1-2 weeks"
+      },
+      {
+        "lens": "conversion-maximizer",
+        "title": "Video viewing as a first-class booking type",
+        "why_it_matters": "Most of the funnel is sitting in Oslo/Amsterdam/Manchester, not Alicante. A live video viewing is the established overseas-Spain practice for converting remote interest into a scheduled commitment weeks before a flight, and some buyers now complete purchases on video alone (https://www.martin-realestate.com/news/buy-spanish-property-from-abroad-how-to-secure-your-spanish-home-with-professional-video-viewings, https://inmoinvestments.com/services/4081/virtual-video-viewings-take-a-closer-look-without-leaving-home/). It is a low-commitment 'yes' that fills the gap between chat and trip, keeps the lead exclusive to this agency, and feeds trip-mode's shortlist.",
+        "concrete_design": "viewing_type enum {in_person|video} on the viewing row and through propose_viewing_slots/book_viewing (same EXCLUDE constraint, same pending_action confirm, same lifecycle rungs from #2 — video link or 'María will video-call you on WhatsApp at 17:00' in the confirmation). Proposal policy (#1) prefers offering video when lead_state has no trip_dates and the buyer is remote ('want a video walk-through this week, before you're here in person?'). Agent side: appears in the same calendar sync; agency toggle to disable per property. One golden scenario: remote buyer → video offered → booked → post-viewing choreography (#3) runs identically.",
+        "phase_fit": "P2/P3 alongside the booking build (the enum lands in the P0 schema for free)",
+        "effort": "Low: 2-3 days on top of the existing booking machinery"
+      },
+      {
+        "lens": "conversion-maximizer",
+        "title": "Funnel instrumentation + Amanda attribution — the ROI counter the product sells on",
+        "why_it_matters": "§7 meters cost, latency, and ticket SLAs — but nothing measures the funnel. Without lead→engaged→viewing-proposed→booked→attended→offer counts per agency with an Amanda-attribution flag, Christian cannot prove 'Amanda booked 12 viewings this month' — which IS the renewal pitch, the pricing justification, and the pilot go/no-go evidence. It also makes every other addition here tunable (proposal timing, no-show rate, post-viewing conversion). Cheap now, nearly impossible to reconstruct later.",
+        "concrete_design": "conversation_funnel_events table (P0 schema, next to turn_usage): {conversation, lead, stage: engaged|intel_core_complete|viewing_proposed|viewing_booked|confirmed|attended|no_show|offer_intent, amanda_attributed bool, ts} — written by the engine at the same deterministic points that already exist (proposal fired, book_viewing succeeded, outcome set, HOT offer handoff). Surfaces: the §6 daily digest's 'one trust number' becomes a funnel line ('3 viewings booked this week, 2 attended'); agency dashboard gets a simple stage-count funnel; P1 shadow report gets 'viewings Amanda WOULD have proposed/booked' as promotion evidence. Later marketing stat sits beside the SLA one: 'X viewings booked per agency per month'.",
+        "phase_fit": "P0 (schema) + P1 (events written from shadow) + P2 (dashboard/digest surface)",
+        "effort": "Low: 2-3 days total across phases"
+      },
+      {
+        "lens": "conversion-maximizer",
+        "title": "Hot-lead 'call now' alert — Amanda detects, the human closes",
+        "why_it_matters": "The design pings agents about QUESTIONS but never about BUYERS. A lead who states budget + timeline + asks about offers is worth a phone call within minutes, not a chat reply — speed-to-contact is the single most-documented conversion lever in the industry (21x qualification within 5 minutes; conversion collapses with delay — https://greetnow.com/blog/lead-response-time-statistics). The entire delivery mechanism (ping spine, P1-HOT tier, [I've got it] claim button that already anticipates agents who 'call the buyer instead of typing') is designed — it is one new trigger away.",
+        "concrete_design": "Deterministic buying-intent trigger from lead_state deltas (same pattern as #1's scorer, stricter): offer language, 'can we see it this week', budget+timeline+financing all filled, or second-viewing request → fires ONE P1-HOT-tier ping to the owning agent on the AIVENA Office sender: 'HOT: Lars (NO) — budget 250k, flying in Oct 12, asking about offers on Casa X. Call him? [I've got it] [Amanda continues]'. 'I've got it' = the existing claim/handoff-in-progress semantics. Max 1 hot alert per lead per 72h; never blocks Amanda's own reply (she answers normally either way, so the buyer never stalls). Logged as offer_intent in #6.",
+        "phase_fit": "P2 (rides the ping spine the moment it exists)",
+        "effort": "Low: 2 days (new trigger + one template on existing infra)"
+      },
+      {
+        "lens": "conversion-maximizer",
+        "title": "Objection playbooks + property-alert opt-in captured at the natural moment",
+        "why_it_matters": "The three objections that end most conversations — 'too expensive', 'wrong area', 'just looking' — currently fall to generic prompting; a grounded playbook turns each into a next step instead of a dead end. And the §10 dormancy rule, correct as written, silently loses the 6-18-month buyers that dominate international purchase cycles — the design's own answer (the consented ≤1/week property-alert stream) exists but nothing ever ASKS for the opt-in. Capturing it at high-intent moments converts a compliance TODO into the retention channel where much of the revenue actually lives, and raises the priority of Christian's §9 marketing-consent decision from 'blocks property-push only' to 'blocks long-cycle nurture revenue'.",
+        "concrete_design": "Playbooks as prompt doctrine + golden scenarios (not new infra): price-too-high → 1-2 budget-fit alternates from search_properties + optional ask_agency ticket on flexibility (never invented discounts — §2 floor holds); wrong-area → adjacent-area suggestion grounded in get_area_info; 'just looking' → warm acknowledgment, zero pressure, one offer of the alert stream. Opt-in ask fires at exactly three deterministic moments, max once per lead: 'just looking' response, pre-dormancy sign-off ('want me to message you only when something matching X appears?'), and trip-date capture for far-future trips; consent recorded per the §5 consent_marketing machinery verbatim. Golden scenarios: each objection → correct route; opt-in never asked twice; no consent → dormancy stays absolute.",
+        "phase_fit": "Playbooks: P1 (prompt + golden suite). Opt-in ask: P2, gated on Christian's §9 marketing-consent flow decision",
+        "effort": "Low-medium: 3-4 days playbooks; opt-in ask ~1 day once the consent flow exists"
+      },
+      {
+        "lens": "learning-flywheel",
+        "title": "Outcome feedback spine: viewing → attended → interested → offer → sale",
+        "why_it_matters": "The entire funnel ends at book_viewing; nothing records whether the viewing happened, whether the buyer was interested, or whether it led to an offer/sale. Without this, (a) the 'one trust number' in the daily digest and the future marketing stat have no ground truth, (b) no-show patterns can never drive reminder tuning, (c) matching and prioritization can never be evaluated against reality, and (d) every other learning loop below has no label to learn against. This is the single dataset that turns Amanda from 'books viewings' into 'books viewings that convert' — and it cannot be backfilled: a viewing whose outcome was never asked about is lost forever.",
+        "concrete_design": "P0 schema: add outcome columns to viewings (outcome: attended/no_show/cancelled_by_buyer/cancelled_by_agency, buyer_verdict: interested/thinking/rejected+reason, led_to_offer bool, recorded_by, recorded_at). P2 capture UX: reuse the §3b ping spine verbatim — 2h after each viewing's end time, the AIVENA Office sender pings the owning agent one template ('Did the viewing with {first name} at {property ref} happen? [Yes—interested] [Yes—not for them] [No-show]'), quick-reply buttons ride the same ButtonPayload ladder, unanswered folds into the morning digest, never nags past 2 pings. Amanda also self-reports what she can observe (buyer cancels/reschedules in chat). Sale/offer terminal events are a one-tap on the lead in the dashboard. Feed the aggregate into the digest ('3 viewings this week, 2 attended, 1 second visit requested').",
+        "phase_fit": "Schema columns in P0 (near-zero cost); one-tap agent capture in P2 when real bookings start (it reuses the ping-spine infra being built for tickets anyway); analysis loops post-launch.",
+        "effort": "0.5 day schema in P0 + ~1.5 days for the post-viewing ping flow in P2 (mostly reuse of the ticket ladder). Analysis later, separate."
+      },
+      {
+        "lens": "learning-flywheel",
+        "title": "Day-one learning telemetry pack: turn_events with behavior tags + version stamps + knowledge-usage log",
+        "why_it_matters": "turn_usage (§7) meters cost only. To ever answer 'which Amanda behaviors correlate with booked viewings' — message length bands, intel-slot asks, viewing proposals, nudge types, relay latency, which knowledge entries were actually cited — each turn must carry structured behavior tags and prompt_version/knowledge_version/model_id stamps. This is the difference between being able to do offline analysis in month 3 versus having six months of unlabeled transcripts. It also gives 'knowledge that earns': agencies see which of their saved entries Amanda actually uses, and stale/never-used entries get flagged instead of rotting.",
+        "concrete_design": "Extend the P1 engine to emit one turn_events row per outbound turn: {conversation_id, turn_id, strategy_tags[] (answered_fact, asked_intel_slot:<slot>, proposed_viewing, relayed_ticket, nudge:<type>, social_ack…), msg_length, question_count, knowledge_entry_ids_used[], tool_calls[], prompt_version, knowledge_pack_version, model_id, gate_outcomes}. Tags come from the turn classifier + tool log the engine already produces — this is logging, not new intelligence. Add a nightly rollup view per agency. No dashboards required now; the loop closes post-launch with simple SQL (turns tagged X in conversations that reached booked_viewing vs not).",
+        "phase_fit": "P1 (must ship with shadow — shadow traffic is exactly the free data you want). Version stamping is ~free and also gives clean before/after reads on every prompt change without A/B infra.",
+        "effort": "~1–1.5 days inside the P1 engine build. Honest note: this is the cheapest item on this list relative to what it unlocks."
+      },
+      {
+        "lens": "learning-flywheel",
+        "title": "Draft-edit mining → per-agency learned voice (El Gusto for conversation)",
+        "why_it_matters": "The doc tracks '39 of 42 approved unchanged — 93%' but throws away the 3 edits — which are the highest-signal supervision data in the whole system: an agent showing Amanda exactly how this agency talks. Mining them closes a loop that directly drives the product's core adoption metric: fewer edits → higher approved-unchanged % → agencies promote the dial faster → more auto-replies → more capacity. And it is time-critical: approval mode is a shrinking window — once an agency reaches full-auto this data stream ends forever. The ONE tone choice (formal/casual) in settings is a blunt instrument; real agencies have greeting habits, sign-offs, phrase preferences, emoji norms that the dial stat proves they care about (they edited).",
+        "concrete_design": "P1: store {draft, final_sent_text, structured_diff, editor, timestamp} on every approval-mode send (a column pair on the existing outbound-intent row — trivial). P3: a periodic batch job (LLM, offline) distills accumulated diffs per agency into a short 'voice addendum' (5–10 bullet style rules: 'signs off with Saludos, María'; 'never uses emoji with German leads'; 'opens with the property ref'). Critically: the addendum is NOT auto-injected — it goes through the exact §5 save-time scrubber and is shown to the agency as 'Amanda has noticed you prefer… apply?' with accept/reject and version history. Same treatment for 'Report this reply' corrections (already filed as draft knowledge — mine them into the same stream).",
+        "phase_fit": "Logging in P1 (non-negotiable timing — the data window is the approval phase itself); distillation job + agency-facing 'learned voice' card in P3 or first post-launch cycle.",
+        "effort": "0.5 day in P1 for storage. 2–3 days later for the distillation job + settings card. The P1 half is the part that can never be recovered if skipped."
+      },
+      {
+        "lens": "learning-flywheel",
+        "title": "Question-ticket aggregate mining → auto-suggested knowledge entries and catalogue fields",
+        "why_it_matters": "§3b.6's per-ticket 'save as knowledge' tap is reactive and depends on a busy agent tapping it. The compounding win is aggregation: 'is the price negotiable?' asked 40 times across conversations should automatically surface 'add a price-flexibility field to the catalogue / a standing knowledge entry' — both per-agency and as AIVENA platform schema evolution (furniture included, community fees, pet policy, orientation…). Every mined answer permanently deletes a class of future tickets, which is the exact mechanism by which agent load falls over months while answer coverage rises — the flywheel §3b names, actually spinning. It also gives Christian the evidence-based roadmap for which catalogue fields to build next instead of guessing.",
+        "concrete_design": "At ticket creation (the amanda_question write that ships in P0), add an LLM-classified question_category (small fixed taxonomy: price_negotiation, fees_commission, furniture, availability, legal_process, community, viewing_logistics, area, other) + free-text normalized_question — one extra model call on a path that already runs a model. Post-launch: a weekly job clusters by category × property/agency, and the daily digest gains one line when a threshold trips: 'Asked 6× this month: whether furniture is included — save a standard answer? [one tap]'. Platform-level rollup (category counts across agencies, no PII) feeds the catalogue-field backlog.",
+        "phase_fit": "question_category tagging at P1/P2 when tickets go live (the taxonomy must exist before tickets accumulate); mining digest post-launch. Data captured from the first real ticket either way.",
+        "effort": "0.5 day for tagging at creation; 1–2 days for the weekly mining + digest line later."
+      },
+      {
+        "lens": "learning-flywheel",
+        "title": "Rejection-reason capture → demand intelligence ('what buyers want that you don't have')",
+        "why_it_matters": "lead_state stores rejected_properties (so Amanda never re-pitches) but not WHY — 'too far from the beach', 'no ground floor', 'over budget once fees explained'. The why improves the very next suggestion in the same conversation, and aggregated it becomes a report no small Costa Blanca agency has ever had: 'this month, 8 Norwegian leads wanted ground-floor near Playa Flamenca under €200k — you have 1 such listing.' That is listing-acquisition intelligence — it tells the agency which mandates to go win — and it is the kind of number that makes an agency owner renew, because it makes AIVENA feel like it understands their market, not just their inbox.",
+        "concrete_design": "P1: extend the lead-state extraction (already promoted from the interest trigger in §1) so a rejection stores {property_id, reason_category (price/location/type/feature/timing/other), reason_text} — a prompt + schema tweak on machinery being built anyway. Amanda's suggestion filter can then avoid the CLASS, not just the property. Post-launch: monthly per-agency demand report (aggregate lead requirements + rejection reasons vs current catalogue, gap list). No new consent surface — it is the same lead-state processing already covered in the privacy notice; the report is aggregate.",
+        "phase_fit": "Reason capture in P1 (part of the lead-state build — retrofitting the extractor later re-tests everything); demand report post-launch once there are enough real leads for the aggregate to be honest.",
+        "effort": "~0.5 day in P1. Report: 1–2 days later."
+      },
+      {
+        "lens": "learning-flywheel",
+        "title": "Self-growing golden suite: one-tap 'add this failure as a test scenario'",
+        "why_it_matters": "The 60–100 scripted conversations are a static snapshot of what the design team imagined in 2026. Real buyers will produce failure shapes nobody scripted (the Finnish idiom that reads as a cancellation, the voice note with two questions). If every real gate-miss, 'Report this reply', and wrong-relay near-miss can be promoted into the regression corpus in one tap, the promotion gate gets harder to pass over time instead of staying frozen — which is precisely what 'must not fail' requires as traffic diversifies. Cheap because the harness, the review feed, and the report button all already exist in the plan; this is the connector between them.",
+        "concrete_design": "On the review feed / Report-this-reply / gate-failure alert surfaces, add 'add to test suite': snapshots the conversation slice + the expected-correct behavior (agent writes one line), strips PII (first-name-only rule already applies; scrub the rest deterministically), lands as a pending golden-suite case Christian (or CC) approves into the fixture set. Suite grows monotonically; deploy still blocks on regression.",
+        "phase_fit": "P2 (when the review feed ships and real auto-replies begin producing failures worth keeping).",
+        "effort": "~1 day, mostly the PII-scrubbed snapshot serializer."
+      },
+      {
+        "lens": "learning-flywheel",
+        "title": "Cross-agency anonymized insight layer for area guides and per-nationality FAQ",
+        "why_it_matters": "get_area_info's precomputed locality guides are a platform asset with no feedback loop: nobody learns which questions the guides fail to answer. Mining cannot_answer events + question categories + area/language across ALL agencies tells you exactly which guide sections to write next ('Norwegian buyers ask about winter rentals in Torrevieja; Dutch buyers ask about NIE process') — every guide improvement raises the answer floor for every agency simultaneously, which is a genuine platform moat over any single-agency chatbot. Requires zero new collection if the telemetry pack (turn_events + question_category + language, all already proposed above) ships at P1.",
+        "concrete_design": "Post-launch monthly job: aggregate {question_category, area, lead_language, answered vs cannot_answer vs ticketed} across agencies with agency/lead identifiers dropped at aggregation time (counts only, k-threshold before display). Output = ranked 'guide gaps' list for the area-guide authoring pipeline. Add one line to the RoPA (aggregate service-improvement processing) — no per-lead profile is ever built cross-agency.",
+        "phase_fit": "Post-launch (needs ≥ a few agencies of volume to mean anything); its inputs are the P1 telemetry pack, so nothing extra to build early.",
+        "effort": "1–2 days when the time comes; ~0 now."
+      },
+      {
+        "lens": "cold-completeness",
+        "title": "Conversation entry kit — top-of-funnel wiring (missed-call text-back, per-property wa.me links + QR, web-to-WhatsApp invite)",
+        "why_it_matters": "The plan engineers the middle of the funnel and contains zero words on how a conversation STARTS. Viewings scale linearly with conversation starts, and the pieces are lying on the floor: the feature truth table (2026-08-24) lists missed-call text-back as BUILT-NOT-WIRED, and an agency's most common lost lead is exactly the unanswered call. A wa.me link with the property ref prefilled means Amanda's turn 1 is already property-grounded — her strongest first impression.",
+        "concrete_design": "(a) Wire the existing missed-call text-back EF into the Amanda pipeline: missed office call -> utility-template first touch (service framing, respects §5 consent split; NOT marketing) -> conversation opens in Amanda. (b) Dashboard generator for per-property wa.me deep links + QR codes with prefilled 'Hi, I'm interested in IC-28746' so listings, portals-as-shopfront, and window displays all feed Amanda with context. (c) Web-Amanda widget gains a 'continue on WhatsApp' invite using the §4 verified-phone identity link that already exists. All entry sources tagged in lead source for attribution.",
+        "phase_fit": "P2 (needs auto conversational replies live so starts get answered); missed-call first-touch template enters the 13-language pipeline at the P2 gate with the other templates",
+        "effort": "3-5 CC-days + 1 utility template x 13 languages"
+      },
+      {
+        "lens": "cold-completeness",
+        "title": "Viewing outcome loop — buyer reminders, no-show handling, post-viewing debrief",
+        "why_it_matters": "The doc ends at 'viewing booked'; the business outcome is viewings ATTENDED and offers made. Buyer-side reminders are the single proven no-show reducer (agents' biggest wasted hours), and the post-viewing 'how was it?' is the highest-conversion, most natural message Amanda can ever send — it also feeds lead-state with real preference signal instead of inferred intel. This loop also produces the funnel numbers (conversations -> booked -> attended -> offers) that pricing, dial-promotion evidence, and the sales pitch all need; today only ops metrics are specified.",
+        "concrete_design": "T-24h and T-2h buyer reminders via approved utility template, window-law aware, tied to the same calendar objects the live agent-sync uses. After the slot: agent one-tap 'happened / no-show'. Post-viewing debrief message (one, whitelisted as servicing a shared event — explicitly outside the 2-nudge lifetime cap); structured liked/disliked/price-reaction into lead-state; no-show -> exactly one polite reschedule offer. Attended/no-show/debrief land in the daily digest and a small funnel panel. Golden-suite scenarios added: reminder near window boundary, no-show reschedule, debrief-then-silence.",
+        "phase_fit": "Reminders ride P2 ASSISTED bookings; no-show + debrief at P3 with full-auto booking. Both templates into the 13-language pipeline at the P2 gate (Meta latency is on Meta's clock, as the doc itself says)",
+        "effort": "3-4 CC-days + 2 templates x 13 languages"
+      },
+      {
+        "lens": "cold-completeness",
+        "title": "Offline-contact awareness — agents phone buyers and Amanda doesn't know",
+        "why_it_matters": "Agents call leads constantly; a call leaves no trace, so full-auto Amanda then contradicts what was just agreed by voice ('shall we book a viewing?' after the call booked one). This is the most LIKELY daily 'Amanda looks stupid' incident in the whole design — the ping-spine's 'I've got it' only covers calls triggered by tickets, and §6 hand-back only covers claimed handoffs.",
+        "concrete_design": "(a) Any agent activity on a lead (calendar event created for that lead, dashboard reply, ticket claim) sets a short auto-hold on Amanda's proactive sends for that conversation. (b) A 10-second 'log contact' quick action in the dashboard AND via the Office WhatsApp number ('NOTE <lead>: spoke by phone, viewing Sat 12:00') parsed into lead-state as ground truth — same ingestion class as the existing hand-back note, so no new trust machinery.",
+        "phase_fit": "P2 (matters the moment auto-replies go live)",
+        "effort": "~2 CC-days"
+      },
+      {
+        "lens": "cold-completeness",
+        "title": "Non-buyer intent lanes — vendor/seller lead capture + rental routing",
+        "why_it_matters": "The same buyer-facing number will receive 'I want to sell my villa' and rental inquiries. A vendor lead is the single most valuable inbound an agency gets (listing acquisition is their lifeblood), and today Amanda would treat the vendor as a confused buyer or dead-end it. Graceful vendor capture is a decisive agency-trust and revenue feature for near-zero cost. Rental inquiries otherwise pollute the lead funnel.",
+        "concrete_design": "Intent router adds {vendor_lead, rental_inquiry, job/spam/other}. Vendor -> 3-4 natural intake questions (location, property type, timeline) -> vendor_lead ticket + escalation-phone push ('Someone wants to SELL — call them'); Amanda NEVER estimates value or promises terms (the valuation launch gate standing order holds). Rental -> per-agency toggle: handoff, or polite 'we focus on sales' close. Spam/job -> graceful close, no lead row. Calibrate lane precision in P1 shadow on real traffic.",
+        "phase_fit": "Classifier lanes in P1 SHADOW; vendor-ticket surface + push in P2",
+        "effort": "~2 CC-days"
+      },
+      {
+        "lens": "cold-completeness",
+        "title": "GDPR rights as a first-class chat intent + retention schedule + backup/restore statement",
+        "why_it_matters": "§5's privacy line promises rights via a URL, but buyers will exercise them IN the chat — 'delete my data' typed into WhatsApp starts a statutory 1-month clock whether or not the classifier catches it. Missing it is a real breach risk and exactly the failure mode that kills agency trust. Separately, the doc has sub-processor retention terms but NO retention schedule for AIVENA's own data (messages, voice-note audio, media, ticket_events, turn journals) and no backup/restore word anywhere, despite the 'must not fail' doctrine — losing conversation state means losing pending viewings.",
+        "concrete_design": "Classifier intents {erasure, access, objection} + opt-out-vs-erasure disambiguation -> in-language acknowledgment + a rights ticket type with a statutory-deadline clock owned by the agency admin with Christian visibility. Retention schedule table with an automated deletion job (e.g. inbound media 90d, dormant-lead data N months, voice audio shortest) honoring legal holds. One-paragraph DR statement: Supabase PITR verified enabled, RPO/RTO stated, one restore drill executed before P2.",
+        "phase_fit": "Rights intent + DR statement in P1 (shadow exercises the intent; probes join the golden suite); retention schedule + deletion job at the P2 gate. Policy text rides the existing Christian-owned DPA work in §9",
+        "effort": "2-3 CC-days + policy sign-off (Christian)"
+      },
+      {
+        "lens": "cold-completeness",
+        "title": "Payments/deposit platform floor — Amanda never transmits bank details",
+        "why_it_matters": "Deposit fraud over WhatsApp is rampant in Spanish coastal real estate (spoofed agents sending IBANs). One incident where 'Amanda' appears to have sent payment instructions destroys the product. The §2 no-commitment floor covers reservations, and §3c's sensitive list covers advice — neither covers 'where do I send the deposit?'.",
+        "concrete_design": "Add payments to the §3c platform floor: any payment-instruction request -> escalation to a named human + a one-line fraud-caution ('the office will confirm payment details with you directly — never trust bank details sent in chat'). Deterministic send-path block on IBAN/account-number patterns in outbound (unlike tone, IBANs regex cleanly across all 13 languages). One golden-suite probe.",
+        "phase_fit": "P1 (it is a floor rule; costs nothing to have from the start)",
+        "effort": "Hours"
+      },
+      {
+        "lens": "cold-completeness",
+        "title": "WABA number health telemetry — the number IS the business",
+        "why_it_matters": "Meta quality-rating drops or buyer blocks throttle and can kill the buyer-facing number — a silent, existential dependency the doc only touches at template level ('template-category/quality monitoring'). Buyer blocks are also the truest 'Amanda is annoying' signal, better than any internal tone metric, and should feed the dial-promotion evidence.",
+        "concrete_design": "Poll phone-number quality_rating + messaging-limit tier per agency (Meta Cloud API; exact surface via Twilio to be verified at build — honest uncertainty); alert Christian on any drop. Track STOP/opt-out/undelivered-spike as a per-agency block-proxy KPI shown next to the shadow stats. Quality drop -> automatic conservative mode: proactive sends off, template volume minimized, alert; recovery manual.",
+        "phase_fit": "P2 (the moment Amanda auto-sends at volume)",
+        "effort": "1-2 CC-days"
+      },
+      {
+        "lens": "cold-completeness",
+        "title": "The two missing runbooks — agency offboarding wind-down + incident one-pager",
+        "why_it_matters": "Live conversations are a liability with no ending: a churned agency leaves buyers mid-thread and mid-booking, and Art. 28 requires return-or-delete on termination — the DPA will promise it, but no machinery or procedure exists. And when the invariant monitor fires at Saturday 22:00, the alert reaches Christian — a solo non-coder — with no written procedure; the runbook IS the on-call system at this company's size.",
+        "concrete_design": "Offboarding state machine: suspend sends -> Amanda closure message with the agency's direct contact -> open tickets/pending_actions closed -> data export to agency -> deletion per retention schedule -> WABA number disposition documented. Incident one-pager: alert -> triage table -> exact kill-switch/downgrade clicks in the admin UI -> agency-comms template -> post-incident note; plus prompt-version hash stamped per turn (extends turn_usage) so any incident is forensically replayable.",
+        "phase_fit": "Incident one-pager at P1 (before real traffic); offboarding machinery at the P2 gate (before a second real agency)",
+        "effort": "1-2 CC-days (mostly writing + a few states)"
+      },
+      {
+        "lens": "cold-completeness",
+        "title": "Lifecycle edges — dormant-return re-confirmation + agent-confirmed household linking",
+        "why_it_matters": "The demographic is literally couples buying retirement homes, often on two phones: double-booked viewings and Amanda re-pitching the property the spouse already rejected are real and visible failures. And a lead returning after 6 dormant months meets a lead-state that is declared authoritative but is now wrong — confidently quoting a stale budget is exactly the 'not listening' failure §1 was built to kill.",
+        "concrete_design": "(a) Re-inbound after >6 weeks dormant -> lead-state facts flip to 'stale: reconfirm-on-use' — hedged phrasing plus one natural reconfirm ('last time your budget was around 200k — still about right?'). (b) Household heuristic (same surname + same property + overlapping context, or explicit 'my wife spoke to you') -> agent-confirmed link ONLY, never auto-merge (cross-exposing chats between two people is itself a privacy breach); linked leads share rejected_properties and viewing dedup, never message content.",
+        "phase_fit": "Dormant-return at P2 (cheap); household linking post-launch",
+        "effort": "Dormant-return ~0.5 CC-day; household linking 2-3 CC-days"
+      },
+      {
+        "lens": "lean-cutter",
+        "title": "P0.5 'Live Demo Track' — full loop, FULL mode, is_test agencies only",
+        "why_it_matters": "This is the single biggest hole in an otherwise excellent plan. As phased, the dream demo — watching Amanda converse and actually book a viewing that lands in a calendar — never happens until P3, because P1 SHADOW simulates all bookings and P2 keeps them one-tap. Three real consequences: (1) the sales demo and the founder's own conviction arrive months late; (2) the 'must not fail' transactional machinery (pending_action, slot EXCLUDE constraint, date resolver, idempotency) gets its FIRST live execution at P3 on a real pilot agency — the highest-stakes moment is also its maiden voyage; (3) the DPA chain (Christian-owned, blocks P1-on-real-traffic) sits on the critical path to ALL visible progress. A test-agency full loop has none of these problems: it is Christian's own phone, no real PII, no DPA dependency, and it burns in the booking machinery for months before any real buyer touches it. It is also the '\"Try Amanda\" sandbox' from §6 — one build, two uses (demo + sales tool).",
+        "concrete_design": "Add one rule to §8: 'is_test agencies may run ANY mode at any phase; real agencies follow the phase gates.' Then sequence: after the lean P0 core, enable FULL mode on the Mediterráneo Costa Homes test agency and run the complete loop — sonnet tool loop, grounding gates, ask_agency ticket answered from the existing dashboard, real book_viewing writing a real slot + calendar event. Mode enforcement is already in the tool layer, so this is one flag plus demo seed data, not new machinery. Keep it running permanently: add to the P3 gate 'N real FULL-mode bookings executed on the test agency with zero double-books/constraint violations' as an evidence requirement.",
+        "phase_fit": "New phase P0.5, between P0 and P1 (and a new evidence line in the P3 gate)",
+        "effort": "~0.5–1 day incremental (it is 90% re-sequencing of work P0–P3 already contain); the P0-core it depends on is ~4–6 days"
+      },
+      {
+        "lens": "lean-cutter",
+        "title": "Ping Spine v0: dashboard-first + one template + deterministic matching — full ladder behind evidence triggers",
+        "why_it_matters": "The §3b-spine is the most over-built section relative to evidence: a 1-minute cadence worker with 3 priority tiers, 6-rung ladders, snooze grammar with Spanish synonyms, digest collapse, mute-resilience heuristics, away mode, duty rosters, and an SLA p90 dashboard — designed to v0.9 before a single ticket has ever been filed, for agencies of 1–10 agents, with zero agencies live. P1 shadow will reveal actual ticket volume, question types, and whether the knowledge flywheel kills recurring tickets faster than any ladder matters. Building the cadence engine first risks ~5 days on machinery shaped by guesses. What IS load-bearing now: the WhatsApp ping channel finding, the no-auto-relay-on-ambiguity law, the dedicated staff sender, and the back-translation echo (correctness, cheap).",
+        "concrete_design": "P2 ships only: dedicated AIVENA Office sender · ONE ping template (lead name + property + question gist) · the deterministic matching ladder (quoted-SID → short-code → fresh-single-ticket → disambiguation menu, no auto-relay on ambiguity) · one re-ping at +30m · unanswered → next-morning owner digest · back-translated confirmation echo · quiet hours. Everything else gets a written build trigger in the doc: priority tiers + backup/owner rungs WHEN a live agency has >1 answering agent; digest collapse WHEN any agent hits 3+ open tickets in a day; snooze grammar WHEN an agent asks; away mode/duty roster WHEN a real vacation happens; SLA p90 dashboard WHEN there are ≥50 answered tickets to chart.",
+        "phase_fit": "P2 (v0); the deferred pieces move to post-launch behind their triggers",
+        "effort": "~2 days for v0 vs ~6–7 days for the full spine — roughly 4–5 days deferred"
+      },
+      {
+        "lens": "lean-cutter",
+        "title": "Media Law v0: deterministic 'never auto-act on unparsed media' instead of P0 STT/vision",
+        "why_it_matters": "§1 makes voice-note STT + image vision a P0 item. But an STT vendor is a new sub-processor in Christian's DPA annex (lengthening his blocking legal work), a new cost line, and a new failure mode — all before any real buyer exists. The red-team's actual fear ('voice note containing a cancellation') is fully covered by a one-hour deterministic rule, and the P0.5 demo + P1 shadow work fine with typed messages. Real buyers do send voice notes, so transcription IS needed — but before real-buyer auto-replies (P2), not before the first line of engine code.",
+        "concrete_design": "P0 rule: any non-text inbound → stored, acknowledged gracefully ('could you type that for me?' in the lead's language), flagged fact-bearing, and NEVER auto-acted on — if the conversation is decision-pending (open pending_action, open ticket), it converts to a ticket/handoff. STT + vision move to the P2 gate ('before auto conversational replies to real buyers'), which also delays adding the STT vendor to the DPA annex until it is true. Keep the P0 media-storage audit of the inbound EF (cheap, informs the later build).",
+        "phase_fit": "Deterministic rule in P0; STT/vision pipeline moves to the P2 gate",
+        "effort": "~1 hour for the rule; ~2 days of STT/vision work deferred out of P0"
+      },
+      {
+        "lens": "lean-cutter",
+        "title": "Golden suite growth model: ~25–30 core scenarios at P1, transcript-fed to 60–100",
+        "why_it_matters": "Authoring 60–100 scripted multilingual conversations before any traffic exists means guessing the failure distribution — and the plan then treats that guess as the promotion gate. The suite's VALUE is real (it is the right regression harness); its SIZE at P1 is not. A ~25–30 scenario core covering every safety invariant (language correctness, zero invented facts, escalation precision, booking/DST edges, injection + poisoned-knowledge probes, window-expired relay) gates P1 credibly; every real failure found in shadow and every P0.5 demo transcript then becomes a permanent scenario — so by P2 the suite is 60+ and, crucially, shaped by reality instead of imagination.",
+        "concrete_design": "P0 keeps the harness skeleton as designed. P1 gate = 25–30 core scenarios green (all safety invariants represented, ≥ ES/EN/DE/NO). Add one rule to §7: 'every shadow-phase failure and every escalation-calibration miss is converted into a suite scenario within 48h.' P2 gate keeps the full thresholds against the grown suite.",
+        "phase_fit": "P0 (harness) + P1 (core suite); growth is continuous through P1–P2",
+        "effort": "Saves ~3 days of upfront authoring; the conversion rule costs minutes per incident"
+      },
+      {
+        "lens": "lean-cutter",
+        "title": "Written 'build-when' trigger ledger for the deferred 20%",
+        "why_it_matters": "The plan's biggest process risk for a solo founder is that everything in the doc reads as equally mandatory, so build order defaults to document order. A one-page ledger in §8 that names each deferred subsystem WITH its objective trigger keeps the design's completeness (nothing is lost or re-litigated) while making the lean path the default. It also gives Christian — a non-coder — a checkable dashboard of 'why isn't X built yet' answers.",
+        "concrete_design": "Add to §8: episodic memory layer 3 → WHEN a real conversation first exceeds the verbatim window; disengagement state machine + value-nudge scheduler (§10) → WHEN a live agency has ≥10 conversations gone cold AND the marketing-consent flow exists (until then, the only proactive sends are ticket relays/SLA updates — which also shrinks P1 compliance surface); per-agency euro hard-degrade + global concurrency limiter → WHEN first real agency is live (P1 keeps the turn_usage table + soft alert to Christian only); cross-channel web+WA identity linking → WHEN the web widget serves real leads; PWA/web-push pull-forward → WHEN an agent asks for desktop pings; typing indicator → WHEN Twilio support is verified AND latency p95 is met without it.",
+        "phase_fit": "Doc change now; each item lands post-P2/post-launch when its trigger fires",
+        "effort": "~0.5 day of doc work; defers ~6–8 build days of machinery"
+      }
+    ],
+    "cuts": [
+      {
+        "lens": "competitor-sota",
+        "cut": "NEVER run bulk WhatsApp reactivation blasts over cold/imported databases, despite the seductive AI-SDR stats (78 appointments in 3 days, 2-5% booking rates). Those are SMS-economy numbers; on WhatsApp, blast recipients who don't recognize you report/block, Meta's 7-day rolling quality rating degrades the NUMBER itself, and the number at risk is the agency's buyer-facing line — plus LSSI-CE Art. 21 makes unconsented commercial WhatsApp unlawful in Spain. First-touch (addition 2) is per-lead, enquiry-referencing, consent-logged — keep that distinction as a written platform rule so no future growth idea erodes it."
+      },
+      {
+        "lens": "competitor-sota",
+        "cut": "Explicitly ban human-mimicry tricks: Structurely famously ships 'intentional typos' and fake human hesitation. Amanda already has the good half (jittered pacing, warm register); add the prohibition on the bad half (typo injection, claiming to be typing, any human pretense) to the §5 classification memo. It violates AI Act Art. 50 spirit and Meta's Jan-2026 WhatsApp AI policy (which bans AI impersonation — and while checking that policy, record the one-line conformance note that Amanda is a business-specific assistant, not a banned general-purpose AI provider on the API)."
+      },
+      {
+        "lens": "competitor-sota",
+        "cut": "Defer AI voice calling (Ylopo/Retell-style) to post-launch. It is the market's current arms race, but AIVENA's voice EFs are a separate built-not-wired lane, and voice multiplies every risk the 79 findings just fenced (grounding, disclosure, recording consent under Spanish law). Do not let it creep into this packet."
+      },
+      {
+        "lens": "competitor-sota",
+        "cut": "Defer cross-surface behavioral triggers (Ylopo's 'viewed the same villa 3 times → text them') to post-launch: with ~0 real web traffic today there is no signal to trigger on, and it is marketing-consent-gated anyway. Note it as the natural v2 payload source for the §10 value-nudge whitelist and the alert stream once the site has traffic."
+      },
+      {
+        "lens": "competitor-sota",
+        "cut": "Do not add email/SMS as Amanda channels to chase AI-SDR multichannel parity. In Spain/Costa Blanca, WhatsApp ≈ 95%+ open rates and is where these buyers already are; every added channel re-opens the window/consent/idempotency work the design just solved for WhatsApp. Single-channel depth is a strength here, not a gap."
+      },
+      {
+        "lens": "competitor-sota",
+        "cut": "Do not import vendor benchmark numbers as targets (Intercom's 67% vs independently measured ~38% in small-business reality). The design's own instinct — calibrate thresholds from AIVENA's shadow data — is correct; write the resolution-rate targets only after P1 shadow measures the real baseline."
+      },
+      {
+        "lens": "conversion-maximizer",
+        "cut": "Explicitly enumerate a transactional-message exemption list (viewing confirmation, day-before reminder, morning-of logistics, post-viewing feedback ask + one re-ask, promised ticket relays) that does NOT count against the 2-lifetime-nudge cap or the 20-minute scheduler refusal — otherwise §10 as written strangles the viewing lifecycle; the exemption must be a closed enumerated list, never a loophole for sales content."
+      },
+      {
+        "lens": "conversion-maximizer",
+        "cut": "Do NOT extend Amanda into offer negotiation or price-discussion automation beyond capture-and-HOT-handoff — the §3c boundary is correct; the additions above deliberately route offer intent to humans faster, not around them."
+      },
+      {
+        "lens": "conversion-maximizer",
+        "cut": "Do NOT build portal-lead ingestion/auto-response (Idealista email capture is confirmed impossible; leads come direct) — the industry speed-to-lead problem is already solved for AIVENA's channel because Amanda answers WhatsApp inbound in seconds; spend nothing chasing channels that don't exist for us."
+      },
+      {
+        "lens": "conversion-maximizer",
+        "cut": "Defer all vendor/owner-side touchpoints (owner viewing-feedback reports, owner comms) to post-launch — but the #3 structured feedback capture builds the data asset now so the vendor report is a rendering job later, not a new pipeline."
+      },
+      {
+        "lens": "conversion-maximizer",
+        "cut": "Do NOT add drip sequences, additional re-engagement touches, or 'follow up 7 times' machinery beyond the designed caps — the restraint doctrine is a trust feature in this market; the leak is fixed by the opt-in alert stream (#8), not by more nudges."
+      },
+      {
+        "lens": "conversion-maximizer",
+        "cut": "Do NOT attempt AI-generated video tours or synthetic imagery in conversations — video viewings (#5) mean a real agent on a real call; keep the honesty hard guard absolute."
+      },
+      {
+        "lens": "conversion-maximizer",
+        "cut": "Keep the public agent leaderboard parked and skip any native buyer/agent app work in this packet — the WhatsApp-native ping decision is right; nothing above requires an app."
+      },
+      {
+        "lens": "conversion-maximizer",
+        "cut": "Do NOT delay P0/P1 for any of this: only the funnel-events schema (#6) and the viewing_type enum (#5) belong in P0; everything else layers onto already-designed machinery in P1-P3 without touching the safety chassis."
+      },
+      {
+        "lens": "learning-flywheel",
+        "cut": "Do NOT build A/B testing infrastructure now. At one pilot agency's volume, split tests are statistically meaningless and the machinery (assignment, exposure logging, stats) is real cost. The version stamps in the telemetry pack + the golden suite give you clean before/after comparison on every prompt/knowledge change, which is the honest experiment mechanism at this scale. Revisit only at multi-agency real volume."
+      },
+      {
+        "lens": "learning-flywheel",
+        "cut": "Do NOT let any learned artifact (mined voice addendum, auto-suggested knowledge) inject into prompts without passing the existing §5 save-time scrubber AND explicit agency accept/reject. Buyer messages influence the edit/correction stream, so an auto-applied learning loop is a prompt-poisoning channel — the doc's scrubber already exists; route everything learned through it, no exceptions."
+      },
+      {
+        "lens": "learning-flywheel",
+        "cut": "Do NOT build lead scoring / lead prioritization from outcome data. 'This buyer type converts' drifts straight into the person-ranking territory the §5 classification memo explicitly prohibits and would reopen Art. 22 exposure. All learning stays at the level of Amanda's behaviors, content, catalogue, and guides — never scoring the human."
+      },
+      {
+        "lens": "learning-flywheel",
+        "cut": "Do NOT create any engagement-optimizing feedback loop (e.g. tuning nudge frequency/wording to maximize replies). An optimizer pointed at engagement will rediscover pushiness and quietly fight the §10 tone laws. Tone, cadence, and nudge caps stay deterministic law, permanently non-learnable; learning may only improve accuracy, coverage, and voice fidelity."
+      },
+      {
+        "lens": "learning-flywheel",
+        "cut": "Defer all analysis/dashboard/report UIs for these loops (demand report, guide-gap mining, behavior-outcome correlation) to post-launch. Only the logging (schema columns, turn_events, diff storage, ticket categories, rejection reasons) belongs in P0/P1 — roughly 3–4 days total across items 1–5. Do not let any closing-the-loop work delay the P1 shadow date beyond those days."
+      },
+      {
+        "lens": "cold-completeness",
+        "cut": "Do NOT attempt WhatsApp group-chat support (couple on one thread) — the WABA/Cloud API effectively cannot participate in groups; household linking (agent-confirmed) is the honest substitute."
+      },
+      {
+        "lens": "cold-completeness",
+        "cut": "Do NOT let any lane grow toward portal-message automation — Idealista email-capture is confirmed impossible (walled garden, portal-source truth 2026-07); the entry kit is the substitute, leads come direct."
+      },
+      {
+        "lens": "cold-completeness",
+        "cut": "Do NOT reopen the native-agent-app question for pings — the WhatsApp-as-ping-channel finding is correct and already survived review; the PWA lane stays the ~1.5-day secondary exactly as scoped."
+      },
+      {
+        "lens": "cold-completeness",
+        "cut": "Do NOT let the missed-call/entry-kit first-touch template drift into marketing framing — it must stay utility/service class or it hits the LSSI-CE consent wall §5 already erected; proactive property-push stays OFF until the marketing-consent flow exists, as the doc says."
+      },
+      {
+        "lens": "cold-completeness",
+        "cut": "Do NOT build a buyer-facing web account/portal for chat history or self-serve GDPR requests at this stage — WhatsApp is the buyer UX; the rights-ticket workflow covers the legal duty."
+      },
+      {
+        "lens": "cold-completeness",
+        "cut": "Do NOT absorb voice-call Amanda (a talking phone agent) into this packet — voice notes via STT are in scope, a phone agent is a separate lane that would destabilize the golden-suite bar; the optional Twilio Voice 'make it ring' rung for AGENTS stays an open call with Christian, nothing more."
+      },
+      {
+        "lens": "cold-completeness",
+        "cut": "Keep the public agent leaderboard parked (coaching framing only) — reaffirm, do not build."
+      },
+      {
+        "lens": "cold-completeness",
+        "cut": "Do NOT auto-merge household/duplicate identities under any heuristic confidence — agent-confirmed only, ever; an auto-merge that exposes one partner's chat to the other is a GDPR breach manufactured in-house."
+      },
+      {
+        "lens": "cold-completeness",
+        "cut": "Defer multi-model/provider-failover routing — circuit-breaker -> APPROVAL-FIRST + static holding message is the right outage story at pilot scale; a second provider doubles the golden-suite and grounding surface for negligible pilot value."
+      },
+      {
+        "lens": "cold-completeness",
+        "cut": "Defer 100-agency scale engineering (sharding, per-agency cache economics, noisy-neighbor isolation beyond what exists) — §7's per-agency budgets + global concurrency limiter are sufficient for pilot; revisit at ~25 live agencies with real turn_usage data."
+      },
+      {
+        "lens": "lean-cutter",
+        "cut": "Do NOT build the §3b-spine cadence engine (priority tiers, backup/owner rungs, snooze grammar, digest collapse, away mode, duty roster, SLA p90 dashboard) before live ticket evidence — ship Ping Spine v0 and let triggers pull the rest. Keep untouched: no-auto-relay-on-ambiguity, dedicated staff sender, staff-number hard-stop, back-translation echo, quiet hours (these are law, not polish)."
+      },
+      {
+        "lens": "lean-cutter",
+        "cut": "Do NOT integrate an STT/vision vendor at P0 — the deterministic media law covers the safety case; transcription lands at the P2 gate. This also keeps the STT vendor OUT of Christian's DPA annex until needed."
+      },
+      {
+        "lens": "lean-cutter",
+        "cut": "Do NOT build the §10 disengagement state machine, cooling/dormant scoring, or the value-nudge scheduler pre-launch — with zero traffic there is nobody to re-engage, and its thresholds (3× median reply gap, 0.7–1.5× length band) are guesses that shadow data should set. Keep the cheap deterministic laws now: length/question linter, 20-min uninvited-send refusal, rejected_property filter, banned-pattern screen."
+      },
+      {
+        "lens": "lean-cutter",
+        "cut": "Do NOT build the episodic summary (memory layer 3) until a real conversation outgrows last-20-turns + lead-state."
+      },
+      {
+        "lens": "lean-cutter",
+        "cut": "Do NOT pull the PWA/web-push lane forward (~1.5d) — the doc's own verified finding is that WhatsApp is the ping backbone and iOS web push is crippled; the dashboard already has realtime."
+      },
+      {
+        "lens": "lean-cutter",
+        "cut": "Do NOT build per-agency euro budget hard-auto-degrade or the global concurrency limiter pre-revenue — turn_usage metering + soft alert to Christian is the P1 truth-gathering; enforcement machinery when a real agency is live."
+      },
+      {
+        "lens": "lean-cutter",
+        "cut": "Do NOT build cross-channel web-Amanda↔WA identity linking until the web widget serves real leads (it is currently gated/coming-soon)."
+      },
+      {
+        "lens": "lean-cutter",
+        "cut": "Do NOT author 60–100 golden conversations upfront — 25–30 safety-complete core scenarios gate P1; grow the suite from real transcripts."
+      },
+      {
+        "lens": "lean-cutter",
+        "cut": "Do NOT build the 'Try Amanda' sandbox as a separate P2 surface — it IS the P0.5 test-agency demo track; building it twice is pure waste."
+      },
+      {
+        "lens": "lean-cutter",
+        "cut": "Do NOT reopen the parked leaderboard, the Twilio Voice 'make it ring' rung, or Android-PWA offers before the sit-down — and when they are discussed, default all three to 'after ticket-volume evidence exists'."
+      },
+      {
+        "lens": "lean-cutter",
+        "cut": "Do NOT defer or thin ANY of: tool-layer mode enforcement, send-executor total gate (window/opt-out/mute/disclosure), pending_action confirmation, slot EXCLUDE constraint, deterministic date resolver, outbox + idempotency, no-commitment floor, fail-closed gates, Art. 50 disclosure infra. These are the chassis both red-teams confirmed; the lean path keeps 100% of them."
+      }
+    ],
+    "judge": {
+      "adopt": [
+        {
+          "title": "Viewing lifecycle + outcome spine: confirm → remind → post-viewing follow-up → attended/no-show/verdict recorded",
+          "merged_from": "competitor-sota #1, conversion-maximizer #2, conversion-maximizer #3, learning-flywheel #1, cold-completeness #2; plus viewing_type {in_person|video} enum from conversion-maximizer #5 and the location-pin from competitor-sota #4",
+          "reason": "The single largest gap, flagged independently by four of five lenses. The doc's money metric is viewings booked, but every phase ends at book_viewing — no confirmation, no reminder, no outcome, no follow-up. Unreminded no-show rates of 25-40% mean the plan silently forfeits a third of the viewings Amanda earns; the post-viewing 'how did it feel?' is the highest-intent message she can ever send and feeds lead-state with real preference data. Everything rides existing machinery (the §3b 1-minute fire-time worker, pending_action buttons, ping spine for agent outcome capture). Two non-negotiables: (a) the confirmation/reminder/follow-up templates enter the 13-language Meta pipeline NOW — Meta latency is on Meta's clock, the doc's own rule; (b) these messages need the closed enumerated transactional exemption from the §10 caps (see endorsed cuts) or the doc's own tone law strangles them. Outcome columns + viewing_type enum = LOG-THE-DATA-NOW (P0 schema, ~0.5 day) — a viewing whose outcome was never recorded is lost forever.",
+          "phase_fit": "P0: schema columns + viewing_type enum. P1: templates submitted to Meta. P2: reminder rungs + agent one-tap outcome capture + show-rate in the digest. P2/P3: post-viewing follow-up choreography (drafts first). Honest effort ~5-7 days total across phases."
+        },
+        {
+          "title": "P0.5 Live Demo Track — FULL mode on is_test agencies from week one",
+          "merged_from": "lean-cutter #1; dedupes the §6 'Try Amanda' sandbox (one build, two uses)",
+          "reason": "Fixes the plan's biggest sequencing flaw: as phased, the must-not-fail booking machinery (pending_action, EXCLUDE constraint, date resolver, idempotency) gets its FIRST live execution at P3 on a real pilot agency — the highest-stakes moment is also its maiden voyage. A test-agency full loop has no PII, no DPA dependency, and burns in the transactional chassis for months; it also gives Christian the sales demo and his own conviction in weeks instead of months, and takes the Christian-owned DPA chain off the critical path of all visible progress. Mode enforcement already lives in the tool layer, so this is one rule ('is_test agencies may run any mode at any phase') plus demo seed data — ~0.5-1 day of re-sequencing, not new machinery. Add 'N real FULL-mode test-agency bookings, zero constraint violations' as P3 gate evidence.",
+          "phase_fit": "New P0.5 between P0 and P1; runs permanently thereafter as the demo/regression surface."
+        },
+        {
+          "title": "Viewing-proposal policy + objection playbooks — define WHEN Amanda offers the viewing and what she does with 'too expensive / wrong area / just looking'",
+          "merged_from": "conversion-maximizer #1 + the playbook half of conversion-maximizer #8",
+          "reason": "The doc specifies every safety rail around book_viewing and never the trigger for proposing one — as written, Amanda waits to be asked, which is the biggest funnel leak in the whole design. A deterministic readiness scorer (same pattern as the §10 disengagement machine) + two-concrete-slots phrasing + once-per-property blocker costs 3-4 days and is measurable in P1 shadow as proposal precision, giving the promotion gate a conversion metric next to the safety ones. The three objection playbooks are prompt doctrine + golden scenarios on tools that already exist (search_properties, get_area_info, ask_agency) — they turn the most common conversation-enders into next steps at near-zero infra cost. Both obey §10's one-question law by construction.",
+          "phase_fit": "P1 (scorer + doctrine + golden scenarios, measured in shadow); live behavior lands automatically with P2 auto-replies. ~4-5 days."
+        },
+        {
+          "title": "Day-one data pack: funnel events + turn behavior tags/version stamps + resolution-rate metric + draft-edit diffs + ticket question_category + rejection reasons",
+          "merged_from": "conversion-maximizer #6, learning-flywheel #2, learning-flywheel #3 (logging half only), learning-flywheel #4 (tagging half only), learning-flywheel #5 (capture half only), competitor-sota #5 (metric half only)",
+          "reason": "The purest LOG-NOW-BUILD-THE-LOOP-LATER cluster: ~3-4 days total, none of it new intelligence, all of it unrecoverable if skipped. Funnel events (lead→engaged→proposed→booked→attended→offer, amanda_attributed) are the renewal pitch and pilot go/no-go evidence — 'Amanda booked 12 viewings this month' cannot be reconstructed later. Resolution rate is a 1-day query over telemetry the doc already collects and becomes the §6 'one trust number' with real ground truth. Draft-edit diffs are time-critical: the approval phase is a shrinking window — once an agency reaches full-auto that supervision stream ends forever. Ticket question_category and rejection reasons must exist before tickets and rejections accumulate. All analysis, distillation, and report UIs stay post-launch per the endorsed cuts — only the logging ships now.",
+          "phase_fit": "P0: funnel_events schema next to turn_usage. P1: turn_events emission + version stamps + edit-diff storage + rejection-reason extraction in the lead-state build + resolution-rate definition. P1/P2: question_category at ticket creation. Loops post-launch."
+        },
+        {
+          "title": "Lean descope pack with a written build-when trigger ledger: Ping Spine v0, Media Law v0 (STT→P2 gate), golden suite 25-30 core + grow-from-reality",
+          "merged_from": "lean-cutter #2, #3, #4, #5 + learning-flywheel #6 (one-tap add-failure-to-suite is the growth mechanism); dormant-return re-confirmation from cold-completeness #9 added as a ledger line",
+          "reason": "Not an addition but the subtraction that funds the additions — roughly 10 build days deferred behind objective triggers, without losing a word of the design. Ping Spine v0 keeps everything that is law (dedicated Office sender, no-auto-relay-on-ambiguity, matching ladder, back-translation echo, quiet hours) and defers the cadence engine polish until live ticket evidence shapes it. Media Law v0 ('never auto-act on unparsed media, ask to type it') covers the red-team's actual fear in an hour and — the underrated win — keeps the STT vendor OUT of Christian's DPA annex until P2, shortening his blocking legal work. The 25-30-scenario core suite still covers every safety invariant at P1; the 48h failure-to-scenario conversion rule means by P2 the suite is 60+ and shaped by reality instead of imagination. The ledger itself is the founder's defense against document-order-as-build-order.",
+          "phase_fit": "Doc change now (~0.5 day); Media Law rule in P0; Ping Spine v0 in P2; suite growth continuous; each deferred subsystem lands when its written trigger fires."
+        },
+        {
+          "title": "Payments/IBAN platform floor — Amanda never transmits bank details, plus the fraud-caution line",
+          "reason": "Hours of effort against an existential failure mode: WhatsApp deposit fraud with spoofed agents is endemic in Spanish coastal real estate, and neither the §2 no-commitment floor nor the §3c sensitive list covers 'where do I send the deposit?'. A deterministic outbound IBAN/account-number block (regexes cleanly across all 13 languages, unlike tone) + escalation to a named human + one golden probe. One incident where 'Amanda' appears to send payment instructions ends the product.",
+          "phase_fit": "P1 — it is a floor rule, costs hours, exists from the first real message."
+        },
+        {
+          "title": "GDPR rights as a chat intent + retention schedule + one-paragraph DR statement",
+          "reason": "A genuine hole in an otherwise compliance-heavy design: §5 promises rights via URL, but 'delete my data' typed into WhatsApp starts a statutory 1-month clock whether or not anything catches it — missing it is a real breach and exactly the failure that kills agency trust. Classifier intents {erasure, access, objection} + a deadline-clocked rights ticket type ride the existing ticket machinery. The retention schedule and a verified-PITR restore drill are the missing operational half of the 'must not fail' doctrine — losing conversation state means losing pending viewings. Policy text rides the DPA work Christian already owns, so no new external dependency.",
+          "phase_fit": "P1: rights intents + golden probes + DR statement/restore drill. P2 gate: retention schedule + automated deletion job. ~2-3 days + Christian sign-off he is already doing."
+        },
+        {
+          "title": "Property-alert opt-in captured in conversation — the only long-horizon nurture channel the design's own rules permit",
+          "merged_from": "competitor-sota #3 + the opt-in half of conversion-maximizer #8",
+          "reason": "The doc's anti-pushiness law (2 nudges then dormant-forever) is right, but AIVENA's buyers run 6-18 month cycles — and the design's own compliant answer, the consented ≤1/week alert stream (§10), has no capture mechanism: nowhere does Amanda ever ASK. Without this, every cooled lead is permanently forfeited, in precisely the slow-cycle market. One earned ask per lead at three deterministic moments, button tap = consent_marketing per the §5 split, dormancy stops conversation but never the subscription, any reply reactivates the engine. Strategic side effect: it correctly re-prices Christian-owned item #3 from 'blocks property-push only' to 'blocks long-cycle nurture revenue' and forces it onto the critical path.",
+          "phase_fit": "P2: opt-in ask + consent recording (gated on Christian item #3). P2/P3: alert scheduler on the existing matching engine. ~4-5 days total."
+        },
+        {
+          "title": "Conversation entry kit: missed-call text-back wiring, per-property wa.me links + QR, web-to-WhatsApp invite, first-touch template for non-WhatsApp leads",
+          "merged_from": "cold-completeness #1 + competitor-sota #2",
+          "reason": "The plan engineers the middle of the funnel and contains zero words on how a conversation STARTS; viewings scale linearly with conversation starts. Half the pieces already exist (missed-call text-back is BUILT-NOT-WIRED per the 2026-08-24 truth table; the §4 verified-phone identity link covers web handoff). A wa.me link with the property ref prefilled makes Amanda's turn 1 property-grounded — her strongest first impression — and the sub-5-minute first-touch effect is the most replicated stat in the industry. Guardrails all exist: utility-class template, consent logged at source, one nudge max then stop, executor gate unchanged. All entry sources tagged for the funnel-events attribution.",
+          "phase_fit": "P2 (needs live auto-replies so starts get answered); the first-touch/missed-call template joins the Meta 13-language pipeline NOW. ~4-5 days."
+        },
+        {
+          "title": "Hot-lead 'call now' alert — Amanda detects, the human closes",
+          "reason": "The design pings agents about QUESTIONS but never about BUYERS. A lead with budget + timeline + offer language is worth a phone call within minutes, and the entire delivery mechanism already exists (ping spine, P1-HOT tier, the [I've got it] claim button explicitly designed for agents who call instead of typing). One deterministic trigger, max 1 per lead per 72h, never blocks Amanda's own reply. Two days for the single highest-leverage human-in-the-loop moment in the funnel.",
+          "phase_fit": "P2, the moment the ping spine exists. ~2 days."
+        },
+        {
+          "title": "Offline-contact awareness — auto-hold on agent activity + a 10-second 'log contact' quick action",
+          "reason": "The most LIKELY daily 'Amanda looks stupid' incident in the design: agents phone buyers constantly, calls leave no trace, and full-auto Amanda then contradicts what was just agreed by voice. The ping spine's claim button only covers ticket-triggered calls; §6 hand-back only covers claimed handoffs. Auto-hold on any agent activity for that lead + a NOTE quick action parsed as ground truth (same ingestion class as the existing hand-back note — no new trust machinery). Two days to protect the trust the whole product depends on.",
+          "phase_fit": "P2, before real auto-replies. ~2 days."
+        },
+        {
+          "title": "Non-buyer intent lanes — vendor/seller capture + rental routing",
+          "reason": "The buyer-facing number WILL receive 'I want to sell my villa', and a vendor lead is the most valuable inbound a small agency gets (listings are their lifeblood) — today Amanda would treat the vendor as a confused buyer. Three intake questions + a vendor_lead ticket + escalation push, with the valuation launch gate standing order absolutely intact (Amanda never estimates value). Rental/spam lanes keep the funnel clean. ~2 days for a decisive agency-trust and revenue feature.",
+          "phase_fit": "P1: classifier lanes calibrated in shadow. P2: vendor-ticket surface + push. ~2 days."
+        },
+        {
+          "title": "Trip-mode Phase A: trip_dates as a first-class lead-state slot",
+          "reason": "This is how Costa Blanca internationals actually buy — a 3-5 day fly-in trip, then decide — and the departure flight is honest urgency that passes §10's banned-pattern screen because it is fact, not fake scarcity. Phase A is just one intel slot in the §1 lead-state (asked once via the existing slow-drip discipline) that makes the viewing-proposal policy and re-engagement whitelist trip-aware. 1-2 days for the single most demographic-fitting piece of intelligence in the system. Phase B (multi-viewing itinerary) stays post-launch — see rejects.",
+          "phase_fit": "P1 (lead-state + prompt only). 1-2 days."
+        },
+        {
+          "title": "Outbound property cards — deterministic renderer, model chooses when, code decides what",
+          "reason": "For holiday-home buyers the photo IS the product; a text-only villa description loses to any rival agent who sends five photos, and in-session media costs nothing extra. The design keeps grounding intact by construction: deterministic renderer pulls hero image + as-listed price + facts from the catalogue row; cards count against rejected_property_ids. Honest constraint adopted with it: the catalogue image layer is ~60% hotlinked (Packet-3 audit), so cards ship for owned/mirrored-image properties only, and the image-mirroring backfill graduates from parked to a real P2 prerequisite for full coverage.",
+          "phase_fit": "P2 (~2 days for the tool; mirroring backfill scheduled separately as its prerequisite)."
+        },
+        {
+          "title": "WABA number health telemetry + automatic conservative mode",
+          "reason": "Meta quality-rating drops silently throttle or kill the buyer-facing number — an existential dependency the doc only touches at template level. Buyer blocks are also the truest 'Amanda is annoying' signal and belong next to the dial-promotion evidence. Poll quality rating + tier, alert Christian on any drop, auto-drop to conservative mode (proactive sends off). 1-2 days to instrument the asset the entire business runs on.",
+          "phase_fit": "P2, the moment Amanda auto-sends at volume. 1-2 days."
+        },
+        {
+          "title": "Two runbooks: incident one-pager (P1) + agency-offboarding wind-down (P2 gate)",
+          "reason": "The invariant monitor alerts Christian — a solo non-coder — with no written procedure; at this company's size the runbook IS the on-call system, and it must exist before real traffic. Offboarding is an Art. 28 return-or-delete obligation the DPA will promise with no machinery behind it, plus live buyers mid-thread; needed before a second real agency. Mostly writing, 1-2 days total.",
+          "phase_fit": "Incident one-pager: P1. Offboarding state machine: P2 gate."
+        }
+      ],
+      "reject": [
+        {
+          "title": "Cross-agency anonymized insight layer (guide-gap mining across agencies)",
+          "reason": "Nothing to build now — its inputs are exactly the adopted day-one data pack, and it needs multiple agencies of real volume to mean anything; pure post-launch analysis."
+        },
+        {
+          "title": "Trip-mode Phase B: multi-viewing itinerary objects with travel-time checks",
+          "reason": "Premature until FULL-AUTO booking is proven on real traffic — 1-2 weeks of orchestration for a flow no buyer can exercise yet; Phase A's trip_dates slot captures the data it will need."
+        },
+        {
+          "title": "Learned-voice distillation job + agency 'Amanda has noticed…' card",
+          "reason": "Only the P1 edit-diff logging is time-critical (adopted in the data pack); the distillation loop needs months of accumulated diffs and is safely a P3/post-launch build — building it now optimizes against data that doesn't exist."
+        },
+        {
+          "title": "Weekly knowledge-gap clustering dashboard",
+          "reason": "Needs real ticket volume to cluster anything; the resolution-rate metric and question_category tagging (adopted) capture everything it will run on — the dashboard itself is post-launch."
+        },
+        {
+          "title": "Household linking (agent-confirmed couple/spouse identity links)",
+          "reason": "Real but rare at pilot scale and privacy-delicate; post-launch, with the no-auto-merge cut endorsed as permanent law — the P2 dormant-return staleness rule covers the cheap half of the lifecycle-edges proposal via the trigger ledger."
+        },
+        {
+          "title": "Standalone 2-minute speed-to-lead SLA machinery",
+          "reason": "Duplicative once merged: inbound WhatsApp is already answered in seconds by the engine itself, and non-WhatsApp leads are covered by the adopted entry-kit first-touch — no separate SLA subsystem earns its keep."
+        },
+        {
+          "title": "Show-rate and resolution-rate as public marketing stats now",
+          "reason": "Right metrics, wrong moment — with zero real traffic any published number is fiction; compute them from P1 shadow onward (adopted) and let marketing use them when they are real."
+        }
+      ],
+      "cuts_endorsed": [
+        "NEVER bulk WhatsApp reactivation blasts over cold databases — LSSI-CE Art. 21 + Meta quality rating make this both unlawful and number-lethal; write it as a standing platform rule so no future growth idea erodes the per-lead, consent-logged first-touch distinction",
+        "Ban human-mimicry tricks (intentional typos, fake typing, any human pretense) in the §5 classification memo — Amanda's jittered pacing is the honest half; the dishonest half violates Art. 50 spirit and Meta's 2026 AI policy",
+        "AI voice calling stays out of this packet — separate lane, multiplies every risk the 79 findings just fenced (grounding, disclosure, Spanish recording-consent law)",
+        "No email/SMS channel expansion — single-channel WhatsApp depth is a strength in this market; every added channel reopens the window/consent/idempotency work just solved",
+        "No vendor benchmark numbers as targets (Intercom's 67% et al.) — calibrate every threshold from AIVENA's own P1 shadow baseline, per the design's existing instinct",
+        "ADOPT-AS-LAW: the closed enumerated transactional-message exemption list (viewing confirmation, reminders, morning-of logistics, post-viewing ask + one re-ask, promised relays) outside the 2-lifetime-nudge cap and 20-min refusal — REQUIRED for the adopted viewing lifecycle to coexist with §10, and it must remain a closed list, never a loophole for sales content",
+        "Offer negotiation and price-discussion automation stay human — §3c boundary is correct; the adopted additions route offer intent to humans FASTER, never around them",
+        "No portal-lead ingestion/auto-response — Idealista email capture is confirmed impossible (portal-source truth); leads come direct, the entry kit is the substitute",
+        "No drip sequences or extra re-engagement touches beyond the designed caps — restraint is the trust feature; the long-cycle leak is fixed by the consented opt-in alert stream, not more nudges",
+        "No A/B testing infrastructure at pilot volume — version stamps + golden suite give honest before/after comparison; revisit at multi-agency real volume",
+        "Every learned artifact (voice addendum, auto-suggested knowledge) passes the §5 save-time scrubber + explicit agency accept/reject — auto-applied learning is a prompt-poisoning channel; no exceptions ever",
+        "No lead scoring / person-ranking from outcome data — drifts straight into the §5 memo's prohibited territory and reopens Art. 22; learning stays at the level of Amanda's behavior, content, catalogue, guides",
+        "No engagement-optimizing feedback loops — an optimizer pointed at reply-rate will rediscover pushiness; tone, cadence, and nudge caps stay deterministic law, permanently non-learnable",
+        "All analysis/dashboard/report UIs for the learning loops deferred post-launch — only logging ships in P0/P1, and closing-the-loop work never delays the P1 shadow date",
+        "No WhatsApp group-chat support — the WABA API cannot honestly do it; agent-confirmed household linking (post-launch) is the substitute, and auto-merge stays banned forever (a manufactured GDPR breach)",
+        "No buyer-facing web portal for chat history or self-serve GDPR — WhatsApp is the buyer UX; the adopted rights-ticket workflow covers the statutory duty",
+        "First-touch and missed-call templates stay utility/service class, never marketing framing — or they hit the LSSI-CE wall §5 already erected",
+        "Defer multi-model provider failover and 100-agency scale engineering — circuit-breaker → APPROVAL-FIRST + static holding message is the right pilot outage story; revisit at ~25 live agencies",
+        "Defer behind written triggers (the adopted ledger): §3b cadence-engine polish beyond Ping Spine v0 · §10 disengagement machine + value-nudge scheduler (keep the cheap deterministic laws now) · episodic memory layer 3 · per-agency euro hard-degrade + global concurrency limiter (metering + soft alert stays P1) · cross-channel web↔WA identity linking · PWA pull-forward · typing indicator",
+        "No STT/vision vendor at P0 — the deterministic Media Law covers the safety case and keeps the vendor out of Christian's DPA annex until the P2 gate makes it true",
+        "Don't author 60-100 golden conversations upfront — 25-30 safety-complete core scenarios gate P1; the suite grows from real transcripts under the 48h conversion rule",
+        "Don't build the 'Try Amanda' sandbox twice — it IS the P0.5 demo track",
+        "Leaderboard, Twilio Voice 'make it ring' rung, and Android-PWA offers stay parked for the Christian sit-down, defaulting to 'after ticket-volume evidence'",
+        "No AI-generated video tours or synthetic property imagery in conversations — video viewings mean a real agent on a real call; the honesty hard guard is absolute",
+        "NON-NEGOTIABLE (all five lenses agree): nothing thins the chassis — tool-layer mode enforcement, atomic send gate, pending_action, slot EXCLUDE constraint, deterministic date resolver, outbox + idempotency, no-commitment floor, fail-closed gates, Art. 50 disclosure infra ship at 100% on the lean path"
+      ],
+      "overall": "Honest answer: the half of the plan that exists is near-optimal — the conversation engine, safety chassis, and compliance spine survived two adversarial reviews and none of the five lenses found anything wrong INSIDE it. What they found, with striking independence, is that the plan engineers the middle of the funnel and goes silent at both ends. Nothing defines when Amanda proposes a viewing (she waits to be asked). Nothing happens after a viewing is booked — no reminder, no outcome, no follow-up — so the money metric leaks 25-40% to no-shows the design never sees. Nothing wires how conversations start for leads that don't arrive via WhatsApp. And the data that would prove any of it works (funnel events, outcomes, behavior tags, edit diffs) isn't being logged, which is the one omission that can never be backfilled. The adopted list fixes exactly those edges, and almost all of it rides machinery the doc already designed — roughly 3-4 weeks of work spread across P0-P3, of which only ~4-5 days touch P0/P1, largely offset by the ~10 days the endorsed lean descopes give back. The single thing that matters most now is not another addition — the marginal return on more planning just went negative. It is to start building the lean path this week: P0 core, then the P0.5 test-agency FULL loop, so the must-not-fail booking machinery gets months of live burn-in before any real buyer touches it (instead of its current maiden voyage at P3, on a pilot agency), Christian gets his demo and his conviction in weeks, and the DPA chain comes off the critical path of all visible progress. In the same week, submit the viewing-lifecycle and first-touch templates to Meta — approval latency is on Meta's clock, by the doc's own rule. Everything else layers in behind those two moves."
+    }
+  },
+  "workflowProgress": [
+    {
+      "type": "workflow_phase",
+      "index": 1,
+      "title": "Hunt"
+    },
+    {
+      "type": "workflow_phase",
+      "index": 2,
+      "title": "Judge"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 1,
+      "label": "hunt:competitor-sota",
+      "phaseIndex": 1,
+      "phaseTitle": "Hunt",
+      "agentId": "ac066f23ca29191df",
+      "model": "claude-fable-5",
+      "state": "done",
+      "startedAt": 1787773108559,
+      "queuedAt": 1787773106246,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "The conversational core is genuinely state-of-the-art — gro…",
+      "promptPreview": "CONTEXT: AIVENA is a real-estate agency OS for Costa Blanca, Spain (international buyers: Norwegian, Dutch, German, British, Swedish etc. buying holiday/retirement homes; agencies are small, 1-10 agents). The design document at the path below is the build contract for \"Amanda\" — an autonomous WhatsApp AI agent that converses with property buyers, answers property questions, books viewings, files q…",
+      "lastProgressAt": 1787773390627,
+      "tokens": 86873,
+      "toolCalls": 13,
+      "durationMs": 282068,
+      "resultPreview": "{\"additions\":[{\"title\":\"Viewing lifecycle: confirm → remind → post-viewing follow-up (the design books a viewing and then goes silent)\",\"why_it_matters\":\"This is the single largest measurable gap. The design's money metric is viewings booked, but a booked viewing is not a happened viewing: industry data puts unreminded viewing no-show rates at 25-40%, and interactive WhatsApp reminders with Confir…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 2,
+      "label": "hunt:conversion-maximizer",
+      "phaseIndex": 1,
+      "phaseTitle": "Hunt",
+      "agentId": "acdedf2978225339d",
+      "model": "claude-fable-5",
+      "state": "done",
+      "startedAt": 1787773108569,
+      "queuedAt": 1787773106247,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "The plan is near-optimal as a SAFE conversation machine — t…",
+      "promptPreview": "CONTEXT: AIVENA is a real-estate agency OS for Costa Blanca, Spain (international buyers: Norwegian, Dutch, German, British, Swedish etc. buying holiday/retirement homes; agencies are small, 1-10 agents). The design document at the path below is the build contract for \"Amanda\" — an autonomous WhatsApp AI agent that converses with property buyers, answers property questions, books viewings, files q…",
+      "lastProgressAt": 1787773349232,
+      "tokens": 78831,
+      "toolCalls": 6,
+      "durationMs": 238633,
+      "resultPreview": "{\"additions\":[{\"title\":\"Viewing-proposal policy — define WHEN Amanda offers the viewing (the plan never says)\",\"why_it_matters\":\"The entire product ROI is viewings booked, yet the design specifies every safety rail around book_viewing and never the trigger for proposing one — as written, Amanda waits to be asked, which is the single biggest funnel leak. Real-estate conversion data: 78% of buyers e…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 3,
+      "label": "hunt:learning-flywheel",
+      "phaseIndex": 1,
+      "phaseTitle": "Hunt",
+      "agentId": "a2d59704c62dde188",
+      "model": "claude-fable-5",
+      "state": "done",
+      "startedAt": 1787773109775,
+      "queuedAt": 1787773106247,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "The plan is near-optimal at what it aims to be — a safe, ho…",
+      "promptPreview": "CONTEXT: AIVENA is a real-estate agency OS for Costa Blanca, Spain (international buyers: Norwegian, Dutch, German, British, Swedish etc. buying holiday/retirement homes; agencies are small, 1-10 agents). The design document at the path below is the build contract for \"Amanda\" — an autonomous WhatsApp AI agent that converses with property buyers, answers property questions, books viewings, files q…",
+      "lastProgressAt": 1787773274300,
+      "tokens": 70959,
+      "toolCalls": 2,
+      "durationMs": 163700,
+      "resultPreview": "{\"additions\":[{\"title\":\"Outcome feedback spine: viewing → attended → interested → offer → sale\",\"why_it_matters\":\"The entire funnel ends at book_viewing; nothing records whether the viewing happened, whether the buyer was interested, or whether it led to an offer/sale. Without this, (a) the 'one trust number' in the daily digest and the future marketing stat have no ground truth, (b) no-show patte…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 4,
+      "label": "hunt:cold-completeness",
+      "phaseIndex": 1,
+      "phaseTitle": "Hunt",
+      "agentId": "ac8dd8e0019b67aa6",
+      "model": "claude-fable-5",
+      "state": "done",
+      "startedAt": 1787773108688,
+      "queuedAt": 1787773106247,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "The plan is near-optimal for what it covers — the conversat…",
+      "promptPreview": "CONTEXT: AIVENA is a real-estate agency OS for Costa Blanca, Spain (international buyers: Norwegian, Dutch, German, British, Swedish etc. buying holiday/retirement homes; agencies are small, 1-10 agents). The design document at the path below is the build contract for \"Amanda\" — an autonomous WhatsApp AI agent that converses with property buyers, answers property questions, books viewings, files q…",
+      "lastProgressAt": 1787773379077,
+      "tokens": 71028,
+      "toolCalls": 2,
+      "durationMs": 268477,
+      "resultPreview": "{\"additions\":[{\"title\":\"Conversation entry kit — top-of-funnel wiring (missed-call text-back, per-property wa.me links + QR, web-to-WhatsApp invite)\",\"why_it_matters\":\"The plan engineers the middle of the funnel and contains zero words on how a conversation STARTS. Viewings scale linearly with conversation starts, and the pieces are lying on the floor: the feature truth table (2026-08-24) lists mi…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 5,
+      "label": "hunt:lean-cutter",
+      "phaseIndex": 1,
+      "phaseTitle": "Hunt",
+      "agentId": "a0a240fd87efc67dc",
+      "model": "claude-fable-5",
+      "state": "done",
+      "startedAt": 1787773108570,
+      "queuedAt": 1787773106247,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "The plan's architecture is genuinely near-optimal — the cha…",
+      "promptPreview": "CONTEXT: AIVENA is a real-estate agency OS for Costa Blanca, Spain (international buyers: Norwegian, Dutch, German, British, Swedish etc. buying holiday/retirement homes; agencies are small, 1-10 agents). The design document at the path below is the build contract for \"Amanda\" — an autonomous WhatsApp AI agent that converses with property buyers, answers property questions, books viewings, files q…",
+      "lastProgressAt": 1787773311937,
+      "tokens": 73356,
+      "toolCalls": 5,
+      "durationMs": 201337,
+      "resultPreview": "{\"additions\":[{\"title\":\"P0.5 'Live Demo Track' — full loop, FULL mode, is_test agencies only\",\"why_it_matters\":\"This is the single biggest hole in an otherwise excellent plan. As phased, the dream demo — watching Amanda converse and actually book a viewing that lands in a calendar — never happens until P3, because P1 SHADOW simulates all bookings and P2 keeps them one-tap. Three real consequences:…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 6,
+      "label": "value-judge",
+      "phaseIndex": 2,
+      "phaseTitle": "Judge",
+      "agentId": "a0ad6983b93e617e9",
+      "model": "claude-fable-5",
+      "state": "done",
+      "startedAt": 1787773397411,
+      "queuedAt": 1787773393077,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "Honest answer: the half of the plan that exists is near-opt…",
+      "promptPreview": "CONTEXT: AIVENA is a real-estate agency OS for Costa Blanca, Spain (international buyers: Norwegian, Dutch, German, British, Swedish etc. buying holiday/retirement homes; agencies are small, 1-10 agents). The design document at the path below is the build contract for \"Amanda\" — an autonomous WhatsApp AI agent that converses with property buyers, answers property questions, books viewings, files q…",
+      "lastProgressAt": 1787773644661,
+      "tokens": 97846,
+      "toolCalls": 2,
+      "durationMs": 247249,
+      "resultPreview": "{\"adopt\":[{\"title\":\"Viewing lifecycle + outcome spine: confirm → remind → post-viewing follow-up → attended/no-show/verdict recorded\",\"merged_from\":\"competitor-sota #1, conversion-maximizer #2, conversion-maximizer #3, learning-flywheel #1, cold-completeness #2; plus viewing_type {in_person|video} enum from conversion-maximizer #5 and the location-pin from competitor-sota #4\",\"reason\":\"The single …"
+    }
+  ],
+  "totalTokens": 478893,
+  "totalToolCalls": 30
+}

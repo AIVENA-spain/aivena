@@ -538,9 +538,12 @@ route.post('/languages', async (c) => {
   }
 
   try {
+    // Never pass a JS array as a bind param here: the driver mis-serializes it
+    // (drizzle expands it to a ($1,$2,…) record) and the UPDATE fails on every
+    // call. Same string_to_array workaround as the calendar OAuth-scopes store.
     const result = await tx.execute(sql`
       UPDATE agency_settings
-         SET supported_languages = ${normalised}::text[],
+         SET supported_languages = string_to_array(${normalised.join(',')}, ','),
              updated_at          = now()
        WHERE agency_id = current_setting('app.current_agency_id', true)
        RETURNING agency_id

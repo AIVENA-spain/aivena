@@ -298,6 +298,20 @@ describe('golden/core — mode dial edges', () => {
     expect(JSON.stringify(model.requests[0].messages)).toContain('NOT interested in: prop-2');
   });
 
+  it('S25: slot taken at execution → nothing booked, proposal released, model told honestly', async () => {
+    const backends = new FakeBackends();
+    const model = new ScriptedModel([
+      textResponse('So sorry — that Friday slot was just taken. Shall I line up a couple of fresh times for you?'),
+    ]);
+    const { deps, journal } = makeDeps(model, backends);
+    deps.executeBooking = async () => ({ ok: false, reason: 'slot_taken' });
+    const r = await runTurn('full', baseContext(), inbound('Yes please!'), pending(), deps);
+    expect(r.bookingId).toBeNull();
+    expect(r.outcome).toBe('sent');
+    expect(journal.released).toEqual([{ id: 'pa-1', reason: 'superseded' }]);
+    expect(JSON.stringify(model.requests[0].messages)).toContain('JUST TAKEN');
+  });
+
   it('S24: cannot_answer is surfaced to the orchestrator for calibration', async () => {
     const backends = new FakeBackends();
     const model = new ScriptedModel([

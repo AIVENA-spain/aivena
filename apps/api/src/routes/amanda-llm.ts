@@ -18,7 +18,8 @@ export type { ListingForLlm, LlmAnswer } from './amanda-llm-lib';
 // env var can still override for local/testing without colliding.
 let cachedKey: string | null | undefined;
 let cachedAt = 0;
-async function getLlmKey(): Promise<string | null> {
+// Exported for the WhatsApp engine (amanda-engine/llm.ts) — same vault-first key.
+export async function getLlmKey(): Promise<string | null> {
   if (process.env.AMANDA_LLM_DISABLED === 'true') return null;
   const override = process.env.AMANDA_ANTHROPIC_API_KEY?.trim();
   if (override) return override;

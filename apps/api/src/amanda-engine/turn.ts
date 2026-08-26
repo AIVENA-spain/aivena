@@ -42,8 +42,11 @@ export interface TurnDeps {
   backends: ToolBackends;
   verifier: Verifier | null;
   /** Deterministic booking execution from a CONFIRMED pending action — the only
-   *  path that creates a booking. Throws mapped errors (slot_taken etc.). */
-  executeBooking(pendingActionId: string): Promise<{ bookingId: string; echo: string }>;
+   *  path that creates a booking. slot_taken = the EXCLUDE constraint (or a
+   *  validity check) refused: the turn continues and offers alternatives. */
+  executeBooking(pendingActionId: string): Promise<
+    { ok: true; bookingId: string; echo: string } | { ok: false; reason: 'slot_taken' | 'action_invalid' }
+  >;
   releasePendingAction(pendingActionId: string, reason: 'declined' | 'superseded'): Promise<void>;
   /** Reply dispatch effects per mode. */
   sendReply(text: string): Promise<{ providerMessageId: string | null }>;
@@ -96,10 +99,20 @@ export async function runTurn(
         queue: async (kind) => deps.queueDraft(`[confirm booking ${pendingAction.echo}]`, kind),
       });
       if (result.ok && !result.simulated && !result.queued) {
-        const data = result.data as { bookingId: string; echo: string };
-        bookingId = data.bookingId;
-        bookingEcho = data.echo;
-        effectivePending = null;
+        const data = result.data as Awaited<ReturnType<TurnDeps['executeBooking']>>;
+        if (data.ok) {
+          bookingId = data.bookingId;
+          bookingEcho = data.echo;
+          effectivePending = null;
+        } else {
+          // The DB arbiter refused (slot just taken / action no longer valid):
+          // keep NOTHING booked; hand the model an honest note to offer options.
+          await deps.releasePendingAction(pendingAction.id, 'superseded');
+          effectivePending = {
+            ...pendingAction,
+            echo: `${pendingAction.echo} — that slot was JUST TAKEN and is no longer available: apologize briefly and offer to line up new times (propose_viewing_slots)`,
+          };
+        }
       } else if (result.simulated) {
         bookingEcho = pendingAction.echo;      // shadow: phrase it, book nothing
         effectivePending = null;

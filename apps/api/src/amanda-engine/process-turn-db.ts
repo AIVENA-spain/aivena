@@ -1,0 +1,325 @@
+// Amanda engine — the ProcessTurn implementation the outbox worker runs per
+// queue row: load the conversation world in one short transaction, run the
+// turn (no tx held across model IO), execute effects in their own short
+// transactions, record telemetry. Every skip reason is explicit — a skipped
+// row is a decision, never a silent drop.
+
+import { sql } from 'drizzle-orm';
+import { withAgency } from '../../../../packages/db/client';
+import { runTurn, type TurnDeps, type PendingActionView } from './turn';
+import { parseAmandaMode } from './modes';
+import { makeDbBackends, parseAmandaSettings, slotLabel, type AmandaAgencySettings } from './backends-db';
+import { productionModelCall, productionVerifier, ENGINE_MODEL } from './llm';
+import { turnId } from './turn-id';
+import { nudgeCalendarSync } from '../routes/calendar-worker';
+import type { QueueRow, TurnOutcome } from './outbox-lib';
+import type { TurnContext } from './prompt';
+import type { LeadStateData } from './lead-state-lib';
+
+interface LoadedWorld {
+  mode: ReturnType<typeof parseAmandaMode>;
+  agencyName: string;
+  settings: AmandaAgencySettings;
+  leadFirstName: string | null;
+  leadLanguage: string;
+  leadPhone: string | null;
+  leadFullName: string | null;
+  leadState: LeadStateData;
+  aiMuted: boolean;
+  optedOut: boolean;
+  recentTurns: TurnContext['recentTurns'];
+  mirrorTargetWords: number | null;
+  pendingActions: Array<{ id: string; label: string; expiresAtMs: number }>;
+  openTicketNote: string | null;
+  agencyKnowledge: string[];
+}
+
+async function loadWorld(row: QueueRow): Promise<LoadedWorld | { skip: string }> {
+  return withAgency(row.agency_id, async (tx) => {
+    const agencyRows = await tx.execute(sql`
+      SELECT a.name AS agency_name, s.amanda_mode, s.amanda_settings
+        FROM agency_settings s
+        JOIN agencies a ON a.id = s.agency_id
+       WHERE s.agency_id = current_setting('app.current_agency_id', true)
+       LIMIT 1
+    `);
+    const agency = (agencyRows as unknown as Array<Record<string, unknown>>)[0];
+    if (!agency) return { skip: 'agency_settings_missing' };
+    const mode = parseAmandaMode(agency.amanda_mode);
+    if (mode === 'off') return { skip: 'amanda_mode_off' };
+
+    const leadRows = await tx.execute(sql`
+      SELECT full_name, phone, language, opt_in_status FROM leads WHERE id = ${row.lead_id}::uuid LIMIT 1
+    `);
+    const lead = (leadRows as unknown as Array<Record<string, unknown>>)[0];
+    if (!lead) return { skip: 'lead_missing' };
+
+    const convRows = await tx.execute(sql`
+      SELECT ai_muted_at, human_claimed_at, status FROM conversations WHERE id = ${row.conversation_id}::uuid LIMIT 1
+    `);
+    const conv = (convRows as unknown as Array<Record<string, unknown>>)[0];
+    if (!conv) return { skip: 'conversation_missing' };
+
+    const msgRows = await tx.execute(sql`
+      SELECT direction, content, sent_at FROM conversation_messages
+       WHERE conversation_id = ${row.conversation_id}::uuid
+       ORDER BY sent_at DESC NULLS LAST LIMIT 20
+    `);
+    const messages = (msgRows as unknown as Array<{ direction: string; content: string | null; sent_at: string }>).reverse();
+
+    const stateRows = await tx.execute(sql`
+      SELECT state FROM amanda_lead_state WHERE lead_id = ${row.lead_id}::uuid LIMIT 1
+    `);
+    const leadState = ((stateRows as unknown as Array<{ state: LeadStateData }>)[0]?.state ?? {}) as LeadStateData;
+
+    const paRows = await tx.execute(sql`
+      SELECT id, payload->>'label' AS label, extract(epoch FROM expires_at) * 1000 AS expires_ms
+        FROM amanda_pending_actions
+       WHERE conversation_id = ${row.conversation_id}::uuid AND status = 'pending' AND expires_at > now()
+       ORDER BY created_at DESC LIMIT 5
+    `);
+
+    const ticketRows = await tx.execute(sql`
+      SELECT short_code, question_text FROM amanda_questions
+       WHERE conversation_id = ${row.conversation_id}::uuid AND status IN ('open', 'clarifying', 'escalated')
+       ORDER BY created_at DESC LIMIT 3
+    `);
+
+    const knowledgeRows = await tx.execute(sql`
+      SELECT content FROM agency_amanda_knowledge
+       WHERE agency_id = current_setting('app.current_agency_id', true) AND status = 'active'
+       ORDER BY created_at ASC LIMIT 30
+    `);
+
+    const inboundWordCounts = messages
+      .filter((m) => m.direction === 'inbound' && m.content)
+      .slice(-5)
+      .map((m) => (m.content as string).trim().split(/\s+/).length)
+      .sort((a, b) => a - b);
+    const mirror = inboundWordCounts.length >= 3 ? inboundWordCounts[Math.floor(inboundWordCounts.length / 2)] : null;
+
+    return {
+      mode,
+      agencyName: String(agency.agency_name ?? 'the agency'),
+      settings: parseAmandaSettings(agency.amanda_settings),
+      leadFirstName: lead.full_name ? String(lead.full_name).split(/\s+/)[0] : null,
+      leadFullName: (lead.full_name as string) ?? null,
+      leadPhone: (lead.phone as string) ?? null,
+      leadLanguage: (lead.language as string) || 'en',
+      leadState,
+      aiMuted: Boolean(conv.ai_muted_at) || Boolean(conv.human_claimed_at),
+      optedOut: lead.opt_in_status === 'opted_out',
+      recentTurns: messages.map((m) => ({
+        role: m.direction === 'inbound' ? ('buyer' as const) : ('amanda' as const),
+        text: m.content ?? '', at: m.sent_at,
+      })),
+      mirrorTargetWords: mirror,
+      pendingActions: (paRows as unknown as Array<Record<string, unknown>>).map((r) => ({
+        id: String(r.id), label: String(r.label ?? 'proposed viewing'), expiresAtMs: Number(r.expires_ms),
+      })),
+      openTicketNote: (ticketRows as unknown as Array<{ short_code: number; question_text: string }>)
+        .map((t) => `Q${t.short_code} to the office: "${t.question_text}" — still waiting`)
+        .join('; ') || null,
+      agencyKnowledge: (knowledgeRows as unknown as Array<{ content: string }>).map((k) => k.content),
+    };
+  });
+}
+
+export async function processTurnDb(row: QueueRow): Promise<TurnOutcome> {
+  if (row.kind !== 'message' && row.kind !== 'media') return { result: 'skip', reason: `kind_${row.kind}_not_engine_v1` };
+
+  const world = await loadWorld(row);
+  if ('skip' in world) return { result: 'skip', reason: world.skip };
+  if (world.aiMuted) return { result: 'skip', reason: 'ai_muted_or_human_claimed' };
+  if (world.optedOut) return { result: 'skip', reason: 'lead_opted_out' };
+
+  const payload = (row.payload ?? {}) as Record<string, unknown>;
+  const inboundText = typeof payload.body === 'string' ? payload.body : '';
+  const buttonPayload = typeof payload.button_payload === 'string' ? payload.button_payload : null;
+
+  // Media Law v0 (design §11b): never auto-act on unparsed media — the model is
+  // told a media message arrived and asks the buyer to type it. STT/vision = P2.
+  const effectiveText = row.kind === 'media' && !inboundText.trim()
+    ? '[the buyer sent a voice note or image that could not be read — warmly ask them to type it out]'
+    : inboundText;
+  if (!effectiveText.trim() && !buttonPayload) return { result: 'skip', reason: 'empty_inbound' };
+
+  // Pending-action selection (§4): a button pinpoints its action; otherwise
+  // exactly ONE unexpired action may be auto-considered; several → the model
+  // re-asks which (never guess).
+  let pending: PendingActionView | null = null;
+  let pendingNote: string | null = null;
+  const byButton = buttonPayload ? world.pendingActions.find((p) => p.id === buttonPayload) : undefined;
+  if (byButton) {
+    pending = { id: byButton.id, echo: byButton.label, expiresAtMs: byButton.expiresAtMs };
+  } else if (world.pendingActions.length === 1) {
+    const p = world.pendingActions[0];
+    pending = { id: p.id, echo: p.label, expiresAtMs: p.expiresAtMs };
+  } else if (world.pendingActions.length > 1) {
+    pendingNote = `Proposed viewing slots awaiting the buyer's pick: ${world.pendingActions.map((p) => p.label).join(' OR ')} — if they choose one, restate it explicitly and ask them to confirm that exact slot.`;
+  }
+
+  const ctx: TurnContext = {
+    agencyName: world.agencyName,
+    agencyKnowledge: world.agencyKnowledge,
+    workingHoursLine: `Viewings: weekdays 11:00/17:00, Saturday 11:00 (${world.settings.timezone})`,
+    leadFirstName: world.leadFirstName,
+    leadLanguage: world.leadLanguage,
+    leadState: world.leadState,
+    recentTurns: world.recentTurns,
+    episodicSummary: null,                         // layer-3 memory: trigger-ledger item
+    pendingActionEcho: pendingNote,
+    openTicketNote: world.openTicketNote,
+    mirrorTargetWords: world.mirrorTargetWords,
+  };
+
+  const backends = makeDbBackends({
+    agencyId: row.agency_id, leadId: row.lead_id, conversationId: row.conversation_id,
+    leadLanguage: world.leadLanguage, rejectedPropertyIds: world.leadState.rejected_property_ids ?? [],
+    settings: world.settings, nowMs: () => Date.now(),
+  });
+
+  const deps: TurnDeps = {
+    callModel: productionModelCall,
+    backends,
+    verifier: productionVerifier,
+
+    async executeBooking(pendingActionId) {
+      return withAgency(row.agency_id, async (tx) => {
+        const paRows = await tx.execute(sql`
+          SELECT property_id, lower(slot) AS start_at,
+                 (extract(epoch FROM upper(slot) - lower(slot)) / 60)::int AS duration_min,
+                 payload->>'label' AS label
+            FROM amanda_pending_actions
+           WHERE id = ${pendingActionId}::uuid AND status = 'pending' AND expires_at > now()
+           LIMIT 1
+        `);
+        const pa = (paRows as unknown as Array<Record<string, unknown>>)[0];
+        if (!pa) return { ok: false as const, reason: 'action_invalid' as const };
+        try {
+          const created = await tx.execute(sql`
+            SELECT * FROM create_manual_viewing(
+              ${row.lead_id}::uuid, ${String(pa.start_at)}::timestamptz, ${Number(pa.duration_min) || 60}::int,
+              ${String(pa.property_id)}::uuid, ${null}, ${'Booked by Amanda (auto-mode)'}, ${null}, false
+            )
+          `);
+          const bookingId = String((created as unknown as Array<{ booking_id: string }>)[0]?.booking_id ?? '');
+          await tx.execute(sql`
+            UPDATE amanda_pending_actions
+               SET status = 'executed', resolved_at = now(), executed_booking_id = ${bookingId}::uuid
+             WHERE id = ${pendingActionId}::uuid
+          `);
+          await tx.execute(sql`DELETE FROM viewing_slot_holds WHERE pending_action_id = ${pendingActionId}::uuid`);
+          await tx.execute(sql`
+            UPDATE amanda_pending_actions SET status = 'superseded', resolved_at = now()
+             WHERE conversation_id = ${row.conversation_id}::uuid AND status = 'pending'
+          `);
+          await tx.execute(sql`
+            INSERT INTO amanda_funnel_events (agency_id, lead_id, conversation_id, property_id, event_type, amanda_attributed, metadata)
+            VALUES (${row.agency_id}, ${row.lead_id}::uuid, ${row.conversation_id}::uuid, ${String(pa.property_id)}::uuid, 'viewing_booked', true, jsonb_build_object('booking_id', ${bookingId}::uuid))
+          `);
+          nudgeCalendarSync();
+          return { ok: true as const, bookingId, echo: String(pa.label ?? 'the proposed time') };
+        } catch (err) {
+          const code = (err as { cause?: { code?: string }; code?: string })?.cause?.code ?? (err as { code?: string })?.code;
+          if (code === '23P01') return { ok: false as const, reason: 'slot_taken' as const };   // EXCLUDE arbiter
+          throw err;
+        }
+      });
+    },
+
+    async releasePendingAction(pendingActionId, reason) {
+      await withAgency(row.agency_id, async (tx) => {
+        await tx.execute(sql`
+          UPDATE amanda_pending_actions
+             SET status = ${reason === 'declined' ? 'cancelled' : 'superseded'}, resolved_at = now()
+           WHERE id = ${pendingActionId}::uuid AND status = 'pending'
+        `);
+        await tx.execute(sql`DELETE FROM viewing_slot_holds WHERE pending_action_id = ${pendingActionId}::uuid`);
+      });
+    },
+
+    async sendReply(text) {
+      // The proven, gated outbound path: send_queue freeform, drained by the
+      // live whatsapp-send-execute executor (opt-out/window law lives THERE).
+      if (!world.leadPhone) throw new Error('lead_has_no_phone');
+      const key = `amanda-engine:${turnId(row.conversation_id, row.provider_message_id)}`;
+      return withAgency(row.agency_id, async (tx) => {
+        await tx.execute(sql`
+          INSERT INTO send_queue (idempotency_key, agency_id, lead_id, channel, hub, template_key, template_variables, priority, status, requested_by, requested_at, expiry_at)
+          VALUES (
+            ${key}, ${row.agency_id}, ${row.lead_id}::uuid, 'whatsapp', 'twilio', 'freeform',
+            jsonb_build_object('body', ${text}, 'full_name', ${world.leadFullName}, 'first_name', ${world.leadFirstName}, 'lead_phone', ${world.leadPhone}, 'agency_name', ${world.agencyName}),
+            'high', 'pending', 'amanda_engine', now(), now() + interval '30 minutes'
+          )
+          ON CONFLICT (idempotency_key) DO NOTHING
+        `);
+        return { providerMessageId: null };
+      });
+    },
+
+    async queueDraft(text, kind) {
+      await withAgency(row.agency_id, async (tx) => {
+        await tx.execute(sql`
+          INSERT INTO dashboard_tasks (agency_id, lead_id, conversation_id, task_type, title, message_body, channel, platform, priority, status, raw_payload)
+          VALUES (
+            ${row.agency_id}, ${row.lead_id}::uuid, ${row.conversation_id},
+            'suggested_reply', 'WhatsApp from lead - review suggested reply', ${(row.payload as Record<string, unknown>)?.body ?? ''},
+            'whatsapp', 'twilio', 'high', 'pending',
+            jsonb_build_object(
+              'suggested_reply', ${text},
+              'lead_language', ${world.leadLanguage},
+              'inbound_body_text', ${(row.payload as Record<string, unknown>)?.body ?? ''},
+              'inbound_message_id', ${row.provider_message_id},
+              'inbound_profile_name', ${world.leadFullName},
+              'ai_draft_pending', false,
+              'ai_failure_reason', null,
+              'via', 'amanda_engine',
+              'draft_kind', ${kind}
+            )
+          )
+        `);
+      });
+    },
+
+    async escalateToHuman(reason, detail) {
+      await withAgency(row.agency_id, async (tx) => {
+        await tx.execute(sql`
+          INSERT INTO dashboard_tasks (agency_id, lead_id, conversation_id, task_type, title, message_body, channel, platform, priority, status, raw_payload)
+          VALUES (
+            ${row.agency_id}, ${row.lead_id}::uuid, ${row.conversation_id},
+            'human_review_needed', 'Amanda needs a human on this reply', ${detail.slice(0, 800)},
+            'whatsapp', 'twilio', 'high', 'pending',
+            jsonb_build_object('reason', ${reason}, 'via', 'amanda_engine')
+          )
+        `);
+      });
+    },
+  };
+
+  const started = Date.now();
+  const result = await runTurn(world.mode, ctx, {
+    text: effectiveText,
+    buttonPayload,
+    providerMessageId: row.provider_message_id,
+    atMs: Date.now(),
+  }, pending, deps);
+
+  await withAgency(row.agency_id, async (tx) => {
+    await tx.execute(sql`
+      INSERT INTO amanda_turn_usage (agency_id, conversation_id, turn_id, mode, model, prompt_version, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, tool_calls, latency_ms, outcome)
+      VALUES (
+        ${row.agency_id}, ${row.conversation_id}::uuid, ${turnId(row.conversation_id, row.provider_message_id)},
+        ${world.mode}, ${ENGINE_MODEL()}, ${result.promptVersion},
+        ${result.loop?.usage.inputTokens ?? 0}, ${result.loop?.usage.outputTokens ?? 0},
+        ${result.loop?.usage.cacheReadTokens ?? 0}, ${result.loop?.usage.cacheWriteTokens ?? 0},
+        ${result.loop?.toolEvents.length ?? 0}, ${Date.now() - started}, ${result.outcome}
+      )
+      ON CONFLICT (turn_id) DO NOTHING
+    `);
+  }).catch((err) => console.error('[amanda-engine] turn_usage write failed', err instanceof Error ? err.message.split('\n')[0].slice(0, 160) : 'error'));
+
+  return { result: 'done' };
+}
+
+export { slotLabel };

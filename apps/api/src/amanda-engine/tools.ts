@@ -20,9 +20,11 @@ export interface PropertySummary {
 }
 
 export interface SlotProposal {
-  pendingActionId: string;
-  /** Explicit echo forms the model MUST use verbatim ("Friday 28 August, 17:00"). */
-  slots: Array<{ label: string; startISO: string }>;
+  /** One pending action PER SLOT: a buyer's button tap or pick can never book
+   *  the wrong one, and a bare "yes" against 2 open proposals is ambiguous by
+   *  construction (the confirmation law re-asks). Labels are the explicit echo
+   *  forms the model MUST use verbatim ("Friday 28 August, 17:00"). */
+  slots: Array<{ label: string; startISO: string; pendingActionId: string }>;
 }
 
 export interface TicketRef { ticketId: string; shortCode: number }
@@ -199,7 +201,7 @@ export async function executeToolCall(
       if (!propertyId) return refuse('missing_property_id');
       result = await run(
         () => backends.proposeViewingSlots(propertyId, str('preferred_time_iso')),
-        { simulated: true, slots: [{ label: 'SIMULATED — would propose real slots', startISO: '' }] },
+        { simulated: true, slots: [{ label: 'SIMULATED — would propose real slots', startISO: '', pendingActionId: 'simulated' }] },
       );
       break;
     }

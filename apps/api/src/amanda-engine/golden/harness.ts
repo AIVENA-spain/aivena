@@ -51,13 +51,13 @@ export class FakeBackends implements ToolBackends {
   }
   async proposeViewingSlots(propertyId: string, preferredISO: string | null): Promise<SlotProposal> {
     this.slotCounter += 1;
-    const id = `pa-${this.slotCounter}`;
-    this.journal.push({ effect: 'propose_slots', detail: { propertyId, preferredISO, pendingActionId: id } });
+    const a = `pa-${this.slotCounter}a`;
+    const b = `pa-${this.slotCounter}b`;
+    this.journal.push({ effect: 'propose_slots', detail: { propertyId, preferredISO, pendingActionIds: [a, b] } });
     return {
-      pendingActionId: id,
       slots: [
-        { label: 'Friday 28 August, 17:00', startISO: '2026-08-28T15:00:00.000Z' },
-        { label: 'Saturday 29 August, 11:00', startISO: '2026-08-29T09:00:00.000Z' },
+        { label: 'Friday 28 August, 17:00', startISO: '2026-08-28T15:00:00.000Z', pendingActionId: a },
+        { label: 'Saturday 29 August, 11:00', startISO: '2026-08-29T09:00:00.000Z', pendingActionId: b },
       ],
     };
   }
@@ -136,7 +136,7 @@ export function makeDeps(model: ScriptedModel, backends: FakeBackends): { deps: 
     verifier: null,
     async executeBooking(pendingActionId) {
       journal.bookings.push(pendingActionId);
-      return { bookingId: `bk-${pendingActionId}`, echo: 'Friday 28 August, 17:00 · Chalet IC-28746' };
+      return { ok: true, bookingId: `bk-${pendingActionId}`, echo: 'Friday 28 August, 17:00 · Chalet IC-28746' };
     },
     async releasePendingAction(id, reason) {
       journal.released.push({ id, reason });

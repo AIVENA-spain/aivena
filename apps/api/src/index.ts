@@ -35,6 +35,8 @@ import adminRoute from './routes/admin';
 import chatRoute from './routes/chat';
 import { apiCalendarRoute, publicCalendarRoute, googleConfig } from './routes/calendar';
 import { pollCalendarSyncs } from './routes/calendar-worker';
+import { drainAmandaInbound, engineEnabled } from './amanda-engine/outbox-worker';
+import { processTurnDb } from './amanda-engine/process-turn-db';
 
 Sentry.init({
   dsn: env.SENTRY_DSN,
@@ -206,6 +208,26 @@ if (googleConfig() !== null) {
     firstTickMs: CALENDAR_SYNC_FIRST_TICK_MS,
     intervalMs: CALENDAR_SYNC_INTERVAL_MS,
   });
+}
+
+// Amanda auto-mode engine worker (Packet 2 · P0) — DOUBLY inert by default:
+// starts only with AMANDA_ENGINE_ENABLED=true (unset in prod until the P0
+// schema migration is applied + approved), and even then every agency's
+// amanda_mode defaults to 'off' so no conversation is touched until an agency
+// is explicitly dialed up. Drains the amanda_inbound_queue outbox every 20s
+// (claim RPC = FOR UPDATE SKIP LOCKED + lease steal, safe across instances).
+const AMANDA_ENGINE_TICK_MS = 20_000;
+if (engineEnabled()) {
+  const engineTick = async () => {
+    try {
+      const r = await drainAmandaInbound(processTurnDb);
+      if (r.claimed > 0) logger.info('Amanda engine drained', r);
+    } catch (err) {
+      console.error('[amanda-engine] tick failed', err instanceof Error ? err.message.split('\n')[0].slice(0, 200) : 'error');
+    }
+  };
+  setInterval(() => { void engineTick(); }, AMANDA_ENGINE_TICK_MS);
+  logger.info('Amanda engine worker scheduled', { intervalMs: AMANDA_ENGINE_TICK_MS });
 }
 
 export default app;

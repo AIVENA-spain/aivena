@@ -5,9 +5,12 @@ import { randomUUID } from 'crypto';
 /**
  * Bookings / viewings read surface (W11-lite). Read-only for this pass — the
  * dashboard Viewings page lists upcoming + past appointments. Runs as
- * aivena_app inside the agency-context tx (RLS-scoped). Joins the lead name and
- * (nullable) property title for display. status is a Postgres enum — cast to
- * text so the JSON is a plain string.
+ * aivena_app inside the agency-context tx (RLS-scoped). Joins the lead name,
+ * phone + language and the (nullable) property title, reference (external_id)
+ * and zone/city so the agent sees the essentials at a glance — properties have
+ * no street-address column, so zone (raw_payload) + location_city is the most
+ * precise place line we can show. status is a Postgres enum — cast to text so
+ * the JSON is a plain string.
  */
 const route = new Hono();
 
@@ -18,8 +21,13 @@ route.get('/', async (c) => {
       SELECT b.id,
              b.lead_id,
              l.full_name        AS lead_name,
+             l.phone            AS lead_phone,
+             l.language         AS lead_language,
              b.property_id,
              p.title            AS property_title,
+             p.external_id      AS property_ref,
+             p.location_city    AS property_city,
+             p.raw_payload->>'zone' AS property_zone,
              b.scheduled_at,
              b.duration_minutes,
              b.location,

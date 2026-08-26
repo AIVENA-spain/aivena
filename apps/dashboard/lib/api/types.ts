@@ -231,8 +231,16 @@ export type BookingRow = {
   id: string;
   lead_id: string;
   lead_name: string | null;
+  lead_phone: string | null;
+  /** ISO code of the lead's language (e.g. "no") — render via langLabel. */
+  lead_language: string | null;
   property_id: string | null;
   property_title: string | null;
+  /** The agency's own property reference (properties.external_id). */
+  property_ref: string | null;
+  property_city: string | null;
+  /** Zone within the city (properties.raw_payload->>'zone'); often null. */
+  property_zone: string | null;
   scheduled_at: string | null;
   duration_minutes: number | null;
   location: string | null;

@@ -13,6 +13,7 @@ import {
   List,
   Loader2,
   MapPin,
+  Phone,
   Plus,
   Search,
   TriangleAlert,
@@ -22,6 +23,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { langLabel } from "@/app/(app)/matches/_shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -61,6 +63,28 @@ function fromDatetimeLocal(v: string): string | null {
 }
 
 const DURATIONS = [30, 45, 60, 90, 120];
+
+/* ── display helpers ─────────────────────────────────────────────────────── */
+
+/**
+ * "zone, city" when the zone is known, else just the city — properties have no
+ * street-address column, so this is the most precise place line we can show.
+ */
+function zoneCity(zone: string | null, city: string | null): string | null {
+  if (zone && city) return `${zone}, ${city}`;
+  return zone ?? city;
+}
+
+/** Ref + zone/city in one muted line, e.g. "IC-28746 · El Raso, Guardamar". */
+function propertyMeta(ref: string | null, zone: string | null, city: string | null): string | null {
+  const line = [ref, zoneCity(zone, city)].filter(Boolean).join(" · ");
+  return line || null;
+}
+
+/** tel: URIs must not contain spaces/formatting — keep digits and a leading +. */
+function telHref(phone: string): string {
+  return `tel:${phone.replace(/[^+\d]/g, "")}`;
+}
 
 /* ── workspace ───────────────────────────────────────────────────────────── */
 
@@ -361,7 +385,17 @@ function MonthGrid({
                         ? "bg-muted text-muted-foreground line-through"
                         : "bg-brand-soft text-brand hover:brightness-95",
                     )}
-                    title={b.lead_name ?? undefined}
+                    // Hover tooltip with the essentials (phone · ref · zone/city)
+                    // — the click-through modal shows the same, clickable.
+                    title={
+                      [
+                        b.lead_name,
+                        b.lead_phone,
+                        propertyMeta(b.property_ref, b.property_zone, b.property_city),
+                      ]
+                        .filter(Boolean)
+                        .join(" · ") || undefined
+                    }
                   >
                     {b.scheduled_at ? tf.format(new Date(b.scheduled_at)) : ""}{" "}
                     {b.lead_name ?? "—"}
@@ -451,22 +485,37 @@ function Section({
       ) : (
         <div className="flex flex-col gap-2.5">
           {rows.map((b) => (
-            <button
+            // div+role (not <button>) so the nested tel: link stays valid HTML —
+            // same pattern as the MonthGrid day cells.
+            <div
               key={b.id}
-              type="button"
+              role="button"
+              tabIndex={0}
               onClick={() => onPick(b)}
+              onKeyDown={(e) => e.key === "Enter" && onPick(b)}
               className={cn(
-                "flex flex-col gap-2 rounded-xl border border-border bg-card p-4 text-left shadow-elevated transition-colors hover:bg-muted/30",
+                "flex cursor-pointer flex-col gap-2 rounded-xl border border-border bg-card p-4 text-left shadow-elevated transition-colors hover:bg-muted/30",
                 muted && "opacity-80",
               )}
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex min-w-0 flex-col">
-                  <span className="text-[14px] font-semibold text-foreground">
+                  <span className="flex items-baseline gap-2 text-[14px] font-semibold text-foreground">
                     {b.lead_name ?? "—"}
+                    {b.lead_language ? (
+                      <span className="text-[11px] font-normal text-muted-foreground">
+                        {langLabel(b.lead_language)}
+                      </span>
+                    ) : null}
                   </span>
                   <span className="text-[12.5px] text-muted-foreground">
                     {b.property_title ?? "—"}
+                    {propertyMeta(b.property_ref, b.property_zone, b.property_city) ? (
+                      <span className="font-mono text-[11px]">
+                        {" · "}
+                        {propertyMeta(b.property_ref, b.property_zone, b.property_city)}
+                      </span>
+                    ) : null}
                   </span>
                 </div>
                 <StatusPill status={b.status} t={t} />
@@ -481,6 +530,16 @@ function Section({
                     </span>
                   ) : null}
                 </span>
+                {b.lead_phone ? (
+                  <a
+                    href={telHref(b.lead_phone)}
+                    onClick={(e) => e.stopPropagation()}
+                    className="inline-flex items-center gap-1.5 hover:text-foreground hover:underline"
+                  >
+                    <Phone className="h-3.5 w-3.5" aria-hidden />
+                    {b.lead_phone}
+                  </a>
+                ) : null}
                 {b.location ? (
                   <span className="inline-flex items-center gap-1.5">
                     <MapPin className="h-3.5 w-3.5" aria-hidden />
@@ -497,7 +556,7 @@ function Section({
               {b.notes ? (
                 <p className="text-[12.5px] leading-snug text-muted-foreground">{b.notes}</p>
               ) : null}
-            </button>
+            </div>
           ))}
         </div>
       )}
@@ -572,6 +631,18 @@ function ViewingModal({
   const editable =
     mode === "create" ||
     ["requested", "confirmed", "rescheduled"].includes(booking?.status ?? "");
+
+  // Ref + zone/city line for the selected property: the booking's join fields
+  // when the selection is unchanged (they carry the zone), else the catalogue
+  // row (external_id + city — the properties list does not carry zone).
+  const selectedPropertyInfo =
+    booking && propertyId && propertyId === booking.property_id
+      ? propertyMeta(booking.property_ref, booking.property_zone, booking.property_city)
+      : propertyMeta(
+          properties.find((p) => p.id === propertyId)?.external_id ?? null,
+          null,
+          properties.find((p) => p.id === propertyId)?.location_city ?? null,
+        );
 
   async function onSave() {
     setError(null);
@@ -653,8 +724,24 @@ function ViewingModal({
           ) : (
             <div className="flex flex-col gap-1.5">
               <Label>{t("leadLabel")}</Label>
-              <div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-foreground">
-                {booking?.lead_name ?? "—"}
+              <div className="flex flex-col gap-0.5 rounded-md border border-border bg-muted/40 px-3 py-2">
+                <span className="text-sm text-foreground">{booking?.lead_name ?? "—"}</span>
+                {booking?.lead_phone || booking?.lead_language ? (
+                  <span className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11.5px] text-muted-foreground">
+                    {booking?.lead_phone ? (
+                      <a
+                        href={telHref(booking.lead_phone)}
+                        className="inline-flex items-center gap-1 font-mono hover:text-foreground hover:underline"
+                      >
+                        <Phone className="h-3 w-3" aria-hidden />
+                        {booking.lead_phone}
+                      </a>
+                    ) : null}
+                    {booking?.lead_language ? (
+                      <span>{langLabel(booking.lead_language)}</span>
+                    ) : null}
+                  </span>
+                ) : null}
               </div>
             </div>
           )}
@@ -705,6 +792,11 @@ function ViewingModal({
                 </option>
               ))}
             </select>
+            {selectedPropertyInfo ? (
+              <p className="font-mono text-[11px] text-muted-foreground">
+                {selectedPropertyInfo}
+              </p>
+            ) : null}
           </div>
 
           <div className="flex flex-col gap-1.5">

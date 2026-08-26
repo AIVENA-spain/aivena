@@ -14,6 +14,11 @@ set `AMANDA_ENGINE_ENABLED` to `false` → redeploy. Inbound messages still arri
 are stored, and queue up; agents still see everything in the Inbox; W4C drafting
 continues for off/shadow agencies. NOTHING is lost — the queue is durable and
 processing resumes where it stopped when re-enabled.
+**But note:** any agency at approval or higher gets NO drafts while the global
+switch is off (W4C stays suppressed for them) — for those agencies also run the
+per-agency Step 0 above, or accept draft-less inbox until re-enable. Also: while
+an agency is per-agency 'off', its inbound is NOT queued for Amanda — re-enabling
+does not back-process the gap (agents saw everything in the Inbox regardless).
 
 ## Symptom → action
 | Symptom | Likely cause | Action |
@@ -24,11 +29,11 @@ processing resumes where it stopped when re-enabled.
 | Booking at a wrong/duplicate time | constraint breach (should be impossible — DB enforced) | Step 0; fix the booking by hand in /viewings (reschedule/cancel — calendar follows); tell CC with the booking id |
 | Buyer says "stop"/opted out but still got a message | executor gate breach | Step 0 GLOBAL immediately; tell CC — compliance-critical |
 | Costs look high | runaway loop | Supabase SQL: `SELECT date_trunc('day', created_at) d, count(*), sum(input_tokens+output_tokens) FROM amanda_turn_usage GROUP BY 1 ORDER BY 1 DESC LIMIT 7;` → if one day explodes, Step 0 + tell CC |
-| Ticket (Q to office) never answered, buyer waiting | agent missed it | /tasks → answer the amanda_question task; Amanda relays on the next inbound (full ping spine = P2) |
+| Ticket (Q to office) never answered, buyer waiting | agent missed it | Open the conversation in the Inbox and answer the buyer YOURSELF (Amanda sees your reply as ground truth and stops saying she's waiting; the ticket auto-closes). Automatic relay of office answers arrives with the P2 ping spine. |
 
 ## What can NEVER happen by construction (if it does, it's a code bug — tell CC verbatim)
 - Shadow/off agency: any buyer-visible message or booking from the engine.
-- A send to an opted-out lead (executor refuses) or outside the 24h window (executor refuses freeform).
+- A send to an opted-out lead (the executor refuses) or outside the 24h WhatsApp window (the engine refuses to enqueue in the last hour of the window; Twilio rejects anything out-of-window; the full atomic executor-side gate lands before P2).
 - A booking without the buyer's explicit confirmation of an exact proposed slot.
 - Overlapping viewings for the same agent (Postgres EXCLUDE constraint refuses).
 - An IBAN/account number in an Amanda message (send-path law blocks + escalates).

@@ -160,6 +160,16 @@ Deno.serve(async (req) => {
       return twiml();
     }
     leadId = newLead.id;
+    // Amanda data pack (design §11.4): the funnel starts here. Best-effort —
+    // the table exists only after the P0 migration this EF deploys with.
+    await admin.from("amanda_funnel_events").insert({
+      agency_id: agencyId,
+      lead_id: leadId,
+      event_type: "lead_created",
+      amanda_attributed: false,
+      source: "whatsapp_inbound",
+      metadata: {},
+    }).then(({ error }) => { if (error) console.error("funnel lead_created:", error.code); });
     await admin.from("consent_log").insert({
       agency_id: agencyId,
       lead_id: leadId,

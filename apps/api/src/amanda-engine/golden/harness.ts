@@ -61,8 +61,8 @@ export class FakeBackends implements ToolBackends {
       ],
     };
   }
-  async askAgency(question: string, propertyId: string | null): Promise<TicketRef> {
-    this.journal.push({ effect: 'ask_agency', detail: { question, propertyId } });
+  async askAgency(question: string, propertyId: string | null, category?: string | null): Promise<TicketRef> {
+    this.journal.push({ effect: 'ask_agency', detail: { question, propertyId, category: category ?? null } });
     return this.nextTicket;
   }
   async handoffToHuman(reason: string, summary: string): Promise<void> {

@@ -1,7 +1,8 @@
 // Amanda engine — inbound outbox consumer (design §4 "Inbound processing =
-// outbox pattern"). P0 skeleton: compiles, tested at the seam, NOT WIRED into
-// index.ts yet — wiring ships with the schema-apply proposal so nothing can
-// activate before the tables exist and Christian approves.
+// outbox pattern"). Wired into index.ts DOUBLY inert: the worker starts only
+// with AMANDA_ENGINE_ENABLED=true, and even then every agency's amanda_mode
+// defaults to 'off' — nothing can activate before the approval-gated schema
+// apply and an explicit per-agency dial-up.
 //
 // Shape mirrors the calendar worker: a periodic tick claims due queue rows via
 // the SECURITY DEFINER RPC (cross-agency drain — the 2026-08-25 FORCE-RLS

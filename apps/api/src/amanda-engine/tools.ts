@@ -35,7 +35,7 @@ export interface ToolBackends {
   getPropertyDetails(refOrId: string): Promise<Record<string, unknown> | null>;
   getAreaInfo(area: string): Promise<string | null>;
   proposeViewingSlots(propertyId: string, preferredTimePhrase: string | null): Promise<SlotProposal>;
-  askAgency(question: string, propertyId: string | null): Promise<TicketRef>;
+  askAgency(question: string, propertyId: string | null, category?: string | null): Promise<TicketRef>;
   handoffToHuman(reason: string, summary: string): Promise<void>;
   recordLeadIntel(patch: Partial<LeadStateData>): Promise<void>;
 }
@@ -109,7 +109,10 @@ export const TOOL_SPECS: ToolSpec[] = [
       description: 'File a question only the agency can answer (price negotiability, commission, furniture, exceptions). Tell the buyer you will check with the office and come back — then keep helping them with other things.',
       input_schema: {
         type: 'object',
-        properties: { question: { type: 'string' }, property_id: { type: 'string' } },
+        properties: {
+          question: { type: 'string' }, property_id: { type: 'string' },
+          category: { type: 'string', description: 'One word: negotiability, commission, furniture, availability, viewing_exception, rules, other' },
+        },
         required: ['question'],
       },
     },
@@ -236,7 +239,7 @@ export async function executeToolCall(
       const question = str('question');
       if (!question) return refuse('missing_question');
       result = await run(
-        () => backends.askAgency(question, str('property_id')),
+        () => backends.askAgency(question, str('property_id'), str('category')),
         { simulated: true, ticketId: 'simulated', shortCode: 0 },
       );
       break;

@@ -32,6 +32,7 @@ interface LoadedWorld {
   mirrorTargetWords: number | null;
   pendingActions: Array<{ id: string; label: string; expiresAtMs: number }>;
   openTicketNote: string | null;
+  humanAnsweredTicketIds: string[];
   agencyKnowledge: string[];
 }
 
@@ -81,8 +82,11 @@ async function loadWorld(row: QueueRow): Promise<LoadedWorld | { skip: string }>
        ORDER BY created_at DESC LIMIT 5
     `);
 
+    // Tickets a HUMAN already answered directly in the chat must not keep the
+    // "still waiting on the office" note alive (P0 has no relay — conformance
+    // audit): compare against the last agent-authored outbound.
     const ticketRows = await tx.execute(sql`
-      SELECT short_code, question_text FROM amanda_questions
+      SELECT id, short_code, question_text, created_at FROM amanda_questions
        WHERE conversation_id = ${row.conversation_id}::uuid AND status IN ('open', 'clarifying', 'escalated')
        ORDER BY created_at DESC LIMIT 3
     `);
@@ -123,9 +127,23 @@ async function loadWorld(row: QueueRow): Promise<LoadedWorld | { skip: string }>
       pendingActions: (paRows as unknown as Array<Record<string, unknown>>).map((r) => ({
         id: String(r.id), label: String(r.label ?? 'proposed viewing'), expiresAtMs: Number(r.expires_ms),
       })),
-      openTicketNote: (ticketRows as unknown as Array<{ short_code: number; question_text: string }>)
-        .map((t) => `Q${t.short_code} to the office: "${t.question_text}" — still waiting`)
-        .join('; ') || null,
+      openTicketNote: (() => {
+        const lastAgentReplyAt = messages
+          .filter((m) => m.direction !== 'inbound' && m.sent_by && !/amanda|engine|system/i.test(m.sent_by))
+          .map((m) => m.sent_at).sort().pop() ?? null;
+        return (ticketRows as unknown as Array<{ id: string; short_code: number; question_text: string; created_at: string }>)
+          .filter((tk) => !(lastAgentReplyAt && lastAgentReplyAt > tk.created_at))
+          .map((tk) => `Q${tk.short_code} to the office: "${tk.question_text}" — still waiting`)
+          .join('; ') || null;
+      })(),
+      humanAnsweredTicketIds: (() => {
+        const lastAgentReplyAt = messages
+          .filter((m) => m.direction !== 'inbound' && m.sent_by && !/amanda|engine|system/i.test(m.sent_by))
+          .map((m) => m.sent_at).sort().pop() ?? null;
+        return (ticketRows as unknown as Array<{ id: string; created_at: string }>)
+          .filter((tk) => lastAgentReplyAt && lastAgentReplyAt > tk.created_at)
+          .map((tk) => String(tk.id));
+      })(),
       agencyKnowledge: (knowledgeRows as unknown as Array<{ content: string }>).map((k) => k.content),
     };
   });
@@ -141,6 +159,19 @@ export async function processTurnDb(row: QueueRow): Promise<TurnOutcome> {
   if ('skip' in world) return { result: 'skip', reason: world.skip };
   if (world.aiMuted) return { result: 'skip', reason: 'ai_muted_or_human_claimed' };
   if (world.optedOut) return { result: 'skip', reason: 'lead_opted_out' };
+
+  // Tickets a human agent answered directly in the chat close as 'handoff'
+  // (P0 has no relay — see GO_LIVE_PACK deferrals). Live modes only: shadow
+  // stays zero-write beyond telemetry.
+  if (world.humanAnsweredTicketIds.length > 0 && world.mode !== 'shadow') {
+    const idsCsv = world.humanAnsweredTicketIds.join(',');
+    await withAgency(row.agency_id, async (tx) => {
+      await tx.execute(sql`
+        UPDATE amanda_questions SET status = 'handoff', answered_by = 'human_direct_reply', answered_at = now()
+         WHERE id = ANY(string_to_array(${idsCsv}, ',')::uuid[]) AND status IN ('open', 'clarifying', 'escalated')
+      `);
+    }).catch((err) => console.error('[amanda-engine] ticket close failed', err instanceof Error ? err.message.split('\n')[0].slice(0, 120) : 'error'));
+  }
 
   const rowAgeMs = Date.now() - Date.parse(row.created_at ?? '') || 0;
   if (Number.isFinite(rowAgeMs) && rowAgeMs > 24 * 3600_000) return { result: 'skip', reason: 'stale_inbound' };
@@ -217,6 +248,18 @@ export async function processTurnDb(row: QueueRow): Promise<TurnOutcome> {
         `);
         const pa = (paRows as unknown as Array<Record<string, unknown>>)[0];
         if (!pa) return { ok: false as const, reason: 'action_invalid' as const };
+        // §4 supersession (partial, pre-P1): if a NEWER unprocessed inbound exists
+        // for this conversation, the buyer said something after the confirmation —
+        // never book on a stale snapshot; the newer turn re-evaluates.
+        const newer = await tx.execute(sql`
+          SELECT 1 FROM amanda_inbound_queue
+           WHERE conversation_id = ${row.conversation_id}::uuid
+             AND status IN ('pending', 'processing')
+             AND id <> ${row.id}::uuid
+             AND created_at > (SELECT created_at FROM amanda_inbound_queue WHERE id = ${row.id}::uuid)
+           LIMIT 1
+        `);
+        if ((newer as unknown as unknown[]).length > 0) return { ok: false as const, reason: 'action_invalid' as const };
         try {
           // create_manual_viewing is SECURITY INVOKER and PERFORMs
           // require_role('agent'); withAgency sets only the agency GUC, so the
@@ -293,7 +336,7 @@ export async function processTurnDb(row: QueueRow): Promise<TurnOutcome> {
         const windowRows = await tx.execute(sql`
           SELECT 1 FROM leads
            WHERE id = ${row.lead_id}::uuid
-             AND last_inbound_whatsapp_at > now() - interval '23 hours 30 minutes'
+             AND last_inbound_whatsapp_at > now() - interval '23 hours'
         `);
         if ((windowRows as unknown as unknown[]).length === 0) throw new Error('window_closed');
         await tx.execute(sql`
@@ -383,13 +426,15 @@ export async function processTurnDb(row: QueueRow): Promise<TurnOutcome> {
 
   await withAgency(row.agency_id, async (tx) => {
     await tx.execute(sql`
-      INSERT INTO amanda_turn_usage (agency_id, conversation_id, turn_id, mode, model, prompt_version, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, tool_calls, latency_ms, outcome)
+      INSERT INTO amanda_turn_usage (agency_id, conversation_id, turn_id, mode, model, prompt_version, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, tool_calls, latency_ms, outcome, turn_class, gate_failures, cannot_answer)
       VALUES (
         ${row.agency_id}, ${row.conversation_id}::uuid, ${turnId(row.conversation_id, row.provider_message_id)},
         ${world.mode}, ${ENGINE_MODEL()}, ${result.promptVersion},
         ${result.loop?.usage.inputTokens ?? 0}, ${result.loop?.usage.outputTokens ?? 0},
         ${result.loop?.usage.cacheReadTokens ?? 0}, ${result.loop?.usage.cacheWriteTokens ?? 0},
-        ${result.loop?.toolEvents.length ?? 0}, ${Date.now() - started}, ${result.outcome}
+        ${result.loop?.toolEvents.length ?? 0}, ${Date.now() - started}, ${result.outcome},
+        ${result.turnClass}, ${result.gateFailures.length ? result.gateFailures.join(',').slice(0, 500) : null},
+        ${result.loop?.cannotAnswer?.slice(0, 200) ?? null}
       )
       ON CONFLICT (turn_id) DO NOTHING
     `);

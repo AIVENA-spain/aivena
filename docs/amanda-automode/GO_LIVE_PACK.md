@@ -29,8 +29,13 @@ column adds are additive with defaults; the EXCLUDE constraint can be dropped st
 ## Step 2 — Deploy inbound EF v3
 File: `supabase/functions/twilio-whatsapp-inbound/index.v3-proposed.ts` (rename to index.ts at deploy).
 Requires Step 1 (amanda_inbound_queue + agency_settings.amanda_mode must exist).
-Behavior change matrix: agencies amanda_mode off/shadow → IDENTICAL behavior to v10
-(W4C keeps drafting) + queue rows written; approval+ → engine is the drafter, W4C skipped.
+Behavior change matrix: amanda_mode 'off' → IDENTICAL to v10 (W4C drafts, NO queue
+rows — an off agency's rows would accumulate with nothing draining them);
+'shadow' → v10 behavior + queue rows written (engine runs silently);
+approval+ → engine is the drafter, W4C skipped. Note: the message insert and the
+queue insert are two sequential API calls, not one transaction — a failed queue
+insert is logged on webhook_events (message safe, engine turn missed); the P1
+sweep should diff conversation_messages vs the queue for on-dial agencies.
 Rollback: redeploy the captured v10 (`index.ts`).
 
 ## Step 3 — Set Railway env `AMANDA_ENGINE_ENABLED=true`
@@ -49,6 +54,11 @@ send_queue freeform relays ride the LIVE executor (opt-out law there; the engine
 DEPENDENCY TO VERIFY on first demo: the n8n Send-Pusher drains engine-authored
 freeform rows the same as approval-authored ones (same table, same shape,
 requested_by='amanda_engine').
+DEMO NUANCE (be ready for it): when asked "is the price negotiable?", Amanda
+files the ticket and SAYS she'll come back with the office's answer — the
+automatic relay is the P2 ping spine, so in this demo the agent answers the
+buyer manually from the Inbox (Amanda then treats that human reply as ground
+truth and the ticket auto-closes as 'handoff').
 
 ## Step 5 — P1 SHADOW on the real pilot posture
 Per-agency: amanda_mode='shadow' → engine runs silently on real inbound (zero
@@ -84,6 +94,35 @@ Laws that came out of it:
 - The full atomic send gate (window/mute/disclosure re-check at the moment of send)
   moves INTO whatsapp-send-execute before P2 assisted-auto; today the engine
   pre-checks the 24h window at enqueue and the executor enforces opt-out.
+
+## P0 deferrals beyond the design's §11b ledger (named here so no gap is silent)
+Confirmed by the conformance audit; none breaks a P0 safety law (drain latch +
+EXCLUDE arbiter + idempotency + supersession guard contain the worst), but each
+is design§4/§2/§1 machinery that lands LATER, on purpose:
+- **Conversation ordering machinery** (per-conversation lease, 12s burst debounce,
+  abort-and-fold-in on newer inbound mid-loop): pre-P2 assisted-auto. P0 has a
+  per-process drain latch, per-row leases, and a booking-time newer-inbound check.
+- **Circuit breaker + model-free holding message** (auto-downgrade on error spikes):
+  P1, with the alerting spine. Today a failing row retires to 'failed' after 5 tries.
+- **Durable turn journal for crash replay**: P1; idempotency keys + per-tool dedupe
+  cover re-runs today.
+- **Property staleness guard (45-day hedge)**: P1.
+- **reschedule_viewing / cancel_viewing tools**: P2 — until then the agent handles
+  changes via /viewings (runbook says so); a buyer's change request routes to
+  ask_agency/handoff by the prompt ladder.
+- **cannot_answer routing**: telemetry-only in P0 (persisted per turn for shadow
+  calibration); ticket-vs-handoff routing is wired after P1-shadow data.
+- **consent_service/consent_marketing split columns**: P2, with Christian's
+  marketing-consent decision (§11.7 alert opt-in) — consent_log covers service today.
+- **Funnel coverage in P0**: lead_created (EF v3), intel_captured, question_ticket,
+  viewing_booked, handoff are emitted; engaged/attended/no_show/post_viewing/
+  offer/dormant/reactivated/alert_opt_in land with their features (viewing
+  lifecycle + entry kit, P2).
+- **Agency settings card + knowledge write surface + save-time scrubber**: P2 —
+  P0 reads agency_amanda_knowledge (active rows) and amanda_settings keys
+  timezone / viewing_duration_min / viewing_notice_hours; nothing writes them yet.
+- **Engine env names** (rollback reference): AMANDA_ENGINE_MODEL,
+  AMANDA_ENGINE_VERIFIER_MODEL (the design doc's §1 line has been aligned).
 
 ## What stays OFF regardless (standing orders intact)
 Valuation gate untouched · no real-lead traffic in FULL mode (test agency only until P2/P3 gates) ·

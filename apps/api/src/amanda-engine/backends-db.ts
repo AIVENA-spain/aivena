@@ -221,9 +221,10 @@ export function makeDbBackends(ctx: BackendCtx): ToolBackends {
       return { slots: created };
     },
 
-    async askAgency(question: string, propertyId: string | null): Promise<TicketRef> {
+    async askAgency(question: string, propertyId: string | null, category?: string | null): Promise<TicketRef> {
       const q = question.slice(0, 800);
       const propId = propertyId && UUID_RE.test(propertyId) ? propertyId : null;
+      const cat = category && /^[a-z_]{3,32}$/i.test(category) ? category.toLowerCase() : null;
       // A 23505 (concurrent mint of the same live short_code, partial unique
       // index) aborts its transaction — the single retry must be a FRESH tx.
       const attempt = (): Promise<TicketRef> => withAgency(A, async (tx) => {
@@ -251,8 +252,8 @@ export function makeDbBackends(ctx: BackendCtx): ToolBackends {
               )
             ) c
           )
-          INSERT INTO amanda_questions (agency_id, short_code, conversation_id, lead_id, property_id, question_text, question_lang, next_ping_at)
-          SELECT ${A}, code, ${ctx.conversationId}::uuid, ${ctx.leadId}::uuid, ${propId}::uuid, ${q}, ${ctx.leadLanguage}, now()
+          INSERT INTO amanda_questions (agency_id, short_code, conversation_id, lead_id, property_id, question_text, question_lang, question_category, next_ping_at)
+          SELECT ${A}, code, ${ctx.conversationId}::uuid, ${ctx.leadId}::uuid, ${propId}::uuid, ${q}, ${ctx.leadLanguage}, ${cat}, now()
             FROM next_code
           RETURNING id, short_code
         `);
@@ -305,6 +306,11 @@ export function makeDbBackends(ctx: BackendCtx): ToolBackends {
           VALUES (${ctx.leadId}::uuid, ${A}, ${JSON.stringify(merged)}::jsonb, now())
           ON CONFLICT (lead_id) DO UPDATE
             SET state = EXCLUDED.state, version = amanda_lead_state.version + 1, updated_at = now()
+        `);
+        // §11.4 data pack: intel capture is a funnel event (slot keys only, no values).
+        await tx.execute(sql`
+          INSERT INTO amanda_funnel_events (agency_id, lead_id, conversation_id, event_type, amanda_attributed, metadata)
+          VALUES (${A}, ${ctx.leadId}::uuid, ${ctx.conversationId}::uuid, 'intel_captured', true, jsonb_build_object('slots', ${Object.keys(patch).join(',')}))
         `);
       });
     },

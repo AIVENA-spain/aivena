@@ -17,7 +17,7 @@
 // scripted — no network, no database.
 
 import { runAgentLoop, type ModelCall, type LoopResult } from './agent-loop';
-import { runGates, type Verifier } from './gates';
+import { runGates, classifyDraft, type Verifier } from './gates';
 import { validateDraft } from './validators';
 import { detectConfirmation } from './confirmation';
 import { runActionTool, type AmandaMode } from './modes';
@@ -73,6 +73,7 @@ export interface TurnResult {
   loop: LoopResult | null;
   bookingId: string | null;
   bookingQueued: boolean;      // approval/assisted: a booking-confirm task was filed
+  turnClass: 'social' | 'fact_bearing' | null;   // §2 false-block budget telemetry
   promptVersion: string;
 }
 
@@ -83,8 +84,8 @@ export async function runTurn(
   pendingAction: PendingActionView | null,
   deps: TurnDeps,
 ): Promise<TurnResult> {
-  const base: Omit<TurnResult, 'outcome' | 'bookingQueued'> = {
-    replyText: null, gateFailures: [], loop: null, bookingId: null, promptVersion: PROMPT_VERSION,
+  const base: Omit<TurnResult, 'outcome' | 'bookingQueued' | 'turnClass'> & { turnClass: TurnResult['turnClass'] } = {
+    replyText: null, gateFailures: [], loop: null, bookingId: null, turnClass: null, promptVersion: PROMPT_VERSION,
   };
   if (mode === 'off') return { ...base, bookingQueued: false, outcome: 'refused' };
 
@@ -167,6 +168,7 @@ export async function runTurn(
     await escalate('empty_draft', 'engine produced no reply text');
     return { ...base, bookingQueued, outcome: 'escalated', loop, bookingId };
   }
+  base.turnClass = classifyDraft(draft);
 
   // ── 3. The law: validators + gates, one constrained regeneration ───────────
   // Long-form (≤120 words) is deterministically earned, never assumed: only a

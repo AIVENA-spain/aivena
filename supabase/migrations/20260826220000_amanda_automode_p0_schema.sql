@@ -130,6 +130,9 @@ CREATE TABLE public.amanda_turn_usage (
   tool_calls         integer NOT NULL DEFAULT 0,
   latency_ms         integer,
   outcome            text,                      -- sent | drafted | blocked_gate | handoff | error ...
+  turn_class         text,                      -- social | fact_bearing (§2 false-block budget needs this from day one)
+  gate_failures      text,                      -- comma list when gates blocked (calibration data, unrecoverable later)
+  cannot_answer      text,                      -- reason when the model declared abstention (§2 calibration)
   created_at         timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX amanda_turn_usage_agency_day_idx ON public.amanda_turn_usage (agency_id, created_at);

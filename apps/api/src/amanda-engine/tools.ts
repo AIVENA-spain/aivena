@@ -34,11 +34,13 @@ export interface ToolBackends {
   searchProperties(filters: Record<string, unknown>): Promise<PropertySummary[]>;
   getPropertyDetails(refOrId: string): Promise<Record<string, unknown> | null>;
   getAreaInfo(area: string): Promise<string | null>;
-  proposeViewingSlots(propertyId: string, preferredISO: string | null): Promise<SlotProposal>;
+  proposeViewingSlots(propertyId: string, preferredTimePhrase: string | null): Promise<SlotProposal>;
   askAgency(question: string, propertyId: string | null): Promise<TicketRef>;
   handoffToHuman(reason: string, summary: string): Promise<void>;
   recordLeadIntel(patch: Partial<LeadStateData>): Promise<void>;
 }
+
+export const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export interface ToolSpec {
   name: string;
@@ -81,14 +83,20 @@ export const TOOL_SPECS: ToolSpec[] = [
     },
   },
   {
+    // internal_write, NOT commitment: proposing slots writes internal state and
+    // sends nothing to the buyer by itself (the reply dispatch decides that).
+    // The COMMITMENT is the booking, governed by the deterministic confirmation
+    // pre-step in turn.ts. As commitment-class, approval/assisted would hand
+    // the model a stub with no real slot labels — and invented times pass every
+    // gate (reviewer-confirmed). Shadow still simulates (no writes).
     name: 'propose_viewing_slots',
-    toolClass: 'commitment',
+    toolClass: 'internal_write',
     schema: {
       name: 'propose_viewing_slots',
-      description: 'Propose viewing slots for a property. Returns explicit slot labels you MUST echo verbatim. The booking itself only happens after the buyer explicitly confirms a proposed slot — never claim a viewing is booked.',
+      description: 'Propose viewing slots for a property. Returns explicit slot labels you MUST echo verbatim. The booking itself only happens after the buyer explicitly confirms a proposed slot — never claim a viewing is booked. If the buyer already named a day/time, pass their words in preferred_time_phrase.',
       input_schema: {
         type: 'object',
-        properties: { property_id: { type: 'string' }, preferred_time_iso: { type: 'string' } },
+        properties: { property_id: { type: 'string' }, preferred_time_phrase: { type: 'string', description: "The buyer's own words for when, e.g. 'viernes a las 17' — the system resolves it, never you" } },
         required: ['property_id'],
       },
     },
@@ -176,8 +184,16 @@ export async function executeToolCall(
 
   const str = (k: string): string | null => (typeof input[k] === 'string' && (input[k] as string).trim() ? (input[k] as string).trim() : null);
 
-  const run = (real: () => Promise<unknown>, simulatedData?: unknown) =>
-    runActionTool(mode, toolClass, real, { simulatedData });
+  // A throwing backend must cost ONE tool call, never the turn: the model sees
+  // an error result and can route around it (ask_agency / cannot_answer).
+  const run = async (real: () => Promise<unknown>, simulatedData?: unknown): Promise<ToolResult> => {
+    try {
+      return await runActionTool(mode, toolClass, real, { simulatedData });
+    } catch (err) {
+      console.error('[amanda-tools] backend failed', name, err instanceof Error ? err.message.split('\n')[0].slice(0, 160) : 'error');
+      return { ok: false, simulated: false, queued: null, refused: 'backend_error', data: null };
+    }
+  };
 
   let result: ToolResult;
   switch (name) {
@@ -197,10 +213,21 @@ export async function executeToolCall(
       break;
     }
     case 'propose_viewing_slots': {
-      const propertyId = str('property_id');
-      if (!propertyId) return refuse('missing_property_id');
+      const propertyRef = str('property_id');
+      if (!propertyRef) return refuse('missing_property_id');
       result = await run(
-        () => backends.proposeViewingSlots(propertyId, str('preferred_time_iso')),
+        async () => {
+          // Models pass refs (IC-28746) as readily as ids — resolve to the real
+          // uuid; an unvalidated cast would 22P02 the whole query (reviewer).
+          let propertyId = propertyRef;
+          if (!UUID_RE.test(propertyId)) {
+            const details = await backends.getPropertyDetails(propertyRef);
+            const resolved = details && typeof details.id === 'string' && details.id ? details.id : null;
+            if (!resolved) throw new Error('property_not_found');
+            propertyId = resolved;   // our own lookup's id — authoritative by construction
+          }
+          return backends.proposeViewingSlots(propertyId, str('preferred_time_phrase'));
+        },
         { simulated: true, slots: [{ label: 'SIMULATED — would propose real slots', startISO: '', pendingActionId: 'simulated' }] },
       );
       break;
@@ -248,6 +275,10 @@ export function intelPatchFromInput(input: Record<string, unknown>): Partial<Lea
   if (typeof input.trip_from === 'string' && typeof input.trip_to === 'string') {
     patch.trip_dates = { value: { from: input.trip_from, to: input.trip_to }, at };
   }
-  if (typeof input.rejected_property_id === 'string') patch.rejected_property_ids = [input.rejected_property_id];
+  // Only real uuids may enter rejected_property_ids — the read seam casts the
+  // list ::uuid[], so one model-passed ref would poison every future search.
+  if (typeof input.rejected_property_id === 'string' && UUID_RE.test(input.rejected_property_id)) {
+    patch.rejected_property_ids = [input.rejected_property_id];
+  }
   return patch as Partial<LeadStateData>;
 }

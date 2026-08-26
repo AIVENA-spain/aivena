@@ -93,14 +93,28 @@ describe('golden/core — the confirmation law (§4: never parse "yes" loosely)'
     expect(r.bookingId).toBeNull();
   });
 
-  it('S8: ASSISTED + affirmation → booking queues one-tap, never executes directly', async () => {
+  it('S8: ASSISTED + affirmation → booking-confirm task filed (own type), never executes, reply auto-sends', async () => {
     const backends = new FakeBackends();
     const model = new ScriptedModel([textResponse('Lovely — I am locking that in with the office right now, one moment.')]);
     const { deps, journal } = makeDeps(model, backends);
     const r = await runTurn('assisted', baseContext(), inbound('Yes please!'), pending(), deps);
     expect(journal.bookings).toHaveLength(0);
-    expect(journal.drafts.some((d) => d.kind === 'one_tap')).toBe(true);
+    expect(journal.bookingConfirms).toEqual([{ pendingActionId: 'pa-1', echo: 'Friday 28 August, 17:00 · Chalet IC-28746' }]);
+    expect(journal.drafts).toHaveLength(0);   // NEVER a suggested_reply placeholder (reviewer bug)
+    expect(r.bookingQueued).toBe(true);
     expect(r.outcome).toBe('sent');   // the conversational reply still auto-sends in assisted
+    // The model was told it's being locked in — never re-asks which time.
+    expect(JSON.stringify(model.requests[0].messages)).toContain('awaiting a quick approval');
+  });
+
+  it('S8b: "ok no problem!" affirms — negative-word collocations never decline', async () => {
+    const backends = new FakeBackends();
+    const model = new ScriptedModel([textResponse('Wonderful — Friday at 17:00 it is. See you there!')]);
+    const { deps, journal } = makeDeps(model, backends);
+    const r = await runTurn('full', baseContext(), inbound('ok no problem!'), pending(), deps);
+    expect(journal.bookings).toEqual(['pa-1']);
+    expect(journal.released).toHaveLength(0);
+    expect(r.bookingId).toBe('bk-pa-1');
   });
 });
 
@@ -196,6 +210,96 @@ describe('golden/core — the law on drafts (§10 validators + §2 gates)', () =
     expect(r.outcome).toBe('escalated');
     expect(journal.sent).toHaveLength(0);
     expect(r.gateFailures).toContain('verifier_unavailable');
+  });
+});
+
+describe('golden/core — reviewer-regression scenarios', () => {
+  it('R1: SHADOW gate-failure escalation is SIMULATED — no agent-visible task', async () => {
+    const backends = new FakeBackends();
+    const model = new ScriptedModel([
+      textResponse('Last chance! Act now!'),
+      textResponse('Final chance — it won’t last!'),
+    ]);
+    const { deps, journal } = makeDeps(model, backends);
+    const r = await runTurn('shadow', baseContext(), inbound('hmm'), null, deps);
+    expect(r.outcome).toBe('escalated');           // telemetry still records it
+    expect(journal.escalations).toHaveLength(0);   // but no real task was written
+  });
+
+  it('R2: SHADOW decline never writes a release', async () => {
+    const backends = new FakeBackends();
+    const model = new ScriptedModel([textResponse('No problem at all — another day perhaps?')]);
+    const { deps, journal } = makeDeps(model, backends);
+    await runTurn('shadow', baseContext(), inbound('no'), pending(), deps);
+    expect(journal.released).toHaveLength(0);
+  });
+
+  it('R3: typed grounding — a price lurking in DESCRIPTION prose cannot launder a fake price', async () => {
+    const poisoned = { ...CHALET, description: 'Great value. Previously listed at 199.000, a steal!' };
+    const backends = new FakeBackends();
+    backends.getPropertyDetails = async () => poisoned;
+    const model = new ScriptedModel([
+      toolResponse('get_property_details', { ref: 'IC-28746' }),
+      textResponse('It costs €199.000 — a real bargain.'),
+      textResponse(`The asking price is €${CHALET.price as number}.`),
+    ]);
+    const { deps, journal } = makeDeps(model, backends);
+    const r = await runTurn('full', baseContext(), inbound('Price?'), null, deps);
+    expect(r.outcome).toBe('sent');
+    expect(journal.sent[0]).toContain('245000');
+  });
+
+  it('R4: propose_viewing_slots executes for REAL in approval mode (no invented times)', async () => {
+    const backends = new FakeBackends();
+    const model = new ScriptedModel([
+      toolResponse('propose_viewing_slots', { property_id: 'prop-1' }),
+      textResponse('I could do Friday 28 August, 17:00 or Saturday 29 August, 11:00 — which suits?'),
+    ]);
+    const { deps, journal } = makeDeps(model, backends);
+    const r = await runTurn('approval', baseContext(), inbound('Can I see it?'), null, deps);
+    expect(backends.journal.filter((w) => w.effect === 'propose_slots')).toHaveLength(1);
+    expect(r.outcome).toBe('drafted');
+    expect(journal.drafts[0].text).toContain('Friday 28 August, 17:00');
+  });
+
+  it('R5: a throwing backend costs ONE tool call, never the turn', async () => {
+    const backends = new FakeBackends();
+    backends.searchProperties = async () => { throw new Error('db timeout'); };
+    const model = new ScriptedModel([
+      toolResponse('search_properties', { city: 'San Javier' }),
+      textResponse('Let me check the latest San Javier options with the office and come right back to you.'),
+    ]);
+    const { deps } = makeDeps(model, backends);
+    const r = await runTurn('full', baseContext(), inbound('What do you have in San Javier?'), null, deps);
+    expect(r.outcome).toBe('sent');
+    const ev = r.loop!.toolEvents.find((e) => e.tool === 'search_properties');
+    expect(ev?.result.refused).toBe('backend_error');
+  });
+
+  it('R6: a ref passed as property_id resolves to the real uuid before slot proposal', async () => {
+    const backends = new FakeBackends();
+    const model = new ScriptedModel([
+      toolResponse('propose_viewing_slots', { property_id: 'IC-28746' }),
+      textResponse('I could do Friday 28 August, 17:00 or Saturday 29 August, 11:00 — which suits?'),
+    ]);
+    const { deps } = makeDeps(model, backends);
+    const r = await runTurn('full', baseContext(), inbound('Can I see IC-28746?'), null, deps);
+    expect(r.outcome).toBe('sent');
+    const propose = backends.journal.find((w) => w.effect === 'propose_slots');
+    expect(propose?.detail.propertyId).toBe('prop-1');   // resolved, not the raw ref
+  });
+
+  it('R7: long-form is earned by a details fetch — a property summary may run past 35 words', async () => {
+    const longSummary = 'It is a bright three-bedroom chalet of 120 m² in San Javier with a private pool, a big terrace and air conditioning, listed at €245000. The living room opens onto the terrace, and the Mar Menor beaches are a short drive away. Shall I line up a viewing so you can feel it for yourself?';
+    const backends = new FakeBackends();
+    const model = new ScriptedModel([
+      toolResponse('get_property_details', { ref: 'IC-28746' }),
+      textResponse(longSummary),
+    ]);
+    const { deps, journal } = makeDeps(model, backends);
+    const r = await runTurn('full', baseContext(), inbound('Tell me about IC-28746'), null, deps);
+    expect(r.outcome).toBe('sent');
+    expect(journal.sent[0]).toBe(longSummary);
   });
 });
 

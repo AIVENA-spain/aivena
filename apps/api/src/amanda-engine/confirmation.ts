@@ -31,11 +31,21 @@ const NEGATIVES = [
 // not confirming ("yes but Sunday", "ok at 18 instead") — re-ask, never guess.
 const MODIFIER_RE = /\d{1,2}[:.h]\d{0,2}|\b(am|pm)\b|\b(mon|tues|wednes|thurs|fri|satur|sun)day\b|\b(lunes|martes|miercoles|miércoles|jueves|viernes|sabado|sábado|domingo)\b|\b(tomorrow|manana|mañana|today|hoy|next week|otra semana)\b/i;
 
+// Affirmative collocations that CONTAIN a negative word ("no problem") must be
+// stripped BEFORE the negative scan, or every "ok, no problem!" declines and
+// silently releases the pending action (reviewer-confirmed).
+const AFFIRMATIVE_COLLOCATIONS = [
+  'no problem', 'not a problem', 'no worries', 'no pasa nada', 'no hay problema',
+  'no te preocupes', 'geen probleem', 'kein problem', 'pas de probleme', "pas de problème",
+  'nessun problema', 'sem problema', 'inga problem', 'ikke noe problem', 'intet problem',
+  'ei ongelmaa', 'nie ma problemu', 'без проблем',
+];
+
 function normalize(text: string): string {
   return text
     .toLowerCase()
     .replace(/[’‘]/g, "'")
-    .replace(/[!.…]+$/g, '')
+    .replace(/[!.…,]+$/g, '')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -48,9 +58,12 @@ export type ConfirmationVerdict = 'affirm' | 'decline' | 'unclear';
  * ONE unexpired pending action and no newer modifying inbound.
  */
 export function detectConfirmation(text: string, lang: string | null): ConfirmationVerdict {
-  const t = normalize(text);
+  let t = normalize(text);
   if (!t || t.length > 60) return 'unclear';           // long messages are never bare confirmations
   if (MODIFIER_RE.test(t)) return 'unclear';           // "yes but Sunday" modifies
+  for (const c of AFFIRMATIVE_COLLOCATIONS) t = t.replace(c, ' ');
+  t = t.replace(/\s+/g, ' ').replace(/^[,\s]+|[,\s]+$/g, '');
+  if (!t) return 'unclear';   // bare "no problem" alone: agreeable, but too weak to book on
   const words = t.split(/\s+/);
   if (words.some((w) => NEGATIVES.includes(w))) return 'decline';
   const lexicons = lang && AFFIRMATIVES[lang] ? [AFFIRMATIVES[lang], AFFIRMATIVES.en] : Object.values(AFFIRMATIVES);

@@ -245,38 +245,45 @@ Deno.serve(async (req) => {
     .update({ processing_status: finalStatus, lead_id: leadId, processed_at: new Date().toISOString(), error_message: msgErr && msgErr.code !== "23505" ? msgErr.message?.slice(0, 240) : null })
     .eq("id", webhookEvent?.id);
 
+  const amandaMode = (agencyRow as { amanda_mode?: string }).amanda_mode ?? "off";
   if (finalStatus === "processed") {
-    // v3 OUTBOX: media messages are enqueued TOO (kind 'media') — v10's
-    // body-length gate silently dropped caption-less voice notes from the AI
-    // path. Unique(provider_message_id, kind) makes redeliveries no-ops.
-    const { error: queueErr } = await admin.from("amanda_inbound_queue").insert({
-      agency_id: agencyId,
-      conversation_id: conversationId,
-      lead_id: leadId,
-      provider_message_id: messageSid,
-      kind: numMedia > 0 ? "media" : "message",
-      payload: {
-        body,
-        profile_name: profileName,
-        num_media: numMedia,
-        media_url: mediaUrl0,
-        media_content_type: mediaContentType,
-        button_payload: buttonPayload,
-        button_text: buttonText,
-        replied_message_sid: repliedMessageSid,
-      },
-      status: "pending",
-    });
-    if (queueErr && queueErr.code !== "23505") {
-      await admin.from("webhook_events").update({ error_message: ("queue: " + queueErr.message).slice(0, 240) }).eq("id", webhookEvent?.id);
+    // v3 OUTBOX — only for agencies whose dial is on (an 'off' agency's rows
+    // would accumulate unbounded with nothing draining them). Media messages
+    // are enqueued TOO (kind 'media') — v10's body-length gate silently
+    // dropped caption-less voice notes from the AI path.
+    // Unique(provider_message_id, kind) makes redeliveries no-ops.
+    if (amandaMode !== "off") {
+      const { error: queueErr } = await admin.from("amanda_inbound_queue").insert({
+        agency_id: agencyId,
+        conversation_id: conversationId,
+        lead_id: leadId,
+        provider_message_id: messageSid,
+        kind: numMedia > 0 ? "media" : "message",
+        payload: {
+          body,
+          profile_name: profileName,
+          num_media: numMedia,
+          media_url: mediaUrl0,
+          media_content_type: mediaContentType,
+          button_payload: buttonPayload,
+          button_text: buttonText,
+          replied_message_sid: repliedMessageSid,
+        },
+        status: "pending",
+      });
+      if (queueErr && queueErr.code !== "23505") {
+        await admin.from("webhook_events").update({ error_message: ("queue: " + queueErr.message).slice(0, 240) }).eq("id", webhookEvent?.id);
+      }
     }
 
     // Legacy W4C drafting: per-agency cutover, deterministic. The engine is the
-    // drafter once the agency's dial leaves off/shadow (approval and up) — W4C
+    // drafter once the agency's dial reaches approval/assisted/full — W4C
     // firing too would double-draft every inbound. off/shadow agencies keep W4C
-    // (shadow runs the engine SILENTLY alongside for comparison). Env kill
-    // switch retires W4C globally at full cutover.
-    const engineIsDrafter = ["approval", "assisted", "full"].includes((agencyRow as { amanda_mode?: string }).amanda_mode ?? "off");
+    // (shadow runs the engine SILENTLY alongside for comparison). ROLLOUT LAW
+    // (go-live pack): AMANDA_ENGINE_ENABLED must be true on Railway BEFORE any
+    // agency leaves off/shadow, or approval+ agencies get NO drafts at all.
+    // Env kill switch retires W4C globally at full cutover.
+    const engineIsDrafter = ["approval", "assisted", "full"].includes(amandaMode);
     if (body.trim().length > 0 && !engineIsDrafter && Deno.env.get("AMANDA_W4C_DISABLED") !== "true") {
       const w4cCall = fetch(W4C_WEBHOOK_URL, {
         method: "POST",

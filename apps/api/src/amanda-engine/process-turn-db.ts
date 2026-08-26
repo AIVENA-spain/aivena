@@ -11,6 +11,7 @@ import { parseAmandaMode } from './modes';
 import { makeDbBackends, parseAmandaSettings, slotLabel, type AmandaAgencySettings } from './backends-db';
 import { productionModelCall, productionVerifier, ENGINE_MODEL } from './llm';
 import { turnId } from './turn-id';
+import { narrowPendingByText } from './pending-select';
 import { nudgeCalendarSync } from '../routes/calendar-worker';
 import type { QueueRow, TurnOutcome } from './outbox-lib';
 import type { TurnContext } from './prompt';
@@ -37,7 +38,7 @@ interface LoadedWorld {
 async function loadWorld(row: QueueRow): Promise<LoadedWorld | { skip: string }> {
   return withAgency(row.agency_id, async (tx) => {
     const agencyRows = await tx.execute(sql`
-      SELECT a.name AS agency_name, s.amanda_mode, s.amanda_settings
+      SELECT COALESCE(a.trading_name, a.legal_name, a.slug) AS agency_name, s.amanda_mode, s.amanda_settings
         FROM agency_settings s
         JOIN agencies a ON a.id = s.agency_id
        WHERE s.agency_id = current_setting('app.current_agency_id', true)
@@ -61,11 +62,12 @@ async function loadWorld(row: QueueRow): Promise<LoadedWorld | { skip: string }>
     if (!conv) return { skip: 'conversation_missing' };
 
     const msgRows = await tx.execute(sql`
-      SELECT direction, content, sent_at FROM conversation_messages
+      SELECT direction, content, sent_at, sent_by FROM conversation_messages
        WHERE conversation_id = ${row.conversation_id}::uuid
+         AND provider_message_id IS DISTINCT FROM ${row.provider_message_id}
        ORDER BY sent_at DESC NULLS LAST LIMIT 20
     `);
-    const messages = (msgRows as unknown as Array<{ direction: string; content: string | null; sent_at: string }>).reverse();
+    const messages = (msgRows as unknown as Array<{ direction: string; content: string | null; sent_at: string; sent_by: string | null }>).reverse();
 
     const stateRows = await tx.execute(sql`
       SELECT state FROM amanda_lead_state WHERE lead_id = ${row.lead_id}::uuid LIMIT 1
@@ -110,7 +112,11 @@ async function loadWorld(row: QueueRow): Promise<LoadedWorld | { skip: string }>
       aiMuted: Boolean(conv.ai_muted_at) || Boolean(conv.human_claimed_at),
       optedOut: lead.opt_in_status === 'opted_out',
       recentTurns: messages.map((m) => ({
-        role: m.direction === 'inbound' ? ('buyer' as const) : ('amanda' as const),
+        // Human-sent outbound (operator approvals carry sent_by) is 'agent' —
+        // hand-back ground truth must not read as Amanda's own words.
+        role: m.direction === 'inbound'
+          ? ('buyer' as const)
+          : m.sent_by && !/amanda|engine|system/i.test(m.sent_by) ? ('agent' as const) : ('amanda' as const),
         text: m.content ?? '', at: m.sent_at,
       })),
       mirrorTargetWords: mirror,
@@ -128,10 +134,16 @@ async function loadWorld(row: QueueRow): Promise<LoadedWorld | { skip: string }>
 export async function processTurnDb(row: QueueRow): Promise<TurnOutcome> {
   if (row.kind !== 'message' && row.kind !== 'media') return { result: 'skip', reason: `kind_${row.kind}_not_engine_v1` };
 
+  // Stale-row guard (reviewer): a retried row from many hours ago must not fire
+  // a reply into a conversation that has long moved on (and freeform would fail
+  // the 24h window anyway).
   const world = await loadWorld(row);
   if ('skip' in world) return { result: 'skip', reason: world.skip };
   if (world.aiMuted) return { result: 'skip', reason: 'ai_muted_or_human_claimed' };
   if (world.optedOut) return { result: 'skip', reason: 'lead_opted_out' };
+
+  const rowAgeMs = Date.now() - Date.parse(row.created_at ?? '') || 0;
+  if (Number.isFinite(rowAgeMs) && rowAgeMs > 24 * 3600_000) return { result: 'skip', reason: 'stale_inbound' };
 
   const payload = (row.payload ?? {}) as Record<string, unknown>;
   const inboundText = typeof payload.body === 'string' ? payload.body : '';
@@ -156,7 +168,16 @@ export async function processTurnDb(row: QueueRow): Promise<TurnOutcome> {
     const p = world.pendingActions[0];
     pending = { id: p.id, echo: p.label, expiresAtMs: p.expiresAtMs };
   } else if (world.pendingActions.length > 1) {
-    pendingNote = `Proposed viewing slots awaiting the buyer's pick: ${world.pendingActions.map((p) => p.label).join(' OR ')} — if they choose one, restate it explicitly and ask them to confirm that exact slot.`;
+    // Deterministic narrowing (reviewer): two slots are always proposed, so
+    // "the Friday one" / "el 28 a las 17" must be resolvable without a button.
+    // Match on the label's unambiguous numeric tokens (day-of-month, HH:MM) —
+    // exactly ONE match narrows to that slot; anything else → the model re-asks.
+    const narrowed = narrowPendingByText(world.pendingActions, effectiveText);
+    if (narrowed) {
+      pending = { id: narrowed.id, echo: narrowed.label, expiresAtMs: narrowed.expiresAtMs };
+    } else {
+      pendingNote = `Proposed viewing slots awaiting the buyer's pick: ${world.pendingActions.map((p) => p.label).join(' OR ')} — if they choose one, restate it explicitly and ask them to confirm that exact slot.`;
+    }
   }
 
   const ctx: TurnContext = {
@@ -197,6 +218,14 @@ export async function processTurnDb(row: QueueRow): Promise<TurnOutcome> {
         const pa = (paRows as unknown as Array<Record<string, unknown>>)[0];
         if (!pa) return { ok: false as const, reason: 'action_invalid' as const };
         try {
+          // create_manual_viewing is SECURITY INVOKER and PERFORMs
+          // require_role('agent'); withAgency sets only the agency GUC, so the
+          // worker must claim its role explicitly (aivena_staff bypass —
+          // reviewer-verified live) or every booking raises no_role_context.
+          await tx.execute(sql`
+            SELECT set_config('app.current_user_role', 'aivena_staff', true),
+                   set_config('app.current_user_id', 'amanda_engine', true)
+          `);
           const created = await tx.execute(sql`
             SELECT * FROM create_manual_viewing(
               ${row.lead_id}::uuid, ${String(pa.start_at)}::timestamptz, ${Number(pa.duration_min) || 60}::int,
@@ -211,6 +240,12 @@ export async function processTurnDb(row: QueueRow): Promise<TurnOutcome> {
           `);
           await tx.execute(sql`DELETE FROM viewing_slot_holds WHERE pending_action_id = ${pendingActionId}::uuid`);
           await tx.execute(sql`
+            DELETE FROM viewing_slot_holds WHERE pending_action_id IN (
+              SELECT id FROM amanda_pending_actions
+               WHERE conversation_id = ${row.conversation_id}::uuid AND status = 'pending'
+            )
+          `);
+          await tx.execute(sql`
             UPDATE amanda_pending_actions SET status = 'superseded', resolved_at = now()
              WHERE conversation_id = ${row.conversation_id}::uuid AND status = 'pending'
           `);
@@ -221,8 +256,16 @@ export async function processTurnDb(row: QueueRow): Promise<TurnOutcome> {
           nudgeCalendarSync();
           return { ok: true as const, bookingId, echo: String(pa.label ?? 'the proposed time') };
         } catch (err) {
-          const code = (err as { cause?: { code?: string }; code?: string })?.cause?.code ?? (err as { code?: string })?.code;
+          const cause = (err as { cause?: { code?: string; message?: string } })?.cause;
+          const code = cause?.code ?? (err as { code?: string })?.code;
           if (code === '23P01') return { ok: false as const, reason: 'slot_taken' as const };   // EXCLUDE arbiter
+          if (code === 'P0001') {
+            // RPC validation refusals (viewing_time_in_past, lead_not_found …)
+            // are honest 'this proposal no longer works', never a crash-retry.
+            // Message token only — bind params must never be logged.
+            console.error('[amanda-engine] booking refused by RPC:', cause?.message?.split('\n')[0].slice(0, 80) ?? 'P0001');
+            return { ok: false as const, reason: 'action_invalid' as const };
+          }
           throw err;
         }
       });
@@ -240,17 +283,25 @@ export async function processTurnDb(row: QueueRow): Promise<TurnOutcome> {
     },
 
     async sendReply(text) {
-      // The proven, gated outbound path: send_queue freeform, drained by the
-      // live whatsapp-send-execute executor (opt-out/window law lives THERE).
+      // Outbound rides send_queue freeform, drained by the live executor. The
+      // executor enforces OPT-OUT law only (reviewer-verified) — the 24h-window
+      // check is OURS, deterministic, before enqueue; the full atomic send gate
+      // moves INTO the executor before P2 (design §4, go-live pack).
       if (!world.leadPhone) throw new Error('lead_has_no_phone');
       const key = `amanda-engine:${turnId(row.conversation_id, row.provider_message_id)}`;
       return withAgency(row.agency_id, async (tx) => {
+        const windowRows = await tx.execute(sql`
+          SELECT 1 FROM leads
+           WHERE id = ${row.lead_id}::uuid
+             AND last_inbound_whatsapp_at > now() - interval '23 hours 30 minutes'
+        `);
+        if ((windowRows as unknown as unknown[]).length === 0) throw new Error('window_closed');
         await tx.execute(sql`
-          INSERT INTO send_queue (idempotency_key, agency_id, lead_id, channel, hub, template_key, template_variables, priority, status, requested_by, requested_at, expiry_at)
+          INSERT INTO send_queue (idempotency_key, agency_id, lead_id, channel, hub, template_key, template_variables, priority, requested_by, requested_at, expiry_at)
           VALUES (
             ${key}, ${row.agency_id}, ${row.lead_id}::uuid, 'whatsapp', 'twilio', 'freeform',
             jsonb_build_object('body', ${text}, 'full_name', ${world.leadFullName}, 'first_name', ${world.leadFirstName}, 'lead_phone', ${world.leadPhone}, 'agency_name', ${world.agencyName}),
-            'high', 'pending', 'amanda_engine', now(), now() + interval '30 minutes'
+            'high', 'amanda_engine', now(), now() + interval '30 minutes'
           )
           ON CONFLICT (idempotency_key) DO NOTHING
         `);
@@ -260,11 +311,17 @@ export async function processTurnDb(row: QueueRow): Promise<TurnOutcome> {
 
     async queueDraft(text, kind) {
       await withAgency(row.agency_id, async (tx) => {
+        // message_body = THE DRAFT: the approvals UI prefills it and the live
+        // approve RPC sends message_body verbatim (reviewer-verified live
+        // convention — 13/18 existing tasks message_body == the AI draft).
+        // The inbound text lives in raw_payload.inbound_body_text.
         await tx.execute(sql`
-          INSERT INTO dashboard_tasks (agency_id, lead_id, conversation_id, task_type, title, message_body, channel, platform, priority, status, raw_payload)
+          INSERT INTO dashboard_tasks (agency_id, lead_id, conversation_id, task_type, title, description, message_body, channel, platform, priority, status, raw_payload)
           VALUES (
             ${row.agency_id}, ${row.lead_id}::uuid, ${row.conversation_id},
-            'suggested_reply', 'WhatsApp from lead - review suggested reply', ${(row.payload as Record<string, unknown>)?.body ?? ''},
+            'suggested_reply', 'WhatsApp from lead - review suggested reply',
+            ${('Lead wrote: ' + String((row.payload as Record<string, unknown>)?.body ?? '')).slice(0, 500)},
+            ${text},
             'whatsapp', 'twilio', 'high', 'pending',
             jsonb_build_object(
               'suggested_reply', ${text},
@@ -277,6 +334,25 @@ export async function processTurnDb(row: QueueRow): Promise<TurnOutcome> {
               'via', 'amanda_engine',
               'draft_kind', ${kind}
             )
+          )
+        `);
+      });
+    },
+
+    async queueBookingConfirm(pendingActionId, echo) {
+      // Own task type — NEVER 'suggested_reply' (the approve RPC would text the
+      // placeholder to the buyer). No executor exists yet: the task surfaces on
+      // /tasks for visibility; the one-tap execute endpoint is the P2 build,
+      // and until then agencies below FULL simply don't auto-book (honest).
+      await withAgency(row.agency_id, async (tx) => {
+        await tx.execute(sql`
+          INSERT INTO dashboard_tasks (agency_id, lead_id, conversation_id, task_type, title, message_body, channel, platform, priority, status, raw_payload)
+          VALUES (
+            ${row.agency_id}, ${row.lead_id}::uuid, ${row.conversation_id},
+            'amanda_booking_confirm', ${'Buyer confirmed a viewing: ' + echo},
+            ${'The buyer accepted ' + echo + '. Book it from the Viewings page (one-tap execute lands with P2).'},
+            'whatsapp', 'twilio', 'high', 'pending',
+            jsonb_build_object('pending_action_id', ${pendingActionId}::uuid, 'echo', ${echo}, 'via', 'amanda_engine')
           )
         `);
       });

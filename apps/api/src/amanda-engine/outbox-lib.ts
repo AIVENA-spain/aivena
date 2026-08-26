@@ -10,6 +10,7 @@ export interface QueueRow {
   kind: string;
   payload: unknown;
   attempts: number;
+  created_at?: string;      // stale-row guard input (present on real rows)
 }
 
 export type TurnOutcome =

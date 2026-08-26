@@ -48,6 +48,10 @@ export interface TurnDeps {
     { ok: true; bookingId: string; echo: string } | { ok: false; reason: 'slot_taken' | 'action_invalid' }
   >;
   releasePendingAction(pendingActionId: string, reason: 'declined' | 'superseded'): Promise<void>;
+  /** Queue a booking confirmation for agent approval — its OWN task type,
+   *  never a 'suggested_reply' (the live approve RPC sends those verbatim to
+   *  the buyer — reviewer-confirmed placeholder-to-buyer bug). */
+  queueBookingConfirm(pendingActionId: string, echo: string): Promise<void>;
   /** Reply dispatch effects per mode. */
   sendReply(text: string): Promise<{ providerMessageId: string | null }>;
   queueDraft(text: string, kind: 'draft' | 'one_tap'): Promise<void>;
@@ -68,6 +72,7 @@ export interface TurnResult {
   gateFailures: string[];
   loop: LoopResult | null;
   bookingId: string | null;
+  bookingQueued: boolean;      // approval/assisted: a booking-confirm task was filed
   promptVersion: string;
 }
 
@@ -78,15 +83,16 @@ export async function runTurn(
   pendingAction: PendingActionView | null,
   deps: TurnDeps,
 ): Promise<TurnResult> {
-  const base: Omit<TurnResult, 'outcome'> = {
+  const base: Omit<TurnResult, 'outcome' | 'bookingQueued'> = {
     replyText: null, gateFailures: [], loop: null, bookingId: null, promptVersion: PROMPT_VERSION,
   };
-  if (mode === 'off') return { ...base, outcome: 'refused' };
+  if (mode === 'off') return { ...base, bookingQueued: false, outcome: 'refused' };
 
   // ── 1. Deterministic confirmation pre-step ─────────────────────────────────
   let bookingId: string | null = null;
   let bookingEcho: string | null = null;
   let wouldBook = false;                        // shadow: record what WOULD have booked
+  let bookingQueued = false;                    // approval/assisted: confirm task filed
   let effectivePending = pendingAction;
   if (pendingAction && pendingAction.expiresAtMs > inbound.atMs) {
     const affirmedByButton = inbound.buttonPayload === pendingAction.id;
@@ -96,7 +102,7 @@ export async function runTurn(
       // would a tool call — shadow simulates, approval leaves it for the draft.
       const result = await runActionTool(mode, 'commitment', async () => deps.executeBooking(pendingAction.id), {
         simulatedData: { simulated: true },
-        queue: async (kind) => deps.queueDraft(`[confirm booking ${pendingAction.echo}]`, kind),
+        queue: async () => deps.queueBookingConfirm(pendingAction.id, pendingAction.echo),
       });
       if (result.ok && !result.simulated && !result.queued) {
         const data = result.data as Awaited<ReturnType<TurnDeps['executeBooking']>>;
@@ -107,7 +113,7 @@ export async function runTurn(
         } else {
           // The DB arbiter refused (slot just taken / action no longer valid):
           // keep NOTHING booked; hand the model an honest note to offer options.
-          await deps.releasePendingAction(pendingAction.id, 'superseded');
+          await runActionTool(mode, 'internal_write', () => deps.releasePendingAction(pendingAction.id, 'superseded'));
           effectivePending = {
             ...pendingAction,
             echo: `${pendingAction.echo} — that slot was JUST TAKEN and is no longer available: apologize briefly and offer to line up new times (propose_viewing_slots)`,
@@ -117,10 +123,17 @@ export async function runTurn(
         bookingEcho = pendingAction.echo;      // shadow: phrase it, book nothing
         effectivePending = null;
         wouldBook = true;
+      } else if (result.queued) {
+        // approval/assisted: the confirm task is filed for the agent; the model
+        // must tell the buyer it's being locked in — never re-ask.
+        bookingQueued = true;
+        bookingEcho = pendingAction.echo;
+        effectivePending = null;
       }
-      // queued one_tap: the agent taps; the model just acknowledges warmly below.
     } else if (textVerdict === 'decline') {
-      await deps.releasePendingAction(pendingAction.id, 'declined');
+      // internal_write class: real release in live modes, simulated in shadow —
+      // shadow must stay zero-write beyond telemetry (reviewer-confirmed gap).
+      await runActionTool(mode, 'internal_write', () => deps.releasePendingAction(pendingAction.id, 'declined'));
       effectivePending = null;
     }
     // 'unclear' → the proposal stays in context; the model re-asks explicitly.
@@ -132,7 +145,7 @@ export async function runTurn(
   const loopCtx: TurnContext = {
     ...ctx,
     pendingActionEcho: bookingEcho
-      ? `CONFIRMED by the buyer just now: ${bookingEcho}${bookingId || wouldBook ? ' (the system HAS booked it — confirm it warmly, explicitly restating day and time)' : ' (awaiting final one-tap approval by the office — tell them it is being locked in)'}`
+      ? `CONFIRMED by the buyer just now: ${bookingEcho}${bookingId || wouldBook ? ' (the system HAS booked it — confirm it warmly, explicitly restating day and time)' : ' (awaiting a quick approval by the office — tell them it is being locked in and they will get the confirmation shortly; do NOT re-ask which time)'}`
       : effectivePending?.echo ?? null,
   };
   const system = buildSystemPrompt(loopCtx);
@@ -144,15 +157,24 @@ export async function runTurn(
     // is the warm handover line; it still passes the law below.
   }
 
+  // Escalation is an internal write: real task in live modes, SIMULATED in
+  // shadow — shadow must never spawn agent-visible tasks (reviewer-confirmed).
+  const escalate = (reason: string, detail: string) =>
+    runActionTool(mode, 'internal_write', () => deps.escalateToHuman(reason, detail));
+
   let draft = loop.text?.trim() ?? '';
   if (!draft) {
-    await deps.escalateToHuman('empty_draft', 'engine produced no reply text');
-    return { ...base, outcome: 'escalated', loop, bookingId };
+    await escalate('empty_draft', 'engine produced no reply text');
+    return { ...base, bookingQueued, outcome: 'escalated', loop, bookingId };
   }
 
   // ── 3. The law: validators + gates, one constrained regeneration ───────────
+  // Long-form (≤120 words) is deterministically earned, never assumed: only a
+  // turn that actually fetched full property details may run longer (§10 B1 —
+  // "summarizing a property they requested"). Everything else stays short.
+  const allowLongForm = loop.toolEvents.some((ev) => ev.tool === 'get_property_details' && ev.result.ok && !ev.result.refused);
   const judge = async (text: string) => {
-    const v = validateDraft(text, { allowLongForm: false, mirrorTargetWords: ctx.mirrorTargetWords ?? undefined });
+    const v = validateDraft(text, { allowLongForm, mirrorTargetWords: ctx.mirrorTargetWords ?? undefined });
     const g = await runGates(text, loop.toolEvents, deps.verifier);
     return [...v.violations, ...g.failures];
   };
@@ -179,8 +201,8 @@ export async function runTurn(
     }
   }
   if (failures.length > 0) {
-    await deps.escalateToHuman('gates_failed', failures.join(', '));
-    return { ...base, outcome: 'escalated', replyText: null, gateFailures: failures, loop, bookingId };
+    await escalate('gates_failed', failures.join(', '));
+    return { ...base, bookingQueued, outcome: 'escalated', replyText: null, gateFailures: failures, loop, bookingId };
   }
 
   // ── 4. Dispatch under the mode law ─────────────────────────────────────────
@@ -189,11 +211,11 @@ export async function runTurn(
     queue: async (kind) => deps.queueDraft(draft, kind),
   });
   const suffix = bookingId || wouldBook ? 'booked_and_' : '';
-  if (dispatch.refused) return { ...base, outcome: 'refused', replyText: draft, loop, bookingId };
+  if (dispatch.refused) return { ...base, bookingQueued, outcome: 'refused', replyText: draft, loop, bookingId };
   const outcome = (dispatch.simulated
     ? `${suffix}simulated`
     : dispatch.queued
       ? `${suffix}drafted`
       : `${suffix}sent`) as TurnOutcomeKind;
-  return { ...base, outcome, replyText: draft, gateFailures: [], loop, bookingId };
+  return { ...base, bookingQueued, outcome, replyText: draft, gateFailures: [], loop, bookingId };
 }

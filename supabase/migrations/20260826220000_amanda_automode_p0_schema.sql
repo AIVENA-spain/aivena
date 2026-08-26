@@ -40,7 +40,7 @@ CREATE TABLE public.amanda_inbound_queue (
   processed_at        timestamptz,
   UNIQUE (provider_message_id, kind)
 );
-CREATE INDEX amanda_inbound_queue_due_idx ON public.amanda_inbound_queue (status, next_attempt_at) WHERE status IN ('pending','failed');
+CREATE INDEX amanda_inbound_queue_due_idx ON public.amanda_inbound_queue (status, next_attempt_at, lease_expires_at) WHERE status IN ('pending','processing');
 CREATE INDEX amanda_inbound_queue_conv_idx ON public.amanda_inbound_queue (conversation_id, created_at);
 ALTER TABLE public.amanda_inbound_queue ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.amanda_inbound_queue FORCE ROW LEVEL SECURITY;
@@ -92,10 +92,18 @@ CREATE POLICY viewing_slot_holds_isolation ON public.viewing_slot_holds AS PERMI
 -- The arbiter: two ACTIVE viewings for the same agent may not overlap. App-level
 -- checks stay advisory; this constraint is the truth (design §4). DRY-RUN NOTE:
 -- verify no existing active rows overlap before applying (query in apply proposal).
+-- timestamptz + interval is only STABLE in pg_proc, which EXCLUDE expressions
+-- reject — for pure minute intervals the result is instant-deterministic, so the
+-- IMMUTABLE wrapper is sound (the standard workaround; reviewer-confirmed).
+CREATE OR REPLACE FUNCTION public.booking_slot_range(ts timestamptz, mins integer)
+ RETURNS tstzrange
+ LANGUAGE sql IMMUTABLE PARALLEL SAFE
+AS $$ SELECT tstzrange(ts, ts + make_interval(mins => COALESCE(mins, 60)), '[)') $$;
+
 ALTER TABLE public.bookings ADD CONSTRAINT bookings_active_slot_exclusive EXCLUDE USING gist (
   agency_id WITH =,
   COALESCE(agent_id, agent_name, 'agency') WITH =,
-  tstzrange(scheduled_at, scheduled_at + make_interval(mins => COALESCE(duration_minutes, 60)), '[)') WITH &&
+  public.booking_slot_range(scheduled_at, duration_minutes) WITH &&
 ) WHERE (status IN ('requested'::public.booking_status, 'confirmed'::public.booking_status, 'rescheduled'::public.booking_status));
 
 -- 10 ── viewing lifecycle spine on bookings (§11.1) ───────────────────────────
@@ -197,6 +205,11 @@ CREATE TABLE public.amanda_questions (
   created_at        timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX amanda_questions_open_idx ON public.amanda_questions (agency_id, status) WHERE status IN ('open','clarifying','escalated');
+-- One LIVE ticket per code per agency — closes the concurrent-mint race (the
+-- allocator retries on 23505). Live statuses ONLY: answered tickets release
+-- their code; the 7-day non-recycle window stays enforced by the allocator CTE
+-- (now() is not allowed in index predicates).
+CREATE UNIQUE INDEX amanda_questions_live_code_uq ON public.amanda_questions (agency_id, short_code) WHERE status IN ('open','clarifying','escalated');
 CREATE INDEX amanda_questions_due_idx ON public.amanda_questions (next_ping_at) WHERE status IN ('open','escalated');
 CREATE INDEX amanda_questions_conv_idx ON public.amanda_questions (conversation_id, created_at);
 ALTER TABLE public.amanda_questions ENABLE ROW LEVEL SECURITY;
@@ -253,6 +266,17 @@ ALTER TABLE public.conversations
 ALTER TABLE public.agency_settings
   ADD COLUMN amanda_mode     text NOT NULL DEFAULT 'off' CHECK (amanda_mode IN ('off','shadow','approval','assisted','full')),
   ADD COLUMN amanda_settings jsonb NOT NULL DEFAULT '{}'::jsonb;  -- working hours/duration/escalation phone/tone/quiet-hours etc.
+
+-- 12b ── privilege hygiene ────────────────────────────────────────────────────
+-- Supabase default privileges grant anon/authenticated on every new table
+-- (pg_default_acl) — RLS already fences rows, but these tables are engine
+-- internals with no client-facing surface: revoke outright (defense in depth,
+-- and it makes the header's "no grants to anon/authenticated" literally true).
+REVOKE ALL ON public.amanda_inbound_queue, public.amanda_pending_actions,
+  public.viewing_slot_holds, public.amanda_turn_usage, public.amanda_lead_state,
+  public.agency_amanda_knowledge, public.amanda_questions,
+  public.amanda_question_events, public.amanda_funnel_events
+FROM anon, authenticated;
 
 -- 13 ── cross-agency queue claim RPC ──────────────────────────────────────────
 -- The engine worker runs as aivena_app (no BYPASSRLS) and drains EVERY agency's

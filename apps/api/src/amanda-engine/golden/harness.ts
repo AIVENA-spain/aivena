@@ -49,11 +49,11 @@ export class FakeBackends implements ToolBackends {
   async getAreaInfo(area: string): Promise<string | null> {
     return `${area}: family-friendly coastal town, sandy beaches, good international schools nearby.`;
   }
-  async proposeViewingSlots(propertyId: string, preferredISO: string | null): Promise<SlotProposal> {
+  async proposeViewingSlots(propertyId: string, preferredTimePhrase: string | null): Promise<SlotProposal> {
     this.slotCounter += 1;
     const a = `pa-${this.slotCounter}a`;
     const b = `pa-${this.slotCounter}b`;
-    this.journal.push({ effect: 'propose_slots', detail: { propertyId, preferredISO, pendingActionIds: [a, b] } });
+    this.journal.push({ effect: 'propose_slots', detail: { propertyId, preferredTimePhrase, pendingActionIds: [a, b] } });
     return {
       slots: [
         { label: 'Friday 28 August, 17:00', startISO: '2026-08-28T15:00:00.000Z', pendingActionId: a },
@@ -123,13 +123,14 @@ export function baseContext(overrides: Partial<TurnContext> = {}): TurnContext {
 export interface DispatchJournal {
   sent: string[];
   drafts: Array<{ text: string; kind: 'draft' | 'one_tap' }>;
+  bookingConfirms: Array<{ pendingActionId: string; echo: string }>;
   bookings: string[];
   released: Array<{ id: string; reason: string }>;
   escalations: Array<{ reason: string; detail: string }>;
 }
 
 export function makeDeps(model: ScriptedModel, backends: FakeBackends): { deps: TurnDeps; journal: DispatchJournal } {
-  const journal: DispatchJournal = { sent: [], drafts: [], bookings: [], released: [], escalations: [] };
+  const journal: DispatchJournal = { sent: [], drafts: [], bookingConfirms: [], bookings: [], released: [], escalations: [] };
   const deps: TurnDeps = {
     callModel: model.call,
     backends,
@@ -137,6 +138,9 @@ export function makeDeps(model: ScriptedModel, backends: FakeBackends): { deps: 
     async executeBooking(pendingActionId) {
       journal.bookings.push(pendingActionId);
       return { ok: true, bookingId: `bk-${pendingActionId}`, echo: 'Friday 28 August, 17:00 · Chalet IC-28746' };
+    },
+    async queueBookingConfirm(pendingActionId, echo) {
+      journal.bookingConfirms.push({ pendingActionId, echo });
     },
     async releasePendingAction(id, reason) {
       journal.released.push({ id, reason });

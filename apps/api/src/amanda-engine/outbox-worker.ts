@@ -18,44 +18,72 @@ import { MAX_ATTEMPTS, backoffSeconds, type ProcessTurn, type QueueRow } from '.
 
 export { engineEnabled, backoffSeconds, type ProcessTurn, type QueueRow, type TurnOutcome } from './outbox-lib';
 
-export async function drainAmandaInbound(processTurn: ProcessTurn, limit = 20): Promise<{ claimed: number; done: number; failed: number }> {
-  const rows = (await db.execute(
-    sql`SELECT * FROM public.pick_and_claim_amanda_inbound(${limit}, ${120})`,
-  )) as unknown as QueueRow[];
+// One drain at a time per process: a turn can legitimately take minutes of
+// model IO, and the 20s tick must never stack drains (lease-steal mid-turn —
+// reviewer-confirmed). Cross-instance overlap is handled by the lease itself.
+let drainInFlight = false;
 
-  let done = 0;
-  let failed = 0;
-  for (const row of rows) {
-    try {
-      const outcome = await processTurn(row);
-      await withAgency(row.agency_id, async (tx) => {
-        if (outcome.result === 'done' || outcome.result === 'skip') {
-          await tx.execute(sql`
-            UPDATE public.amanda_inbound_queue
-            SET status = ${outcome.result === 'done' ? 'done' : 'skipped'},
-                processed_at = now(), lease_expires_at = NULL,
-                error_message = ${outcome.result === 'skip' ? outcome.reason : null}
+export async function drainAmandaInbound(processTurn: ProcessTurn, limit = 5): Promise<{ claimed: number; done: number; failed: number }> {
+  if (drainInFlight) return { claimed: 0, done: 0, failed: 0 };
+  drainInFlight = true;
+  try {
+    // Small batches + a long lease: each turn may spend minutes in model IO and
+    // the lease must outlive the WHOLE sequential batch, or another instance
+    // steals rows mid-turn and re-runs the model loop (reviewer-confirmed).
+    const rows = (await db.execute(
+      sql`SELECT * FROM public.pick_and_claim_amanda_inbound(${limit}, ${900})`,
+    )) as unknown as QueueRow[];
+
+    let done = 0;
+    let failed = 0;
+    for (const row of rows) {
+      try {
+        const outcome = await processTurn(row);
+        await withAgency(row.agency_id, async (tx) => {
+          if (outcome.result === 'done' || outcome.result === 'skip') {
+            await tx.execute(sql`
+              UPDATE public.amanda_inbound_queue
+              SET status = ${outcome.result === 'done' ? 'done' : 'skipped'},
+                  processed_at = now(), lease_expires_at = NULL,
+                  error_message = ${outcome.result === 'skip' ? outcome.reason : null}
+              WHERE id = ${row.id}::uuid
+            `);
+            done++;
+          } else {
+            const exhausted = row.attempts >= MAX_ATTEMPTS;
+            await tx.execute(sql`
+              UPDATE public.amanda_inbound_queue
+              SET status = ${exhausted ? 'failed' : 'pending'},
+                  next_attempt_at = now() + make_interval(secs => ${backoffSeconds(row.attempts)}),
+                  lease_expires_at = NULL,
+                  error_message = ${outcome.reason.slice(0, 240)}
             WHERE id = ${row.id}::uuid
-          `);
-          done++;
-        } else {
+            `);
+            if (exhausted) failed++;
+          }
+        });
+      } catch (err) {
+        // A THROWN row must terminate like a retry — leaving it 'processing'
+        // means the stale-lease steal re-runs it forever with no attempts cap
+        // (reviewer-confirmed). Best-effort, fenced, and itself guarded.
+        const msg = err instanceof Error ? err.message.split('\n')[0].slice(0, 200) : 'error';
+        console.error('[amanda-outbox] row threw', row.id, msg);
+        failed++;
+        await withAgency(row.agency_id, async (tx) => {
           const exhausted = row.attempts >= MAX_ATTEMPTS;
           await tx.execute(sql`
             UPDATE public.amanda_inbound_queue
             SET status = ${exhausted ? 'failed' : 'pending'},
                 next_attempt_at = now() + make_interval(secs => ${backoffSeconds(row.attempts)}),
                 lease_expires_at = NULL,
-                error_message = ${outcome.reason.slice(0, 240)}
-            WHERE id = ${row.id}::uuid
+                error_message = ${('threw: ' + msg).slice(0, 240)}
+            WHERE id = ${row.id}::uuid AND status = 'processing'
           `);
-          if (exhausted) failed++;
-        }
-      });
-    } catch (err) {
-      // Never let one row kill the drain; the lease expiry re-offers it.
-      console.error('[amanda-outbox] row failed', row.id, err instanceof Error ? err.message.split('\n')[0].slice(0, 200) : 'error');
-      failed++;
+        }).catch(() => { /* DB down — the lease expiry re-offers the row */ });
+      }
     }
+    return { claimed: rows.length, done, failed };
+  } finally {
+    drainInFlight = false;
   }
-  return { claimed: rows.length, done, failed };
 }

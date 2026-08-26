@@ -6,9 +6,9 @@
 
 import { sql } from 'drizzle-orm';
 import { withAgency } from '../../../../packages/db/client';
-import { wallClockInZone, zonedTimeToUtc } from './datetime-resolver';
+import { wallClockInZone, zonedTimeToUtc, resolveDatetimePhrase } from './datetime-resolver';
 import { mergeExtraction, type LeadStateData } from './lead-state-lib';
-import type { ToolBackends, PropertySummary, SlotProposal, TicketRef } from './tools';
+import { UUID_RE, type ToolBackends, type PropertySummary, type SlotProposal, type TicketRef } from './tools';
 
 export interface AmandaAgencySettings {
   timezone: string;                       // default Europe/Madrid
@@ -75,7 +75,9 @@ export function makeDbBackends(ctx: BackendCtx): ToolBackends {
       const minBeds = typeof filters.min_bedrooms === 'number' ? filters.min_bedrooms : null;
       const city = typeof filters.city === 'string' && filters.city.trim() ? `%${filters.city.trim().replace(/[%_]/g, '')}%` : null;
       const type = typeof filters.property_type === 'string' && filters.property_type.trim() ? `%${filters.property_type.trim().replace(/[%_]/g, '')}%` : null;
-      const rejectedCsv = ctx.rejectedPropertyIds.join(',');
+      // Read-seam belt: one non-uuid in the list (legacy/bad data) and the
+      // ::uuid[] cast would 22P02 every future search for this lead.
+      const rejectedCsv = ctx.rejectedPropertyIds.filter((id) => UUID_RE.test(id)).join(',');
       return withAgency(A, async (tx) => {
         const rows = await tx.execute(sql`
           SELECT id, external_id, title, price, bedrooms, location_city, property_type
@@ -135,17 +137,32 @@ export function makeDbBackends(ctx: BackendCtx): ToolBackends {
       });
     },
 
-    async proposeViewingSlots(propertyId: string, preferredISO: string | null): Promise<SlotProposal> {
+    async proposeViewingSlots(propertyId: string, preferredTimePhrase: string | null): Promise<SlotProposal> {
       const s = ctx.settings;
       const nowMs = ctx.nowMs();
       const candidates: number[] = [];
-      if (preferredISO) {
-        const t = Date.parse(preferredISO);
-        if (Number.isFinite(t) && t > nowMs + s.viewingNoticeHours * 3600_000) candidates.push(t);
+      if (preferredTimePhrase) {
+        // Design §4: the model passes the buyer's WORDS; the deterministic
+        // resolver converts (agency tz, fresh now). Ambiguous/unparseable →
+        // fall back to canned slots; the explicit echo prevents silent drift.
+        const r = resolveDatetimePhrase(preferredTimePhrase, nowMs, s.timezone);
+        if (r.ok) {
+          const t = Date.parse(r.utcISO);
+          if (t > nowMs + s.viewingNoticeHours * 3600_000) candidates.push(t);
+        }
       }
       candidates.push(...candidateSlots(nowMs, s));
 
-      return withAgency(A, async (tx) => {
+      // Phase 1 (one tx): sweep dead holds, find free slots, create the pending
+      // actions. Holds are inserted in phase 2, OUTSIDE this tx: an EXCLUDE
+      // violation (23P01) aborts its transaction, and ON CONFLICT does not
+      // support exclusion constraints — a contested hold must never destroy the
+      // pending actions themselves (reviewer-confirmed).
+      const created = await withAgency(A, async (tx) => {
+        await tx.execute(sql`
+          DELETE FROM viewing_slot_holds
+           WHERE agency_id = current_setting('app.current_agency_id', true) AND expires_at <= now()
+        `);
         const free: number[] = [];
         for (const startMs of candidates) {
           if (free.length >= 2) break;
@@ -159,10 +176,12 @@ export function makeDbBackends(ctx: BackendCtx): ToolBackends {
                AND tstzrange(scheduled_at, scheduled_at + make_interval(mins => COALESCE(duration_minutes, 60)), '[)')
                    && tstzrange(${startISO}::timestamptz, ${endISO}::timestamptz, '[)')
             UNION ALL
-            SELECT 1 FROM viewing_slot_holds
-             WHERE agency_id = current_setting('app.current_agency_id', true)
-               AND expires_at > now()
-               AND slot && tstzrange(${startISO}::timestamptz, ${endISO}::timestamptz, '[)')
+            SELECT 1 FROM viewing_slot_holds h
+             LEFT JOIN amanda_pending_actions pa ON pa.id = h.pending_action_id
+             WHERE h.agency_id = current_setting('app.current_agency_id', true)
+               AND h.expires_at > now()
+               AND h.slot && tstzrange(${startISO}::timestamptz, ${endISO}::timestamptz, '[)')
+               AND (pa.conversation_id IS NULL OR pa.conversation_id <> ${ctx.conversationId}::uuid)
             LIMIT 1
           `);
           if ((conflicts as unknown as unknown[]).length === 0) free.push(startMs);
@@ -183,24 +202,48 @@ export function makeDbBackends(ctx: BackendCtx): ToolBackends {
             RETURNING id
           `);
           const paId = String((rows as unknown as Array<{ id: string }>)[0].id);
-          // Soft hold (TTL 15 min) — the EXCLUDE constraint at execution stays the arbiter.
-          await tx.execute(sql`
-            INSERT INTO viewing_slot_holds (agency_id, agent_key, slot, pending_action_id, expires_at)
-            VALUES (${A}, 'agency', tstzrange(${startISO}::timestamptz, ${endISO}::timestamptz, '[)'), ${paId}::uuid, now() + interval '15 minutes')
-            ON CONFLICT ON CONSTRAINT viewing_slot_holds_no_overlap DO NOTHING
-          `).catch(() => { /* overlapping hold = fine, the slot is simply contested */ });
           slots.push({ label: slotLabel(startMs, s.timezone), startISO, pendingActionId: paId });
         }
-        return { slots };
+        return slots;
       });
+
+      // Phase 2: best-effort soft holds (TTL 15 min), each in its own tx — the
+      // EXCLUDE constraint at execution time stays the arbiter regardless.
+      for (const slot of created) {
+        const endISO = new Date(Date.parse(slot.startISO) + s.viewingDurationMin * 60_000).toISOString();
+        await withAgency(A, async (tx) => {
+          await tx.execute(sql`
+            INSERT INTO viewing_slot_holds (agency_id, agent_key, slot, pending_action_id, expires_at)
+            VALUES (${A}, 'agency', tstzrange(${slot.startISO}::timestamptz, ${endISO}::timestamptz, '[)'), ${slot.pendingActionId}::uuid, now() + interval '15 minutes')
+          `);
+        }).catch(() => { /* contested hold (23P01) = fine; the arbiter decides at booking */ });
+      }
+      return { slots: created };
     },
 
     async askAgency(question: string, propertyId: string | null): Promise<TicketRef> {
-      return withAgency(A, async (tx) => {
+      const q = question.slice(0, 800);
+      const propId = propertyId && UUID_RE.test(propertyId) ? propertyId : null;
+      // A 23505 (concurrent mint of the same live short_code, partial unique
+      // index) aborts its transaction — the single retry must be a FRESH tx.
+      const attempt = (): Promise<TicketRef> => withAgency(A, async (tx) => {
+        // Retry-idempotency (reviewer): a crashed turn re-runs its tools — the
+        // same question on the same conversation within 24h reuses the ticket
+        // instead of re-pinging the agency.
+        const existing = await tx.execute(sql`
+          SELECT id, short_code FROM amanda_questions
+           WHERE conversation_id = ${ctx.conversationId}::uuid
+             AND question_text = ${q}
+             AND (status IN ('open', 'clarifying', 'escalated') OR created_at > now() - interval '24 hours')
+           LIMIT 1
+        `);
+        const dup = (existing as unknown as Array<{ id: string; short_code: number }>)[0];
+        if (dup) return { ticketId: String(dup.id), shortCode: Number(dup.short_code) };
+
         const rows = await tx.execute(sql`
           WITH next_code AS (
             SELECT COALESCE(MIN(candidate), 1) AS code FROM (
-              SELECT gs AS candidate FROM generate_series(1, 99) gs
+              SELECT gs AS candidate FROM generate_series(1, 999) gs
               WHERE gs NOT IN (
                 SELECT short_code FROM amanda_questions
                  WHERE agency_id = current_setting('app.current_agency_id', true)
@@ -209,37 +252,49 @@ export function makeDbBackends(ctx: BackendCtx): ToolBackends {
             ) c
           )
           INSERT INTO amanda_questions (agency_id, short_code, conversation_id, lead_id, property_id, question_text, question_lang, next_ping_at)
-          SELECT ${A}, code, ${ctx.conversationId}::uuid, ${ctx.leadId}::uuid, ${propertyId}::uuid, ${question.slice(0, 800)}, ${ctx.leadLanguage}, now()
+          SELECT ${A}, code, ${ctx.conversationId}::uuid, ${ctx.leadId}::uuid, ${propId}::uuid, ${q}, ${ctx.leadLanguage}, now()
             FROM next_code
           RETURNING id, short_code
         `);
         const r = (rows as unknown as Array<{ id: string; short_code: number }>)[0];
         await tx.execute(sql`
           INSERT INTO amanda_question_events (agency_id, question_id, event_type, detail)
-          VALUES (${A}, ${r.id}::uuid, 'filed', jsonb_build_object('question', ${question.slice(0, 800)}))
+          VALUES (${A}, ${r.id}::uuid, 'filed', jsonb_build_object('question', ${q}))
         `);
         // Mirror into dashboard_tasks so the ticket is visible on /tasks today
         // (the dedicated "Questions from Amanda" surface is the P2 build).
+        // task_type 'amanda_question' is NOT 'suggested_reply', so the approve
+        // RPC can never send it to the buyer.
         await tx.execute(sql`
           INSERT INTO dashboard_tasks (agency_id, lead_id, conversation_id, task_type, title, message_body, channel, platform, priority, status, raw_payload)
           VALUES (
             ${A}, ${ctx.leadId}::uuid, ${ctx.conversationId}, 'amanda_question',
-            ${'Amanda needs an answer (Q' + r.short_code + ')'}, ${question.slice(0, 800)},
+            ${'Amanda needs an answer (Q' + r.short_code + ')'}, ${q},
             'whatsapp', 'twilio', 'high', 'pending',
             jsonb_build_object('amanda_question_id', ${r.id}::uuid, 'short_code', ${r.short_code}::int)
           )
         `);
         await tx.execute(sql`
           INSERT INTO amanda_funnel_events (agency_id, lead_id, conversation_id, property_id, event_type, amanda_attributed, metadata)
-          VALUES (${A}, ${ctx.leadId}::uuid, ${ctx.conversationId}::uuid, ${propertyId}::uuid, 'question_ticket', true, jsonb_build_object('question_id', ${r.id}::uuid))
+          VALUES (${A}, ${ctx.leadId}::uuid, ${ctx.conversationId}::uuid, ${propId}::uuid, 'question_ticket', true, jsonb_build_object('question_id', ${r.id}::uuid))
         `);
         return { ticketId: String(r.id), shortCode: Number(r.short_code) };
       });
+      try {
+        return await attempt();
+      } catch (err) {
+        const code = (err as { cause?: { code?: string }; code?: string })?.cause?.code ?? (err as { code?: string })?.code;
+        if (code !== '23505') throw err;
+        return attempt();
+      }
     },
 
     async recordLeadIntel(patch: Partial<LeadStateData>): Promise<void> {
       const atISO = new Date(ctx.nowMs()).toISOString();
       await withAgency(A, async (tx) => {
+        // Advisory lock closes the read-modify-write race for BOTH the update
+        // and the first-write case (SELECT FOR UPDATE can't lock a missing row).
+        await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${ctx.leadId}))`);
         const rows = await tx.execute(sql`
           SELECT state FROM amanda_lead_state WHERE lead_id = ${ctx.leadId}::uuid
         `);

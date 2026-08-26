@@ -105,6 +105,8 @@ async function readJson(c: import('hono').Context): Promise<Record<string, unkno
   }
 }
 
+import { nudgeCalendarSync } from './calendar-worker';
+
 const str = (v: unknown): string | null =>
   typeof v === 'string' && v.trim() ? v.trim() : null;
 
@@ -127,6 +129,7 @@ route.post('/', async (c) => {
       )
     `);
     const rows = result as unknown as Array<{ booking_id: string; calendar_sync_status: string }>;
+    nudgeCalendarSync();   // instant calendar push; the 30-min sweep is the fallback
     return c.json({ ok: true, bookingId: rows[0]?.booking_id, calendarSyncStatus: rows[0]?.calendar_sync_status ?? null });
   } catch (err) {
     return viewingError(c, err, 'create');
@@ -148,6 +151,7 @@ route.patch('/:id', async (c) => {
       )
     `);
     const rows = result as unknown as Array<{ booking_id: string; calendar_sync_status: string }>;
+    nudgeCalendarSync();   // instant calendar push; the 30-min sweep is the fallback
     return c.json({ ok: true, bookingId: rows[0]?.booking_id, calendarSyncStatus: rows[0]?.calendar_sync_status ?? null });
   } catch (err) {
     return viewingError(c, err, 'update');

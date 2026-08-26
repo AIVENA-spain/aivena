@@ -189,7 +189,7 @@ serve({ fetch: app.fetch, port: PORT }, () => {
 // multiple instances: the claim RPC uses FOR UPDATE SKIP LOCKED. A tick must
 // never crash the process — each one is fully caught.
 const CALENDAR_SYNC_FIRST_TICK_MS = 30_000;
-const CALENDAR_SYNC_INTERVAL_MS = 5 * 60_000;
+const CALENDAR_SYNC_INTERVAL_MS = 30 * 60_000;
 if (googleConfig() !== null) {
   const calendarTick = async () => {
     try {

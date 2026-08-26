@@ -41,6 +41,16 @@ type BookingContextRow = {
   booking_id: string; booking_status: string; agent_name: string | null; property_title: string | null;
 };
 
+/** Fire-and-forget nudge: run one sync pass NOW (booking created/rescheduled).
+ *  Safe to call concurrently with the scheduled sweep — the claim RPC uses
+ *  FOR UPDATE SKIP LOCKED, so overlapping runs never double-sync a booking.
+ *  The 30-min sweep remains the safety net for non-API booking writes. */
+export function nudgeCalendarSync(): void {
+  void pollCalendarSyncs().catch((err) =>
+    console.error('[calendar/worker] nudge failed', err instanceof Error ? err.message.split('\n')[0].slice(0, 200) : 'error'),
+  );
+}
+
 export async function pollCalendarSyncs(limit = 10): Promise<{ processed: number }> {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;

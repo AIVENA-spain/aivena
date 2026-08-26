@@ -20,7 +20,13 @@ import { parseGoogleTokenResponse } from './calendar-lib';
  */
 const PROVIDER = 'google_calendar';
 const STATE_TTL_SEC = 600;
-const dashboardUrl = () => (process.env.DASHBOARD_URL || 'https://aivena.es/dashboard').replace(/\/$/, '');
+// DASHBOARD_URL doubles as a CORS origin (bare domain, no path) — so normalize
+// here instead of asking ops to change it: the dashboard app lives under
+// /dashboard, and a redirect to the bare domain 404s on the marketing site.
+const dashboardUrl = () => {
+  const base = (process.env.DASHBOARD_URL || 'https://aivena.es').replace(/\/$/, '');
+  return base.endsWith('/dashboard') ? base : `${base}/dashboard`;
+};
 
 export function googleConfig(): { clientId: string; clientSecret: string; redirectUri: string; stateSecret: string } | null {
   const clientId = process.env.GOOGLE_CLIENT_ID;
@@ -92,7 +98,11 @@ publicCalendarRoute.get('/google/callback', async (c) => {
     const req = buildTokenExchangeRequest({ code, clientId: cfg.clientId, clientSecret: cfg.clientSecret, redirectUri: cfg.redirectUri });
     const resp = await fetch(req.url, { method: req.method, headers: req.headers, body: req.body });
     if (!resp.ok) {
-      console.error('[calendar/callback] token exchange status', resp.status);
+      // Google's error body names the exact cause (invalid_client = bad client
+      // secret, redirect_uri_mismatch, invalid_grant = expired/reused code) and
+      // never contains tokens — log a truncated copy so ops can diagnose.
+      const errBody = await resp.text().catch(() => '');
+      console.error('[calendar/callback] token exchange status', resp.status, errBody.slice(0, 200));
       return done('error');
     }
     const parsed = parseGoogleTokenResponse((await resp.json()) as Record<string, unknown>, Date.now());

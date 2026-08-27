@@ -12,6 +12,7 @@ import { makeDbBackends, parseAmandaSettings, slotLabel, type AmandaAgencySettin
 import { productionModelCall, productionVerifier, ENGINE_MODEL } from './llm';
 import { turnId } from './turn-id';
 import { narrowPendingByText } from './pending-select';
+import { sendTypingIndicator } from './typing';
 import { executeBookingFromPendingAction } from './booking-exec';
 import { nudgeCalendarSync } from '../routes/calendar-worker';
 import type { QueueRow, TurnOutcome } from './outbox-lib';
@@ -168,6 +169,13 @@ export async function processTurnDb(row: QueueRow): Promise<TurnOutcome> {
   if ('skip' in world) return { result: 'skip', reason: world.skip };
   if (world.aiMuted) return { result: 'skip', reason: 'ai_muted_or_human_claimed' };
   if (world.optedOut) return { result: 'skip', reason: 'lead_opted_out' };
+
+  // Typing indicator + read receipt (fire-and-forget): only when a reply is
+  // actually coming (assisted/full) and only for real buyer messages — in
+  // approval/shadow "typing…" would be a lie and blue ticks would leak shadow.
+  if ((world.mode === 'assisted' || world.mode === 'full') && (row.kind === 'message' || row.kind === 'media')) {
+    sendTypingIndicator(row.provider_message_id);
+  }
 
   // Tickets a human agent answered directly in the chat close as 'handoff'
   // (P0 has no relay — see GO_LIVE_PACK deferrals). Live modes only: shadow

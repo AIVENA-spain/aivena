@@ -61,6 +61,29 @@ describe('banned-pattern screen (§10 B5)', () => {
   });
 });
 
+describe('deliver-now law — no self future promises (Christian, live demo 2026-08-27)', () => {
+  it.each([
+    'Jeg sjekker nye boliger nå. Kommer straks tilbake med konkrete alternativer!',
+    'Hei igjen! Jeg sender deg forslag straks.',
+    "I'll get back to you shortly with some great options.",
+    'Let me come back to you with a few listings.',
+    'Te mando opciones enseguida.',
+    'Kommer tillbaka strax med några förslag.',
+  ])('blocks: %s', (text) => {
+    const r = screenBannedPatterns(text);
+    expect(r.ok).toBe(false);
+    expect(r.matched.join(',')).toContain('self_future_promise');
+  });
+  it('the OFFICE promising to come back stays legal (§3b relay promise)', () => {
+    expect(screenBannedPatterns("Good question — I'll check with the office and come back to you with their answer.").ok).toBe(true);
+    expect(screenBannedPatterns('Jeg sjekker med kontoret og kommer straks tilbake til deg med svaret.').ok).toBe(true);
+  });
+  it('acting NOW stays legal', () => {
+    expect(screenBannedPatterns('I found two villas in San Javier that fit — want the details?').ok).toBe(true);
+    expect(screenBannedPatterns('Jeg fant to boliger som passer: en i San Javier og en i Los Alcázares.').ok).toBe(true);
+  });
+});
+
 describe('payments/IBAN floor (§11.5) — existential guard', () => {
   it('blocks an IBAN in any casing/spacing', () => {
     expect(screenPaymentDetails('Please transfer to ES91 2100 0418 4502 0005 1332').ok).toBe(false);

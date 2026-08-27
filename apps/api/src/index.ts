@@ -219,7 +219,7 @@ if (googleConfig() !== null) {
 // amanda_mode defaults to 'off' so no conversation is touched until an agency
 // is explicitly dialed up. Drains the amanda_inbound_queue outbox every 20s
 // (claim RPC = FOR UPDATE SKIP LOCKED + lease steal, safe across instances).
-const AMANDA_ENGINE_TICK_MS = 20_000;
+const AMANDA_ENGINE_TICK_MS = 8_000;   // latency budget: debounce(≤12s) + tick(≤8s) + model(~15-20s)
 if (engineEnabled()) {
   const engineTick = async () => {
     try {

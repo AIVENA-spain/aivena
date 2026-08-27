@@ -68,10 +68,29 @@ const BANNED_PATTERNS: Array<{ id: string; re: RegExp }> = [
   { id: 'fake_deadline',         re: /\b(offer (ends|expires)|only (today|this week)|price goes up|solo (hoy|esta semana)|la oferta (termina|caduca)|el precio subir[áa])\b/i },
 ];
 
+// ── Deliver-now law: Amanda may not promise HER OWN future delivery ("I'll come
+// right back with options") — she acts inside this reply or offers and asks.
+// The OFFICE promising to come back is legitimate (§3b — the ticket machinery
+// keeps that promise), so drafts naming the office/team are exempt.
+const SELF_FUTURE_PROMISE: RegExp[] = [
+  /\b(i(?:'ll| will)|let me)\s+(?:get|come|be|circle)\s+(?:right\s+)?back(?:\s+to\s+you)?[^.!?]{0,40}\bwith\b/i,
+  /\b(?:kommer|er)\s+(?:straks|snart)\s+tilbake(?:\s+til\s+deg)?\s+med\b/i,                    // no/da
+  /\bsender\s+(?:deg|dere)\b[^.!?]{0,50}\b(?:straks|snart|om litt)\b/i,                          // no/da
+  /\bkommer\s+tillbaka\s+(?:strax|snart)\s+med\b|\bskickar\s+(?:dig|er)\b[^.!?]{0,40}\b(?:strax|snart)\b/i, // sv
+  /\b(?:te|os)\s+(?:env[ií]o|mando|paso)\b[^.!?]{0,50}\b(?:enseguida|ahora mismo|en un momento|pronto)\b/i,     // es
+  /\bmelde mich\s+(?:gleich|bald)\s+mit\b|\bschicke dir\s+(?:gleich|bald)\b/i,                 // de
+  /\bkom\s+(?:zo|straks)\s+(?:bij je\s+)?terug\s+met\b|\bstuur je\s+(?:zo|straks)\b/i,       // nl
+  /\b(?:coming|getting)\s+(?:right\s+)?back\s+(?:to you\s+)?(?:shortly|soon|right away)\s+with\b/i,
+];
+const OFFICE_EXEMPT_RE = /\b(office|team|kontoret?|oficina|equipo|b[üu]ro|kantoor|the agency|byr[åa]et)\b/i;
+
 export function screenBannedPatterns(draft: string): { ok: boolean; matched: string[] } {
   // Curly apostrophes (what phones actually type) must match the ASCII patterns.
   const normalized = draft.replace(/[’‘]/g, "'");
   const matched = BANNED_PATTERNS.filter((p) => p.re.test(normalized)).map((p) => p.id);
+  if (!OFFICE_EXEMPT_RE.test(normalized) && SELF_FUTURE_PROMISE.some((re) => re.test(normalized))) {
+    matched.push('self_future_promise_PRESENT_YOUR_RESULTS_NOW_instead');
+  }
   return { ok: matched.length === 0, matched };
 }
 

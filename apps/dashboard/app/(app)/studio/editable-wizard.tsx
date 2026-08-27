@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
-import { ArrowLeft, Check, Download, Loader2, Minus, Plus, Save, Search, Sparkles, X } from "lucide-react";
+import { ArrowLeft, Check, Download, Loader2, Maximize2, Minus, Plus, Save, Search, Sparkles, X } from "lucide-react";
 import {
   propertiesAction,
   propertyPhotosAction,
@@ -107,6 +107,9 @@ export function EditableWizard() {
   // classic designs (the old engine's finished looks — enhance + composed overlay)
   const [classicThumbs, setClassicThumbs] = useState<Record<string, string | null | undefined>>({});
   const [classicKey, setClassicKey] = useState<string | null>(null);
+  // full-size template preview before choosing (Christian 2026-08-27: "you should be able to
+  // see what the full template looks like if you want before choosing one")
+  const [enlarged, setEnlarged] = useState<{ src: string; title: string; pick?: () => void } | null>(null);
   const [classicGenId, setClassicGenId] = useState<string | null>(null);
   const [classicImage, setClassicImage] = useState<string | null>(null);
   const [classicBusy, setClassicBusy] = useState<string | null>(null);
@@ -536,8 +539,9 @@ export function EditableWizard() {
           ) : (
             <div className="grid grid-cols-4 gap-2 sm:gap-4">
               {gallery.map((item) => (
-                <button key={item.template_id} onClick={() => useGalleryTemplate(item)}
-                  className="group overflow-hidden rounded-xl border border-neutral-200 bg-white transition hover:border-neutral-900 hover:shadow-md dark:border-neutral-800 dark:bg-neutral-900">
+                <div key={item.template_id} role="button" tabIndex={0} onClick={() => useGalleryTemplate(item)}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); useGalleryTemplate(item); } }}
+                  className="group relative cursor-pointer overflow-hidden rounded-xl border border-neutral-200 bg-white transition hover:border-neutral-900 hover:shadow-md dark:border-neutral-800 dark:bg-neutral-900">
                   <div className="aspect-[4/5] bg-neutral-100 dark:bg-neutral-800">
                     {galleryThumbs[item.template_id] === undefined ? (
                       <div className="flex h-full items-center justify-center text-neutral-300"><Loader2 className="h-5 w-5 animate-spin" /></div>
@@ -551,7 +555,14 @@ export function EditableWizard() {
                     <span className="font-medium text-neutral-600 dark:text-neutral-300">Template {item.number ?? item.template_id}</span>
                     <span className="text-neutral-400 opacity-0 transition group-hover:opacity-100">Customise →</span>
                   </div>
-                </button>
+                  {galleryThumbs[item.template_id] && (
+                    <button type="button" title="See it full size"
+                      onClick={(e) => { e.stopPropagation(); setEnlarged({ src: galleryThumbs[item.template_id]!, title: `Template ${item.number ?? item.template_id}`, pick: () => useGalleryTemplate(item) }); }}
+                      className="absolute right-2 top-2 rounded-lg bg-black/50 p-1.5 text-white opacity-0 transition hover:bg-black/70 focus:opacity-100 group-hover:opacity-100">
+                      <Maximize2 className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
               ))}
             </div>
           )}
@@ -564,12 +575,12 @@ export function EditableWizard() {
           {(["property", "template", "edit"] as const).map((s, i) => (
             <div key={s} className="flex items-center gap-2">
               <span className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold ${
-                step === s ? "bg-neutral-900 text-white" : i < ["property", "template", "edit"].indexOf(step) ? "bg-emerald-500 text-white" : "bg-neutral-200 text-neutral-500"
+                step === s ? "bg-primary text-primary-foreground" : i < ["property", "template", "edit"].indexOf(step) ? "bg-emerald-500 text-white" : "bg-muted text-muted-foreground"
               }`}>{i + 1}</span>
-              <span className={step === s ? "font-medium text-neutral-900 dark:text-neutral-100" : "text-neutral-500"}>
+              <span className={step === s ? "font-medium text-foreground" : "text-muted-foreground"}>
                 {s === "property" ? "Property" : s === "template" ? "Template" : "Edit"}
               </span>
-              {i < 2 && <span className="mx-1 text-neutral-300">→</span>}
+              {i < 2 && <span className="mx-1 text-muted-foreground/50">→</span>}
             </div>
           ))}
         </div>
@@ -578,7 +589,7 @@ export function EditableWizard() {
       {/* ── STEP 1: PROPERTY (the one shared picker — search/filter + photos in place) ── */}
       {step === "property" && (
         <div>
-          <button onClick={() => setStep("gallery")} className="mb-4 flex items-center gap-1.5 text-sm text-neutral-500 hover:text-neutral-900"><ArrowLeft className="h-4 w-4" /> Templates</button>
+          <button onClick={() => setStep("gallery")} className="mb-4 flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" /> Templates</button>
           <PropertyPicker onConfirm={(p, chosen) => {
             setProperty(p); setPhotos(chosen);
             void enterTemplateStep(p, chosen);
@@ -589,52 +600,68 @@ export function EditableWizard() {
       {/* ── STEP 2: TEMPLATE PICKER (filtered by photo count) ─────────────────── */}
       {step === "template" && (
         <div>
-          <button onClick={() => setStep("property")} className="mb-4 flex items-center gap-1.5 text-sm text-neutral-500 hover:text-neutral-900"><ArrowLeft className="h-4 w-4" /> Property</button>
-          <div className="mb-4 text-sm text-neutral-600">
+          <button onClick={() => setStep("property")} className="mb-4 flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" /> Property</button>
+          <div className="mb-4 text-sm text-muted-foreground">
             {eligibleTemplates.length} template{eligibleTemplates.length === 1 ? "" : "s"} for <strong>{photos.length} photo{photos.length === 1 ? "" : "s"}</strong> — showing your listing in each.
           </div>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
             {eligibleTemplates.map((t) => (
-              <button key={t.id} onClick={() => pickTemplate(t)}
-                className="group overflow-hidden rounded-xl border border-neutral-200 bg-white transition hover:border-neutral-900 hover:shadow-md">
-                <div className="aspect-[4/5] bg-neutral-100">
+              <div key={t.id} role="button" tabIndex={0} onClick={() => pickTemplate(t)}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pickTemplate(t); } }}
+                className="group relative cursor-pointer overflow-hidden rounded-xl border border-border bg-card transition hover:border-foreground hover:shadow-md">
+                <div className="aspect-[4/5] bg-muted">
                   {thumbs[t.id] === undefined ? (
-                    <div className="flex h-full items-center justify-center text-neutral-300"><Loader2 className="h-5 w-5 animate-spin" /></div>
+                    <div className="flex h-full items-center justify-center text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin" /></div>
                   ) : thumbs[t.id] ? (
                     <img src={thumbs[t.id]!} alt="" className="h-full w-full object-cover" />
                   ) : (
-                    <div className="flex h-full items-center justify-center text-xs text-neutral-400">preview failed</div>
+                    <div className="flex h-full items-center justify-center text-xs text-muted-foreground">preview failed</div>
                   )}
                 </div>
-                <div className="p-2 text-center text-xs font-medium text-neutral-600">Template {t.number ?? t.id}</div>
-              </button>
+                <div className="p-2 text-center text-xs font-medium text-muted-foreground">Template {t.number ?? t.id}</div>
+                {thumbs[t.id] && (
+                  <button type="button" title="See it full size"
+                    onClick={(e) => { e.stopPropagation(); setEnlarged({ src: thumbs[t.id]!, title: `Template ${t.number ?? t.id} — your listing`, pick: () => pickTemplate(t) }); }}
+                    className="absolute right-2 top-2 rounded-lg bg-black/50 p-1.5 text-white opacity-0 transition hover:bg-black/70 focus:opacity-100 group-hover:opacity-100">
+                    <Maximize2 className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
             ))}
           </div>
 
           {/* the best 4 of the old engine's finished designs (Christian kept these) */}
           <div className="mt-8">
-            <div className="mb-1 text-sm font-semibold text-neutral-900">Classic designs</div>
-            <p className="mb-3 text-xs text-neutral-500">
+            <div className="mb-1 text-sm font-semibold text-foreground">Classic designs</div>
+            <p className="mb-3 text-xs text-muted-foreground">
               AI-finished looks — your photo gets polished and the design composed on top. Uses a credit · 2 free changes after.
             </p>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
               {CLASSICS.map((cd) => (
-                <button key={cd.key} onClick={() => void pickClassic(cd.key)}
-                  className="group overflow-hidden rounded-xl border border-neutral-200 bg-white text-left transition hover:-translate-y-0.5 hover:border-neutral-900 hover:shadow-md">
-                  <div className="aspect-[4/5] bg-neutral-100">
+                <div key={cd.key} role="button" tabIndex={0} onClick={() => void pickClassic(cd.key)}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); void pickClassic(cd.key); } }}
+                  className="group relative cursor-pointer overflow-hidden rounded-xl border border-border bg-card text-left transition hover:-translate-y-0.5 hover:border-foreground hover:shadow-md">
+                  <div className="aspect-[4/5] bg-muted">
                     {classicThumbs[cd.key] === undefined ? (
-                      <div className="flex h-full items-center justify-center text-neutral-300"><Loader2 className="h-5 w-5 animate-spin" /></div>
+                      <div className="flex h-full items-center justify-center text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin" /></div>
                     ) : classicThumbs[cd.key] ? (
                       <img src={classicThumbs[cd.key]!} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
                     ) : (
-                      <div className="flex h-full items-center justify-center px-3 text-center text-xs text-neutral-400">preview unavailable</div>
+                      <div className="flex h-full items-center justify-center px-3 text-center text-xs text-muted-foreground">preview unavailable</div>
                     )}
                   </div>
                   <div className="p-2">
-                    <div className="text-xs font-semibold text-neutral-800">{cd.name}</div>
-                    <div className="text-[11px] text-neutral-400">{cd.desc}</div>
+                    <div className="text-xs font-semibold text-foreground">{cd.name}</div>
+                    <div className="text-[11px] text-muted-foreground">{cd.desc}</div>
                   </div>
-                </button>
+                  {classicThumbs[cd.key] && (
+                    <button type="button" title="See it full size"
+                      onClick={(e) => { e.stopPropagation(); setEnlarged({ src: classicThumbs[cd.key]!, title: cd.name }); }}
+                      className="absolute right-2 top-2 rounded-lg bg-black/50 p-1.5 text-white opacity-0 transition hover:bg-black/70 focus:opacity-100 group-hover:opacity-100">
+                      <Maximize2 className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
               ))}
             </div>
           </div>
@@ -645,46 +672,46 @@ export function EditableWizard() {
       {step === "classic" && (
         <div>
           <button onClick={() => { if (classicPoll.current) clearTimeout(classicPoll.current); setStep("template"); }}
-            className="mb-4 flex items-center gap-1.5 text-sm text-neutral-500 hover:text-neutral-900"><ArrowLeft className="h-4 w-4" /> Templates</button>
+            className="mb-4 flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" /> Templates</button>
           <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
-            <div className="overflow-hidden rounded-xl border border-neutral-200 bg-neutral-50">
+            <div className="overflow-hidden rounded-xl border border-border bg-muted">
               {classicImage ? (
                 <img src={classicImage} alt="Your design" className="w-full" referrerPolicy="no-referrer" />
               ) : (
-                <div className="flex aspect-[4/5] flex-col items-center justify-center gap-3 text-neutral-400">
+                <div className="flex aspect-[4/5] flex-col items-center justify-center gap-3 text-muted-foreground">
                   <Loader2 className="h-6 w-6 animate-spin" />
                   <p className="px-6 text-center text-sm">{classicBusy ?? "Working…"}</p>
                 </div>
               )}
             </div>
             <div className="space-y-4">
-              <div className="rounded-xl border border-neutral-200 p-3">
-                <label className="block text-xs font-semibold uppercase tracking-wide text-neutral-500">
+              <div className="rounded-xl border border-border p-3">
+                <label className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   Change something ({classicRevLeft} free change{classicRevLeft === 1 ? "" : "s"} left)
                 </label>
                 <textarea rows={2} value={classicNote} onChange={(e) => setClassicNote(e.target.value)} maxLength={1000}
                   disabled={!classicImage || classicRevLeft <= 0 || !!classicBusy}
                   placeholder="e.g. warmer evening light, remove the car"
-                  className="mt-2 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-900 disabled:opacity-50" />
+                  className="mt-2 w-full rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-ring disabled:opacity-50" />
                 <button onClick={() => void reviseClassic()} disabled={!classicImage || classicRevLeft <= 0 || !classicNote.trim() || !!classicBusy}
-                  className="mt-2 w-full rounded-lg border border-neutral-900 px-4 py-2 text-sm font-medium text-neutral-900 disabled:border-neutral-200 disabled:text-neutral-400">
+                  className="mt-2 w-full rounded-lg border border-foreground px-4 py-2 text-sm font-medium text-foreground disabled:border-border disabled:text-muted-foreground">
                   Apply change
                 </button>
               </div>
-              <div className="space-y-2 rounded-xl border border-neutral-200 p-3">
-                <label className="block text-xs font-semibold uppercase tracking-wide text-neutral-500">File it in a section</label>
+              <div className="space-y-2 rounded-xl border border-border p-3">
+                <label className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">File it in a section</label>
                 <input list="studio-sections" value={classicSection} onChange={(e) => { setClassicSection(e.target.value); setClassicFiled(false); }}
                   placeholder="e.g. Just listed (optional)"
-                  className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-900" />
+                  className="w-full rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-ring" />
                 <button onClick={() => void fileClassic()} disabled={!classicImage}
-                  className={`flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-white ${classicFiled ? "bg-emerald-600" : "bg-neutral-900"} disabled:opacity-40`}>
+                  className={`flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium ${classicFiled ? "bg-emerald-600 text-white" : "bg-primary text-primary-foreground"} disabled:opacity-40`}>
                   {classicFiled ? <Check className="h-4 w-4" /> : <Save className="h-4 w-4" />}{classicFiled ? "Filed ✓" : "File in section"}
                 </button>
-                <p className="text-[11px] text-neutral-400">Saved to your library automatically — this only chooses where it lives.</p>
+                <p className="text-[11px] text-muted-foreground">Saved to your library automatically — this only chooses where it lives.</p>
               </div>
               <button type="button" disabled={!classicImage}
                 onClick={() => classicImage && void downloadImage(classicImage, `${property?.title || "post"}-${classicKey}.png`)}
-                className={`flex w-full items-center justify-center gap-2 rounded-lg border border-neutral-300 px-4 py-2.5 text-sm font-medium text-neutral-700 ${classicImage ? "hover:bg-neutral-50" : "opacity-40"}`}>
+                className={`flex w-full items-center justify-center gap-2 rounded-lg border border-border px-4 py-2.5 text-sm font-medium text-foreground ${classicImage ? "hover:bg-muted" : "opacity-40"}`}>
                 <Download className="h-4 w-4" /> Download image
               </button>
               {err && <div className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">{err}</div>}
@@ -696,20 +723,20 @@ export function EditableWizard() {
       {/* ── STEP 3: EDIT ─────────────────────────────────────────────────────── */}
       {step === "edit" && defaults && (
         <div>
-          <button onClick={() => setStep(editFrom)} className="mb-4 flex items-center gap-1.5 text-sm text-neutral-500 hover:text-neutral-900">
+          <button onClick={() => setStep(editFrom)} className="mb-4 flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
             <ArrowLeft className="h-4 w-4" /> {editFrom === "gallery" ? "Templates" : "Templates"}
           </button>
           <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
             {/* interactive canvas — tap to select, drag to move, toolbar to recolour/resize */}
             <div>
               <div className="sticky top-4">
-                <div className="relative overflow-hidden rounded-xl border border-neutral-200 bg-neutral-50" style={{ touchAction: "none" }}>
+                <div className="relative overflow-hidden rounded-xl border border-border bg-muted" style={{ touchAction: "none" }}>
                   {preview ? (
                     <img ref={imgRef} src={preview} alt="Preview" draggable={false}
                       onLoad={() => setDispW(imgRef.current?.clientWidth ?? 0)}
                       className="block w-full select-none" />
                   ) : (
-                    <div className="flex aspect-[4/5] items-center justify-center text-neutral-400"><Loader2 className="h-6 w-6 animate-spin" /></div>
+                    <div className="flex aspect-[4/5] items-center justify-center text-muted-foreground"><Loader2 className="h-6 w-6 animate-spin" /></div>
                   )}
 
                   {/* tap-targets over each text element */}
@@ -784,14 +811,14 @@ export function EditableWizard() {
                   {rendering && <div className="absolute right-3 top-3 flex items-center gap-1.5 rounded-full bg-white/90 px-2.5 py-1 text-xs text-neutral-600 shadow"><Loader2 className="h-3 w-3 animate-spin" /> updating…</div>}
                 </div>
 
-                <div className="mt-2 flex items-center justify-between gap-3 text-xs text-neutral-500">
+                <div className="mt-2 flex items-center justify-between gap-3 text-xs text-muted-foreground">
                   <span className="min-w-0 truncate">
-                    {selectedSlot ? <>Selected <b className="text-neutral-800">{selectedSlot.label}</b> — drag to move, toolbar to recolour &amp; resize</>
-                      : regionSel ? <>Selected <b className="text-neutral-800">{roleLabel(regionSel.role)}</b> — tap the colour chip to change it</>
+                    {selectedSlot ? <>Selected <b className="text-foreground">{selectedSlot.label}</b> — drag to move, toolbar to recolour &amp; resize</>
+                      : regionSel ? <>Selected <b className="text-foreground">{roleLabel(regionSel.role)}</b> — tap the colour chip to change it</>
                       : "Tap anything on the image — text, a panel, the background — to select and recolour it."}
                   </span>
                   {(Object.keys(positions).length > 0 || Object.keys(sizes).length > 0) && (
-                    <button onClick={() => { setPositions({}); setSizes({}); setSelected(null); scheduleRender(); }} className="shrink-0 underline hover:text-neutral-800">Reset layout</button>
+                    <button onClick={() => { setPositions({}); setSizes({}); setSelected(null); scheduleRender(); }} className="shrink-0 underline hover:text-foreground">Reset layout</button>
                   )}
                 </div>
                 {err && <div className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">{err}</div>}
@@ -800,27 +827,27 @@ export function EditableWizard() {
                     changes flash on the image, or tap the thing itself above. */}
                 {!defaults.palette_locked && (
                   <div className="mt-4">
-                    <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">Colours</div>
+                    <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Colours</div>
                     <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
                       {defaults.colour_layers.filter((cl) => cl.used).map((cl) => (
                         <label key={cl.role} onPointerEnter={() => setHoverRole(cl.role)} onPointerLeave={() => setHoverRole(null)}
-                          className={`flex cursor-pointer flex-col items-center gap-1.5 rounded-xl border px-2 py-2.5 transition ${activeRole === cl.role ? "border-emerald-500 ring-1 ring-emerald-500" : "border-neutral-200 hover:border-neutral-400"}`}>
+                          className={`flex cursor-pointer flex-col items-center gap-1.5 rounded-xl border px-2 py-2.5 transition ${activeRole === cl.role ? "border-emerald-500 ring-1 ring-emerald-500" : "border-border hover:border-ring"}`}>
                           <span className="relative h-7 w-full overflow-hidden rounded-lg border border-black/10" style={{ background: colours[cl.role] ?? cl.value }}>
                             <input type="color" value={colours[cl.role] ?? cl.value}
                               onChange={(e) => editColour(cl.role, e.target.value)}
                               className="absolute inset-0 h-full w-full cursor-pointer opacity-0" />
                           </span>
-                          <span className="max-w-full truncate text-[11px] font-medium text-neutral-600">{cl.label}</span>
+                          <span className="max-w-full truncate text-[11px] font-medium text-muted-foreground">{cl.label}</span>
                         </label>
                       ))}
                     </div>
                     {BAKED_ART_NOTE[templateId ?? ""] && (
-                      <p className="mt-2 text-[11px] text-neutral-400">{BAKED_ART_NOTE[templateId ?? ""]}</p>
+                      <p className="mt-2 text-[11px] text-muted-foreground">{BAKED_ART_NOTE[templateId ?? ""]}</p>
                     )}
                   </div>
                 )}
                 {defaults.palette_locked && (
-                  <p className="mt-3 text-[11px] text-neutral-400">This template keeps its own colours — they&apos;re part of its design.</p>
+                  <p className="mt-3 text-[11px] text-muted-foreground">This template keeps its own colours — they&apos;re part of its design.</p>
                 )}
               </div>
             </div>
@@ -829,28 +856,28 @@ export function EditableWizard() {
             <div className="space-y-6">
               {/* language */}
               <div>
-                <label className="mb-1.5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                <label className="mb-1.5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   Post language
-                  {translating && <span className="flex items-center gap-1 font-normal normal-case text-neutral-400"><Loader2 className="h-3 w-3 animate-spin" /> translating…</span>}
+                  {translating && <span className="flex items-center gap-1 font-normal normal-case text-muted-foreground"><Loader2 className="h-3 w-3 animate-spin" /> translating…</span>}
                 </label>
                 <select value={language} disabled={translating} onChange={(e) => void changeLanguage(e.target.value)}
-                  className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-900 disabled:opacity-60">
+                  className="w-full rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground outline-none focus:border-ring disabled:opacity-60">
                   {LANGS.map((l) => <option key={l.code} value={l.code}>{l.label}</option>)}
                 </select>
-                <p className="mt-1 text-[11px] text-neutral-400">Write in any language — the text is translated into the language you pick.</p>
+                <p className="mt-1 text-[11px] text-muted-foreground">Write in any language — the text is translated into the language you pick.</p>
               </div>
 
               {/* text layers */}
               <div>
-                <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">Text</div>
+                <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Text</div>
                 <div className="space-y-3">
                   {defaults.editable_slots.map((s) => (
                     <div key={s.id}>
-                      <label className="mb-1 block text-xs text-neutral-500">{s.label}</label>
+                      <label className="mb-1 block text-xs text-muted-foreground">{s.label}</label>
                       <textarea rows={(text[s.id] || "").includes("\n") ? 2 : 1}
                         value={text[s.id] ?? ""} onChange={(e) => editText(s.id, e.target.value)}
                         onFocus={() => setSelected(s.id)}
-                        className={`w-full resize-none rounded-lg border bg-white px-3 py-1.5 text-sm outline-none ${selected === s.id ? "border-emerald-500 ring-1 ring-emerald-500" : "border-neutral-300 focus:border-neutral-900"}`} />
+                        className={`w-full resize-none rounded-lg border bg-card px-3 py-1.5 text-sm text-foreground outline-none ${selected === s.id ? "border-emerald-500 ring-1 ring-emerald-500" : "border-input focus:border-ring"}`} />
                     </div>
                   ))}
                 </div>
@@ -860,32 +887,32 @@ export function EditableWizard() {
               {/* move / crop each photo inside its frame */}
               {photos.length > 0 && (
                 <div>
-                  <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">Photos</div>
-                  <p className="mb-2 text-[11px] text-neutral-400">Not framed how you want it? Move it or zoom in.</p>
+                  <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Photos</div>
+                  <p className="mb-2 text-[11px] text-muted-foreground">Not framed how you want it? Move it or zoom in.</p>
                   <div className="space-y-2">
                     {photos.map((u, i) => {
                       const t = photoTr[i] ?? { zoom: 1, x: 0.5, y: 0.5 };
                       const moved = !!photoTr[i];
                       return (
-                        <div key={u} className="flex items-center gap-2 rounded-lg border border-neutral-200 p-2">
+                        <div key={u} className="flex items-center gap-2 rounded-lg border border-border p-2">
                           <img src={u} alt="" referrerPolicy="no-referrer" className="h-11 w-11 shrink-0 rounded object-cover" />
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-1">
-                              <span className="w-8 shrink-0 text-[10px] font-medium uppercase text-neutral-400">Zoom</span>
+                              <span className="w-8 shrink-0 text-[10px] font-medium uppercase text-muted-foreground">Zoom</span>
                               <input type="range" min={1} max={4} step={0.1} value={t.zoom}
                                 onChange={(e) => framePhoto(i, { zoom: Number(e.target.value) })}
-                                className="h-1 w-full cursor-pointer accent-neutral-900" />
+                                className="h-1 w-full cursor-pointer accent-primary" />
                             </div>
                             <div className="mt-1 flex items-center gap-1">
-                              <span className="w-8 shrink-0 text-[10px] font-medium uppercase text-neutral-400">Move</span>
+                              <span className="w-8 shrink-0 text-[10px] font-medium uppercase text-muted-foreground">Move</span>
                               <div className="flex gap-1">
-                                <button onClick={() => framePhoto(i, { x: t.x - 0.08 })} className="rounded border border-neutral-200 px-1.5 text-xs text-neutral-600 hover:bg-neutral-50" title="Left">←</button>
-                                <button onClick={() => framePhoto(i, { x: t.x + 0.08 })} className="rounded border border-neutral-200 px-1.5 text-xs text-neutral-600 hover:bg-neutral-50" title="Right">→</button>
-                                <button onClick={() => framePhoto(i, { y: t.y - 0.08 })} className="rounded border border-neutral-200 px-1.5 text-xs text-neutral-600 hover:bg-neutral-50" title="Up">↑</button>
-                                <button onClick={() => framePhoto(i, { y: t.y + 0.08 })} className="rounded border border-neutral-200 px-1.5 text-xs text-neutral-600 hover:bg-neutral-50" title="Down">↓</button>
+                                <button onClick={() => framePhoto(i, { x: t.x - 0.08 })} className="rounded border border-border px-1.5 text-xs text-muted-foreground hover:bg-muted" title="Left">←</button>
+                                <button onClick={() => framePhoto(i, { x: t.x + 0.08 })} className="rounded border border-border px-1.5 text-xs text-muted-foreground hover:bg-muted" title="Right">→</button>
+                                <button onClick={() => framePhoto(i, { y: t.y - 0.08 })} className="rounded border border-border px-1.5 text-xs text-muted-foreground hover:bg-muted" title="Up">↑</button>
+                                <button onClick={() => framePhoto(i, { y: t.y + 0.08 })} className="rounded border border-border px-1.5 text-xs text-muted-foreground hover:bg-muted" title="Down">↓</button>
                                 {moved && (
                                   <button onClick={() => { setPhotoTr((p) => { const n = { ...p }; delete n[i]; return n; }); setSaved(false); scheduleRender(); }}
-                                    className="ml-1 text-[10px] text-neutral-400 underline hover:text-neutral-700">reset</button>
+                                    className="ml-1 text-[10px] text-muted-foreground underline hover:text-foreground">reset</button>
                                 )}
                               </div>
                             </div>
@@ -899,33 +926,33 @@ export function EditableWizard() {
 
               {/* Surgical watermark removal — only the watermark's own pixels change; the rest of each
                   photo, plus your text and layout, are never touched. Instant + free. */}
-              <div className="space-y-2 rounded-xl border border-neutral-200 p-3">
+              <div className="space-y-2 rounded-xl border border-border p-3">
                 <div className="flex items-center justify-between">
-                  <label className="block text-xs font-semibold uppercase tracking-wide text-neutral-500">Remove watermarks</label>
+                  <label className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Remove watermarks</label>
                   {cleanedIds.length > 0 && <span className="flex items-center gap-1 text-[11px] font-medium text-emerald-600"><Check className="h-3 w-3" /> removed</span>}
                 </div>
-                <p className="text-[11px] leading-relaxed text-neutral-400">
+                <p className="text-[11px] leading-relaxed text-muted-foreground">
                   Erases the portal watermark from your photos and puts them straight back into this template.
                   Only the watermark itself is touched — the house, the framing and your text stay exactly the same.
                   Instant and free.
                 </p>
                 <button onClick={() => void runFinish()} disabled={finishing || !preview}
-                  className={`flex w-full items-center justify-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium ${finishing || !preview ? "border-neutral-200 text-neutral-400" : "border-neutral-900 text-neutral-900 hover:bg-neutral-50"}`}>
+                  className={`flex w-full items-center justify-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium ${finishing || !preview ? "border-border text-muted-foreground" : "border-foreground text-foreground hover:bg-muted"}`}>
                   {finishing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                   {cleanedIds.length > 0 ? "Remove again" : `Remove from ${photos.length} photo${photos.length === 1 ? "" : "s"}`}
                 </button>
-                {finishMsg && <p className="text-[11px] text-neutral-500">{finishMsg}</p>}
+                {finishMsg && <p className="text-[11px] text-muted-foreground">{finishMsg}</p>}
               </div>
 
               {/* save to library + section */}
-              <div className="space-y-2 rounded-xl border border-neutral-200 p-3">
-                <label className="block text-xs font-semibold uppercase tracking-wide text-neutral-500">Save to a section</label>
+              <div className="space-y-2 rounded-xl border border-border p-3">
+                <label className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Save to a section</label>
                 <input list="studio-sections" value={section} onChange={(e) => { setSection(e.target.value); setSaved(false); }}
                   placeholder="e.g. Just listed (optional)"
-                  className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-900" />
+                  className="w-full rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-ring" />
                 <datalist id="studio-sections">{sections.map((s) => <option key={s} value={s} />)}</datalist>
                 <button onClick={saveToLibrary} disabled={saving || !preview}
-                  className={`flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium ${saved ? "bg-emerald-600 text-white" : "bg-neutral-900 text-white"} ${saving || !preview ? "opacity-50" : ""}`}>
+                  className={`flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium ${saved ? "bg-emerald-600 text-white" : "bg-primary text-primary-foreground"} ${saving || !preview ? "opacity-50" : ""}`}>
                   {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : saved ? <Check className="h-4 w-4" /> : <Save className="h-4 w-4" />}
                   {saved ? "Saved to library" : "Save to library"}
                 </button>
@@ -934,11 +961,30 @@ export function EditableWizard() {
               {/* download */}
               <button type="button" disabled={!preview}
                 onClick={() => preview && void downloadImage(preview, `${property?.title || "post"}-${templateId}.png`)}
-                className={`flex w-full items-center justify-center gap-2 rounded-lg border border-neutral-300 px-4 py-2.5 text-sm font-medium text-neutral-700 ${preview ? "hover:bg-neutral-50" : "opacity-40"}`}>
+                className={`flex w-full items-center justify-center gap-2 rounded-lg border border-border px-4 py-2.5 text-sm font-medium text-foreground ${preview ? "hover:bg-muted" : "opacity-40"}`}>
                 <Download className="h-4 w-4" /> Download image
               </button>
-              <button onClick={reset} className="w-full text-center text-xs text-neutral-400 hover:text-neutral-600">Start over</button>
+              <button onClick={reset} className="w-full text-center text-xs text-muted-foreground hover:text-foreground">Start over</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* full-size template preview — look before you choose */}
+      {enlarged && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={() => setEnlarged(null)}>
+          <div className="w-full max-w-[440px]" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-2 flex items-center justify-between text-white">
+              <span className="text-sm font-semibold">{enlarged.title}</span>
+              <button onClick={() => setEnlarged(null)} className="rounded-lg p-1 text-white/70 hover:text-white"><X className="h-5 w-5" /></button>
+            </div>
+            <img src={enlarged.src} alt={enlarged.title} className="max-h-[72vh] w-full rounded-xl object-contain shadow-2xl" />
+            {enlarged.pick && (
+              <button type="button" onClick={() => { const p = enlarged.pick!; setEnlarged(null); p(); }}
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 text-sm font-semibold text-white hover:bg-emerald-700">
+                <Check className="h-4 w-4" /> Customise this template
+              </button>
+            )}
           </div>
         </div>
       )}

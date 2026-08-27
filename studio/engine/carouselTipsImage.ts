@@ -8,6 +8,9 @@ import { CarouselBrand } from "./renderCarousel";
 // images are backdrops only; every slide carrying a generated layer shows the localized disclosure
 // micro-tag (EU AI Act Art 50(4) transparency — live duty from 2 Aug 2026, adopted early).
 // Deck: cover(img0) → context(img1) → tips 1..N (type-led) → mid-deck moment(img2) → recap → CTA(img0 re-crop).
+// Corner echoes ROTATE through the family (Christian 2026-08-27: one image repeated across the deck
+// reads repetitive/boring) — tip i echoes img (i+1)%len, recap echoes img2; only the CTA keeps the
+// cover re-crop as the heavily-graded bookend.
 
 export type TipsImageStyle =
   | "bodegon" | "litoral" | "tinta" | "salitre"
@@ -189,7 +192,7 @@ export async function renderTipsImageStyled(
       background: CREAM,
       elements: [
         { type: "text", bbox: [80, 80, 620, 340], content: String(i + 1).padStart(2, "0"), font: FR, size: 230, colour: GOLD, align: "left" },
-        { type: "photo", photo: 0, bbox: [860, 90, 1010, 240], zoom: 2.4, x: 0.5, y: 0.6 },
+        { type: "photo", photo: (i + 1) % images.length, bbox: [860, 90, 1010, 240], zoom: 2.4, x: 0.5, y: 0.6 },
         { type: "rect", bbox: [80, 400, 164, 404], fill: GOLD },
         { type: "text", bbox: [80, 452, 1000, 650], content: wrap(tip.title, FR, 64, 920), font: FR, size: 64, colour: NAVY, align: "left", line_height: 78 },
         { type: "text", bbox: [80, 700, 1000, 1080], content: wrap(tip.body, "Jost", 36, 920), font: "Jost", size: 36, colour: mix(NAVY, CREAM, 0.85), align: "left", line_height: 56, valign: "center" },
@@ -225,7 +228,7 @@ export async function renderTipsImageStyled(
       background: CREAM,
       elements: [
         { type: "text", bbox: [80, 110, 700, 144], content: plan.eyebrow.toUpperCase(), font: "Jost", size: 21, colour: mix(NAVY, CREAM, 0.6), align: "left", tracking: 5 },
-        { type: "photo", photo: 0, bbox: [880, 84, 1010, 214], zoom: 2.4, x: 0.5, y: 0.6 },
+        { type: "photo", photo: 2 % images.length, bbox: [880, 84, 1010, 214], zoom: 2.4, x: 0.5, y: 0.6 },
         { type: "text", bbox: [80, 190, 1000, 300], content: wrap(plan.recap_title, FR, 64, 920), font: FR, size: 64, colour: NAVY, align: "left" },
         ...plan.tips.flatMap((tip, i) => {
           const y = 380 + i * rowH;
@@ -335,7 +338,9 @@ export async function renderTipsImageStyledV2(
 
   // 3..N+2 · TIP SLIDES — each with its own art, three layouts rotating
   plan.tips.forEach((tip, i) => {
-    const photo = Math.min(i + 1, images.length - 1);
+    // one artwork per tip; when the library returns fewer artworks than tips, CYCLE through
+    // them (1..len-1) instead of repeating the last one on every remaining slide
+    const photo = images.length > 1 ? 1 + (i % (images.length - 1)) : 0;
     const slideNo = i + 2 + (includeContext ? 1 : 0);
     const variant = (i + variantOffset) % 3;
     if (variant === 0) {
@@ -400,7 +405,7 @@ export async function renderTipsImageStyledV2(
       background: CREAM,
       elements: [
         { type: "text", bbox: [80, 110, 700, 144], content: plan.eyebrow.toUpperCase(), font: "Jost", size: 21, colour: mix(NAVY, CREAM, 0.6), align: "left", tracking: 5 },
-        { type: "photo", photo: 0, bbox: [880, 84, 1010, 214], zoom: 2.4, x: 0.5, y: 0.6 },
+        { type: "photo", photo: 2 % images.length, bbox: [880, 84, 1010, 214], zoom: 2.4, x: 0.5, y: 0.6 },
         { type: "text", bbox: [80, 190, 1000, 300], content: wrap(plan.recap_title, FR, 64, 920), font: FR, size: 64, colour: NAVY, align: "left" },
         ...plan.tips.flatMap((tip, i) => {
           const y = 380 + i * rowH;

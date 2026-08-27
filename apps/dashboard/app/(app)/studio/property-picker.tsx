@@ -111,15 +111,15 @@ export function PropertyPicker({
       {/* search + filter */}
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <div className="relative min-w-0 flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input value={query} onChange={(e) => setQuery(e.target.value)}
             placeholder="Search a property or area (e.g. Torrevieja)"
-            className="w-full rounded-lg border border-neutral-300 bg-white py-2.5 pl-9 pr-3 text-sm outline-none focus:border-neutral-900" />
+            className="w-full rounded-lg border border-input bg-card py-2.5 pl-9 pr-3 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-ring" />
         </div>
-        <div className="flex items-center gap-1 rounded-lg border border-neutral-200 bg-white p-1">
+        <div className="flex items-center gap-1 rounded-lg border border-border bg-card p-1">
           {BED_FILTERS.map((b) => (
             <button key={b} onClick={() => setBeds(b)}
-              className={`rounded-md px-2.5 py-1.5 text-xs font-medium transition ${beds === b ? "bg-neutral-900 text-white" : "text-neutral-500 hover:text-neutral-900"}`}>
+              className={`rounded-md px-2.5 py-1.5 text-xs font-medium transition ${beds === b ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>
               {b === 0 ? "Any beds" : `${b}+`}
             </button>
           ))}
@@ -127,9 +127,9 @@ export function PropertyPicker({
       </div>
 
       {loading ? (
-        <div className="flex items-center gap-2 py-16 text-neutral-500"><Loader2 className="h-4 w-4 animate-spin" /> Loading properties…</div>
+        <div className="flex items-center gap-2 py-16 text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Loading properties…</div>
       ) : shown.length === 0 ? (
-        <div className="py-16 text-center text-sm text-neutral-500">
+        <div className="py-16 text-center text-sm text-muted-foreground">
           No properties found{query ? ` for “${query}”` : ""}{beds ? ` with ${beds}+ bedrooms` : ""}
           {minPhotos > 1 ? ` that have ${minPhotos}+ usable photos` : ""}.
         </div>
@@ -137,18 +137,18 @@ export function PropertyPicker({
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {shown.map((p) => (
             <button key={p.id} onClick={() => open(p)}
-              className="group overflow-hidden rounded-xl border border-neutral-200 bg-white text-left transition hover:-translate-y-0.5 hover:border-neutral-900 hover:shadow-md">
-              <div className="aspect-[4/3] bg-neutral-100">
+              className="group overflow-hidden rounded-xl border border-border bg-card text-left transition hover:-translate-y-0.5 hover:border-foreground hover:shadow-md">
+              <div className="aspect-[4/3] bg-muted">
                 {p.thumb_url ? <img src={p.thumb_url} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" /> : null}
               </div>
               <div className="p-2.5">
-                <div className="truncate text-sm font-medium text-neutral-900">{p.title || "Untitled"}</div>
-                <div className="mt-0.5 flex items-center justify-between gap-2 text-xs text-neutral-500">
+                <div className="truncate text-sm font-medium text-foreground">{p.title || "Untitled"}</div>
+                <div className="mt-0.5 flex items-center justify-between gap-2 text-xs text-muted-foreground">
                   <span className="truncate">{p.location_city || "—"}</span>
-                  <span className="shrink-0 font-medium text-neutral-700">{money(p.price)}</span>
+                  <span className="shrink-0 font-medium text-muted-foreground">{money(p.price)}</span>
                 </div>
-                {specsOf(p) && <div className="mt-1 truncate text-[11px] font-medium text-neutral-600">{specsOf(p)}</div>}
-                <div className="mt-0.5 text-[11px] text-neutral-400">{p.photo_count} photo{p.photo_count === 1 ? "" : "s"}</div>
+                {specsOf(p) && <div className="mt-1 truncate text-[11px] font-medium text-muted-foreground">{specsOf(p)}</div>}
+                <div className="mt-0.5 text-[11px] text-muted-foreground">{p.photo_count} photo{p.photo_count === 1 ? "" : "s"}</div>
               </div>
             </button>
           ))}
@@ -158,30 +158,30 @@ export function PropertyPicker({
       {/* photos pop up RIGHT HERE — never a scroll to the bottom */}
       {modalProp && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setModalProp(null)}>
-          <div className="max-h-[85vh] w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between border-b border-neutral-200 px-5 py-3">
+          <div className="max-h-[85vh] w-full max-w-3xl overflow-hidden rounded-2xl bg-card shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-border px-5 py-3">
               <div className="min-w-0">
-                <div className="truncate text-sm font-semibold text-neutral-900">{modalProp.title || "Property"}</div>
-                <div className="text-xs text-neutral-500">
+                <div className="truncate text-sm font-semibold text-foreground">{modalProp.title || "Property"}</div>
+                <div className="text-xs text-muted-foreground">
                   {specsOf(modalProp) ? `${specsOf(modalProp)} · ` : ""}{multi ? "Choose one or more photos" : "Choose a room photo"}
                 </div>
               </div>
-              <button onClick={() => setModalProp(null)} className="rounded-full p-1.5 text-neutral-400 hover:bg-neutral-100"><X className="h-5 w-5" /></button>
+              <button onClick={() => setModalProp(null)} className="rounded-full p-1.5 text-muted-foreground hover:bg-muted"><X className="h-5 w-5" /></button>
             </div>
             <div className="max-h-[60vh] overflow-y-auto p-4">
               {loadingPhotos ? (
-                <div className="flex items-center gap-2 py-12 text-neutral-500"><Loader2 className="h-4 w-4 animate-spin" /> Loading photos…</div>
+                <div className="flex items-center gap-2 py-12 text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Loading photos…</div>
               ) : modalPhotos.length === 0 ? (
-                <div className="py-12 text-center text-sm text-neutral-500">This property has no usable photos.</div>
+                <div className="py-12 text-center text-sm text-muted-foreground">This property has no usable photos.</div>
               ) : (
                 <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
                   {modalPhotos.map((u) => {
                     const on = chosen.includes(u);
                     return (
                       <button key={u} onClick={() => toggle(u)}
-                        className={`relative aspect-square overflow-hidden rounded-lg border-2 transition ${on ? "border-neutral-900" : "border-transparent hover:border-neutral-300"}`}>
+                        className={`relative aspect-square overflow-hidden rounded-lg border-2 transition ${on ? "border-foreground" : "border-transparent hover:border-ring"}`}>
                         <img src={u} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
-                        {on && <span className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-neutral-900 text-white"><Check className="h-3 w-3" /></span>}
+                        {on && <span className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground"><Check className="h-3 w-3" /></span>}
                       </button>
                     );
                   })}
@@ -189,10 +189,10 @@ export function PropertyPicker({
               )}
             </div>
             {multi && (
-              <div className="flex items-center justify-between border-t border-neutral-200 px-5 py-3">
-                <span className="text-xs text-neutral-500">{chosen.length} selected</span>
+              <div className="flex items-center justify-between border-t border-border px-5 py-3">
+                <span className="text-xs text-muted-foreground">{chosen.length} selected</span>
                 <button disabled={chosen.length === 0} onClick={confirm}
-                  className="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-40">
+                  className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-40">
                   Use {chosen.length || ""} photo{chosen.length === 1 ? "" : "s"} →
                 </button>
               </div>

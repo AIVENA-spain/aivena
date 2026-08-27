@@ -9,7 +9,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import type { OpsTask } from "@/lib/api/types";
 
-import { answerQuestionAction, dismissTaskAction } from "./actions";
+import { answerQuestionAction, dismissTaskAction, executeBookingAction } from "./actions";
 import {
   rowReducer,
   whyItMatters,
@@ -235,6 +235,12 @@ function TaskRow({
         <AnswerBox taskId={task.taskId} question={task.body ?? null} onAnswered={onAnswered} />
       ) : null}
 
+      {/* Amanda booking confirm: ONE TAP books the buyer-accepted slot through
+          the same deterministic path the engine uses; Amanda tells the buyer. */}
+      {task.type === "amanda_booking_confirm" && state !== "saving" ? (
+        <ConfirmBookingBox taskId={task.taskId} detail={task.body ?? task.title ?? null} onDone={onAnswered} />
+      ) : null}
+
       {/* Confirm helper + error live below the row so the action zone stays compact */}
       {state === "confirming" ? (
         <p className="mt-2 text-[12px] text-muted-foreground">
@@ -315,6 +321,50 @@ function AnswerBox({
           {busy ? "Sending…" : "Send to Amanda"}
         </button>
       </div>
+      {error ? <p className="mt-2 text-[12px] text-destructive">{error}</p> : null}
+    </div>
+  );
+}
+
+/** One-tap confirm for a buyer-accepted viewing slot (amanda_booking_confirm). */
+function ConfirmBookingBox({
+  taskId,
+  detail,
+  onDone,
+}: {
+  taskId: string;
+  detail: string | null;
+  onDone: () => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  function onConfirmBooking() {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    void (async () => {
+      const res = await executeBookingAction(taskId);
+      if (res.ok) {
+        onDone();
+      } else {
+        setBusy(false);
+        setError(res.error);
+      }
+    })();
+  }
+
+  return (
+    <div className="mt-2 rounded-lg border border-border bg-muted/40 p-3">
+      {detail ? <p className="mb-2 text-[13px] text-foreground">{detail}</p> : null}
+      <button
+        type="button"
+        onClick={onConfirmBooking}
+        disabled={busy}
+        className={cn(buttonVariants({ variant: "default", size: "sm" }))}
+      >
+        {busy ? "Booking…" : "Confirm booking"}
+      </button>
       {error ? <p className="mt-2 text-[12px] text-destructive">{error}</p> : null}
     </div>
   );

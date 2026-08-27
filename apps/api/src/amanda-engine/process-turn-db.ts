@@ -12,6 +12,7 @@ import { makeDbBackends, parseAmandaSettings, slotLabel, type AmandaAgencySettin
 import { productionModelCall, productionVerifier, ENGINE_MODEL } from './llm';
 import { turnId } from './turn-id';
 import { narrowPendingByText } from './pending-select';
+import { executeBookingFromPendingAction } from './booking-exec';
 import { nudgeCalendarSync } from '../routes/calendar-worker';
 import type { QueueRow, TurnOutcome } from './outbox-lib';
 import type { TurnContext } from './prompt';
@@ -150,7 +151,7 @@ async function loadWorld(row: QueueRow): Promise<LoadedWorld | { skip: string }>
 }
 
 export async function processTurnDb(row: QueueRow): Promise<TurnOutcome> {
-  if (row.kind !== 'message' && row.kind !== 'media' && row.kind !== 'ticket_answered') return { result: 'skip', reason: `kind_${row.kind}_not_engine_v1` };
+  if (row.kind !== 'message' && row.kind !== 'media' && row.kind !== 'ticket_answered' && row.kind !== 'system') return { result: 'skip', reason: `kind_${row.kind}_not_engine_v1` };
 
   // Stale-row guard (reviewer): a retried row from many hours ago must not fire
   // a reply into a conversation that has long moved on (and freeform would fail
@@ -191,9 +192,16 @@ export async function processTurnDb(row: QueueRow): Promise<TurnOutcome> {
     : null;
   if (row.kind === 'ticket_answered' && !relayNote) return { result: 'skip', reason: 'ticket_answer_empty' };
 
+  // System events: today only booking_executed (the agent one-tapped a queued
+  // booking confirm) — Amanda tells the buyer it's locked in, restating the slot.
+  const systemNote = row.kind === 'system' && payload.event === 'booking_executed' && typeof payload.echo === 'string'
+    ? `[SYSTEM: the office just approved and BOOKED the viewing the buyer confirmed earlier: ${String(payload.echo).slice(0, 200)}. Tell the buyer warmly it is now confirmed, explicitly restating day and time. Nothing else happened.]`
+    : null;
+  if (row.kind === 'system' && !systemNote) return { result: 'skip', reason: 'system_event_unknown' };
+
   // Media Law v0 (design §11b): never auto-act on unparsed media — the model is
   // told a media message arrived and asks the buyer to type it. STT/vision = P2.
-  const effectiveText = relayNote ?? (row.kind === 'media' && !inboundText.trim()
+  const effectiveText = relayNote ?? systemNote ?? (row.kind === 'media' && !inboundText.trim()
     ? '[the buyer sent a voice note or image that could not be read — warmly ask them to type it out]'
     : inboundText);
   if (!effectiveText.trim() && !buttonPayload) return { result: 'skip', reason: 'empty_inbound' };
@@ -250,79 +258,12 @@ export async function processTurnDb(row: QueueRow): Promise<TurnOutcome> {
 
     async executeBooking(pendingActionId) {
       return withAgency(row.agency_id, async (tx) => {
-        const paRows = await tx.execute(sql`
-          SELECT property_id, lower(slot) AS start_at,
-                 (extract(epoch FROM upper(slot) - lower(slot)) / 60)::int AS duration_min,
-                 payload->>'label' AS label
-            FROM amanda_pending_actions
-           WHERE id = ${pendingActionId}::uuid AND status = 'pending' AND expires_at > now()
-           LIMIT 1
-        `);
-        const pa = (paRows as unknown as Array<Record<string, unknown>>)[0];
-        if (!pa) return { ok: false as const, reason: 'action_invalid' as const };
-        // §4 supersession (partial, pre-P1): if a NEWER unprocessed inbound exists
-        // for this conversation, the buyer said something after the confirmation —
-        // never book on a stale snapshot; the newer turn re-evaluates.
-        const newer = await tx.execute(sql`
-          SELECT 1 FROM amanda_inbound_queue
-           WHERE conversation_id = ${row.conversation_id}::uuid
-             AND status IN ('pending', 'processing')
-             AND id <> ${row.id}::uuid
-             AND created_at > (SELECT created_at FROM amanda_inbound_queue WHERE id = ${row.id}::uuid)
-           LIMIT 1
-        `);
-        if ((newer as unknown as unknown[]).length > 0) return { ok: false as const, reason: 'action_invalid' as const };
-        try {
-          // create_manual_viewing is SECURITY INVOKER and PERFORMs
-          // require_role('agent'); withAgency sets only the agency GUC, so the
-          // worker must claim its role explicitly (aivena_staff bypass —
-          // reviewer-verified live) or every booking raises no_role_context.
-          await tx.execute(sql`
-            SELECT set_config('app.current_user_role', 'aivena_staff', true),
-                   set_config('app.current_user_id', 'amanda_engine', true)
-          `);
-          const created = await tx.execute(sql`
-            SELECT * FROM create_manual_viewing(
-              ${row.lead_id}::uuid, ${String(pa.start_at)}::timestamptz, ${Number(pa.duration_min) || 60}::int,
-              ${String(pa.property_id)}::uuid, ${null}, ${'Booked by Amanda (auto-mode)'}, ${null}, false
-            )
-          `);
-          const bookingId = String((created as unknown as Array<{ booking_id: string }>)[0]?.booking_id ?? '');
-          await tx.execute(sql`
-            UPDATE amanda_pending_actions
-               SET status = 'executed', resolved_at = now(), executed_booking_id = ${bookingId}::uuid
-             WHERE id = ${pendingActionId}::uuid
-          `);
-          await tx.execute(sql`DELETE FROM viewing_slot_holds WHERE pending_action_id = ${pendingActionId}::uuid`);
-          await tx.execute(sql`
-            DELETE FROM viewing_slot_holds WHERE pending_action_id IN (
-              SELECT id FROM amanda_pending_actions
-               WHERE conversation_id = ${row.conversation_id}::uuid AND status = 'pending'
-            )
-          `);
-          await tx.execute(sql`
-            UPDATE amanda_pending_actions SET status = 'superseded', resolved_at = now()
-             WHERE conversation_id = ${row.conversation_id}::uuid AND status = 'pending'
-          `);
-          await tx.execute(sql`
-            INSERT INTO amanda_funnel_events (agency_id, lead_id, conversation_id, property_id, event_type, amanda_attributed, metadata)
-            VALUES (${row.agency_id}, ${row.lead_id}::uuid, ${row.conversation_id}::uuid, ${String(pa.property_id)}::uuid, 'viewing_booked', true, jsonb_build_object('booking_id', ${bookingId}::uuid))
-          `);
-          nudgeCalendarSync();
-          return { ok: true as const, bookingId, echo: String(pa.label ?? 'the proposed time') };
-        } catch (err) {
-          const cause = (err as { cause?: { code?: string; message?: string } })?.cause;
-          const code = cause?.code ?? (err as { code?: string })?.code;
-          if (code === '23P01') return { ok: false as const, reason: 'slot_taken' as const };   // EXCLUDE arbiter
-          if (code === 'P0001') {
-            // RPC validation refusals (viewing_time_in_past, lead_not_found …)
-            // are honest 'this proposal no longer works', never a crash-retry.
-            // Message token only — bind params must never be logged.
-            console.error('[amanda-engine] booking refused by RPC:', cause?.message?.split('\n')[0].slice(0, 80) ?? 'P0001');
-            return { ok: false as const, reason: 'action_invalid' as const };
-          }
-          throw err;
-        }
+        const r = await executeBookingFromPendingAction(tx, {
+          pendingActionId, conversationId: row.conversation_id, leadId: row.lead_id,
+          agencyId: row.agency_id, setRoleGuc: true, bookedBy: 'amanda_engine',
+        });
+        if (r.ok) nudgeCalendarSync();
+        return r.ok ? { ok: true as const, bookingId: r.bookingId, echo: r.echo } : { ok: false as const, reason: r.reason };
       });
     },
 

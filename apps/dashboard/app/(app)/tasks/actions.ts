@@ -84,6 +84,37 @@ export async function answerQuestionAction(
   }
 }
 
+/**
+ * One-tap booking confirm (design §4 ASSISTED): executes the buyer-confirmed
+ * viewing through the same deterministic path the engine uses; Amanda then
+ * tells the buyer it's locked in. A slot-taken race comes back as a friendly
+ * error — the task is auto-handled and Amanda re-offers times to the buyer.
+ */
+export async function executeBookingAction(taskId: string): Promise<Ok | Err> {
+  try {
+    await apiFetch(`/api/v1/tasks/${encodeURIComponent(taskId)}/execute-booking`, {
+      method: "POST",
+      body: JSON.stringify({}),
+    });
+    return { ok: true };
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 422) {
+      // Friendly copy comes from the API body; the task is already handled.
+      const body = err.body as { error?: unknown } | null;
+      const msg = body && typeof body.error === "string" ? body.error : null;
+      return { ok: false, error: msg ?? "That slot is no longer available — Amanda will offer new times." };
+    }
+    const detail =
+      err instanceof ApiError
+        ? `${err.status} ${err.message}`
+        : err instanceof Error
+          ? err.message
+          : String(err);
+    console.error("[tasks] execute-booking failed:", detail);
+    return { ok: false, error: "Couldn't confirm that booking — please try again." };
+  }
+}
+
 export async function dismissTaskAction(
   taskId: string,
   reason: string,

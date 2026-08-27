@@ -1,5 +1,7 @@
 import { Hono } from 'hono';
 import { sql } from 'drizzle-orm';
+import { executeBookingFromPendingAction } from '../amanda-engine/booking-exec';
+import { nudgeCalendarSync } from './calendar-worker';
 
 const route = new Hono();
 
@@ -464,6 +466,71 @@ route.post('/:id/answer-question', async (c) => {
   `);
 
   return c.json({ ok: true, shortCode: q.short_code });
+});
+
+// POST /api/v1/tasks/:id/execute-booking — one-tap confirm of an
+// amanda_booking_confirm task (design §4 ASSISTED mode): runs the SAME
+// deterministic booking path as the engine (pending action → create_manual_viewing
+// → EXCLUDE arbiter → holds cleanup → funnel), then queues a 'system' engine row
+// so Amanda tells the buyer it's locked in (mode-governed). The HTTP tx already
+// carries the operator's role from agencyContextMiddleware — no GUC claim needed.
+route.post('/:id/execute-booking', async (c) => {
+  const tx = c.get('tx');
+  const user = c.get('user');
+  const taskId = c.req.param('id');
+
+  const taskRows = (await tx.execute(sql`
+    SELECT id, lead_id, conversation_id,
+           raw_payload->>'pending_action_id' AS pending_action_id,
+           raw_payload->>'echo' AS echo
+      FROM public.dashboard_tasks
+     WHERE id = ${taskId}::uuid AND task_type = 'amanda_booking_confirm' AND status IN ('pending', 'open')
+     LIMIT 1
+  `)) as unknown as Array<{ id: string; lead_id: string; conversation_id: string | null; pending_action_id: string | null; echo: string | null }>;
+  const task = taskRows[0];
+  if (!task || !task.pending_action_id || !task.conversation_id) {
+    return c.json({ error: 'That booking was already handled or could not be found.' }, 404);
+  }
+
+  const agencyId = c.get('agencyId') as string;
+  const result = await executeBookingFromPendingAction(tx, {
+    pendingActionId: task.pending_action_id,
+    conversationId: task.conversation_id,
+    leadId: task.lead_id,
+    agencyId,
+    setRoleGuc: false,
+    bookedBy: user.email,
+  });
+  if (!result.ok) {
+    const friendly = result.reason === 'slot_taken'
+      ? 'That slot was just taken by another booking — Amanda will offer the buyer new times on their next message.'
+      : 'This proposal is no longer valid (it may have expired) — Amanda will sort a fresh time with the buyer.';
+    // The proposal is dead either way: mark the task handled so it stops nagging.
+    await tx.execute(sql`
+      UPDATE public.dashboard_tasks
+         SET status = 'handled', handled_at = now(), handled_by = ${user.email}, updated_at = now()
+       WHERE id = ${taskId}::uuid
+    `);
+    return c.json({ error: friendly, code: result.reason }, 422);
+  }
+
+  // Tell the buyer (engine turn, mode-governed): unique key = one confirmation ever.
+  await tx.execute(sql`
+    INSERT INTO public.amanda_inbound_queue (agency_id, conversation_id, lead_id, provider_message_id, kind, payload)
+    VALUES (
+      ${agencyId}, ${task.conversation_id}::uuid, ${task.lead_id}::uuid,
+      ${'booking-executed:' + task.pending_action_id}, 'system',
+      jsonb_build_object('event', 'booking_executed', 'booking_id', ${result.bookingId}::uuid, 'echo', ${result.echo})
+    )
+    ON CONFLICT (provider_message_id, kind) DO NOTHING
+  `);
+  await tx.execute(sql`
+    UPDATE public.dashboard_tasks
+       SET status = 'handled', handled_at = now(), handled_by = ${user.email}, updated_at = now()
+     WHERE id = ${taskId}::uuid
+  `);
+  nudgeCalendarSync();
+  return c.json({ ok: true, bookingId: result.bookingId, echo: result.echo });
 });
 
 export default route;

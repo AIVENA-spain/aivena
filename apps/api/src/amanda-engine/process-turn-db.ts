@@ -296,7 +296,7 @@ export async function processTurnDb(row: QueueRow): Promise<TurnOutcome> {
           INSERT INTO send_queue (idempotency_key, agency_id, lead_id, channel, hub, template_key, template_variables, priority, requested_by, requested_at, expiry_at)
           VALUES (
             ${key}, ${row.agency_id}, ${row.lead_id}::uuid, 'whatsapp', 'twilio', 'freeform',
-            jsonb_build_object('body', ${text}, 'full_name', ${world.leadFullName}, 'first_name', ${world.leadFirstName}, 'lead_phone', ${world.leadPhone}, 'agency_name', ${world.agencyName}),
+            jsonb_build_object('body', ${text}::text, 'full_name', ${world.leadFullName}::text, 'first_name', ${world.leadFirstName}::text, 'lead_phone', ${world.leadPhone}::text, 'agency_name', ${world.agencyName}::text),
             'high', 'amanda_engine', now(), now() + interval '30 minutes'
           )
           ON CONFLICT (idempotency_key) DO NOTHING
@@ -320,15 +320,15 @@ export async function processTurnDb(row: QueueRow): Promise<TurnOutcome> {
             ${text},
             'whatsapp', 'twilio', 'high', 'pending',
             jsonb_build_object(
-              'suggested_reply', ${text},
-              'lead_language', ${world.leadLanguage},
-              'inbound_body_text', ${(row.payload as Record<string, unknown>)?.body ?? ''},
-              'inbound_message_id', ${row.provider_message_id},
-              'inbound_profile_name', ${world.leadFullName},
+              'suggested_reply', ${text}::text,
+              'lead_language', ${world.leadLanguage}::text,
+              'inbound_body_text', ${(row.payload as Record<string, unknown>)?.body ?? ''}::text,
+              'inbound_message_id', ${row.provider_message_id}::text,
+              'inbound_profile_name', ${world.leadFullName}::text,
               'ai_draft_pending', false,
               'ai_failure_reason', null,
               'via', 'amanda_engine',
-              'draft_kind', ${kind}
+              'draft_kind', ${kind}::text
             )
           )
         `);
@@ -348,7 +348,7 @@ export async function processTurnDb(row: QueueRow): Promise<TurnOutcome> {
             'amanda_booking_confirm', ${'Buyer confirmed a viewing: ' + echo},
             ${'The buyer accepted ' + echo + '. Book it from the Viewings page (one-tap execute lands with P2).'},
             'whatsapp', 'twilio', 'high', 'pending',
-            jsonb_build_object('pending_action_id', ${pendingActionId}::uuid, 'echo', ${echo}, 'via', 'amanda_engine')
+            jsonb_build_object('pending_action_id', ${pendingActionId}::uuid, 'echo', ${echo}::text, 'via', 'amanda_engine')
           )
         `);
       });
@@ -362,7 +362,7 @@ export async function processTurnDb(row: QueueRow): Promise<TurnOutcome> {
             ${row.agency_id}, ${row.lead_id}::uuid, ${row.conversation_id},
             'human_review_needed', 'Amanda needs a human on this reply', ${detail.slice(0, 800)},
             'whatsapp', 'twilio', 'high', 'pending',
-            jsonb_build_object('reason', ${reason}, 'via', 'amanda_engine')
+            jsonb_build_object('reason', ${reason}::text, 'via', 'amanda_engine')
           )
         `);
       });
@@ -390,7 +390,7 @@ export async function processTurnDb(row: QueueRow): Promise<TurnOutcome> {
       `);
       await tx.execute(sql`
         INSERT INTO amanda_question_events (agency_id, question_id, event_type, detail)
-        VALUES (${row.agency_id}, ${payload.question_id}::uuid, ${result.outcome === 'sent' ? 'relayed' : 'relay_drafted'}, jsonb_build_object('relay', ${relayText.slice(0, 1200)}))
+        VALUES (${row.agency_id}, ${payload.question_id}::uuid, ${result.outcome === 'sent' ? 'relayed' : 'relay_drafted'}, jsonb_build_object('relay', ${relayText.slice(0, 1200)}::text))
       `);
     }).catch((err) => console.error('[amanda-engine] relay record failed', err instanceof Error ? err.message.split('\n')[0].slice(0, 120) : 'error'));
   }

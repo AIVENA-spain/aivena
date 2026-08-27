@@ -65,7 +65,7 @@ export async function executeBookingFromPendingAction(
     `);
     await tx.execute(sql`
       INSERT INTO amanda_funnel_events (agency_id, lead_id, conversation_id, property_id, event_type, amanda_attributed, metadata)
-      VALUES (${args.agencyId}, ${args.leadId}::uuid, ${args.conversationId}::uuid, ${String(pa.property_id)}::uuid, 'viewing_booked', true, jsonb_build_object('booking_id', ${bookingId}::uuid, 'booked_by', ${args.bookedBy}))
+      VALUES (${args.agencyId}, ${args.leadId}::uuid, ${args.conversationId}::uuid, ${String(pa.property_id)}::uuid, 'viewing_booked', true, jsonb_build_object('booking_id', ${bookingId}::uuid, 'booked_by', ${args.bookedBy}::text))
     `);
     return { ok: true, bookingId, echo: String(pa.label ?? 'the proposed time'), propertyId: pa.property_id ? String(pa.property_id) : null };
   } catch (err) {

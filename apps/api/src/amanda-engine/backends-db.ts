@@ -206,7 +206,7 @@ export function makeDbBackends(ctx: BackendCtx): ToolBackends {
             VALUES (
               ${A}, ${ctx.conversationId}::uuid, ${ctx.leadId}::uuid, ${propertyId}::uuid, 'book_viewing',
               tstzrange(${startISO}::timestamptz, ${endISO}::timestamptz, '[)'),
-              jsonb_build_object('label', ${slotLabel(startMs, s.timezone)}),
+              jsonb_build_object('label', ${slotLabel(startMs, s.timezone)}::text),
               now() + interval '24 hours'
             )
             RETURNING id
@@ -270,7 +270,7 @@ export function makeDbBackends(ctx: BackendCtx): ToolBackends {
         const r = (rows as unknown as Array<{ id: string; short_code: number }>)[0];
         await tx.execute(sql`
           INSERT INTO amanda_question_events (agency_id, question_id, event_type, detail)
-          VALUES (${A}, ${r.id}::uuid, 'filed', jsonb_build_object('question', ${q}))
+          VALUES (${A}, ${r.id}::uuid, 'filed', jsonb_build_object('question', ${q}::text))
         `);
         // Mirror into dashboard_tasks so the ticket is visible on /tasks today
         // (the dedicated "Questions from Amanda" surface is the P2 build).
@@ -320,7 +320,7 @@ export function makeDbBackends(ctx: BackendCtx): ToolBackends {
         // §11.4 data pack: intel capture is a funnel event (slot keys only, no values).
         await tx.execute(sql`
           INSERT INTO amanda_funnel_events (agency_id, lead_id, conversation_id, event_type, amanda_attributed, metadata)
-          VALUES (${A}, ${ctx.leadId}::uuid, ${ctx.conversationId}::uuid, 'intel_captured', true, jsonb_build_object('slots', ${Object.keys(patch).join(',')}))
+          VALUES (${A}, ${ctx.leadId}::uuid, ${ctx.conversationId}::uuid, 'intel_captured', true, jsonb_build_object('slots', ${Object.keys(patch).join(',')}::text))
         `);
       });
     },
@@ -388,12 +388,12 @@ export function makeDbBackends(ctx: BackendCtx): ToolBackends {
             ${A}, ${ctx.leadId}::uuid, ${ctx.conversationId}, 'human_review_needed',
             'Amanda handed this conversation to a human', ${summary.slice(0, 800)},
             'whatsapp', 'twilio', 'high', 'pending',
-            jsonb_build_object('reason', ${reason.slice(0, 120)}, 'via', 'amanda_engine')
+            jsonb_build_object('reason', ${reason.slice(0, 120)}::text, 'via', 'amanda_engine')
           )
         `);
         await tx.execute(sql`
           INSERT INTO amanda_funnel_events (agency_id, lead_id, conversation_id, event_type, amanda_attributed, metadata)
-          VALUES (${A}, ${ctx.leadId}::uuid, ${ctx.conversationId}::uuid, 'handoff', true, jsonb_build_object('reason', ${reason.slice(0, 120)}))
+          VALUES (${A}, ${ctx.leadId}::uuid, ${ctx.conversationId}::uuid, 'handoff', true, jsonb_build_object('reason', ${reason.slice(0, 120)}::text))
         `);
       });
     },

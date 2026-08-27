@@ -108,7 +108,7 @@ export async function drainAmandaInbound(processTurn: ProcessTurn, limit = 5): P
                 'human_review_needed', 'Amanda paused herself after repeated errors',
                 ${'Amanda hit repeated processing errors and paused this agency for ' + Math.round(BREAKER_COOLDOWN_MS / 60000) + ' minutes. Messages are safe in the queue; agents see everything in the Inbox. If this repeats, tell CC (see the incident runbook).'},
                 'whatsapp', 'twilio', 'high', 'pending',
-                jsonb_build_object('via', 'amanda_engine', 'kind', 'breaker_tripped', 'last_error', ${msg})
+                jsonb_build_object('via', 'amanda_engine', 'kind', 'breaker_tripped', 'last_error', ${msg}::text)
               )
             `);
           }).catch(() => { /* alert is best-effort */ });

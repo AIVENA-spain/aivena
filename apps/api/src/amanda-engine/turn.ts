@@ -175,9 +175,11 @@ export async function runTurn(
   // turn that actually fetched full property details may run longer (§10 B1 —
   // "summarizing a property they requested"). Everything else stays short.
   const allowLongForm = loop.toolEvents.some((ev) => ev.tool === 'get_property_details' && ev.result.ok && !ev.result.refused);
+  const authoritative = ctx.officeAnswerText ? [ctx.officeAnswerText] : [];
   const judge = async (text: string) => {
-    const v = validateDraft(text, { allowLongForm, mirrorTargetWords: ctx.mirrorTargetWords ?? undefined });
-    const g = await runGates(text, loop.toolEvents, deps.verifier);
+    // A relay turn may run long-form: the office answer needs attribution + context.
+    const v = validateDraft(text, { allowLongForm: allowLongForm || authoritative.length > 0, mirrorTargetWords: ctx.mirrorTargetWords ?? undefined });
+    const g = await runGates(text, loop.toolEvents, deps.verifier, authoritative);
     return [...v.violations, ...g.failures];
   };
   let failures = await judge(draft);

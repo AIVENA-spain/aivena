@@ -9,7 +9,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import type { OpsTask } from "@/lib/api/types";
 
-import { dismissTaskAction } from "./actions";
+import { answerQuestionAction, dismissTaskAction } from "./actions";
 import {
   rowReducer,
   whyItMatters,
@@ -94,6 +94,7 @@ export function TasksWorkspace({ tasks }: { tasks: OpsTask[] }) {
               onCancel={() => dispatch(row.task.taskId, { type: "CANCEL" })}
               onConfirm={() => onConfirm(row.task.taskId)}
               onSetReason={(reason) => dispatch(row.task.taskId, { type: "SET_REASON", reason })}
+              onAnswered={() => dispatch(row.task.taskId, { type: "SUCCESS" })}
             />
           ))}
           {resolvedCount > 0 ? (
@@ -126,12 +127,14 @@ function TaskRow({
   onCancel,
   onConfirm,
   onSetReason,
+  onAnswered,
 }: {
   row: Row;
   onAsk: () => void;
   onCancel: () => void;
   onConfirm: () => void;
   onSetReason: (reason: string) => void;
+  onAnswered: () => void;
 }) {
   const { task, state, error } = row;
   const who = task.leadName ?? "Unknown lead";
@@ -225,6 +228,13 @@ function TaskRow({
         </div>
       </div>
 
+      {/* Amanda question: the ONE-BOX answer (design §3b) — answer here and
+          Amanda relays it to the buyer, mode-governed. Self-contained state so
+          the two-step Resolve machinery above stays untouched. */}
+      {task.type === "amanda_question" && state !== "saving" ? (
+        <AnswerBox taskId={task.taskId} question={task.body ?? null} onAnswered={onAnswered} />
+      ) : null}
+
       {/* Confirm helper + error live below the row so the action zone stays compact */}
       {state === "confirming" ? (
         <p className="mt-2 text-[12px] text-muted-foreground">
@@ -234,6 +244,78 @@ function TaskRow({
       {state === "error" && error ? (
         <p className="mt-2 text-[12px] text-destructive">{error}</p>
       ) : null}
+    </div>
+  );
+}
+
+/**
+ * One-box answer for a "Question from Amanda" (design §3b). Shows the question,
+ * takes one line, sends it. On success the row resolves out of the list —
+ * Amanda relays the answer to the buyer (as a draft for approval-mode agencies,
+ * auto-sent for assisted/full).
+ */
+function AnswerBox({
+  taskId,
+  question,
+  onAnswered,
+}: {
+  taskId: string;
+  question: string | null;
+  onAnswered: () => void;
+}) {
+  const [answer, setAnswer] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  function onSend() {
+    if (busy || !answer.trim()) return;
+    setBusy(true);
+    setError(null);
+    void (async () => {
+      const res = await answerQuestionAction(taskId, answer);
+      if (res.ok) {
+        onAnswered();
+      } else {
+        setBusy(false);
+        setError(res.error);
+      }
+    })();
+  }
+
+  return (
+    <div className="mt-2 rounded-lg border border-border bg-muted/40 p-3">
+      {question ? (
+        <p className="mb-2 text-[13px] text-foreground">
+          <span className="font-semibold">Amanda asks:</span> {question}
+        </p>
+      ) : null}
+      <div className="flex flex-wrap items-center gap-2">
+        <label className="sr-only" htmlFor={`answer-${taskId}`}>
+          Your answer
+        </label>
+        <input
+          id={`answer-${taskId}`}
+          type="text"
+          value={answer}
+          onChange={(e) => setAnswer(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") onSend();
+          }}
+          placeholder="Type the answer — Amanda passes it to the buyer"
+          disabled={busy}
+          maxLength={1200}
+          className="h-9 min-w-0 flex-1 rounded-md border border-border bg-background px-2.5 text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand/40"
+        />
+        <button
+          type="button"
+          onClick={onSend}
+          disabled={busy || !answer.trim()}
+          className={cn(buttonVariants({ variant: "default", size: "sm" }), "shrink-0")}
+        >
+          {busy ? "Sending…" : "Send to Amanda"}
+        </button>
+      </div>
+      {error ? <p className="mt-2 text-[12px] text-destructive">{error}</p> : null}
     </div>
   );
 }

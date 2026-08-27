@@ -399,4 +399,71 @@ route.post('/:id/dismiss', async (c) => {
   }
 });
 
+// POST /api/v1/tasks/:id/answer-question — the agent answers an amanda_question
+// ticket in ONE box (design §3b step 3). Records the answer on the ticket,
+// enqueues a 'ticket_answered' engine row (Amanda relays it, mode-governed:
+// approval agencies get a relay DRAFT, assisted/full auto-send), and marks the
+// mirrored dashboard task handled. All inside the agency-scoped tx — RLS-fenced.
+// Ships dark: amanda_question tasks can only exist after the Amanda P0 schema.
+route.post('/:id/answer-question', async (c) => {
+  const tx = c.get('tx');
+  const user = c.get('user');
+  const taskId = c.req.param('id');
+
+  let body: { answer?: unknown } = {};
+  try {
+    body = await c.req.json();
+  } catch {
+    body = {};
+  }
+  const answer = typeof body.answer === 'string' ? body.answer.trim().slice(0, 1200) : '';
+  if (!answer) {
+    return c.json({ error: 'Please write the answer first.' }, 400);
+  }
+
+  const taskRows = (await tx.execute(sql`
+    SELECT id, lead_id, conversation_id, raw_payload->>'amanda_question_id' AS question_id
+      FROM public.dashboard_tasks
+     WHERE id = ${taskId}::uuid AND task_type = 'amanda_question' AND status IN ('pending', 'open')
+     LIMIT 1
+  `)) as unknown as Array<{ id: string; lead_id: string; conversation_id: string | null; question_id: string | null }>;
+  const task = taskRows[0];
+  if (!task || !task.question_id) {
+    return c.json({ error: 'That question was already handled or could not be found.' }, 404);
+  }
+
+  const qRows = (await tx.execute(sql`
+    UPDATE public.amanda_questions
+       SET answer_raw = ${answer}, answered_by = ${user.email}, answered_at = now(), status = 'answered'
+     WHERE id = ${task.question_id}::uuid AND status IN ('open', 'clarifying', 'escalated')
+     RETURNING id, short_code, question_text, conversation_id, lead_id, agency_id
+  `)) as unknown as Array<{ id: string; short_code: number; question_text: string; conversation_id: string; lead_id: string; agency_id: string }>;
+  const q = qRows[0];
+  if (!q) {
+    return c.json({ error: 'That question was already answered.' }, 409);
+  }
+
+  await tx.execute(sql`
+    INSERT INTO public.amanda_question_events (agency_id, question_id, event_type, detail)
+    VALUES (${q.agency_id}, ${q.id}::uuid, 'answer_received', jsonb_build_object('answered_by', ${user.email}))
+  `);
+  // The relay ride: unique (provider_message_id, kind) makes a double-submit a no-op.
+  await tx.execute(sql`
+    INSERT INTO public.amanda_inbound_queue (agency_id, conversation_id, lead_id, provider_message_id, kind, payload)
+    VALUES (
+      ${q.agency_id}, ${q.conversation_id}::uuid, ${q.lead_id}::uuid,
+      ${'ticket-answer:' + q.id}, 'ticket_answered',
+      jsonb_build_object('question_id', ${q.id}::uuid, 'short_code', ${q.short_code}::int, 'question', ${q.question_text}, 'answer', ${answer})
+    )
+    ON CONFLICT (provider_message_id, kind) DO NOTHING
+  `);
+  await tx.execute(sql`
+    UPDATE public.dashboard_tasks
+       SET status = 'handled', handled_at = now(), handled_by = ${user.email}, updated_at = now()
+     WHERE id = ${taskId}::uuid
+  `);
+
+  return c.json({ ok: true, shortCode: q.short_code });
+});
+
 export default route;

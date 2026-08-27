@@ -303,6 +303,63 @@ describe('golden/core — reviewer-regression scenarios', () => {
   });
 });
 
+describe('golden/core — office-answer relay (§3b step 3)', () => {
+  const RELAY_NOTE = '[OFFICE ANSWER for Q3 — the buyer had asked: "Is the price negotiable?". The office answers: "Yes, we would consider offers from 230000 euros". Relay this to the buyer NOW...]';
+
+  it('R8: the office\'s numbers are authoritative — the relay passes gates and sends in FULL', async () => {
+    const backends = new FakeBackends();
+    const model = new ScriptedModel([
+      textResponse('Word back from the office — they would consider offers from €230.000. Shall I set up a viewing so you can see it first?'),
+    ]);
+    const { deps, journal } = makeDeps(model, backends);
+    const ctx = baseContext({ officeAnswerText: 'Yes, we would consider offers from 230000 euros' });
+    const r = await runTurn('full', ctx, inbound(RELAY_NOTE), null, deps);
+    expect(r.outcome).toBe('sent');
+    expect(journal.sent[0]).toContain('230.000');
+  });
+
+  it('R9: in APPROVAL mode the relay becomes a draft — nothing auto-sends', async () => {
+    const backends = new FakeBackends();
+    const model = new ScriptedModel([
+      textResponse('The office says they would consider offers from €230.000 — happy to talk it through whenever you like.'),
+    ]);
+    const { deps, journal } = makeDeps(model, backends);
+    const ctx = baseContext({ officeAnswerText: 'Yes, we would consider offers from 230000 euros' });
+    const r = await runTurn('approval', ctx, inbound(RELAY_NOTE), null, deps);
+    expect(r.outcome).toBe('drafted');
+    expect(journal.sent).toHaveLength(0);
+    expect(journal.drafts[0].text).toContain('230.000');
+  });
+
+  it('R10: the verifier receives the office answer as authoritative data', async () => {
+    const backends = new FakeBackends();
+    const model = new ScriptedModel([
+      textResponse('The office confirms: offers from €230.000 would be considered.'),
+    ]);
+    const { deps } = makeDeps(model, backends);
+    let seenAuthoritative: string[] | undefined;
+    deps.verifier = async (_draft, _events, authoritative) => {
+      seenAuthoritative = authoritative;
+      return true;
+    };
+    const ctx = baseContext({ officeAnswerText: 'Yes, we would consider offers from 230000 euros' });
+    await runTurn('full', ctx, inbound(RELAY_NOTE), null, deps);
+    expect(seenAuthoritative).toEqual(['Yes, we would consider offers from 230000 euros']);
+  });
+
+  it('R11: WITHOUT an office answer the same number still dies at the gate', async () => {
+    const backends = new FakeBackends();
+    const model = new ScriptedModel([
+      textResponse('They would consider offers from €230.000.'),
+      textResponse('Let me confirm the exact figure with the office and come back to you.'),
+    ]);
+    const { deps, journal } = makeDeps(model, backends);
+    const r = await runTurn('full', baseContext(), inbound('Is the price negotiable?'), null, deps);
+    expect(r.outcome).toBe('sent');
+    expect(journal.sent[0]).not.toContain('230.000');
+  });
+});
+
 describe('golden/core — escalation ladder (§3)', () => {
   it('S16: ask_agency files the ticket for real in APPROVAL mode; the reply is a draft', async () => {
     const backends = new FakeBackends();

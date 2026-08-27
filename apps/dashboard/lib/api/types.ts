@@ -900,6 +900,8 @@ export type OpsTask = {
   priority: string | null;
   temperature: string | null;
   title: string | null;
+  /** message_body — for amanda_question rows this is the question text. */
+  body?: string | null;
   createdAt: string | null;
   ageHours: number | null;
   /** True = this lead is openable in the Inbox (has a dashboard_inbox row). */

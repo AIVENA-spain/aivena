@@ -64,10 +64,20 @@ const PROPERTY_NUMBER_PATTERNS: Array<{ cls: 'price' | 'size' | 'rooms'; re: Reg
 ];
 
 /** Deterministic numeric grounding: a stated property-fact number must exist in
- *  the matching STRUCTURED field of something fetched this turn. No tool data +
- *  a property number stated = ungrounded by definition. */
-export function draftNumbersGrounded(draft: string, toolEvents: ToolEvent[]): { ok: boolean; offending: string[] } {
+ *  the matching STRUCTURED field of something fetched this turn — or in an
+ *  AUTHORITATIVE agency-authored text (an office answer being relayed, design
+ *  §3b: the relay is the AGENCY'S words; its numbers are trusted-layer). */
+export function draftNumbersGrounded(draft: string, toolEvents: ToolEvent[], authoritativeTexts: string[] = []): { ok: boolean; offending: string[] } {
   const sets = fetchedFieldTokens(toolEvents);
+  for (const text of authoritativeTexts) {
+    for (const m of text.match(/\d+/g) ?? []) {
+      sets.price.add(m); sets.size.add(m); sets.rooms.add(m);
+    }
+    for (const m of text.match(/\d[\d.,]*\d/g) ?? []) {
+      const c = m.replace(/[.,]/g, '');
+      sets.price.add(c); sets.size.add(c); sets.rooms.add(c);
+    }
+  }
   const offending: string[] = [];
   for (const { cls, re } of PROPERTY_NUMBER_PATTERNS) {
     re.lastIndex = 0;
@@ -82,8 +92,10 @@ export function draftNumbersGrounded(draft: string, toolEvents: ToolEvent[]): { 
 }
 
 /** The independent verifier seam: production wires Haiku, tests script it.
- *  Returning false (or throwing) BLOCKS — gates fail closed (design §4). */
-export type Verifier = (draft: string, toolEvents: ToolEvent[]) => Promise<boolean>;
+ *  Returning false (or throwing) BLOCKS — gates fail closed (design §4).
+ *  authoritativeTexts = agency-authored content (office answers) the verifier
+ *  must treat as supporting DATA. */
+export type Verifier = (draft: string, toolEvents: ToolEvent[], authoritativeTexts?: string[]) => Promise<boolean>;
 
 export interface GateResult {
   ok: boolean;
@@ -91,17 +103,22 @@ export interface GateResult {
   failures: string[];
 }
 
-export async function runGates(draft: string, toolEvents: ToolEvent[], verifier: Verifier | null): Promise<GateResult> {
+export async function runGates(
+  draft: string,
+  toolEvents: ToolEvent[],
+  verifier: Verifier | null,
+  authoritativeTexts: string[] = [],
+): Promise<GateResult> {
   const turnClass = classifyDraft(draft);
   const failures: string[] = [];
   if (turnClass === 'social') return { ok: true, turnClass, failures };
 
-  const numeric = draftNumbersGrounded(draft, toolEvents);
+  const numeric = draftNumbersGrounded(draft, toolEvents, authoritativeTexts);
   if (!numeric.ok) failures.push(`ungrounded_numbers:${numeric.offending.join('|')}`);
 
   if (verifier) {
     try {
-      if (!(await verifier(draft, toolEvents))) failures.push('verifier_rejected');
+      if (!(await verifier(draft, toolEvents, authoritativeTexts))) failures.push('verifier_rejected');
     } catch {
       failures.push('verifier_unavailable');   // fail closed: no verifier, no fact-bearing send
     }

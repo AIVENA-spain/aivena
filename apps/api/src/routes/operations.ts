@@ -74,6 +74,7 @@ type RawTask = {
   priority: string | null;
   temperature: string | null;
   title: string | null;
+  body: string | null;
   created_at: Date | string | null;
 };
 type RawLife = {
@@ -139,6 +140,7 @@ route.get('/', async (c) => {
                dt.priority,
                dt.temperature,
                dt.title,
+               dt.message_body AS body,
                dt.created_at
           FROM public.dashboard_tasks dt
           LEFT JOIN public.leads l ON l.id = dt.lead_id
@@ -156,6 +158,7 @@ route.get('/', async (c) => {
         priority: x.priority,
         temperature: x.temperature,
         title: x.title,
+        body: x.body,
         created_at: toIso(x.created_at),
       }));
     },

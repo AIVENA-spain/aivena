@@ -54,11 +54,13 @@ export const productionModelCall: ModelCall = async ({ system, messages, tools }
  *  the draft assert a property-specific fact the data doesn't support? Area/
  *  lifestyle talk and scheduling chatter are allowed. Unparseable → false
  *  (the gate layer treats false/throw as BLOCK — fail closed). */
-export const productionVerifier: Verifier = async (draft: string, toolEvents: ToolEvent[]) => {
-  const corpus = toolEvents
-    .filter((ev) => !ev.result.refused && ev.result.data != null)
-    .map((ev) => `${ev.tool}: ${JSON.stringify(ev.result.data).slice(0, 4000)}`)
-    .join('\n');
+export const productionVerifier: Verifier = async (draft: string, toolEvents: ToolEvent[], authoritativeTexts: string[] = []) => {
+  const corpus = [
+    ...toolEvents
+      .filter((ev) => !ev.result.refused && ev.result.data != null)
+      .map((ev) => `${ev.tool}: ${JSON.stringify(ev.result.data).slice(0, 4000)}`),
+    ...authoritativeTexts.map((a) => `OFFICE ANSWER (agency-authored, authoritative): ${a.slice(0, 1500)}`),
+  ].join('\n');
   const system = [
     'You are a strict fact-checker for a real-estate assistant chatting on WhatsApp.',
     'You get DATA (tool results the assistant fetched) and its proposed ANSWER to the buyer.',

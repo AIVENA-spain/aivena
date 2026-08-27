@@ -150,7 +150,7 @@ async function loadWorld(row: QueueRow): Promise<LoadedWorld | { skip: string }>
 }
 
 export async function processTurnDb(row: QueueRow): Promise<TurnOutcome> {
-  if (row.kind !== 'message' && row.kind !== 'media') return { result: 'skip', reason: `kind_${row.kind}_not_engine_v1` };
+  if (row.kind !== 'message' && row.kind !== 'media' && row.kind !== 'ticket_answered') return { result: 'skip', reason: `kind_${row.kind}_not_engine_v1` };
 
   // Stale-row guard (reviewer): a retried row from many hours ago must not fire
   // a reply into a conversation that has long moved on (and freeform would fail
@@ -180,11 +180,22 @@ export async function processTurnDb(row: QueueRow): Promise<TurnOutcome> {
   const inboundText = typeof payload.body === 'string' ? payload.body : '';
   const buttonPayload = typeof payload.button_payload === 'string' ? payload.button_payload : null;
 
+  // Office-answer relay (§3b step 3): the agent answered a ticket in the
+  // dashboard — this turn RELAYS it, warmly attributed, in the buyer's language.
+  // The answer text is agency-authored → authoritative for the grounding gates.
+  const officeAnswer = row.kind === 'ticket_answered' && typeof payload.answer === 'string' && payload.answer.trim()
+    ? payload.answer.trim().slice(0, 1200)
+    : null;
+  const relayNote = officeAnswer
+    ? `[OFFICE ANSWER for Q${String(payload.short_code ?? '?')} — the buyer had asked: "${String(payload.question ?? '').slice(0, 300)}". The office answers: "${officeAnswer}". Relay this to the buyer NOW, warmly and with attribution (vary the opener — never the same phrasing twice), in their language. Add NOTHING beyond the office's answer, then offer to keep helping.]`
+    : null;
+  if (row.kind === 'ticket_answered' && !relayNote) return { result: 'skip', reason: 'ticket_answer_empty' };
+
   // Media Law v0 (design §11b): never auto-act on unparsed media — the model is
   // told a media message arrived and asks the buyer to type it. STT/vision = P2.
-  const effectiveText = row.kind === 'media' && !inboundText.trim()
+  const effectiveText = relayNote ?? (row.kind === 'media' && !inboundText.trim()
     ? '[the buyer sent a voice note or image that could not be read — warmly ask them to type it out]'
-    : inboundText;
+    : inboundText);
   if (!effectiveText.trim() && !buttonPayload) return { result: 'skip', reason: 'empty_inbound' };
 
   // Pending-action selection (§4): a button pinpoints its action; otherwise
@@ -222,6 +233,7 @@ export async function processTurnDb(row: QueueRow): Promise<TurnOutcome> {
     episodicSummary: null,                         // layer-3 memory: trigger-ledger item
     pendingActionEcho: pendingNote,
     openTicketNote: world.openTicketNote,
+    officeAnswerText: officeAnswer,
     mirrorTargetWords: world.mirrorTargetWords,
   };
 
@@ -423,6 +435,24 @@ export async function processTurnDb(row: QueueRow): Promise<TurnOutcome> {
     providerMessageId: row.provider_message_id,
     atMs: Date.now(),
   }, pending, deps);
+
+  const relayText = result.replyText;
+  if (officeAnswer && typeof payload.question_id === 'string' && relayText
+      && (result.outcome === 'sent' || result.outcome === 'drafted')) {
+    await withAgency(row.agency_id, async (tx) => {
+      await tx.execute(sql`
+        UPDATE amanda_questions
+           SET answer_relay = ${relayText.slice(0, 1200)},
+               relay_message_sid = NULL,
+               relay_sent_at = ${result.outcome === 'sent' ? sql`now()` : sql`NULL`}
+         WHERE id = ${payload.question_id}::uuid
+      `);
+      await tx.execute(sql`
+        INSERT INTO amanda_question_events (agency_id, question_id, event_type, detail)
+        VALUES (${row.agency_id}, ${payload.question_id}::uuid, ${result.outcome === 'sent' ? 'relayed' : 'relay_drafted'}, jsonb_build_object('relay', ${relayText.slice(0, 1200)}))
+      `);
+    }).catch((err) => console.error('[amanda-engine] relay record failed', err instanceof Error ? err.message.split('\n')[0].slice(0, 120) : 'error'));
+  }
 
   await withAgency(row.agency_id, async (tx) => {
     await tx.execute(sql`

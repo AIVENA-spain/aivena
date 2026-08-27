@@ -18,6 +18,9 @@ export interface TurnContext {
   episodicSummary: string | null;
   pendingActionEcho: string | null;   // "Friday 28 August, 17:00 — awaiting their confirmation"
   openTicketNote: string | null;      // "Q3 to the office: 'is the price negotiable?' — still waiting"
+  /** Agency-authored office answer being relayed this turn (§3b) — authoritative
+   *  for the grounding gates; its numbers are the agency's own words. */
+  officeAnswerText?: string | null;
   mirrorTargetWords: number | null;
 }
 

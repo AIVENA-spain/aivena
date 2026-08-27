@@ -51,6 +51,8 @@ const TASK_LABELS: Record<string, string> = {
   viewing_booking_needed: 'Viewing to book',
   scoring_failed: 'Lead scoring failed',
   manual_follow_up: 'Manual follow-up',
+  amanda_question: 'Question from Amanda',
+  amanda_booking_confirm: 'Viewing to confirm (Amanda)',
 };
 
 export function taskLabel(type: string): string {
@@ -101,6 +103,7 @@ export type OpenTaskRow = {
   priority: string | null;
   temperature: string | null;
   title: string | null;
+  body?: string | null;      // message_body — the question text for amanda_question rows
   created_at: string | null; // ISO
 };
 
@@ -409,6 +412,7 @@ export function computeOperations(agencyId: string, s: OperationsSignals): Opera
     priority: t.priority,
     temperature: t.temperature,
     title: t.title,
+    body: t.body ?? null,
     createdAt: t.created_at,
     ageHours: ageHours(t.created_at, now),
     inInbox: t.lead_id ? inboxLeadIds.has(t.lead_id) : false,

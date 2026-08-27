@@ -53,6 +53,37 @@ function toErr(err: unknown): Err {
  * friendly result the UI renders inline — never throws to the client, never
  * surfaces a raw code or status.
  */
+/**
+ * Answer an amanda_question ticket (design §3b): one box, one click. The API
+ * records the answer, marks the task handled, and queues Amanda's relay —
+ * mode-governed (approval agencies get a relay draft; assisted/full auto-send).
+ */
+export async function answerQuestionAction(
+  taskId: string,
+  answer: string,
+): Promise<Ok | Err> {
+  const trimmed = answer.trim();
+  if (!trimmed) {
+    return { ok: false, error: "Write the answer first — one line is enough." };
+  }
+  try {
+    await apiFetch(`/api/v1/tasks/${encodeURIComponent(taskId)}/answer-question`, {
+      method: "POST",
+      body: JSON.stringify({ answer: trimmed.slice(0, 1200) }),
+    });
+    return { ok: true };
+  } catch (err) {
+    const detail =
+      err instanceof ApiError
+        ? `${err.status} ${err.message}`
+        : err instanceof Error
+          ? err.message
+          : String(err);
+    console.error("[tasks] answer-question failed:", detail);
+    return { ok: false, error: "Couldn't send that answer — please try again." };
+  }
+}
+
 export async function dismissTaskAction(
   taskId: string,
   reason: string,

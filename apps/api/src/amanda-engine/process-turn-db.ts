@@ -336,6 +336,20 @@ export async function processTurnDb(row: QueueRow): Promise<TurnOutcome> {
           )
           ON CONFLICT (idempotency_key) DO NOTHING
         `);
+        // Auto-mode dashboard coherence (Christian, live demo 2026-08-27): the
+        // moment Amanda ANSWERS a conversation herself, any pending human
+        // suggested-reply draft for it is stale by construction — an agent
+        // tapping Send on one would talk over her. sendReply only runs in
+        // assisted/full (approval rides queueDraft), so sweep unconditionally,
+        // same transaction as the send enqueue.
+        await tx.execute(sql`
+          UPDATE dashboard_tasks
+             SET status = 'dismissed', updated_at = now(),
+                 raw_payload = COALESCE(raw_payload, '{}'::jsonb)
+                   || jsonb_build_object('auto_dismissed', 'amanda_auto_mode_answered', 'turn_id', ${turnId(row.conversation_id, row.provider_message_id)}::text)
+           WHERE conversation_id = ${row.conversation_id}::text
+             AND task_type = 'suggested_reply' AND status = 'pending'
+        `);
         return { providerMessageId: null };
       });
     },

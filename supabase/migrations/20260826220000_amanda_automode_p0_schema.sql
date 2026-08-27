@@ -294,21 +294,72 @@ CREATE OR REPLACE FUNCTION public.pick_and_claim_amanda_inbound(p_limit integer 
 AS $function$
 BEGIN
   RETURN QUERY
-  WITH to_claim AS (
-    SELECT q.id
+  -- §4 ordering machinery (v2):
+  --   · per-conversation SERIALIZATION — a conversation with a live 'processing'
+  --     row is untouchable (no concurrent turns on one conversation, ever);
+  --   · 12s BURST DEBOUNCE for buyer messages — a message row becomes claimable
+  --     only once 12s old, and only if it is the NEWEST pending message/media of
+  --     its conversation (a typing burst settles into ONE turn on the last
+  --     message, with the earlier ones folded as superseded — their text is in
+  --     conversation context regardless);
+  --   · internal kinds (ticket_answered / system / agency_edit) skip the
+  --     debounce but still respect the serialization.
+  WITH claimable AS (
+    SELECT q.*
     FROM public.amanda_inbound_queue q
-    WHERE (q.status = 'pending' AND (q.next_attempt_at IS NULL OR q.next_attempt_at <= now()))
-       OR (q.status = 'processing' AND q.lease_expires_at < now())  -- stale lease steal
-    ORDER BY q.created_at ASC
+    WHERE ((q.status = 'pending' AND (q.next_attempt_at IS NULL OR q.next_attempt_at <= now()))
+        OR (q.status = 'processing' AND q.lease_expires_at < now()))   -- stale lease steal
+      AND NOT EXISTS (
+        SELECT 1 FROM public.amanda_inbound_queue live
+        WHERE live.conversation_id = q.conversation_id
+          AND live.status = 'processing' AND live.lease_expires_at >= now()
+      )
+    FOR UPDATE OF q SKIP LOCKED   -- two workers can never claim/fold the same rows
+  ),
+  eligible AS (
+    SELECT c.id, c.conversation_id, c.created_at,
+           (c.kind IN ('message', 'media')) AS is_buyer_msg
+    FROM claimable c
+    WHERE c.kind NOT IN ('message', 'media')
+       OR (c.created_at <= now() - interval '12 seconds'
+           AND NOT EXISTS (
+             SELECT 1 FROM public.amanda_inbound_queue newer
+             WHERE newer.conversation_id = c.conversation_id
+               AND newer.kind IN ('message', 'media')
+               AND newer.status = 'pending'
+               AND newer.created_at > c.created_at
+           ))
+  ),
+  one_per_conversation AS (
+    SELECT e.id, e.conversation_id, e.is_buyer_msg
+    FROM (
+      SELECT e2.*, row_number() OVER (PARTITION BY e2.conversation_id ORDER BY e2.created_at ASC) AS rn
+      FROM eligible e2
+    ) e
+    WHERE e.rn = 1
+    ORDER BY e.conversation_id
     LIMIT p_limit
-    FOR UPDATE OF q SKIP LOCKED
+  ),
+  folded AS (
+    -- Older pending buyer messages of a claimed conversation collapse into the
+    -- claimed (newest) one: mark them skipped so they never fire their own turn.
+    UPDATE public.amanda_inbound_queue q
+    SET status = 'skipped', processed_at = now(),
+        error_message = 'superseded_by_newer_inbound (burst fold)'
+    FROM one_per_conversation oc
+    WHERE oc.is_buyer_msg
+      AND q.conversation_id = oc.conversation_id
+      AND q.id <> oc.id
+      AND q.kind IN ('message', 'media')
+      AND q.status = 'pending'
+    RETURNING q.id
   )
   UPDATE public.amanda_inbound_queue q
   SET status = 'processing',
       attempts = q.attempts + 1,
       lease_expires_at = now() + make_interval(secs => p_lease_seconds),
       leased_by = 'api-worker'
-  WHERE q.id IN (SELECT id FROM to_claim)
+  WHERE q.id IN (SELECT id FROM one_per_conversation)
   RETURNING q.*;
 END;
 $function$;

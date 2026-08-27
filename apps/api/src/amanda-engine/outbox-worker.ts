@@ -15,7 +15,7 @@
 
 import { sql } from 'drizzle-orm';
 import { db, withAgency } from '../../../../packages/db/client';
-import { MAX_ATTEMPTS, backoffSeconds, type ProcessTurn, type QueueRow } from './outbox-lib';
+import { AgencyCircuitBreaker, BREAKER_COOLDOWN_MS, MAX_ATTEMPTS, backoffSeconds, type ProcessTurn, type QueueRow } from './outbox-lib';
 
 export { engineEnabled, backoffSeconds, type ProcessTurn, type QueueRow, type TurnOutcome } from './outbox-lib';
 
@@ -23,6 +23,7 @@ export { engineEnabled, backoffSeconds, type ProcessTurn, type QueueRow, type Tu
 // model IO, and the 20s tick must never stack drains (lease-steal mid-turn —
 // reviewer-confirmed). Cross-instance overlap is handled by the lease itself.
 let drainInFlight = false;
+const breaker = new AgencyCircuitBreaker();
 
 export async function drainAmandaInbound(processTurn: ProcessTurn, limit = 5): Promise<{ claimed: number; done: number; failed: number }> {
   if (drainInFlight) return { claimed: 0, done: 0, failed: 0 };
@@ -38,8 +39,23 @@ export async function drainAmandaInbound(processTurn: ProcessTurn, limit = 5): P
     let done = 0;
     let failed = 0;
     for (const row of rows) {
+      // Breaker open for this agency: put the row back with a cooldown-length
+      // delay (durable, nothing lost) and move on.
+      if (breaker.isOpen(row.agency_id, Date.now())) {
+        await withAgency(row.agency_id, async (tx) => {
+          await tx.execute(sql`
+            UPDATE public.amanda_inbound_queue
+            SET status = 'pending', lease_expires_at = NULL,
+                next_attempt_at = now() + make_interval(secs => ${Math.round(BREAKER_COOLDOWN_MS / 1000)}),
+                error_message = 'breaker_open: agency paused after repeated errors'
+            WHERE id = ${row.id}::uuid
+          `);
+        }).catch(() => { /* lease expiry re-offers it */ });
+        continue;
+      }
       try {
         const outcome = await processTurn(row);
+        breaker.recordSuccess(row.agency_id);
         await withAgency(row.agency_id, async (tx) => {
           if (outcome.result === 'done' || outcome.result === 'skip') {
             await tx.execute(sql`
@@ -70,6 +86,23 @@ export async function drainAmandaInbound(processTurn: ProcessTurn, limit = 5): P
         const msg = err instanceof Error ? err.message.split('\n')[0].slice(0, 200) : 'error';
         console.error('[amanda-outbox] row threw', row.id, msg);
         failed++;
+        // Circuit breaker: repeated errors pause the agency's drain and file ONE
+        // alert task so a human sees it before P1's alerting spine exists.
+        if (breaker.recordFailure(row.agency_id, Date.now())) {
+          console.error('[amanda-outbox] BREAKER TRIPPED for agency', row.agency_id);
+          await withAgency(row.agency_id, async (tx) => {
+            await tx.execute(sql`
+              INSERT INTO public.dashboard_tasks (agency_id, lead_id, conversation_id, task_type, title, message_body, channel, platform, priority, status, raw_payload)
+              VALUES (
+                ${row.agency_id}, ${row.lead_id}::uuid, ${row.conversation_id},
+                'human_review_needed', 'Amanda paused herself after repeated errors',
+                ${'Amanda hit repeated processing errors and paused this agency for ' + Math.round(BREAKER_COOLDOWN_MS / 60000) + ' minutes. Messages are safe in the queue; agents see everything in the Inbox. If this repeats, tell CC (see the incident runbook).'},
+                'whatsapp', 'twilio', 'high', 'pending',
+                jsonb_build_object('via', 'amanda_engine', 'kind', 'breaker_tripped', 'last_error', ${msg})
+              )
+            `);
+          }).catch(() => { /* alert is best-effort */ });
+        }
         await withAgency(row.agency_id, async (tx) => {
           const exhausted = row.attempts >= MAX_ATTEMPTS;
           await tx.execute(sql`

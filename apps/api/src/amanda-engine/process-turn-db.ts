@@ -30,6 +30,8 @@ interface LoadedWorld {
   aiMuted: boolean;
   optedOut: boolean;
   recentTurns: TurnContext['recentTurns'];
+  /** Whole days since the newest PRIOR message (null = no history). */
+  gapDays: number | null;
   mirrorTargetWords: number | null;
   pendingActions: Array<{ id: string; label: string; expiresAtMs: number }>;
   openTicketNote: string | null;
@@ -124,6 +126,12 @@ async function loadWorld(row: QueueRow): Promise<LoadedWorld | { skip: string }>
           : m.sent_by && !/amanda|engine|system/i.test(m.sent_by) ? ('agent' as const) : ('amanda' as const),
         text: m.content ?? '', at: m.sent_at,
       })),
+      gapDays: (() => {
+        const newestPrior = messages.length ? messages[messages.length - 1].sent_at : null;
+        if (!newestPrior) return null;
+        const ms = Date.now() - Date.parse(newestPrior);
+        return Number.isFinite(ms) ? Math.floor(ms / 86_400_000) : null;
+      })(),
       mirrorTargetWords: mirror,
       pendingActions: (paRows as unknown as Array<Record<string, unknown>>).map((r) => ({
         id: String(r.id), label: String(r.label ?? 'proposed viewing'), expiresAtMs: Number(r.expires_ms),
@@ -242,6 +250,9 @@ export async function processTurnDb(row: QueueRow): Promise<TurnOutcome> {
     pendingActionEcho: pendingNote,
     openTicketNote: world.openTicketNote,
     officeAnswerText: officeAnswer,
+    gapNote: world.gapDays !== null && world.gapDays >= 2
+      ? `The buyer's previous exchange was ${world.gapDays} days ago. Treat this as a FRESH conversation opening: greet warmly, do NOT resume their old requests unless they bring them up, and ask what they need today.`
+      : null,
     mirrorTargetWords: world.mirrorTargetWords,
   };
 

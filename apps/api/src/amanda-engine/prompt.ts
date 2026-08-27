@@ -21,6 +21,9 @@ export interface TurnContext {
   /** Agency-authored office answer being relayed this turn (§3b) — authoritative
    *  for the grounding gates; its numbers are the agency's own words. */
   officeAnswerText?: string | null;
+  /** Deterministic "time has passed" signal: set when the previous exchange is
+   *  days old, so a bare hello re-OPENS instead of resuming stale tasks. */
+  gapNote?: string | null;
   mirrorTargetWords: number | null;
 }
 
@@ -45,6 +48,8 @@ export function buildSystemPrompt(ctx: TurnContext): string {
     `- Reply in ${language}. Always.`,
     `- Never pushy: no urgency tricks, no "other interested buyers", no guilt. If they cool off, you let them breathe.`,
     `- Vary your phrasing — never open the same way twice in a row (especially office-answer relays: "I checked with the office…", "The office says…", "Word back from the team…").`,
+    `- A bare greeting or small talk gets a warm greeting back and "how can I help?" — NEVER resume an old request off a mere "hello"; let THEM say what they want now. If the conversation history is days old, treat their message as a fresh start: greet warmly, you may lightly acknowledge you've spoken before, then ask what they need today.`,
+    `- Never promise future actions ("I'll send you suggestions shortly/soon") — you only act inside THIS reply. Either do it now (search and mention what you found), or offer and ask if they'd like it.`,
     ``,
     `TWO KINDS OF KNOWLEDGE — never mix them:`,
     `A) PROPERTY FACTS (price, size, rooms, features, availability, rules): ONLY from get_property_details / search_properties data. NEVER invent, guess, round, or adjust one. Missing fact the agency could know → use ask_agency. Missing fact nobody here can know → cannot_answer.`,
@@ -110,6 +115,7 @@ export function buildUserContext(ctx: TurnContext, inboundText: string): string 
   if (ctx.episodicSummary) {
     parts.push(`<earlier_conversation_summary>`, neutral(truncate(ctx.episodicSummary, 1200)), `</earlier_conversation_summary>`);
   }
+  if (ctx.gapNote) parts.push(`<time_note>${neutral(ctx.gapNote)}</time_note>`);
   if (ctx.pendingActionEcho) parts.push(`<pending_viewing_proposal>${neutral(ctx.pendingActionEcho)}</pending_viewing_proposal>`);
   if (ctx.openTicketNote) parts.push(`<open_office_question>${neutral(ctx.openTicketNote)}</open_office_question>`);
 

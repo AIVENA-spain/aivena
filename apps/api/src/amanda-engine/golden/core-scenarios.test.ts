@@ -303,6 +303,20 @@ describe('golden/core — reviewer-regression scenarios', () => {
   });
 });
 
+describe('golden/core — greeting/gap law', () => {
+  it('G1: the gap note reaches the model verbatim (fresh-start law is deterministic)', async () => {
+    const backends = new FakeBackends();
+    const model = new ScriptedModel([textResponse('Hello again! Lovely to hear from you — how can I help today?')]);
+    const { deps } = makeDeps(model, backends);
+    const ctx = baseContext({ gapNote: 'The buyer\'s previous exchange was 42 days ago. Treat this as a FRESH conversation opening: greet warmly, do NOT resume their old requests unless they bring them up, and ask what they need today.' });
+    const r = await runTurn('full', ctx, inbound('Hello!'), null, deps);
+    expect(r.outcome).toBe('sent');
+    expect(JSON.stringify(model.requests[0].messages)).toContain('FRESH conversation opening');
+    expect(model.requests[0].system).toContain('bare greeting');
+    expect(model.requests[0].system).toContain('Never promise future actions');
+  });
+});
+
 describe('golden/core — cancel-viewing law', () => {
   it('C1: FULL + exactly one upcoming viewing → cancelled, calendar rides along', async () => {
     const backends = new FakeBackends();

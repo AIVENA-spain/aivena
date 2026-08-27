@@ -108,14 +108,23 @@ export function makeDbBackends(ctx: BackendCtx): ToolBackends {
           SELECT id, external_id AS ref, title, property_type, status, price, price_currency,
                  bedrooms, bathrooms, area_sqm, area_built_sqm, area_plot_sqm,
                  location_city, location_region, raw_payload->>'zone' AS zone,
-                 features, left(description, 900) AS description, updated_at
+                 features, left(description, 900) AS description, updated_at,
+                 (updated_at < now() - interval '45 days') AS is_stale
             FROM properties
            WHERE agency_id = current_setting('app.current_agency_id', true)
              AND (external_id = ${needle} OR id::text = ${needle})
            LIMIT 1
         `);
         const r = (rows as unknown as Array<Record<string, unknown>>)[0];
-        return r ?? null;
+        if (!r) return null;
+        // §2 staleness guard: a listing untouched for 45+ days gets an explicit
+        // hedge instruction riding the tool result (the model treats tool data
+        // as law; the honest framing is deterministic, not hoped-for).
+        if (r.is_stale) {
+          r.staleness_note = 'LISTING NOT UPDATED FOR 45+ DAYS: frame price/availability as "listed at ... — let me confirm the current status with the office" and offer to double-check; never state them as certain.';
+        }
+        delete r.is_stale;
+        return r;
       });
     },
 

@@ -35,6 +35,7 @@ import adminRoute from './routes/admin';
 import chatRoute from './routes/chat';
 import { apiCalendarRoute, publicCalendarRoute, googleConfig } from './routes/calendar';
 import { pollCalendarSyncs } from './routes/calendar-worker';
+import amandaAdminRoute from './routes/amanda-admin';
 import { drainAmandaInbound, engineEnabled } from './amanda-engine/outbox-worker';
 import { processTurnDb } from './amanda-engine/process-turn-db';
 
@@ -106,6 +107,7 @@ app.route('/api/v1/me', meRoute);
 app.route('/api/v1/overview', overviewRoute);
 app.route('/api/v1/tasks', tasksRoute);
 app.route('/api/v1/settings', settingsRoute);
+app.route('/api/v1/amanda', amandaAdminRoute);   // Amanda auto-mode agency surface (§6) — dark pre-migration
 app.route('/api/v1/invitations', invitationsRoute);
 // Property catalog ingestion (§5.17) — paths are /api/v1/agencies/:id/property-imports[...]
 app.route('/api/v1/agencies', propertiesRoute);

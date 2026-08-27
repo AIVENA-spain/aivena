@@ -1,8 +1,9 @@
 import { getTranslations } from "next-intl/server";
 import { Check } from "lucide-react";
 
-import type { ReplyLanes, SettingsResponse } from "@/lib/api/types";
+import type { AmandaSettingsResponse, ReplyLanes, SettingsResponse } from "@/lib/api/types";
 import { hasAutoSend } from "../automation-safety";
+import { AmandaSection } from "./amanda-section";
 
 /**
  * AI behaviour & approvals — accordion body. Fully READ-ONLY / locked for pilot:
@@ -27,9 +28,11 @@ function effectiveReview(explicit: string | undefined, defaultReview: boolean): 
 export async function AiSection({
   branding,
   initialLanes,
+  amanda,
 }: {
   branding: SettingsResponse["branding"];
   initialLanes: ReplyLanes | undefined;
+  amanda?: AmandaSettingsResponse | null;
 }) {
   const t = await getTranslations("settings.aiRules");
   const tv = await getTranslations("settings.voice");
@@ -45,6 +48,10 @@ export async function AiSection({
 
   return (
     <div className="flex flex-col gap-5">
+      {/* Amanda auto-mode (Packet 2 engine) — status + the two viewing knobs +
+          screened agency knowledge. Renders one honest line pre-migration. */}
+      <AmandaSection data={amanda ?? null} />
+
       {/* Auto-send safety banner — derived from real reply_rules (hidden when safe) */}
       {autoSendActive ? (
         <div className="rounded-lg border border-amber-300 bg-amber-50 px-3.5 py-2.5 text-[12px] leading-relaxed text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-200">

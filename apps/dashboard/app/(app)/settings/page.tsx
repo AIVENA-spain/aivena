@@ -23,6 +23,7 @@ import type {
   PropertiesResponse,
   WorkingHours,
   CalendarStatusResponse,
+  AmandaSettingsResponse,
 } from "@/lib/api/types";
 
 import { StatusDot, StatusTag } from "./accordion";
@@ -69,13 +70,14 @@ export default async function SettingsPage({
   // ?calendar=connected|error; the banner scrubs the param client-side.
   const { calendar: calendarResult } = await searchParams;
 
-  const [settingsRes, prefsRes, readinessRes, ctx, feedRes, calendarRes] = await Promise.allSettled([
+  const [settingsRes, prefsRes, readinessRes, ctx, feedRes, calendarRes, amandaRes] = await Promise.allSettled([
     apiFetch<SettingsResponse>("/api/v1/settings"),
     apiFetch<PreferencesResponse>("/api/v1/me/preferences"),
     apiFetch<ReadinessResponse>("/api/v1/readiness"),
     getCurrentUserContext(),
     apiFetch<{ ok: true; config: FeedConfig | null }>("/api/v1/settings/feed"),
     apiFetch<CalendarStatusResponse>("/api/v1/calendar/status"),
+    apiFetch<AmandaSettingsResponse>("/api/v1/amanda/settings"),
   ]);
 
   if (settingsRes.status === "rejected") {
@@ -102,6 +104,12 @@ export default async function SettingsPage({
   const calendarStatus: CalendarStatusResponse | null =
     calendarRes.status === "fulfilled" ? calendarRes.value : null;
   if (calendarRes.status === "rejected") logFailure("calendar-status", calendarRes.reason);
+
+  // Amanda auto-mode card data (enhancement, never load-critical; pre-deploy 404
+  // or pre-migration → null → the card renders its honest not-set-up line).
+  const amandaSettings: AmandaSettingsResponse | null =
+    amandaRes.status === "fulfilled" ? amandaRes.value : null;
+  if (amandaRes.status === "rejected") logFailure("amanda-settings", amandaRes.reason);
 
   const currentUserId = ctx.status === "fulfilled" && ctx.value ? ctx.value.userId : "";
 
@@ -235,7 +243,7 @@ export default async function SettingsPage({
       closeLabel: tc("close"),
       children: (
         <div className="flex flex-col gap-6">
-          <AiSection branding={branding} initialLanes={lanes} />
+          <AiSection branding={branding} initialLanes={lanes} amanda={amandaSettings} />
           <div className="border-t border-border/60 pt-5">
             <ChannelsSection
               channels={settings.channels}

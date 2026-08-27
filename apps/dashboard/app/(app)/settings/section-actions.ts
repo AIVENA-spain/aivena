@@ -407,3 +407,56 @@ export async function disconnectCalendarAction(): Promise<ActionResult<{ ok: tru
     return actionError("disconnectCalendarAction", err);
   }
 }
+
+// ── Amanda auto-mode (design §6): settings + screened knowledge ───────────────
+
+export async function saveAmandaSettingsAction(input: {
+  viewing_duration_min?: number;
+  viewing_notice_hours?: number;
+}): Promise<ActionResult<{ ok: true }>> {
+  try {
+    await apiFetch<{ ok: true }>("/api/v1/amanda/settings", {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+    revalidatePath("/settings");
+    return { ok: true, data: { ok: true } };
+  } catch (err) {
+    return actionError("saveAmandaSettingsAction", err);
+  }
+}
+
+/** Add a knowledge entry — the API scrubs at save time (design §5) and a
+ *  rejection carries a `reason` key the card maps to friendly copy. */
+export async function addAmandaKnowledgeAction(
+  content: string,
+): Promise<ActionResult<{ id: string; content: string; createdAt: string }> | { ok: false; error: string; reason: string }> {
+  try {
+    const res = await apiFetch<{ ok: true; entry: { id: string; content: string; status: string; createdAt: string } }>(
+      "/api/v1/amanda/knowledge",
+      { method: "POST", body: JSON.stringify({ content }) },
+    );
+    revalidatePath("/settings");
+    return { ok: true, data: { id: res.entry.id, content: res.entry.content, createdAt: res.entry.createdAt } };
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 422) {
+      const body = err.body as { reason?: unknown } | null;
+      const reason = body && typeof body.reason === "string" ? body.reason : "rejected";
+      return { ok: false, error: "rejected", reason };
+    }
+    return actionError("addAmandaKnowledgeAction", err);
+  }
+}
+
+export async function removeAmandaKnowledgeAction(id: string): Promise<ActionResult<{ ok: true }>> {
+  try {
+    await apiFetch<{ ok: true }>(`/api/v1/amanda/knowledge/${encodeURIComponent(id)}/remove`, {
+      method: "POST",
+      body: "{}",
+    });
+    revalidatePath("/settings");
+    return { ok: true, data: { ok: true } };
+  } catch (err) {
+    return actionError("removeAmandaKnowledgeAction", err);
+  }
+}

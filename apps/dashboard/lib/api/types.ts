@@ -955,3 +955,23 @@ export type OperationsResponse = {
   };
   signalHealth: Array<{ signal: string; ok: boolean; source: string }>;
 };
+
+// ── Amanda auto-mode settings (design §6, /api/v1/amanda/settings) ────────────
+export type AmandaKnowledgeEntry = {
+  id: string;
+  content: string;
+  status: string;
+  createdAt: string;
+};
+
+export type AmandaSettingsResponse = {
+  ok: true;
+  configured: boolean;
+  mode?: "off" | "shadow" | "approval" | "assisted" | "full";
+  settings?: {
+    viewing_duration_min: number;
+    viewing_notice_hours: number;
+    timezone: string;
+  };
+  knowledge?: AmandaKnowledgeEntry[];
+};

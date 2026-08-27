@@ -364,6 +364,62 @@ BEGIN
 END;
 $function$;
 
+-- 14 ── viewing day-before reminder claim (§11.1 lifecycle, reminder rung) ────
+-- Cross-agency sweep (DEFINER, same FORCE-RLS lesson): finds tomorrow's
+-- confirmed viewings for engine-enabled agencies (amanda_mode <> 'off'),
+-- inside the agency's local daytime (09-20h), marks reminder_sent atomically
+-- and returns everything the worker needs to enqueue the approved
+-- viewing_reminder_v1 template. Google Calendar's own 24h/2h popups remain the
+-- belt if a WhatsApp enqueue ever fails after the mark.
+CREATE OR REPLACE FUNCTION public.pick_and_mark_viewing_reminders(p_limit integer DEFAULT 25)
+ RETURNS TABLE(booking_id uuid, agency_id text, lead_id uuid, lead_phone text, lead_first_name text,
+               lead_language text, agency_name text, scheduled_at timestamptz,
+               property_title text, tz text)
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+BEGIN
+  RETURN QUERY
+  WITH candidates AS (
+    SELECT b.id
+    FROM public.bookings b
+    JOIN public.agency_settings s ON s.agency_id = b.agency_id
+    JOIN public.leads l ON l.id = b.lead_id
+    WHERE b.status = 'confirmed'::public.booking_status
+      AND b.reminder_sent = false
+      AND b.scheduled_at BETWEEN now() + interval '20 hours' AND now() + interval '28 hours'
+      AND s.amanda_mode <> 'off'
+      AND l.phone IS NOT NULL
+      AND COALESCE(l.opt_in_status, '') <> 'opted_out'
+      AND extract(hour FROM now() AT TIME ZONE COALESCE(s.amanda_settings->>'timezone', 'Europe/Madrid')) BETWEEN 9 AND 19
+    ORDER BY b.scheduled_at ASC
+    LIMIT p_limit
+    FOR UPDATE OF b SKIP LOCKED
+  ),
+  marked AS (
+    UPDATE public.bookings b SET reminder_sent = true, updated_at = now()
+    WHERE b.id IN (SELECT id FROM candidates)
+    RETURNING b.id, b.agency_id, b.lead_id, b.property_id, b.scheduled_at
+  )
+  SELECT m.id, m.agency_id, m.lead_id, l.phone, split_part(COALESCE(l.full_name, ''), ' ', 1),
+         COALESCE(l.language, 'en'), COALESCE(a.trading_name, a.legal_name, a.slug),
+         m.scheduled_at, p.title,
+         COALESCE(s.amanda_settings->>'timezone', 'Europe/Madrid')
+  FROM marked m
+  JOIN public.leads l ON l.id = m.lead_id
+  JOIN public.agencies a ON a.id = m.agency_id
+  JOIN public.agency_settings s ON s.agency_id = m.agency_id
+  LEFT JOIN public.properties p ON p.id = m.property_id;
+END;
+$function$;
+
+REVOKE EXECUTE ON FUNCTION public.pick_and_mark_viewing_reminders(integer) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.pick_and_mark_viewing_reminders(integer) FROM anon;
+REVOKE EXECUTE ON FUNCTION public.pick_and_mark_viewing_reminders(integer) FROM authenticated;
+GRANT EXECUTE ON FUNCTION public.pick_and_mark_viewing_reminders(integer) TO aivena_app;
+GRANT EXECUTE ON FUNCTION public.pick_and_mark_viewing_reminders(integer) TO service_role;
+
 REVOKE EXECUTE ON FUNCTION public.pick_and_claim_amanda_inbound(integer, integer) FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION public.pick_and_claim_amanda_inbound(integer, integer) FROM anon;
 REVOKE EXECUTE ON FUNCTION public.pick_and_claim_amanda_inbound(integer, integer) FROM authenticated;

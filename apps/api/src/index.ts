@@ -38,6 +38,7 @@ import { pollCalendarSyncs } from './routes/calendar-worker';
 import amandaAdminRoute from './routes/amanda-admin';
 import { drainAmandaInbound, engineEnabled } from './amanda-engine/outbox-worker';
 import { processTurnDb } from './amanda-engine/process-turn-db';
+import { sweepViewingReminders } from './amanda-engine/viewing-reminders';
 
 Sentry.init({
   dsn: env.SENTRY_DSN,
@@ -230,6 +231,19 @@ if (engineEnabled()) {
   };
   setInterval(() => { void engineTick(); }, AMANDA_ENGINE_TICK_MS);
   logger.info('Amanda engine worker scheduled', { intervalMs: AMANDA_ENGINE_TICK_MS });
+
+  // Viewing day-before reminders (§11.1) — every 30 min; the claim RPC gates on
+  // engine-enabled agencies + their local daytime, so the sweep is cheap and
+  // quiet. Rides the approved viewing_reminder_v1 template via the live executor.
+  const reminderTick = async () => {
+    try {
+      const r = await sweepViewingReminders();
+      if (r.enqueued > 0) logger.info('Viewing reminders enqueued', r);
+    } catch (err) {
+      console.error('[amanda-reminders] tick failed', err instanceof Error ? err.message.split('\n')[0].slice(0, 200) : 'error');
+    }
+  };
+  setInterval(() => { void reminderTick(); }, 30 * 60_000);
 }
 
 export default app;

@@ -95,34 +95,26 @@ Laws that came out of it:
   moves INTO whatsapp-send-execute before P2 assisted-auto; today the engine
   pre-checks the 24h window at enqueue and the executor enforces opt-out.
 
-## P0 deferrals beyond the design's §11b ledger (named here so no gap is silent)
-Confirmed by the conformance audit; none breaks a P0 safety law (drain latch +
-EXCLUDE arbiter + idempotency + supersession guard contain the worst), but each
-is design§4/§2/§1 machinery that lands LATER, on purpose:
-- **Conversation ordering machinery** (per-conversation lease, 12s burst debounce,
-  abort-and-fold-in on newer inbound mid-loop): pre-P2 assisted-auto. P0 has a
-  per-process drain latch, per-row leases, and a booking-time newer-inbound check.
-- **Circuit breaker + model-free holding message** (auto-downgrade on error spikes):
-  P1, with the alerting spine. Today a failing row retires to 'failed' after 5 tries.
-- **Durable turn journal for crash replay**: P1; idempotency keys + per-tool dedupe
-  cover re-runs today.
-- **Property staleness guard (45-day hedge)**: P1.
-- **reschedule_viewing / cancel_viewing tools**: P2 — until then the agent handles
-  changes via /viewings (runbook says so); a buyer's change request routes to
-  ask_agency/handoff by the prompt ladder.
-- **cannot_answer routing**: telemetry-only in P0 (persisted per turn for shadow
-  calibration); ticket-vs-handoff routing is wired after P1-shadow data.
-- **consent_service/consent_marketing split columns**: P2, with Christian's
-  marketing-consent decision (§11.7 alert opt-in) — consent_log covers service today.
-- **Funnel coverage in P0**: lead_created (EF v3), intel_captured, question_ticket,
-  viewing_booked, handoff are emitted; engaged/attended/no_show/post_viewing/
-  offer/dormant/reactivated/alert_opt_in land with their features (viewing
-  lifecycle + entry kit, P2).
-- **Agency settings card + knowledge write surface + save-time scrubber**: P2 —
-  P0 reads agency_amanda_knowledge (active rows) and amanda_settings keys
-  timezone / viewing_duration_min / viewing_notice_hours; nothing writes them yet.
-- **Engine env names** (rollback reference): AMANDA_ENGINE_MODEL,
-  AMANDA_ENGINE_VERIFIER_MODEL (the design doc's §1 line has been aligned).
+## Deferral ledger — UPDATED after the 2026-08-27 build block (no gap is silent)
+BUILT during the block (were deferrals, now live code on the branch):
+- ✅ Ask-agency answer→relay loop (one-box answer on /tasks → engine relays, mode-governed)
+- ✅ One-tap booking execute (`POST /tasks/:id/execute-booking` + Confirm-booking box)
+- ✅ cancel_viewing tool (exactly-one law; human task below FULL; shadow zero-write)
+- ✅ Conversation ordering machinery (claim RPC v2: per-conversation serialization + 12s burst debounce + folding)
+- ✅ Circuit breaker (per-agency drain pause + one alert task; mode untouched)
+- ✅ Property staleness hedge (45-day note riding get_property_details)
+- ✅ Agency settings card + knowledge write surface + deterministic §5 save-time scrubber
+- ✅ Day-one calibration columns (turn_class / gate_failures / cannot_answer in turn_usage)
+
+STILL DEFERRED, on purpose, with phase:
+- **WhatsApp agent pings (ping spine v1)**: P2, after the sit-down with Christian (second sender, cadence, quiet hours) — the dashboard ticket surface covers P0.5/P1.
+- **STT/vision (Media Law v1)**: P2 gate (keeps the STT vendor out of the DPA annex until then).
+- **Atomic send gate INSIDE whatsapp-send-execute** (window/mute/disclosure re-check at send moment): before P2 assisted-auto on real traffic; today = engine 23h pre-check + executor opt-out law.
+- **PATCH-reschedule** (move the calendar event instead of cancel+create): P2 polish.
+- **Episodic memory (layer 3)** + per-agency euro hard-degrade + cross-channel identity linking + typing indicator: per the §11b trigger ledger.
+- **cannot_answer routing** (ticket vs handoff): wired after P1-shadow calibration; persisted per turn since the conformance pass.
+- **consent_service/consent_marketing split columns**: P2 with Christian's marketing-consent decision.
+- **Funnel events not yet emitted**: engaged / attended / no_show / post_viewing / offer / dormant / reactivated / alert_opt_in — land with their features (viewing lifecycle outcome capture + entry kit, P2). Emitted today: lead_created, intel_captured, question_ticket, viewing_booked, handoff.
 
 ## What stays OFF regardless (standing orders intact)
 Valuation gate untouched · no real-lead traffic in FULL mode (test agency only until P2/P3 gates) ·

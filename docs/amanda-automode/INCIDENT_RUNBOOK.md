@@ -29,6 +29,8 @@ does not back-process the gap (agents saw everything in the Inbox regardless).
 | Booking at a wrong/duplicate time | constraint breach (should be impossible — DB enforced) | Step 0; fix the booking by hand in /viewings (reschedule/cancel — calendar follows); tell CC with the booking id |
 | Buyer says "stop"/opted out but still got a message | executor gate breach | Step 0 GLOBAL immediately; tell CC — compliance-critical |
 | Costs look high | runaway loop | Supabase SQL: `SELECT date_trunc('day', created_at) d, count(*), sum(input_tokens+output_tokens) FROM amanda_turn_usage GROUP BY 1 ORDER BY 1 DESC LIMIT 7;` → if one day explodes, Step 0 + tell CC |
+| "Amanda paused herself after repeated errors" task appeared | circuit breaker tripped (5 errors in 10 min) | Nothing urgent: her drain is paused 15 min for that agency and resumes alone; messages are safe in the queue. If it re-trips, Step 0 + tell CC with the task's last_error |
+| Buyer says they never got the viewing reminder | reminder rung | Check send_queue for idempotency_key 'viewing-reminder:<booking_id>'; the Google Calendar 24h/2h popups are the belt — the viewing itself was never at risk |
 | Ticket (Q to office) never answered, buyer waiting | agent missed it | Open the conversation in the Inbox and answer the buyer YOURSELF (Amanda sees your reply as ground truth and stops saying she's waiting; the ticket auto-closes). Automatic relay of office answers arrives with the P2 ping spine. |
 
 ## What can NEVER happen by construction (if it does, it's a code bug — tell CC verbatim)

@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Check, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Copy, Download, Globe, Images, Info, Loader2, Pencil, PlayCircle, RefreshCw, Save, Sparkles, X } from "lucide-react";
 import { downloadImage } from "./property-picker";
-import { carouselAction, carouselRemixAction, carouselTopicIdeasAction, carouselUpdateAction, carouselStyleExamplesAction, statusAction, editableSectionsAction, setSectionAction } from "./wizard-actions";
+import { withBasePath } from "@/lib/base-path";
+import { carouselAction, carouselRemixAction, carouselTopicIdeasAction, carouselUpdateAction, statusAction, editableSectionsAction, setSectionAction } from "./wizard-actions";
 
 /**
  * CAROUSEL STUDIO — tips & advice only (Christian 2026-07-17: property carousels REMOVED from the
@@ -42,6 +43,19 @@ const LANGS: [string, string][] = [
   ["sv", "Svenska"], ["no", "Norsk"], ["da", "Dansk"], ["fi", "Suomi"], ["pl", "Polski"],
   ["ru", "Русский"], ["it", "Italiano"], ["pt", "Português"],
 ];
+
+// Style example slides ship as static assets (public/studio/carousel-examples/<style>/<n>.jpg)
+// so the picker paints instantly — no fetch, no signed URLs. Counts must match the files on disk.
+const EXAMPLE_COUNTS: Record<string, number> = {
+  acuarela: 3, arcilla: 3, bodegon: 3, bordado: 3, brisa: 2, cartel: 3, cuarteto: 2,
+  editorial: 3, encalada: 2, horizonte: 3, litoral: 3, marea: 2, papel: 3, plano: 3,
+  portada: 3, recorte: 2, riviera: 2, salitre: 3, sereno: 2, tinta: 3, ventana: 2,
+};
+const EXAMPLES: Record<string, string[]> = Object.fromEntries(
+  Object.entries(EXAMPLE_COUNTS).map(([k, n]) => [
+    k, Array.from({ length: n }, (_, i) => withBasePath(`/studio/carousel-examples/${k}/${i + 1}.jpg`)),
+  ]),
+);
 
 // the approved visual styles, per post type (server validates too)
 const STYLES: Record<CarouselType, [string, string, string][]> = {
@@ -106,8 +120,9 @@ export function CarouselStudio({ initialTopic = "", initialLanguage }: { initial
   const [seenIdeas, setSeenIdeas] = useState<string[]>([]);
   const [ideasLoading, setIdeasLoading] = useState(false);
   const [slideTotal, setSlideTotal] = useState(7);
-  const [examples, setExamples] = useState<Record<string, string[]>>({});
+  const examples = EXAMPLES;
   const [exampleStyle, setExampleStyle] = useState<string | null>(null);
+  const [exampleIdx, setExampleIdx] = useState(0);
   const [quoteText, setQuoteText] = useState("");
   const [quoteAuthor, setQuoteAuthor] = useState("");
   const [language, setLanguage] = useState(initialLanguage ?? "es");
@@ -129,8 +144,6 @@ export function CarouselStudio({ initialTopic = "", initialLanguage }: { initial
     (async () => {
       const r = await editableSectionsAction();
       if (r.ok && Array.isArray(r.sections)) setSections(r.sections as string[]);
-      const e = await carouselStyleExamplesAction();
-      if (e.ok && e.examples && typeof e.examples === "object") setExamples(e.examples as Record<string, string[]>);
     })();
   }, []);
 
@@ -239,34 +252,6 @@ export function CarouselStudio({ initialTopic = "", initialLanguage }: { initial
   const field = "w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100";
   const label = "mb-1 block text-xs font-medium text-neutral-500 dark:text-neutral-400";
 
-  function stylePicker() {
-    const options = STYLES[ctype];
-    const active = options.some(([k]) => k === style) ? style : "editorial";
-    return (
-      <div>
-        <label className={label}>Look &amp; feel</label>
-        <div className="grid gap-2 sm:grid-cols-2">
-          {options.map(([key, name, desc]) => (
-            <div key={key} className={`rounded-lg border transition ${active === key
-                ? "border-neutral-900 bg-neutral-50 dark:border-neutral-100 dark:bg-neutral-800"
-                : "border-neutral-200 hover:border-neutral-400 dark:border-neutral-700"}`}>
-              <button type="button" onClick={() => setStyle(key)} className="w-full px-3 pt-2 text-left">
-                <span className="block text-sm font-medium text-neutral-900 dark:text-neutral-100">{name}</span>
-                <span className="block text-xs text-neutral-500 dark:text-neutral-400">{desc}</span>
-              </button>
-              {examples[key]?.length ? (
-                <button type="button" onClick={() => setExampleStyle(key)}
-                  className="px-3 pb-2 pt-1 text-[11px] font-medium text-emerald-700 hover:underline dark:text-emerald-400">
-                  See example →
-                </button>
-              ) : <span className="block pb-2" />}
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className={`mx-auto ${phase === "form" ? "max-w-[1600px] px-6 lg:px-8" : "max-w-6xl px-4"} py-6`}>
       {phase === "form" && (
@@ -341,23 +326,27 @@ export function CarouselStudio({ initialTopic = "", initialLanguage }: { initial
             <div className="mb-2 mt-7 text-sm font-semibold text-neutral-900 dark:text-neutral-100">3. Choose a look &amp; feel</div>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
               {STYLES.tips.map(([key, name, desc]) => (
-                <button key={key} type="button" onClick={() => { setStyle(key); setPreviewIdx(0); }}
-                  className={`relative rounded-xl border text-left transition ${style === key
+                <div key={key} role="button" tabIndex={0}
+                  onClick={() => { setStyle(key); setPreviewIdx(0); }}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setStyle(key); setPreviewIdx(0); } }}
+                  className={`relative cursor-pointer rounded-xl border text-left transition ${style === key
                     ? "border-emerald-600 ring-1 ring-emerald-600"
                     : "border-neutral-200 bg-white hover:border-neutral-400 dark:border-neutral-700 dark:bg-neutral-900"}`}>
-                  {examples[key]?.[0]
-                    ? <img src={examples[key][0]} alt={name} referrerPolicy="no-referrer" className="aspect-square w-full rounded-t-xl object-cover object-top" />
-                    : <div className="aspect-square w-full rounded-t-xl bg-gradient-to-br from-neutral-100 to-neutral-200 dark:from-neutral-800 dark:to-neutral-700" />}
+                  <img src={examples[key][0]} alt={name} className="aspect-square w-full rounded-t-xl object-cover object-top" />
                   <div className="p-2.5">
                     <div className="text-[13px] font-semibold text-neutral-900 dark:text-neutral-100">{name.replace(" ✦ Recommended", "")}</div>
                     <div className="mt-0.5 text-[11px] leading-snug text-neutral-500 dark:text-neutral-400">{desc.replace(/^AI imagery — /, "")}</div>
+                    <button type="button" onClick={(e) => { e.stopPropagation(); setExampleIdx(0); setExampleStyle(key); }}
+                      className="mt-1.5 text-[11px] font-medium text-emerald-700 hover:underline dark:text-emerald-400">
+                      See full example &rarr;
+                    </button>
                   </div>
                   {style === key && (
                     <span className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-600">
                       <Check className="h-3.5 w-3.5 text-white" strokeWidth={3} />
                     </span>
                   )}
-                </button>
+                </div>
               ))}
             </div>
 
@@ -401,7 +390,7 @@ export function CarouselStudio({ initialTopic = "", initialLanguage }: { initial
               <div className="text-base font-semibold text-neutral-900 dark:text-neutral-100">Live preview</div>
               <div className="mt-3 flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
                 <span className="h-2 w-2 rounded-full bg-emerald-500" /> Cover preview
-                <span title="Example slides in this look — your own carousel is written and drawn fresh for your topic."><Info className="h-3.5 w-3.5 text-neutral-300" /></span>
+                <span title="Example slides in this look — your own carousel is written and drawn fresh for your topic."><Info className="h-3.5 w-3.5 text-neutral-400 dark:text-neutral-500" /></span>
               </div>
               <div className="mt-2 flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400">
                 <span className="flex h-5 w-5 items-center justify-center rounded-md bg-gradient-to-tr from-amber-400 via-pink-500 to-purple-500">
@@ -453,7 +442,7 @@ export function CarouselStudio({ initialTopic = "", initialLanguage }: { initial
                   <div className="mt-0.5 text-neutral-500 dark:text-neutral-400">Great topics solve a problem, teach something actionable or spark curiosity.</div>
                 </div>
                 {examples[style]?.length ? (
-                  <button type="button" onClick={() => setExampleStyle(style)}
+                  <button type="button" onClick={() => { setExampleIdx(0); setExampleStyle(style); }}
                     className="shrink-0 self-center rounded-lg border border-neutral-200 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:border-emerald-600 dark:border-neutral-700 dark:text-emerald-400">
                     See examples
                   </button>
@@ -468,7 +457,7 @@ export function CarouselStudio({ initialTopic = "", initialLanguage }: { initial
               <div className="w-full max-w-md rounded-2xl bg-white p-6 dark:bg-neutral-900" onClick={(e) => e.stopPropagation()}>
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">How it works</h3>
-                  <button onClick={() => setShowHow(false)} className="rounded-lg p-1 text-neutral-400 hover:text-neutral-700"><X className="h-5 w-5" /></button>
+                  <button onClick={() => setShowHow(false)} className="rounded-lg p-1 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"><X className="h-5 w-5" /></button>
                 </div>
                 <ol className="mt-4 flex flex-col gap-3 text-sm text-neutral-600 dark:text-neutral-300">
                   {[
@@ -501,17 +490,17 @@ export function CarouselStudio({ initialTopic = "", initialLanguage }: { initial
       {phase === "result" && (
         <div>
           <button onClick={() => { setPhase("form"); setSlides([]); setPlan(null); setCaption(""); }}
-            className="mb-4 flex items-center gap-1.5 text-sm text-neutral-500 hover:text-neutral-900"><ArrowLeft className="h-4 w-4" /> New carousel</button>
+            className="mb-4 flex items-center gap-1.5 text-sm text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100"><ArrowLeft className="h-4 w-4" /> New carousel</button>
           <div className="mb-2 flex items-center gap-2 text-sm font-medium text-emerald-700"><Check className="h-4 w-4" /> {slides.length} slides ready — swipe order left to right</div>
 
           <div className="flex gap-3 overflow-x-auto pb-3">
             {slides.map((u, i) => (
               <div key={u} className="w-56 shrink-0">
-                <div className="overflow-hidden rounded-xl border border-neutral-200 bg-neutral-100">
+                <div className="overflow-hidden rounded-xl border border-neutral-200 bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-800">
                   <img src={u} alt={`Slide ${i + 1}`} className="w-full" referrerPolicy="no-referrer" />
                 </div>
                 <button onClick={() => void downloadImage(u, `${ctype}-slide-${i + 1}.png`)}
-                  className="mt-1.5 flex w-full items-center justify-center gap-1.5 rounded-lg border border-neutral-200 px-2 py-1.5 text-xs text-neutral-600 hover:bg-neutral-50">
+                  className="mt-1.5 flex w-full items-center justify-center gap-1.5 rounded-lg border border-neutral-200 px-2 py-1.5 text-xs text-neutral-600 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800">
                   <Download className="h-3.5 w-3.5" /> Slide {i + 1}
                 </button>
               </div>
@@ -668,22 +657,57 @@ export function CarouselStudio({ initialTopic = "", initialLanguage }: { initial
           {err && <div className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">{err}</div>}
         </div>
       )}
-      {exampleStyle && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={() => setExampleStyle(null)}>
-          <div className="max-h-[85vh] w-full max-w-3xl overflow-auto rounded-2xl bg-white p-4 dark:bg-neutral-900" onClick={(e) => e.stopPropagation()}>
-            <div className="mb-3 flex items-center justify-between">
-              <span className="text-sm font-semibold capitalize text-neutral-900 dark:text-neutral-100">{exampleStyle} — example slides</span>
-              <button onClick={() => setExampleStyle(null)} className="rounded-lg border border-neutral-300 px-3 py-1 text-xs text-neutral-600 dark:border-neutral-700 dark:text-neutral-300">Close</button>
+      {exampleStyle && (() => {
+        const exSlides = examples[exampleStyle] ?? [];
+        const idx = Math.min(exampleIdx, Math.max(0, exSlides.length - 1));
+        const styleName = (STYLES.tips.find(([k]) => k === exampleStyle)?.[1] ?? exampleStyle).replace(" ✦ Recommended", "");
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={() => setExampleStyle(null)}>
+            <div className="w-full max-w-[420px]" onClick={(e) => e.stopPropagation()}>
+              <div className="mb-2 flex items-center justify-between text-white">
+                <span className="text-sm font-semibold">{styleName} <span className="ml-1 font-normal text-white/60">{idx + 1} / {exSlides.length}</span></span>
+                <button onClick={() => setExampleStyle(null)} className="rounded-lg p-1 text-white/70 hover:text-white"><X className="h-5 w-5" /></button>
+              </div>
+              <div
+                onTouchStart={(e) => { (e.currentTarget as HTMLDivElement & { _sx?: number })._sx = e.touches[0].clientX; }}
+                onTouchEnd={(e) => {
+                  const sx = (e.currentTarget as HTMLDivElement & { _sx?: number })._sx;
+                  if (sx == null) return;
+                  const dx = e.changedTouches[0].clientX - sx;
+                  if (dx < -40) setExampleIdx((i) => Math.min(i + 1, exSlides.length - 1));
+                  if (dx > 40) setExampleIdx((i) => Math.max(i - 1, 0));
+                }}
+                className="relative">
+                <img src={exSlides[idx]} alt={`${styleName} example slide ${idx + 1}`} className="max-h-[64vh] w-full rounded-xl object-contain shadow-2xl" />
+                {exSlides.length > 1 && (
+                  <>
+                    <button type="button" aria-label="Previous slide" disabled={idx === 0}
+                      onClick={() => setExampleIdx((i) => Math.max(i - 1, 0))}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white hover:bg-black/70 disabled:opacity-30"><ChevronLeft className="h-5 w-5" /></button>
+                    <button type="button" aria-label="Next slide" disabled={idx === exSlides.length - 1}
+                      onClick={() => setExampleIdx((i) => Math.min(i + 1, exSlides.length - 1))}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white hover:bg-black/70 disabled:opacity-30"><ChevronRight className="h-5 w-5" /></button>
+                  </>
+                )}
+              </div>
+              {exSlides.length > 1 && (
+                <div className="mt-3 flex justify-center gap-1.5">
+                  {exSlides.map((u, i) => (
+                    <button key={u} type="button" aria-label={`Slide ${i + 1}`} onClick={() => setExampleIdx(i)}
+                      className={`h-2 w-2 rounded-full transition ${i === idx ? "bg-white" : "bg-white/30 hover:bg-white/60"}`} />
+                  ))}
+                </div>
+              )}
+              <button type="button"
+                onClick={() => { setStyle(exampleStyle); setPreviewIdx(0); setExampleStyle(null); }}
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 text-sm font-semibold text-white hover:bg-emerald-700">
+                <Check className="h-4 w-4" /> Use this look
+              </button>
+              <p className="mt-2 text-center text-[11px] text-white/60">Your post will follow this look — with fresh artwork generated for your topic.</p>
             </div>
-            <div className="flex gap-3 overflow-x-auto pb-2">
-              {(examples[exampleStyle] ?? []).map((u) => (
-                <img key={u} src={u} alt="example slide" className="w-56 shrink-0 rounded-lg border border-neutral-200 dark:border-neutral-700" referrerPolicy="no-referrer" />
-              ))}
-            </div>
-            <p className="mt-2 text-[11px] text-neutral-400">Your post will follow this look — with fresh artwork generated for your topic.</p>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

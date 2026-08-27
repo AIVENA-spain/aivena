@@ -141,8 +141,8 @@ export function SmartStudio() {
       {/* ── PICK ──────────────────────────────────────────────────────────── */}
       {phase === "pick" && (
         <div>
-          <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Smart</h2>
-          <p className="mb-4 text-sm text-neutral-500 dark:text-neutral-400">
+          <h2 className="text-lg font-semibold text-foreground">Smart</h2>
+          <p className="mb-4 text-sm text-muted-foreground">
             Pick a property and the photos you want — AIVENA designs the whole post itself.
           </p>
           <PropertyPicker onConfirm={(p, chosen) => { setProperty(p); setPhotos(chosen); setPhase("brief"); }} />
@@ -152,9 +152,9 @@ export function SmartStudio() {
       {/* ── BRIEF ─────────────────────────────────────────────────────────── */}
       {phase === "brief" && property && (
         <div className="max-w-2xl">
-          <button onClick={() => setPhase("pick")} className="mb-4 flex items-center gap-1.5 text-sm text-neutral-500 hover:text-neutral-900"><ArrowLeft className="h-4 w-4" /> Property</button>
+          <button onClick={() => setPhase("pick")} className="mb-4 flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" /> Property</button>
 
-          <div className="mb-5 flex items-center gap-3 rounded-xl border border-neutral-200 bg-white p-3">
+          <div className="mb-5 flex items-center gap-3 rounded-xl border border-border bg-card p-3">
             <div className="flex -space-x-2">
               {photos.slice(0, 5).map((u) => (
                 <img key={u} src={u} alt="" referrerPolicy="no-referrer"
@@ -162,35 +162,35 @@ export function SmartStudio() {
               ))}
             </div>
             <div className="min-w-0 text-sm">
-              <div className="truncate font-medium text-neutral-900">{property.title || "Property"}</div>
-              <div className="text-xs text-neutral-500">{photos.length} photo{photos.length === 1 ? "" : "s"} — all of them will be used</div>
+              <div className="truncate font-medium text-foreground">{property.title || "Property"}</div>
+              <div className="text-xs text-muted-foreground">{photos.length} photo{photos.length === 1 ? "" : "s"} — all of them will be used</div>
             </div>
           </div>
 
-          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-neutral-500">What should it say or look like? (optional)</label>
+          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">What should it say or look like? (optional)</label>
           <textarea rows={3} value={brief} onChange={(e) => setBrief(e.target.value)} maxLength={2000}
             placeholder="e.g. bold luxury feel, lead with the sea view, mention the private pool"
-            className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-900" />
-          <p className="mt-1 text-[11px] text-neutral-400">
+            className="w-full rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-ring" />
+          <p className="mt-1 text-[11px] text-muted-foreground">
             AIVENA designs a brand-new layout around your photos. The price, rooms and location come straight from your listing — they can never be wrong.
           </p>
 
-          <label className="mt-5 flex cursor-pointer items-start gap-2.5 rounded-lg border border-neutral-200 p-3">
+          <label className="mt-5 flex cursor-pointer items-start gap-2.5 rounded-lg border border-border p-3">
             <input type="checkbox" checked={cleanFirst} onChange={(e) => setCleanFirst(e.target.checked)}
-              className="mt-0.5 h-4 w-4 accent-neutral-900" />
-            <span className="text-sm text-neutral-700">
+              className="mt-0.5 h-4 w-4 accent-primary" />
+            <span className="text-sm text-muted-foreground">
               <span className="font-medium">Remove watermarks from the photos first</span> (recommended)
-              <span className="block text-[11px] text-neutral-400">Uses a credit per photo the first time — already-cleaned photos are reused free.</span>
+              <span className="block text-[11px] text-muted-foreground">Uses a credit per photo the first time — already-cleaned photos are reused free.</span>
             </span>
           </label>
 
-          <label className="mb-1.5 mt-5 block text-xs font-semibold uppercase tracking-wide text-neutral-500">Post size</label>
+          <label className="mb-1.5 mt-5 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Post size</label>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {SIZES.map((s) => (
               <button key={s.key} onClick={() => setSize(s.key)}
-                className={`flex items-center justify-between rounded-lg border px-3 py-2.5 text-left text-sm transition ${size === s.key ? "border-neutral-900 bg-neutral-50 ring-1 ring-neutral-900" : "border-neutral-200 hover:border-neutral-400"}`}>
-                <span className="font-medium text-neutral-800">{s.label}</span>
-                <span className="ml-2 truncate text-xs text-neutral-500">({s.use})</span>
+                className={`flex items-center justify-between rounded-lg border px-3 py-2.5 text-left text-sm transition ${size === s.key ? "border-foreground bg-muted ring-1 ring-foreground" : "border-border text-foreground hover:border-ring"}`}>
+                <span className="font-medium text-foreground">{s.label}</span>
+                <span className="ml-2 truncate text-xs text-muted-foreground">({s.use})</span>
               </button>
             ))}
           </div>
@@ -198,63 +198,63 @@ export function SmartStudio() {
           {err && <div className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">{err}</div>}
 
           <button onClick={() => void generate()} disabled={photos.length === 0}
-            className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg bg-neutral-900 px-4 py-3 text-sm font-semibold text-white disabled:opacity-40">
+            className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground disabled:opacity-40">
             <Sparkles className="h-4 w-4" /> Design my post
           </button>
-          <p className="mt-2 text-center text-[11px] text-neutral-400">{cleanFirst ? "Takes 1-3 minutes (photo clean-up + design)" : "Takes ~30 seconds"} · you get 2 free changes after</p>
+          <p className="mt-2 text-center text-[11px] text-muted-foreground">{cleanFirst ? "Takes 1-3 minutes (photo clean-up + design)" : "Takes ~30 seconds"} · you get 2 free changes after</p>
         </div>
       )}
 
       {/* ── WORKING ───────────────────────────────────────────────────────── */}
       {phase === "working" && (
         <div className="flex flex-col items-center justify-center gap-3 py-24 text-center">
-          <Loader2 className="h-7 w-7 animate-spin text-neutral-400" />
-          <p className="text-sm font-medium text-neutral-700">{busyMsg}</p>
-          <p className="text-xs text-neutral-400">{cleanFirst ? "Cleaning the photos, then designing — up to a few minutes." : "Designing the layout and placing your photos — under a minute."}</p>
+          <Loader2 className="h-7 w-7 animate-spin text-muted-foreground" />
+          <p className="text-sm font-medium text-foreground">{busyMsg}</p>
+          <p className="text-xs text-muted-foreground">{cleanFirst ? "Cleaning the photos, then designing — up to a few minutes." : "Designing the layout and placing your photos — under a minute."}</p>
         </div>
       )}
 
       {/* ── RESULT ────────────────────────────────────────────────────────── */}
       {phase === "result" && (
         <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
-          <div className="overflow-hidden rounded-xl border border-neutral-200 bg-neutral-50">
+          <div className="overflow-hidden rounded-xl border border-border bg-muted">
             {image ? <img src={image} alt="Your post" className="w-full" referrerPolicy="no-referrer" /> : null}
           </div>
           <div className="space-y-4">
-            <div className="rounded-xl border border-neutral-200 p-3">
-              <label className="block text-xs font-semibold uppercase tracking-wide text-neutral-500">
+            <div className="rounded-xl border border-border p-3">
+              <label className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Change something ({revisionsLeft} free change{revisionsLeft === 1 ? "" : "s"} left)
               </label>
               <textarea rows={2} value={editNote} onChange={(e) => setEditNote(e.target.value)} maxLength={1000}
                 disabled={revisionsLeft <= 0}
                 placeholder="e.g. make the price bigger, use the pool photo as the main one"
-                className="mt-2 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-900 disabled:opacity-50" />
+                className="mt-2 w-full rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-ring disabled:opacity-50" />
               <button onClick={() => void revise()} disabled={revisionsLeft <= 0 || !editNote.trim()}
-                className="mt-2 w-full rounded-lg border border-neutral-900 px-4 py-2 text-sm font-medium text-neutral-900 disabled:border-neutral-200 disabled:text-neutral-400">
+                className="mt-2 w-full rounded-lg border border-foreground px-4 py-2 text-sm font-medium text-foreground disabled:border-border disabled:text-muted-foreground">
                 Apply change
               </button>
             </div>
 
-            <div className="space-y-2 rounded-xl border border-neutral-200 p-3">
-              <label className="block text-xs font-semibold uppercase tracking-wide text-neutral-500">File it in a section</label>
+            <div className="space-y-2 rounded-xl border border-border p-3">
+              <label className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">File it in a section</label>
               <input list="smart-sections" value={section} onChange={(e) => { setSection(e.target.value); setSaved(false); }}
                 placeholder="e.g. Just listed (optional)"
-                className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-900" />
+                className="w-full rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-ring" />
               <datalist id="smart-sections">{sections.map((s) => <option key={s} value={s} />)}</datalist>
               <button onClick={() => void save()}
-                className={`flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-white ${saved ? "bg-emerald-600" : "bg-neutral-900"}`}>
+                className={`flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium ${saved ? "bg-emerald-600 text-white" : "bg-primary text-primary-foreground"}`}>
                 {saved ? <Check className="h-4 w-4" /> : <Save className="h-4 w-4" />}{saved ? "Filed ✓" : "File in section"}
               </button>
-              <p className="text-[11px] text-neutral-400">Your post is saved to the library automatically — this only chooses which section it lives in.</p>
+              <p className="text-[11px] text-muted-foreground">Your post is saved to the library automatically — this only chooses which section it lives in.</p>
             </div>
 
             <button type="button" disabled={!image}
               onClick={() => image && void downloadImage(image, `${property?.title || "post"}.png`)}
-              className={`flex w-full items-center justify-center gap-2 rounded-lg border border-neutral-300 px-4 py-2.5 text-sm font-medium text-neutral-700 ${image ? "hover:bg-neutral-50" : "opacity-40"}`}>
+              className={`flex w-full items-center justify-center gap-2 rounded-lg border border-border px-4 py-2.5 text-sm font-medium text-muted-foreground ${image ? "hover:bg-muted" : "opacity-40"}`}>
               <Download className="h-4 w-4" /> Download image
             </button>
             {err && <div className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">{err}</div>}
-            <button onClick={startOver} className="w-full text-center text-xs text-neutral-400 hover:text-neutral-600">Start over</button>
+            <button onClick={startOver} className="w-full text-center text-xs text-muted-foreground hover:text-foreground">Start over</button>
           </div>
         </div>
       )}

@@ -18,7 +18,7 @@
 
 import { runAgentLoop, type ModelCall, type LoopResult } from './agent-loop';
 import { runGates, classifyDraft, type Verifier } from './gates';
-import { validateDraft } from './validators';
+import { validateDraft, screenLanguageDrift } from './validators';
 import { detectConfirmation } from './confirmation';
 import { runActionTool, type AmandaMode } from './modes';
 import { buildSystemPrompt, buildUserContext, type TurnContext, PROMPT_VERSION } from './prompt';
@@ -176,9 +176,24 @@ export async function runTurn(
   // "summarizing a property they requested"). Everything else stays short.
   const allowLongForm = loop.toolEvents.some((ev) => ev.tool === 'get_property_details' && ev.result.ok && !ev.result.refused);
   const authoritative = ctx.officeAnswerText ? [ctx.officeAnswerText] : [];
+  // Office-promise law input: the machinery keeps the promise only when an
+  // ask_agency call succeeded THIS turn (simulated counts — shadow parity), a
+  // ticket is already open, or an office answer is being relayed.
+  const officeContextPresent =
+    loop.toolEvents.some((ev) => ev.tool === 'ask_agency' && ev.result.ok && !ev.result.refused) ||
+    Boolean(ctx.openTicketNote) || Boolean(ctx.officeAnswerText);
+  // Language law yields when the BUYER writes English (a Norwegian lead
+  // switching to English must get English back — mirroring beats the stored
+  // code; review-verified gap). The same drift profile detects it.
+  const buyerWroteEnglish = !screenLanguageDrift(inbound.text, ctx.leadLanguage).ok;
   const judge = async (text: string) => {
     // A relay turn may run long-form: the office answer needs attribution + context.
-    const v = validateDraft(text, { allowLongForm: allowLongForm || authoritative.length > 0, mirrorTargetWords: ctx.mirrorTargetWords ?? undefined });
+    const v = validateDraft(text, {
+      allowLongForm: allowLongForm || authoritative.length > 0,
+      mirrorTargetWords: ctx.mirrorTargetWords ?? undefined,
+      expectedLanguage: buyerWroteEnglish ? undefined : ctx.leadLanguage,
+      officeContextPresent,
+    });
     const g = await runGates(text, loop.toolEvents, deps.verifier, authoritative);
     return [...v.violations, ...g.failures];
   };

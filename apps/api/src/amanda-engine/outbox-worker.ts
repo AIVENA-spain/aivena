@@ -20,25 +20,74 @@ import { AgencyCircuitBreaker, BREAKER_COOLDOWN_MS, MAX_ATTEMPTS, backoffSeconds
 export { engineEnabled, backoffSeconds, type ProcessTurn, type QueueRow, type TurnOutcome } from './outbox-lib';
 
 // One drain at a time per process: a turn can legitimately take minutes of
-// model IO, and the 20s tick must never stack drains (lease-steal mid-turn —
+// model IO, and the tick must never stack drains (lease-steal mid-turn —
 // reviewer-confirmed). Cross-instance overlap is handled by the lease itself.
 let drainInFlight = false;
 const breaker = new AgencyCircuitBreaker();
+
+/** Graceful-shutdown seam: index.ts waits for the in-flight drain before exit
+ *  so a deploy never orphans a mid-turn row into a lease-length silence. */
+export function drainBusy(): boolean {
+  return drainInFlight;
+}
+
+// Shutdown stop: after SIGTERM the drain must FINISH its current turn but not
+// START the rest of the claimed batch — unstarted rows are released back to
+// pending immediately so the new instance picks them up in seconds instead of
+// waiting out their leases (review-verified batch-orphan gap).
+let stopRequested = false;
+export function requestDrainStop(): void {
+  stopRequested = true;
+}
+
+// Instance-unique lease identity: with a shared tag, a rolling deploy's old and
+// new processes are indistinguishable in leased_by and no one can reason about
+// whose lease is whose (the 2026-08-27 15-minute demo stall).
+const WORKER_ID = `api-${Math.random().toString(36).slice(2, 10)}`;
+
+// Per-ROW lease (re-upped before each turn below): must outlive one worst-case
+// turn (a few 45s model calls + verifier + retry), NOT the whole batch. The
+// old whole-batch 900s lease meant a killed worker silenced a conversation for
+// 15 minutes; 300s per row caps that at 5 — and graceful shutdown makes the
+// orphan case rare (hard kill only).
+const LEASE_SECONDS = 300;
 
 export async function drainAmandaInbound(processTurn: ProcessTurn, limit = 5): Promise<{ claimed: number; done: number; failed: number }> {
   if (drainInFlight) return { claimed: 0, done: 0, failed: 0 };
   drainInFlight = true;
   try {
-    // Small batches + a long lease: each turn may spend minutes in model IO and
-    // the lease must outlive the WHOLE sequential batch, or another instance
-    // steals rows mid-turn and re-runs the model loop (reviewer-confirmed).
     const rows = (await db.execute(
-      sql`SELECT * FROM public.pick_and_claim_amanda_inbound(${limit}, ${900})`,
+      sql`SELECT * FROM public.pick_and_claim_amanda_inbound(${limit}, ${LEASE_SECONDS}, ${WORKER_ID})`,
     )) as unknown as QueueRow[];
 
     let done = 0;
     let failed = 0;
     for (const row of rows) {
+      if (stopRequested) {
+        // Shutting down: hand this unstarted row straight back (guarded — only
+        // if we still hold it); the successor instance claims it on its next tick.
+        await withAgency(row.agency_id, async (tx) => {
+          await tx.execute(sql`
+            UPDATE public.amanda_inbound_queue
+            SET status = 'pending', lease_expires_at = NULL, leased_by = NULL, next_attempt_at = now()
+            WHERE id = ${row.id}::uuid AND status = 'processing' AND leased_by = ${WORKER_ID}
+          `);
+        }).catch(() => { /* lease expiry re-offers it */ });
+        continue;
+      }
+      // Re-up THIS row's lease as its turn starts: each row gets a full lease
+      // from its own start instead of sharing the batch's claim-time window.
+      // Guarded by leased_by = us: if the lease already expired and another
+      // instance stole the row, we must not resurrect it under ourselves.
+      const reup = await withAgency(row.agency_id, async (tx) =>
+        tx.execute(sql`
+          UPDATE public.amanda_inbound_queue
+          SET lease_expires_at = now() + make_interval(secs => ${LEASE_SECONDS})
+          WHERE id = ${row.id}::uuid AND status = 'processing' AND leased_by = ${WORKER_ID}
+          RETURNING id
+        `),
+      ).catch(() => [] as unknown[]);
+      if ((reup as unknown[]).length === 0) continue;   // stolen or resolved elsewhere — skip
       // Breaker open for this agency: put the row back with a cooldown-length
       // delay (durable, nothing lost) and move on.
       if (breaker.isOpen(row.agency_id, Date.now())) {
@@ -48,7 +97,7 @@ export async function drainAmandaInbound(processTurn: ProcessTurn, limit = 5): P
             SET status = 'pending', lease_expires_at = NULL,
                 next_attempt_at = now() + make_interval(secs => ${Math.round(BREAKER_COOLDOWN_MS / 1000)}),
                 error_message = 'breaker_open: agency paused after repeated errors'
-            WHERE id = ${row.id}::uuid
+            WHERE id = ${row.id}::uuid AND status = 'processing' AND leased_by = ${WORKER_ID}
           `);
         }).catch(() => { /* lease expiry re-offers it */ });
         continue;
@@ -58,12 +107,16 @@ export async function drainAmandaInbound(processTurn: ProcessTurn, limit = 5): P
         breaker.recordSuccess(row.agency_id);
         await withAgency(row.agency_id, async (tx) => {
           if (outcome.result === 'done' || outcome.result === 'skip') {
+            // Leaseholder guard on EVERY finalization: a zombie instance whose
+            // row was folded/stolen must never overwrite the new owner's state.
+            // (The fold-case zombie SEND is blocked by sendReply's lease fence —
+            // the idempotency key alone only dedupes same-message re-runs.)
             await tx.execute(sql`
               UPDATE public.amanda_inbound_queue
               SET status = ${outcome.result === 'done' ? 'done' : 'skipped'},
                   processed_at = now(), lease_expires_at = NULL,
                   error_message = ${outcome.result === 'skip' ? outcome.reason : null}
-              WHERE id = ${row.id}::uuid
+              WHERE id = ${row.id}::uuid AND status = 'processing' AND leased_by = ${WORKER_ID}
             `);
             done++;
           } else {
@@ -74,7 +127,7 @@ export async function drainAmandaInbound(processTurn: ProcessTurn, limit = 5): P
                   next_attempt_at = now() + make_interval(secs => ${backoffSeconds(row.attempts)}),
                   lease_expires_at = NULL,
                   error_message = ${outcome.reason.slice(0, 240)}
-            WHERE id = ${row.id}::uuid
+            WHERE id = ${row.id}::uuid AND status = 'processing' AND leased_by = ${WORKER_ID}
             `);
             if (exhausted) failed++;
           }
@@ -121,7 +174,7 @@ export async function drainAmandaInbound(processTurn: ProcessTurn, limit = 5): P
                 next_attempt_at = now() + make_interval(secs => ${backoffSeconds(row.attempts)}),
                 lease_expires_at = NULL,
                 error_message = ${('threw: ' + msg).slice(0, 240)}
-            WHERE id = ${row.id}::uuid AND status = 'processing'
+            WHERE id = ${row.id}::uuid AND status = 'processing' AND leased_by = ${WORKER_ID}
           `);
         }).catch(() => { /* DB down — the lease expiry re-offers the row */ });
       }

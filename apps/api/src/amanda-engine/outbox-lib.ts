@@ -11,6 +11,7 @@ export interface QueueRow {
   payload: unknown;
   attempts: number;
   created_at?: string;      // stale-row guard input (present on real rows)
+  leased_by?: string;       // instance identity from the claim — the send fence's key
 }
 
 export type TurnOutcome =

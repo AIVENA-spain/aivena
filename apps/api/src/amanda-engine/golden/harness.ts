@@ -7,7 +7,7 @@
 // real caller behind AMANDA_GOLDEN_LIVE=true (P1).
 
 import type { ModelCall, ModelResponse, ContentBlock } from '../agent-loop';
-import type { ToolBackends, PropertySummary, SlotProposal, TicketRef } from '../tools';
+import type { ToolBackends, PropertySearchResult, SlotProposal, TicketRef } from '../tools';
 import type { TurnContext } from '../prompt';
 import type { TurnDeps, PendingActionView, InboundMessage } from '../turn';
 import type { LeadStateData } from '../lead-state-lib';
@@ -35,13 +35,17 @@ export class FakeBackends implements ToolBackends {
   nextTicket: TicketRef = { ticketId: 'ticket-1', shortCode: 3 };
   slotCounter = 0;
 
-  async searchProperties(filters: Record<string, unknown>): Promise<PropertySummary[]> {
+  async searchProperties(filters: Record<string, unknown>): Promise<PropertySearchResult> {
     void filters;
-    return [CHALET, APARTMENT].map((p) => ({
-      id: p.id as string, ref: p.ref as string, title: p.title as string,
-      price: p.price as number, bedrooms: p.bedrooms as number,
-      city: p.location_city as string, type: p.property_type as string,
-    }));
+    return {
+      results: [CHALET, APARTMENT].map((p) => ({
+        id: p.id as string, ref: p.ref as string, title: p.title as string,
+        price: p.price as number, bedrooms: p.bedrooms as number,
+        city: p.location_city as string, type: p.property_type as string,
+        listed: '2026-08-01',
+      })),
+      catalogue_note: null,
+    };
   }
   async getPropertyDetails(refOrId: string): Promise<Record<string, unknown> | null> {
     return [CHALET, APARTMENT].find((p) => p.ref === refOrId || p.id === refOrId) ?? null;

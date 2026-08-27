@@ -6,6 +6,16 @@
 export interface LintOptions {
   allowLongForm?: boolean;      // broad question / re-engagement / property summary / relay-with-context
   mirrorTargetWords?: number;   // rolling median of the buyer's last messages (optional)
+  /** Lead's language code (raw, e.g. 'no'/'nb'/'pt-BR') — when set and not
+   *  English, an English-drift draft is a violation (live demo 2026-08-27:
+   *  the prompt fell back to English on the unmapped 'no' and the model
+   *  eventually obeyed it mid-conversation). */
+  expectedLanguage?: string;
+  /** Office-promise law: 'I'll check with the office' is legal ONLY when the
+   *  machinery will keep the promise — an ask_agency call succeeded this turn,
+   *  a ticket is already open, or an office answer is being relayed. Pass
+   *  false to enforce; undefined skips (pure-lint callers/tests). */
+  officeContextPresent?: boolean;
 }
 
 export interface LintResult {
@@ -84,6 +94,72 @@ const SELF_FUTURE_PROMISE: RegExp[] = [
 ];
 const OFFICE_EXEMPT_RE = /\b(office|team|kontoret?|oficina|equipo|b[üu]ro|kantoor|the agency|byr[åa]et)\b/i;
 
+// ── Language law: normalize a lead's language code before ANY table lookup —
+// the 2026-08-27 live bug: leads store 'no' but the prompt table keyed 'nb',
+// so the lookup silently fell back to "Reply in English. Always." Base-code +
+// alias handling; unknown codes must NEVER silently become English.
+const LANG_ALIASES: Record<string, string> = { no: 'nb', nn: 'nb', cz: 'cs', gr: 'el', se: 'sv', dk: 'da' };
+
+export function normalizeLeadLanguage(code: string | null | undefined): string | null {
+  const base = (code ?? '').trim().toLowerCase().split(/[-_]/)[0];
+  if (!base) return null;
+  return LANG_ALIASES[base] ?? base;
+}
+
+// English-drift detector (deterministic): models drift TO English, so one
+// collision-safe marker set suffices. Markers avoid words that are also words
+// in our other 12 locales — review-verified prune: no 'will'/'also' (de),
+// 'want' (nl), 'just' (sv), 'details'/'apartment'/'bungalow'/'bed'/'double'
+// (shared European listing vocabulary).
+const ENGLISH_MARKERS = new Set([
+  'the', 'you', 'your', 'are', 'with', 'here', 'what', 'would',
+  'can', 'not', 'but', 'these', 'both', 'either', 'more', 'keep', 'looking',
+  'should', 'about', 'they', 'there', 'which', 'when', 'right',
+  'very', 'within', 'listed', 'check', 'currently', 'available',
+  'promise', 'newest', 'bath', 'beach', 'quiet',
+  'office', 'back', 'their', 'answer', 'shortly', 'again', 'today',
+]);
+
+// The 13 supported locales — the drift gate runs only for a KNOWN non-English
+// code (an unknown code means we cannot rule out an English-writing buyer).
+const KNOWN_LANGS = new Set(['en', 'es', 'de', 'nl', 'fr', 'it', 'pt', 'pl', 'sv', 'nb', 'da', 'fi', 'ru']);
+
+/** Violation when the expected language is NOT English but the draft reads as
+ *  English. Thresholds (≥5 distinct markers AND ≥15% marker density) sit far
+ *  above any real cross-language collision rate and far below any real English
+ *  sentence pair. Short drafts ("Ok!") are skipped. */
+export function screenLanguageDrift(draft: string, expectedLanguage?: string): { ok: boolean; expected: string | null } {
+  const expected = normalizeLeadLanguage(expectedLanguage);
+  if (!expected || expected === 'en' || !KNOWN_LANGS.has(expected)) return { ok: true, expected };
+  // Tokenizer keeps Latin (incl. Extended-A for pl) AND Cyrillic word chars —
+  // a Russian draft must count its own words in the denominator, or quoted
+  // Latin catalogue names alone would trip the gate (review-verified).
+  const words = draft.toLowerCase().split(/[^a-zà-ÿßĀ-ſа-яё']+/).filter((w) => w.length > 0);
+  if (words.length < 8) return { ok: true, expected };
+  const distinct = new Set(words.filter((w) => ENGLISH_MARKERS.has(w)));
+  const hits = words.filter((w) => ENGLISH_MARKERS.has(w)).length;
+  const drifted = distinct.size >= 5 && hits / words.length >= 0.15;
+  return { ok: !drifted, expected };
+}
+
+// ── Office-promise law: a sentence that promises checking/confirming with the
+// office is legal ONLY when the ticket machinery will keep that promise.
+// All 13 locales' office words; 'home office'/'post office' are room/place
+// vocabulary, not the agency. Cyrillic alternatives sit OUTSIDE \b — the ASCII
+// word boundary never matches next to Cyrillic letters (review-verified).
+const OFFICE_WORD_RE = /\b(?:(?<!home )(?<!post )office|kontoret?|oficina|bureau|ufficio|biur\w*|toimisto\w*|escrit[óo]rio|b[üu]ro|kantoor|byr[åa]et|the team|el equipo)\b|офис|бюро|агентств/i;
+const CHECK_VERB_RE = /\b(?:check|confirm|ask|verif|v[ée]rif|controll?|chied|pergunt|sprawdz|tarkist|double[-\s]?check|dobbelt?sjekk|dobbelt?tjek|sjekk|bekreft|h[øo]r|sp[øo]r|kollar?\b|dubbelkoll|st[äa]m|tjek|frag|nachfrag|pr[üu]f|kl[äa]re|vraag|navraag|consult|pregunt|comprueb|verific)|провер|уточн|спрош|спрос/i;
+
+export function screenOfficePromise(draft: string, officeContextPresent: boolean): { ok: boolean } {
+  if (officeContextPresent) return { ok: true };
+  // Questions are OFFERS ("want me to check with the office?") — always legal;
+  // only a declarative promise needs the ticket machinery behind it.
+  const promised = splitSentences(draft).some(
+    (s) => !/[?？]\s*$/.test(s) && !/^[¿]/.test(s) && OFFICE_WORD_RE.test(s) && CHECK_VERB_RE.test(s),
+  );
+  return { ok: !promised };
+}
+
 export function screenBannedPatterns(draft: string): { ok: boolean; matched: string[] } {
   // Curly apostrophes (what phones actually type) must match the ASCII patterns.
   const normalized = draft.replace(/[’‘]/g, "'");
@@ -131,5 +207,10 @@ export function validateDraft(draft: string, opts: LintOptions = {}): { ok: bool
   if (!banned.ok) violations.push(...banned.matched.map((m) => `banned:${m}`));
   const pay = screenPaymentDetails(draft);
   if (!pay.ok) violations.push(`payment_floor:${pay.reason}`);
+  const lang = screenLanguageDrift(draft, opts.expectedLanguage);
+  if (!lang.ok) violations.push(`wrong_language_WRITE_THE_WHOLE_REPLY_IN_${lang.expected}_not_English`);
+  if (opts.officeContextPresent === false && !screenOfficePromise(draft, false).ok) {
+    violations.push('office_promise_without_filed_question_CALL_ask_agency_or_DROP_the_promise');
+  }
   return { ok: violations.length === 0, violations };
 }

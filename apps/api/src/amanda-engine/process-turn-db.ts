@@ -305,6 +305,22 @@ export async function processTurnDb(row: QueueRow): Promise<TurnOutcome> {
       if (!world.leadPhone) throw new Error('lead_has_no_phone');
       const key = `amanda-engine:${turnId(row.conversation_id, row.provider_message_id)}`;
       return withAgency(row.agency_id, async (tx) => {
+        // LEASE FENCE (review-verified fold-zombie hole): the idempotency key
+        // dedupes re-runs of the SAME inbound, but after a lease expiry the
+        // fold path answers the NEWER message under a DIFFERENT key — so a
+        // zombie turn finishing late must be stopped HERE, not at the queue
+        // finalization. Only the current leaseholder with a live lease may
+        // send; the row lock this takes (held to commit) also blocks a
+        // concurrent claim/fold from stealing the row mid-send.
+        const fence = await tx.execute(sql`
+          UPDATE amanda_inbound_queue
+          SET lease_expires_at = GREATEST(lease_expires_at, now() + interval '120 seconds')
+          WHERE id = ${row.id}::uuid AND status = 'processing'
+            AND leased_by = ${String((row as { leased_by?: unknown }).leased_by ?? '')}
+            AND lease_expires_at >= now()
+          RETURNING id
+        `);
+        if ((fence as unknown as unknown[]).length === 0) throw new Error('lease_lost_reply_suppressed');
         const windowRows = await tx.execute(sql`
           SELECT 1 FROM leads
            WHERE id = ${row.lead_id}::uuid

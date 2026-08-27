@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   splitSentences, countWords, countQuestionSentences, lintDraft,
   screenBannedPatterns, screenPaymentDetails, cooldownOk, validateDraft, COOLDOWN_MS,
+  normalizeLeadLanguage, screenLanguageDrift, screenOfficePromise,
 } from './validators';
 
 describe('sentence + question counting', () => {
@@ -81,6 +82,75 @@ describe('deliver-now law — no self future promises (Christian, live demo 2026
   it('acting NOW stays legal', () => {
     expect(screenBannedPatterns('I found two villas in San Javier that fit — want the details?').ok).toBe(true);
     expect(screenBannedPatterns('Jeg fant to boliger som passer: en i San Javier og en i Los Alcázares.').ok).toBe(true);
+  });
+});
+
+describe('language law (live demo 2026-08-27: "no" lead got English)', () => {
+  it('normalizes aliases and region tags; empty stays null', () => {
+    expect(normalizeLeadLanguage('no')).toBe('nb');
+    expect(normalizeLeadLanguage('NO')).toBe('nb');
+    expect(normalizeLeadLanguage('nn')).toBe('nb');
+    expect(normalizeLeadLanguage('pt-BR')).toBe('pt');
+    expect(normalizeLeadLanguage('sv')).toBe('sv');
+    expect(normalizeLeadLanguage('')).toBeNull();
+    expect(normalizeLeadLanguage(null)).toBeNull();
+  });
+  it('blocks the exact live English drift against a Norwegian lead', () => {
+    const live = "I can't promise these are the very newest, but here are two current listings within about 20 minutes of Torrevieja, both with a communal pool. Want more details on either, or should I keep looking?";
+    expect(screenLanguageDrift(live, 'no').ok).toBe(false);
+    expect(screenLanguageDrift(live, 'nb').ok).toBe(false);
+  });
+  it('passes Norwegian, Spanish, German drafts against their own language', () => {
+    expect(screenLanguageDrift('Hei igjen Marte! Jeg fant to leiligheter i Torrevieja med felles svømmebasseng som kan passe deg veldig godt.', 'no').ok).toBe(true);
+    expect(screenLanguageDrift('¡Hola! He encontrado dos apartamentos en Torrevieja con piscina comunitaria que podrían encajar contigo.', 'es').ok).toBe(true);
+    expect(screenLanguageDrift('Hallo! Ich habe zwei Wohnungen in Torrevieja mit Gemeinschaftspool gefunden, die gut passen könnten.', 'de').ok).toBe(true);
+  });
+  it('skips when the lead language IS English, is unknown, or the draft is tiny', () => {
+    expect(screenLanguageDrift('Here are the details you asked about for the villa with the pool.', 'en').ok).toBe(true);
+    expect(screenLanguageDrift('Here are the details you asked about for the villa with the pool.', 'xx').ok).toBe(true);
+    expect(screenLanguageDrift('Ok!', 'no').ok).toBe(true);
+  });
+  it('review-pinned false positives stay legal: German marker-collisions, Russian with Latin catalogue names', () => {
+    expect(screenLanguageDrift('Ich will also mehr Details zum Apartment im Bungalow sehen, gerne mit Terrasse.', 'de').ok).toBe(true);
+    expect(screenLanguageDrift('Я нашла для вас два варианта: Apartment in Orihuela Costa и Bungalow in San Miguel, оба с бассейном рядом. Хотите узнать подробности об одном из них?', 'ru').ok).toBe(true);
+  });
+});
+
+describe('office-promise law (live demo 2026-08-27: promised checks, no ticket)', () => {
+  it.each([
+    'Jeg dobbeltsjekker med kontoret at den fortsatt er tilgjengelig til denne prisen.',
+    'Jeg sjekker med kontoret og kommer tilbake til deg.',
+    "I'll double-check current status with the office.",
+    'Lo confirmo con la oficina y te digo.',
+    'Ich kläre das mit dem Büro.',
+  ])('without a filed question, blocks: %s', (text) => {
+    expect(screenOfficePromise(text, false).ok).toBe(false);
+  });
+  it('the same promises are legal when the ticket machinery backs them', () => {
+    expect(screenOfficePromise('Jeg sjekker med kontoret og kommer tilbake til deg.', true).ok).toBe(true);
+  });
+  it('OFFERS (questions) are always legal — that is the desired stale-listing hedge', () => {
+    expect(screenOfficePromise('Vil du at jeg skal sjekke med kontoret?', false).ok).toBe(true);
+    expect(screenOfficePromise('Want me to confirm the current status with the office?', false).ok).toBe(true);
+  });
+  it('mentioning the office without a check-verb stays legal', () => {
+    expect(screenOfficePromise('The office is open Monday to Friday from 9:30.', false).ok).toBe(true);
+  });
+  it('review-pinned false positives stay legal: home office + double bedroom vocabulary', () => {
+    expect(screenOfficePromise('It has a home office and a double bedroom facing the pool.', false).ok).toBe(true);
+    expect(screenOfficePromise('The apartment offers a bright home office you could double as a guest room.', false).ok).toBe(true);
+  });
+  it('review-pinned false negatives now blocked: fr / it / pl / ru office promises', () => {
+    expect(screenOfficePromise('Je vérifie avec le bureau et je reviens vers vous.', false).ok).toBe(false);
+    expect(screenOfficePromise("Controllo con l'ufficio e ti faccio sapere.", false).ok).toBe(false);
+    expect(screenOfficePromise('Sprawdzę to w biurze i dam znać.', false).ok).toBe(false);
+    expect(screenOfficePromise('Я проверю в офисе и вернусь к вам с ответом.', false).ok).toBe(false);
+  });
+  it('validateDraft wires both laws when their context is provided', () => {
+    const r = validateDraft("I'll double-check with the office and come back to you.", { expectedLanguage: 'no', officeContextPresent: false });
+    expect(r.ok).toBe(false);
+    expect(r.violations.join(',')).toMatch(/office_promise_without_filed_question/);
+    expect(r.violations.join(',')).toMatch(/wrong_language/);
   });
 });
 

@@ -5,6 +5,8 @@
 // pending_action_id); this text fallback is deliberately CONSERVATIVE — a miss
 // re-asks, which is annoying; a false positive books the wrong Saturday.
 
+import { normalizeLeadLanguage } from './validators';
+
 const AFFIRMATIVES: Record<string, string[]> = {
   en: ['yes', 'yes please', 'ok', 'okay', 'sure', 'perfect', 'sounds good', 'confirm', 'confirmed', 'that works', 'deal', 'great'],
   es: ['si', 'sí', 'vale', 'ok', 'perfecto', 'confirmo', 'confirmado', 'de acuerdo', 'me va bien', 'genial', 'claro'],
@@ -66,7 +68,11 @@ export function detectConfirmation(text: string, lang: string | null): Confirmat
   if (!t) return 'unclear';   // bare "no problem" alone: agreeable, but too weak to book on
   const words = t.split(/\s+/);
   if (words.some((w) => NEGATIVES.includes(w))) return 'decline';
-  const lexicons = lang && AFFIRMATIVES[lang] ? [AFFIRMATIVES[lang], AFFIRMATIVES.en] : Object.values(AFFIRMATIVES);
+  // Normalize the code BEFORE the lexicon lookup — leads store 'no' but the
+  // table keys 'nb' (the 2026-08-27 language-law bug class); an unmapped code
+  // falls back to scanning every lexicon, which stays conservative.
+  const norm = normalizeLeadLanguage(lang);
+  const lexicons = norm && AFFIRMATIVES[norm] ? [AFFIRMATIVES[norm], AFFIRMATIVES.en] : Object.values(AFFIRMATIVES);
   for (const lex of lexicons) {
     if (lex.includes(t)) return 'affirm';
     // "yes please!" / "vale genial" — every word affirmative-ish, max 3 words

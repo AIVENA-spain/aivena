@@ -6,6 +6,7 @@
     "deploy": {
       "startCommand": "node dist/apps/api/src/index.js",
       "healthcheckPath": "/health",
-      "restartPolicyType": "ON_FAILURE"
+      "restartPolicyType": "ON_FAILURE",
+      "drainingSeconds": 90
     }
   }

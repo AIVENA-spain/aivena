@@ -17,6 +17,17 @@ export interface PropertySummary {
   bedrooms: number | null;
   city: string | null;
   type: string | null;
+  /** Date the listing entered the AGENCY'S CATALOGUE (YYYY-MM-DD) — "in our
+   *  catalogue since", not necessarily its first day on the market. Null when
+   *  the backend detects the dates are a bulk-import artifact. */
+  listed: string | null;
+}
+
+export interface PropertySearchResult {
+  results: PropertySummary[];
+  /** Deterministic honesty rider (e.g. "catalogue cannot rank newness — all
+   *  listings share one import date") — the model treats tool data as law. */
+  catalogue_note: string | null;
 }
 
 export interface SlotProposal {
@@ -31,7 +42,7 @@ export interface TicketRef { ticketId: string; shortCode: number }
 
 /** The seam: real implementations hit the db/RPCs; the golden harness fakes them. */
 export interface ToolBackends {
-  searchProperties(filters: Record<string, unknown>): Promise<PropertySummary[]>;
+  searchProperties(filters: Record<string, unknown>): Promise<PropertySearchResult>;
   getPropertyDetails(refOrId: string): Promise<Record<string, unknown> | null>;
   getAreaInfo(area: string): Promise<string | null>;
   proposeViewingSlots(propertyId: string, preferredTimePhrase: string | null): Promise<SlotProposal>;
@@ -60,12 +71,15 @@ export const TOOL_SPECS: ToolSpec[] = [
     toolClass: 'read',
     schema: {
       name: 'search_properties',
-      description: 'Search the agency catalogue. Returns up to 5 matching properties. Rejected properties are filtered automatically.',
+      description: 'Search the agency catalogue. Returns up to 5 matches, each with the date it was listed. Rejected properties are filtered automatically. For "near X" requests pass cities as a list of X plus its neighbouring towns.',
       input_schema: {
         type: 'object',
         properties: {
           max_price: { type: 'number' }, min_bedrooms: { type: 'number' },
-          city: { type: 'string' }, property_type: { type: 'string' },
+          city: { type: 'string' },
+          cities: { type: 'array', items: { type: 'string' }, description: 'One or more towns to search at once — use for areas ("Torrevieja and around")' },
+          property_type: { type: 'string' },
+          sort: { type: 'string', enum: ['newest', 'price_asc', 'price_desc'], description: 'newest = most recently added to the catalogue; omit for best match' },
         },
       },
     },

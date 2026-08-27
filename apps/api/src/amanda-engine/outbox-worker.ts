@@ -83,7 +83,17 @@ export async function drainAmandaInbound(processTurn: ProcessTurn, limit = 5): P
         // A THROWN row must terminate like a retry — leaving it 'processing'
         // means the stale-lease steal re-runs it forever with no attempts cap
         // (reviewer-confirmed). Best-effort, fenced, and itself guarded.
-        const msg = err instanceof Error ? err.message.split('\n')[0].slice(0, 200) : 'error';
+        // Walk the cause chain: drizzle's "Failed query" wrapper hides the real
+        // driver/postgres error (and its first line can be blank) — but NEVER
+        // include query params (token-leak law): message first lines only.
+        const chain: string[] = [];
+        let cur: unknown = err;
+        for (let i = 0; i < 4 && cur; i++) {
+          const m = (cur as { message?: unknown }).message;
+          if (typeof m === 'string' && m.trim()) chain.push(m.split('\n')[0].slice(0, 120));
+          cur = (cur as { cause?: unknown }).cause;
+        }
+        const msg = chain.join(' <- ') || 'error';
         console.error('[amanda-outbox] row threw', row.id, msg);
         failed++;
         // Circuit breaker: repeated errors pause the agency's drain and file ONE

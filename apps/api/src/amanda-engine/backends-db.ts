@@ -6,6 +6,7 @@
 
 import { sql } from 'drizzle-orm';
 import { withAgency } from '../../../../packages/db/client';
+import { deleteCalendarEventForBooking } from '../routes/calendar-worker';
 import { wallClockInZone, zonedTimeToUtc, resolveDatetimePhrase } from './datetime-resolver';
 import { mergeExtraction, type LeadStateData } from './lead-state-lib';
 import { UUID_RE, type ToolBackends, type PropertySummary, type SlotProposal, type TicketRef } from './tools';
@@ -311,6 +312,56 @@ export function makeDbBackends(ctx: BackendCtx): ToolBackends {
         await tx.execute(sql`
           INSERT INTO amanda_funnel_events (agency_id, lead_id, conversation_id, event_type, amanda_attributed, metadata)
           VALUES (${A}, ${ctx.leadId}::uuid, ${ctx.conversationId}::uuid, 'intel_captured', true, jsonb_build_object('slots', ${Object.keys(patch).join(',')}))
+        `);
+      });
+    },
+
+    async listUpcomingViewings(): Promise<Array<{ id: string; label: string }>> {
+      return withAgency(A, async (tx) => {
+        const rows = await tx.execute(sql`
+          SELECT b.id, b.scheduled_at, p.title, p.external_id AS ref
+            FROM bookings b
+            LEFT JOIN properties p ON p.id = b.property_id
+           WHERE b.lead_id = ${ctx.leadId}::uuid
+             AND b.status IN ('requested'::booking_status, 'confirmed'::booking_status, 'rescheduled'::booking_status)
+             AND b.scheduled_at > now()
+           ORDER BY b.scheduled_at ASC LIMIT 5
+        `);
+        return (rows as unknown as Array<Record<string, unknown>>).map((r) => ({
+          id: String(r.id),
+          label: `${slotLabel(Date.parse(String(r.scheduled_at)), ctx.settings.timezone)}${r.title ? ` · ${String(r.title)}` : ''}${r.ref ? ` (${String(r.ref)})` : ''}`,
+        }));
+      });
+    },
+
+    async cancelViewing(bookingId: string): Promise<{ cancelled: boolean }> {
+      if (!UUID_RE.test(bookingId)) return { cancelled: false };
+      const done = await withAgency(A, async (tx) => {
+        // cancel_viewing RPC PERFORMs require_role — the worker tx claims the
+        // staff role exactly like the booking path (booking-exec.ts).
+        await tx.execute(sql`
+          SELECT set_config('app.current_user_role', 'aivena_staff', true),
+                 set_config('app.current_user_id', 'amanda_engine', true)
+        `);
+        await tx.execute(sql`SELECT * FROM cancel_viewing(${bookingId}::uuid, ${'Cancelled by the buyer via Amanda'})`);
+        return true;
+      });
+      // Fire-and-forget calendar cleanup (never blocks the reply) — same path
+      // the dashboard cancel uses.
+      void deleteCalendarEventForBooking(bookingId, A);
+      return { cancelled: done };
+    },
+
+    async fileCancelRequest(summary: string): Promise<void> {
+      await withAgency(A, async (tx) => {
+        await tx.execute(sql`
+          INSERT INTO dashboard_tasks (agency_id, lead_id, conversation_id, task_type, title, message_body, channel, platform, priority, status, raw_payload)
+          VALUES (
+            ${A}, ${ctx.leadId}::uuid, ${ctx.conversationId}, 'human_review_needed',
+            'Buyer wants to cancel a viewing', ${summary.slice(0, 500)},
+            'whatsapp', 'twilio', 'high', 'pending',
+            jsonb_build_object('via', 'amanda_engine', 'kind', 'cancel_request')
+          )
         `);
       });
     },

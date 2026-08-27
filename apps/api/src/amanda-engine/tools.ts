@@ -38,6 +38,12 @@ export interface ToolBackends {
   askAgency(question: string, propertyId: string | null, category?: string | null): Promise<TicketRef>;
   handoffToHuman(reason: string, summary: string): Promise<void>;
   recordLeadIntel(patch: Partial<LeadStateData>): Promise<void>;
+  /** Upcoming (future, active) viewings for THIS lead — the cancel law's input. */
+  listUpcomingViewings(): Promise<Array<{ id: string; label: string }>>;
+  /** Cancel one viewing (deterministic; calendar cleanup rides along). */
+  cancelViewing(bookingId: string): Promise<{ cancelled: boolean }>;
+  /** Non-FULL modes: file the cancel request as a human task instead. */
+  fileCancelRequest(summary: string): Promise<void>;
 }
 
 export const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -149,6 +155,20 @@ export const TOOL_SPECS: ToolSpec[] = [
     },
   },
   {
+    // Commitment class: FULL executes under the exactly-one law (several
+    // upcoming viewings → the tool returns candidates and the model asks
+    // WHICH); assisted/approval file a human task instead (the agent cancels
+    // via /viewings); shadow simulates. Reschedule v1 = cancel + propose fresh
+    // slots (calendar PATCH-reschedule is the P2 polish).
+    name: 'cancel_viewing',
+    toolClass: 'commitment',
+    schema: {
+      name: 'cancel_viewing',
+      description: 'Cancel an upcoming viewing the buyer explicitly asked to cancel. Call WITHOUT booking_id first — if several viewings exist you get the list and must ask the buyer which one. For a reschedule: cancel, then propose_viewing_slots for fresh times.',
+      input_schema: { type: 'object', properties: { booking_id: { type: 'string' } } },
+    },
+  },
+  {
     name: 'cannot_answer',
     toolClass: 'internal_write',
     schema: {
@@ -192,6 +212,25 @@ export async function executeToolCall(
   const run = async (real: () => Promise<unknown>, simulatedData?: unknown): Promise<ToolResult> => {
     try {
       return await runActionTool(mode, toolClass, real, { simulatedData });
+    } catch (err) {
+      console.error('[amanda-tools] backend failed', name, err instanceof Error ? err.message.split('\n')[0].slice(0, 160) : 'error');
+      return { ok: false, simulated: false, queued: null, refused: 'backend_error', data: null };
+    }
+  };
+  // Variant with a QUEUE effect whose result the model should see (cancel law:
+  // non-FULL modes file a human task and the model reassures the buyer).
+  const runActionToolSafe = async (
+    real: () => Promise<unknown>,
+    simulatedData: unknown,
+    queueEffect: () => Promise<unknown>,
+  ): Promise<ToolResult> => {
+    try {
+      const r = await runActionTool(mode, toolClass, real, { simulatedData });
+      if (r.queued) {
+        const data = await queueEffect();
+        return { ...r, data };
+      }
+      return r;
     } catch (err) {
       console.error('[amanda-tools] backend failed', name, err instanceof Error ? err.message.split('\n')[0].slice(0, 160) : 'error');
       return { ok: false, simulated: false, queued: null, refused: 'backend_error', data: null };
@@ -253,6 +292,27 @@ export async function executeToolCall(
       const summary = str('summary');
       if (!reason || !summary) return refuse('missing_reason_or_summary');
       result = await run(() => backends.handoffToHuman(reason, summary).then(() => ({ handedOff: true })), { simulated: true, handedOff: true });
+      break;
+    }
+    case 'cancel_viewing': {
+      const bookingId = str('booking_id');
+      result = await runActionToolSafe(
+        async () => {
+          const upcoming = await backends.listUpcomingViewings();
+          if (upcoming.length === 0) return { none: true, note: 'no upcoming viewing found — nothing to cancel' };
+          const target = bookingId
+            ? upcoming.find((v) => v.id === bookingId)
+            : upcoming.length === 1 ? upcoming[0] : undefined;
+          if (!target) return { candidates: upcoming, note: 'several upcoming viewings — ask the buyer WHICH one, then call again with its booking_id' };
+          const r = await backends.cancelViewing(target.id);
+          return { cancelled: r.cancelled, label: target.label };
+        },
+        { simulated: true, cancelled: true },
+        async () => {
+          await backends.fileCancelRequest(`Buyer asked to cancel${bookingId ? ` viewing ${bookingId}` : ' their viewing'} — please handle it from the Viewings page.`);
+          return { queuedForHuman: true, note: 'the office will handle the cancellation — reassure the buyer it is being taken care of' };
+        },
+      );
       break;
     }
     case 'cannot_answer':

@@ -303,6 +303,66 @@ describe('golden/core — reviewer-regression scenarios', () => {
   });
 });
 
+describe('golden/core — cancel-viewing law', () => {
+  it('C1: FULL + exactly one upcoming viewing → cancelled, calendar rides along', async () => {
+    const backends = new FakeBackends();
+    backends.upcomingViewings = [{ id: 'bk-1', label: 'Friday 28 August, 17:00 · Chalet (IC-28746)' }];
+    const model = new ScriptedModel([
+      toolResponse('cancel_viewing', {}),
+      textResponse('All cancelled — no problem at all. Shall we look at another day, or leave it for now?'),
+    ]);
+    const { deps, journal } = makeDeps(model, backends);
+    const r = await runTurn('full', baseContext(), inbound('Please cancel my viewing'), null, deps);
+    expect(r.outcome).toBe('sent');
+    expect(backends.journal.filter((w) => w.effect === 'cancel_viewing')).toEqual([{ effect: 'cancel_viewing', detail: { bookingId: 'bk-1' } }]);
+    expect(journal.sent).toHaveLength(1);
+  });
+
+  it('C2: several upcoming viewings → NOTHING cancelled, the model gets the list to ask WHICH', async () => {
+    const backends = new FakeBackends();
+    backends.upcomingViewings = [
+      { id: 'bk-1', label: 'Friday 28 August, 17:00' },
+      { id: 'bk-2', label: 'Saturday 29 August, 11:00' },
+    ];
+    const model = new ScriptedModel([
+      toolResponse('cancel_viewing', {}),
+      textResponse('Of course — you have two coming up: Friday 28 August, 17:00 and Saturday 29 August, 11:00. Which one should I cancel?'),
+    ]);
+    const { deps } = makeDeps(model, backends);
+    const r = await runTurn('full', baseContext(), inbound('cancel my viewing please'), null, deps);
+    expect(r.outcome).toBe('sent');
+    expect(backends.journal.filter((w) => w.effect === 'cancel_viewing')).toHaveLength(0);
+    expect(JSON.stringify(model.requests[1].messages)).toContain('candidates');
+  });
+
+  it('C3: ASSISTED → no cancellation executes; a human task is filed and the model reassures', async () => {
+    const backends = new FakeBackends();
+    backends.upcomingViewings = [{ id: 'bk-1', label: 'Friday 28 August, 17:00' }];
+    const model = new ScriptedModel([
+      toolResponse('cancel_viewing', {}),
+      textResponse('Of course — the office is taking care of that cancellation right now. Anything else I can help with?'),
+    ]);
+    const { deps } = makeDeps(model, backends);
+    const r = await runTurn('assisted', baseContext(), inbound('cancel my viewing'), null, deps);
+    expect(r.outcome).toBe('sent');
+    expect(backends.journal.filter((w) => w.effect === 'cancel_viewing')).toHaveLength(0);
+    expect(backends.journal.filter((w) => w.effect === 'cancel_request_task')).toHaveLength(1);
+    expect(JSON.stringify(model.requests[1].messages)).toContain('queuedForHuman');
+  });
+
+  it('C4: SHADOW → simulated, zero writes', async () => {
+    const backends = new FakeBackends();
+    backends.upcomingViewings = [{ id: 'bk-1', label: 'Friday 28 August, 17:00' }];
+    const model = new ScriptedModel([
+      toolResponse('cancel_viewing', {}),
+      textResponse('Done — consider it cancelled. Another day instead?'),
+    ]);
+    const { deps } = makeDeps(model, backends);
+    await runTurn('shadow', baseContext(), inbound('cancel my viewing'), null, deps);
+    expect(backends.journal.filter((w) => ['cancel_viewing', 'cancel_request_task'].includes(w.effect))).toHaveLength(0);
+  });
+});
+
 describe('golden/core — office-answer relay (§3b step 3)', () => {
   const RELAY_NOTE = '[OFFICE ANSWER for Q3 — the buyer had asked: "Is the price negotiable?". The office answers: "Yes, we would consider offers from 230000 euros". Relay this to the buyer NOW...]';
 

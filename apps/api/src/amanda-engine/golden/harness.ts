@@ -71,6 +71,17 @@ export class FakeBackends implements ToolBackends {
   async recordLeadIntel(patch: Partial<LeadStateData>): Promise<void> {
     this.journal.push({ effect: 'record_intel', detail: { patch } });
   }
+  upcomingViewings: Array<{ id: string; label: string }> = [];
+  async listUpcomingViewings(): Promise<Array<{ id: string; label: string }>> {
+    return this.upcomingViewings;
+  }
+  async cancelViewing(bookingId: string): Promise<{ cancelled: boolean }> {
+    this.journal.push({ effect: 'cancel_viewing', detail: { bookingId } });
+    return { cancelled: true };
+  }
+  async fileCancelRequest(summary: string): Promise<void> {
+    this.journal.push({ effect: 'cancel_request_task', detail: { summary } });
+  }
   writes(): EffectJournalEntry[] {
     return this.journal;   // every entry IS a write-or-effect record
   }

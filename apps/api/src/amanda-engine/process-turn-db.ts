@@ -10,6 +10,9 @@ import { runTurn, type TurnDeps, type PendingActionView } from './turn';
 import { parseAmandaMode } from './modes';
 import { makeDbBackends, parseAmandaSettings, slotLabel, type AmandaAgencySettings } from './backends-db';
 import { upcomingCalendarNotes } from './availability-lib';
+import { isHumanSender } from './sender-lib';
+
+export { isHumanSender } from './sender-lib';
 import { productionModelCall, productionVerifier, ENGINE_MODEL } from './llm';
 import { turnId } from './turn-id';
 import { narrowPendingByText } from './pending-select';
@@ -129,7 +132,7 @@ async function loadWorld(row: QueueRow): Promise<LoadedWorld | { skip: string }>
         // hand-back ground truth must not read as Amanda's own words.
         role: m.direction === 'inbound'
           ? ('buyer' as const)
-          : m.sent_by && !/amanda|engine|system/i.test(m.sent_by) ? ('agent' as const) : ('amanda' as const),
+          : isHumanSender(m.sent_by) ? ('agent' as const) : ('amanda' as const),
         text: m.content ?? '', at: m.sent_at,
       })),
       gapDays: (() => {
@@ -144,7 +147,7 @@ async function loadWorld(row: QueueRow): Promise<LoadedWorld | { skip: string }>
       })),
       openTicketNote: (() => {
         const lastAgentReplyAt = messages
-          .filter((m) => m.direction !== 'inbound' && m.sent_by && !/amanda|engine|system/i.test(m.sent_by))
+          .filter((m) => m.direction !== 'inbound' && isHumanSender(m.sent_by))
           .map((m) => m.sent_at).sort().pop() ?? null;
         return (ticketRows as unknown as Array<{ id: string; short_code: number; question_text: string; created_at: string }>)
           .filter((tk) => !(lastAgentReplyAt && lastAgentReplyAt > tk.created_at))
@@ -153,7 +156,7 @@ async function loadWorld(row: QueueRow): Promise<LoadedWorld | { skip: string }>
       })(),
       humanAnsweredTicketIds: (() => {
         const lastAgentReplyAt = messages
-          .filter((m) => m.direction !== 'inbound' && m.sent_by && !/amanda|engine|system/i.test(m.sent_by))
+          .filter((m) => m.direction !== 'inbound' && isHumanSender(m.sent_by))
           .map((m) => m.sent_at).sort().pop() ?? null;
         return (ticketRows as unknown as Array<{ id: string; created_at: string }>)
           .filter((tk) => lastAgentReplyAt && lastAgentReplyAt > tk.created_at)

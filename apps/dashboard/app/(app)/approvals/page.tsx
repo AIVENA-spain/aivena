@@ -82,7 +82,7 @@ export default async function InboxPage({
 
   return (
     <>
-      <AutoRefresh intervalMs={20000} />
+      <AutoRefresh intervalMs={30000} />
       {agencyId ? <HandoffQueue agencyId={agencyId} /> : null}
       <InboxWorkspace
         locale={locale}

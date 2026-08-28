@@ -154,6 +154,25 @@ describe('office-promise law (live demo 2026-08-27: promised checks, no ticket)'
   });
 });
 
+describe('tourist-rental legality floor (buyer-research 2026-08-28)', () => {
+  it.each([
+    'You can definitely rent it out on Airbnb when you are not using it.',
+    'The tourist licence transfers with the property, no problem.',
+    'Se puede alquilar sin problema en verano.',
+    'Du kan trygt leie den ut når dere ikke er der.',
+  ])('blocks assertive rentability claims: %s', (text) => {
+    const r = screenBannedPatterns(text);
+    expect(r.ok).toBe(false);
+    expect(r.matched.join(',')).toContain('rental_legality_claim');
+  });
+  it('relaying the OFFICE\'s written rental answer stays legal (§3b)', () => {
+    expect(screenBannedPatterns('The office confirms the tourist licence transfers with the property.').ok).toBe(true);
+  });
+  it('routing the question stays legal', () => {
+    expect(screenBannedPatterns('That one is worth getting exactly right — I have asked the office to confirm the licence for this property.').ok).toBe(true);
+  });
+});
+
 describe('payments/IBAN floor (§11.5) — existential guard', () => {
   it('blocks an IBAN in any casing/spacing', () => {
     expect(screenPaymentDetails('Please transfer to ES91 2100 0418 4502 0005 1332').ok).toBe(false);

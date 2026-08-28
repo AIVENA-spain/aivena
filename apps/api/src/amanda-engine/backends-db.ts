@@ -19,6 +19,26 @@ export interface AmandaAgencySettings {
   viewingHoursByWeekday: Record<number, number[]>;
 }
 
+const DEFAULT_VIEWING_HOURS: Record<number, number[]> = { 1: [11, 17], 2: [11, 17], 3: [11, 17], 4: [11, 17], 5: [11, 17], 6: [11] };
+
+/** Agency-configured viewing hours — buyer-research 2026-08-28 caught that
+ *  this was hardcoded to the default, silently ignoring any configured hours
+ *  (Saturday-afternoon/evening slots, which international buyers ask for,
+ *  could never be offered). Shape: { "1": [10, 12, 17], ... } weekday 0-6 →
+ *  start hours 8-21; anything malformed falls back per-entry to nothing and
+ *  a fully-empty parse falls back to the default. */
+function parseViewingHours(raw: unknown): Record<number, number[]> {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return DEFAULT_VIEWING_HOURS;
+  const out: Record<number, number[]> = {};
+  for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+    const day = Number(k);
+    if (!Number.isInteger(day) || day < 0 || day > 6 || !Array.isArray(v)) continue;
+    const hours = v.filter((h): h is number => typeof h === 'number' && Number.isInteger(h) && h >= 8 && h <= 21);
+    if (hours.length) out[day] = [...new Set(hours)].sort((a, b) => a - b);
+  }
+  return Object.keys(out).length ? out : DEFAULT_VIEWING_HOURS;
+}
+
 export function parseAmandaSettings(raw: unknown): AmandaAgencySettings {
   const o = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
   const num = (v: unknown, d: number) => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : d);
@@ -26,7 +46,7 @@ export function parseAmandaSettings(raw: unknown): AmandaAgencySettings {
     timezone: typeof o.timezone === 'string' && o.timezone ? o.timezone : 'Europe/Madrid',
     viewingDurationMin: num(o.viewing_duration_min, 60),
     viewingNoticeHours: num(o.viewing_notice_hours, 24),
-    viewingHoursByWeekday: { 1: [11, 17], 2: [11, 17], 3: [11, 17], 4: [11, 17], 5: [11, 17], 6: [11] },
+    viewingHoursByWeekday: parseViewingHours(o.viewing_hours_by_weekday),
   };
 }
 

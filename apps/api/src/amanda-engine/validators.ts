@@ -160,12 +160,32 @@ export function screenOfficePromise(draft: string, officeContextPresent: boolean
   return { ok: !promised };
 }
 
+// ── Tourist-rental legality floor (buyer-research 2026-08-28, "do first"):
+// asserting rentability is a LEGAL claim in the Valencia region (2025 rule
+// change — the community can veto tourist lets). Amanda may RELAY the office's
+// written answer (office-named sentences exempt, §3b) but never assert it
+// herself. The prompt carries the routing law; this is the belt for the worst
+// assertive phrasings across the main demo locales.
+const RENTAL_CLAIM_RE: RegExp[] = [
+  /\byou can (?:definitely |certainly |easily |of course )?(?:rent (?:it|this) out|airbnb (?:it|this))\b/i,
+  /\bairbnb is (?:allowed|fine|permitted|no problem)\b|\btourist licen[cs]e (?:transfers?|is valid|comes with|is included)\b/i,
+  /\bholiday.?let(?:ting)? is (?:allowed|fine|permitted|no problem)\b/i,
+  /\bse puede alquilar (?:sin problema|tranquilamente|sin licencia)\b|\bpuedes alquilarlo\b/i,
+  /\bdu kan (?:helt sikkert |trygt |enkelt )?leie (?:den|det) ut\b/i,                 // no
+  /\bdu kan (?:enkelt )?hyra ut (?:den|det)\b/i,                                      // sv
+  /\bdu kannst (?:es|sie) (?:problemlos |einfach )?vermieten\b/i,                     // de
+  /\bje kunt het (?:gewoon |zonder problemen )?verhuren\b/i,                          // nl
+];
+
 export function screenBannedPatterns(draft: string): { ok: boolean; matched: string[] } {
   // Curly apostrophes (what phones actually type) must match the ASCII patterns.
   const normalized = draft.replace(/[’‘]/g, "'");
   const matched = BANNED_PATTERNS.filter((p) => p.re.test(normalized)).map((p) => p.id);
   if (!OFFICE_EXEMPT_RE.test(normalized) && SELF_FUTURE_PROMISE.some((re) => re.test(normalized))) {
     matched.push('self_future_promise_PRESENT_YOUR_RESULTS_NOW_instead');
+  }
+  if (!OFFICE_EXEMPT_RE.test(normalized) && RENTAL_CLAIM_RE.some((re) => re.test(normalized))) {
+    matched.push('rental_legality_claim_ROUTE_TO_ask_agency_never_assert_rentability');
   }
   return { ok: matched.length === 0, matched };
 }

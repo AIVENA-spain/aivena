@@ -937,7 +937,9 @@
       "addBreak": "+ Pausa",
       "removeBreak": "Remover pausa",
       "breakLabel": "Pausa",
-      "allDay": "Todo o dia"
+      "allDay": "Todo o dia",
+      "availabilityInfo": "As horas a vermelho são quando NÃO estás disponível — pausas, horas bloqueadas e dias bloqueados. A Amanda nunca propõe visitas em tempo vermelho, e também aparece no calendário.",
+      "whatIsRed": "O que é o tempo a vermelho?"
     }
   },
   "performance": {
@@ -1408,7 +1410,10 @@
     "availability": "Disponibilidade",
     "availabilityHint": "Horário de visitas e dias bloqueados — a Amanda só marca dentro destes.",
     "close": "Fechar",
-    "blockedDay": "Bloqueado"
+    "blockedDay": "Bloqueado",
+    "closedDay": "Fechado",
+    "dayView": "Dia",
+    "weekView": "Semana"
   },
   "calls": {
     "title": "Chamadas",

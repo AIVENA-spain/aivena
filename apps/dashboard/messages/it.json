@@ -937,7 +937,9 @@
       "addBreak": "+ Pausa",
       "removeBreak": "Rimuovi pausa",
       "breakLabel": "Pausa",
-      "allDay": "Tutto il giorno"
+      "allDay": "Tutto il giorno",
+      "availabilityInfo": "Gli orari in rosso sono quando NON sei disponibile — pause, ore bloccate e giorni bloccati. Amanda non propone mai visite nel tempo rosso, e si vede anche nel calendario.",
+      "whatIsRed": "Cos'è il tempo in rosso?"
     }
   },
   "performance": {
@@ -1408,7 +1410,10 @@
     "availability": "Disponibilità",
     "availabilityHint": "Orari delle visite e giorni bloccati — Amanda prenota solo entro questi.",
     "close": "Chiudi",
-    "blockedDay": "Bloccato"
+    "blockedDay": "Bloccato",
+    "closedDay": "Chiuso",
+    "dayView": "Giorno",
+    "weekView": "Settimana"
   },
   "calls": {
     "title": "Chiamate",

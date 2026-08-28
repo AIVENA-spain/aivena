@@ -25,7 +25,7 @@ import {
 
 import { cn } from "@/lib/utils";
 import { langLabel } from "@/app/(app)/matches/_shared";
-import { AvailabilityEditor } from "@/components/amanda/availability-editor";
+import { AvailabilityEditor, toRange, type BlockedSlot } from "@/components/amanda/availability-editor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -43,7 +43,7 @@ import {
   type ViewingInput,
 } from "./viewings-actions";
 
-type ViewMode = "month" | "list";
+type ViewMode = "day" | "week" | "month" | "list";
 
 /* ── date helpers (all local-time; the dashboard convention) ─────────────── */
 
@@ -102,15 +102,18 @@ export function ViewingsWorkspace({
   const t = useTranslations("viewings");
   const locale = intlLocaleFor(useLocale());
   const router = useRouter();
-  const [view, setView] = useState<ViewMode>("month");
+  const [view, setView] = useState<ViewMode>("week");
   // Availability drawer (Christian: edit hours/blocked days right here, not
   // buried in Settings). blockedDates mirrors saves instantly into the grid.
   const [availOpen, setAvailOpen] = useState(false);
   const [blockedDates, setBlockedDates] = useState<string[]>(
     amanda?.settings?.blocked_dates ?? [],
   );
-  const [slotBlockDates, setSlotBlockDates] = useState<string[]>(
-    (amanda?.settings?.blocked_slots ?? []).map((s) => s.date),
+  const [blockedSlots, setBlockedSlots] = useState<BlockedSlot[]>(
+    amanda?.settings?.blocked_slots ?? [],
+  );
+  const [weekHours, setWeekHours] = useState<Record<string, number[]> | null>(
+    amanda?.settings?.viewing_hours_by_weekday ?? null,
   );
   const [modal, setModal] = useState<
     | { kind: "create"; presetDate?: string }
@@ -149,6 +152,8 @@ export function ViewingsWorkspace({
             <div className="inline-flex rounded-lg border border-border bg-card p-0.5">
               {(
                 [
+                  { key: "day", label: t("dayView"), icon: CalendarClock },
+                  { key: "week", label: t("weekView"), icon: CalendarCheck },
                   { key: "month", label: t("monthView"), icon: CalendarDays },
                   { key: "list", label: t("listView"), icon: List },
                 ] as const
@@ -225,12 +230,25 @@ export function ViewingsWorkspace({
         {t("syncNote")}
       </p>
 
-      {view === "month" ? (
+      {view === "day" || view === "week" ? (
+        <TimeGrid
+          key={view}
+          days={view === "week" ? 7 : 1}
+          bookings={bookings}
+          locale={locale}
+          blockedDates={blockedDates}
+          blockedSlots={blockedSlots}
+          weekHours={weekHours}
+          onPickDay={(date) => setModal({ kind: "create", presetDate: date })}
+          onPickBooking={(b) => setModal({ kind: "edit", booking: b })}
+        />
+      ) : view === "month" ? (
         <MonthGrid
           bookings={bookings}
           locale={locale}
           blockedDates={blockedDates}
-          slotBlockDates={slotBlockDates}
+          blockedSlots={blockedSlots}
+          weekHours={weekHours}
           onPickDay={(date) => setModal({ kind: "create", presetDate: date })}
           onPickBooking={(b) => setModal({ kind: "edit", booking: b })}
         />
@@ -284,14 +302,248 @@ export function ViewingsWorkspace({
               initialHours={amanda?.settings?.viewing_hours_by_weekday}
               initialBlocked={amanda?.settings?.blocked_dates}
               initialSlots={amanda?.settings?.blocked_slots}
-              onSaved={(_, blocked, slots) => {
+              onSaved={(hours, blocked, slots) => {
+                setWeekHours(hours);
                 setBlockedDates(blocked);
-                setSlotBlockDates(slots.map((s) => s.date));
+                setBlockedSlots(slots);
               }}
             />
           </div>
         </div>
       ) : null}
+    </div>
+  );
+}
+
+/* ── time grid (day + week views, Christian 2026-08-28: "standard should be a
+   week so you see clearly what times doesnt work and what times is open") ──
+   One hour-by-hour grid: OPEN hours on the card ground, closed/outside hours
+   grey, breaks + blocked hours + blocked days red — the same red language as
+   the availability panel — and the actual viewings positioned at their time. */
+
+const GRID_H_START = 8;
+const GRID_H_END = 22;
+const HOUR_PX = 34;
+
+function startOfWeekLocal(d: Date): Date {
+  const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); // Monday-first
+  return x;
+}
+
+function TimeGrid({
+  days,
+  bookings,
+  locale,
+  blockedDates,
+  blockedSlots,
+  weekHours,
+  onPickDay,
+  onPickBooking,
+}: {
+  days: 1 | 7;
+  bookings: BookingRow[];
+  locale: string;
+  blockedDates: string[];
+  blockedSlots: BlockedSlot[];
+  weekHours: Record<string, number[]> | null;
+  onPickDay: (isoDate: string) => void;
+  onPickBooking: (b: BookingRow) => void;
+}) {
+  const t = useTranslations("viewings");
+  const [anchor, setAnchor] = useState(() => {
+    const now = new Date();
+    return days === 7 ? startOfWeekLocal(now) : new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  });
+  const [todayKey] = useState(() => ymd(new Date()));
+
+  const cols = useMemo(
+    () =>
+      Array.from({ length: days }, (_, i) => {
+        const d = new Date(anchor);
+        d.setDate(anchor.getDate() + i);
+        return d;
+      }),
+    [anchor, days],
+  );
+
+  const headFmt = useMemo(
+    () => new Intl.DateTimeFormat(locale, { weekday: "short", day: "numeric" }),
+    [locale],
+  );
+  const rangeFmt = useMemo(
+    () => new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", year: "numeric" }),
+    [locale],
+  );
+  const tf = useMemo(
+    () => new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit" }),
+    [locale],
+  );
+  const label =
+    days === 1
+      ? new Intl.DateTimeFormat(locale, { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(anchor)
+      : `${headFmt.format(cols[0])} – ${rangeFmt.format(cols[cols.length - 1])}`;
+
+  const byDay = useMemo(() => {
+    const m = new Map<string, BookingRow[]>();
+    for (const b of bookings) {
+      if (!b.scheduled_at) continue;
+      const key = ymd(new Date(b.scheduled_at));
+      const arr = m.get(key) ?? [];
+      arr.push(b);
+      m.set(key, arr);
+    }
+    return m;
+  }, [bookings]);
+
+  const hours = Array.from({ length: GRID_H_END - GRID_H_START }, (_, i) => GRID_H_START + i);
+  const shift = (dir: -1 | 1) => {
+    const d = new Date(anchor);
+    d.setDate(anchor.getDate() + dir * days);
+    setAnchor(d);
+  };
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-border bg-card shadow-elevated">
+      <div className="flex items-center justify-between border-b border-border bg-brand-soft/50 px-4 py-3">
+        <span className="text-[15px] font-bold capitalize text-brand">{label}</span>
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            aria-label={t("prevMonth")}
+            onClick={() => shift(-1)}
+            className="rounded-md border border-border p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            <ChevronLeft className="h-4 w-4" aria-hidden />
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const now = new Date();
+              setAnchor(days === 7 ? startOfWeekLocal(now) : new Date(now.getFullYear(), now.getMonth(), now.getDate()));
+            }}
+            className="rounded-md border border-border px-2.5 py-1.5 text-[11.5px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            {t("today")}
+          </button>
+          <button
+            type="button"
+            aria-label={t("nextMonth")}
+            onClick={() => shift(1)}
+            className="rounded-md border border-border p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            <ChevronRight className="h-4 w-4" aria-hidden />
+          </button>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto">
+        <div className={days === 7 ? "min-w-[760px]" : "min-w-[340px]"}>
+          {/* Column headers */}
+          <div className="grid border-b border-border bg-brand-soft/30" style={{ gridTemplateColumns: `48px repeat(${days}, 1fr)` }}>
+            <div />
+            {cols.map((d) => {
+              const key = ymd(d);
+              const isToday = key === todayKey;
+              return (
+                <div key={key} className="px-2 py-1.5 text-center">
+                  <span
+                    className={cn(
+                      "inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-mono text-[10.5px] font-semibold capitalize",
+                      isToday ? "bg-brand text-white" : "text-brand/90",
+                    )}
+                  >
+                    {headFmt.format(d)}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Hour rows */}
+          <div className="grid" style={{ gridTemplateColumns: `48px repeat(${days}, 1fr)` }}>
+            {/* time axis */}
+            <div className="flex flex-col">
+              {hours.map((h) => (
+                <div
+                  key={h}
+                  style={{ height: HOUR_PX }}
+                  className="border-b border-r border-border/60 pr-1.5 text-right font-mono text-[9.5px] leading-[1] text-muted-foreground"
+                >
+                  <span className="relative top-1">{String(h).padStart(2, "0")}:00</span>
+                </div>
+              ))}
+            </div>
+            {cols.map((d) => {
+              const key = ymd(d);
+              const isBlockedDay = blockedDates.includes(key);
+              const range = weekHours ? toRange(weekHours[String(d.getDay())]) : null;
+              const dayBlocks = blockedSlots.filter((b) => b.date === key);
+              const dayBookings = byDay.get(key) ?? [];
+              return (
+                <div key={key} className="relative border-r border-border/60 last:border-r-0">
+                  {hours.map((h) => {
+                    const closed =
+                      range !== null &&
+                      (!range.open || h < range.from || h >= range.to);
+                    const inBreak =
+                      range?.open && range.breakFrom != null && range.breakTo != null && h >= range.breakFrom && h < range.breakTo;
+                    const inSlotBlock = dayBlocks.some((b) => h >= b.from && h < b.to);
+                    const red = isBlockedDay || inBreak || inSlotBlock;
+                    return (
+                      <div
+                        key={h}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => onPickDay(key)}
+                        onKeyDown={(e) => e.key === "Enter" && onPickDay(key)}
+                        title={red ? t("blockedDay") : closed ? t("closedDay") : undefined}
+                        style={{ height: HOUR_PX }}
+                        className={cn(
+                          "cursor-pointer border-b border-border/40 transition-colors",
+                          red ? "bg-red-500/10 hover:bg-red-500/15" : closed ? "bg-muted/40" : "hover:bg-brand-soft/30",
+                        )}
+                      />
+                    );
+                  })}
+                  {/* bookings positioned at their real time */}
+                  {dayBookings.map((b) => {
+                    if (!b.scheduled_at) return null;
+                    const dt = new Date(b.scheduled_at);
+                    const startH = dt.getHours() + dt.getMinutes() / 60;
+                    if (startH >= GRID_H_END || startH < GRID_H_START - 1) return null;
+                    const top = Math.max(0, (startH - GRID_H_START) * HOUR_PX);
+                    const height = Math.max(20, ((b.duration_minutes ?? 60) / 60) * HOUR_PX - 2);
+                    const dead = b.status === "cancelled" || b.status === "no_show";
+                    return (
+                      <button
+                        key={b.id}
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onPickBooking(b);
+                        }}
+                        style={{ top, height }}
+                        title={[b.lead_name, b.lead_phone, propertyMeta(b.property_ref, b.property_zone, b.property_city)].filter(Boolean).join(" · ") || undefined}
+                        className={cn(
+                          "absolute inset-x-1 overflow-hidden rounded-md border-l-2 px-1.5 py-0.5 text-left text-[10px] font-medium leading-tight",
+                          dead
+                            ? "border-transparent bg-muted text-muted-foreground line-through"
+                            : b.status === "completed"
+                              ? "border-emerald-500/70 bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
+                              : "border-transparent bg-brand text-white shadow-sm hover:brightness-110",
+                        )}
+                      >
+                        {tf.format(dt)} {b.lead_name ?? "—"}
+                      </button>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -302,14 +554,16 @@ function MonthGrid({
   bookings,
   locale,
   blockedDates,
-  slotBlockDates,
+  blockedSlots,
+  weekHours,
   onPickDay,
   onPickBooking,
 }: {
   bookings: BookingRow[];
   locale: string;
   blockedDates: string[];
-  slotBlockDates: string[];
+  blockedSlots: BlockedSlot[];
+  weekHours: Record<string, number[]> | null;
   onPickDay: (isoDate: string) => void;
   onPickBooking: (b: BookingRow) => void;
 }) {
@@ -425,7 +679,16 @@ function MonthGrid({
           const isToday = key === todayKey;
           const isWeekend = d.getDay() === 0 || d.getDay() === 6;
           const isBlocked = blockedDates.includes(key);
-          const hasSlotBlock = !isBlocked && slotBlockDates.includes(key);
+          // Weekly availability, painted into the calendar (Christian
+          // 2026-08-28): a closed weekday, a recurring break, and one-off
+          // hour blocks all show as red markers — red = not available.
+          const dayRange = weekHours ? toRange(weekHours[String(d.getDay())]) : null;
+          const isClosedWeekday = !isBlocked && dayRange !== null && !dayRange.open;
+          const daySlotBlocks = isBlocked ? [] : blockedSlots.filter((b) => b.date === key);
+          const breakChip =
+            !isBlocked && dayRange?.open && dayRange.breakFrom != null && dayRange.breakTo != null
+              ? `${dayRange.breakFrom}–${dayRange.breakTo}`
+              : null;
           return (
             <div
               key={i}
@@ -438,7 +701,8 @@ function MonthGrid({
                 "min-h-[56px] cursor-pointer border-b border-r border-border/60 p-1.5 align-top transition-colors hover:bg-muted/40 sm:min-h-[68px]",
                 !inMonth && "bg-muted/20 opacity-50",
                 inMonth && isWeekend && !isBlocked && "bg-muted/25",
-                isBlocked && "bg-amber-500/10 hover:bg-amber-500/15",
+                isBlocked && "bg-red-500/10 hover:bg-red-500/15",
+                isClosedWeekday && "bg-muted/40",
                 isToday && "bg-brand-soft/40 ring-1 ring-inset ring-brand/30",
                 (i + 1) % 7 === 0 && "border-r-0",
                 i >= 35 && "border-b-0",
@@ -451,7 +715,7 @@ function MonthGrid({
                     isToday
                       ? "bg-brand text-white font-semibold"
                       : isBlocked
-                        ? "font-semibold text-amber-700 dark:text-amber-400"
+                        ? "font-semibold text-red-700 dark:text-red-400"
                         : dayBookings.length > 0
                           ? "bg-brand-soft font-semibold text-brand"
                           : "text-muted-foreground",
@@ -460,14 +724,35 @@ function MonthGrid({
                   {d.getDate()}
                 </span>
                 {isBlocked ? (
-                  <span className="truncate text-[8.5px] font-semibold uppercase tracking-wide text-amber-700/80 dark:text-amber-400/80">
+                  <span className="truncate text-[8.5px] font-semibold uppercase tracking-wide text-red-700/80 dark:text-red-400/80">
                     {t("blockedDay")}
                   </span>
-                ) : hasSlotBlock ? (
-                  <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-amber-500" title={t("blockedDay")} />
+                ) : isClosedWeekday ? (
+                  <span className="truncate text-[8.5px] font-medium uppercase tracking-wide text-muted-foreground/70">
+                    {t("closedDay")}
+                  </span>
                 ) : null}
               </span>
               <div className="mt-1 flex flex-col gap-0.5">
+                {inMonth && breakChip ? (
+                  <span
+                    title={t("blockedDay")}
+                    className="w-fit rounded bg-red-500/10 px-1 py-px font-mono text-[8.5px] tabular-nums text-red-700/90 dark:text-red-400/90"
+                  >
+                    {breakChip}
+                  </span>
+                ) : null}
+                {inMonth
+                  ? daySlotBlocks.slice(0, 2).map((b) => (
+                      <span
+                        key={`${b.date}-${b.from}`}
+                        title={t("blockedDay")}
+                        className="w-fit rounded bg-red-500/10 px-1 py-px font-mono text-[8.5px] tabular-nums text-red-700/90 dark:text-red-400/90"
+                      >
+                        {b.from}–{b.to}
+                      </span>
+                    ))
+                  : null}
                 {dayBookings.slice(0, 2).map((b) => (
                   <button
                     key={b.id}

@@ -937,7 +937,9 @@
       "addBreak": "+ Pause",
       "removeBreak": "Pause entfernen",
       "breakLabel": "Pause",
-      "allDay": "Ganzer Tag"
+      "allDay": "Ganzer Tag",
+      "availabilityInfo": "Die roten Zeiten sind, wenn du NICHT verfügbar bist — Pausen, gesperrte Stunden und gesperrte Tage. Amanda bietet in roter Zeit nie Besichtigungen an, und es erscheint auch im Kalender.",
+      "whatIsRed": "Was ist rote Zeit?"
     }
   },
   "performance": {
@@ -1408,7 +1410,10 @@
     "availability": "Verfügbarkeit",
     "availabilityHint": "Besichtigungszeiten und gesperrte Tage — Amanda bucht nur innerhalb davon.",
     "close": "Schließen",
-    "blockedDay": "Gesperrt"
+    "blockedDay": "Gesperrt",
+    "closedDay": "Geschlossen",
+    "dayView": "Tag",
+    "weekView": "Woche"
   },
   "calls": {
     "title": "Anrufe",

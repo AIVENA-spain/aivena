@@ -1,4 +1,5 @@
 import { getLocale } from "next-intl/server";
+import { AutoRefresh } from "@/components/shell/auto-refresh";
 
 import { apiFetch, ApiError } from "@/lib/api/client";
 import { PageLoadError } from "@/components/shell/page-error";
@@ -81,6 +82,7 @@ export default async function InboxPage({
 
   return (
     <>
+      <AutoRefresh intervalMs={20000} />
       {agencyId ? <HandoffQueue agencyId={agencyId} /> : null}
       <InboxWorkspace
         locale={locale}

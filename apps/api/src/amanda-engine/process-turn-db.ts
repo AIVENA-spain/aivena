@@ -423,6 +423,27 @@ export async function processTurnDb(row: QueueRow): Promise<TurnOutcome> {
           )
         `);
       });
+      // LIVE alert (Christian 2026-08-28: escalations produced no ping): flag
+      // the lead for the "Needs a human" panel's poll AND fire the same
+      // private realtime event the website handoff uses — chime + desktop
+      // notification with zero new client code. Each rides its OWN
+      // transaction so a failure can never roll back the task insert.
+      await withAgency(row.agency_id, async (tx) => {
+        await tx.execute(sql`
+          UPDATE leads SET needs_human_since = COALESCE(needs_human_since, now())
+           WHERE id = ${row.lead_id}::uuid
+        `);
+      }).catch(() => { /* panel poll still shows the task page */ });
+      await withAgency(row.agency_id, async (tx) => {
+        await tx.execute(sql`
+          SELECT realtime.send(
+            jsonb_build_object('lead_id', ${row.lead_id}::uuid, 'at', now()),
+            'handoff_requested',
+            'agency:' || ${row.agency_id} || ':handoffs',
+            true
+          )
+        `);
+      }).catch(() => { /* realtime hiccup must never fail the escalation */ });
     },
   };
 

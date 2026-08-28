@@ -174,7 +174,10 @@ function friendlyFor(messageCode: string): string {
 // GET /api/v1/tasks — list pending tasks (RLS-scoped to current agency)
 route.get('/', async (c) => {
   const tx = c.get('tx');
-  const taskType = c.req.query('type') ?? 'suggested_reply';
+  // type accepts a comma list ("suggested_reply,amanda_question,…") so the
+  // sidebar badge can count everything Amanda needs a human for.
+  const taskTypesCsv = (c.req.query('type') ?? 'suggested_reply')
+    .split(',').map((t) => t.trim()).filter((t) => /^[a-z_]{1,40}$/.test(t)).join(',') || 'suggested_reply';
   const status = c.req.query('status') ?? 'pending';
 
   const result = await tx.execute(sql`
@@ -199,7 +202,7 @@ route.get('/', async (c) => {
       l.summary
     FROM public.dashboard_tasks dt
     JOIN public.leads l ON l.id = dt.lead_id
-    WHERE dt.task_type = ${taskType}
+    WHERE dt.task_type = ANY (string_to_array(${taskTypesCsv}, ','))
       AND dt.status = ${status}
     ORDER BY dt.created_at DESC
   `);

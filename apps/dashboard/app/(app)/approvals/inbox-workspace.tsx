@@ -507,7 +507,10 @@ export function InboxWorkspace({
   }, [selectedId, view, loadThread]);
 
   // LIVE THREAD (Christian 2026-08-28: a conversation happening right now must
-  // show up without a reload): the OPEN conversation refetches every 8s while
+  // show up without a reload). This is the ONLY live mechanism on this page —
+  // the whole-page auto-refresh was removed because it re-rendered the server
+  // tree and visibly reopened/closed the Client Intelligence panel. This one
+  // only swaps message bubbles in place, so nothing flickers. Every 5s while
   // the tab is visible — reloadThread merges server truth into the cache and
   // keeps the old bubbles on a transient failure.
   useEffect(() => {
@@ -517,7 +520,7 @@ export function InboxWorkspace({
       // Never compete with the FIRST load of a thread — only keep a loaded one fresh.
       if (threadCacheRef.current[selectedId]?.status !== "ok") return;
       reloadThread(selectedId);
-    }, 8000);
+    }, 5000);
     return () => window.clearInterval(id);
   }, [selectedId, view, reloadThread]);
 

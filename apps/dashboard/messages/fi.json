@@ -938,7 +938,8 @@
       "removeBreak": "Poista tauko",
       "breakLabel": "Tauko",
       "allDay": "Koko päivä",
-      "availabilityInfo": "Punaiset ajat ovat, kun ET ole käytettävissä — tauot, estetyt tunnit ja estetyt päivät. Amanda ei koskaan tarjoa esittelyjä punaisena aikana, ja se näkyy myös kalenterissa."
+      "availabilityInfo": "Punaiset ajat ovat, kun ET ole käytettävissä — tauot, estetyt tunnit ja estetyt päivät. Amanda ei koskaan tarjoa esittelyjä punaisena aikana, ja se näkyy myös kalenterissa.",
+      "whatIsRed": "Mitä punainen aika on?"
     }
   },
   "performance": {
@@ -1410,7 +1411,9 @@
     "availabilityHint": "Esittelyajat ja estetyt päivät — Amanda varaa vain näiden sisällä.",
     "close": "Sulje",
     "blockedDay": "Estetty",
-    "closedDay": "Suljettu"
+    "closedDay": "Suljettu",
+    "dayView": "Päivä",
+    "weekView": "Viikko"
   },
   "calls": {
     "title": "Puhelut",

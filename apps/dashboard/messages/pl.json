@@ -938,7 +938,8 @@
       "removeBreak": "Usuń przerwę",
       "breakLabel": "Przerwa",
       "allDay": "Cały dzień",
-      "availabilityInfo": "Czerwone godziny to czas, kiedy NIE jesteś dostępny — przerwy, zablokowane godziny i dni. Amanda nigdy nie proponuje prezentacji w czerwonym czasie, co widać też w kalendarzu."
+      "availabilityInfo": "Czerwone godziny to czas, kiedy NIE jesteś dostępny — przerwy, zablokowane godziny i dni. Amanda nigdy nie proponuje prezentacji w czerwonym czasie, co widać też w kalendarzu.",
+      "whatIsRed": "Czym jest czerwony czas?"
     }
   },
   "performance": {
@@ -1410,7 +1411,9 @@
     "availabilityHint": "Godziny prezentacji i zablokowane dni — Amanda umawia tylko w ich obrębie.",
     "close": "Zamknij",
     "blockedDay": "Zablokowany",
-    "closedDay": "Zamknięte"
+    "closedDay": "Zamknięte",
+    "dayView": "Dzień",
+    "weekView": "Tydzień"
   },
   "calls": {
     "title": "Połączenia",

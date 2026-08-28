@@ -938,7 +938,8 @@
       "removeBreak": "Pauze verwijderen",
       "breakLabel": "Pauze",
       "allDay": "Hele dag",
-      "availabilityInfo": "De rode tijden zijn wanneer je NIET beschikbaar bent — pauzes, geblokkeerde uren en geblokkeerde dagen. Amanda biedt nooit bezichtigingen aan in rode tijd, en het is ook zichtbaar in de kalender."
+      "availabilityInfo": "De rode tijden zijn wanneer je NIET beschikbaar bent — pauzes, geblokkeerde uren en geblokkeerde dagen. Amanda biedt nooit bezichtigingen aan in rode tijd, en het is ook zichtbaar in de kalender.",
+      "whatIsRed": "Wat is rode tijd?"
     }
   },
   "performance": {
@@ -1410,7 +1411,9 @@
     "availabilityHint": "Bezichtigingsuren en geblokkeerde dagen — Amanda boekt alleen hierbinnen.",
     "close": "Sluiten",
     "blockedDay": "Geblokkeerd",
-    "closedDay": "Gesloten"
+    "closedDay": "Gesloten",
+    "dayView": "Dag",
+    "weekView": "Week"
   },
   "calls": {
     "title": "Oproepen",

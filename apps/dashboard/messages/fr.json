@@ -938,7 +938,8 @@
       "removeBreak": "Supprimer la pause",
       "breakLabel": "Pause",
       "allDay": "Toute la journée",
-      "availabilityInfo": "Les heures en rouge sont celles où vous n'êtes PAS disponible — pauses, heures bloquées et jours bloqués. Amanda ne propose jamais de visite sur du temps rouge, et cela apparaît aussi dans le calendrier."
+      "availabilityInfo": "Les heures en rouge sont celles où vous n'êtes PAS disponible — pauses, heures bloquées et jours bloqués. Amanda ne propose jamais de visite sur du temps rouge, et cela apparaît aussi dans le calendrier.",
+      "whatIsRed": "Le temps en rouge, c'est quoi ?"
     }
   },
   "performance": {
@@ -1410,7 +1411,9 @@
     "availabilityHint": "Horaires de visite et jours bloqués — Amanda ne réserve que dans ces limites.",
     "close": "Fermer",
     "blockedDay": "Bloqué",
-    "closedDay": "Fermé"
+    "closedDay": "Fermé",
+    "dayView": "Jour",
+    "weekView": "Semaine"
   },
   "calls": {
     "title": "Appels",

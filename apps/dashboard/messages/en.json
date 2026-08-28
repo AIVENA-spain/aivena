@@ -938,7 +938,8 @@
       "removeBreak": "Remove break",
       "breakLabel": "Break",
       "allDay": "All day",
-      "availabilityInfo": "The red times are when you are NOT available — breaks, blocked hours and blocked days. Amanda never offers viewings in red time, and it shows in the calendar too."
+      "availabilityInfo": "The red times are when you are NOT available — breaks, blocked hours and blocked days. Amanda never offers viewings in red time, and it shows in the calendar too.",
+      "whatIsRed": "What is red time?"
     }
   },
   "performance": {
@@ -1410,7 +1411,9 @@
     "availabilityHint": "Viewing hours and blocked days — Amanda books only inside these.",
     "close": "Close",
     "blockedDay": "Blocked",
-    "closedDay": "Closed"
+    "closedDay": "Closed",
+    "dayView": "Day",
+    "weekView": "Week"
   },
   "calls": {
     "title": "Calls",

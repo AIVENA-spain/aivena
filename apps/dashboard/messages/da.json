@@ -938,7 +938,8 @@
       "removeBreak": "Fjern pause",
       "breakLabel": "Pause",
       "allDay": "Hele dagen",
-      "availabilityInfo": "De røde tider er, når du IKKE er tilgængelig — pauser, blokerede timer og blokerede dage. Amanda tilbyder aldrig fremvisninger i rød tid, og det vises også i kalenderen."
+      "availabilityInfo": "De røde tider er, når du IKKE er tilgængelig — pauser, blokerede timer og blokerede dage. Amanda tilbyder aldrig fremvisninger i rød tid, og det vises også i kalenderen.",
+      "whatIsRed": "Hvad er rød tid?"
     }
   },
   "performance": {
@@ -1410,7 +1411,9 @@
     "availabilityHint": "Fremvisningstider og blokerede dage — Amanda booker kun inden for disse.",
     "close": "Luk",
     "blockedDay": "Blokeret",
-    "closedDay": "Lukket"
+    "closedDay": "Lukket",
+    "dayView": "Dag",
+    "weekView": "Uge"
   },
   "calls": {
     "title": "Opkald",

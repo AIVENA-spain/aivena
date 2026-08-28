@@ -147,16 +147,16 @@ export function AvailabilityEditor({
       {/* Viewing-hours tap grid — Amanda only ever offers these start times. */}
       <div className="flex flex-col gap-2">
         <div>
-          <span className="flex items-center gap-1.5">
+          <span className="flex flex-wrap items-center gap-2">
             <h4 className="text-[12.5px] font-semibold text-foreground">{t("hoursTitle")}</h4>
             <button
               type="button"
-              aria-label={t("hoursTitle")}
               aria-expanded={showInfo}
               onClick={() => setShowInfo((v) => !v)}
-              className="flex h-4 w-4 items-center justify-center rounded-full border border-border text-[9.5px] font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
+              className="flex items-center gap-1 rounded-full bg-red-500/10 px-2.5 py-1 text-[11px] font-semibold text-red-700 hover:bg-red-500/15 dark:text-red-400"
             >
-              i
+              <span aria-hidden className="flex h-3.5 w-3.5 items-center justify-center rounded-full border border-current text-[8.5px]">i</span>
+              {t("whatIsRed")}
             </button>
           </span>
           <p className="text-[11.5px] text-muted-foreground">{t("hoursHint")}</p>

@@ -406,6 +406,47 @@ route.get('/status/:id', async (c) => {
   }
 });
 
+// ── Studio taste profile (Christian 2026-08-28: the this-or-that game) ─────────
+// A dozen binary choices stored as {key: value} plus optional likes/dislikes text.
+// Read by the carousel pipeline: style recommendations (UI), edition matching and
+// art-direction hints (server). Nullable — nothing changes until the game is played.
+const PREF_KEYS = new Set(['font', 'serif', 'scale', 'ground', 'accent', 'intensity', 'artwork', 'illo', 'density', 'numerals', 'mood', 'devices']);
+route.get('/preferences', async (c) => {
+  const tx = c.get('tx');
+  const agencyId = c.get('agencyId');
+  try {
+    const res = await tx.execute(sql`SELECT creative_prefs FROM agency_branding WHERE agency_id = ${agencyId} LIMIT 1`);
+    const rows = res as unknown as Array<{ creative_prefs: Record<string, unknown> | null }>;
+    return c.json({ ok: true, prefs: rows[0]?.creative_prefs ?? null });
+  } catch (err) {
+    console.error('[studio/preferences] read failed:', err);
+    return c.json({ ok: false, error: 'prefs_failed', message: GENERIC }, 500);
+  }
+});
+route.post('/preferences', async (c) => {
+  const tx = c.get('tx');
+  const agencyId = c.get('agencyId');
+  const b = await readJson(c);
+  const raw = (b.prefs && typeof b.prefs === 'object' ? b.prefs : {}) as Record<string, unknown>;
+  const prefs: Record<string, string> = {};
+  for (const [k, v] of Object.entries(raw)) {
+    if (PREF_KEYS.has(k) && typeof v === 'string' && v.length <= 40) prefs[k] = v;
+  }
+  if (typeof raw.likes === 'string' && raw.likes.trim()) prefs.likes = raw.likes.trim().slice(0, 300);
+  if (typeof raw.dislikes === 'string' && raw.dislikes.trim()) prefs.dislikes = raw.dislikes.trim().slice(0, 300);
+  try {
+    const upd = await tx.execute(sql`UPDATE agency_branding SET creative_prefs = ${JSON.stringify(prefs)}::jsonb WHERE agency_id = ${agencyId} RETURNING agency_id`);
+    if ((upd as unknown as unknown[]).length === 0) {
+      // agency has no branding row yet — create one carrying just the taste profile
+      await tx.execute(sql`INSERT INTO agency_branding (agency_id, creative_prefs) VALUES (${agencyId}, ${JSON.stringify(prefs)}::jsonb)`);
+    }
+    return c.json({ ok: true, prefs });
+  } catch (err) {
+    console.error('[studio/preferences] save failed:', err);
+    return c.json({ ok: false, error: 'prefs_failed', message: GENERIC }, 500);
+  }
+});
+
 // ── GET /api/studio/library — finished images, newest first ────────────────
 route.get('/library', async (c) => {
   const tx = c.get('tx');
@@ -999,6 +1040,7 @@ async function runPlannedCarousel(opts: {
   brand: { navy: string; gold: string; cream: string; text: string };
   styleEdition?: number;   // type-only styles: which font/colour edition this deck wears
   lockPalette?: boolean;   // user picked custom colours — edition may not recolour
+  agencyTaste?: string;    // one-line taste profile from the this-or-that game (art-director hint)
 }): Promise<void> {
   const { genId, agencyId } = opts;
   try {
@@ -1062,6 +1104,7 @@ async function runPlannedCarousel(opts: {
         topic: opts.topic ?? '', hook: plan.hook_title,
         tips: plan.tips.map((t) => ({ title: t.title, body: t.body })),
         includeContext: opts.includeContext, avoidMotifs,
+        taste: opts.agencyTaste || undefined,
       });
       if (direction) {
         plan.image_scenes = [direction.cover.scene, direction.context?.scene ?? plan.image_scenes?.[1] ?? '', plan.image_scenes?.[2] ?? ''];
@@ -1177,18 +1220,22 @@ route.post('/carousel', async (c) => {
 
       const bRes = await tx.execute(sql`
         SELECT brand_name, primary_color, accent_color, background_color, text_color,
-               phone, whatsapp_number, website_url, sender_email, email_signature_name
+               phone, whatsapp_number, website_url, sender_email, email_signature_name, creative_prefs
         FROM agency_branding WHERE agency_id = ${agencyId} LIMIT 1
       `);
       const bRows = bRes as unknown as any[];
       const { agency, brand } = mapBranding(bRows[0] || {});
       if (brandNavy) brand.navy = brandNavy;
       if (brandGold) brand.gold = brandGold;
+      const prefs = (bRows[0]?.creative_prefs && typeof bRows[0].creative_prefs === 'object'
+        ? bRows[0].creative_prefs : null) as Record<string, string> | null;
 
-      // each new type-only deck wears a random edition (fonts + colour world) — stored so every
-      // re-render of this deck reproduces the exact same look
-      const styleEdition = Math.floor(Math.random() * 3);
+      // each new type-only deck wears an edition (fonts + colour world) — matched to the agency's
+      // taste profile when the this-or-that game has been played, random otherwise; stored so
+      // every re-render of this deck reproduces the exact same look
+      const styleEdition = pickEditionForTaste(style, prefs);
       const lockPalette = !!(brandNavy || brandGold);
+      const agencyTaste = tasteLine(prefs);
 
       const label = type === 'tips' ? `Tips carousel · ${topic.slice(0, 80)}` : 'Client quote carousel';
       const ins = await tx.execute(sql`
@@ -1206,7 +1253,7 @@ route.post('/carousel', async (c) => {
       void runPlannedCarousel({
         genId, agencyId, type, topic, quoteText, quoteAuthor, slideCount, language, style, scheme, includeRecap, includeContext,
         agency: { name: agency.name, web: agency.web, phone: agency.phone }, brand,
-        styleEdition, lockPalette,
+        styleEdition, lockPalette, agencyTaste,
       });
       return c.json({ ok: true, generation_id: genId, status: 'processing' });
     }
@@ -1435,6 +1482,34 @@ const REMIX_IMG_RING = ['bodegon', 'litoral', 'tinta', 'salitre', 'papel', 'arci
 
 /** strict #rrggbb or null — the only shape the colour override accepts */
 const hexColour = (v: unknown): string | null => typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v) ? v : null;
+
+/** taste → type-style edition (editions tagged by accent temperature / ground); no profile → random */
+function pickEditionForTaste(style: string, prefs: Record<string, string> | null): number {
+  const rnd = () => Math.floor(Math.random() * 3);
+  if (!prefs) return rnd();
+  if (style === 'editorial') return prefs.accent === 'warm' ? 1 : prefs.accent === 'cool' ? 2 : rnd();
+  if (style === 'cartel') return prefs.ground === 'dark' ? 2 : prefs.mood === 'bold' ? 1 : rnd();
+  if (style === 'encalada') return prefs.accent === 'cool' ? 1 : prefs.accent === 'warm' ? 2 : rnd();
+  if (style === 'sereno') return prefs.accent === 'warm' ? 1 : prefs.accent === 'cool' ? 2 : rnd();
+  return rnd();
+}
+
+/** taste → one compact line for the art director; empty string when no profile exists */
+function tasteLine(prefs: Record<string, string> | null): string {
+  if (!prefs) return '';
+  const bits: string[] = [];
+  if (prefs.artwork === 'illustration') bits.push('leans illustrated/painterly over photographic');
+  if (prefs.artwork === 'photo') bits.push('leans photographic over illustrated');
+  if (prefs.accent === 'warm') bits.push('prefers warm tones (terracotta, gold, sand)');
+  if (prefs.accent === 'cool') bits.push('prefers cool tones (olive, sea, slate)');
+  if (prefs.density === 'minimal') bits.push('prefers calm minimal scenes with few objects');
+  if (prefs.density === 'decorated') bits.push('enjoys richer, layered compositions');
+  if (prefs.mood === 'bold') bits.push('bold striking imagery welcome');
+  if (prefs.mood === 'calm') bits.push('keep the mood calm and premium');
+  if (prefs.likes) bits.push(`they love: ${prefs.likes}`);
+  if (prefs.dislikes) bits.push(`AVOID: ${prefs.dislikes}`);
+  return bits.join('; ');
+}
 const REMIX_TYPE_RING = ['editorial', 'cartel', 'encalada', 'sereno'];
 route.post('/carousel/remix', async (c) => {
   const tx = c.get('tx');

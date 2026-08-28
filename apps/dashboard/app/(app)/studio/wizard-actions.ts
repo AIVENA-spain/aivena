@@ -203,6 +203,12 @@ export async function carouselAction(input: {
 export async function carouselStyleExamplesAction(): Promise<Envelope> {
   return call("/api/studio/carousel/style-examples");
 }
+export async function studioPreferencesAction(): Promise<Envelope> {
+  return call("/api/studio/preferences");
+}
+export async function saveStudioPreferencesAction(prefs: Record<string, string>): Promise<Envelope> {
+  return call("/api/studio/preferences", { method: "POST", body: { prefs } });
+}
 export async function carouselUpdateAction(generationId: string, plan: unknown, colours?: { navy?: string; gold?: string }): Promise<Envelope> {
   return call("/api/studio/carousel/update", { method: "POST", body: { generation_id: generationId, plan, ...(colours?.navy ? { brand_navy: colours.navy } : {}), ...(colours?.gold ? { brand_gold: colours.gold } : {}) } });
 }

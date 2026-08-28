@@ -51,6 +51,7 @@ export async function directScenes(opts: {
   tips: { title: string; body: string }[];
   includeContext: boolean;
   avoidMotifs: string[];
+  taste?: string;   // the agency's this-or-that taste profile, one compact line
 }): Promise<ArtDirection | null> {
   const tipList = opts.tips.map((t, i) => `${i + 1}. "${t.title}" — ${t.body}`).join('\n');
   const prompt = `You are the ART DIRECTOR for a premium Mediterranean real-estate agency's Instagram carousels. The copy is already written; your only job is the artwork brief for each slide. These images decide whether the post looks like considered editorial work or random AI output — every one must look THOUGHT THROUGH.
@@ -74,7 +75,8 @@ HARD RULES:
 - Across the deck: every slide a different hero object; one or two tip slides may be quiet simple beats (open sea, a lone olive tree) for rhythm.
 - NEVER default to keys, suitcases or luggage unless the tip is literally about them.
 - No text or lettering in scenes, no people close-up, no interiors, no building facades that could read as a real property, no recognizable landmarks.${opts.avoidMotifs.length ? `
-- Recently used in this agency's posts — do NOT reuse as hero objects: ${opts.avoidMotifs.join('; ')}.` : ''}
+- Recently used in this agency's posts — do NOT reuse as hero objects: ${opts.avoidMotifs.join('; ')}.` : ''}${opts.taste ? `
+- THIS AGENCY'S TASTE PROFILE (from their own choices — respect it in every scene): ${opts.taste}.` : ''}
 
 ${opts.includeContext ? 'Provide cover, context, and one brief per tip.' : 'Provide cover and one brief per tip (no context slide).'}
 Submit with the submit_art_direction tool.`;

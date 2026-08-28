@@ -209,8 +209,22 @@ export async function studioPreferencesAction(): Promise<Envelope> {
 export async function saveStudioPreferencesAction(prefs: Record<string, string>): Promise<Envelope> {
   return call("/api/studio/preferences", { method: "POST", body: { prefs } });
 }
-export async function carouselUpdateAction(generationId: string, plan: unknown, colours?: { navy?: string; gold?: string }): Promise<Envelope> {
-  return call("/api/studio/carousel/update", { method: "POST", body: { generation_id: generationId, plan, ...(colours?.navy ? { brand_navy: colours.navy } : {}), ...(colours?.gold ? { brand_gold: colours.gold } : {}) } });
+export async function carouselUpdateAction(
+  generationId: string,
+  plan: unknown,
+  colours?: { navy?: string; gold?: string },
+  // per-slide overrides keyed by slide index; an entry with neither colour clears that slide
+  slideColours?: Record<number, { navy?: string; gold?: string }>,
+): Promise<Envelope> {
+  return call("/api/studio/carousel/update", {
+    method: "POST",
+    body: {
+      generation_id: generationId, plan,
+      ...(colours?.navy ? { brand_navy: colours.navy } : {}),
+      ...(colours?.gold ? { brand_gold: colours.gold } : {}),
+      ...(slideColours ? { slide_colours: slideColours } : {}),
+    },
+  });
 }
 // GET INSPIRED: 6 fresh tips-carousel topic ideas (free; exclude = already-shown ideas)
 export async function carouselTopicIdeasAction(language: string, exclude: string[]): Promise<Envelope> {

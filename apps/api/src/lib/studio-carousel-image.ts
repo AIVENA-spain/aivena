@@ -1,4 +1,5 @@
 import { supabaseAdmin } from './supabase-admin';
+import { critiqueArtwork } from './studio-carousel-art';
 
 // TIPS IMAGE PIPELINE v2 (Christian 2026-07-17): the eight approved styles are ANCHORS, not fixed
 // assets. Every tips post generates a FRESH 3-image family conditioned on its style's anchor —
@@ -95,7 +96,10 @@ async function pollTask(key: string, taskId: string, maxMs: number): Promise<Buf
  */
 export async function generateTipsImages(opts: {
   style: string; scheme: string; scenes: string[]; agencyId: string; genId: string;
-}): Promise<{ buffers: Buffer[]; paths: string[] } | null> {
+  // parallel to scenes: the art-director's IDEA per scene — presence turns on the vision reviewer
+  // (each image is LOOKED AT before it ships; rejects regenerate once with the problem fed back)
+  ideas?: string[];
+}): Promise<{ buffers: Buffer[]; paths: string[]; qa?: { reviewed: number; regenerated: number; still_flagged: number } } | null> {
   const files = TIPS_LIBRARY[opts.style];
   const scheme = TIPS_SCHEMES[opts.scheme] ?? TIPS_SCHEMES.clasico;
   const scenes = opts.scenes.filter((x) => typeof x === 'string' && x.trim().length >= 10).slice(0, 9);
@@ -108,26 +112,59 @@ export async function generateTipsImages(opts: {
     const anchorUrl = signed.data?.signedUrl;
     if (!anchorUrl) return null;
 
-    const tasks: (string | null)[] = [];
-    for (let si = 0; si < scenes.length; si++) {
+    const buildPrompt = (si: number, extra = '') => {
       const scene = scenes[si];
       // SUBJECT REPLACEMENT (Christian 2026-07-17: the anchor's motif bled into 3 of 5 slides):
       // keep only the technique; the reference's objects/room/composition must NOT reappear, and
       // each task knows its siblings so the family can't converge on one motif.
       const siblings = scenes.filter((_, j) => j !== si).map((x) => x.split(/[,.]/)[0].trim()).filter(Boolean).slice(0, 8);
-      const prompt = `Keep exactly the same artistic style, technique, texture, grain, lighting mood and colour language as this reference image, but REPLACE THE SUBJECT COMPLETELY with a new scene: ${scene}. Render it as ONE deliberately composed still — every object purposeful and clearly readable, arranged with intent, nothing random. Do NOT reuse the reference image's objects, room, window, or composition — only its technique. ${siblings.length ? `Other images in this set show: ${siblings.join('; ')} — this one must be clearly different from all of them. ` : ''}${scheme.clause} Keep generous calm empty space for text. ${NEG}`;
+      return `Keep exactly the same artistic style, technique, texture, grain, lighting mood and colour language as this reference image, but REPLACE THE SUBJECT COMPLETELY with a new scene: ${scene}. Render it as ONE deliberately composed still — every object purposeful and clearly readable, arranged with intent, nothing random. Do NOT reuse the reference image's objects, room, window, or composition — only its technique. ${siblings.length ? `Other images in this set show: ${siblings.join('; ')} — this one must be clearly different from all of them. ` : ''}${extra}${scheme.clause} Keep generous calm empty space for text. ${NEG}`;
+    };
+    const createTask = async (si: number, extra = ''): Promise<string | null> => {
       const res = await fetch(KIE_CREATE, {
         method: 'POST',
         headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: 'google/nano-banana-edit', input: { prompt, image_urls: [anchorUrl], output_format: 'png' } }),
+        body: JSON.stringify({ model: 'google/nano-banana-edit', input: { prompt: buildPrompt(si, extra), image_urls: [anchorUrl], output_format: 'png' } }),
       });
       const cj = (await res.json()) as { data?: { taskId?: string } };
-      tasks.push(cj?.data?.taskId ?? null);
-    }
+      return cj?.data?.taskId ?? null;
+    };
+
+    const tasks: (string | null)[] = [];
+    for (let si = 0; si < scenes.length; si++) tasks.push(await createTask(si));
     if (tasks.some((t) => !t)) return null;
 
     const buffers = await Promise.all(tasks.map((t) => pollTask(key, t!, 150_000)));
     if (buffers.some((b) => !b)) return null;
+
+    // VISION REVIEW (Christian 2026-08-28: "it always looks thought through") — look at every
+    // image; a reject regenerates ONCE with the reviewer's problem in the prompt. Reviewer
+    // unavailable or retry also flagged → ship what we have; QA never blocks a post.
+    const qa = { reviewed: 0, regenerated: 0, still_flagged: 0 };
+    if (Array.isArray(opts.ideas) && opts.ideas.length) {
+      for (let si = 0; si < buffers.length; si++) {
+        const idea = opts.ideas[si];
+        if (typeof idea !== 'string' || !idea.trim()) continue;
+        const verdict = await critiqueArtwork(buffers[si]!, idea, scenes[si]);
+        if (!verdict) continue;
+        qa.reviewed++;
+        if (verdict.acceptable) continue;
+        const retryTask = await createTask(si, `IMPORTANT — a previous attempt at this scene was rejected in review: "${verdict.problem}". Avoid that specific problem; render the scene cleanly and unambiguously. `);
+        const retry = retryTask ? await pollTask(key, retryTask, 150_000) : null;
+        if (retry) {
+          qa.regenerated++;
+          const second = await critiqueArtwork(retry, idea, scenes[si]);
+          if (second && !second.acceptable) {
+            qa.still_flagged++;
+            // keep whichever the reviewer disliked less is unknowable — prefer the retry (it
+            // addressed a named problem)
+          }
+          buffers[si] = retry;
+        } else {
+          qa.still_flagged++;
+        }
+      }
+    }
 
     const paths: string[] = [];
     for (let i = 0; i < buffers.length; i++) {
@@ -136,7 +173,7 @@ export async function generateTipsImages(opts: {
       if (up.error) return null;
       paths.push(path);
     }
-    return { buffers: buffers as Buffer[], paths };
+    return { buffers: buffers as Buffer[], paths, qa };
   } catch (err) {
     console.error('[tips-image] generate failed:', (err as Error).message);
     return null;

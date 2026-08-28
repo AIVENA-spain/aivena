@@ -363,6 +363,8 @@ function shapeStatus(r: GenRow) {
     carousel_style: typeof (meta as any)?.carousel_style === 'string' ? (meta as any).carousel_style : undefined,
     per_slide_art: (meta as any)?.per_slide_art === true ? true : undefined,
     artwork_source: typeof (meta as any)?.artwork_source === 'string' ? (meta as any).artwork_source : undefined,
+    brand_navy: typeof (r as any).raw_request?.brand_navy === 'string' ? (r as any).raw_request.brand_navy : undefined,
+    brand_gold: typeof (r as any).raw_request?.brand_gold === 'string' ? (r as any).raw_request.brand_gold : undefined,
     caption: typeof (meta as any)?.caption === 'string' ? (meta as any).caption : undefined,
     hashtags: Array.isArray((meta as any)?.hashtags) ? (meta as any).hashtags : undefined,
     plan: (meta as any)?.plan && typeof (meta as any).plan === 'object' ? (meta as any).plan : undefined,
@@ -1149,9 +1151,8 @@ route.post('/carousel', async (c) => {
   const scheme = typeof b.scheme === 'string' && TIPS_SCHEMES[b.scheme] ? b.scheme : 'clasico';
   // optional two-colour override (Christian 2026-08-28): main = brand.navy, accent = brand.gold —
   // chrome/type only; artwork palette stays with the colour-mood scheme
-  const hex = (v: unknown): string | null => typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v) ? v : null;
-  const brandNavy = hex(b.brand_navy);
-  const brandGold = hex(b.brand_gold);
+  const brandNavy = hexColour(b.brand_navy);
+  const brandGold = hexColour(b.brand_gold);
 
   try {
     // ── tips / quote: no property needed — brand + agency identity only ──────
@@ -1302,9 +1303,14 @@ route.post('/carousel/update', async (c) => {
     `);
     const bRows = bRes as unknown as any[];
     const { agency, brand } = mapBranding(bRows[0] || {});
+    // colour override: a NEW choice sent with this edit wins over the stored one, and is
+    // persisted so every later re-render keeps it (Christian 2026-08-28: "possible to edit
+    // those colors when you get to the finished product too")
     const rawU = (rows[0].raw_request ?? {}) as Record<string, unknown>;
-    if (typeof rawU.brand_navy === 'string') brand.navy = rawU.brand_navy;
-    if (typeof rawU.brand_gold === 'string') brand.gold = rawU.brand_gold;
+    const effNavy = hexColour(b.brand_navy) ?? (typeof rawU.brand_navy === 'string' ? rawU.brand_navy : null);
+    const effGold = hexColour(b.brand_gold) ?? (typeof rawU.brand_gold === 'string' ? rawU.brand_gold : null);
+    if (effNavy) brand.navy = effNavy;
+    if (effGold) brand.gold = effGold;
     const contact = [agency.web, agency.phone].filter(Boolean).join(' · ');
 
     // re-render in the SAME visual style the carousel was created with
@@ -1324,10 +1330,10 @@ route.post('/carousel/update', async (c) => {
           ? await renderTipsImageStyledV2(storedStyle, plan, agency.name, contact, brand, images, storedLang, meta?.include_recap !== false, meta?.include_context !== false, typeof meta?.layout_variant === 'number' ? meta.layout_variant : 0, ctxArt)
           : await renderTipsImageStyled(storedStyle, plan, agency.name, contact, brand, images, storedLang);
       } else {
-        slides = await renderPlannedStyled('editorial', plan, agency.name, contact, brand, storedLang, typeof rawU.style_edition === 'number' ? rawU.style_edition : 0, !!(rawU.brand_navy || rawU.brand_gold));
+        slides = await renderPlannedStyled('editorial', plan, agency.name, contact, brand, storedLang, typeof rawU.style_edition === 'number' ? rawU.style_edition : 0, !!(effNavy || effGold));
       }
     } else {
-      slides = await renderPlannedStyled(storedStyle, plan, agency.name, contact, brand, storedLang, typeof rawU.style_edition === 'number' ? rawU.style_edition : 0, !!(rawU.brand_navy || rawU.brand_gold));
+      slides = await renderPlannedStyled(storedStyle, plan, agency.name, contact, brand, storedLang, typeof rawU.style_edition === 'number' ? rawU.style_edition : 0, !!(effNavy || effGold));
     }
     const stored = await storeSlides(agencyId, genId, slides);
 
@@ -1338,6 +1344,9 @@ route.post('/carousel/update', async (c) => {
         ...meta, slide_count: stored.length, slides: stored,
         plan, caption: plan.caption, hashtags: plan.hashtags,
       },
+      ...(hexColour(b.brand_navy) || hexColour(b.brand_gold)
+        ? { raw_request: { ...rawU, ...(effNavy ? { brand_navy: effNavy } : {}), ...(effGold ? { brand_gold: effGold } : {}) } }
+        : {}),
       updated_at: new Date().toISOString(),
     }).eq('id', genId).eq('agency_id', agencyId);
 
@@ -1423,6 +1432,9 @@ route.get('/suggestions', async (c) => {
 //   layout → same everything, per-tip layout rotation shifts (per-slide-art decks only)
 // The remix lands as a NEW generation so the original stays in the library untouched.
 const REMIX_IMG_RING = ['bodegon', 'litoral', 'tinta', 'salitre', 'papel', 'arcilla', 'acuarela', 'bordado', 'pueblo', 'mercado'];
+
+/** strict #rrggbb or null — the only shape the colour override accepts */
+const hexColour = (v: unknown): string | null => typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v) ? v : null;
 const REMIX_TYPE_RING = ['editorial', 'cartel', 'encalada', 'sereno'];
 route.post('/carousel/remix', async (c) => {
   const tx = c.get('tx');

@@ -71,6 +71,7 @@ export default async function StudioPage() {
       firstName={firstName}
       agencyName={agencyName}
       greeting={greeting}
+      uiLanguage={ctx?.uiLanguage ?? "es"}
     />
   );
 }

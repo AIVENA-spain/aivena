@@ -54,6 +54,7 @@ route.get('/settings', async (c) => {
         timezone: parsed.timezone,
         viewing_hours_by_weekday: parsed.viewingHoursByWeekday,
         blocked_dates: parsed.blockedDates,
+        blocked_slots: parsed.blockedSlots,
       },
       knowledge: knowledge.map((k) => ({ id: k.id, content: k.content, status: k.status, createdAt: k.created_at })),
     });
@@ -105,6 +106,24 @@ route.post('/settings', async (c) => {
       (body.blocked_dates as unknown[])
         .filter((d): d is string => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d) && d >= today)
     )].sort().slice(0, 120);
+  }
+  // One-off hour blocks on a date ("busy Tuesday 12-14"): {date, from, to},
+  // hours 8-22, same past-date drop and cap.
+  if (Array.isArray(body.blocked_slots)) {
+    const today = new Date().toISOString().slice(0, 10);
+    patch.blocked_slots = (body.blocked_slots as unknown[])
+      .filter((s): s is { date: string; from: number; to: number } => {
+        const x = s as { date?: unknown; from?: unknown; to?: unknown };
+        return (
+          typeof x?.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(x.date) && x.date >= today &&
+          typeof x.from === 'number' && Number.isInteger(x.from) &&
+          typeof x.to === 'number' && Number.isInteger(x.to) &&
+          x.from >= 8 && x.to > x.from && x.to <= 22
+        );
+      })
+      .map((s) => ({ date: s.date, from: s.from, to: s.to }))
+      .sort((a, b) => a.date.localeCompare(b.date) || a.from - b.from)
+      .slice(0, 120);
   }
   if (Object.keys(patch).length === 0) {
     return c.json({ error: 'Nothing valid to save — durations 15-240 min, notice 1-168 hours.' }, 400);

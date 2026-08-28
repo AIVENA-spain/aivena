@@ -933,7 +933,11 @@
       "fromLabel": "Van",
       "toLabel": "Tot",
       "closedLabel": "Gesloten",
-      "copyToAll": "Elke dag hetzelfde"
+      "copyToAll": "Elke dag hetzelfde",
+      "addBreak": "+ Pauze",
+      "removeBreak": "Pauze verwijderen",
+      "breakLabel": "Pauze",
+      "allDay": "Hele dag"
     }
   },
   "performance": {

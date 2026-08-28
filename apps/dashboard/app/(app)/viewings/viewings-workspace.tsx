@@ -109,6 +109,9 @@ export function ViewingsWorkspace({
   const [blockedDates, setBlockedDates] = useState<string[]>(
     amanda?.settings?.blocked_dates ?? [],
   );
+  const [slotBlockDates, setSlotBlockDates] = useState<string[]>(
+    (amanda?.settings?.blocked_slots ?? []).map((s) => s.date),
+  );
   const [modal, setModal] = useState<
     | { kind: "create"; presetDate?: string }
     | { kind: "edit"; booking: BookingRow }
@@ -227,6 +230,7 @@ export function ViewingsWorkspace({
           bookings={bookings}
           locale={locale}
           blockedDates={blockedDates}
+          slotBlockDates={slotBlockDates}
           onPickDay={(date) => setModal({ kind: "create", presetDate: date })}
           onPickBooking={(b) => setModal({ kind: "edit", booking: b })}
         />
@@ -279,7 +283,11 @@ export function ViewingsWorkspace({
             <AvailabilityEditor
               initialHours={amanda?.settings?.viewing_hours_by_weekday}
               initialBlocked={amanda?.settings?.blocked_dates}
-              onSaved={(_, blocked) => setBlockedDates(blocked)}
+              initialSlots={amanda?.settings?.blocked_slots}
+              onSaved={(_, blocked, slots) => {
+                setBlockedDates(blocked);
+                setSlotBlockDates(slots.map((s) => s.date));
+              }}
             />
           </div>
         </div>
@@ -294,12 +302,14 @@ function MonthGrid({
   bookings,
   locale,
   blockedDates,
+  slotBlockDates,
   onPickDay,
   onPickBooking,
 }: {
   bookings: BookingRow[];
   locale: string;
   blockedDates: string[];
+  slotBlockDates: string[];
   onPickDay: (isoDate: string) => void;
   onPickBooking: (b: BookingRow) => void;
 }) {
@@ -415,6 +425,7 @@ function MonthGrid({
           const isToday = key === todayKey;
           const isWeekend = d.getDay() === 0 || d.getDay() === 6;
           const isBlocked = blockedDates.includes(key);
+          const hasSlotBlock = !isBlocked && slotBlockDates.includes(key);
           return (
             <div
               key={i}
@@ -452,6 +463,8 @@ function MonthGrid({
                   <span className="truncate text-[8.5px] font-semibold uppercase tracking-wide text-amber-700/80 dark:text-amber-400/80">
                     {t("blockedDay")}
                   </span>
+                ) : hasSlotBlock ? (
+                  <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-amber-500" title={t("blockedDay")} />
                 ) : null}
               </span>
               <div className="mt-1 flex flex-col gap-0.5">

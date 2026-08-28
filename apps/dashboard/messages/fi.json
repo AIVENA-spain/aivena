@@ -933,7 +933,11 @@
       "fromLabel": "Alkaen",
       "toLabel": "Asti",
       "closedLabel": "Suljettu",
-      "copyToAll": "Sama joka päivä"
+      "copyToAll": "Sama joka päivä",
+      "addBreak": "+ Tauko",
+      "removeBreak": "Poista tauko",
+      "breakLabel": "Tauko",
+      "allDay": "Koko päivä"
     }
   },
   "performance": {

@@ -11,14 +11,31 @@ import { saveAmandaSettingsAction } from "@/app/(app)/settings/section-actions";
 const GRID_DAYS = [1, 2, 3, 4, 5, 6, 0]; // Mon..Sat, Sun — agency-week order
 const FROM_HOURS = Array.from({ length: 14 }, (_, i) => 8 + i);   // 8..21
 
-/** Per-day range view over the engine's hour-array shape: open = min..max+1.
- *  (Non-contiguous stored hours render as their spanning range.) */
-function toRange(hs: number[] | undefined): { open: boolean; from: number; to: number } {
-  if (!hs || hs.length === 0) return { open: false, from: 10, to: 19 };
-  return { open: true, from: Math.min(...hs), to: Math.max(...hs) + 1 };
+/** Per-day view over the engine's hour-array shape: open = min..max+1, and a
+ *  mid-day gap renders as ONE break (multiple gaps merge into their span). */
+function toRange(hs: number[] | undefined): {
+  open: boolean; from: number; to: number; breakFrom: number | null; breakTo: number | null;
+} {
+  if (!hs || hs.length === 0) return { open: false, from: 10, to: 19, breakFrom: null, breakTo: null };
+  const sorted = [...hs].sort((a, b) => a - b);
+  const from = sorted[0];
+  const to = sorted[sorted.length - 1] + 1;
+  let breakFrom: number | null = null;
+  let breakTo: number | null = null;
+  for (let i = 1; i < sorted.length; i++) {
+    if (sorted[i] - sorted[i - 1] > 1) {
+      if (breakFrom === null) breakFrom = sorted[i - 1] + 1;
+      breakTo = sorted[i];
+    }
+  }
+  return { open: true, from, to, breakFrom, breakTo };
 }
-function toHours(from: number, to: number): number[] {
-  return Array.from({ length: Math.max(0, to - from) }, (_, i) => from + i);
+function toHours(from: number, to: number, breakFrom?: number | null, breakTo?: number | null): number[] {
+  const hs = Array.from({ length: Math.max(0, to - from) }, (_, i) => from + i);
+  if (breakFrom != null && breakTo != null && breakTo > breakFrom) {
+    return hs.filter((h) => h < breakFrom || h >= breakTo);
+  }
+  return hs;
 }
 function hh(n: number): string {
   return `${String(n).padStart(2, "0")}:00`;
@@ -35,14 +52,18 @@ function localDateStr(offsetDays: number): string {
  * "they can easily modify it from there"). Saves only its own two fields;
  * the empty-grid trap is refused client- AND server-side.
  */
+export type BlockedSlot = { date: string; from: number; to: number };
+
 export function AvailabilityEditor({
   initialHours,
   initialBlocked,
+  initialSlots,
   onSaved,
 }: {
   initialHours: Record<string, number[]> | undefined;
   initialBlocked: string[] | undefined;
-  onSaved?: (hours: Record<string, number[]>, blocked: string[]) => void;
+  initialSlots?: BlockedSlot[];
+  onSaved?: (hours: Record<string, number[]>, blocked: string[], slots: BlockedSlot[]) => void;
 }) {
   const t = useTranslations("settings.amanda");
   const locale = useLocale();
@@ -51,7 +72,10 @@ export function AvailabilityEditor({
     initialHours ?? { "1": [11, 17], "2": [11, 17], "3": [11, 17], "4": [11, 17], "5": [11, 17], "6": [11] },
   );
   const [blocked, setBlocked] = useState<string[]>(initialBlocked ?? []);
+  const [slots, setSlots] = useState<BlockedSlot[]>(initialSlots ?? []);
   const [blockDraft, setBlockDraft] = useState("");
+  const [blockFrom, setBlockFrom] = useState<number | "">("");   // "" = all day
+  const [blockTo, setBlockTo] = useState<number | "">("");
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saving, startSaving] = useTransition();
@@ -73,11 +97,22 @@ export function AvailabilityEditor({
     });
   }
 
-  function addBlocked(date: string) {
+  function addBlocked(date: string, from?: number | "", to?: number | "") {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date < localDateStr(0)) return;
     setSavedAt(null);
-    setBlocked((prev) => (prev.includes(date) ? prev : [...prev, date].sort()));
+    if (typeof from === "number" && typeof to === "number" && to > from) {
+      // Hour block on that date only — the day itself stays open.
+      setSlots((prev) =>
+        prev.some((x) => x.date === date && x.from === from && x.to === to)
+          ? prev
+          : [...prev, { date, from, to }].sort((a, b) => a.date.localeCompare(b.date) || a.from - b.from),
+      );
+    } else {
+      setBlocked((prev) => (prev.includes(date) ? prev : [...prev, date].sort()));
+    }
     setBlockDraft("");
+    setBlockFrom("");
+    setBlockTo("");
   }
 
   function onSave() {
@@ -87,10 +122,11 @@ export function AvailabilityEditor({
       const res = await saveAmandaSettingsAction({
         viewing_hours_by_weekday: hours,
         blocked_dates: blocked,
+        blocked_slots: slots,
       });
       if (res.ok) {
         setSavedAt(Date.now());
-        onSaved?.(hours, blocked);
+        onSaved?.(hours, blocked, slots);
       } else {
         setSaveError(res.error);
       }
@@ -155,6 +191,53 @@ export function AvailabilityEditor({
                         <option key={h + 1} value={h + 1}>{hh(h + 1)}</option>
                       ))}
                     </select>
+                    {r.breakFrom != null && r.breakTo != null ? (
+                      <span className="flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-1 text-[11.5px] tabular-nums text-amber-700 dark:text-amber-400">
+                        <select
+                          value={r.breakFrom}
+                          aria-label={t("breakLabel")}
+                          onChange={(e) => {
+                            const bf = Number(e.target.value);
+                            setDay(day, toHours(r.from, r.to, bf, Math.max(bf + 1, r.breakTo ?? bf + 1)));
+                          }}
+                          className="bg-transparent tabular-nums focus:outline-none"
+                        >
+                          {FROM_HOURS.filter((h) => h > r.from && h < r.to - 1).map((h) => (
+                            <option key={h} value={h}>{hh(h)}</option>
+                          ))}
+                        </select>
+                        –
+                        <select
+                          value={r.breakTo}
+                          aria-label={t("breakLabel")}
+                          onChange={(e) => setDay(day, toHours(r.from, r.to, r.breakFrom, Number(e.target.value)))}
+                          className="bg-transparent tabular-nums focus:outline-none"
+                        >
+                          {FROM_HOURS.filter((h) => h > (r.breakFrom ?? r.from) && h < r.to).map((h) => (
+                            <option key={h} value={h}>{hh(h)}</option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          aria-label={t("removeBreak")}
+                          onClick={() => setDay(day, toHours(r.from, r.to))}
+                          className="rounded p-0.5 opacity-70 hover:opacity-100"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    ) : r.to - r.from >= 3 ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const mid = Math.floor((r.from + r.to) / 2);
+                          setDay(day, toHours(r.from, r.to, mid, mid + 1));
+                        }}
+                        className="rounded-md px-2 py-1 text-[11.5px] font-medium text-amber-700 hover:bg-amber-500/10 dark:text-amber-400"
+                      >
+                        {t("addBreak")}
+                      </button>
+                    ) : null}
                     <button
                       type="button"
                       onClick={() => copyToAll(day)}
@@ -194,12 +277,59 @@ export function AvailabilityEditor({
             className="h-8 rounded-md border border-border bg-background px-2 text-[12.5px] text-foreground focus:outline-none focus:ring-2 focus:ring-brand/40"
             aria-label={t("addDate")}
           />
-          <Button size="sm" variant="outline" onClick={() => addBlocked(blockDraft)} disabled={!blockDraft}>
+          <select
+            value={blockFrom}
+            aria-label={t("fromLabel")}
+            onChange={(e) => {
+              const v = e.target.value === "" ? "" : Number(e.target.value);
+              setBlockFrom(v);
+              if (v !== "" && (blockTo === "" || (blockTo as number) <= v)) setBlockTo(v + 1);
+              if (v === "") setBlockTo("");
+            }}
+            className="h-8 rounded-md border border-border bg-background px-1.5 text-[12.5px] tabular-nums text-foreground focus:outline-none focus:ring-2 focus:ring-brand/40"
+          >
+            <option value="">{t("allDay")}</option>
+            {FROM_HOURS.map((h) => (
+              <option key={h} value={h}>{hh(h)}</option>
+            ))}
+          </select>
+          {blockFrom !== "" ? (
+            <>
+              <span className="text-[12px] text-muted-foreground">–</span>
+              <select
+                value={blockTo}
+                aria-label={t("toLabel")}
+                onChange={(e) => setBlockTo(Number(e.target.value))}
+                className="h-8 rounded-md border border-border bg-background px-1.5 text-[12.5px] tabular-nums text-foreground focus:outline-none focus:ring-2 focus:ring-brand/40"
+              >
+                {FROM_HOURS.filter((h) => h + 1 > (blockFrom as number)).map((h) => (
+                  <option key={h + 1} value={h + 1}>{hh(h + 1)}</option>
+                ))}
+              </select>
+            </>
+          ) : null}
+          <Button size="sm" variant="outline" onClick={() => addBlocked(blockDraft, blockFrom, blockTo)} disabled={!blockDraft}>
             {t("addDate")}
           </Button>
         </div>
-        {blocked.length > 0 ? (
+        {blocked.length > 0 || slots.length > 0 ? (
           <ul className="flex flex-wrap gap-1.5">
+            {slots.map((sl) => (
+              <li key={`${sl.date}-${sl.from}`} className="flex items-center gap-1 rounded-full bg-amber-500/15 px-2.5 py-1 text-[11.5px] tabular-nums text-amber-700 dark:text-amber-400">
+                {sl.date} · {hh(sl.from)}–{hh(sl.to)}
+                <button
+                  type="button"
+                  aria-label={t("unblock")}
+                  onClick={() => {
+                    setSavedAt(null);
+                    setSlots((prev) => prev.filter((x) => !(x.date === sl.date && x.from === sl.from && x.to === sl.to)));
+                  }}
+                  className="rounded p-0.5 opacity-70 hover:opacity-100"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </li>
+            ))}
             {blocked.map((d) => (
               <li key={d} className="flex items-center gap-1 rounded-full bg-amber-500/15 px-2.5 py-1 text-[11.5px] tabular-nums text-amber-700 dark:text-amber-400">
                 {d}

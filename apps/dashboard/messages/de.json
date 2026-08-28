@@ -933,7 +933,11 @@
       "fromLabel": "Von",
       "toLabel": "Bis",
       "closedLabel": "Geschlossen",
-      "copyToAll": "Jeden Tag gleich"
+      "copyToAll": "Jeden Tag gleich",
+      "addBreak": "+ Pause",
+      "removeBreak": "Pause entfernen",
+      "breakLabel": "Pause",
+      "allDay": "Ganzer Tag"
     }
   },
   "performance": {

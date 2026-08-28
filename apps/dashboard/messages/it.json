@@ -933,7 +933,11 @@
       "fromLabel": "Dalle",
       "toLabel": "Alle",
       "closedLabel": "Chiuso",
-      "copyToAll": "Uguale ogni giorno"
+      "copyToAll": "Uguale ogni giorno",
+      "addBreak": "+ Pausa",
+      "removeBreak": "Rimuovi pausa",
+      "breakLabel": "Pausa",
+      "allDay": "Tutto il giorno"
     }
   },
   "performance": {

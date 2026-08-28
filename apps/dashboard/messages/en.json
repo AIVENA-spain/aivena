@@ -933,7 +933,11 @@
       "fromLabel": "From",
       "toLabel": "Until",
       "closedLabel": "Closed",
-      "copyToAll": "Same every day"
+      "copyToAll": "Same every day",
+      "addBreak": "+ Break",
+      "removeBreak": "Remove break",
+      "breakLabel": "Break",
+      "allDay": "All day"
     }
   },
   "performance": {

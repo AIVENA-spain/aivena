@@ -933,7 +933,11 @@
       "fromLabel": "Fra",
       "toLabel": "Til",
       "closedLabel": "Lukket",
-      "copyToAll": "Ens hver dag"
+      "copyToAll": "Ens hver dag",
+      "addBreak": "+ Pause",
+      "removeBreak": "Fjern pause",
+      "breakLabel": "Pause",
+      "allDay": "Hele dagen"
     }
   },
   "performance": {

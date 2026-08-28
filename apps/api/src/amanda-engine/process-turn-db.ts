@@ -276,7 +276,8 @@ export async function processTurnDb(row: QueueRow): Promise<TurnOutcome> {
   };
 
   const backends = makeDbBackends({
-    agencyId: row.agency_id, leadId: row.lead_id, conversationId: row.conversation_id,
+    agencyId: row.agency_id, agencyName: world.agencyName,
+    leadId: row.lead_id, conversationId: row.conversation_id,
     leadLanguage: world.leadLanguage, rejectedPropertyIds: world.leadState.rejected_property_ids ?? [],
     settings: world.settings, nowMs: () => Date.now(),
   });

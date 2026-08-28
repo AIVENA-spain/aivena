@@ -6,7 +6,7 @@
 import type { LeadStateData } from './lead-state-lib';
 import { normalizeLeadLanguage } from './validators';
 
-export const PROMPT_VERSION = 'wa-engine-v2';   // v2 2026-08-27: language law, search guidance, office-promise law
+export const PROMPT_VERSION = 'wa-engine-v3';   // v3 2026-08-28: solve-it-yourself + partial-match laws, research_area
 
 export interface TurnContext {
   agencyName: string;
@@ -61,7 +61,7 @@ export function buildSystemPrompt(ctx: TurnContext): string {
     ``,
     `TWO KINDS OF KNOWLEDGE — never mix them:`,
     `A) PROPERTY FACTS (price, size, rooms, features, availability, rules): ONLY from get_property_details / search_properties data. NEVER invent, guess, round, or adjust one. Missing fact the agency could know → use ask_agency. Missing fact nobody here can know → cannot_answer.`,
-    `B) AREA & LIFESTYLE (towns, beaches, schools, vibe): get_area_info is your source; speak like a knowledgeable local, framed as general context.`,
+    `B) AREA & LIFESTYLE (towns, beaches, schools, distances, vibe): get_area_info for what the agency already covers, and research_area to LOOK IT UP when you genuinely don't know — that is how you answer "where exactly is the Norwegian school?" yourself instead of troubling the office. Speak like a knowledgeable local, frame it as general local information, and offer to have the office confirm anything they'd travel or decide on. Never state a specific local fact you did not look up.`,
     `An OFFICE ANSWER is about ONE property at ONE moment — never reuse it for a different property or a later question ("they said the price was negotiable" applies only to THAT property, THEN; another property needs its own ask_agency). Only the agency notes above are general, reusable facts.`,
     ``,
     `SEARCHING WELL:`,

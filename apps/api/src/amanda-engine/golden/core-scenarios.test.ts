@@ -440,6 +440,36 @@ describe('golden/core — office-answer relay (§3b step 3)', () => {
   });
 });
 
+describe('golden/core — research before escalation (Christian 2026-08-28)', () => {
+  it('S30: a local question is RESEARCHED and answered — no office ticket is filed', async () => {
+    const backends = new FakeBackends();
+    const model = new ScriptedModel([
+      toolResponse('research_area', { question: 'Where exactly is the Norwegian school near Ciudad Quesada?' }),
+      textResponse('The Norwegian school sits just outside Ciudad Quesada, a few minutes from the centre — want me to look for homes around there?'),
+    ]);
+    const { deps, journal } = makeDeps(model, backends);
+    const r = await runTurn('full', baseContext(), inbound('Do you know where the Norwegian school is?'), null, deps);
+    expect(r.outcome).toBe('sent');
+    expect(backends.journal.filter((w) => w.effect === 'research_area')).toHaveLength(1);
+    expect(backends.journal.filter((w) => w.effect === 'ask_agency')).toHaveLength(0);   // researched, not ticketed
+    expect(journal.sent).toHaveLength(1);
+  });
+
+  it('S31: research is a READ — SHADOW may use it, and still sends nothing', async () => {
+    const backends = new FakeBackends();
+    const model = new ScriptedModel([
+      toolResponse('research_area', { question: 'What is Ciudad Quesada like in winter?' }),
+      textResponse('Quesada stays lively through the winter — plenty of the community lives there year round.'),
+    ]);
+    const { deps, journal } = makeDeps(model, backends);
+    const r = await runTurn('shadow', baseContext(), inbound('Is Quesada dead in winter?'), null, deps);
+    expect(r.outcome).toBe('simulated');
+    expect(journal.sent).toHaveLength(0);
+    const ev = r.loop!.toolEvents.find((e) => e.tool === 'research_area');
+    expect(ev?.result.ok).toBe(true);
+  });
+});
+
 describe('golden/core — escalation ladder (§3)', () => {
   it('S16: ask_agency files the ticket for real in APPROVAL mode; the reply is a draft', async () => {
     const backends = new FakeBackends();

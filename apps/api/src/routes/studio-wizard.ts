@@ -28,7 +28,7 @@ import { type CarouselPlan, chrome as carouselChrome } from '../../../../studio/
 import {
   renderPlannedStyled, renderListingStyled, vibraListing, PLANNED_STYLES, LISTING_STYLES, type CarouselStyle,
 } from '../../../../studio/engine/carouselStyles';
-import { planCarousel, remixHook, topicIdeas, listingCopy, listingStory, PlanSchema } from '../lib/studio-carousel-plan';
+import { planCarousel, editPlan, remixHook, topicIdeas, listingCopy, listingStory, PlanSchema } from '../lib/studio-carousel-plan';
 import { directScenes } from '../lib/studio-carousel-art';
 import { renderTipsImageStyled, renderTipsImageStyledV2, isTipsImageStyle } from '../../../../studio/engine/carouselTipsImage';
 import { renderFreeform, type DesignSpec } from '../../../../studio/engine/renderFreeform';
@@ -1024,11 +1024,21 @@ async function runPlannedCarousel(opts: {
         avoidMotifs = [...motifs].slice(0, 18);
       } catch { /* variety hint only */ }
     }
-    const plan = await planCarousel({
+    let plan = await planCarousel({
       type: opts.type, topic: opts.topic, quoteText: opts.quoteText, quoteAuthor: opts.quoteAuthor,
       slideCount: opts.slideCount, language: opts.language, agencyName: opts.agency.name,
       avoidMotifs,
     });
+    // EDITOR pass (Christian 2026-08-28): a skeptical second read of the copy — sense, value,
+    // trust — before anything renders. Quote decks are verbatim client words and skip it.
+    let copyQa: { revised: boolean; notes: string[] } | undefined;
+    if (opts.type === 'tips') {
+      const edited = await editPlan(plan, opts.topic ?? '');
+      if (edited) {
+        plan = edited.plan;
+        copyQa = { revised: edited.notes.length > 0, notes: edited.notes };
+      }
+    }
     const contact = [opts.agency.web, opts.agency.phone].filter(Boolean).join(' · ');
     // AI-imagery styles compose the pre-seeded generated family; a library miss falls back to the
     // editorial type-only deck — an image can never block a post (spec fallback rule)
@@ -1099,7 +1109,7 @@ async function runPlannedCarousel(opts: {
       result_metadata: {
         engine: 'carousel', carousel_type: opts.type, carousel_style: usedStyle, slide_count: stored.length, slides: stored,
         ai_imagery: opts.type === 'tips' && isTipsImageStyle(usedStyle),
-        image_paths: imagePaths, image_scheme: opts.scheme, per_slide_art: perSlideArt, artwork_source: artworkSource, artwork_qa: artworkQa, include_recap: opts.includeRecap, include_context: opts.includeContext,
+        image_paths: imagePaths, image_scheme: opts.scheme, per_slide_art: perSlideArt, artwork_source: artworkSource, artwork_qa: artworkQa, copy_qa: copyQa, include_recap: opts.includeRecap, include_context: opts.includeContext,
         plan, caption: plan.caption, hashtags: plan.hashtags,
       },
       completed_at: new Date().toISOString(),

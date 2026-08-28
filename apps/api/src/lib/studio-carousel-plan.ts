@@ -200,7 +200,7 @@ Submit with the submit_carousel tool.`;
     if (Array.isArray(input.hashtags)) {
       input.hashtags = (input.hashtags as unknown[])
         .filter((h): h is string => typeof h === 'string')
-        .map((h) => h.replace(/^#/, '').trim().slice(0, 40))
+        .map((h) => h.replace(/["'\u201c\u201d\u2018\u2019#]/g, '').trim().slice(0, 40))
         .filter((h) => h.length >= 2).slice(0, 5);
     }
     const parsed = PlanSchema.safeParse(input);
@@ -218,6 +218,89 @@ Submit with the submit_carousel tool.`;
     return plan;
   }
   throw new Error(`carousel plan invalid after retries: ${lastErr}`);
+}
+
+// ── EDITOR pass (Christian 2026-08-28: "we always need to make sure that the content makes
+// sense and brings value and builds trust") — a skeptical second read of the whole tips plan
+// BEFORE anything renders. His live case: a tip body stapled salt-air corrosion to guests
+// running showers as if one caused the other — almost-right copy is exactly what erodes trust,
+// and a one-shot writer cannot catch its own non-sequiturs. Fails open: null → original plan.
+
+const EDIT_TOOL = {
+  name: 'submit_edited_plan',
+  description: 'Submit the reviewed carousel plan (corrected where needed) plus review notes.',
+  input_schema: {
+    type: 'object' as const,
+    properties: {
+      ...(PLAN_TOOL.input_schema.properties as Record<string, unknown>),
+      review_notes: { type: 'array', items: { type: 'string' }, description: 'one short note per problem found and fixed; EMPTY array if the plan passed clean' },
+    },
+  },
+} as const;
+
+export async function editPlan(plan: CarouselPlan, topic: string): Promise<{ plan: CarouselPlan; notes: string[] } | null> {
+  const prompt = `You are the skeptical EDITOR at a real-estate agency on the Spanish coast. The reader of this Instagram carousel is a potential client — every slide must make sense on first read, teach something useful, and sound like an agent they can trust. Review the plan below and correct ONLY what fails.
+
+POST TOPIC: "${topic}"
+THE PLAN (JSON):
+${JSON.stringify({ ...plan, image_scenes: undefined, tips: plan.tips.map((t) => ({ ...t, scene: undefined })) }, null, 1)}
+
+CHECK EVERY TEXT FIELD:
+1. SENSE — every sentence must parse and be TRUE on first read. Cause and effect must be genuinely connected: never staple two unrelated mechanisms into one sentence (real failure caught this week: "sea air corrodes pipes and railings, especially with guests running showers daily" — salt air and shower usage are different problems; pick one mechanism per sentence, or split them cleanly).
+2. VALUE — the reader must finish each tip knowing something specific they can DO: a question to ask, a check to schedule, a decision rule. Vague filler ("be careful", "keep an eye on it") fails.
+3. TRUST — no invented facts, figures or statistics; nothing a seasoned local agent wouldn't stand behind; no scaremongering, no overpromising.
+4. DELIVERY — each tip title's promise must be delivered by its body; the cover hook's promise must be delivered by the deck as a whole.
+
+RULES FOR CORRECTIONS:
+- Rewrite in the SAME LANGUAGE as the existing copy, within the same length limits, same warm expert tone.
+- Keep the hook_title unless it fails a check (the user may have chosen it deliberately).
+- Change as little as possible — this is an edit, not a rewrite.
+- Artwork is handled by a separate art director: do NOT create, review or mention image_scenes or tip scenes.
+- Return the FULL plan (all fields, corrected where needed) with review_notes listing each fix in one short English sentence. If everything passes, return the plan unchanged with an empty review_notes array.
+
+Submit with the submit_edited_plan tool.`;
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-5', max_tokens: 3000,
+        tools: [EDIT_TOOL], tool_choice: { type: 'tool', name: 'submit_edited_plan' },
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { content?: { type: string; input?: unknown }[] };
+    const raw = unesc(data.content?.find((c) => c.type === 'tool_use')?.input) as Record<string, unknown> | undefined;
+    if (!raw) return null;
+    const notes = Array.isArray(raw.review_notes)
+      ? (raw.review_notes as unknown[]).filter((n): n is string => typeof n === 'string' && n.trim().length > 0).slice(0, 12)
+      : [];
+    delete raw.review_notes;
+    // the editor reviews words, not art direction — the planner's scenes ride through untouched
+    const input = {
+      ...raw, type: plan.type,
+      image_scenes: plan.image_scenes,
+      tips: Array.isArray(raw.tips)
+        ? (raw.tips as Record<string, unknown>[]).map((t, i) => ({ ...t, scene: plan.tips[i]?.scene ?? '' }))
+        : plan.tips,
+    } as Record<string, unknown>;
+    if (typeof input.hashtags === 'string') input.hashtags = (input.hashtags as string).split(/[\s,#]+/);
+    if (Array.isArray(input.hashtags)) {
+      input.hashtags = (input.hashtags as unknown[])
+        .filter((h): h is string => typeof h === 'string')
+        .map((h) => h.replace(/["'\u201c\u201d\u2018\u2019#]/g, '').trim().slice(0, 40))
+        .filter((h) => h.length >= 2).slice(0, 5);
+    }
+    const parsed = PlanSchema.safeParse(input);
+    if (!parsed.success) return null;
+    const edited = parsed.data as CarouselPlan;
+    if (edited.tips.length !== plan.tips.length) return null;   // the editor may not add or drop slides
+    if (planIssues(edited, '')) return null;
+    return { plan: edited, notes };
+  } catch {
+    return null;
+  }
 }
 
 // ── LISTING copy (v2): hook overlay + lifestyle line + caption, from canonical facts only ──

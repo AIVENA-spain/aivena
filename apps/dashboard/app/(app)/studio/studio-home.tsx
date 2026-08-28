@@ -145,9 +145,10 @@ function StyleCard({ img, name, desc, swatches, onClick }: {
 }
 
 export function StudioHome({
-  initialLibrary, quota: _quota, firstName, agencyName, greeting,
+  initialLibrary, quota: _quota, firstName, agencyName, greeting, uiLanguage = "es",
 }: {
   initialLibrary: LibraryItem[]; quota: Quota; firstName: string; agencyName: string; greeting: string;
+  uiLanguage?: string;   // the post language defaults to the user's dashboard language (Christian 2026-08-28)
 }) {
   const [view, setView] = useState<View>("home");
   const [menuId, setMenuId] = useState<string | null>(null);
@@ -182,9 +183,9 @@ export function StudioHome({
     return initialLibrary.filter((i) => i.section === activeSection);
   }, [initialLibrary, activeSection]);
 
-  if (view === "templates") return <SubViewShell onBack={() => setView("home")}><EditableWizard /></SubViewShell>;
+  if (view === "templates") return <SubViewShell onBack={() => setView("home")}><EditableWizard initialLanguage={uiLanguage} /></SubViewShell>;
   if (view === "smart") return <SubViewShell onBack={() => setView("home")}><SmartStudio /></SubViewShell>;
-  if (view === "carousel") return <SubViewShell onBack={() => { setResumeGenId(undefined); setView("home"); }} crumb="Tips carousel"><CarouselStudio initialTopic={pendingTopic} initialLanguage={pendingLang} resumeGenId={resumeGenId} /></SubViewShell>;
+  if (view === "carousel") return <SubViewShell onBack={() => { setResumeGenId(undefined); setView("home"); }} crumb="Tips carousel"><CarouselStudio initialTopic={pendingTopic} initialLanguage={pendingLang ?? uiLanguage} resumeGenId={resumeGenId} /></SubViewShell>;
   if (view === "renovation") return <SubViewShell onBack={() => setView("home")}><StudioWizard initialLibrary={initialLibrary} initialFork="renovation" /></SubViewShell>;
 
   if (view === "library") {

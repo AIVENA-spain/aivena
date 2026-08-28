@@ -365,6 +365,39 @@ function serenoPlanned(plan: CarouselPlan, agency: string, contact: string, bran
   } else {
     // value slides: LOT-style numerals + plate captions
     plan.tips.forEach((tip, i) => {
+      // rotating compositions (Christian 2026-08-28): classic page → grand ghost numeral → centered air
+      const v = i % 3;
+      if (v === 1) {
+        specs.push(DesignSpec.parse({
+          background: warm,
+          elements: [
+            { type: "text", bbox: [560, 60, 1500, 1300], content: String(i + 1).padStart(2, "0"), font: FR, size: 620, colour: mix(warm, GOLD, 0.68), align: "left" },
+            { type: "text", bbox: [96, 110, 800, 140], content: `Nº ${i + 1} · ${plan.eyebrow.toUpperCase()}`, font: "Glacial Indifference", size: 19, colour: inkMuted, align: "left", tracking: 5 },
+            { type: "rect", bbox: [96, 200, 240, 201.5], fill: NAVY, opacity: 0.4 },
+            { type: "text", bbox: [96, 280, 620, 700], content: wrap(tip.title, FR, 54, 520), font: FR, size: 54, colour: NAVY, align: "left", line_height: 68 },
+            { type: "text", bbox: [96, 760, 600, 1110], content: wrap(tip.body, "Jost", 30, 500), font: "Jost", size: 30, colour: mix(NAVY, warm, 0.8), align: "left", line_height: 48, valign: "center" },
+            ...(tip.teaser ? [{ type: "text", bbox: [96, 1140, 900, 1186], content: tip.teaser.toUpperCase(), font: "Glacial Indifference", size: 19, colour: inkMuted, align: "left", tracking: 4 }] : []),
+            spine(i + 3), folioLine(i + 3, inkMuted),
+          ],
+        }));
+        return;
+      }
+      if (v === 2) {
+        specs.push(DesignSpec.parse({
+          background: warm,
+          elements: [
+            ...frame([70, 70, 1010, 1280], NAVY, 1.2, 0.3),
+            { type: "text", bbox: [96, 190, 984, 224], content: `Nº ${i + 1} · ${plan.eyebrow.toUpperCase()}`, font: "Glacial Indifference", size: 19, colour: inkMuted, align: "center", tracking: 6 },
+            { type: "text", bbox: [96, 280, 984, 400], content: String(i + 1).padStart(2, "0"), font: FR, size: 96, colour: GOLD, align: "center" },
+            { type: "text", bbox: [130, 460, 950, 740], content: wrap(tip.title, FR, 62, 780), font: FR, size: 62, colour: NAVY, align: "center", line_height: 78, valign: "center" },
+            { type: "rect", bbox: [480, 790, 600, 791.5], fill: NAVY, opacity: 0.4 },
+            { type: "text", bbox: [170, 850, 910, 1110], content: wrap(tip.body, "Jost", 31, 700), font: "Jost", size: 31, colour: mix(NAVY, warm, 0.8), align: "center", line_height: 50, valign: "center" },
+            ...(tip.teaser ? [{ type: "text", bbox: [96, 1150, 984, 1190], content: tip.teaser.toUpperCase(), font: "Glacial Indifference", size: 18, colour: inkMuted, align: "center", tracking: 4 }] : []),
+            folioLine(i + 3, inkMuted),
+          ],
+        }));
+        return;
+      }
       specs.push(DesignSpec.parse({
         background: warm,
         elements: [

@@ -90,7 +90,7 @@ async function runLimited<T>(items: T[], n: number, fn: (t: T, i: number) => Pro
   await Promise.all(workers);
 }
 
-export function EditableWizard() {
+export function EditableWizard({ initialLanguage }: { initialLanguage?: string } = {}) {
   const [step, setStep] = useState<"gallery" | "property" | "template" | "edit" | "classic">("gallery");
   const [editFrom, setEditFrom] = useState<"gallery" | "template">("gallery");
 
@@ -130,7 +130,7 @@ export function EditableWizard() {
   const [defaults, setDefaults] = useState<Defaults | null>(null);
   const [text, setText] = useState<Record<string, string>>({});
   const [colours, setColours] = useState<Record<string, string>>({});
-  const [language, setLanguage] = useState("en");
+  const [language, setLanguage] = useState(LANGS.some((l) => l.code === initialLanguage) ? initialLanguage! : "en");
   const [preview, setPreview] = useState<string | null>(null);
   const [rendering, setRendering] = useState(false);
   const [err, setErr] = useState<string | null>(null);

@@ -136,9 +136,14 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
   const [customColours, setCustomColours] = useState(false);
   const [colMain, setColMain] = useState("#1a2b4a");
   const [colAccent, setColAccent] = useState("#c8a24b");
+  // colours are also editable on the FINISHED deck (Christian 2026-08-28: "sometimes you chose
+  // wrong just and need to change to see") — re-renders from stored artwork, no regeneration
+  const [resColMain, setResColMain] = useState("#1a2b4a");
+  const [resColAccent, setResColAccent] = useState("#c8a24b");
+  const [recolouring, setRecolouring] = useState(false);
   const [quoteText, setQuoteText] = useState("");
   const [quoteAuthor, setQuoteAuthor] = useState("");
-  const [language, setLanguage] = useState(initialLanguage ?? "es");
+  const [language, setLanguage] = useState(LANGS.some(([c]) => c === initialLanguage) ? initialLanguage! : "es");
   const [style, setStyle] = useState("editorial");
   const [scheme, setScheme] = useState("clasico");
   // otra vuelta (one-axis remix)
@@ -190,6 +195,8 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
     if (typeof s.carousel_style === "string") setResultStyle(s.carousel_style);
     setResultPerSlideArt(s.per_slide_art === true);
     setResultArtSource(typeof s.artwork_source === "string" ? s.artwork_source : "");
+    setResColMain(typeof s.brand_navy === "string" ? (s.brand_navy as string) : "#1a2b4a");
+    setResColAccent(typeof s.brand_gold === "string" ? (s.brand_gold as string) : "#c8a24b");
     setEditing(false); setDraft(null); setRemixed(false);
     setPhase("result");
   }
@@ -579,6 +586,21 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
                 className="flex items-center gap-1.5 rounded-lg border border-neutral-300 px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300">
                 <Pencil className="h-4 w-4" /> Edit the text on the slides
               </button>
+              <span className="flex items-center gap-1.5 rounded-lg border border-neutral-300 px-2.5 py-1.5 dark:border-neutral-700">
+                <label className="flex cursor-pointer items-center"><input type="color" value={resColMain} onChange={(e) => setResColMain(e.target.value)} className="h-6 w-7 cursor-pointer rounded border-0 bg-transparent p-0" title="Main colour" /></label>
+                <label className="flex cursor-pointer items-center"><input type="color" value={resColAccent} onChange={(e) => setResColAccent(e.target.value)} className="h-6 w-7 cursor-pointer rounded border-0 bg-transparent p-0" title="Accent colour" /></label>
+                <button disabled={recolouring} onClick={async () => {
+                  if (!genId || !plan) return;
+                  setRecolouring(true); setErr(null);
+                  const r = await carouselUpdateAction(genId, plan, { navy: resColMain, gold: resColAccent });
+                  setRecolouring(false);
+                  if (!r.ok) { setErr((r.message as string) ?? "Couldn't change the colours — please try again."); return; }
+                  setSlides(Array.isArray(r.slides) ? (r.slides as string[]) : slides);
+                  setSaved(false);
+                }} className="text-sm font-medium text-neutral-700 hover:text-neutral-900 disabled:opacity-50 dark:text-neutral-300 dark:hover:text-neutral-100">
+                  {recolouring ? "Recolouring…" : "Apply colours"}
+                </button>
+              </span>
               {plan.type === "tips" && ([
                 ["hook", "Otra vuelta · new hook", "The AI reframes the cover from a different angle"],
                 ["style", "Otra vuelta · new look", "Same words and artwork, next look"],

@@ -231,6 +231,48 @@ function tipsSlide2(plan: CarouselPlan, agency: string, brand: CarouselBrand, to
 
 /** Value slide — one idea: oversized gold numeral, heading, 15-40 word body, open-loop footer pill. */
 function tipSlide(slideIndex: number, tipNumber: number, total: number, tip: { title: string; body: string; teaser: string }, agency: string, brand: CarouselBrand) {
+  // three rotating compositions (Christian 2026-08-28: "not changing it up enough throughout the
+  // slides… make it interesting — font wise, or size wise") — a deck's tips now alternate between
+  // the classic numeral page, an inverted full-colour STATEMENT page, and a ghost-numeral page.
+  const v = (tipNumber - 1) % 3;
+
+  if (v === 1) {
+    // THE STATEMENT — colour-flipped, the title as the hero at display scale
+    const titleTxt = wrap(tip.title, SERIF, 96, W - 2 * M);
+    const tLines = titleTxt.split("\n").length;
+    const elements: any[] = [
+      { type: "text", bbox: [M, 110, 700, 146], content: `Nº ${String(tipNumber).padStart(2, "0")}`, font: SANS, size: 21, colour: brand.gold, align: "left", tracking: 6 },
+      { type: "text", bbox: [M, 230, W - M, 230 + tLines * 110 + 10], content: titleTxt, font: SERIF, size: 96, colour: brand.cream, align: "left", line_height: 110 },
+      { type: "rect", bbox: [M, 250 + tLines * 110 + 40, M + 120, 250 + tLines * 110 + 43], fill: brand.gold },
+      { type: "text", bbox: [M, 880, W - M, 1110], content: wrap(tip.body, SANS, 34, W - 2 * M), font: SANS, size: 34, colour: mix(brand.cream, brand.navy, 0.85), align: "left", line_height: 52, valign: "center" },
+      ...(tip.teaser ? [{
+        type: "text", bbox: [M, 1150, 900, 1198], content: tip.teaser, font: SANS, size: 26,
+        colour: brand.navy, align: "left", weight: "500", valign: "center",
+        pill: { fill: brand.gold, pad_x: 28, pad_y: 14 },
+      }] : []),
+      ...footerBand(agency, slideIndex, total, brand, brand.navy, true),
+    ];
+    return DesignSpec.parse({ background: brand.navy, elements });
+  }
+
+  if (v === 2) {
+    // THE GHOST — an oversized numeral melts into the paper behind a centered title
+    const elements: any[] = [
+      { type: "text", bbox: [420, 120, 1500, 1250], content: String(tipNumber).padStart(2, "0"), font: SERIF, size: 640, colour: mix(brand.cream, brand.navy, 0.9), align: "left" },
+      { type: "text", bbox: [M, 200, W - M, 236], content: `Nº ${String(tipNumber).padStart(2, "0")}`, font: SANS, size: 21, colour: brand.gold, align: "center", tracking: 6 },
+      { type: "text", bbox: [M, 330, W - M, 640], content: wrap(tip.title, SERIF, 70, W - 2 * M - 80), font: SERIF, size: 70, colour: brand.navy, align: "center", line_height: 84, valign: "center" },
+      { type: "rect", bbox: [W / 2 - 60, 690, W / 2 + 60, 693], fill: brand.gold },
+      { type: "text", bbox: [M + 60, 750, W - M - 60, 1080], content: wrap(tip.body, SANS, 34, W - 2 * M - 120), font: SANS, size: 34, colour: brand.text, align: "center", line_height: 54, valign: "center" },
+      ...(tip.teaser ? [{
+        type: "text", bbox: [M, 1145, W - M, 1193], content: tip.teaser, font: SANS, size: 25,
+        colour: brand.cream, align: "center", weight: "500", valign: "center",
+        pill: { fill: brand.navy, pad_x: 28, pad_y: 13 },
+      }] : []),
+      ...footerBand(agency, slideIndex, total, brand, brand.cream, false),
+    ];
+    return DesignSpec.parse({ background: brand.cream, elements });
+  }
+
   const elements: any[] = [
     { type: "text", bbox: [M, 70, 640, 340], content: String(tipNumber).padStart(2, "0"), font: SERIF, size: 250, colour: brand.gold, align: "left" },
     { type: "rect", bbox: [M, 400, M + 84, 404], fill: brand.gold },

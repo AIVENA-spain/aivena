@@ -18,6 +18,10 @@ export interface PropertySummary {
   bedrooms: number | null;
   city: string | null;
   type: string | null;
+  /** How many photos the agency holds for this property. She may SAY the count
+   *  and offer to have them sent; the URLs are deliberately never exposed —
+   *  they point at a third-party site (see the share-page decision). */
+  photos: number;
   /** Date the listing entered the AGENCY'S CATALOGUE (YYYY-MM-DD) — "in our
    *  catalogue since", not necessarily its first day on the market. Null when
    *  the backend detects the dates are a bulk-import artifact. */

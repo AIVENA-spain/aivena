@@ -25,10 +25,22 @@ function greetingForHour(hour: number): GreetingKey {
   return "greetingEvening";
 }
 
+/** Tasks badge (Christian 2026-08-28): everything waiting on a human — Amanda's
+ *  office questions, escalations, booking confirms, failed sends. Without it a
+ *  pending office question is invisible until you open the page. */
+async function getTasksCount(): Promise<number | null> {
+  try {
+    const res = await apiFetch<TasksResponse>("/api/v1/tasks?type=all&status=pending");
+    return res.tasks.length;
+  } catch {
+    return null;
+  }
+}
+
 async function getInboxCount(): Promise<number | null> {
   try {
     const res = await apiFetch<TasksResponse>(
-      "/api/v1/tasks?type=suggested_reply,amanda_question,human_review_needed,amanda_booking_confirm&status=pending",
+      "/api/v1/tasks?type=suggested_reply&status=pending",
     );
     return res.tasks.length;
   } catch {
@@ -82,8 +94,9 @@ export default async function AppLayout({
     return <NoAgencyState email={ctx.email} />;
   }
 
-  const [inboxCount, settings] = await Promise.all([
+  const [inboxCount, tasksCount, settings] = await Promise.all([
     getInboxCount(),
+    getTasksCount(),
     getSettings(),
   ]);
   const brandName = settings?.branding?.brand_name ?? null;
@@ -141,7 +154,7 @@ export default async function AppLayout({
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
-      <Sidebar ctx={ctx} inboxCount={inboxCount} brandName={brandName} />
+      <Sidebar ctx={ctx} inboxCount={inboxCount} tasksCount={tasksCount} brandName={brandName} />
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar
           ctx={ctx}

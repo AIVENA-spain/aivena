@@ -62,7 +62,7 @@ ${tipList}
 
 YOUR PROCESS for every slide, in order:
 1. IDEA — one sentence: what must a viewer understand at a glance, seeing only this image?
-2. STRATEGY — choose what serves the idea best: quiet irony (a surface that looks perfect with trouble hinted at the margins), a staged still that literally acts out the advice, or a calm single-subject beat. Subtlety beats shock; suggestion beats depiction.
+2. STRATEGY — choose what serves the idea best: quiet irony (a surface that looks perfect with trouble hinted at the margins), a staged still that literally acts out the advice, or a calm single-subject beat. Subtlety beats shock; suggestion beats depiction. MATCH THE TOPIC'S REGISTER: for dream/philosophical/aspirational topics, the scenes are luminous and desirable — morning light, a set table, an open window to the sea — with NO flaws or trouble anywhere; save the hidden-trouble grammar for practical warning topics.
 3. SCENE — 20-45 words of concrete, stageable objects. Hero object in the first five words, then 2-4 supporting props. Every object must earn its place in the idea.
 
 THE STANDARD (learn from this example): topic "Some buy a home in Spain. Others buy a renovation." A large hole or crater in a floor is WRONG — image models render damage as surreal voids, and destruction reads cheap. RIGHT is the hidden-trouble version: "a freshly painted white wall, one corner of the new paint lifting to show an older ochre layer beneath, a folded dust sheet and a spirit level resting against the skirting, warm afternoon light" — the house looks good at first glance; the story is in the details.

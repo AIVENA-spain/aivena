@@ -298,7 +298,17 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
             </div>
             {err && <div className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{err}</div>}
 
-            <div className="mb-2 text-sm font-semibold text-neutral-900 dark:text-neutral-100">1. What&rsquo;s your topic?</div>
+            <div className="mb-2 text-sm font-semibold text-neutral-900 dark:text-neutral-100">1. Language of the post</div>
+            <div className="relative">
+              <Globe className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+              <select value={language} onChange={(e) => setLanguage(e.target.value)}
+                className="w-full appearance-none rounded-xl border border-neutral-200 bg-white py-3.5 pl-10 pr-8 text-sm outline-none focus:border-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100">
+                {LANGS.map(([code, name]) => <option key={code} value={code}>{name}</option>)}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+            </div>
+
+            <div className="mb-2 mt-7 text-sm font-semibold text-neutral-900 dark:text-neutral-100">2. What&rsquo;s your topic?</div>
             <div className="flex gap-3">
               <div className="relative flex-1">
                 <Sparkles className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
@@ -327,7 +337,7 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
               </button>
             </div>
 
-            <div className="mb-2 mt-7 text-sm font-semibold text-neutral-900 dark:text-neutral-100">2. How many slides?</div>
+            <div className="mb-2 mt-7 text-sm font-semibold text-neutral-900 dark:text-neutral-100">3. How many slides?</div>
             <div className="flex flex-wrap gap-2">
               {[3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
                 <button key={n} onClick={() => setSlideTotal(n)}
@@ -349,7 +359,7 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
               })()}
             </div>
 
-            <div className="mb-2 mt-7 text-sm font-semibold text-neutral-900 dark:text-neutral-100">3. Choose a look &amp; feel</div>
+            <div className="mb-2 mt-7 text-sm font-semibold text-neutral-900 dark:text-neutral-100">4. Choose a look &amp; feel</div>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
               {STYLES.tips.map(([key, name, desc]) => (
                 <div key={key} role="button" tabIndex={0}
@@ -391,16 +401,6 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
                 </div>
               </>
             )}
-
-            <div className="mb-2 mt-7 text-sm font-semibold text-neutral-900 dark:text-neutral-100">4. Language of the post</div>
-            <div className="relative">
-              <Globe className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
-              <select value={language} onChange={(e) => setLanguage(e.target.value)}
-                className="w-full appearance-none rounded-xl border border-neutral-200 bg-white py-3.5 pl-10 pr-8 text-sm outline-none focus:border-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100">
-                {LANGS.map(([code, name]) => <option key={code} value={code}>{name}</option>)}
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
-            </div>
 
             <button
               onClick={() => void start({ type: "tips", topic: topic.trim(), slides: slideTotal, language, style, scheme }, "form")}

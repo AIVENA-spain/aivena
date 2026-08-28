@@ -138,7 +138,11 @@ export async function planCarousel(opts: {
 
   const task = opts.type === 'tips'
     ? `Create an EDUCATIONAL carousel: exactly ${Math.min(7, Math.max(1, opts.slideCount ?? 5))} points about: "${opts.topic}".
-Prefer the LOSS/MISTAKE frame — "errors that cost you money", "what nobody warns you about", "what I'd never do" — it is the only hook style with experimental proof. Each point = one slide: punchy title + 15-40 words of genuinely useful, practical advice a real buyer/seller can act on. One idea per point. Each point's "teaser" is an open loop pulling to the next slide; leave the last teaser empty.
+TONE LAW — read the topic's REGISTER first and match the whole deck to it:
+- PRACTICAL topics (how-to, costs, process) → the LOSS/MISTAKE frame ("errors that cost you money", "what nobody warns you about") — it has experimental proof and is the default.
+- DREAM / PHILOSOPHICAL topics (the life, the place, time, identity — e.g. "location-life balance", "a life you don't need to retire from") → STAY in that reflective, aspirational register: tips become principles, perspectives and ways to choose, written with warmth and longing. Converting a dream topic into a warnings-and-mistakes listicle is a FAILURE — the reader chose that topic for its feeling.
+- PROVOCATIVE topics (a sting, a challenged belief) → keep the sting through the whole deck, not just the cover.
+Each point = one slide: punchy title + 15-40 words that genuinely deliver in the topic's register — practical advice for practical topics, a real shift in perspective for dream topics. One idea per point. Each point's "teaser" is an open loop pulling to the next slide; leave the last teaser empty.
 IF THE TOPIC ALREADY READS AS A FINISHED HOOK LINE — a crafted sentence or two with its own punch (often picked from the inspiration ideas, e.g. "Some people buy a home in the sun. Others buy a problem with a pool.") — the user chose those words on purpose: use the line (translated into the post language if needed) VERBATIM as hook_title when it fits 90 chars; if longer, the sharpest sentence verbatim as hook_title and let slide2 carry the rest. NEVER flatten a provocative topic into a generic listicle title — losing its edge is a failure.
 If the hook promises a number ("5 errores"), it MUST equal the number of points delivered.`
     : `Create a CLIENT STORY carousel from this quote (provided by the agency — treat as authentic):
@@ -249,7 +253,7 @@ CHECK EVERY TEXT FIELD:
 1. SENSE — every sentence must parse and be TRUE on first read. Cause and effect must be genuinely connected: never staple two unrelated mechanisms into one sentence (real failure caught this week: "sea air corrodes pipes and railings, especially with guests running showers daily" — salt air and shower usage are different problems; pick one mechanism per sentence, or split them cleanly).
 2. VALUE — the reader must finish each tip knowing something specific they can DO: a question to ask, a check to schedule, a decision rule. Vague filler ("be careful", "keep an eye on it") fails.
 3. TRUST — no invented facts, figures or statistics; nothing a seasoned local agent wouldn't stand behind; no scaremongering, no overpromising.
-4. DELIVERY — each tip title's promise must be delivered by its body; the cover hook's promise must be delivered by the deck as a whole.
+4. DELIVERY — each tip title's promise must be delivered by its body; the cover hook's promise must be delivered by the deck as a whole. This includes REGISTER: a dreamy or philosophical topic answered with a warnings-and-mistakes listicle is a failure — the deck's tone must match the topic's tone.
 
 RULES FOR CORRECTIONS:
 - Rewrite in the SAME LANGUAGE as the existing copy, within the same length limits, same warm expert tone.
@@ -534,12 +538,16 @@ export async function topicIdeas(language: string, exclude: string[]): Promise<s
   const month = new Date().toLocaleString('en', { month: 'long' });
   const prompt = `You suggest Instagram tips-carousel topics for a real-estate agency on the Spanish coast (buyers are often foreign, sellers often local; the audience dreams of a home in Spain).
 
-Write 6 topic ideas in language "${language}". Rules:
-- Each is a TOPIC for a tips/advice carousel (the copywriter will write the hook later) — specific and curiosity-driven, not generic ("Why sea-view flats sell in winter" beats "Tips for sellers").
-- Mix the angles: buying, selling, owning, relocating, financing/process, and one seasonal angle (it is ${month}).
-- Exactly ONE of the 6 must be a PROVOCATIVE hook: a bold one-or-two-sentence line that challenges a common belief or names an uncomfortable truth, with a little sting — it should make the reader stop mid-scroll. Style references (write yours FRESH, in "${language}", never copy these): "Some people buy a home in Spain. Others buy a problem with a pool." / "You can always make more money. You cannot buy back ten winters." / "Maybe success isn't retiring one day. Maybe it's building a life you don't need to retire from." / "The dream of waiting for prices to crash has cost some buyers more than the crash ever would."
-- NO place names, NO prices, NO statistics, NO legal/tax advice framing (the provocative line may gesture at cost/time in the abstract, never with figures).
-- 30-90 characters each; the provocative one may run up to 150. No emoji, no numbering.${exclude.length ? `\n- Do NOT repeat or paraphrase these already-shown ideas:\n${exclude.slice(0, 24).map((t) => `  · ${t}`).join('\n')}` : ''}
+Write 6 topic ideas in language "${language}" — SIX GENUINELY DIFFERENT REGISTERS, one each, so the batch never reads as six flavours of the same real-estate advice:
+1. PRACTICAL — a specific, useful how-to angle (buying, selling, owning or the process). Curiosity-driven, never generic ("Why sea-view flats sell in winter" beats "Tips for sellers").
+2. PROVOCATIVE — a bold one-or-two-sentence line that challenges a common belief or names an uncomfortable truth, with a little sting. Style references (write yours FRESH, never copy): "Some people buy a home in Spain. Others buy a problem with a pool." / "The dream of waiting for prices to crash has cost some buyers more than the crash ever would."
+3. THE DREAM — sell the life, not the transaction: mornings, light, slowness, the person you become there. Aspirational and warm, zero warnings. Style reference: "Maybe success isn't retiring one day. Maybe it's building a life you don't need to retire from."
+4. THE SECRET — what insiders/locals/agents know that outsiders don't ("what nobody tells you about…", "the question agents hope you won't ask").
+5. SEASONAL — timely for ${month}, concrete to the coast right now.
+6. WILDCARD — a life-philosophy angle that touches home and place sideways (work, time, family, identity) rather than property mechanics. Style reference: "Everyone talks about work-life balance. Almost nobody talks about location-life balance."
+Rules for all 6:
+- NO place names, NO prices, NO statistics, NO legal/tax advice framing (bold lines may gesture at cost/time in the abstract, never with figures).
+- 30-90 characters for the practical/secret/seasonal ones; the provocative, dream and wildcard lines may run up to 150. No emoji, no numbering, no register labels in the output.${exclude.length ? `\n- Do NOT repeat or paraphrase these already-shown ideas:\n${exclude.slice(0, 24).map((t) => `  · ${t}`).join('\n')}` : ''}
 
 Submit with the submit_ideas tool.`;
   try {

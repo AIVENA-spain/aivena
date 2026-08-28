@@ -9,7 +9,7 @@ import { withAgency } from '../../../../packages/db/client';
 import { deleteCalendarEventForBooking } from '../routes/calendar-worker';
 import { wallClockInZone, zonedTimeToUtc, resolveDatetimePhrase } from './datetime-resolver';
 import { mergeExtraction, type LeadStateData } from './lead-state-lib';
-import { UUID_RE, type ToolBackends, type PropertySummary, type SlotProposal, type TicketRef } from './tools';
+import { UUID_RE, type ToolBackends, type PropertySummary, type PropertySearchResult, type SlotProposal, type TicketRef } from './tools';
 
 export interface AmandaAgencySettings {
   timezone: string;                       // default Europe/Madrid
@@ -19,6 +19,26 @@ export interface AmandaAgencySettings {
   viewingHoursByWeekday: Record<number, number[]>;
 }
 
+const DEFAULT_VIEWING_HOURS: Record<number, number[]> = { 1: [11, 17], 2: [11, 17], 3: [11, 17], 4: [11, 17], 5: [11, 17], 6: [11] };
+
+/** Agency-configured viewing hours — buyer-research 2026-08-28 caught that
+ *  this was hardcoded to the default, silently ignoring any configured hours
+ *  (Saturday-afternoon/evening slots, which international buyers ask for,
+ *  could never be offered). Shape: { "1": [10, 12, 17], ... } weekday 0-6 →
+ *  start hours 8-21; anything malformed falls back per-entry to nothing and
+ *  a fully-empty parse falls back to the default. */
+function parseViewingHours(raw: unknown): Record<number, number[]> {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return DEFAULT_VIEWING_HOURS;
+  const out: Record<number, number[]> = {};
+  for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+    const day = Number(k);
+    if (!Number.isInteger(day) || day < 0 || day > 6 || !Array.isArray(v)) continue;
+    const hours = v.filter((h): h is number => typeof h === 'number' && Number.isInteger(h) && h >= 8 && h <= 21);
+    if (hours.length) out[day] = [...new Set(hours)].sort((a, b) => a - b);
+  }
+  return Object.keys(out).length ? out : DEFAULT_VIEWING_HOURS;
+}
+
 export function parseAmandaSettings(raw: unknown): AmandaAgencySettings {
   const o = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
   const num = (v: unknown, d: number) => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : d);
@@ -26,7 +46,7 @@ export function parseAmandaSettings(raw: unknown): AmandaAgencySettings {
     timezone: typeof o.timezone === 'string' && o.timezone ? o.timezone : 'Europe/Madrid',
     viewingDurationMin: num(o.viewing_duration_min, 60),
     viewingNoticeHours: num(o.viewing_notice_hours, 24),
-    viewingHoursByWeekday: { 1: [11, 17], 2: [11, 17], 3: [11, 17], 4: [11, 17], 5: [11, 17], 6: [11] },
+    viewingHoursByWeekday: parseViewingHours(o.viewing_hours_by_weekday),
   };
 }
 
@@ -71,33 +91,99 @@ export function makeDbBackends(ctx: BackendCtx): ToolBackends {
   const A = ctx.agencyId;
 
   return {
-    async searchProperties(filters: Record<string, unknown>): Promise<PropertySummary[]> {
+    async searchProperties(filters: Record<string, unknown>): Promise<PropertySearchResult> {
       const maxPrice = typeof filters.max_price === 'number' ? filters.max_price : null;
       const minBeds = typeof filters.min_bedrooms === 'number' ? filters.min_bedrooms : null;
-      const city = typeof filters.city === 'string' && filters.city.trim() ? `%${filters.city.trim().replace(/[%_]/g, '')}%` : null;
+      // cities (array) and city (single) merge into ONE any-of ILIKE list —
+      // "near Torrevieja" = Torrevieja + the neighbouring towns the model
+      // names. A comma INSIDE an entry splits it into separate towns (models
+      // pass "Torrevieja, La Mata" as one string, and "Pilar de la Horadada,
+      // Alicante" must not silently become an unmatchable pattern — review).
+      // Each core is sanitized of %_ metachars; a core that sanitizes to
+      // nothing is DROPPED, never allowed to become a '%%' match-everything
+      // (review). CSV seam per the drizzle array law (string_to_array).
+      const cityList = [
+        ...(Array.isArray(filters.cities) ? filters.cities : []),
+        ...(typeof filters.city === 'string' ? [filters.city] : []),
+      ]
+        .filter((c): c is string => typeof c === 'string')
+        .flatMap((c) => c.split(','))
+        .map((c) => c.trim().replace(/[%_]/g, ''))
+        .filter((core) => core.length > 0)
+        .map((core) => `%${core}%`)
+        .slice(0, 20);
+      const citiesCsv = cityList.join(',');
       const type = typeof filters.property_type === 'string' && filters.property_type.trim() ? `%${filters.property_type.trim().replace(/[%_]/g, '')}%` : null;
+      // keywords: EVERY keyword must appear in title+description+features —
+      // the vague-reference ladder ("the one near the golf in Quesada"):
+      // narrowing traits are conjunctive, like an agent's mental filter.
+      const kwCsv = (Array.isArray(filters.keywords) ? filters.keywords : [])
+        .filter((k): k is string => typeof k === 'string')
+        .flatMap((k) => k.split(','))
+        .map((k) => k.trim().replace(/[%_]/g, ''))
+        .filter((core) => core.length > 0)
+        .map((core) => `%${core}%`)
+        .slice(0, 8)
+        .join(',');
+      const sort = filters.sort === 'newest' || filters.sort === 'price_asc' || filters.sort === 'price_desc' ? (filters.sort as string) : null;
       // Read-seam belt: one non-uuid in the list (legacy/bad data) and the
       // ::uuid[] cast would 22P02 every future search for this lead.
       const rejectedCsv = ctx.rejectedPropertyIds.filter((id) => UUID_RE.test(id)).join(',');
       return withAgency(A, async (tx) => {
         const rows = await tx.execute(sql`
-          SELECT id, external_id, title, price, bedrooms, location_city, property_type
+          SELECT id, external_id, title, price, bedrooms, location_city, property_type,
+                 created_at::date::text AS listed_date,
+                 (SELECT count(DISTINCT p2.created_at::date) FROM properties p2
+                   WHERE p2.agency_id = current_setting('app.current_agency_id', true)
+                     AND (p2.status IS NULL OR p2.status NOT IN ('sold', 'withdrawn', 'inactive', 'archived'))
+                 ) AS catalogue_distinct_days,
+                 (SELECT min(p2.created_at) < now() - interval '30 days' FROM properties p2
+                   WHERE p2.agency_id = current_setting('app.current_agency_id', true)
+                     AND (p2.status IS NULL OR p2.status NOT IN ('sold', 'withdrawn', 'inactive', 'archived'))
+                 ) AS catalogue_oldest_old
             FROM properties
            WHERE agency_id = current_setting('app.current_agency_id', true)
              AND (status IS NULL OR status NOT IN ('sold', 'withdrawn', 'inactive', 'archived'))
              AND (${maxPrice}::numeric IS NULL OR price <= ${maxPrice}::numeric)
              AND (${minBeds}::int IS NULL OR bedrooms >= ${minBeds}::int)
-             AND (${city}::text IS NULL OR location_city ILIKE ${city})
+             AND (${citiesCsv} = '' OR location_city ILIKE ANY (string_to_array(${citiesCsv}, ',')))
              AND (${type}::text IS NULL OR property_type ILIKE ${type})
+             AND (${kwCsv} = '' OR (
+               SELECT bool_and((COALESCE(title,'') || ' ' || COALESCE(description,'') || ' ' || COALESCE(features::text,'')) ILIKE k)
+               FROM unnest(string_to_array(${kwCsv}, ',')) AS k
+             ))
              AND (${rejectedCsv} = '' OR NOT (id = ANY(string_to_array(${rejectedCsv}, ',')::uuid[])))
-           ORDER BY updated_at DESC NULLS LAST
+           ORDER BY
+             CASE WHEN ${sort}::text = 'newest' THEN created_at END DESC NULLS LAST,
+             CASE WHEN ${sort}::text = 'price_asc' THEN price END ASC NULLS LAST,
+             CASE WHEN ${sort}::text = 'price_desc' THEN price END DESC NULLS LAST,
+             updated_at DESC NULLS LAST
            LIMIT 5
         `);
-        return (rows as unknown as Array<Record<string, unknown>>).map((r) => ({
+        const list = rows as unknown as Array<Record<string, unknown>>;
+        // Honesty rider (§2), two distinct truths (review-verified):
+        //   · BULK-IMPORT ARTIFACT — 1-2 distinct created dates AND the oldest
+        //     is 30+ days back: the dates are import timestamps, not market
+        //     reality. Listed dates are WITHHELD (the model would honestly
+        //     misstate them) and "newest" is declared unrankable.
+        //   · GENUINELY YOUNG catalogue — 1-2 distinct dates, all recent:
+        //     the dates are real; everything effectively just came in.
+        // General across agencies: real per-listing feeds accumulate many
+        // distinct dates and get clean per-result dates with no note.
+        const distinctDays = list[0] != null ? Number(list[0].catalogue_distinct_days) : 99;
+        const importArtifact = distinctDays <= 2 && list[0] != null && list[0].catalogue_oldest_old === true;
+        const results: PropertySummary[] = list.map((r) => ({
           id: String(r.id), ref: (r.external_id as string) ?? null, title: (r.title as string) ?? null,
           price: r.price != null ? Number(r.price) : null, bedrooms: r.bedrooms != null ? Number(r.bedrooms) : null,
           city: (r.location_city as string) ?? null, type: (r.property_type as string) ?? null,
+          listed: importArtifact ? null : (r.listed_date as string) ?? null,
         }));
+        const catalogue_note = importArtifact
+          ? 'CATALOGUE CANNOT RANK NEWNESS: all listings entered the system on the same bulk-import date, so "newest" and listing dates are not knowable from this data. Never claim any of these is new, just in, or listed on a date — say honestly that you cannot rank by newness and offer to ask the office what has come in recently.'
+          : sort === 'newest' && distinctDays <= 2
+            ? 'THE WHOLE CATALOGUE IS BRAND NEW: everything came in within the last day or two, so all of these are effectively just in — say that honestly rather than ranking them against each other.'
+            : null;
+        return { results, catalogue_note };
       });
     },
 
@@ -121,7 +207,10 @@ export function makeDbBackends(ctx: BackendCtx): ToolBackends {
         // hedge instruction riding the tool result (the model treats tool data
         // as law; the honest framing is deterministic, not hoped-for).
         if (r.is_stale) {
-          r.staleness_note = 'LISTING NOT UPDATED FOR 45+ DAYS: frame price/availability as "listed at ... — let me confirm the current status with the office" and offer to double-check; never state them as certain.';
+          // No first-person promise in the hedge: "I'll confirm with the
+          // office" without a filed ask_agency is exactly the empty promise
+          // the office-promise law rejects (live demo 2026-08-27).
+          r.staleness_note = 'LISTING NOT UPDATED FOR 45+ DAYS: frame price/availability as "listed at ..." and, if current status matters to the buyer, OFFER to double-check with the office ("want me to confirm the current status with the office?") — file ask_agency only if they say yes. Never state price/availability as certain, and never say you are checking with the office unless you actually filed the question.';
         }
         delete r.is_stale;
         return r;
@@ -206,7 +295,7 @@ export function makeDbBackends(ctx: BackendCtx): ToolBackends {
             VALUES (
               ${A}, ${ctx.conversationId}::uuid, ${ctx.leadId}::uuid, ${propertyId}::uuid, 'book_viewing',
               tstzrange(${startISO}::timestamptz, ${endISO}::timestamptz, '[)'),
-              jsonb_build_object('label', ${slotLabel(startMs, s.timezone)}),
+              jsonb_build_object('label', ${slotLabel(startMs, s.timezone)}::text),
               now() + interval '24 hours'
             )
             RETURNING id
@@ -270,7 +359,7 @@ export function makeDbBackends(ctx: BackendCtx): ToolBackends {
         const r = (rows as unknown as Array<{ id: string; short_code: number }>)[0];
         await tx.execute(sql`
           INSERT INTO amanda_question_events (agency_id, question_id, event_type, detail)
-          VALUES (${A}, ${r.id}::uuid, 'filed', jsonb_build_object('question', ${q}))
+          VALUES (${A}, ${r.id}::uuid, 'filed', jsonb_build_object('question', ${q}::text))
         `);
         // Mirror into dashboard_tasks so the ticket is visible on /tasks today
         // (the dedicated "Questions from Amanda" surface is the P2 build).
@@ -320,7 +409,7 @@ export function makeDbBackends(ctx: BackendCtx): ToolBackends {
         // §11.4 data pack: intel capture is a funnel event (slot keys only, no values).
         await tx.execute(sql`
           INSERT INTO amanda_funnel_events (agency_id, lead_id, conversation_id, event_type, amanda_attributed, metadata)
-          VALUES (${A}, ${ctx.leadId}::uuid, ${ctx.conversationId}::uuid, 'intel_captured', true, jsonb_build_object('slots', ${Object.keys(patch).join(',')}))
+          VALUES (${A}, ${ctx.leadId}::uuid, ${ctx.conversationId}::uuid, 'intel_captured', true, jsonb_build_object('slots', ${Object.keys(patch).join(',')}::text))
         `);
       });
     },
@@ -388,12 +477,12 @@ export function makeDbBackends(ctx: BackendCtx): ToolBackends {
             ${A}, ${ctx.leadId}::uuid, ${ctx.conversationId}, 'human_review_needed',
             'Amanda handed this conversation to a human', ${summary.slice(0, 800)},
             'whatsapp', 'twilio', 'high', 'pending',
-            jsonb_build_object('reason', ${reason.slice(0, 120)}, 'via', 'amanda_engine')
+            jsonb_build_object('reason', ${reason.slice(0, 120)}::text, 'via', 'amanda_engine')
           )
         `);
         await tx.execute(sql`
           INSERT INTO amanda_funnel_events (agency_id, lead_id, conversation_id, event_type, amanda_attributed, metadata)
-          VALUES (${A}, ${ctx.leadId}::uuid, ${ctx.conversationId}::uuid, 'handoff', true, jsonb_build_object('reason', ${reason.slice(0, 120)}))
+          VALUES (${A}, ${ctx.leadId}::uuid, ${ctx.conversationId}::uuid, 'handoff', true, jsonb_build_object('reason', ${reason.slice(0, 120)}::text))
         `);
       });
     },

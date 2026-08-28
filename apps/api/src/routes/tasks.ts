@@ -447,7 +447,7 @@ route.post('/:id/answer-question', async (c) => {
 
   await tx.execute(sql`
     INSERT INTO public.amanda_question_events (agency_id, question_id, event_type, detail)
-    VALUES (${q.agency_id}, ${q.id}::uuid, 'answer_received', jsonb_build_object('answered_by', ${user.email}))
+    VALUES (${q.agency_id}, ${q.id}::uuid, 'answer_received', jsonb_build_object('answered_by', ${user.email}::text))
   `);
   // The relay ride: unique (provider_message_id, kind) makes a double-submit a no-op.
   await tx.execute(sql`
@@ -455,7 +455,7 @@ route.post('/:id/answer-question', async (c) => {
     VALUES (
       ${q.agency_id}, ${q.conversation_id}::uuid, ${q.lead_id}::uuid,
       ${'ticket-answer:' + q.id}, 'ticket_answered',
-      jsonb_build_object('question_id', ${q.id}::uuid, 'short_code', ${q.short_code}::int, 'question', ${q.question_text}, 'answer', ${answer})
+      jsonb_build_object('question_id', ${q.id}::uuid, 'short_code', ${q.short_code}::int, 'question', ${q.question_text}::text, 'answer', ${answer}::text)
     )
     ON CONFLICT (provider_message_id, kind) DO NOTHING
   `);
@@ -520,7 +520,7 @@ route.post('/:id/execute-booking', async (c) => {
     VALUES (
       ${agencyId}, ${task.conversation_id}::uuid, ${task.lead_id}::uuid,
       ${'booking-executed:' + task.pending_action_id}, 'system',
-      jsonb_build_object('event', 'booking_executed', 'booking_id', ${result.bookingId}::uuid, 'echo', ${result.echo})
+      jsonb_build_object('event', 'booking_executed', 'booking_id', ${result.bookingId}::uuid, 'echo', ${result.echo}::text)
     )
     ON CONFLICT (provider_message_id, kind) DO NOTHING
   `);

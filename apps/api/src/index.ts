@@ -36,7 +36,7 @@ import chatRoute from './routes/chat';
 import { apiCalendarRoute, publicCalendarRoute, googleConfig } from './routes/calendar';
 import { pollCalendarSyncs } from './routes/calendar-worker';
 import amandaAdminRoute from './routes/amanda-admin';
-import { drainAmandaInbound, engineEnabled } from './amanda-engine/outbox-worker';
+import { drainAmandaInbound, drainBusy, engineEnabled, requestDrainStop } from './amanda-engine/outbox-worker';
 import { processTurnDb } from './amanda-engine/process-turn-db';
 import { sweepViewingReminders } from './amanda-engine/viewing-reminders';
 
@@ -219,9 +219,33 @@ if (googleConfig() !== null) {
 // amanda_mode defaults to 'off' so no conversation is touched until an agency
 // is explicitly dialed up. Drains the amanda_inbound_queue outbox every 20s
 // (claim RPC = FOR UPDATE SKIP LOCKED + lease steal, safe across instances).
-const AMANDA_ENGINE_TICK_MS = 20_000;
+const AMANDA_ENGINE_TICK_MS = 5_000;   // latency budget: debounce(≤6s) + tick(≤5s) + model(~15-20s)
 if (engineEnabled()) {
+  // Graceful shutdown (the 2026-08-27 demo stall): a deploy's SIGTERM used to
+  // kill the worker mid-turn, orphaning the claimed row into a lease-length
+  // silence. Now: stop claiming, let the in-flight drain finish (idempotency
+  // keys make even a hard kill double-send-safe), then exit. Pair with
+  // RAILWAY_DEPLOYMENT_DRAINING_SECONDS=90 so Railway waits for us.
+  let shuttingDown = false;
+  const shutdown = (signal: string) => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    requestDrainStop();   // finish the in-flight turn, release the unstarted batch
+    logger.info('Amanda engine draining for shutdown', { signal, busy: drainBusy() });
+    const started = Date.now();
+    const waiter = setInterval(() => {
+      if (!drainBusy() || Date.now() - started > 75_000) {
+        clearInterval(waiter);
+        logger.info('Amanda engine shutdown complete', { waitedMs: Date.now() - started });
+        process.exit(0);
+      }
+    }, 1_000);
+  };
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
+
   const engineTick = async () => {
+    if (shuttingDown) return;
     try {
       const r = await drainAmandaInbound(processTurnDb);
       if (r.claimed > 0) logger.info('Amanda engine drained', r);

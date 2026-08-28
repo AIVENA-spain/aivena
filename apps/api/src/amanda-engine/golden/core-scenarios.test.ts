@@ -267,7 +267,9 @@ describe('golden/core — reviewer-regression scenarios', () => {
     backends.searchProperties = async () => { throw new Error('db timeout'); };
     const model = new ScriptedModel([
       toolResponse('search_properties', { city: 'San Javier' }),
-      textResponse('Let me check the latest San Javier options with the office and come right back to you.'),
+      // Law-compliant graceful degradation: no office promise without a filed
+      // ticket (office-promise law, 2026-08-27), no self future promise.
+      textResponse('My property search is being a little slow right now — mind asking me again in a few minutes?'),
     ]);
     const { deps } = makeDeps(model, backends);
     const r = await runTurn('full', baseContext(), inbound('What do you have in San Javier?'), null, deps);
@@ -300,6 +302,20 @@ describe('golden/core — reviewer-regression scenarios', () => {
     const r = await runTurn('full', baseContext(), inbound('Tell me about IC-28746'), null, deps);
     expect(r.outcome).toBe('sent');
     expect(journal.sent[0]).toBe(longSummary);
+  });
+});
+
+describe('golden/core — greeting/gap law', () => {
+  it('G1: the gap note reaches the model verbatim (fresh-start law is deterministic)', async () => {
+    const backends = new FakeBackends();
+    const model = new ScriptedModel([textResponse('Hello again! Lovely to hear from you — how can I help today?')]);
+    const { deps } = makeDeps(model, backends);
+    const ctx = baseContext({ gapNote: 'The buyer\'s previous exchange was 42 days ago. Treat this as a FRESH conversation opening: greet warmly, do NOT resume their old requests unless they bring them up, and ask what they need today.' });
+    const r = await runTurn('full', ctx, inbound('Hello!'), null, deps);
+    expect(r.outcome).toBe('sent');
+    expect(JSON.stringify(model.requests[0].messages)).toContain('FRESH conversation opening');
+    expect(model.requests[0].system).toContain('bare greeting');
+    expect(model.requests[0].system).toContain('Never promise future actions');
   });
 });
 
@@ -411,7 +427,9 @@ describe('golden/core — office-answer relay (§3b step 3)', () => {
     const backends = new FakeBackends();
     const model = new ScriptedModel([
       textResponse('They would consider offers from €230.000.'),
-      textResponse('Let me confirm the exact figure with the office and come back to you.'),
+      // The regen must clear the office-promise law too: an OFFER (question),
+      // not an unfiled first-person promise.
+      textResponse('That is one for the office — want me to ask them about the price for you?'),
     ]);
     const { deps, journal } = makeDeps(model, backends);
     const r = await runTurn('full', baseContext(), inbound('Is the price negotiable?'), null, deps);

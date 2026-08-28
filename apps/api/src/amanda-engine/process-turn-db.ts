@@ -12,6 +12,7 @@ import { makeDbBackends, parseAmandaSettings, slotLabel, type AmandaAgencySettin
 import { productionModelCall, productionVerifier, ENGINE_MODEL } from './llm';
 import { turnId } from './turn-id';
 import { narrowPendingByText } from './pending-select';
+import { sendTypingIndicator } from './typing';
 import { executeBookingFromPendingAction } from './booking-exec';
 import { nudgeCalendarSync } from '../routes/calendar-worker';
 import type { QueueRow, TurnOutcome } from './outbox-lib';
@@ -30,6 +31,8 @@ interface LoadedWorld {
   aiMuted: boolean;
   optedOut: boolean;
   recentTurns: TurnContext['recentTurns'];
+  /** Whole days since the newest PRIOR message (null = no history). */
+  gapDays: number | null;
   mirrorTargetWords: number | null;
   pendingActions: Array<{ id: string; label: string; expiresAtMs: number }>;
   openTicketNote: string | null;
@@ -124,6 +127,12 @@ async function loadWorld(row: QueueRow): Promise<LoadedWorld | { skip: string }>
           : m.sent_by && !/amanda|engine|system/i.test(m.sent_by) ? ('agent' as const) : ('amanda' as const),
         text: m.content ?? '', at: m.sent_at,
       })),
+      gapDays: (() => {
+        const newestPrior = messages.length ? messages[messages.length - 1].sent_at : null;
+        if (!newestPrior) return null;
+        const ms = Date.now() - Date.parse(newestPrior);
+        return Number.isFinite(ms) ? Math.floor(ms / 86_400_000) : null;
+      })(),
       mirrorTargetWords: mirror,
       pendingActions: (paRows as unknown as Array<Record<string, unknown>>).map((r) => ({
         id: String(r.id), label: String(r.label ?? 'proposed viewing'), expiresAtMs: Number(r.expires_ms),
@@ -160,6 +169,13 @@ export async function processTurnDb(row: QueueRow): Promise<TurnOutcome> {
   if ('skip' in world) return { result: 'skip', reason: world.skip };
   if (world.aiMuted) return { result: 'skip', reason: 'ai_muted_or_human_claimed' };
   if (world.optedOut) return { result: 'skip', reason: 'lead_opted_out' };
+
+  // Typing indicator + read receipt (fire-and-forget): only when a reply is
+  // actually coming (assisted/full) and only for real buyer messages — in
+  // approval/shadow "typing…" would be a lie and blue ticks would leak shadow.
+  if ((world.mode === 'assisted' || world.mode === 'full') && (row.kind === 'message' || row.kind === 'media')) {
+    sendTypingIndicator(row.provider_message_id);
+  }
 
   // Tickets a human agent answered directly in the chat close as 'handoff'
   // (P0 has no relay — see GO_LIVE_PACK deferrals). Live modes only: shadow
@@ -242,6 +258,9 @@ export async function processTurnDb(row: QueueRow): Promise<TurnOutcome> {
     pendingActionEcho: pendingNote,
     openTicketNote: world.openTicketNote,
     officeAnswerText: officeAnswer,
+    gapNote: world.gapDays !== null && world.gapDays >= 2
+      ? `The buyer's previous exchange was ${world.gapDays} days ago. Treat this as a FRESH conversation opening: greet warmly, do NOT resume their old requests unless they bring them up, and ask what they need today.`
+      : null,
     mirrorTargetWords: world.mirrorTargetWords,
   };
 
@@ -286,6 +305,22 @@ export async function processTurnDb(row: QueueRow): Promise<TurnOutcome> {
       if (!world.leadPhone) throw new Error('lead_has_no_phone');
       const key = `amanda-engine:${turnId(row.conversation_id, row.provider_message_id)}`;
       return withAgency(row.agency_id, async (tx) => {
+        // LEASE FENCE (review-verified fold-zombie hole): the idempotency key
+        // dedupes re-runs of the SAME inbound, but after a lease expiry the
+        // fold path answers the NEWER message under a DIFFERENT key — so a
+        // zombie turn finishing late must be stopped HERE, not at the queue
+        // finalization. Only the current leaseholder with a live lease may
+        // send; the row lock this takes (held to commit) also blocks a
+        // concurrent claim/fold from stealing the row mid-send.
+        const fence = await tx.execute(sql`
+          UPDATE amanda_inbound_queue
+          SET lease_expires_at = GREATEST(lease_expires_at, now() + interval '120 seconds')
+          WHERE id = ${row.id}::uuid AND status = 'processing'
+            AND leased_by = ${String((row as { leased_by?: unknown }).leased_by ?? '')}
+            AND lease_expires_at >= now()
+          RETURNING id
+        `);
+        if ((fence as unknown as unknown[]).length === 0) throw new Error('lease_lost_reply_suppressed');
         const windowRows = await tx.execute(sql`
           SELECT 1 FROM leads
            WHERE id = ${row.lead_id}::uuid
@@ -296,10 +331,24 @@ export async function processTurnDb(row: QueueRow): Promise<TurnOutcome> {
           INSERT INTO send_queue (idempotency_key, agency_id, lead_id, channel, hub, template_key, template_variables, priority, requested_by, requested_at, expiry_at)
           VALUES (
             ${key}, ${row.agency_id}, ${row.lead_id}::uuid, 'whatsapp', 'twilio', 'freeform',
-            jsonb_build_object('body', ${text}, 'full_name', ${world.leadFullName}, 'first_name', ${world.leadFirstName}, 'lead_phone', ${world.leadPhone}, 'agency_name', ${world.agencyName}),
+            jsonb_build_object('body', ${text}::text, 'full_name', ${world.leadFullName}::text, 'first_name', ${world.leadFirstName}::text, 'lead_phone', ${world.leadPhone}::text, 'agency_name', ${world.agencyName}::text),
             'high', 'amanda_engine', now(), now() + interval '30 minutes'
           )
           ON CONFLICT (idempotency_key) DO NOTHING
+        `);
+        // Auto-mode dashboard coherence (Christian, live demo 2026-08-27): the
+        // moment Amanda ANSWERS a conversation herself, any pending human
+        // suggested-reply draft for it is stale by construction — an agent
+        // tapping Send on one would talk over her. sendReply only runs in
+        // assisted/full (approval rides queueDraft), so sweep unconditionally,
+        // same transaction as the send enqueue.
+        await tx.execute(sql`
+          UPDATE dashboard_tasks
+             SET status = 'dismissed', updated_at = now(),
+                 raw_payload = COALESCE(raw_payload, '{}'::jsonb)
+                   || jsonb_build_object('auto_dismissed', 'amanda_auto_mode_answered', 'turn_id', ${turnId(row.conversation_id, row.provider_message_id)}::text)
+           WHERE conversation_id = ${row.conversation_id}::text
+             AND task_type = 'suggested_reply' AND status = 'pending'
         `);
         return { providerMessageId: null };
       });
@@ -320,15 +369,15 @@ export async function processTurnDb(row: QueueRow): Promise<TurnOutcome> {
             ${text},
             'whatsapp', 'twilio', 'high', 'pending',
             jsonb_build_object(
-              'suggested_reply', ${text},
-              'lead_language', ${world.leadLanguage},
-              'inbound_body_text', ${(row.payload as Record<string, unknown>)?.body ?? ''},
-              'inbound_message_id', ${row.provider_message_id},
-              'inbound_profile_name', ${world.leadFullName},
+              'suggested_reply', ${text}::text,
+              'lead_language', ${world.leadLanguage}::text,
+              'inbound_body_text', ${(row.payload as Record<string, unknown>)?.body ?? ''}::text,
+              'inbound_message_id', ${row.provider_message_id}::text,
+              'inbound_profile_name', ${world.leadFullName}::text,
               'ai_draft_pending', false,
               'ai_failure_reason', null,
               'via', 'amanda_engine',
-              'draft_kind', ${kind}
+              'draft_kind', ${kind}::text
             )
           )
         `);
@@ -348,7 +397,7 @@ export async function processTurnDb(row: QueueRow): Promise<TurnOutcome> {
             'amanda_booking_confirm', ${'Buyer confirmed a viewing: ' + echo},
             ${'The buyer accepted ' + echo + '. Book it from the Viewings page (one-tap execute lands with P2).'},
             'whatsapp', 'twilio', 'high', 'pending',
-            jsonb_build_object('pending_action_id', ${pendingActionId}::uuid, 'echo', ${echo}, 'via', 'amanda_engine')
+            jsonb_build_object('pending_action_id', ${pendingActionId}::uuid, 'echo', ${echo}::text, 'via', 'amanda_engine')
           )
         `);
       });
@@ -362,7 +411,7 @@ export async function processTurnDb(row: QueueRow): Promise<TurnOutcome> {
             ${row.agency_id}, ${row.lead_id}::uuid, ${row.conversation_id},
             'human_review_needed', 'Amanda needs a human on this reply', ${detail.slice(0, 800)},
             'whatsapp', 'twilio', 'high', 'pending',
-            jsonb_build_object('reason', ${reason}, 'via', 'amanda_engine')
+            jsonb_build_object('reason', ${reason}::text, 'via', 'amanda_engine')
           )
         `);
       });
@@ -390,7 +439,7 @@ export async function processTurnDb(row: QueueRow): Promise<TurnOutcome> {
       `);
       await tx.execute(sql`
         INSERT INTO amanda_question_events (agency_id, question_id, event_type, detail)
-        VALUES (${row.agency_id}, ${payload.question_id}::uuid, ${result.outcome === 'sent' ? 'relayed' : 'relay_drafted'}, jsonb_build_object('relay', ${relayText.slice(0, 1200)}))
+        VALUES (${row.agency_id}, ${payload.question_id}::uuid, ${result.outcome === 'sent' ? 'relayed' : 'relay_drafted'}, jsonb_build_object('relay', ${relayText.slice(0, 1200)}::text))
       `);
     }).catch((err) => console.error('[amanda-engine] relay record failed', err instanceof Error ? err.message.split('\n')[0].slice(0, 120) : 'error'));
   }

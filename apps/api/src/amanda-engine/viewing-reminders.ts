@@ -31,9 +31,9 @@ export async function sweepViewingReminders(limit = 25): Promise<{ enqueued: num
             ${'viewing-reminder:' + r.booking_id}, ${r.agency_id}, ${r.lead_id}::uuid, 'whatsapp', 'twilio',
             'viewing_reminder_v1',
             jsonb_build_object(
-              '1', ${r.lead_first_name || 'there'}, '2', ${r.agency_name},
-              '3', ${date}, '4', ${time}, '5', ${r.property_title ?? 'the property'},
-              'lead_phone', ${r.lead_phone}, 'first_name', ${r.lead_first_name || null}, 'agency_name', ${r.agency_name}
+              '1', ${r.lead_first_name || 'there'}::text, '2', ${r.agency_name}::text,
+              '3', ${date}::text, '4', ${time}::text, '5', ${r.property_title ?? 'the property'}::text,
+              'lead_phone', ${r.lead_phone}::text, 'first_name', ${r.lead_first_name || null}::text, 'agency_name', ${r.agency_name}::text
             ),
             'high', 'amanda_viewing_reminder', now(), now() + interval '4 hours'
           )

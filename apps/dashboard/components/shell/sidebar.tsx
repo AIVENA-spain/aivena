@@ -109,9 +109,12 @@ export function NavLink({
 export function Sidebar({
   ctx,
   inboxCount,
+  tasksCount,
   brandName,
 }: {
   ctx: UserContext;
+  /** Live count for the Tasks badge (everything waiting on a human). */
+  tasksCount?: number | null;
   /** Live count for the Inbox badge. Null while loading or unwired. */
   inboxCount: number | null;
   /**
@@ -156,7 +159,7 @@ export function Sidebar({
             item={item}
             active={isActive(pathname, item.href)}
             label={tNav(item.tKey)}
-            badge={item.tKey === "inbox" ? inboxCount : null}
+            badge={item.tKey === "inbox" ? inboxCount : item.tKey === "tasks" ? tasksCount : null}
             soonLabel={tNav("soonBadge")}
           />
         ))}

@@ -46,7 +46,7 @@ describe('calendar notes — parse + prompt-context window', () => {
         { date: '2026-09-02', from: 12, to: 14, note: '' },
       ],
     });
-    expect(s.calendarNotes).toEqual([{ date: '2026-09-02', from: 12, to: 14, note: 'Team meeting — office empty' }]);
+    expect(s.calendarNotes).toEqual([{ date: '2026-09-02', from: 12, to: 14, note: 'Team meeting — office empty', color: 'violet' }]);
   });
   it('upcomingCalendarNotes includes only agency-local today..+14d, sorted and formatted', () => {
     const s = parseAmandaSettings({

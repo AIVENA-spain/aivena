@@ -1423,7 +1423,8 @@
     "notePlaceholder": "esim. \"Pidä vapaana — mahdollinen notaarikäynti\"",
     "saveNote": "Tallenna muistiinpano",
     "removeNote": "Poista muistiinpano",
-    "saving": "Tallennetaan…"
+    "saving": "Tallennetaan…",
+    "noteColor": "Muistiinpanon väri"
   },
   "calls": {
     "title": "Puhelut",

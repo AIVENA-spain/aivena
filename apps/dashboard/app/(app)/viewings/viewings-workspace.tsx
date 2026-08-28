@@ -44,7 +44,30 @@ import {
 } from "./viewings-actions";
 import { saveAmandaSettingsAction } from "@/app/(app)/settings/section-actions";
 
-type CalendarNote = { date: string; from: number; to: number; note: string };
+type CalendarNote = { date: string; from: number; to: number; note: string; color?: string };
+
+// Note colours (red/green reserved for blocked/booked). Static class maps —
+// Tailwind cannot see dynamically-built class names.
+const NOTE_COLORS = ["violet", "blue", "amber", "pink", "teal", "slate"] as const;
+const NOTE_CHIP: Record<string, string> = {
+  violet: "bg-violet-500/15 text-violet-700 dark:text-violet-400",
+  blue: "bg-blue-500/15 text-blue-700 dark:text-blue-400",
+  amber: "bg-amber-500/15 text-amber-700 dark:text-amber-400",
+  pink: "bg-pink-500/15 text-pink-700 dark:text-pink-400",
+  teal: "bg-teal-500/15 text-teal-700 dark:text-teal-400",
+  slate: "bg-slate-500/15 text-slate-700 dark:text-slate-400",
+};
+const NOTE_DOT: Record<string, string> = {
+  violet: "bg-violet-500",
+  blue: "bg-blue-500",
+  amber: "bg-amber-500",
+  pink: "bg-pink-500",
+  teal: "bg-teal-500",
+  slate: "bg-slate-500",
+};
+const NOTE_SWATCH: Record<string, string> = NOTE_DOT;
+const noteChip = (c?: string) => NOTE_CHIP[c ?? "violet"] ?? NOTE_CHIP.violet;
+const noteDot = (c?: string) => NOTE_DOT[c ?? "violet"] ?? NOTE_DOT.violet;
 
 type ViewMode = "day" | "week" | "month" | "list";
 
@@ -548,14 +571,15 @@ function TimeGrid({
                           // 2026-08-28): full line in Day view, truncated in Week.
                           <span
                             className={cn(
-                              "mx-1 mt-0.5 block w-fit max-w-[calc(100%-8px)] truncate rounded bg-violet-500/15 px-1.5 py-px font-medium text-violet-700 dark:text-violet-400",
+                              "mx-1 mt-0.5 block w-fit max-w-[calc(100%-8px)] truncate rounded px-1.5 py-px font-medium",
+                              noteChip(note.color),
                               days === 1 ? "text-[11px]" : "text-[9.5px]",
                             )}
                           >
                             {note.note}
                           </span>
                         ) : note ? (
-                          <span aria-hidden className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-violet-500" />
+                          <span aria-hidden className={cn("absolute right-1 top-1 h-1.5 w-1.5 rounded-full", noteDot(note.color))} />
                         ) : null}
                       </div>
                     );
@@ -635,6 +659,7 @@ function SlotEditor({
   const existingNote = calendarNotes.find((n) => n.date === date && hour >= n.from && hour < n.to) ?? null;
 
   const [note, setNote] = useState(existingNote?.note ?? "");
+  const [noteColor, setNoteColor] = useState<string>(existingNote?.color ?? "violet");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -674,7 +699,7 @@ function SlotEditor({
   function saveNote() {
     const trimmed = note.trim().slice(0, 240);
     const without = calendarNotes.filter((n) => !(n.date === date && hour >= n.from && hour < n.to));
-    const next = trimmed ? [...without, { date, from: hour, to: hour + 1, note: trimmed }] : without;
+    const next = trimmed ? [...without, { date, from: hour, to: hour + 1, note: trimmed, color: noteColor }] : without;
     void persist(blockedDates, blockedSlots, next, true);
   }
 
@@ -739,6 +764,23 @@ function SlotEditor({
               placeholder={t("notePlaceholder")}
               className="min-h-[52px] rounded-md border border-border bg-background px-2.5 py-1.5 text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand/40"
             />
+            <div className="flex items-center gap-1.5" role="radiogroup" aria-label={t("noteColor")}>
+              {NOTE_COLORS.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  role="radio"
+                  aria-checked={noteColor === c}
+                  aria-label={c}
+                  onClick={() => setNoteColor(c)}
+                  className={cn(
+                    "h-5 w-5 rounded-full transition-transform",
+                    NOTE_SWATCH[c],
+                    noteColor === c ? "scale-110 ring-2 ring-foreground/40 ring-offset-1 ring-offset-card" : "opacity-60 hover:opacity-100",
+                  )}
+                />
+              ))}
+            </div>
             <div className="flex items-center gap-2">
               <Button size="sm" onClick={saveNote} disabled={busy || (!note.trim() && !existingNote)}>
                 {busy ? t("saving") : existingNote && !note.trim() ? t("removeNote") : t("saveNote")}
@@ -967,7 +1009,7 @@ function MonthGrid({
                         <span
                           key={`note-${n.date}-${n.from}`}
                           title={n.note}
-                          className="w-fit max-w-full truncate rounded bg-violet-500/15 px-1 py-px text-[8.5px] font-medium text-violet-700/90 dark:text-violet-400/90"
+                          className={cn("w-fit max-w-full truncate rounded px-1 py-px text-[8.5px] font-medium", noteChip(n.color))}
                         >
                           {n.note}
                         </span>

@@ -1423,7 +1423,8 @@
     "notePlaceholder": "bijv. \"Vrijhouden — mogelijk bezoek van de notaris\"",
     "saveNote": "Notitie opslaan",
     "removeNote": "Notitie verwijderen",
-    "saving": "Opslaan…"
+    "saving": "Opslaan…",
+    "noteColor": "Notitiekleur"
   },
   "calls": {
     "title": "Oproepen",

@@ -131,7 +131,7 @@ route.post('/settings', async (c) => {
   // reason instead of being silently dropped.
   if (Array.isArray(body.calendar_notes)) {
     const today = new Date().toISOString().slice(0, 10);
-    const notes: Array<{ date: string; from: number; to: number; note: string }> = [];
+    const notes: Array<{ date: string; from: number; to: number; note: string; color: string }> = [];
     for (const n of body.calendar_notes as unknown[]) {
       const x = n as { date?: unknown; from?: unknown; to?: unknown; note?: unknown };
       if (
@@ -146,7 +146,9 @@ route.post('/settings', async (c) => {
       if (!verdict.ok) {
         return c.json({ error: 'note_rejected', reason: verdict.reason }, 422);
       }
-      notes.push({ date: x.date, from: x.from, to: x.to, note });
+      const colorRaw = (n as { color?: unknown }).color;
+      const color = typeof colorRaw === 'string' && ['violet', 'blue', 'amber', 'pink', 'teal', 'slate'].includes(colorRaw) ? colorRaw : 'violet';
+      notes.push({ date: x.date, from: x.from, to: x.to, note, color });
     }
     patch.calendar_notes = notes
       .sort((a, b) => a.date.localeCompare(b.date) || a.from - b.from)

@@ -1423,7 +1423,8 @@
     "notePlaceholder": "t.ex. \"Håll ledigt — möjligt notariebesök\"",
     "saveNote": "Spara anteckning",
     "removeNote": "Ta bort anteckning",
-    "saving": "Sparar…"
+    "saving": "Sparar…",
+    "noteColor": "Anteckningens färg"
   },
   "calls": {
     "title": "Samtal",

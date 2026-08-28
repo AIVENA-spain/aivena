@@ -1423,7 +1423,8 @@
     "notePlaceholder": "np. „Zostawić wolne — możliwa wizyta u notariusza”",
     "saveNote": "Zapisz notatkę",
     "removeNote": "Usuń notatkę",
-    "saving": "Zapisywanie…"
+    "saving": "Zapisywanie…",
+    "noteColor": "Kolor notatki"
   },
   "calls": {
     "title": "Połączenia",

@@ -1423,7 +1423,8 @@
     "notePlaceholder": "f.eks. \"Hold ledig — mulig besøk fra notaren\"",
     "saveNote": "Lagre notat",
     "removeNote": "Fjern notat",
-    "saving": "Lagrer…"
+    "saving": "Lagrer…",
+    "noteColor": "Notatfarge"
   },
   "calls": {
     "title": "Anrop",

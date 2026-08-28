@@ -949,17 +949,19 @@ route.post('/editable-generate', async (c) => {
 // runs async only to stay clear of serverless timeouts. Produces the slide IMAGES (posting to Instagram
 // is the agent's job — no publishing integration).
 /** Upload rendered slides to their per-generation folder and return signed URLs (1 year). */
+// Slides upload in PARALLEL. Sequentially this was ~5s of the ~9s an edit/recolour made the
+// browser wait for — long enough to hit the hosting platform's request ceiling on the only
+// synchronous request in the Studio (creation is fire-and-forget). Order comes from the index,
+// not from completion order.
 async function storeSlides(agencyId: string, genId: string, slides: Buffer[]): Promise<{ path: string; url: string }[]> {
-  const stored: { path: string; url: string }[] = [];
-  for (let i = 0; i < slides.length; i++) {
+  return Promise.all(slides.map(async (buf, i) => {
     const key = `carousel/${agencyId}/${genId}/slide-${i + 1}.png`;
-    const up = await supabaseAdmin.storage.from('generated-images').upload(key, slides[i], { contentType: 'image/png', upsert: true });
+    const up = await supabaseAdmin.storage.from('generated-images').upload(key, buf, { contentType: 'image/png', upsert: true });
     if (up.error) throw new Error(`slide upload: ${up.error.message}`);
     const signed = await supabaseAdmin.storage.from('generated-images').createSignedUrl(key, 60 * 60 * 24 * 365);
     if (signed.error || !signed.data?.signedUrl) throw new Error('slide sign failed');
-    stored.push({ path: key, url: signed.data.signedUrl });
-  }
-  return stored;
+    return { path: key, url: signed.data.signedUrl };
+  }));
 }
 
 async function runCarousel(opts: {
@@ -1735,6 +1737,11 @@ route.post('/carousel/remix', async (c) => {
 
     return c.json({
       ok: true, generation_id: genId,
+      // the child's OWN colours — without these the result-screen pickers keep showing the
+      // parent style's palette and one "Apply colours" repaints the remix back to the old look
+      render_navy: remixNavy, render_gold: remixGold,
+      brand_navy: typeof raw.brand_navy === 'string' ? raw.brand_navy : undefined,
+      brand_gold: typeof raw.brand_gold === 'string' ? raw.brand_gold : undefined,
       slides: stored.map((sl) => sl.url), plan, caption: plan.caption, hashtags: plan.hashtags,
       carousel_style: newStyle, per_slide_art: perSlideArt,
     });

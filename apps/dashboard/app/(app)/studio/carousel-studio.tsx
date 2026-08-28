@@ -283,11 +283,25 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
   // the server, so overlapping responses would interleave into a mixed deck on screen
   const resultBusy = applying || recolouring || !!remixing;
 
+  // A re-render can fail in the transport (the page was open across a deploy, the connection
+  // dropped, the request was cut off). Without a catch the spinner stuck and NOTHING was shown,
+  // so the feature looked broken rather than failed — every mutation below goes through this.
+  async function guarded<T>(run: () => Promise<T>, fallback: string): Promise<T | null> {
+    try {
+      return await run();
+    } catch (e) {
+      console.error("[carousel] action failed:", e);
+      setErr(fallback);
+      return null;
+    }
+  }
+
   async function applyEdits() {
     if (!genId || !draft || resultBusy) return;
     setApplying(true); setErr(null);
-    const r = await carouselUpdateAction(genId, draft);
+    const r = await guarded(() => carouselUpdateAction(genId, draft), "That took too long to come back. Please try again.");
     setApplying(false);
+    if (!r) return;
     if (!r.ok) { setErr((r.message as string) ?? "Couldn't apply the changes — please try again."); return; }
     // bust caches: the URLs change (fresh signed tokens), so the strip refreshes itself
     setSlides(Array.isArray(r.slides) ? (r.slides as string[]) : slides);
@@ -311,8 +325,9 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
   async function remix(axis: "hook" | "style" | "layout") {
     if (!genId || resultBusy) return;
     setRemixing(axis); setErr(null);
-    const r = await carouselRemixAction(genId, axis);
+    const r = await guarded(() => carouselRemixAction(genId, axis), "That took too long to come back. Please try again.");
     setRemixing("");
+    if (!r) return;
     if (!r.ok) { setErr((r.message as string) ?? "Couldn't remix — please try again."); return; }
     setGenId((r.generation_id as string) ?? genId);
     setSlides(Array.isArray(r.slides) ? (r.slides as string[]) : slides);
@@ -321,6 +336,14 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
     setHashtags(Array.isArray(r.hashtags) ? (r.hashtags as string[]) : hashtags);
     if (typeof r.carousel_style === "string") setResultStyle(r.carousel_style);
     setResultPerSlideArt(r.per_slide_art === true);
+    // a style remix repaints in the new style's palette — reseed the pickers from the CHILD, or
+    // the next "Apply colours" would push the previous style's colours onto the new deck
+    if (typeof r.brand_navy === "string" || typeof r.render_navy === "string") {
+      setResColMain((r.brand_navy as string) ?? (r.render_navy as string));
+    }
+    if (typeof r.brand_gold === "string" || typeof r.render_gold === "string") {
+      setResColAccent((r.brand_gold as string) ?? (r.render_gold as string));
+    }
     setEditing(false); setDraft(null); setSaved(false); setSection(""); setRemixed(true);
   }
 
@@ -627,8 +650,10 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
                 <button disabled={resultBusy} onClick={async () => {
                   if (!genId || !plan || resultBusy) return;
                   setRecolouring(true); setErr(null);
-                  const r = await carouselUpdateAction(genId, plan, { navy: resColMain, gold: resColAccent });
+                  const r = await guarded(() => carouselUpdateAction(genId, plan, { navy: resColMain, gold: resColAccent }),
+                    "That took too long to come back. Please try again.");
                   setRecolouring(false);
+                  if (!r) return;
                   if (!r.ok) { setErr((r.message as string) ?? "Couldn't change the colours — please try again."); return; }
                   setSlides(Array.isArray(r.slides) ? (r.slides as string[]) : slides);
                   setSaved(false);
@@ -649,6 +674,18 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
               ))}
               {remixed && <span className="text-xs text-neutral-400">Free — the original is still in your library.</span>}
             </div>
+          )}
+
+          {/* failures belong NEXT TO the button that was pressed — this message used to sit at
+              the very bottom of the page, below the caption and download rows, where a failed
+              recolour read as "nothing happened" */}
+          {err && !editing && (
+            <div className="mt-3 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
+              <Info className="mt-0.5 h-4 w-4 shrink-0" /> <span>{err}</span>
+            </div>
+          )}
+          {(recolouring || applying) && (
+            <p className="mt-2 text-xs text-neutral-400">Redrawing every slide — this takes a few seconds.</p>
           )}
 
           {editing && draft && (

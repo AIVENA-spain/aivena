@@ -108,7 +108,9 @@ function Mock({ kind, pal, serif }: { kind: MockKind; pal: Palette; serif: boole
           {kind !== "calm" && <div className="h-1.5 w-10/12 rounded" style={{ background: ink, opacity: 0.25 }} />}
         </div>
       </div>
-      <span className="absolute bottom-5 left-5 rounded-full px-2.5 py-1 text-[9px] font-semibold" style={{ background: accent, color: ground }}>SAVE THIS</span>
+      {/* the label reads against the accent, not against whatever the ground happens to be —
+          using the ground colour made it near-white on a mid-tone pill on every light mock */}
+      <span className="absolute bottom-5 left-5 rounded-full px-2.5 py-1 text-[9px] font-semibold" style={{ background: accent, color: pal.main }}>SAVE THIS</span>
     </div>
   );
 }

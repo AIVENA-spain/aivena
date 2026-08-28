@@ -417,6 +417,9 @@ const PREF_KEYS = new Set([
   'font', 'serif', 'scale', 'ground', 'accent', 'intensity', 'artwork', 'illo', 'density', 'numerals', 'mood', 'devices',
   // 2026-08-28 expansion: real-font duels + colour-world duels ("more fonts and colors so it's specific enough")
   'serif_face', 'serif_flavor', 'display_face', 'sans_face', 'palette_classic', 'palette_depth', 'palette_soft',
+  // the ten-palette bracket: the champion world + its hexes (the earlier three keys stay
+  // whitelisted so a profile saved before this still reads back)
+  'palette', 'palette_main', 'palette_accent', 'palette_base',
 ]);
 route.get('/preferences', async (c) => {
   const tx = c.get('tx');
@@ -1248,7 +1251,7 @@ route.post('/carousel', async (c) => {
       // each new type-only deck wears an edition (fonts + colour world) — matched to the agency's
       // taste profile when the this-or-that game has been played, random otherwise; stored so
       // every re-render of this deck reproduces the exact same look
-      const styleEdition = pickEditionForTaste(style, prefs);
+      const styleEdition = pickEditionForTaste(style, prefs, { navy: brand.navy, gold: brand.gold });
       const lockPalette = !!(brandNavy || brandGold);
       const agencyTaste = tasteLine(prefs);
       // The colours this deck will ACTUALLY render with (override ?? edition palette ?? agency
@@ -1524,9 +1527,33 @@ const REMIX_IMG_RING = ['bodegon', 'litoral', 'tinta', 'salitre', 'papel', 'arci
 const hexColour = (v: unknown): string | null => typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v) ? v : null;
 
 /** taste → type-style edition (editions tagged by accent temperature / ground); no profile → random */
-function pickEditionForTaste(style: string, prefs: Record<string, string> | null): number {
+/** squared RGB distance — good enough to say which edition palette is nearest their world */
+function colourGap(a?: string, b?: string): number {
+  if (!a || !b || !/^#[0-9a-fA-F]{6}$/.test(a) || !/^#[0-9a-fA-F]{6}$/.test(b)) return Number.POSITIVE_INFINITY;
+  const x = parseInt(a.slice(1), 16), y = parseInt(b.slice(1), 16);
+  const d = [16, 8, 0].map((s) => (((x >> s) & 255) - ((y >> s) & 255)) ** 2);
+  return d[0] + d[1] + d[2];
+}
+/** the edition whose colour world sits closest to the palette they crowned in the taste game */
+function nearestEdition(style: string, prefs: Record<string, string>, brand: { navy: string; gold: string }): number | null {
+  const main = prefs['palette_main'], accent = prefs['palette_accent'];
+  if (!main || !accent) return null;
+  const eds = TYPE_EDITIONS[style] ?? [];
+  if (!eds.length) return null;
+  let best = 0, bestGap = Number.POSITIVE_INFINITY;
+  eds.forEach((ed, i) => {
+    const gap = colourGap(ed.navy ?? brand.navy, main) + colourGap(ed.gold ?? brand.gold, accent);
+    if (gap < bestGap) { bestGap = gap; best = i; }
+  });
+  return Number.isFinite(bestGap) ? best : null;
+}
+
+function pickEditionForTaste(style: string, prefs: Record<string, string> | null, brand?: { navy: string; gold: string }): number {
   const rnd = () => Math.floor(Math.random() * 3);
   if (!prefs) return rnd();
+  // FONT answers outrank colour ("make the fonts the ones they choose"); the style-specific
+  // rules below run first, and the palette bracket decides anything they leave open.
+  const byPalette = () => (brand ? nearestEdition(style, prefs, brand) : null);
   // FONT answers outrank colour answers (Christian 2026-08-28: "in carousel it should make the
   // fonts the ones they choose") — each edition carries a display face, so the serif duel picks
   // the edition wearing that face; the palette duels break ties; the old mood/accent heuristics
@@ -1535,28 +1562,23 @@ function pickEditionForTaste(style: string, prefs: Record<string, string> | null
     if (prefs.serif_face === 'prata') return 1;                 // Prata + warm ink/terracotta
     if (prefs.serif_face === 'playfair') return 2;              // Playfair + deep green/brass
     if (prefs.serif_flavor === 'caslon') return 0;              // Caslon classic
-    if (prefs.palette_classic === 'terracotta') return 1;
-    if (prefs.palette_depth === 'green-brass') return 2;
-    return prefs.accent === 'warm' ? 1 : prefs.accent === 'cool' ? 2 : rnd();
+    return byPalette() ?? (prefs.accent === 'warm' ? 1 : prefs.accent === 'cool' ? 2 : rnd());
   }
   if (style === 'cartel') {
-    if (prefs.palette_depth === 'noche') return 2;              // ink black + gold
-    if (prefs.palette_classic === 'terracotta') return 1;       // rojo poster red
-    return prefs.ground === 'dark' ? 2 : prefs.mood === 'bold' ? 1 : rnd();
+    // cartel wears Anton in every edition — the face is the style, so colour decides here
+    return byPalette() ?? (prefs.ground === 'dark' ? 2 : prefs.mood === 'bold' ? 1 : rnd());
   }
   if (style === 'encalada') {
     if (prefs.display_face === 'italiana') return 1;            // Italiana + indigo/clay
     if (prefs.serif_face === 'prata') return 2;                 // Prata + earth/olive
-    if (prefs.palette_soft === 'indigo-clay') return 1;
-    if (prefs.palette_soft === 'earth-olive') return 2;
-    return prefs.accent === 'cool' ? 1 : prefs.accent === 'warm' ? 2 : rnd();
+    return byPalette() ?? (prefs.accent === 'cool' ? 1 : prefs.accent === 'warm' ? 2 : rnd());
   }
   if (style === 'sereno') {
     if (prefs.serif_face === 'playfair') return 1;              // Playfair + slate/sand
     if (prefs.serif_face === 'prata') return 2;                 // Prata + steel blue
-    return prefs.accent === 'warm' ? 1 : prefs.accent === 'cool' ? 2 : rnd();
+    return byPalette() ?? (prefs.accent === 'warm' ? 1 : prefs.accent === 'cool' ? 2 : rnd());
   }
-  return rnd();
+  return byPalette() ?? rnd();
 }
 
 /** taste → one compact line for the art director; empty string when no profile exists */
@@ -1572,13 +1594,17 @@ function tasteLine(prefs: Record<string, string> | null): string {
   if (prefs.mood === 'bold') bits.push('bold striking imagery welcome');
   if (prefs.mood === 'calm') bits.push('keep the mood calm and premium');
   const palWords: Record<string, string> = {
-    'navy-gold': 'deep navy and gold', terracotta: 'Spanish red, terracotta and cream',
+    'navy-gold': 'deep navy and gold', terracotta: 'terracotta and cream',
     'green-brass': 'deep green and aged brass', noche: 'ink black and gold',
     'indigo-clay': 'indigo and burnt clay', 'earth-olive': 'earth browns and olive',
+    aegean: 'sea blue and sand', plum: 'plum and apricot',
+    cobalt: 'cobalt blue and sun yellow', 'slate-sand': 'slate grey and sand',
   };
-  const pals = [prefs.palette_classic, prefs.palette_depth, prefs.palette_soft]
+  const chosen = prefs.palette ? palWords[prefs.palette] : null;
+  const legacy = [prefs.palette_classic, prefs.palette_depth, prefs.palette_soft]
     .map((p) => (p ? palWords[p] : null)).filter(Boolean);
-  if (pals.length) bits.push(`their chosen colour worlds: ${pals.join(', ')}`);
+  if (chosen) bits.push(`their colour world is ${chosen}`);
+  else if (legacy.length) bits.push(`their chosen colour worlds: ${legacy.join(', ')}`);
   if (prefs.likes) bits.push(`they love: ${prefs.likes}`);
   if (prefs.dislikes) bits.push(`AVOID: ${prefs.dislikes}`);
   return bits.join('; ');
@@ -1663,13 +1689,21 @@ route.post('/carousel/remix', async (c) => {
       slides = await renderPlannedStyled(newStyle, plan, agency.name, contact, brand, storedLang, typeof raw.style_edition === 'number' ? raw.style_edition : 0, !!(raw.brand_navy || raw.brand_gold));
     }
 
+    // A style remix repaints the deck in the NEW style's edition palette, so the parent's
+    // "colours actually rendered" no longer describe this child — recompute them, or the
+    // finished-deck pickers would open on the old style's colours and overwrite the new look.
+    const remixLock = !!(raw.brand_navy || raw.brand_gold);
+    const remixEd = !remixLock ? ((TYPE_EDITIONS[newStyle] ?? [])[typeof raw.style_edition === 'number' ? raw.style_edition : 0] ?? {}) : {};
+    const remixNavy = (typeof raw.brand_navy === 'string' ? raw.brand_navy : null) ?? remixEd.navy ?? brand.navy;
+    const remixGold = (typeof raw.brand_gold === 'string' ? raw.brand_gold : null) ?? remixEd.gold ?? brand.gold;
+
     const label = `Remix · ${axis} · ${String(raw.topic ?? '').slice(0, 70) || 'tips carousel'}`;
     const ins = await tx.execute(sql`
       INSERT INTO image_generations
         (agency_id, generation_type, status, prompt, requested_by, raw_request)
       VALUES
         (${agencyId}, 'social_post', 'processing', ${label}, ${user?.sub ?? null}::uuid,
-         ${JSON.stringify({ ...raw, engine: 'carousel', content_type: 'carousel', carousel_style: newStyle, remix_of: parentId, remix_axis: axis })}::jsonb)
+         ${JSON.stringify({ ...raw, engine: 'carousel', content_type: 'carousel', carousel_style: newStyle, render_navy: remixNavy, render_gold: remixGold, remix_of: parentId, remix_axis: axis })}::jsonb)
       RETURNING id
     `);
     const insRows = ins as unknown as Array<{ id: string }>;

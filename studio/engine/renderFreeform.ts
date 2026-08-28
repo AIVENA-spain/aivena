@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { textWidth } from "./renderEditable";
+import { textWidth, faceForText } from "./renderEditable";
 import { renderTemplatePng } from "../src/lib/render";
 
 // FREEFORM renderer (Smart v2, Christian 2026-07-14): the AI designs, the engine draws.
@@ -383,11 +383,17 @@ export async function renderFreeform(
         overlaySvg += `<rect x="${gb[0]}" y="${gb[1]}" width="${boxW(gb)}" height="${boxH(gb)}" fill="url(#${gradient("#0B0F14", "up", 0.55)})"/>`;
       }
 
+      // The face that will actually DRAW this block: when the design's face lacks the text's
+      // script (no Cyrillic/Greek in most of the vault) we both measure and emit the fallback,
+      // so wrapping, auto-fit and rendering can never disagree. Resolved per block, not per
+      // line, so a paragraph is never set in two faces.
+      const face = faceForText(el.font, el.content);
+
       // auto-fit: shrink so the widest line fits the box width (minus pill padding when present)
       let size = el.size;
       const availW = boxW(b) - (el.pill ? 2 * el.pill.pad_x : 0);
       const track = (l: string, s: number) => (el.tracking ? el.tracking * Math.max(0, l.length - 1) * (s / el.size) : 0);
-      const widest = (s: number) => Math.max(...lines.map((l) => textWidth(el.font, l, s, el.weight, el.italic) + track(l, s)));
+      const widest = (s: number) => Math.max(...lines.map((l) => textWidth(face, l, s, el.weight, el.italic) + track(l, s)));
       if (widest(size) > availW && availW > 0) size = Math.max(12, size * (availW / widest(size)));
       let lineH = (el.line_height ?? el.size * 1.16) * (size / el.size);
       if (lines.length * lineH > boxH(b) && boxH(b) > 0) {
@@ -429,7 +435,7 @@ export async function renderFreeform(
       let block = "";
       lines.forEach((ln, i) => {
         const by = b[1] + topPad + size * 0.82 + i * lineH;
-        block += `<text x="${tx.toFixed(1)}" y="${by.toFixed(1)}" text-anchor="${anchor}" font-family="${esc(el.font)}" font-size="${size.toFixed(1)}"${attrs}${paint}>${esc(ln)}</text>`;
+        block += `<text x="${tx.toFixed(1)}" y="${by.toFixed(1)}" text-anchor="${anchor}" font-family="${esc(face)}" font-size="${size.toFixed(1)}"${attrs}${paint}>${esc(ln)}</text>`;
       });
       if (el.rotate) {
         const cx = b[0] + boxW(b) / 2, cy = b[1] + topPad + blockH / 2;

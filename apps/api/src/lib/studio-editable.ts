@@ -186,7 +186,10 @@ function tasteTags(m: any): string[] {
   const tags = new Set<string>();
   const slots: any[] = Array.isArray(m.text_slots) ? m.text_slots : [];
   const fonts = slots.map((s) => String(s.font ?? ''));
-  const isTitle = (s: any) => /title|headline/i.test(`${s.role ?? ''} ${s.id ?? ''}`);
+  // NOT a bare /title/ test: the manifests' body role is literally "subtitle/body", which
+  // contains "title" — that matched every caption slot, tagged small supporting faces as
+  // display faces, and left the body: branch of the scorer unreachable.
+  const isTitle = (s: any) => /(?:^|[^a-z])(?:title|headline)/i.test(`${s.role ?? ''} ${s.id ?? ''}`);
   const titleFonts = slots.filter(isTitle).map((s) => String(s.font ?? ''));
   if ((titleFonts.length ? titleFonts : fonts).some((f) => SERIF_FACES.test(f))) tags.add('serif');
   else tags.add('sans');

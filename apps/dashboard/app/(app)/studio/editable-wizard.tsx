@@ -361,7 +361,19 @@ export function EditableWizard({ initialLanguage, prefs = null }: { initialLangu
     if (!property) return;
     setEditFrom("template"); setTemplateId(t.id); setStep("edit");
     setPreview(thumbs[t.id] ?? null); setErr(null); setSaved(false); setSection("");
-    await loadEdit(t.id, property.id);
+    const loaded = await loadEdit(t.id, property.id);
+    // the thumbnail was rendered from the ENGLISH defaults; when the post language translated
+    // them on load, redraw so the canvas matches the fields (and what a save would produce)
+    if (loaded && language !== "en") {
+      setRendering(true);
+      const pr = await editablePreviewAction({
+        template_id: t.id, property_id: property.id, photos,
+        text_overrides: loaded.texts,
+        manual_colours: Object.fromEntries(loaded.d.colour_layers.map((c) => [c.role, c.value])),
+      });
+      if (pr.ok) setPreview(pr.image_url as string);
+      setRendering(false);
+    }
   }
 
   // ── gallery-first: use a template → edit (preview shown in the agency's brand) ──

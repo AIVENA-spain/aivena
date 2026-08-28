@@ -1737,6 +1737,11 @@ route.post('/carousel/remix', async (c) => {
 
     return c.json({
       ok: true, generation_id: genId,
+      // the child's OWN colours — without these the result-screen pickers keep showing the
+      // parent style's palette and one "Apply colours" repaints the remix back to the old look
+      render_navy: remixNavy, render_gold: remixGold,
+      brand_navy: typeof raw.brand_navy === 'string' ? raw.brand_navy : undefined,
+      brand_gold: typeof raw.brand_gold === 'string' ? raw.brand_gold : undefined,
       slides: stored.map((sl) => sl.url), plan, caption: plan.caption, hashtags: plan.hashtags,
       carousel_style: newStyle, per_slide_art: perSlideArt,
     });

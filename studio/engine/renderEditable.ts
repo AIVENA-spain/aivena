@@ -72,37 +72,34 @@ function fkFont(key: string, weight?: string, italic?: boolean): any { const rel
 // every style, with no per-call-site knowledge.
 const SCRIPT_FALLBACKS = ['Tinos', 'Prata', 'Poppins'];   // Tinos is the only vault face with Cyrillic + Greek
 const _faceCache = new Map<string, string>();
-function scriptTag(text: string): string {
-  let cyr = false, grk = false, ext = false, other = false;
-  for (const ch of text) {
-    const c = ch.codePointAt(0) ?? 0;
-    if (c < 0x100) continue;
-    if (c >= 0x400 && c <= 0x52f) cyr = true;
-    else if (c >= 0x370 && c <= 0x3ff) grk = true;
-    else if (c < 0x250) ext = true;
-    else other = true;
-  }
-  return `${cyr ? 'c' : ''}${grk ? 'g' : ''}${ext ? 'e' : ''}${other ? 'o' : ''}`;
-}
 function covers(key: string, chars: number[]): boolean {
   try { const f = fkFont(key); return chars.every((c) => f.hasGlyphForCodePoint(c)); } catch { return false; }
 }
 /** The face that will actually draw this text: the asked-for one when it can set the text's
- *  LETTERS, else the first vault fallback that can. Latin-only text (the common case) short-
- *  circuits. Only letters count: a face missing one symbol (Italiana has no €, Prata no …)
- *  keeps its design face — resvg substitutes that single glyph and the width error is a glyph
- *  wide, whereas a missing script is a whole line drawn at the wrong width. */
+ *  LETTERS, else the first vault fallback that can.
+ *
+ *  Scope is deliberately narrow — a whole-block swap is only right when the face cannot set the
+ *  SCRIPT at all (Cyrillic, Greek: resvg redraws the entire run in a substitute, so measuring
+ *  with the design face is measuring something that is never drawn). For a Latin face missing a
+ *  few accented letters (Polish ą/ę/ł in Prata) resvg substitutes only those glyphs and keeps
+ *  the design face for the rest, so swapping the block would throw away the typeface that
+ *  defines the style to fix a couple of glyph widths. Symbols never trigger a swap either
+ *  (Italiana has no €, Prata no …).
+ *
+ *  The cache key is the exact set of letters tested, not a script class: bucketing by class let
+ *  the first text rendered in a process decide the face for every later text in that bucket
+ *  (French œ and Polish ł share a class but need different answers), which made a deck render
+ *  differently depending on what the server had rendered before it. */
 export function faceForText(fontKey: string, text: string): string {
   if (!text) return fontKey;
-  const tag = scriptTag(text);
-  if (!tag) return fontKey;
-  const letters = [...new Set([...text].filter((ch) => /\p{L}/u.test(ch)).map((ch) => ch.codePointAt(0) ?? 0).filter((c) => c >= 0x100))];
+  const letters = [...new Set([...text].filter((ch) => /\p{L}/u.test(ch)).map((ch) => ch.codePointAt(0) ?? 0).filter((c) => c >= 0x370))];
   if (!letters.length) return fontKey;
-  const ck = `${fontKey}|${tag}`;
+  const ck = `${fontKey}|${letters.sort((a, b) => a - b).join(',')}`;
   const hit = _faceCache.get(ck);
   if (hit) return hit;
   let out = fontKey;
   if (!covers(fontKey, letters)) out = SCRIPT_FALLBACKS.find((f) => covers(f, letters)) ?? fontKey;
+  if (_faceCache.size > 4000) _faceCache.clear();   // bounded: this process is long-lived
   _faceCache.set(ck, out);
   return out;
 }
@@ -500,6 +497,8 @@ export async function renderEditable(m: EditableManifest, palette: Palette = {},
       continue;
     }
     const lines = s.text.split("\n");
+    // measure AND emit the same face (see faceForText) — for Latin text this is s.font itself
+    const sFace = faceForText(s.font, s.text);
     const bw = x1 - x0, bh = y1 - y0;
     const pad = s.pad ?? 0;
     // RESIZE: an editor size override sets the font size directly and wins over the auto-fit (its clamps below
@@ -520,7 +519,7 @@ export async function renderEditable(m: EditableManifest, palette: Palette = {},
     const wsAt = (fs: number) => (s.word_spacing ? s.word_spacing * (fs / designSize) : 0);
     const wsExtra = (l: string, fs: number) => (l.split(" ").length - 1) * wsAt(fs);
     const trackExtra = (l: string, fs: number) => (s.tracking ? s.tracking * Math.max(0, l.length - 1) * (fs / designSize) : 0);
-    const widest = Math.max(...lines.map((l) => textWidth(s.font, l, fontSize, s.weight, s.italic) + wsExtra(l, fontSize) + trackExtra(l, fontSize))) * sx;
+    const widest = Math.max(...lines.map((l) => textWidth(sFace, l, fontSize, s.weight, s.italic) + wsExtra(l, fontSize) + trackExtra(l, fontSize))) * sx;
     if (!userSized && widest > avail && avail > 0) { const r = avail / widest; fontSize = Math.max(8, fontSize * r); lineH = lineH * r; }
     // vertical auto-fit: if the block is taller than the bbox (e.g. a 3-line title), shrink size + line pitch
     if (!userSized && lines.length * lineH > bh && bh > 0) { const rv = bh / (lines.length * lineH); fontSize = Math.max(8, fontSize * rv); lineH = lineH * rv; }
@@ -536,7 +535,7 @@ export async function renderEditable(m: EditableManifest, palette: Palette = {},
     const wNum = s.weight ? (/^\d+$/.test(s.weight) ? s.weight : "700") : "";
     const strokeAttr = (wNum ? ` font-weight="${wNum}"` : "") + (s.italic ? ` font-style="italic"` : "")
       + (s.stroke_px ? ` stroke="${fill}" stroke-width="${s.stroke_px}"` : "") + (s.word_spacing ? ` word-spacing="${wsAt(fontSize).toFixed(1)}"` : "");
-    const maxLineWidth = Math.max(...lines.map((l) => textWidth(s.font, l, fontSize, s.weight, s.italic) + wsExtra(l, fontSize) + trackExtra(l, fontSize))) * sx;
+    const maxLineWidth = Math.max(...lines.map((l) => textWidth(sFace, l, fontSize, s.weight, s.italic) + wsExtra(l, fontSize) + trackExtra(l, fontSize))) * sx;
     blockBottoms.set(s.id, y0 + topPad + (lines.length - 1) * lineH + fontSize * 0.95); // ink bottom (baseline+descender)
     // rotated slots: containment along the run is enforced by the WIDTH check (maxLineWidth vs avail); the
     // vertical-zone numbers are reported in real canvas space (the strip itself) so the QA gate stays coherent.
@@ -561,7 +560,7 @@ export async function renderEditable(m: EditableManifest, palette: Palette = {},
       const posAttr = sx !== 1 || s.skew_x
         ? ` transform="translate(${tx},${by.toFixed(1)})${sx !== 1 ? ` scale(${sx},1)` : ""}${s.skew_x ? ` skewX(${s.skew_x})` : ""}" x="0" y="0"`
         : ` x="${tx}" y="${by.toFixed(1)}"`;
-      overlay += `<text data-slot-id="${s.id}" data-editable="true" data-role="${s.role}"${posAttr} text-anchor="${anchor}" font-family="${s.font}" font-size="${fontSize.toFixed(1)}"${trackAttr}${strokeAttr} fill="${fill}">${esc(ln)}</text>`;
+      overlay += `<text data-slot-id="${s.id}" data-editable="true" data-role="${s.role}"${posAttr} text-anchor="${anchor}" font-family="${sFace}" font-size="${fontSize.toFixed(1)}"${trackAttr}${strokeAttr} fill="${fill}">${esc(ln)}</text>`;
       editableTextCount++;
     });
     if (s.rotate === 90) {

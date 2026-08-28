@@ -336,6 +336,14 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
     setHashtags(Array.isArray(r.hashtags) ? (r.hashtags as string[]) : hashtags);
     if (typeof r.carousel_style === "string") setResultStyle(r.carousel_style);
     setResultPerSlideArt(r.per_slide_art === true);
+    // a style remix repaints in the new style's palette — reseed the pickers from the CHILD, or
+    // the next "Apply colours" would push the previous style's colours onto the new deck
+    if (typeof r.brand_navy === "string" || typeof r.render_navy === "string") {
+      setResColMain((r.brand_navy as string) ?? (r.render_navy as string));
+    }
+    if (typeof r.brand_gold === "string" || typeof r.render_gold === "string") {
+      setResColAccent((r.brand_gold as string) ?? (r.render_gold as string));
+    }
     setEditing(false); setDraft(null); setSaved(false); setSection(""); setRemixed(true);
   }
 

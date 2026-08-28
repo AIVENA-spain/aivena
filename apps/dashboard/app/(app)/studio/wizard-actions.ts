@@ -235,8 +235,16 @@ export async function studioSuggestionsAction(): Promise<Envelope> {
   return call("/api/studio/suggestions");
 }
 // OTRA VUELTA: one-axis remix of a finished tips carousel (hook | style | layout) — free, lands as a new generation
-export async function carouselRemixAction(generationId: string, axis: "hook" | "style" | "layout"): Promise<Envelope> {
-  return call("/api/studio/carousel/remix", { method: "POST", body: { generation_id: generationId, axis } });
+export async function carouselRemixAction(
+  generationId: string,
+  axis: "hook" | "style" | "layout",
+  // the per-slide colours currently on screen — a remix must not discard picks the agent can see
+  slideColours?: Record<number, { navy?: string; gold?: string }>,
+): Promise<Envelope> {
+  return call("/api/studio/carousel/remix", {
+    method: "POST",
+    body: { generation_id: generationId, axis, ...(slideColours ? { slide_colours: slideColours } : {}) },
+  });
 }
 export async function smartReviseAction(generationId: string, editNote: string): Promise<Envelope> {
   return call("/api/studio/smart-design/revise", {

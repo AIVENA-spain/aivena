@@ -221,8 +221,10 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
     if (typeof s.carousel_style === "string") setResultStyle(s.carousel_style);
     setResultPerSlideArt(s.per_slide_art === true);
     setResultArtSource(typeof s.artwork_source === "string" ? s.artwork_source : "");
-    setResColMain(typeof s.brand_navy === "string" ? (s.brand_navy as string) : "#1a2b4a");
-    setResColAccent(typeof s.brand_gold === "string" ? (s.brand_gold as string) : "#c8a24b");
+    // open the pickers on the colours the deck ACTUALLY rendered with (explicit override →
+    // render colours stored at creation → generic default only for pre-fix decks)
+    setResColMain(typeof s.brand_navy === "string" ? (s.brand_navy as string) : typeof s.render_navy === "string" ? (s.render_navy as string) : "#1a2b4a");
+    setResColAccent(typeof s.brand_gold === "string" ? (s.brand_gold as string) : typeof s.render_gold === "string" ? (s.render_gold as string) : "#c8a24b");
     setEditing(false); setDraft(null); setRemixed(false);
     setPhase("result");
   }
@@ -277,8 +279,12 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
     setCopied(true); setTimeout(() => setCopied(false), 2000);
   }
 
+  // one mutation at a time: recolour / remix / text-apply all re-render the same generation on
+  // the server, so overlapping responses would interleave into a mixed deck on screen
+  const resultBusy = applying || recolouring || !!remixing;
+
   async function applyEdits() {
-    if (!genId || !draft) return;
+    if (!genId || !draft || resultBusy) return;
     setApplying(true); setErr(null);
     const r = await carouselUpdateAction(genId, draft);
     setApplying(false);
@@ -303,7 +309,7 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
   }
 
   async function remix(axis: "hook" | "style" | "layout") {
-    if (!genId || remixing) return;
+    if (!genId || resultBusy) return;
     setRemixing(axis); setErr(null);
     const r = await carouselRemixAction(genId, axis);
     setRemixing("");
@@ -618,8 +624,8 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
               <span className="flex items-center gap-1.5 rounded-lg border border-neutral-300 px-2.5 py-1.5 dark:border-neutral-700">
                 <label className="flex cursor-pointer items-center"><input type="color" value={resColMain} onChange={(e) => setResColMain(e.target.value)} className="h-6 w-7 cursor-pointer rounded border-0 bg-transparent p-0" title="Main colour" /></label>
                 <label className="flex cursor-pointer items-center"><input type="color" value={resColAccent} onChange={(e) => setResColAccent(e.target.value)} className="h-6 w-7 cursor-pointer rounded border-0 bg-transparent p-0" title="Accent colour" /></label>
-                <button disabled={recolouring} onClick={async () => {
-                  if (!genId || !plan) return;
+                <button disabled={resultBusy} onClick={async () => {
+                  if (!genId || !plan || resultBusy) return;
                   setRecolouring(true); setErr(null);
                   const r = await carouselUpdateAction(genId, plan, { navy: resColMain, gold: resColAccent });
                   setRecolouring(false);
@@ -636,7 +642,7 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
                 ...(resultPerSlideArt && AI_STYLE_KEYS.includes(resultStyle)
                   ? [["layout", "Otra vuelta · recompose", "Same everything, slides rearranged"]] : []),
               ] as [typeof remixing, string, string][]).map(([axis, title2, tip]) => (
-                <button key={axis} title={tip} disabled={!!remixing} onClick={() => void remix(axis as "hook" | "style" | "layout")}
+                <button key={axis} title={tip} disabled={resultBusy} onClick={() => void remix(axis as "hook" | "style" | "layout")}
                   className="flex items-center gap-1.5 rounded-lg border border-neutral-300 px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-50 disabled:opacity-40 dark:border-neutral-700 dark:text-neutral-300">
                   {remixing === axis ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />} {title2}
                 </button>
@@ -727,7 +733,7 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
                 <textarea value={draft.caption} onChange={(e) => setDraft({ ...draft, caption: e.target.value })} className={`${field} min-h-28`} maxLength={1600} />
               </div>
               <div className="flex gap-2">
-                <button onClick={() => void applyEdits()} disabled={applying}
+                <button onClick={() => void applyEdits()} disabled={resultBusy}
                   className="flex items-center gap-2 rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900">
                   {applying && <Loader2 className="h-4 w-4 animate-spin" />}{applying ? "Redrawing…" : "Apply changes"}
                 </button>

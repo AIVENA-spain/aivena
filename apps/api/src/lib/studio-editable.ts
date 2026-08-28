@@ -176,6 +176,41 @@ export interface TemplateMeta {
     bbox: number[]; align: string; valign: string; size: number | null; rotate: number;
   }[];
   colour_layers: { role: string; label: string; default: string; locked: boolean; used: boolean }[];
+  /** taste-profile tags DERIVED from the manifest itself (fonts, ground luminance, type scale) —
+   *  never hardcoded per template, so new templates classify themselves. */
+  taste_tags: string[];
+}
+
+const SERIF_FACES = /playfair|prata|italiana|caslon|fraunces|tinos|aleo|instrument|forum|garamond/i;
+function tasteTags(m: any): string[] {
+  const tags = new Set<string>();
+  const slots: any[] = Array.isArray(m.text_slots) ? m.text_slots : [];
+  const fonts = slots.map((s) => String(s.font ?? ''));
+  const titleFonts = slots
+    .filter((s) => /title|headline/i.test(`${s.role ?? ''} ${s.id ?? ''}`))
+    .map((s) => String(s.font ?? ''));
+  if ((titleFonts.length ? titleFonts : fonts).some((f) => SERIF_FACES.test(f))) tags.add('serif');
+  else tags.add('sans');
+  for (const f of fonts) {
+    const lf = f.toLowerCase();
+    if (lf.includes('italiana')) tags.add('italiana');
+    if (lf.includes('anton')) tags.add('anton');
+    if (lf.includes('archivo')) tags.add('archivo');
+    if (lf.includes('jost') || lf.includes('questrial')) tags.add('jost');
+    if (lf.includes('playfair')) tags.add('playfair');
+    if (lf.includes('prata')) tags.add('prata');
+    if (lf.includes('caslon')) tags.add('caslon');
+    if (lf.includes('fraunces')) tags.add('fraunces');
+  }
+  const bgHex = m.colour_tokens?.background?.default;
+  if (typeof bgHex === 'string' && /^#[0-9a-fA-F]{6}$/.test(bgHex)) {
+    const n = parseInt(bgHex.slice(1), 16);
+    const lum = 0.2126 * ((n >> 16) & 255) + 0.7152 * ((n >> 8) & 255) + 0.0722 * (n & 255);
+    tags.add(lum < 110 ? 'dark' : 'light');
+  }
+  const maxSize = Math.max(0, ...slots.map((s) => Number(s.size) || 0));
+  tags.add(maxSize >= 110 ? 'bold' : 'calm');
+  return [...tags];
 }
 
 export function templateMeta(id: string): TemplateMeta {
@@ -185,6 +220,7 @@ export function templateMeta(id: string): TemplateMeta {
   return {
     id,
     photo_count,
+    taste_tags: tasteTags(m),
     number: 0, // assigned by catalogue() below (photo-count order)
     palette_locked: !!m.palette_locked,
     canvas: { width: m.canvas.width, height: m.canvas.height },

@@ -8,21 +8,38 @@ import { saveStudioPreferencesAction } from "./wizard-actions";
 /**
  * FIND YOUR STYLE — the this-or-that taste game (Christian 2026-08-28: "give them at least 10
  * this or that choices to find out what they like — font wise, color wise, size wise — and then
- * base the templates on that for this specific agency"). Twelve visual either/or picks + two
- * optional free-text lines, saved to the agency's taste profile. The Studio then recommends
- * styles, matches editions and briefs the art director from it.
+ * base the templates on that for this specific agency"; expanded same day: "more fonts to choose
+ * from and colors so they actually feel it's specific enough — it will decide for the property
+ * post templates too"). Nineteen visual either/or picks — including real-font specimen duels and
+ * colour-world duels — + two optional free-text lines, saved to the agency's taste profile. The
+ * Studio then recommends carousel looks AND property templates, matches editions/fonts, and
+ * briefs the art director from it.
  */
 
 const ex = (p: string) => withBasePath(`/studio/carousel-examples/${p}`);
+const tf = (k: string) => withBasePath(`/studio/taste/${k}.png`);
 
 type Card = { kind: "mock"; bg: string; ink: string; accent: string; serif: boolean; big: boolean; ornament?: boolean }
-          | { kind: "img"; src: string };
+          | { kind: "img"; src: string }
+          | { kind: "pal"; main: string; accent: string; base: string };
 type Pair = { key: string; q: string; a: { v: string; label: string; card: Card }; b: { v: string; label: string; card: Card } };
 
 const PAIRS: Pair[] = [
   { key: "font", q: "Which headline feels more like you?",
     a: { v: "serif", label: "Classic serif", card: { kind: "mock", bg: "#f4f1ea", ink: "#1a2b4a", accent: "#c8a24b", serif: true, big: false } },
     b: { v: "sans", label: "Modern sans", card: { kind: "mock", bg: "#f4f1ea", ink: "#17181c", accent: "#c8a24b", serif: false, big: false } } },
+  { key: "serif_face", q: "If a serif — romantic or razor-sharp?",
+    a: { v: "playfair", label: "Romantic, high contrast", card: { kind: "img", src: tf("playfair") } },
+    b: { v: "prata", label: "Sharp & modern", card: { kind: "img", src: tf("prata") } } },
+  { key: "serif_flavor", q: "And between these two voices?",
+    a: { v: "fraunces", label: "Soft & warm", card: { kind: "img", src: tf("fraunces") } },
+    b: { v: "caslon", label: "Classic editorial", card: { kind: "img", src: tf("caslon") } } },
+  { key: "display_face", q: "For big statements — which one?",
+    a: { v: "anton", label: "Heavy poster type", card: { kind: "img", src: tf("anton") } },
+    b: { v: "italiana", label: "Elegant hairline", card: { kind: "img", src: tf("italiana") } } },
+  { key: "sans_face", q: "For the small supporting text?",
+    a: { v: "archivo", label: "Grounded & sturdy", card: { kind: "img", src: tf("archivo") } },
+    b: { v: "jost", label: "Geometric & light", card: { kind: "img", src: tf("jost") } } },
   { key: "scale", q: "How loud should the type be?",
     a: { v: "bold", label: "Big & bold", card: { kind: "mock", bg: "#f4f1ea", ink: "#1a2b4a", accent: "#c8a24b", serif: true, big: true } },
     b: { v: "calm", label: "Calm & airy", card: { kind: "mock", bg: "#f7f5f0", ink: "#3a4145", accent: "#a68d72", serif: true, big: false } } },
@@ -32,6 +49,15 @@ const PAIRS: Pair[] = [
   { key: "accent", q: "Which colour family pulls you in?",
     a: { v: "warm", label: "Warm — terracotta & gold", card: { kind: "mock", bg: "#f7f1e3", ink: "#8a4a2b", accent: "#c96a4a", serif: true, big: false } },
     b: { v: "cool", label: "Cool — olive & sea", card: { kind: "mock", bg: "#eff2ef", ink: "#33424e", accent: "#5a6b4e", serif: true, big: false } } },
+  { key: "palette_classic", q: "Which pair would you wear?",
+    a: { v: "navy-gold", label: "Deep navy & gold", card: { kind: "pal", main: "#1a2b4a", accent: "#c8a24b", base: "#f3efe6" } },
+    b: { v: "terracotta", label: "Spanish red & cream", card: { kind: "pal", main: "#b3362b", accent: "#c96a4a", base: "#f7f1e3" } } },
+  { key: "palette_depth", q: "And of these two?",
+    a: { v: "green-brass", label: "Deep green & brass", card: { kind: "pal", main: "#1e3a34", accent: "#b98d4f", base: "#f1eee6" } },
+    b: { v: "noche", label: "Ink black & gold", card: { kind: "pal", main: "#17181c", accent: "#c8a24b", base: "#efece4" } } },
+  { key: "palette_soft", q: "One more colour world?",
+    a: { v: "indigo-clay", label: "Indigo & burnt clay", card: { kind: "pal", main: "#2c4a6b", accent: "#a86b3c", base: "#f2efe8" } },
+    b: { v: "earth-olive", label: "Earth & olive", card: { kind: "pal", main: "#4a4238", accent: "#7d8a6a", base: "#f0ede5" } } },
   { key: "intensity", q: "Rich colour or quiet colour?",
     a: { v: "rich", label: "Rich & saturated", card: { kind: "mock", bg: "#b3362b", ink: "#f7f1e3", accent: "#f2e6c9", serif: false, big: true } },
     b: { v: "muted", label: "Muted & soft", card: { kind: "mock", bg: "#efece6", ink: "#6b6f66", accent: "#a6a08d", serif: true, big: false } } },
@@ -57,6 +83,21 @@ const PAIRS: Pair[] = [
     a: { v: "display", label: "Elegant & sharp", card: { kind: "img", src: ex("sereno/2.jpg") } },
     b: { v: "classic", label: "Warm & bookish", card: { kind: "img", src: ex("editorial/1.jpg") } } },
 ];
+
+function PalCard({ c }: { c: Extract<Card, { kind: "pal" }> }) {
+  return (
+    <div className="flex h-full w-full flex-col overflow-hidden rounded-lg" style={{ background: c.base }}>
+      <div className="flex-[3]" style={{ background: c.main }} />
+      <div className="flex-1" style={{ background: c.accent }} />
+      <div className="flex flex-[2] items-center px-4">
+        <div>
+          <div className="text-[15px] font-semibold" style={{ color: c.main }}>The coast in winter</div>
+          <div className="mt-1.5 h-1 w-10 rounded" style={{ background: c.accent }} />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function MockCard({ c }: { c: Extract<Card, { kind: "mock" }> }) {
   return (
@@ -157,6 +198,8 @@ export function TasteGame({ onDone }: { onDone: () => void }) {
             <div className="aspect-[4/5]">
               {opt.card.kind === "img"
                 ? <img src={opt.card.src} alt={opt.label} className="h-full w-full object-cover object-top" />
+                : opt.card.kind === "pal"
+                ? <PalCard c={opt.card} />
                 : <MockCard c={opt.card} />}
             </div>
             <div className="p-3 text-sm font-semibold text-neutral-800 group-hover:text-emerald-700 dark:text-neutral-200 dark:group-hover:text-emerald-400">{opt.label}</div>

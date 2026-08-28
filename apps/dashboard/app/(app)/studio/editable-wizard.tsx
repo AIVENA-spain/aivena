@@ -38,7 +38,26 @@ type TemplateMeta = {
   colour_regions: ColourRegion[];
   editable_slots: EditSlot[];
   colour_layers: { role: string; label: string; default: string; locked: boolean; used: boolean }[];
+  /** manifest-derived taste tags (serif/sans, dark/light, bold/calm, face names) */
+  taste_tags?: string[];
 };
+
+/** How well a template's manifest-derived tags match the agency's taste profile. */
+function templateTasteScore(tags: string[] | undefined, prefs: Record<string, string> | null): number {
+  if (!tags || !prefs) return 0;
+  const has = (t: string) => tags.includes(t);
+  let s = 0;
+  if (prefs.ground === "dark" && has("dark")) s += 2;
+  if (prefs.ground === "light" && has("light")) s += 2;
+  if (prefs.font === "serif" && has("serif")) s += 2;
+  if (prefs.font === "sans" && has("sans")) s += 2;
+  if (prefs.scale === "bold" && has("bold")) s += 1;
+  if (prefs.scale === "calm" && has("calm")) s += 1;
+  for (const face of ["italiana", "anton", "archivo", "jost", "playfair", "prata", "caslon", "fraunces"]) {
+    if (has(face) && (prefs.display_face === face || prefs.serif_face === face || prefs.sans_face === face || prefs.serif_flavor === face)) s += 2;
+  }
+  return s;
+}
 type Defaults = Omit<TemplateMeta, "editable_slots" | "colour_layers"> & {
   editable_slots: (TemplateMeta["editable_slots"][number] & { value: string })[];
   colour_layers: (TemplateMeta["colour_layers"][number] & { value: string })[];
@@ -90,7 +109,7 @@ async function runLimited<T>(items: T[], n: number, fn: (t: T, i: number) => Pro
   await Promise.all(workers);
 }
 
-export function EditableWizard({ initialLanguage }: { initialLanguage?: string } = {}) {
+export function EditableWizard({ initialLanguage, prefs = null }: { initialLanguage?: string; prefs?: Record<string, string> | null } = {}) {
   const [step, setStep] = useState<"gallery" | "property" | "template" | "edit" | "classic">("gallery");
   const [editFrom, setEditFrom] = useState<"gallery" | "template">("gallery");
 
@@ -280,22 +299,39 @@ export function EditableWizard({ initialLanguage }: { initialLanguage?: string }
     else setErr(r.message as string);
   }
 
-  const eligibleTemplates = useMemo(
-    () => catalogue.filter((t) => t.photo_count === photos.length),
-    [catalogue, photos.length],
-  );
+  // taste-sorted (Christian 2026-08-28: the taste game "will decide for the property post type
+  // templates too — give them a few templates that we recommend based on their preferences")
+  const eligibleTemplates = useMemo(() => {
+    const arr = catalogue.filter((t) => t.photo_count === photos.length);
+    if (!prefs) return arr;
+    return [...arr].sort((a, b) => templateTasteScore(b.taste_tags, prefs) - templateTasteScore(a.taste_tags, prefs));
+  }, [catalogue, photos.length, prefs]);
+  const recommendedIds = useMemo(() => {
+    if (!prefs) return new Set<string>();
+    return new Set(catalogue.filter((t) => templateTasteScore(t.taste_tags, prefs) >= 4).map((t) => t.id));
+  }, [catalogue, prefs]);
 
   // load an editable template's defaults into the edit state (shared by both entry paths).
-  async function loadEdit(tId: string, propId: string): Promise<Defaults | null> {
+  // The template/derived copy is authored in English — when the post language (defaulted to the
+  // dashboard language) is anything else, translate the defaults ON LOAD so the language select
+  // and the text fields agree from the first render.
+  async function loadEdit(tId: string, propId: string): Promise<{ d: Defaults; texts: Record<string, string> } | null> {
     const res = await editableDefaultsAction(tId, propId);
     if (!res.ok) { setErr(res.message as string); return null; }
     const d = res as unknown as Defaults;
     setDefaults(d);
-    setText(Object.fromEntries(d.editable_slots.map((s) => [s.id, s.value])));
+    let texts = Object.fromEntries(d.editable_slots.map((s) => [s.id, s.value]));
+    if (language !== "en" && Object.values(texts).some((v) => v && v.trim())) {
+      setTranslating(true);
+      const tr = await translateSlotsAction(texts, language);
+      setTranslating(false);
+      if (tr.ok && tr.texts) texts = tr.texts as Record<string, string>;
+    }
+    setText(texts);
     setColours(Object.fromEntries(d.colour_layers.map((c) => [c.role, c.value])));
     setPositions({}); setSizes({}); setSelected(null); setRegionSel(null); setHoverRole(null);
     setCleanedIds([]); setFinishMsg(null); setPhotoTr({});
-    return d;
+    return { d, texts };
   }
 
   // ── property-first: pick a template → edit ────────────────────────────────────
@@ -316,10 +352,10 @@ export function EditableWizard({ initialLanguage }: { initialLanguage?: string }
     setProperty(p); setPhotos(item.photos); setEditFrom("gallery");
     setTemplateId(item.template_id); setStep("edit"); setErr(null); setSaved(false); setSection("");
     setPreview(galleryThumbs[item.template_id] ?? null); setRendering(true);
-    const d = await loadEdit(item.template_id, p.id);
-    if (!d) { setRendering(false); return; }
+    const loaded = await loadEdit(item.template_id, p.id);
+    if (!loaded) { setRendering(false); return; }
+    const { d, texts: t0 } = loaded;
     // Render once in the agency's brand so the preview equals what a save will produce (WYSIWYG).
-    const t0 = Object.fromEntries(d.editable_slots.map((s) => [s.id, s.value]));
     const c0 = Object.fromEntries(d.colour_layers.map((c) => [c.role, c.value]));
     const pr = await editablePreviewAction({ template_id: item.template_id, property_id: p.id, photos: item.photos, text_overrides: t0, manual_colours: c0 });
     setPreview(pr.ok ? (pr.image_url as string) : (galleryThumbs[item.template_id] ?? null));
@@ -555,6 +591,9 @@ export function EditableWizard({ initialLanguage }: { initialLanguage?: string }
                     <span className="font-medium text-neutral-600 dark:text-neutral-300">Template {item.number ?? item.template_id}</span>
                     <span className="text-neutral-400 opacity-0 transition group-hover:opacity-100">Customise →</span>
                   </div>
+                  {recommendedIds.has(item.template_id) && (
+                    <span className="absolute left-2 top-2 rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-semibold text-white shadow">For your taste</span>
+                  )}
                   {galleryThumbs[item.template_id] && (
                     <button type="button" title="See it full size"
                       onClick={(e) => { e.stopPropagation(); setEnlarged({ src: galleryThumbs[item.template_id]!, title: `Template ${item.number ?? item.template_id}`, pick: () => useGalleryTemplate(item) }); }}
@@ -619,6 +658,9 @@ export function EditableWizard({ initialLanguage }: { initialLanguage?: string }
                   )}
                 </div>
                 <div className="p-2 text-center text-xs font-medium text-muted-foreground">Template {t.number ?? t.id}</div>
+                {recommendedIds.has(t.id) && (
+                  <span className="absolute left-2 top-2 rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-semibold text-white shadow">For your taste</span>
+                )}
                 {thumbs[t.id] && (
                   <button type="button" title="See it full size"
                     onClick={(e) => { e.stopPropagation(); setEnlarged({ src: thumbs[t.id]!, title: `Template ${t.number ?? t.id} — your listing`, pick: () => pickTemplate(t) }); }}

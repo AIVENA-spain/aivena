@@ -26,7 +26,7 @@ import { usablePhotos } from '../lib/property-images';
 import { removeMontinmoWatermark } from '../lib/watermark-removal';
 import { type CarouselPlan, chrome as carouselChrome } from '../../../../studio/engine/carouselSlides';
 import {
-  renderPlannedStyled, renderListingStyled, vibraListing, PLANNED_STYLES, LISTING_STYLES, type CarouselStyle,
+  renderPlannedStyled, renderListingStyled, vibraListing, PLANNED_STYLES, LISTING_STYLES, TYPE_EDITIONS, type CarouselStyle,
 } from '../../../../studio/engine/carouselStyles';
 import { planCarousel, editPlan, remixHook, topicIdeas, listingCopy, listingStory, PlanSchema } from '../lib/studio-carousel-plan';
 import { directScenes } from '../lib/studio-carousel-art';
@@ -365,6 +365,9 @@ function shapeStatus(r: GenRow) {
     artwork_source: typeof (meta as any)?.artwork_source === 'string' ? (meta as any).artwork_source : undefined,
     brand_navy: typeof (r as any).raw_request?.brand_navy === 'string' ? (r as any).raw_request.brand_navy : undefined,
     brand_gold: typeof (r as any).raw_request?.brand_gold === 'string' ? (r as any).raw_request.brand_gold : undefined,
+    // the colours the deck actually rendered with (override ?? edition ?? brand) — seeds the pickers
+    render_navy: typeof (r as any).raw_request?.render_navy === 'string' ? (r as any).raw_request.render_navy : undefined,
+    render_gold: typeof (r as any).raw_request?.render_gold === 'string' ? (r as any).raw_request.render_gold : undefined,
     caption: typeof (meta as any)?.caption === 'string' ? (meta as any).caption : undefined,
     hashtags: Array.isArray((meta as any)?.hashtags) ? (meta as any).hashtags : undefined,
     plan: (meta as any)?.plan && typeof (meta as any).plan === 'object' ? (meta as any).plan : undefined,
@@ -410,7 +413,11 @@ route.get('/status/:id', async (c) => {
 // A dozen binary choices stored as {key: value} plus optional likes/dislikes text.
 // Read by the carousel pipeline: style recommendations (UI), edition matching and
 // art-direction hints (server). Nullable — nothing changes until the game is played.
-const PREF_KEYS = new Set(['font', 'serif', 'scale', 'ground', 'accent', 'intensity', 'artwork', 'illo', 'density', 'numerals', 'mood', 'devices']);
+const PREF_KEYS = new Set([
+  'font', 'serif', 'scale', 'ground', 'accent', 'intensity', 'artwork', 'illo', 'density', 'numerals', 'mood', 'devices',
+  // 2026-08-28 expansion: real-font duels + colour-world duels ("more fonts and colors so it's specific enough")
+  'serif_face', 'serif_flavor', 'display_face', 'sans_face', 'palette_classic', 'palette_depth', 'palette_soft',
+]);
 route.get('/preferences', async (c) => {
   const tx = c.get('tx');
   const agencyId = c.get('agencyId');
@@ -1107,8 +1114,15 @@ async function runPlannedCarousel(opts: {
         taste: opts.agencyTaste || undefined,
       });
       if (direction) {
-        plan.image_scenes = [direction.cover.scene, direction.context?.scene ?? plan.image_scenes?.[1] ?? '', plan.image_scenes?.[2] ?? ''];
-        direction.tips.forEach((b, i) => { if (plan.tips[i]) plan.tips[i].scene = b.scene; });
+        // Keep the stored plan PlanSchema-valid (scenes ≤300 chars, image_scenes entries ≥10, no
+        // '' placeholders) — /carousel/update re-parses this plan on every later edit, so an
+        // out-of-bounds scene here would lock the deck out of editing forever.
+        const clampScene = (s: unknown) => (typeof s === 'string' ? s.trim().slice(0, 300) : '');
+        const cand = [clampScene(direction.cover.scene), clampScene(direction.context?.scene ?? plan.image_scenes?.[1]), clampScene(plan.image_scenes?.[2])];
+        const scenes: string[] = [];
+        for (const s of cand) { if (s.length >= 10) scenes.push(s); else break; }
+        plan.image_scenes = scenes;
+        direction.tips.forEach((b, i) => { if (plan.tips[i]) plan.tips[i].scene = clampScene(b.scene); });
       }
       const tipScenes = plan.tips.map((t) => t.scene ?? '');
       const coverScene = plan.image_scenes?.[0] ?? '';
@@ -1236,6 +1250,12 @@ route.post('/carousel', async (c) => {
       const styleEdition = pickEditionForTaste(style, prefs);
       const lockPalette = !!(brandNavy || brandGold);
       const agencyTaste = tasteLine(prefs);
+      // The colours this deck will ACTUALLY render with (override ?? edition palette ?? agency
+      // brand) — stored so the finished-deck colour pickers open on the truth instead of generic
+      // defaults, which silently overwrote real brand/edition colours on "Apply colours".
+      const edPal = !lockPalette ? ((TYPE_EDITIONS[style] ?? [])[styleEdition] ?? {}) : {};
+      const renderNavy = brandNavy ?? edPal.navy ?? brand.navy;
+      const renderGold = brandGold ?? edPal.gold ?? brand.gold;
 
       const label = type === 'tips' ? `Tips carousel · ${topic.slice(0, 80)}` : 'Client quote carousel';
       const ins = await tx.execute(sql`
@@ -1243,7 +1263,7 @@ route.post('/carousel', async (c) => {
           (agency_id, generation_type, status, prompt, requested_by, raw_request)
         VALUES
           (${agencyId}, 'social_post', 'processing', ${label}, ${user?.sub ?? null}::uuid,
-           ${JSON.stringify({ engine: 'carousel', content_type: 'carousel', carousel_type: type, carousel_style: style, image_scheme: scheme, include_recap: includeRecap, include_context: includeContext, topic, quote_text: quoteText, quote_author: quoteAuthor, slide_count: slideCount, language, brand_navy: brandNavy, brand_gold: brandGold, style_edition: styleEdition })}::jsonb)
+           ${JSON.stringify({ engine: 'carousel', content_type: 'carousel', carousel_type: type, carousel_style: style, image_scheme: scheme, include_recap: includeRecap, include_context: includeContext, topic, quote_text: quoteText, quote_author: quoteAuthor, slide_count: slideCount, language, brand_navy: brandNavy, brand_gold: brandGold, render_navy: renderNavy, render_gold: renderGold, style_edition: styleEdition })}::jsonb)
         RETURNING id
       `);
       const rows = ins as unknown as Array<{ id: string }>;
@@ -1334,7 +1354,23 @@ route.post('/carousel/update', async (c) => {
       return c.json({ ok: false, error: 'not_editable', message: 'Only finished tips/quote carousels can be edited.' }, 400);
     }
 
-    const parsed = PlanSchema.safeParse({ ...(b.plan as object), type: priorPlan.type });
+    // Self-heal the round-tripped SCENE fields before validating (the user can't see or edit
+    // them): clamp overlong director scenes to the schema cap and drop invalid image_scenes
+    // tails — otherwise a deck stored with an out-of-bounds scene can never be edited again.
+    const pIn: Record<string, unknown> = { ...(b.plan as Record<string, unknown>), type: priorPlan.type };
+    if (Array.isArray(pIn['image_scenes'])) {
+      const healed: string[] = [];
+      for (const s of pIn['image_scenes'] as unknown[]) {
+        const t = typeof s === 'string' ? s.trim().slice(0, 300) : '';
+        if (t.length >= 10) healed.push(t); else break;
+      }
+      pIn['image_scenes'] = healed;
+    }
+    if (Array.isArray(pIn['tips'])) {
+      pIn['tips'] = (pIn['tips'] as Record<string, unknown>[]).map((t) =>
+        t && typeof t === 'object' ? { ...t, scene: typeof t['scene'] === 'string' ? (t['scene'] as string).trim().slice(0, 300) : '' } : t);
+    }
+    const parsed = PlanSchema.safeParse(pIn);
     if (!parsed.success) {
       return c.json({ ok: false, error: 'invalid_plan', message: 'Some of the edited text is too long or missing.' }, 400);
     }
@@ -1370,11 +1406,14 @@ route.post('/carousel/update', async (c) => {
       const ownPaths = Array.isArray(meta?.image_paths) ? (meta.image_paths as string[]) : [];
       const ctxArt = ownPaths.length === plan.tips.length + 2;   // deck stored with its own context artwork
       const perSlideArt = meta?.per_slide_art === true && (ownPaths.length === plan.tips.length + 1 || ctxArt);
-      const images = (ownPaths.length >= 3 ? await loadGenerationImages(ownPaths) : null)
-        ?? await loadTipsImages(storedStyle);
+      const own = ownPaths.length >= 3 ? await loadGenerationImages(ownPaths) : null;
+      const images = own ?? await loadTipsImages(storedStyle);
+      // ctxArt describes the STORED set — when it fails to load and the 3-image library stands
+      // in, keeping ctxArt would collapse the tip rotation onto a single artwork
+      const ctxArtEff = ctxArt && !!own;
       if (images) {
         slides = perSlideArt
-          ? await renderTipsImageStyledV2(storedStyle, plan, agency.name, contact, brand, images, storedLang, meta?.include_recap !== false, meta?.include_context !== false, typeof meta?.layout_variant === 'number' ? meta.layout_variant : 0, ctxArt)
+          ? await renderTipsImageStyledV2(storedStyle, plan, agency.name, contact, brand, images, storedLang, meta?.include_recap !== false, meta?.include_context !== false, typeof meta?.layout_variant === 'number' ? meta.layout_variant : 0, ctxArtEff)
           : await renderTipsImageStyled(storedStyle, plan, agency.name, contact, brand, images, storedLang);
       } else {
         slides = await renderPlannedStyled('editorial', plan, agency.name, contact, brand, storedLang, typeof rawU.style_edition === 'number' ? rawU.style_edition : 0, !!(effNavy || effGold));
@@ -1392,7 +1431,7 @@ route.post('/carousel/update', async (c) => {
         plan, caption: plan.caption, hashtags: plan.hashtags,
       },
       ...(hexColour(b.brand_navy) || hexColour(b.brand_gold)
-        ? { raw_request: { ...rawU, ...(effNavy ? { brand_navy: effNavy } : {}), ...(effGold ? { brand_gold: effGold } : {}) } }
+        ? { raw_request: { ...rawU, ...(effNavy ? { brand_navy: effNavy, render_navy: effNavy } : {}), ...(effGold ? { brand_gold: effGold, render_gold: effGold } : {}) } }
         : {}),
       updated_at: new Date().toISOString(),
     }).eq('id', genId).eq('agency_id', agencyId);
@@ -1487,10 +1526,35 @@ const hexColour = (v: unknown): string | null => typeof v === 'string' && /^#[0-
 function pickEditionForTaste(style: string, prefs: Record<string, string> | null): number {
   const rnd = () => Math.floor(Math.random() * 3);
   if (!prefs) return rnd();
-  if (style === 'editorial') return prefs.accent === 'warm' ? 1 : prefs.accent === 'cool' ? 2 : rnd();
-  if (style === 'cartel') return prefs.ground === 'dark' ? 2 : prefs.mood === 'bold' ? 1 : rnd();
-  if (style === 'encalada') return prefs.accent === 'cool' ? 1 : prefs.accent === 'warm' ? 2 : rnd();
-  if (style === 'sereno') return prefs.accent === 'warm' ? 1 : prefs.accent === 'cool' ? 2 : rnd();
+  // FONT answers outrank colour answers (Christian 2026-08-28: "in carousel it should make the
+  // fonts the ones they choose") — each edition carries a display face, so the serif duel picks
+  // the edition wearing that face; the palette duels break ties; the old mood/accent heuristics
+  // remain the final fallback.
+  if (style === 'editorial') {
+    if (prefs.serif_face === 'prata') return 1;                 // Prata + warm ink/terracotta
+    if (prefs.serif_face === 'playfair') return 2;              // Playfair + deep green/brass
+    if (prefs.serif_flavor === 'caslon') return 0;              // Caslon classic
+    if (prefs.palette_classic === 'terracotta') return 1;
+    if (prefs.palette_depth === 'green-brass') return 2;
+    return prefs.accent === 'warm' ? 1 : prefs.accent === 'cool' ? 2 : rnd();
+  }
+  if (style === 'cartel') {
+    if (prefs.palette_depth === 'noche') return 2;              // ink black + gold
+    if (prefs.palette_classic === 'terracotta') return 1;       // rojo poster red
+    return prefs.ground === 'dark' ? 2 : prefs.mood === 'bold' ? 1 : rnd();
+  }
+  if (style === 'encalada') {
+    if (prefs.display_face === 'italiana') return 1;            // Italiana + indigo/clay
+    if (prefs.serif_face === 'prata') return 2;                 // Prata + earth/olive
+    if (prefs.palette_soft === 'indigo-clay') return 1;
+    if (prefs.palette_soft === 'earth-olive') return 2;
+    return prefs.accent === 'cool' ? 1 : prefs.accent === 'warm' ? 2 : rnd();
+  }
+  if (style === 'sereno') {
+    if (prefs.serif_face === 'playfair') return 1;              // Playfair + slate/sand
+    if (prefs.serif_face === 'prata') return 2;                 // Prata + steel blue
+    return prefs.accent === 'warm' ? 1 : prefs.accent === 'cool' ? 2 : rnd();
+  }
   return rnd();
 }
 
@@ -1506,6 +1570,14 @@ function tasteLine(prefs: Record<string, string> | null): string {
   if (prefs.density === 'decorated') bits.push('enjoys richer, layered compositions');
   if (prefs.mood === 'bold') bits.push('bold striking imagery welcome');
   if (prefs.mood === 'calm') bits.push('keep the mood calm and premium');
+  const palWords: Record<string, string> = {
+    'navy-gold': 'deep navy and gold', terracotta: 'Spanish red, terracotta and cream',
+    'green-brass': 'deep green and aged brass', noche: 'ink black and gold',
+    'indigo-clay': 'indigo and burnt clay', 'earth-olive': 'earth browns and olive',
+  };
+  const pals = [prefs.palette_classic, prefs.palette_depth, prefs.palette_soft]
+    .map((p) => (p ? palWords[p] : null)).filter(Boolean);
+  if (pals.length) bits.push(`their chosen colour worlds: ${pals.join(', ')}`);
   if (prefs.likes) bits.push(`they love: ${prefs.likes}`);
   if (prefs.dislikes) bits.push(`AVOID: ${prefs.dislikes}`);
   return bits.join('; ');
@@ -1578,11 +1650,13 @@ route.post('/carousel/remix', async (c) => {
     // render synchronously — the deck's own artwork is reused, so this is seconds, not minutes
     let slides: Buffer[];
     if (isTipsImageStyle(newStyle)) {
-      const images = (ownPaths.length >= 3 ? await loadGenerationImages(ownPaths) : null)
-        ?? await loadTipsImages(newStyle);
+      const own = ownPaths.length >= 3 ? await loadGenerationImages(ownPaths) : null;
+      const images = own ?? await loadTipsImages(newStyle);
       if (!images) return c.json({ ok: false, error: 'remix_failed', message: GENERIC }, 500);
+      // same guard as /carousel/update: library stand-in → drop ctxArt or the rotation collapses
+      const ctxArtEff = ctxArt && !!own;
       slides = perSlideArt
-        ? await renderTipsImageStyledV2(newStyle, plan, agency.name, contact, brand, images, storedLang, meta?.include_recap !== false, meta?.include_context !== false, layoutVariant, ctxArt)
+        ? await renderTipsImageStyledV2(newStyle, plan, agency.name, contact, brand, images, storedLang, meta?.include_recap !== false, meta?.include_context !== false, layoutVariant, ctxArtEff)
         : await renderTipsImageStyled(newStyle, plan, agency.name, contact, brand, images, storedLang);
     } else {
       slides = await renderPlannedStyled(newStyle, plan, agency.name, contact, brand, storedLang, typeof raw.style_edition === 'number' ? raw.style_edition : 0, !!(raw.brand_navy || raw.brand_gold));

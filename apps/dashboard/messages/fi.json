@@ -921,7 +921,7 @@
       "rejected_url": "Linkkejä ei voi tallentaa — Amanda ei lähetä linkkejä.",
       "rejected_instruction_injection": "Tämä kuulostaa ohjeelta Amandalle eikä faktalta — muotoile se tiedoksi.",
       "hoursTitle": "Esittelyajat",
-      "hoursHint": "Napauta tunteja, jolloin esittelyt ovat mahdollisia. Amanda tarjoaa vain näitä aikoja.",
+      "hoursHint": "Napauta päivää avataksesi tai sulkeaksesi sen ja aseta ajat. Amanda tarjoaa esittelyjä vain näiden sisällä.",
       "blockedTitle": "Estetyt päivät",
       "blockedHint": "Pyhäpäivät tai vapaapäivät — Amanda ei koskaan varaa esittelyjä näille päiville.",
       "blockToday": "Estä tämä päivä",
@@ -929,7 +929,11 @@
       "addDate": "Estä päivämäärä",
       "unblock": "Poista esto",
       "hoursSaveNote": "Muista painaa Tallenna yllä, jotta ajat ja estetyt päivät tulevat voimaan.",
-      "hoursEmptyWarning": "Pidä vähintään yksi esittelyaika — käytä vapaisiin estettyjä päiviä."
+      "hoursEmptyWarning": "Pidä vähintään yksi esittelyaika — käytä vapaisiin estettyjä päiviä.",
+      "fromLabel": "Alkaen",
+      "toLabel": "Asti",
+      "closedLabel": "Suljettu",
+      "copyToAll": "Sama joka päivä"
     }
   },
   "performance": {
@@ -1396,7 +1400,11 @@
     "cardUpcoming": "Tulevat esittelyt",
     "cardTotal": "Ajastettu yhteensä",
     "cardManual": "Ajastettu manuaalisesti",
-    "syncNote": "Esittelyt tallennetaan AIVENAan. Google-kalenterin synkronointi tulee myöhemmin."
+    "syncNote": "Amanda varaa vain saatavuutesi sisällä. Yhdistetyt Google-kalenterit synkronoituvat automaattisesti.",
+    "availability": "Saatavuus",
+    "availabilityHint": "Esittelyajat ja estetyt päivät — Amanda varaa vain näiden sisällä.",
+    "close": "Sulje",
+    "blockedDay": "Estetty"
   },
   "calls": {
     "title": "Puhelut",

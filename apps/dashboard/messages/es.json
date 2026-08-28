@@ -921,7 +921,7 @@
       "rejected_url": "No se pueden guardar enlaces: Amanda no envía enlaces.",
       "rejected_instruction_injection": "Eso parece una instrucción para Amanda, no un dato: formúlalo como información.",
       "hoursTitle": "Horario de visitas",
-      "hoursHint": "Toca las horas en las que se pueden hacer visitas. Amanda solo ofrece estas horas.",
+      "hoursHint": "Toca un día para abrirlo o cerrarlo y ajusta las horas. Amanda solo ofrece visitas dentro de ellas.",
       "blockedTitle": "Días bloqueados",
       "blockedHint": "Festivos o días libres: Amanda nunca reserva visitas en estos días.",
       "blockToday": "Bloquear hoy",
@@ -929,7 +929,11 @@
       "addDate": "Bloquear una fecha",
       "unblock": "Desbloquear",
       "hoursSaveNote": "Recuerda pulsar Guardar arriba para que las horas y los días bloqueados se apliquen.",
-      "hoursEmptyWarning": "Mantén al menos una hora de visita: para días libres usa los días bloqueados."
+      "hoursEmptyWarning": "Mantén al menos una hora de visita: para días libres usa los días bloqueados.",
+      "fromLabel": "Desde",
+      "toLabel": "Hasta",
+      "closedLabel": "Cerrado",
+      "copyToAll": "Igual todos los días"
     }
   },
   "performance": {
@@ -1396,7 +1400,11 @@
     "cardUpcoming": "Próximas visitas",
     "cardTotal": "Total programadas",
     "cardManual": "Programadas manualmente",
-    "syncNote": "Las visitas se guardan en AIVENA. La sincronización con Google Calendar llegará más adelante."
+    "syncNote": "Amanda solo reserva dentro de tu disponibilidad. Los Google Calendar conectados se sincronizan automáticamente.",
+    "availability": "Disponibilidad",
+    "availabilityHint": "Horario de visitas y días bloqueados: Amanda solo reserva dentro de estos.",
+    "close": "Cerrar",
+    "blockedDay": "Bloqueado"
   },
   "calls": {
     "title": "Llamadas",

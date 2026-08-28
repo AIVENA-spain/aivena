@@ -921,7 +921,7 @@
       "rejected_url": "Links können nicht gespeichert werden — Amanda versendet keine Links.",
       "rejected_instruction_injection": "Das klingt wie eine Anweisung an Amanda statt einer Tatsache — formuliere es als Information.",
       "hoursTitle": "Besichtigungszeiten",
-      "hoursHint": "Tippe die Stunden an, zu denen Besichtigungen möglich sind. Amanda bietet nur diese Zeiten an.",
+      "hoursHint": "Tippe auf einen Tag zum Öffnen/Schließen und stelle die Zeiten ein. Amanda bietet Besichtigungen nur innerhalb davon an.",
       "blockedTitle": "Gesperrte Tage",
       "blockedHint": "Feiertage oder freie Tage – Amanda bucht an diesen Tagen nie Besichtigungen.",
       "blockToday": "Heute sperren",
@@ -929,7 +929,11 @@
       "addDate": "Datum sperren",
       "unblock": "Freigeben",
       "hoursSaveNote": "Denke daran, oben auf Speichern zu drücken, damit Zeiten und gesperrte Tage wirksam werden.",
-      "hoursEmptyWarning": "Behalte mindestens eine Besichtigungsstunde — für freie Zeit nutze gesperrte Tage."
+      "hoursEmptyWarning": "Behalte mindestens eine Besichtigungsstunde — für freie Zeit nutze gesperrte Tage.",
+      "fromLabel": "Von",
+      "toLabel": "Bis",
+      "closedLabel": "Geschlossen",
+      "copyToAll": "Jeden Tag gleich"
     }
   },
   "performance": {
@@ -1396,7 +1400,11 @@
     "cardUpcoming": "Anstehende Besichtigungen",
     "cardTotal": "Insgesamt geplant",
     "cardManual": "Manuell geplant",
-    "syncNote": "Besichtigungen werden in AIVENA gespeichert. Die Google-Kalender-Synchronisierung folgt später."
+    "syncNote": "Amanda bucht nur innerhalb deiner Verfügbarkeit. Verbundene Google Kalender synchronisieren automatisch.",
+    "availability": "Verfügbarkeit",
+    "availabilityHint": "Besichtigungszeiten und gesperrte Tage — Amanda bucht nur innerhalb davon.",
+    "close": "Schließen",
+    "blockedDay": "Gesperrt"
   },
   "calls": {
     "title": "Anrufe",

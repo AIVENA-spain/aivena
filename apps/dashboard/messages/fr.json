@@ -921,7 +921,7 @@
       "rejected_url": "Les liens ne peuvent pas être enregistrés — Amanda n'envoie pas de liens.",
       "rejected_instruction_injection": "Cela ressemble à une instruction pour Amanda plutôt qu'à un fait — reformulez-le comme une information.",
       "hoursTitle": "Horaires de visite",
-      "hoursHint": "Touchez les heures où les visites sont possibles. Amanda ne propose que ces horaires.",
+      "hoursHint": "Touchez un jour pour l'ouvrir ou le fermer, puis réglez les heures. Amanda ne propose des visites que dans ces créneaux.",
       "blockedTitle": "Jours bloqués",
       "blockedHint": "Jours fériés ou jours de repos — Amanda ne réserve jamais de visite ces jours-là.",
       "blockToday": "Bloquer aujourd'hui",
@@ -929,7 +929,11 @@
       "addDate": "Bloquer une date",
       "unblock": "Débloquer",
       "hoursSaveNote": "N'oubliez pas d'appuyer sur Enregistrer ci-dessus pour appliquer les horaires et les jours bloqués.",
-      "hoursEmptyWarning": "Gardez au moins une heure de visite — pour les congés, utilisez les jours bloqués."
+      "hoursEmptyWarning": "Gardez au moins une heure de visite — pour les congés, utilisez les jours bloqués.",
+      "fromLabel": "De",
+      "toLabel": "Jusqu'à",
+      "closedLabel": "Fermé",
+      "copyToAll": "Pareil chaque jour"
     }
   },
   "performance": {
@@ -1396,7 +1400,11 @@
     "cardUpcoming": "Visites à venir",
     "cardTotal": "Total programmées",
     "cardManual": "Programmées manuellement",
-    "syncNote": "Les visites sont enregistrées dans AIVENA. La synchronisation avec Google Agenda arrivera plus tard."
+    "syncNote": "Amanda ne réserve que dans votre disponibilité. Les Google Agenda connectés se synchronisent automatiquement.",
+    "availability": "Disponibilité",
+    "availabilityHint": "Horaires de visite et jours bloqués — Amanda ne réserve que dans ces limites.",
+    "close": "Fermer",
+    "blockedDay": "Bloqué"
   },
   "calls": {
     "title": "Appels",

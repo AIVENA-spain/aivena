@@ -29,6 +29,7 @@ import {
   renderPlannedStyled, renderListingStyled, vibraListing, PLANNED_STYLES, LISTING_STYLES, type CarouselStyle,
 } from '../../../../studio/engine/carouselStyles';
 import { planCarousel, remixHook, topicIdeas, listingCopy, listingStory, PlanSchema } from '../lib/studio-carousel-plan';
+import { directScenes } from '../lib/studio-carousel-art';
 import { renderTipsImageStyled, renderTipsImageStyledV2, isTipsImageStyle } from '../../../../studio/engine/carouselTipsImage';
 import { renderFreeform, type DesignSpec } from '../../../../studio/engine/renderFreeform';
 import { applyGrain, photoPalette } from '../../../../studio/engine/carouselSlides';
@@ -1036,9 +1037,22 @@ async function runPlannedCarousel(opts: {
     let imagePaths: string[] = [];
     let perSlideArt = false;
     let artworkSource: 'fresh_per_slide' | 'fresh_family' | 'library' | 'none' = 'none';
+    let artworkQa: { reviewed: number; regenerated: number; still_flagged: number } | undefined;
     if (opts.type === 'tips' && isTipsImageStyle(opts.style)) {
       // per-slide artwork: cover scene + one scene PER TIP (every slide's design = that slide's topic);
       // micro-unique every post. Fallbacks: 3-scene family → seeded approved family → editorial deck.
+      // ART DIRECTOR (Christian 2026-08-28: "more thought in the image generation process") — a
+      // dedicated pass writes idea+scene per slide; its scenes REPLACE the copywriter's one-shot
+      // scenes and its ideas power the vision reviewer. Fails → the planner's scenes stand.
+      const direction = await directScenes({
+        topic: opts.topic ?? '', hook: plan.hook_title,
+        tips: plan.tips.map((t) => ({ title: t.title, body: t.body })),
+        includeContext: opts.includeContext, avoidMotifs,
+      });
+      if (direction) {
+        plan.image_scenes = [direction.cover.scene, direction.context?.scene ?? plan.image_scenes?.[1] ?? '', plan.image_scenes?.[2] ?? ''];
+        direction.tips.forEach((b, i) => { if (plan.tips[i]) plan.tips[i].scene = b.scene; });
+      }
       const tipScenes = plan.tips.map((t) => t.scene ?? '');
       const coverScene = plan.image_scenes?.[0] ?? '';
       // slide 2 (context) gets its OWN artwork from image_scenes[1] (Christian 2026-08-28: the
@@ -1047,13 +1061,17 @@ async function runPlannedCarousel(opts: {
       const contextScene = opts.includeContext ? (plan.image_scenes?.[1] ?? '') : '';
       const hasContextArt = typeof contextScene === 'string' && contextScene.trim().length >= 10;
       const allScenes = [coverScene, ...(hasContextArt ? [contextScene] : []), ...tipScenes];
+      const allIdeas = direction
+        ? [direction.cover.idea, ...(hasContextArt && direction.context ? [direction.context.idea] : hasContextArt ? [''] : []), ...direction.tips.map((b) => b.idea)]
+        : undefined;
       let images: Buffer[] | null = null;
       let contextArt = false;
       if (allScenes.every((x) => typeof x === 'string' && x.trim().length >= 10)) {
-        const fresh = await generateTipsImages({ style: opts.style, scheme: opts.scheme, scenes: allScenes, agencyId, genId });
+        const fresh = await generateTipsImages({ style: opts.style, scheme: opts.scheme, scenes: allScenes, agencyId, genId, ideas: allIdeas });
         if (fresh && fresh.buffers.length === allScenes.length) {
           images = fresh.buffers; imagePaths = fresh.paths; perSlideArt = true; artworkSource = 'fresh_per_slide';
           contextArt = hasContextArt;
+          if (fresh.qa?.reviewed) artworkQa = fresh.qa;
         }
       }
       if (!images) {
@@ -1081,7 +1099,7 @@ async function runPlannedCarousel(opts: {
       result_metadata: {
         engine: 'carousel', carousel_type: opts.type, carousel_style: usedStyle, slide_count: stored.length, slides: stored,
         ai_imagery: opts.type === 'tips' && isTipsImageStyle(usedStyle),
-        image_paths: imagePaths, image_scheme: opts.scheme, per_slide_art: perSlideArt, artwork_source: artworkSource, include_recap: opts.includeRecap, include_context: opts.includeContext,
+        image_paths: imagePaths, image_scheme: opts.scheme, per_slide_art: perSlideArt, artwork_source: artworkSource, artwork_qa: artworkQa, include_recap: opts.includeRecap, include_context: opts.includeContext,
         plan, caption: plan.caption, hashtags: plan.hashtags,
       },
       completed_at: new Date().toISOString(),

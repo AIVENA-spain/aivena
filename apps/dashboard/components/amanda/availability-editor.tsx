@@ -12,8 +12,9 @@ const GRID_DAYS = [1, 2, 3, 4, 5, 6, 0]; // Mon..Sat, Sun — agency-week order
 const FROM_HOURS = Array.from({ length: 14 }, (_, i) => 8 + i);   // 8..21
 
 /** Per-day view over the engine's hour-array shape: open = min..max+1, and a
- *  mid-day gap renders as ONE break (multiple gaps merge into their span). */
-function toRange(hs: number[] | undefined): {
+ *  mid-day gap renders as ONE break (multiple gaps merge into their span).
+ *  Exported: the Viewings month grid derives its closed/break markers from it. */
+export function toRange(hs: number[] | undefined): {
   open: boolean; from: number; to: number; breakFrom: number | null; breakTo: number | null;
 } {
   if (!hs || hs.length === 0) return { open: false, from: 10, to: 19, breakFrom: null, breakTo: null };
@@ -76,6 +77,7 @@ export function AvailabilityEditor({
   const [blockDraft, setBlockDraft] = useState("");
   const [blockFrom, setBlockFrom] = useState<number | "">("");   // "" = all day
   const [blockTo, setBlockTo] = useState<number | "">("");
+  const [showInfo, setShowInfo] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saving, startSaving] = useTransition();
@@ -145,8 +147,24 @@ export function AvailabilityEditor({
       {/* Viewing-hours tap grid — Amanda only ever offers these start times. */}
       <div className="flex flex-col gap-2">
         <div>
-          <h4 className="text-[12.5px] font-semibold text-foreground">{t("hoursTitle")}</h4>
+          <span className="flex items-center gap-1.5">
+            <h4 className="text-[12.5px] font-semibold text-foreground">{t("hoursTitle")}</h4>
+            <button
+              type="button"
+              aria-label={t("hoursTitle")}
+              aria-expanded={showInfo}
+              onClick={() => setShowInfo((v) => !v)}
+              className="flex h-4 w-4 items-center justify-center rounded-full border border-border text-[9.5px] font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
+              i
+            </button>
+          </span>
           <p className="text-[11.5px] text-muted-foreground">{t("hoursHint")}</p>
+          {showInfo ? (
+            <p className="mt-1.5 rounded-md bg-red-500/10 px-2.5 py-1.5 text-[11.5px] text-red-700 dark:text-red-400">
+              {t("availabilityInfo")}
+            </p>
+          ) : null}
         </div>
         <div className="flex flex-col gap-1.5">
           {GRID_DAYS.map((day) => {
@@ -192,7 +210,7 @@ export function AvailabilityEditor({
                       ))}
                     </select>
                     {r.breakFrom != null && r.breakTo != null ? (
-                      <span className="flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-1 text-[11.5px] tabular-nums text-amber-700 dark:text-amber-400">
+                      <span className="flex items-center gap-1 rounded-full bg-red-500/10 px-2 py-1 text-[11.5px] tabular-nums text-red-700 dark:text-red-400">
                         <select
                           value={r.breakFrom}
                           aria-label={t("breakLabel")}
@@ -233,7 +251,7 @@ export function AvailabilityEditor({
                           const mid = Math.floor((r.from + r.to) / 2);
                           setDay(day, toHours(r.from, r.to, mid, mid + 1));
                         }}
-                        className="rounded-md px-2 py-1 text-[11.5px] font-medium text-amber-700 hover:bg-amber-500/10 dark:text-amber-400"
+                        className="rounded-md px-2 py-1 text-[11.5px] font-medium text-red-700 hover:bg-red-500/10 dark:text-red-400"
                       >
                         {t("addBreak")}
                       </button>
@@ -315,7 +333,7 @@ export function AvailabilityEditor({
         {blocked.length > 0 || slots.length > 0 ? (
           <ul className="flex flex-wrap gap-1.5">
             {slots.map((sl) => (
-              <li key={`${sl.date}-${sl.from}`} className="flex items-center gap-1 rounded-full bg-amber-500/15 px-2.5 py-1 text-[11.5px] tabular-nums text-amber-700 dark:text-amber-400">
+              <li key={`${sl.date}-${sl.from}`} className="flex items-center gap-1 rounded-full bg-red-500/10 px-2.5 py-1 text-[11.5px] tabular-nums text-red-700 dark:text-red-400">
                 {sl.date} · {hh(sl.from)}–{hh(sl.to)}
                 <button
                   type="button"
@@ -331,7 +349,7 @@ export function AvailabilityEditor({
               </li>
             ))}
             {blocked.map((d) => (
-              <li key={d} className="flex items-center gap-1 rounded-full bg-amber-500/15 px-2.5 py-1 text-[11.5px] tabular-nums text-amber-700 dark:text-amber-400">
+              <li key={d} className="flex items-center gap-1 rounded-full bg-red-500/10 px-2.5 py-1 text-[11.5px] tabular-nums text-red-700 dark:text-red-400">
                 {d}
                 <button
                   type="button"

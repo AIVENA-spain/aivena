@@ -25,7 +25,7 @@ import {
 
 import { cn } from "@/lib/utils";
 import { langLabel } from "@/app/(app)/matches/_shared";
-import { AvailabilityEditor } from "@/components/amanda/availability-editor";
+import { AvailabilityEditor, toRange, type BlockedSlot } from "@/components/amanda/availability-editor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -109,8 +109,11 @@ export function ViewingsWorkspace({
   const [blockedDates, setBlockedDates] = useState<string[]>(
     amanda?.settings?.blocked_dates ?? [],
   );
-  const [slotBlockDates, setSlotBlockDates] = useState<string[]>(
-    (amanda?.settings?.blocked_slots ?? []).map((s) => s.date),
+  const [blockedSlots, setBlockedSlots] = useState<BlockedSlot[]>(
+    amanda?.settings?.blocked_slots ?? [],
+  );
+  const [weekHours, setWeekHours] = useState<Record<string, number[]> | null>(
+    amanda?.settings?.viewing_hours_by_weekday ?? null,
   );
   const [modal, setModal] = useState<
     | { kind: "create"; presetDate?: string }
@@ -230,7 +233,8 @@ export function ViewingsWorkspace({
           bookings={bookings}
           locale={locale}
           blockedDates={blockedDates}
-          slotBlockDates={slotBlockDates}
+          blockedSlots={blockedSlots}
+          weekHours={weekHours}
           onPickDay={(date) => setModal({ kind: "create", presetDate: date })}
           onPickBooking={(b) => setModal({ kind: "edit", booking: b })}
         />
@@ -284,9 +288,10 @@ export function ViewingsWorkspace({
               initialHours={amanda?.settings?.viewing_hours_by_weekday}
               initialBlocked={amanda?.settings?.blocked_dates}
               initialSlots={amanda?.settings?.blocked_slots}
-              onSaved={(_, blocked, slots) => {
+              onSaved={(hours, blocked, slots) => {
+                setWeekHours(hours);
                 setBlockedDates(blocked);
-                setSlotBlockDates(slots.map((s) => s.date));
+                setBlockedSlots(slots);
               }}
             />
           </div>
@@ -302,14 +307,16 @@ function MonthGrid({
   bookings,
   locale,
   blockedDates,
-  slotBlockDates,
+  blockedSlots,
+  weekHours,
   onPickDay,
   onPickBooking,
 }: {
   bookings: BookingRow[];
   locale: string;
   blockedDates: string[];
-  slotBlockDates: string[];
+  blockedSlots: BlockedSlot[];
+  weekHours: Record<string, number[]> | null;
   onPickDay: (isoDate: string) => void;
   onPickBooking: (b: BookingRow) => void;
 }) {
@@ -425,7 +432,16 @@ function MonthGrid({
           const isToday = key === todayKey;
           const isWeekend = d.getDay() === 0 || d.getDay() === 6;
           const isBlocked = blockedDates.includes(key);
-          const hasSlotBlock = !isBlocked && slotBlockDates.includes(key);
+          // Weekly availability, painted into the calendar (Christian
+          // 2026-08-28): a closed weekday, a recurring break, and one-off
+          // hour blocks all show as red markers — red = not available.
+          const dayRange = weekHours ? toRange(weekHours[String(d.getDay())]) : null;
+          const isClosedWeekday = !isBlocked && dayRange !== null && !dayRange.open;
+          const daySlotBlocks = isBlocked ? [] : blockedSlots.filter((b) => b.date === key);
+          const breakChip =
+            !isBlocked && dayRange?.open && dayRange.breakFrom != null && dayRange.breakTo != null
+              ? `${dayRange.breakFrom}–${dayRange.breakTo}`
+              : null;
           return (
             <div
               key={i}
@@ -438,7 +454,8 @@ function MonthGrid({
                 "min-h-[56px] cursor-pointer border-b border-r border-border/60 p-1.5 align-top transition-colors hover:bg-muted/40 sm:min-h-[68px]",
                 !inMonth && "bg-muted/20 opacity-50",
                 inMonth && isWeekend && !isBlocked && "bg-muted/25",
-                isBlocked && "bg-amber-500/10 hover:bg-amber-500/15",
+                isBlocked && "bg-red-500/10 hover:bg-red-500/15",
+                isClosedWeekday && "bg-muted/40",
                 isToday && "bg-brand-soft/40 ring-1 ring-inset ring-brand/30",
                 (i + 1) % 7 === 0 && "border-r-0",
                 i >= 35 && "border-b-0",
@@ -451,7 +468,7 @@ function MonthGrid({
                     isToday
                       ? "bg-brand text-white font-semibold"
                       : isBlocked
-                        ? "font-semibold text-amber-700 dark:text-amber-400"
+                        ? "font-semibold text-red-700 dark:text-red-400"
                         : dayBookings.length > 0
                           ? "bg-brand-soft font-semibold text-brand"
                           : "text-muted-foreground",
@@ -460,14 +477,35 @@ function MonthGrid({
                   {d.getDate()}
                 </span>
                 {isBlocked ? (
-                  <span className="truncate text-[8.5px] font-semibold uppercase tracking-wide text-amber-700/80 dark:text-amber-400/80">
+                  <span className="truncate text-[8.5px] font-semibold uppercase tracking-wide text-red-700/80 dark:text-red-400/80">
                     {t("blockedDay")}
                   </span>
-                ) : hasSlotBlock ? (
-                  <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-amber-500" title={t("blockedDay")} />
+                ) : isClosedWeekday ? (
+                  <span className="truncate text-[8.5px] font-medium uppercase tracking-wide text-muted-foreground/70">
+                    {t("closedDay")}
+                  </span>
                 ) : null}
               </span>
               <div className="mt-1 flex flex-col gap-0.5">
+                {inMonth && breakChip ? (
+                  <span
+                    title={t("blockedDay")}
+                    className="w-fit rounded bg-red-500/10 px-1 py-px font-mono text-[8.5px] tabular-nums text-red-700/90 dark:text-red-400/90"
+                  >
+                    {breakChip}
+                  </span>
+                ) : null}
+                {inMonth
+                  ? daySlotBlocks.slice(0, 2).map((b) => (
+                      <span
+                        key={`${b.date}-${b.from}`}
+                        title={t("blockedDay")}
+                        className="w-fit rounded bg-red-500/10 px-1 py-px font-mono text-[8.5px] tabular-nums text-red-700/90 dark:text-red-400/90"
+                      >
+                        {b.from}–{b.to}
+                      </span>
+                    ))
+                  : null}
                 {dayBookings.slice(0, 2).map((b) => (
                   <button
                     key={b.id}

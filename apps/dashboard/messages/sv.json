@@ -937,7 +937,8 @@
       "addBreak": "+ Paus",
       "removeBreak": "Ta bort paus",
       "breakLabel": "Paus",
-      "allDay": "Hela dagen"
+      "allDay": "Hela dagen",
+      "availabilityInfo": "De röda tiderna är när du INTE är tillgänglig — pauser, blockerade timmar och blockerade dagar. Amanda erbjuder aldrig visningar under röd tid, och det syns även i kalendern."
     }
   },
   "performance": {
@@ -1408,7 +1409,8 @@
     "availability": "Tillgänglighet",
     "availabilityHint": "Visningstider och blockerade dagar — Amanda bokar bara inom dessa.",
     "close": "Stäng",
-    "blockedDay": "Blockerad"
+    "blockedDay": "Blockerad",
+    "closedDay": "Stängt"
   },
   "calls": {
     "title": "Samtal",

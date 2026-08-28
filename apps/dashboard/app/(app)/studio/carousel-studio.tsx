@@ -99,7 +99,7 @@ const STYLES: Record<CarouselType, [string, string, string][]> = {
   ],
 };
 
-export function CarouselStudio({ initialTopic = "", initialLanguage }: { initialTopic?: string; initialLanguage?: string } = {}) {
+export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId }: { initialTopic?: string; initialLanguage?: string; resumeGenId?: string } = {}) {
   const [phase, setPhase] = useState<Phase>("form");   // tips-only: land straight on the form
   const [ctype] = useState<CarouselType>("tips");
   const [slides, setSlides] = useState<string[]>([]);
@@ -150,6 +150,27 @@ export function CarouselStudio({ initialTopic = "", initialLanguage }: { initial
       if (r.ok && Array.isArray(r.sections)) setSections(r.sections as string[]);
     })();
   }, []);
+
+  // Open a PAST carousel straight into the result/editing screen (Christian 2026-08-28: "go in
+  // fast and edit it easy" without regenerating). Stored slide URLs are signed for a year; text
+  // edits and remixes re-render from the deck's stored artwork — no new generation needed.
+  const [resuming, setResuming] = useState(false);
+  useEffect(() => {
+    if (!resumeGenId) return;
+    setResuming(true); setPhase("working");
+    (async () => {
+      const s = await statusAction(resumeGenId);
+      setResuming(false);
+      if (s.ok && s.status === "completed" && Array.isArray(s.slides) && s.slides.length) {
+        setGenId(resumeGenId);
+        showResult(s as Record<string, unknown>);
+      } else {
+        setErr("Couldn't open that design — please try again.");
+        setPhase("form");
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resumeGenId]);
 
   function showResult(s: Record<string, unknown>) {
     setSlides(Array.isArray(s.slides) ? (s.slides as string[]) : s.image_url ? [s.image_url as string] : []);
@@ -486,7 +507,8 @@ export function CarouselStudio({ initialTopic = "", initialLanguage }: { initial
       {phase === "working" && (
         <div className="flex flex-col items-center gap-3 py-24 text-neutral-500">
           <Loader2 className="h-7 w-7 animate-spin" />
-          <p className="text-sm">{["bodegon", "litoral", "tinta", "salitre", "papel", "arcilla", "acuarela", "bordado"].includes(style) || style === "vibra"
+          <p className="text-sm">{resuming ? "Opening your design…"
+            : ["bodegon", "litoral", "tinta", "salitre", "papel", "arcilla", "acuarela", "bordado"].includes(style) || style === "vibra"
             ? "Writing the copy and painting the artwork — this takes a few minutes. Worth it."
             : ctype === "listing" ? "Building your carousel — under a minute…" : "Writing your carousel — about a minute…"}</p>
         </div>

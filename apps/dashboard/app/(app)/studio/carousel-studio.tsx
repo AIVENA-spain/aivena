@@ -169,7 +169,6 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
   const [recolouring, setRecolouring] = useState(false);
   // per-slide colour overrides (index → colours); empty means the slide follows the deck
   const [slideCols, setSlideCols] = useState<Record<number, { navy?: string; gold?: string }>>({});
-  const [perSlide, setPerSlide] = useState(false);
   const [quoteText, setQuoteText] = useState("");
   const [quoteAuthor, setQuoteAuthor] = useState("");
   const [language, setLanguage] = useState(LANGS.some(([c]) => c === initialLanguage) ? initialLanguage! : "es");
@@ -231,7 +230,6 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
     setSlideCols(s.slide_colours && typeof s.slide_colours === "object"
       ? Object.fromEntries(Object.entries(s.slide_colours as Record<string, { navy?: string; gold?: string }>).map(([k, v]) => [Number(k), v]))
       : {});
-    setPerSlide(false);
     setEditing(false); setDraft(null); setRemixed(false);
     setPhase("result");
   }
@@ -332,7 +330,9 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
   async function remix(axis: "hook" | "style" | "layout") {
     if (!genId || resultBusy) return;
     setRemixing(axis); setErr(null);
-    const r = await guarded(() => carouselRemixAction(genId, axis), "That took too long to come back. Please try again.");
+    const r = await guarded(
+      () => carouselRemixAction(genId, axis, Object.fromEntries(slides.map((_, i) => [i, slideCols[i] ?? {}]))),
+      "That took too long to come back. Please try again.");
     setRemixing("");
     if (!r) return;
     if (!r.ok) { setErr((r.message as string) ?? "Couldn't remix — please try again."); return; }
@@ -641,22 +641,20 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
                   className="mt-1.5 flex w-full items-center justify-center gap-1.5 rounded-lg border border-neutral-200 px-2 py-1.5 text-xs text-neutral-600 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800">
                   <Download className="h-3.5 w-3.5" /> Slide {i + 1}
                 </button>
-                {perSlide && (
-                  <div className="mt-1.5 flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-neutral-300 px-2 py-1.5 dark:border-neutral-700">
-                    <input type="color" title={`Main colour · slide ${i + 1}`}
-                      value={slideCols[i]?.navy ?? resColMain}
-                      onChange={(e) => setSlideCols((p) => ({ ...p, [i]: { ...p[i], navy: e.target.value } }))}
-                      className="h-5 w-6 cursor-pointer rounded border-0 bg-transparent p-0" />
-                    <input type="color" title={`Accent colour · slide ${i + 1}`}
-                      value={slideCols[i]?.gold ?? resColAccent}
-                      onChange={(e) => setSlideCols((p) => ({ ...p, [i]: { ...p[i], gold: e.target.value } }))}
-                      className="h-5 w-6 cursor-pointer rounded border-0 bg-transparent p-0" />
-                    {slideCols[i] ? (
-                      <button title="Follow the deck colours again" onClick={() => setSlideCols((p) => { const n = { ...p }; delete n[i]; return n; })}
-                        className="text-[10px] font-medium text-neutral-400 underline hover:text-neutral-600">reset</button>
-                    ) : <span className="text-[10px] text-neutral-300 dark:text-neutral-600">deck</span>}
-                  </div>
-                )}
+                <div className="mt-1.5 flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-neutral-300 px-2 py-1.5 dark:border-neutral-700">
+                  <input type="color" title={`Main colour · slide ${i + 1}`}
+                    value={slideCols[i]?.navy ?? resColMain}
+                    onChange={(e) => setSlideCols((p) => ({ ...p, [i]: { ...p[i], navy: e.target.value } }))}
+                    className="h-5 w-6 cursor-pointer rounded border-0 bg-transparent p-0" />
+                  <input type="color" title={`Accent colour · slide ${i + 1}`}
+                    value={slideCols[i]?.gold ?? resColAccent}
+                    onChange={(e) => setSlideCols((p) => ({ ...p, [i]: { ...p[i], gold: e.target.value } }))}
+                    className="h-5 w-6 cursor-pointer rounded border-0 bg-transparent p-0" />
+                  {slideCols[i] ? (
+                    <button title="Follow the deck colours again" onClick={() => setSlideCols((p) => { const n = { ...p }; delete n[i]; return n; })}
+                      className="text-[10px] font-medium text-neutral-400 underline hover:text-neutral-600">reset</button>
+                  ) : <span className="text-[10px] text-neutral-300 dark:text-neutral-600">deck</span>}
+                </div>
               </div>
             ))}
           </div>
@@ -668,14 +666,12 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
                 <Pencil className="h-4 w-4" /> Edit the text on the slides
               </button>
               <span className="flex items-center gap-1.5 rounded-lg border border-neutral-300 px-2.5 py-1.5 dark:border-neutral-700">
-                <label className="flex cursor-pointer items-center"><input type="color" value={resColMain} onChange={(e) => setResColMain(e.target.value)} className="h-6 w-7 cursor-pointer rounded border-0 bg-transparent p-0" title="Main colour" /></label>
-                <label className="flex cursor-pointer items-center"><input type="color" value={resColAccent} onChange={(e) => setResColAccent(e.target.value)} className="h-6 w-7 cursor-pointer rounded border-0 bg-transparent p-0" title="Accent colour" /></label>
                 <button disabled={resultBusy} onClick={async () => {
                   if (!genId || !plan || resultBusy) return;
                   setRecolouring(true); setErr(null);
                   // send an explicit entry for EVERY slide so a cleared one is cleared server-side too
                   const overrides = Object.fromEntries(slides.map((_, i) => [i, slideCols[i] ?? {}]));
-                  const r = await guarded(() => carouselUpdateAction(genId, plan, { navy: resColMain, gold: resColAccent }, overrides),
+                  const r = await guarded(() => carouselUpdateAction(genId, plan, undefined, overrides),
                     "That took too long to come back. Please try again.");
                   setRecolouring(false);
                   if (!r) return;
@@ -685,11 +681,7 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
                 }} className="text-sm font-medium text-neutral-700 hover:text-neutral-900 disabled:opacity-50 dark:text-neutral-300 dark:hover:text-neutral-100">
                   {recolouring ? "Recolouring…" : "Apply colours"}
                 </button>
-                <button title="Give individual slides their own two colours — useful when one palette works on the photo slides but not on the plain ones"
-                  onClick={() => setPerSlide((v) => !v)}
-                  className={`border-l pl-2 text-xs font-medium ${perSlide ? "text-emerald-700 dark:text-emerald-400" : "text-neutral-500 hover:text-neutral-800 dark:text-neutral-400"} border-neutral-300 dark:border-neutral-700`}>
-                  {perSlide ? "Per-slide: on" : "Per slide"}
-                </button>
+                <span className="border-l border-neutral-300 pl-2 text-xs text-neutral-400 dark:border-neutral-700">set them under each slide</span>
               </span>
               {/* labels are English like the rest of the Studio — these read "Otra vuelta · new
                   hook", half Spanish and half English, which looked like a translation bug */}

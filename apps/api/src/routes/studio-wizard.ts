@@ -952,6 +952,52 @@ route.post('/editable-generate', async (c) => {
 // runs async only to stay clear of serverless timeouts. Produces the slide IMAGES (posting to Instagram
 // is the agent's job — no publishing integration).
 /** Upload rendered slides to their per-generation folder and return signed URLs (1 year). */
+/** Per-slide colours: render the deck once per DISTINCT palette and take each slide from its
+ *  own pass. Two or three passes cost a second or two, where teaching every renderer about
+ *  per-slide brands would mean threading a palette through every spec builder in the engine.
+ *  Used by BOTH the edit path and the remix path — a remix that ignored these would hand back a
+ *  deck repainted in the deck colours while the pickers still showed the per-slide ones. */
+/** Merge an incoming per-slide colour map over the stored one. An entry with neither colour
+ *  clears that slide (it goes back to following the deck). */
+function mergeSlideColours(
+  prior: Record<string, { navy?: string; gold?: string }>,
+  incoming: unknown,
+): Record<string, { navy?: string; gold?: string }> {
+  const out = { ...prior };
+  if (!incoming || typeof incoming !== 'object') return out;
+  for (const [k, v] of Object.entries(incoming as Record<string, unknown>)) {
+    const i = Number(k);
+    if (!Number.isInteger(i) || i < 0 || i > 12) continue;
+    const nv = hexColour((v as any)?.navy), gd = hexColour((v as any)?.gold);
+    if (!nv && !gd) { delete out[String(i)]; continue; }
+    out[String(i)] = { ...(nv ? { navy: nv } : {}), ...(gd ? { gold: gd } : {}) };
+  }
+  return out;
+}
+
+async function renderWithSlideColours<B extends { navy: string; gold: string }>(
+  brand: B,
+  slideCols: Record<string, { navy?: string; gold?: string }>,
+  render: (b: B) => Promise<Buffer[]>,
+): Promise<Buffer[]> {
+  const base = await render(brand);
+  const groups = new Map<string, number[]>();
+  base.forEach((_, i) => {
+    const o = slideCols[String(i)];
+    if (!o || (!o.navy && !o.gold)) return;
+    const navy = o.navy ?? brand.navy, gold = o.gold ?? brand.gold;
+    if (navy === brand.navy && gold === brand.gold) return;
+    const key = `${navy}|${gold}`;
+    groups.set(key, [...(groups.get(key) ?? []), i]);
+  });
+  for (const [key, idxs] of groups) {
+    const [navy, gold] = key.split('|');
+    const pass = await render({ ...brand, navy, gold });
+    for (const i of idxs) if (pass[i]) base[i] = pass[i];
+  }
+  return base;
+}
+
 // Slides upload in PARALLEL. Sequentially this was ~5s of the ~9s an edit/recolour made the
 // browser wait for — long enough to hit the hosting platform's request ceiling on the only
 // synchronous request in the Studio (creation is fire-and-forget). Order comes from the index,
@@ -1411,39 +1457,8 @@ route.post('/carousel/update', async (c) => {
     // page with fine gold rules equally well. Overrides are keyed by slide index and merge over
     // the deck colours; a slide with no override keeps them.
     const priorSlideCols = (rawU.slide_colours && typeof rawU.slide_colours === 'object' ? rawU.slide_colours : {}) as Record<string, { navy?: string; gold?: string }>;
-    const slideCols: Record<string, { navy?: string; gold?: string }> = { ...priorSlideCols };
-    if (b.slide_colours && typeof b.slide_colours === 'object') {
-      for (const [k, v] of Object.entries(b.slide_colours as Record<string, unknown>)) {
-        const i = Number(k);
-        if (!Number.isInteger(i) || i < 0 || i > 12) continue;
-        const nv = hexColour((v as any)?.navy), gd = hexColour((v as any)?.gold);
-        if (!nv && !gd) { delete slideCols[String(i)]; continue; }   // cleared → back to the deck colours
-        slideCols[String(i)] = { ...(nv ? { navy: nv } : {}), ...(gd ? { gold: gd } : {}) };
-      }
-    }
-    const slideBrand = (i: number) => {
-      const o = slideCols[String(i)];
-      return o ? { ...brand, ...(o.navy ? { navy: o.navy } : {}), ...(o.gold ? { gold: o.gold } : {}) } : brand;
-    };
-    /** Render the deck once per DISTINCT palette, then take each slide from its own pass. Two or
-     *  three passes cost a second or two; teaching every renderer about per-slide brands would
-     *  mean threading a palette through every spec builder in the engine. */
-    async function renderDeck(render: (b: typeof brand) => Promise<Buffer[]>): Promise<Buffer[]> {
-      const base = await render(brand);
-      const groups = new Map<string, number[]>();
-      base.forEach((_, i) => {
-        const sb = slideBrand(i);
-        if (sb.navy === brand.navy && sb.gold === brand.gold) return;
-        const key = `${sb.navy}|${sb.gold}`;
-        groups.set(key, [...(groups.get(key) ?? []), i]);
-      });
-      for (const [key, idxs] of groups) {
-        const [navy, gold] = key.split('|');
-        const pass = await render({ ...brand, navy, gold });
-        for (const i of idxs) if (pass[i]) base[i] = pass[i];
-      }
-      return base;
-    }
+    const slideCols = mergeSlideColours(priorSlideCols, b.slide_colours);
+    const renderDeck = (render: (b: typeof brand) => Promise<Buffer[]>) => renderWithSlideColours(brand, slideCols, render);
 
     // re-render in the SAME visual style the carousel was created with
     const storedStyle: CarouselStyle = typeof meta?.carousel_style === 'string' &&
@@ -1732,17 +1747,24 @@ route.post('/carousel/remix', async (c) => {
 
     // render synchronously — the deck's own artwork is reused, so this is seconds, not minutes
     let slides: Buffer[];
+    // the deck's per-slide colour overrides ride through every remix — without this a remix
+    // repainted everything in the deck colours while the pickers still showed the per-slide ones
+    const remixSlideCols = mergeSlideColours(
+      (raw.slide_colours && typeof raw.slide_colours === 'object' ? raw.slide_colours : {}) as Record<string, { navy?: string; gold?: string }>,
+      b.slide_colours,
+    );
     if (isTipsImageStyle(newStyle)) {
       const own = ownPaths.length >= 3 ? await loadGenerationImages(ownPaths) : null;
       const images = own ?? await loadTipsImages(newStyle);
       if (!images) return c.json({ ok: false, error: 'remix_failed', message: GENERIC }, 500);
       // same guard as /carousel/update: library stand-in → drop ctxArt or the rotation collapses
       const ctxArtEff = ctxArt && !!own;
-      slides = perSlideArt
-        ? await renderTipsImageStyledV2(newStyle, plan, agency.name, contact, brand, images, storedLang, meta?.include_recap !== false, meta?.include_context !== false, layoutVariant, ctxArtEff)
-        : await renderTipsImageStyled(newStyle, plan, agency.name, contact, brand, images, storedLang);
+      slides = await renderWithSlideColours(brand, remixSlideCols, (br) => perSlideArt
+        ? renderTipsImageStyledV2(newStyle, plan, agency.name, contact, br, images, storedLang, meta?.include_recap !== false, meta?.include_context !== false, layoutVariant, ctxArtEff)
+        : renderTipsImageStyled(newStyle, plan, agency.name, contact, br, images, storedLang));
     } else {
-      slides = await renderPlannedStyled(newStyle, plan, agency.name, contact, brand, storedLang, styleEdition, !!(raw.brand_navy || raw.brand_gold));
+      slides = await renderWithSlideColours(brand, remixSlideCols, (br) =>
+        renderPlannedStyled(newStyle, plan, agency.name, contact, br, storedLang, styleEdition, !!(raw.brand_navy || raw.brand_gold)));
     }
 
     // A style remix repaints the deck in the NEW style's edition palette, so the parent's
@@ -1759,7 +1781,7 @@ route.post('/carousel/remix', async (c) => {
         (agency_id, generation_type, status, prompt, requested_by, raw_request)
       VALUES
         (${agencyId}, 'social_post', 'processing', ${label}, ${user?.sub ?? null}::uuid,
-         ${JSON.stringify({ ...raw, engine: 'carousel', content_type: 'carousel', carousel_style: newStyle, style_edition: styleEdition, render_navy: remixNavy, render_gold: remixGold, remix_of: parentId, remix_axis: axis })}::jsonb)
+         ${JSON.stringify({ ...raw, engine: 'carousel', content_type: 'carousel', carousel_style: newStyle, style_edition: styleEdition, render_navy: remixNavy, render_gold: remixGold, slide_colours: remixSlideCols, remix_of: parentId, remix_axis: axis })}::jsonb)
       RETURNING id
     `);
     const insRows = ins as unknown as Array<{ id: string }>;
@@ -1793,7 +1815,7 @@ route.post('/carousel/remix', async (c) => {
       ok: true, generation_id: genId,
       // the child's OWN colours — without these the result-screen pickers keep showing the
       // parent style's palette and one "Apply colours" repaints the remix back to the old look
-      render_navy: remixNavy, render_gold: remixGold,
+      render_navy: remixNavy, render_gold: remixGold, slide_colours: remixSlideCols,
       brand_navy: typeof raw.brand_navy === 'string' ? raw.brand_navy : undefined,
       brand_gold: typeof raw.brand_gold === 'string' ? raw.brand_gold : undefined,
       slides: stored.map((sl) => sl.url), plan, caption: plan.caption, hashtags: plan.hashtags,

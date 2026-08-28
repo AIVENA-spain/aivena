@@ -1413,7 +1413,17 @@
     "blockedDay": "Gesperrt",
     "closedDay": "Geschlossen",
     "dayView": "Tag",
-    "weekView": "Woche"
+    "weekView": "Woche",
+    "blockHourAction": "Diese Stunde sperren",
+    "unblockHourAction": "Diese Stunde freigeben",
+    "unblockDayAction": "Diesen Tag freigeben",
+    "newViewingHere": "Neue Besichtigung zu dieser Zeit",
+    "noteLabel": "Notiz für diese Zeit",
+    "noteHint": "Amanda kennt diese Notizen und berücksichtigt sie in Gesprächen mit Käufern.",
+    "notePlaceholder": "z. B. „Freihalten — möglicher Notartermin“",
+    "saveNote": "Notiz speichern",
+    "removeNote": "Notiz entfernen",
+    "saving": "Speichern…"
   },
   "calls": {
     "title": "Anrufe",

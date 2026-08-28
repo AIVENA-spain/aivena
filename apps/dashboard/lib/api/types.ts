@@ -978,6 +978,8 @@ export type AmandaSettingsResponse = {
     blocked_dates?: string[];
     /** One-off hour blocks on a date (meeting, dentist): start hours from..to-1. */
     blocked_slots?: Array<{ date: string; from: number; to: number }>;
+    /** Agent notes pinned to a date+hours — injected into Amanda's context. */
+    calendar_notes?: Array<{ date: string; from: number; to: number; note: string }>;
   };
   knowledge?: AmandaKnowledgeEntry[];
 };

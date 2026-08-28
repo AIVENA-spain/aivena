@@ -1413,7 +1413,17 @@
     "blockedDay": "Blockerad",
     "closedDay": "Stängt",
     "dayView": "Dag",
-    "weekView": "Vecka"
+    "weekView": "Vecka",
+    "blockHourAction": "Blockera denna timme",
+    "unblockHourAction": "Avblockera denna timme",
+    "unblockDayAction": "Avblockera denna dag",
+    "newViewingHere": "Ny visning denna tid",
+    "noteLabel": "Anteckning för denna tid",
+    "noteHint": "Amanda känner till anteckningarna och tar hänsyn till dem i samtal med köpare.",
+    "notePlaceholder": "t.ex. \"Håll ledigt — möjligt notariebesök\"",
+    "saveNote": "Spara anteckning",
+    "removeNote": "Ta bort anteckning",
+    "saving": "Sparar…"
   },
   "calls": {
     "title": "Samtal",

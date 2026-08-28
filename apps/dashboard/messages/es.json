@@ -1413,7 +1413,17 @@
     "blockedDay": "Bloqueado",
     "closedDay": "Cerrado",
     "dayView": "Día",
-    "weekView": "Semana"
+    "weekView": "Semana",
+    "blockHourAction": "Bloquear esta hora",
+    "unblockHourAction": "Desbloquear esta hora",
+    "unblockDayAction": "Desbloquear este día",
+    "newViewingHere": "Nueva visita a esta hora",
+    "noteLabel": "Nota para esta hora",
+    "noteHint": "Amanda conoce estas notas y las tiene en cuenta al hablar con compradores.",
+    "notePlaceholder": "p. ej. «Mantener libre: posible visita del notario»",
+    "saveNote": "Guardar nota",
+    "removeNote": "Eliminar nota",
+    "saving": "Guardando…"
   },
   "calls": {
     "title": "Llamadas",

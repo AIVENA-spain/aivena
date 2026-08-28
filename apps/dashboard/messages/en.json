@@ -1413,7 +1413,17 @@
     "blockedDay": "Blocked",
     "closedDay": "Closed",
     "dayView": "Day",
-    "weekView": "Week"
+    "weekView": "Week",
+    "blockHourAction": "Block this hour",
+    "unblockHourAction": "Unblock this hour",
+    "unblockDayAction": "Unblock this day",
+    "newViewingHere": "New viewing at this time",
+    "noteLabel": "Note for this time",
+    "noteHint": "Amanda knows these notes and considers them when talking to buyers.",
+    "notePlaceholder": "e.g. \"Keep free — possible visit from the notary\"",
+    "saveNote": "Save note",
+    "removeNote": "Remove note",
+    "saving": "Saving…"
   },
   "calls": {
     "title": "Calls",

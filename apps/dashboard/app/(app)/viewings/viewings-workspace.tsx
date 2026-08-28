@@ -42,6 +42,9 @@ import {
   updateViewingAction,
   type ViewingInput,
 } from "./viewings-actions";
+import { saveAmandaSettingsAction } from "@/app/(app)/settings/section-actions";
+
+type CalendarNote = { date: string; from: number; to: number; note: string };
 
 type ViewMode = "day" | "week" | "month" | "list";
 
@@ -115,6 +118,13 @@ export function ViewingsWorkspace({
   const [weekHours, setWeekHours] = useState<Record<string, number[]> | null>(
     amanda?.settings?.viewing_hours_by_weekday ?? null,
   );
+  const [calendarNotes, setCalendarNotes] = useState<CalendarNote[]>(
+    amanda?.settings?.calendar_notes ?? [],
+  );
+  // Tap-a-square editor (Christian 2026-08-28): the tapped date+hour IS the
+  // thing being edited — quick block/unblock, a note Amanda will know, or a
+  // viewing right there.
+  const [slotEdit, setSlotEdit] = useState<{ date: string; hour: number } | null>(null);
   const [modal, setModal] = useState<
     | { kind: "create"; presetDate?: string }
     | { kind: "edit"; booking: BookingRow }
@@ -238,8 +248,9 @@ export function ViewingsWorkspace({
           locale={locale}
           blockedDates={blockedDates}
           blockedSlots={blockedSlots}
+          calendarNotes={calendarNotes}
           weekHours={weekHours}
-          onPickDay={(date) => setModal({ kind: "create", presetDate: date })}
+          onPickSlot={(date, hour) => setSlotEdit({ date, hour })}
           onPickBooking={(b) => setModal({ kind: "edit", booking: b })}
         />
       ) : view === "month" ? (
@@ -268,6 +279,28 @@ export function ViewingsWorkspace({
           presetDate={modal.kind === "create" ? modal.presetDate : undefined}
           properties={properties}
           onClose={closeAndRefresh}
+        />
+      ) : null}
+
+      {slotEdit ? (
+        <SlotEditor
+          date={slotEdit.date}
+          hour={slotEdit.hour}
+          locale={locale}
+          blockedDates={blockedDates}
+          blockedSlots={blockedSlots}
+          calendarNotes={calendarNotes}
+          onClose={() => setSlotEdit(null)}
+          onNewViewing={() => {
+            const preset = `${slotEdit.date}T${String(slotEdit.hour).padStart(2, "0")}:00`;
+            setSlotEdit(null);
+            setModal({ kind: "create", presetDate: preset });
+          }}
+          onSaved={(nextDates, nextSlots, nextNotes) => {
+            setBlockedDates(nextDates);
+            setBlockedSlots(nextSlots);
+            setCalendarNotes(nextNotes);
+          }}
         />
       ) : null}
 
@@ -337,8 +370,9 @@ function TimeGrid({
   locale,
   blockedDates,
   blockedSlots,
+  calendarNotes,
   weekHours,
-  onPickDay,
+  onPickSlot,
   onPickBooking,
 }: {
   days: 1 | 7;
@@ -346,8 +380,9 @@ function TimeGrid({
   locale: string;
   blockedDates: string[];
   blockedSlots: BlockedSlot[];
+  calendarNotes: CalendarNote[];
   weekHours: Record<string, number[]> | null;
-  onPickDay: (isoDate: string) => void;
+  onPickSlot: (isoDate: string, hour: number) => void;
   onPickBooking: (b: BookingRow) => void;
 }) {
   const t = useTranslations("viewings");
@@ -480,6 +515,7 @@ function TimeGrid({
               const range = weekHours ? toRange(weekHours[String(d.getDay())]) : null;
               const dayBlocks = blockedSlots.filter((b) => b.date === key);
               const dayBookings = byDay.get(key) ?? [];
+              const dayNotes = calendarNotes.filter((n) => n.date === key);
               return (
                 <div key={key} className="relative border-r border-border/60 last:border-r-0">
                   {hours.map((h) => {
@@ -490,20 +526,28 @@ function TimeGrid({
                       range?.open && range.breakFrom != null && range.breakTo != null && h >= range.breakFrom && h < range.breakTo;
                     const inSlotBlock = dayBlocks.some((b) => h >= b.from && h < b.to);
                     const red = isBlockedDay || inBreak || inSlotBlock;
+                    const note = dayNotes.find((n) => h >= n.from && h < n.to);
                     return (
                       <div
                         key={h}
                         role="button"
                         tabIndex={0}
-                        onClick={() => onPickDay(key)}
-                        onKeyDown={(e) => e.key === "Enter" && onPickDay(key)}
-                        title={red ? t("blockedDay") : closed ? t("closedDay") : undefined}
+                        onClick={() => onPickSlot(key, h)}
+                        onKeyDown={(e) => e.key === "Enter" && onPickSlot(key, h)}
+                        title={note ? note.note : red ? t("blockedDay") : closed ? t("closedDay") : undefined}
                         style={{ height: HOUR_PX }}
                         className={cn(
-                          "cursor-pointer border-b border-border/40 transition-colors",
-                          red ? "bg-red-500/10 hover:bg-red-500/15" : closed ? "bg-muted/40" : "hover:bg-brand-soft/30",
+                          "relative cursor-pointer border-b border-border/40 transition-colors",
+                          red ? "bg-red-500/10 hover:bg-red-500/15" : closed ? "bg-muted/40 hover:bg-muted/60" : "hover:bg-brand-soft/30",
                         )}
-                      />
+                      >
+                        {note ? (
+                          <span
+                            aria-hidden
+                            className="absolute right-1 top-1 h-2 w-2 rounded-full bg-violet-500"
+                          />
+                        ) : null}
+                      </div>
                     );
                   })}
                   {/* bookings positioned at their real time */}
@@ -543,6 +587,156 @@ function TimeGrid({
             })}
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── slot editor (tap-a-square, Christian 2026-08-28) ─────────────────────
+   The tapped date+hour is the thing being edited: quick block/unblock that
+   hour (or unblock a blocked day), write a note Amanda will genuinely know
+   (it rides her agency context for the next 14 days), or start a viewing at
+   exactly that time. Saves immediately — no separate Save step. */
+
+function SlotEditor({
+  date,
+  hour,
+  locale,
+  blockedDates,
+  blockedSlots,
+  calendarNotes,
+  onClose,
+  onNewViewing,
+  onSaved,
+}: {
+  date: string;
+  hour: number;
+  locale: string;
+  blockedDates: string[];
+  blockedSlots: BlockedSlot[];
+  calendarNotes: CalendarNote[];
+  onClose: () => void;
+  onNewViewing: () => void;
+  onSaved: (dates: string[], slots: BlockedSlot[], notes: CalendarNote[]) => void;
+}) {
+  const t = useTranslations("viewings");
+  const dayBlocked = blockedDates.includes(date);
+  const hourBlocked = blockedSlots.some((b) => b.date === date && hour >= b.from && hour < b.to);
+  const existingNote = calendarNotes.find((n) => n.date === date && hour >= n.from && hour < n.to) ?? null;
+
+  const [note, setNote] = useState(existingNote?.note ?? "");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const title = new Intl.DateTimeFormat(locale, { weekday: "long", day: "numeric", month: "long" }).format(
+    new Date(`${date}T12:00:00`),
+  );
+  const hh = (n: number) => `${String(n).padStart(2, "0")}:00`;
+
+  async function persist(nextDates: string[], nextSlots: BlockedSlot[], nextNotes: CalendarNote[], close: boolean) {
+    setBusy(true);
+    setError(null);
+    const res = await saveAmandaSettingsAction({
+      blocked_dates: nextDates,
+      blocked_slots: nextSlots,
+      calendar_notes: nextNotes,
+    });
+    setBusy(false);
+    if (res.ok) {
+      onSaved(nextDates, nextSlots, nextNotes);
+      if (close) onClose();
+    } else {
+      setError(res.error);
+    }
+  }
+
+  function toggleHourBlock() {
+    if (dayBlocked) {
+      void persist(blockedDates.filter((d) => d !== date), blockedSlots, calendarNotes, true);
+      return;
+    }
+    const next = hourBlocked
+      ? blockedSlots.filter((b) => !(b.date === date && hour >= b.from && hour < b.to))
+      : [...blockedSlots, { date, from: hour, to: hour + 1 }];
+    void persist(blockedDates, next, calendarNotes, true);
+  }
+
+  function saveNote() {
+    const trimmed = note.trim().slice(0, 240);
+    const without = calendarNotes.filter((n) => !(n.date === date && hour >= n.from && hour < n.to));
+    const next = trimmed ? [...without, { date, from: hour, to: hour + 1, note: trimmed }] : without;
+    void persist(blockedDates, blockedSlots, next, true);
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/40 px-4" onClick={onClose}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-[360px] rounded-xl border border-border bg-card p-4 shadow-elevated"
+      >
+        <div className="mb-3 flex items-start justify-between gap-2">
+          <div>
+            <h3 className="text-[14px] font-semibold capitalize text-foreground">{title}</h3>
+            <p className="font-mono text-[12px] tabular-nums text-brand">{hh(hour)} – {hh(hour + 1)}</p>
+          </div>
+          <button
+            type="button"
+            aria-label={t("close")}
+            onClick={onClose}
+            className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            <X className="h-4 w-4" aria-hidden />
+          </button>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={toggleHourBlock}
+            className={cn(
+              "rounded-lg px-3 py-2 text-left text-[13px] font-medium transition-colors",
+              dayBlocked || hourBlocked
+                ? "bg-red-500/10 text-red-700 hover:bg-red-500/15 dark:text-red-400"
+                : "bg-muted/60 text-foreground hover:bg-muted",
+            )}
+          >
+            {dayBlocked ? t("unblockDayAction") : hourBlocked ? t("unblockHourAction") : t("blockHourAction")}
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={onNewViewing}
+            className="rounded-lg bg-brand-soft px-3 py-2 text-left text-[13px] font-medium text-brand hover:brightness-95"
+          >
+            {t("newViewingHere")}
+          </button>
+
+          <div className="mt-1 flex flex-col gap-1.5">
+            <label htmlFor="slot-note" className="text-[12px] font-semibold text-foreground">
+              {t("noteLabel")}
+            </label>
+            <p className="text-[11px] text-muted-foreground">{t("noteHint")}</p>
+            <textarea
+              id="slot-note"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              disabled={busy}
+              maxLength={240}
+              rows={2}
+              placeholder={t("notePlaceholder")}
+              className="min-h-[52px] rounded-md border border-border bg-background px-2.5 py-1.5 text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand/40"
+            />
+            <div className="flex items-center gap-2">
+              <Button size="sm" onClick={saveNote} disabled={busy || (!note.trim() && !existingNote)}>
+                {busy ? t("saving") : existingNote && !note.trim() ? t("removeNote") : t("saveNote")}
+              </Button>
+            </div>
+          </div>
+        </div>
+        {error ? <p className="mt-2 text-[12px] text-destructive">{error}</p> : null}
       </div>
     </div>
   );
@@ -999,7 +1193,7 @@ function ViewingModal({
     booking
       ? toDatetimeLocal(booking.scheduled_at)
       : presetDate
-        ? `${presetDate}T10:00`
+        ? presetDate.includes("T") ? presetDate : `${presetDate}T10:00`
         : "",
   );
   const [duration, setDuration] = useState(booking?.duration_minutes ?? 60);

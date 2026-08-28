@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { candidateSlots, parseAmandaSettings } from './availability-lib';
+import { candidateSlots, parseAmandaSettings, upcomingCalendarNotes } from './availability-lib';
 import { wallClockInZone } from './datetime-resolver';
 
 // 2026-08-31 is a Monday. Anchor "now" at 08:00 UTC that day (10:00 Madrid).
@@ -33,6 +33,35 @@ describe('parseAmandaSettings — availability shapes (Christian 2026-08-28)', (
   it('empty/malformed hours fall back to the safe default (never brick booking)', () => {
     expect(Object.keys(parseAmandaSettings({}).viewingHoursByWeekday).length).toBeGreaterThan(0);
     expect(Object.keys(parseAmandaSettings({ viewing_hours_by_weekday: {} }).viewingHoursByWeekday).length).toBeGreaterThan(0);
+  });
+});
+
+describe('calendar notes — parse + prompt-context window', () => {
+  it('parses valid notes, rejects malformed ones', () => {
+    const s = parseAmandaSettings({
+      calendar_notes: [
+        { date: '2026-09-02', from: 12, to: 14, note: 'Team meeting — office empty' },
+        { date: 'bad', from: 12, to: 14, note: 'x' },
+        { date: '2026-09-02', from: 14, to: 12, note: 'inverted' },
+        { date: '2026-09-02', from: 12, to: 14, note: '' },
+      ],
+    });
+    expect(s.calendarNotes).toEqual([{ date: '2026-09-02', from: 12, to: 14, note: 'Team meeting — office empty' }]);
+  });
+  it('upcomingCalendarNotes includes only agency-local today..+14d, sorted and formatted', () => {
+    const s = parseAmandaSettings({
+      calendar_notes: [
+        { date: '2026-08-30', from: 9, to: 10, note: 'B' },
+        { date: '2026-08-29', from: 17, to: 19, note: 'A' },
+        { date: '2026-08-01', from: 9, to: 10, note: 'past' },
+        { date: '2026-10-01', from: 9, to: 10, note: 'far future' },
+      ],
+    });
+    const got = upcomingCalendarNotes(s, MON_08_UTC - 2 * 86_400_000);   // Sat 2026-08-29 in Madrid
+    expect(got).toEqual([
+      'Calendar note for 2026-08-29 17:00-19:00: A',
+      'Calendar note for 2026-08-30 09:00-10:00: B',
+    ]);
   });
 });
 

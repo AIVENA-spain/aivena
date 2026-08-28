@@ -1413,7 +1413,17 @@
     "blockedDay": "Geblokkeerd",
     "closedDay": "Gesloten",
     "dayView": "Dag",
-    "weekView": "Week"
+    "weekView": "Week",
+    "blockHourAction": "Dit uur blokkeren",
+    "unblockHourAction": "Dit uur deblokkeren",
+    "unblockDayAction": "Deze dag deblokkeren",
+    "newViewingHere": "Nieuwe bezichtiging op dit tijdstip",
+    "noteLabel": "Notitie voor dit tijdstip",
+    "noteHint": "Amanda kent deze notities en houdt er rekening mee in gesprekken met kopers.",
+    "notePlaceholder": "bijv. \"Vrijhouden — mogelijk bezoek van de notaris\"",
+    "saveNote": "Notitie opslaan",
+    "removeNote": "Notitie verwijderen",
+    "saving": "Opslaan…"
   },
   "calls": {
     "title": "Oproepen",

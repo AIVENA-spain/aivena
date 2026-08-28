@@ -1423,7 +1423,8 @@
     "notePlaceholder": "z. B. „Freihalten — möglicher Notartermin“",
     "saveNote": "Notiz speichern",
     "removeNote": "Notiz entfernen",
-    "saving": "Speichern…"
+    "saving": "Speichern…",
+    "noteColor": "Notizfarbe"
   },
   "calls": {
     "title": "Anrufe",

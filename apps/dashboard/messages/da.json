@@ -1423,7 +1423,8 @@
     "notePlaceholder": "f.eks. \"Hold fri — muligt notarbesøg\"",
     "saveNote": "Gem note",
     "removeNote": "Fjern note",
-    "saving": "Gemmer…"
+    "saving": "Gemmer…",
+    "noteColor": "Notefarve"
   },
   "calls": {
     "title": "Opkald",

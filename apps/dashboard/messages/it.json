@@ -1423,7 +1423,8 @@
     "notePlaceholder": "es. \"Tenere libero — possibile visita del notaio\"",
     "saveNote": "Salva nota",
     "removeNote": "Rimuovi nota",
-    "saving": "Salvataggio…"
+    "saving": "Salvataggio…",
+    "noteColor": "Colore della nota"
   },
   "calls": {
     "title": "Chiamate",

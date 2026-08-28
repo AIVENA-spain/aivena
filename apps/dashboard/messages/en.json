@@ -1423,7 +1423,8 @@
     "notePlaceholder": "e.g. \"Keep free — possible visit from the notary\"",
     "saveNote": "Save note",
     "removeNote": "Remove note",
-    "saving": "Saving…"
+    "saving": "Saving…",
+    "noteColor": "Note colour"
   },
   "calls": {
     "title": "Calls",

@@ -416,7 +416,7 @@ export async function saveAmandaSettingsAction(input: {
   viewing_hours_by_weekday?: Record<string, number[]>;
   blocked_dates?: string[];
   blocked_slots?: Array<{ date: string; from: number; to: number }>;
-  calendar_notes?: Array<{ date: string; from: number; to: number; note: string }>;
+  calendar_notes?: Array<{ date: string; from: number; to: number; note: string; color?: string }>;
 }): Promise<ActionResult<{ ok: true }>> {
   try {
     await apiFetch<{ ok: true }>("/api/v1/amanda/settings", {

@@ -18,8 +18,11 @@ export interface AmandaAgencySettings {
    *  Scrubbed at save; upcoming ones are injected into Amanda's agency
    *  context so she genuinely knows them. They do NOT block time by
    *  themselves — blocking is blockedSlots/blockedDates. */
-  calendarNotes: Array<{ date: string; from: number; to: number; note: string }>;
+  calendarNotes: Array<{ date: string; from: number; to: number; note: string; color?: string }>;
 }
+
+/** Note colours the dashboard offers — red/green are reserved (blocked/booked). */
+export const NOTE_COLORS = ['violet', 'blue', 'amber', 'pink', 'teal', 'slate'] as const;
 
 const DEFAULT_VIEWING_HOURS: Record<number, number[]> = { 1: [11, 17], 2: [11, 17], 3: [11, 17], 4: [11, 17], 5: [11, 17], 6: [11] };
 
@@ -67,7 +70,7 @@ export function parseAmandaSettings(raw: unknown): AmandaAgencySettings {
       : [],
     calendarNotes: Array.isArray(o.calendar_notes)
       ? (o.calendar_notes as unknown[])
-          .filter((n): n is { date: string; from: number; to: number; note: string } => {
+          .filter((n): n is { date: string; from: number; to: number; note: string; color?: string } => {
             const x = n as { date?: unknown; from?: unknown; to?: unknown; note?: unknown };
             return (
               typeof x?.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(x.date) &&
@@ -77,6 +80,12 @@ export function parseAmandaSettings(raw: unknown): AmandaAgencySettings {
               typeof x.note === 'string' && x.note.trim().length > 0 && x.note.length <= 240
             );
           })
+          .map((n) => ({
+            ...n,
+            color: (NOTE_COLORS as readonly string[]).includes((n as { color?: unknown }).color as string)
+              ? ((n as { color?: string }).color as string)
+              : 'violet',
+          }))
           .slice(0, 60)
       : [],
   };

@@ -368,6 +368,9 @@ function shapeStatus(r: GenRow) {
     // the colours the deck actually rendered with (override ?? edition ?? brand) — seeds the pickers
     render_navy: typeof (r as any).raw_request?.render_navy === 'string' ? (r as any).raw_request.render_navy : undefined,
     render_gold: typeof (r as any).raw_request?.render_gold === 'string' ? (r as any).raw_request.render_gold : undefined,
+    // per-slide colour overrides, so reopening a deck shows the fine-tuning it was saved with
+    slide_colours: (r as any).raw_request?.slide_colours && typeof (r as any).raw_request.slide_colours === 'object'
+      ? (r as any).raw_request.slide_colours : undefined,
     caption: typeof (meta as any)?.caption === 'string' ? (meta as any).caption : undefined,
     hashtags: Array.isArray((meta as any)?.hashtags) ? (meta as any).hashtags : undefined,
     plan: (meta as any)?.plan && typeof (meta as any).plan === 'object' ? (meta as any).plan : undefined,
@@ -1402,6 +1405,46 @@ route.post('/carousel/update', async (c) => {
     if (effGold) brand.gold = effGold;
     const contact = [agency.web, agency.phone].filter(Boolean).join(' · ');
 
+    // PER-SLIDE colours (Christian 2026-08-28: "no matter what color i choose, in some places
+    // one color wont show as good as it does in other places — it must be possible to change on
+    // each page individually"). One palette cannot serve a full-bleed colour ground and a cream
+    // page with fine gold rules equally well. Overrides are keyed by slide index and merge over
+    // the deck colours; a slide with no override keeps them.
+    const priorSlideCols = (rawU.slide_colours && typeof rawU.slide_colours === 'object' ? rawU.slide_colours : {}) as Record<string, { navy?: string; gold?: string }>;
+    const slideCols: Record<string, { navy?: string; gold?: string }> = { ...priorSlideCols };
+    if (b.slide_colours && typeof b.slide_colours === 'object') {
+      for (const [k, v] of Object.entries(b.slide_colours as Record<string, unknown>)) {
+        const i = Number(k);
+        if (!Number.isInteger(i) || i < 0 || i > 12) continue;
+        const nv = hexColour((v as any)?.navy), gd = hexColour((v as any)?.gold);
+        if (!nv && !gd) { delete slideCols[String(i)]; continue; }   // cleared → back to the deck colours
+        slideCols[String(i)] = { ...(nv ? { navy: nv } : {}), ...(gd ? { gold: gd } : {}) };
+      }
+    }
+    const slideBrand = (i: number) => {
+      const o = slideCols[String(i)];
+      return o ? { ...brand, ...(o.navy ? { navy: o.navy } : {}), ...(o.gold ? { gold: o.gold } : {}) } : brand;
+    };
+    /** Render the deck once per DISTINCT palette, then take each slide from its own pass. Two or
+     *  three passes cost a second or two; teaching every renderer about per-slide brands would
+     *  mean threading a palette through every spec builder in the engine. */
+    async function renderDeck(render: (b: typeof brand) => Promise<Buffer[]>): Promise<Buffer[]> {
+      const base = await render(brand);
+      const groups = new Map<string, number[]>();
+      base.forEach((_, i) => {
+        const sb = slideBrand(i);
+        if (sb.navy === brand.navy && sb.gold === brand.gold) return;
+        const key = `${sb.navy}|${sb.gold}`;
+        groups.set(key, [...(groups.get(key) ?? []), i]);
+      });
+      for (const [key, idxs] of groups) {
+        const [navy, gold] = key.split('|');
+        const pass = await render({ ...brand, navy, gold });
+        for (const i of idxs) if (pass[i]) base[i] = pass[i];
+      }
+      return base;
+    }
+
     // re-render in the SAME visual style the carousel was created with
     const storedStyle: CarouselStyle = typeof meta?.carousel_style === 'string' &&
       (PLANNED_STYLES[priorPlan.type] as string[]).includes(meta.carousel_style)
@@ -1418,14 +1461,14 @@ route.post('/carousel/update', async (c) => {
       // in, keeping ctxArt would collapse the tip rotation onto a single artwork
       const ctxArtEff = ctxArt && !!own;
       if (images) {
-        slides = perSlideArt
-          ? await renderTipsImageStyledV2(storedStyle, plan, agency.name, contact, brand, images, storedLang, meta?.include_recap !== false, meta?.include_context !== false, typeof meta?.layout_variant === 'number' ? meta.layout_variant : 0, ctxArtEff)
-          : await renderTipsImageStyled(storedStyle, plan, agency.name, contact, brand, images, storedLang);
+        slides = await renderDeck((br) => perSlideArt
+          ? renderTipsImageStyledV2(storedStyle, plan, agency.name, contact, br, images, storedLang, meta?.include_recap !== false, meta?.include_context !== false, typeof meta?.layout_variant === 'number' ? meta.layout_variant : 0, ctxArtEff)
+          : renderTipsImageStyled(storedStyle, plan, agency.name, contact, br, images, storedLang));
       } else {
-        slides = await renderPlannedStyled('editorial', plan, agency.name, contact, brand, storedLang, typeof rawU.style_edition === 'number' ? rawU.style_edition : 0, !!(effNavy || effGold));
+        slides = await renderDeck((br) => renderPlannedStyled('editorial', plan, agency.name, contact, br, storedLang, typeof rawU.style_edition === 'number' ? rawU.style_edition : 0, !!(effNavy || effGold)));
       }
     } else {
-      slides = await renderPlannedStyled(storedStyle, plan, agency.name, contact, brand, storedLang, typeof rawU.style_edition === 'number' ? rawU.style_edition : 0, !!(effNavy || effGold));
+      slides = await renderDeck((br) => renderPlannedStyled(storedStyle, plan, agency.name, contact, br, storedLang, typeof rawU.style_edition === 'number' ? rawU.style_edition : 0, !!(effNavy || effGold)));
     }
     const stored = await storeSlides(agencyId, genId, slides);
 
@@ -1436,14 +1479,16 @@ route.post('/carousel/update', async (c) => {
         ...meta, slide_count: stored.length, slides: stored,
         plan, caption: plan.caption, hashtags: plan.hashtags,
       },
-      ...(hexColour(b.brand_navy) || hexColour(b.brand_gold)
-        ? { raw_request: { ...rawU, ...(effNavy ? { brand_navy: effNavy, render_navy: effNavy } : {}), ...(effGold ? { brand_gold: effGold, render_gold: effGold } : {}) } }
+      ...(hexColour(b.brand_navy) || hexColour(b.brand_gold) || b.slide_colours
+        ? { raw_request: { ...rawU, slide_colours: slideCols,
+            ...(effNavy ? { brand_navy: effNavy, render_navy: effNavy } : {}),
+            ...(effGold ? { brand_gold: effGold, render_gold: effGold } : {}) } }
         : {}),
       updated_at: new Date().toISOString(),
     }).eq('id', genId).eq('agency_id', agencyId);
 
     return c.json({
-      ok: true, id: genId,
+      ok: true, id: genId, slide_colours: slideCols,
       slides: stored.map((s) => s.url), plan, caption: plan.caption, hashtags: plan.hashtags,
     });
   } catch (err) {
@@ -1649,20 +1694,29 @@ route.post('/carousel/remix', async (c) => {
     let plan: CarouselPlan = priorPlan;
     let newStyle: CarouselStyle = storedStyle;
     let layoutVariant = priorVariant;
+    let styleEdition = typeof raw.style_edition === 'number' ? (raw.style_edition as number) : 0;
     if (axis === 'hook') {
       const topic = typeof raw.topic === 'string' ? (raw.topic as string) : '';
       const reframed = await remixHook(priorPlan, storedLang, topic);
       if (!reframed) return c.json({ ok: false, error: 'remix_failed', message: "Couldn't find a better angle right now — please try again." }, 502);
       plan = { ...priorPlan, ...reframed };
     } else if (axis === 'style') {
+      // "New look" has to LOOK new. On an AI-imagery deck the artwork is deliberately reused
+      // (a remix is free), and several of those styles differ mainly in their artwork — so
+      // swapping the style key alone could return a deck the agent could not tell apart. The
+      // compositions now advance with it. On a type-only deck the EDITION moves too, which
+      // changes the display face and the colour world — the biggest visible change available.
       const ring = isTipsImageStyle(storedStyle) ? REMIX_IMG_RING : REMIX_TYPE_RING;
       const at = ring.indexOf(storedStyle);
       newStyle = ring[(at + 1) % ring.length] as CarouselStyle;
+      if (isTipsImageStyle(newStyle) && perSlideArt) layoutVariant = (priorVariant + 1) % 6;
+      else styleEdition = (styleEdition + 1) % ((TYPE_EDITIONS[newStyle] ?? [{}]).length || 1);
     } else {
       if (!(isTipsImageStyle(storedStyle) && perSlideArt)) {
         return c.json({ ok: false, error: 'no_layouts', message: "This look doesn't have alternative compositions — try a new hook or another look." }, 400);
       }
-      layoutVariant = (priorVariant + 1) % 3;   // three compositions exist; cycle them
+      // six: three mixed rotations, then three where every tip shares one composition
+      layoutVariant = (priorVariant + 1) % 6;
     }
 
     const bRes = await tx.execute(sql`
@@ -1688,14 +1742,14 @@ route.post('/carousel/remix', async (c) => {
         ? await renderTipsImageStyledV2(newStyle, plan, agency.name, contact, brand, images, storedLang, meta?.include_recap !== false, meta?.include_context !== false, layoutVariant, ctxArtEff)
         : await renderTipsImageStyled(newStyle, plan, agency.name, contact, brand, images, storedLang);
     } else {
-      slides = await renderPlannedStyled(newStyle, plan, agency.name, contact, brand, storedLang, typeof raw.style_edition === 'number' ? raw.style_edition : 0, !!(raw.brand_navy || raw.brand_gold));
+      slides = await renderPlannedStyled(newStyle, plan, agency.name, contact, brand, storedLang, styleEdition, !!(raw.brand_navy || raw.brand_gold));
     }
 
     // A style remix repaints the deck in the NEW style's edition palette, so the parent's
     // "colours actually rendered" no longer describe this child — recompute them, or the
     // finished-deck pickers would open on the old style's colours and overwrite the new look.
     const remixLock = !!(raw.brand_navy || raw.brand_gold);
-    const remixEd = !remixLock ? ((TYPE_EDITIONS[newStyle] ?? [])[typeof raw.style_edition === 'number' ? raw.style_edition : 0] ?? {}) : {};
+    const remixEd = !remixLock ? ((TYPE_EDITIONS[newStyle] ?? [])[styleEdition] ?? {}) : {};
     const remixNavy = (typeof raw.brand_navy === 'string' ? raw.brand_navy : null) ?? remixEd.navy ?? brand.navy;
     const remixGold = (typeof raw.brand_gold === 'string' ? raw.brand_gold : null) ?? remixEd.gold ?? brand.gold;
 
@@ -1705,7 +1759,7 @@ route.post('/carousel/remix', async (c) => {
         (agency_id, generation_type, status, prompt, requested_by, raw_request)
       VALUES
         (${agencyId}, 'social_post', 'processing', ${label}, ${user?.sub ?? null}::uuid,
-         ${JSON.stringify({ ...raw, engine: 'carousel', content_type: 'carousel', carousel_style: newStyle, render_navy: remixNavy, render_gold: remixGold, remix_of: parentId, remix_axis: axis })}::jsonb)
+         ${JSON.stringify({ ...raw, engine: 'carousel', content_type: 'carousel', carousel_style: newStyle, style_edition: styleEdition, render_navy: remixNavy, render_gold: remixGold, remix_of: parentId, remix_axis: axis })}::jsonb)
       RETURNING id
     `);
     const insRows = ins as unknown as Array<{ id: string }>;

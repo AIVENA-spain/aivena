@@ -351,7 +351,11 @@ export async function renderTipsImageStyledV2(
     const base = contextArt && images.length > 2 ? 2 : 1;
     const photo = images.length > base ? base + (i % (images.length - base)) : 0;
     const slideNo = i + 2 + (includeContext ? 1 : 0);
-    const variant = (i + variantOffset) % 3;
+    // Offsets 0-2 give the MIXED deck (each tip a different composition, rotated) — that is why
+    // "rearrange" used to do so little: it only reshuffled which tip got which layout, and the
+    // deck as a whole looked the same. Offsets 3-5 give a UNIFORM deck (every tip on the same
+    // composition), which reads as a genuinely different design. Old rows keep their meaning.
+    const variant = variantOffset < 3 ? (i + variantOffset) % 3 : (variantOffset - 3) % 3;
     if (variant === 0) {
       // ART-TOP: artwork band above, type below on ground
       specs.push(DesignSpec.parse({

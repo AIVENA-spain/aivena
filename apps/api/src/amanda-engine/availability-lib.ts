@@ -14,6 +14,11 @@ export interface AmandaAgencySettings {
   /** One-off HOUR blocks on a specific date (a meeting, the dentist) —
    *  start hours from..to-1 on that agency-local date are unbookable. */
   blockedSlots: Array<{ date: string; from: number; to: number }>;
+  /** Agent notes pinned to a date+hours (tap-a-square in the calendar).
+   *  Scrubbed at save; upcoming ones are injected into Amanda's agency
+   *  context so she genuinely knows them. They do NOT block time by
+   *  themselves — blocking is blockedSlots/blockedDates. */
+  calendarNotes: Array<{ date: string; from: number; to: number; note: string }>;
 }
 
 const DEFAULT_VIEWING_HOURS: Record<number, number[]> = { 1: [11, 17], 2: [11, 17], 3: [11, 17], 4: [11, 17], 5: [11, 17], 6: [11] };
@@ -60,7 +65,37 @@ export function parseAmandaSettings(raw: unknown): AmandaAgencySettings {
           })
           .slice(0, 120)
       : [],
+    calendarNotes: Array.isArray(o.calendar_notes)
+      ? (o.calendar_notes as unknown[])
+          .filter((n): n is { date: string; from: number; to: number; note: string } => {
+            const x = n as { date?: unknown; from?: unknown; to?: unknown; note?: unknown };
+            return (
+              typeof x?.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(x.date) &&
+              typeof x.from === 'number' && Number.isInteger(x.from) &&
+              typeof x.to === 'number' && Number.isInteger(x.to) &&
+              x.from >= 8 && x.to > x.from && x.to <= 22 &&
+              typeof x.note === 'string' && x.note.trim().length > 0 && x.note.length <= 240
+            );
+          })
+          .slice(0, 60)
+      : [],
   };
+}
+
+/** Upcoming calendar notes (agency-local today .. +horizonDays), formatted for
+ *  Amanda's agency-context block — how a tapped-in note becomes something she
+ *  actually knows. Pure; capped. */
+export function upcomingCalendarNotes(s: AmandaAgencySettings, nowMs: number, horizonDays = 14, cap = 8): string[] {
+  const pad2 = (n: number) => String(n).padStart(2, '0');
+  const wcNow = wallClockInZone(nowMs, s.timezone);
+  const today = `${wcNow.year}-${pad2(wcNow.month)}-${pad2(wcNow.day)}`;
+  const wcEnd = wallClockInZone(nowMs + horizonDays * 86_400_000, s.timezone);
+  const end = `${wcEnd.year}-${pad2(wcEnd.month)}-${pad2(wcEnd.day)}`;
+  return s.calendarNotes
+    .filter((n) => n.date >= today && n.date <= end)
+    .sort((a, b) => a.date.localeCompare(b.date) || a.from - b.from)
+    .slice(0, cap)
+    .map((n) => `Calendar note for ${n.date} ${pad2(n.from)}:00-${pad2(n.to)}:00: ${n.note}`);
 }
 
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];

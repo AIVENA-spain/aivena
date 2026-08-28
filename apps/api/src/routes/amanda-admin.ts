@@ -55,6 +55,7 @@ route.get('/settings', async (c) => {
         viewing_hours_by_weekday: parsed.viewingHoursByWeekday,
         blocked_dates: parsed.blockedDates,
         blocked_slots: parsed.blockedSlots,
+        calendar_notes: parsed.calendarNotes,
       },
       knowledge: knowledge.map((k) => ({ id: k.id, content: k.content, status: k.status, createdAt: k.created_at })),
     });
@@ -124,6 +125,32 @@ route.post('/settings', async (c) => {
       .map((s) => ({ date: s.date, from: s.from, to: s.to }))
       .sort((a, b) => a.date.localeCompare(b.date) || a.from - b.from)
       .slice(0, 120);
+  }
+  // Calendar notes (tap-a-square): each note passes the SAME deterministic
+  // scrubber as the knowledge box — a rejected note fails the save with its
+  // reason instead of being silently dropped.
+  if (Array.isArray(body.calendar_notes)) {
+    const today = new Date().toISOString().slice(0, 10);
+    const notes: Array<{ date: string; from: number; to: number; note: string }> = [];
+    for (const n of body.calendar_notes as unknown[]) {
+      const x = n as { date?: unknown; from?: unknown; to?: unknown; note?: unknown };
+      if (
+        typeof x?.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(x.date) || x.date < today ||
+        typeof x.from !== 'number' || !Number.isInteger(x.from) ||
+        typeof x.to !== 'number' || !Number.isInteger(x.to) ||
+        x.from < 8 || x.to <= x.from || x.to > 22 ||
+        typeof x.note !== 'string' || !x.note.trim()
+      ) continue;
+      const note = x.note.trim().slice(0, 240);
+      const verdict = scrubKnowledge(note);
+      if (!verdict.ok) {
+        return c.json({ error: 'note_rejected', reason: verdict.reason }, 422);
+      }
+      notes.push({ date: x.date, from: x.from, to: x.to, note });
+    }
+    patch.calendar_notes = notes
+      .sort((a, b) => a.date.localeCompare(b.date) || a.from - b.from)
+      .slice(0, 60);
   }
   if (Object.keys(patch).length === 0) {
     return c.json({ error: 'Nothing valid to save — durations 15-240 min, notice 1-168 hours.' }, 400);

@@ -9,6 +9,7 @@ import { withAgency } from '../../../../packages/db/client';
 import { runTurn, type TurnDeps, type PendingActionView } from './turn';
 import { parseAmandaMode } from './modes';
 import { makeDbBackends, parseAmandaSettings, slotLabel, type AmandaAgencySettings } from './backends-db';
+import { upcomingCalendarNotes } from './availability-lib';
 import { productionModelCall, productionVerifier, ENGINE_MODEL } from './llm';
 import { turnId } from './turn-id';
 import { narrowPendingByText } from './pending-select';
@@ -252,7 +253,10 @@ export async function processTurnDb(row: QueueRow): Promise<TurnOutcome> {
 
   const ctx: TurnContext = {
     agencyName: world.agencyName,
-    agencyKnowledge: world.agencyKnowledge,
+    // Tapped-in calendar notes ride the same agency-authored context lane —
+    // upcoming 14 days only, so Amanda knows "Tuesday 12-14 is the team
+    // meeting" without the note blocking anything by itself.
+    agencyKnowledge: [...world.agencyKnowledge, ...upcomingCalendarNotes(world.settings, Date.now())],
     workingHoursLine: `Viewings: weekdays 11:00/17:00, Saturday 11:00 (${world.settings.timezone})`,
     leadFirstName: world.leadFirstName,
     leadLanguage: world.leadLanguage,

@@ -1413,7 +1413,17 @@
     "blockedDay": "Bloqueado",
     "closedDay": "Fechado",
     "dayView": "Dia",
-    "weekView": "Semana"
+    "weekView": "Semana",
+    "blockHourAction": "Bloquear esta hora",
+    "unblockHourAction": "Desbloquear esta hora",
+    "unblockDayAction": "Desbloquear este dia",
+    "newViewingHere": "Nova visita a esta hora",
+    "noteLabel": "Nota para esta hora",
+    "noteHint": "A Amanda conhece estas notas e tem-nas em conta com os compradores.",
+    "notePlaceholder": "ex.: \"Manter livre — possível visita do notário\"",
+    "saveNote": "Guardar nota",
+    "removeNote": "Remover nota",
+    "saving": "A guardar…"
   },
   "calls": {
     "title": "Chamadas",

@@ -1413,7 +1413,17 @@
     "blockedDay": "Zablokowany",
     "closedDay": "Zamknięte",
     "dayView": "Dzień",
-    "weekView": "Tydzień"
+    "weekView": "Tydzień",
+    "blockHourAction": "Zablokuj tę godzinę",
+    "unblockHourAction": "Odblokuj tę godzinę",
+    "unblockDayAction": "Odblokuj ten dzień",
+    "newViewingHere": "Nowa prezentacja o tej godzinie",
+    "noteLabel": "Notatka do tej godziny",
+    "noteHint": "Amanda zna te notatki i uwzględnia je w rozmowach z kupującymi.",
+    "notePlaceholder": "np. „Zostawić wolne — możliwa wizyta u notariusza”",
+    "saveNote": "Zapisz notatkę",
+    "removeNote": "Usuń notatkę",
+    "saving": "Zapisywanie…"
   },
   "calls": {
     "title": "Połączenia",

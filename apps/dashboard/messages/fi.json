@@ -1413,7 +1413,17 @@
     "blockedDay": "Estetty",
     "closedDay": "Suljettu",
     "dayView": "Päivä",
-    "weekView": "Viikko"
+    "weekView": "Viikko",
+    "blockHourAction": "Estä tämä tunti",
+    "unblockHourAction": "Poista tunnin esto",
+    "unblockDayAction": "Poista päivän esto",
+    "newViewingHere": "Uusi esittely tähän aikaan",
+    "noteLabel": "Muistiinpano tälle ajalle",
+    "noteHint": "Amanda tuntee nämä muistiinpanot ja huomioi ne ostajien kanssa.",
+    "notePlaceholder": "esim. \"Pidä vapaana — mahdollinen notaarikäynti\"",
+    "saveNote": "Tallenna muistiinpano",
+    "removeNote": "Poista muistiinpano",
+    "saving": "Tallennetaan…"
   },
   "calls": {
     "title": "Puhelut",

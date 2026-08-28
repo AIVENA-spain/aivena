@@ -1413,7 +1413,17 @@
     "blockedDay": "Blokeret",
     "closedDay": "Lukket",
     "dayView": "Dag",
-    "weekView": "Uge"
+    "weekView": "Uge",
+    "blockHourAction": "Bloker denne time",
+    "unblockHourAction": "Fjern blokering af timen",
+    "unblockDayAction": "Fjern blokering af dagen",
+    "newViewingHere": "Ny fremvisning på dette tidspunkt",
+    "noteLabel": "Note til dette tidspunkt",
+    "noteHint": "Amanda kender disse noter og tager højde for dem i samtaler med købere.",
+    "notePlaceholder": "f.eks. \"Hold fri — muligt notarbesøg\"",
+    "saveNote": "Gem note",
+    "removeNote": "Fjern note",
+    "saving": "Gemmer…"
   },
   "calls": {
     "title": "Opkald",

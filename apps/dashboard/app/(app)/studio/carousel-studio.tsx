@@ -47,7 +47,7 @@ const LANGS: [string, string][] = [
 // Style example slides ship as static assets (public/studio/carousel-examples/<style>/<n>.jpg)
 // so the picker paints instantly — no fetch, no signed URLs. Counts must match the files on disk.
 const EXAMPLE_COUNTS: Record<string, number> = {
-  acuarela: 3, arcilla: 3, bodegon: 3, bordado: 3, brisa: 2, cartel: 3, cuarteto: 2,
+  acuarela: 3, arcilla: 3, bodegon: 3, bordado: 3, brisa: 2, cartel: 7, cuarteto: 2,
   editorial: 3, encalada: 2, horizonte: 3, litoral: 3, marea: 2, papel: 3, plano: 3,
   portada: 3, recorte: 2, riviera: 2, salitre: 3, sereno: 2, tinta: 3, ventana: 2,
 };

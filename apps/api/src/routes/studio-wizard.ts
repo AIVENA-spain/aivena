@@ -996,9 +996,36 @@ async function runPlannedCarousel(opts: {
 }): Promise<void> {
   const { genId, agencyId } = opts;
   try {
+    // Variety across generations (Christian 2026-08-28: "a key or a luggage appears" on every
+    // house/moving topic): hand the planner the hero objects from this agency's recent decks so it
+    // must find fresh ones. Best-effort — a fetch failure never blocks the post.
+    let avoidMotifs: string[] = [];
+    if (opts.type === 'tips') {
+      try {
+        const { data: prev } = await supabaseAdmin.from('image_generations')
+          .select('result_metadata').eq('agency_id', agencyId).eq('status', 'completed')
+          .order('created_at', { ascending: false }).limit(14);
+        const motifs = new Set<string>();
+        for (const g of prev ?? []) {
+          const meta = (g as { result_metadata?: { engine?: string; plan?: { image_scenes?: unknown; tips?: { scene?: unknown }[] } } }).result_metadata;
+          if (meta?.engine !== 'carousel') continue;
+          const scenes = [
+            ...(Array.isArray(meta.plan?.image_scenes) ? meta.plan.image_scenes : []),
+            ...(Array.isArray(meta.plan?.tips) ? meta.plan.tips.map((t) => t?.scene) : []),
+          ];
+          for (const s of scenes) {
+            if (typeof s !== 'string' || !s.trim()) continue;
+            const hero = s.split(/[,;—.]/)[0].trim().toLowerCase().split(/\s+/).slice(0, 6).join(' ');
+            if (hero.length >= 6) motifs.add(hero);
+          }
+        }
+        avoidMotifs = [...motifs].slice(0, 18);
+      } catch { /* variety hint only */ }
+    }
     const plan = await planCarousel({
       type: opts.type, topic: opts.topic, quoteText: opts.quoteText, quoteAuthor: opts.quoteAuthor,
       slideCount: opts.slideCount, language: opts.language, agencyName: opts.agency.name,
+      avoidMotifs,
     });
     const contact = [opts.agency.web, opts.agency.phone].filter(Boolean).join(' · ');
     // AI-imagery styles compose the pre-seeded generated family; a library miss falls back to the

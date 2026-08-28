@@ -115,7 +115,7 @@ export async function generateTipsImages(opts: {
       // keep only the technique; the reference's objects/room/composition must NOT reappear, and
       // each task knows its siblings so the family can't converge on one motif.
       const siblings = scenes.filter((_, j) => j !== si).map((x) => x.split(/[,.]/)[0].trim()).filter(Boolean).slice(0, 8);
-      const prompt = `Keep exactly the same artistic style, technique, texture, grain, lighting mood and colour language as this reference image, but REPLACE THE SUBJECT COMPLETELY with a new scene: ${scene}. Do NOT reuse the reference image's objects, room, window, or composition — only its technique. ${siblings.length ? `Other images in this set show: ${siblings.join('; ')} — this one must be clearly different from all of them. ` : ''}${scheme.clause} Keep generous calm empty space for text. ${NEG}`;
+      const prompt = `Keep exactly the same artistic style, technique, texture, grain, lighting mood and colour language as this reference image, but REPLACE THE SUBJECT COMPLETELY with a new scene: ${scene}. Render it as ONE deliberately composed still — every object purposeful and clearly readable, arranged with intent, nothing random. Do NOT reuse the reference image's objects, room, window, or composition — only its technique. ${siblings.length ? `Other images in this set show: ${siblings.join('; ')} — this one must be clearly different from all of them. ` : ''}${scheme.clause} Keep generous calm empty space for text. ${NEG}`;
       const res = await fetch(KIE_CREATE, {
         method: 'POST',
         headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },

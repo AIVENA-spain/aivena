@@ -27,7 +27,7 @@ export type ModelCall = (req: {
 }) => Promise<ModelResponse>;
 
 export interface LoopResult {
-  text: string | null;                 // the drafted reply (last text block)
+  text: string | null;                 // the drafted reply (ALL text blocks of the final turn, joined)
   toolEvents: ToolEvent[];
   cannotAnswer: string | null;         // reason, when the model declared abstention
   handedOff: boolean;
@@ -53,6 +53,12 @@ export async function runAgentLoop(
   let cannotAnswer: string | null = null;
   let handedOff = false;
   let lastText: string | null = null;
+  const joinText = (r: ModelResponse): string | null =>
+    r.content
+      .filter((b) => b.type === 'text' && typeof b.text === 'string')
+      .map((b) => (b.text ?? '').trim())
+      .filter((t) => t.length > 0)
+      .join('\n\n') || null;
 
   for (let i = 1; i <= MAX_ITERATIONS; i++) {
     const resp = await callModel({ system, messages, tools });
@@ -61,12 +67,20 @@ export async function runAgentLoop(
     usage.cacheReadTokens += resp.usage?.cache_read_input_tokens ?? 0;
     usage.cacheWriteTokens += resp.usage?.cache_creation_input_tokens ?? 0;
 
-    const texts = resp.content.filter((b) => b.type === 'text' && typeof b.text === 'string');
-    if (texts.length) lastText = texts[texts.length - 1].text ?? lastText;
+    // The reply is EVERY text block of the turn, joined — not just the last
+    // one. A model that writes "here are two homes: 1)… 2)…" and then a
+    // closing line emits TWO text blocks; keeping only the last shipped the
+    // closing line alone and the buyer got "both homes are right by the
+    // school" with no homes (live demo 2026-08-28). Blocks are joined in
+    // order; blank ones dropped.
+    const turnText = joinText(resp);
+    if (turnText) lastText = turnText;
 
     const toolUses = resp.content.filter((b) => b.type === 'tool_use' && b.name && b.id);
     if (resp.stop_reason !== 'tool_use' || toolUses.length === 0) {
-      return { text: lastText, toolEvents, cannotAnswer, handedOff, usage, iterations: i };
+      // Final turn: the reply is THIS turn's text. Never fall back to text the
+      // model wrote before its tools ran — that text predates the facts.
+      return { text: turnText, toolEvents, cannotAnswer, handedOff, usage, iterations: i };
     }
 
     const resultBlocks: Array<Record<string, unknown>> = [];

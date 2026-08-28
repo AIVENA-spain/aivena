@@ -72,6 +72,7 @@ export function makeDbBackends(ctx: BackendCtx): ToolBackends {
       return withAgency(A, async (tx) => {
         const rows = await tx.execute(sql`
           SELECT id, external_id, title, price, bedrooms, location_city, property_type,
+                 jsonb_array_length(COALESCE(images, '[]'::jsonb)) AS photo_count,
                  created_at::date::text AS listed_date,
                  (SELECT count(DISTINCT p2.created_at::date) FROM properties p2
                    WHERE p2.agency_id = current_setting('app.current_agency_id', true)
@@ -116,6 +117,7 @@ export function makeDbBackends(ctx: BackendCtx): ToolBackends {
           id: String(r.id), ref: (r.external_id as string) ?? null, title: (r.title as string) ?? null,
           price: r.price != null ? Number(r.price) : null, bedrooms: r.bedrooms != null ? Number(r.bedrooms) : null,
           city: (r.location_city as string) ?? null, type: (r.property_type as string) ?? null,
+          photos: r.photo_count != null ? Number(r.photo_count) : 0,
           listed: importArtifact ? null : (r.listed_date as string) ?? null,
         }));
         const catalogue_note = importArtifact
@@ -132,6 +134,7 @@ export function makeDbBackends(ctx: BackendCtx): ToolBackends {
       return withAgency(A, async (tx) => {
         const rows = await tx.execute(sql`
           SELECT id, external_id AS ref, title, property_type, status, price, price_currency,
+                 jsonb_array_length(COALESCE(images, '[]'::jsonb)) AS photo_count,
                  bedrooms, bathrooms, area_sqm, area_built_sqm, area_plot_sqm,
                  location_city, location_region, raw_payload->>'zone' AS zone,
                  features, left(description, 900) AS description, updated_at,

@@ -1396,7 +1396,11 @@
     "cardUpcoming": "Upcoming viewings",
     "cardTotal": "Total scheduled",
     "cardManual": "Manually scheduled",
-    "syncNote": "Viewings are saved in AIVENA. Google Calendar sync comes later."
+    "syncNote": "Amanda books only inside your availability. Connected Google Calendars sync automatically.",
+    "availability": "Availability",
+    "availabilityHint": "Viewing hours and blocked days — Amanda books only inside these.",
+    "close": "Close",
+    "blockedDay": "Blocked"
   },
   "calls": {
     "title": "Calls",

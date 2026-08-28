@@ -1396,7 +1396,11 @@
     "cardUpcoming": "Anstehende Besichtigungen",
     "cardTotal": "Insgesamt geplant",
     "cardManual": "Manuell geplant",
-    "syncNote": "Besichtigungen werden in AIVENA gespeichert. Die Google-Kalender-Synchronisierung folgt später."
+    "syncNote": "Amanda bucht nur innerhalb deiner Verfügbarkeit. Verbundene Google Kalender synchronisieren automatisch.",
+    "availability": "Verfügbarkeit",
+    "availabilityHint": "Besichtigungszeiten und gesperrte Tage — Amanda bucht nur innerhalb davon.",
+    "close": "Schließen",
+    "blockedDay": "Gesperrt"
   },
   "calls": {
     "title": "Anrufe",

@@ -1396,7 +1396,11 @@
     "cardUpcoming": "Nadchodzące oglądania",
     "cardTotal": "Łącznie zaplanowane",
     "cardManual": "Zaplanowane ręcznie",
-    "syncNote": "Prezentacje są zapisywane w AIVENA. Synchronizacja z Kalendarzem Google pojawi się później."
+    "syncNote": "Amanda umawia tylko w ramach Twojej dostępności. Połączone Kalendarze Google synchronizują się automatycznie.",
+    "availability": "Dostępność",
+    "availabilityHint": "Godziny prezentacji i zablokowane dni — Amanda umawia tylko w ich obrębie.",
+    "close": "Zamknij",
+    "blockedDay": "Zablokowany"
   },
   "calls": {
     "title": "Połączenia",

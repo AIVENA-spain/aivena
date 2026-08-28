@@ -1396,7 +1396,11 @@
     "cardUpcoming": "Próximas visitas",
     "cardTotal": "Total agendadas",
     "cardManual": "Agendadas manualmente",
-    "syncNote": "As visitas são guardadas no AIVENA. A sincronização com o Google Calendar chegará mais tarde."
+    "syncNote": "A Amanda só marca dentro da tua disponibilidade. Os Google Calendar ligados sincronizam automaticamente.",
+    "availability": "Disponibilidade",
+    "availabilityHint": "Horário de visitas e dias bloqueados — a Amanda só marca dentro destes.",
+    "close": "Fechar",
+    "blockedDay": "Bloqueado"
   },
   "calls": {
     "title": "Chamadas",

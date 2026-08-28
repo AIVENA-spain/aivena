@@ -7,6 +7,7 @@ import {
   CalendarCheck,
   CalendarClock,
   CalendarDays,
+  Clock3,
   ChevronLeft,
   ChevronRight,
   Info,
@@ -24,6 +25,7 @@ import {
 
 import { cn } from "@/lib/utils";
 import { langLabel } from "@/app/(app)/matches/_shared";
+import { AvailabilityEditor } from "@/components/amanda/availability-editor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,7 +33,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { MetricCard } from "@/components/ui/metric-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { intlLocaleFor } from "@/lib/i18n/date-locale";
-import type { BookingRow, LeadPickerRow, PropertyRow } from "@/lib/api/types";
+import type { AmandaSettingsResponse, BookingRow, LeadPickerRow, PropertyRow } from "@/lib/api/types";
 import {
   cancelViewingAction,
   createViewingAction,
@@ -91,14 +93,22 @@ function telHref(phone: string): string {
 export function ViewingsWorkspace({
   bookings,
   properties,
+  amanda,
 }: {
   bookings: BookingRow[];
   properties: PropertyRow[];
+  amanda: AmandaSettingsResponse | null;
 }) {
   const t = useTranslations("viewings");
   const locale = intlLocaleFor(useLocale());
   const router = useRouter();
   const [view, setView] = useState<ViewMode>("month");
+  // Availability drawer (Christian: edit hours/blocked days right here, not
+  // buried in Settings). blockedDates mirrors saves instantly into the grid.
+  const [availOpen, setAvailOpen] = useState(false);
+  const [blockedDates, setBlockedDates] = useState<string[]>(
+    amanda?.settings?.blocked_dates ?? [],
+  );
   const [modal, setModal] = useState<
     | { kind: "create"; presetDate?: string }
     | { kind: "edit"; booking: BookingRow }
@@ -157,6 +167,18 @@ export function ViewingsWorkspace({
                 </button>
               ))}
             </div>
+            {amanda?.configured ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="gap-1.5"
+                onClick={() => setAvailOpen(true)}
+              >
+                <Clock3 className="h-3.5 w-3.5" aria-hidden />
+                {t("availability")}
+              </Button>
+            ) : null}
             <Button
               type="button"
               size="sm"
@@ -201,6 +223,7 @@ export function ViewingsWorkspace({
         <MonthGrid
           bookings={bookings}
           locale={locale}
+          blockedDates={blockedDates}
           onPickDay={(date) => setModal({ kind: "create", presetDate: date })}
           onPickBooking={(b) => setModal({ kind: "edit", booking: b })}
         />
@@ -222,6 +245,42 @@ export function ViewingsWorkspace({
           onClose={closeAndRefresh}
         />
       ) : null}
+
+      {/* Availability drawer — the same shared editor as Settings. */}
+      {availOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex justify-end bg-foreground/40"
+          onClick={() => setAvailOpen(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={t("availability")}
+            onClick={(e) => e.stopPropagation()}
+            className="flex h-full w-full max-w-[440px] flex-col gap-4 overflow-y-auto border-l border-border bg-card p-5 shadow-elevated"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-[15px] font-semibold text-foreground">{t("availability")}</h3>
+                <p className="text-[12px] text-muted-foreground">{t("availabilityHint")}</p>
+              </div>
+              <button
+                type="button"
+                aria-label={t("close")}
+                onClick={() => setAvailOpen(false)}
+                className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                <X className="h-4 w-4" aria-hidden />
+              </button>
+            </div>
+            <AvailabilityEditor
+              initialHours={amanda?.settings?.viewing_hours_by_weekday}
+              initialBlocked={amanda?.settings?.blocked_dates}
+              onSaved={(_, blocked) => setBlockedDates(blocked)}
+            />
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -231,11 +290,13 @@ export function ViewingsWorkspace({
 function MonthGrid({
   bookings,
   locale,
+  blockedDates,
   onPickDay,
   onPickBooking,
 }: {
   bookings: BookingRow[];
   locale: string;
+  blockedDates: string[];
   onPickDay: (isoDate: string) => void;
   onPickBooking: (b: BookingRow) => void;
 }) {
@@ -346,6 +407,8 @@ function MonthGrid({
           const inMonth = d.getMonth() === anchor.getMonth();
           const dayBookings = byDay.get(key) ?? [];
           const isToday = key === todayKey;
+          const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+          const isBlocked = blockedDates.includes(key);
           return (
             <div
               key={i}
@@ -353,24 +416,37 @@ function MonthGrid({
               tabIndex={0}
               onClick={() => onPickDay(key)}
               onKeyDown={(e) => e.key === "Enter" && onPickDay(key)}
+              title={isBlocked ? t("blockedDay") : undefined}
               className={cn(
-                "min-h-[74px] cursor-pointer border-b border-r border-border/60 p-1.5 align-top transition-colors hover:bg-muted/40 sm:min-h-[88px]",
+                "min-h-[56px] cursor-pointer border-b border-r border-border/60 p-1.5 align-top transition-colors hover:bg-muted/40 sm:min-h-[68px]",
                 !inMonth && "bg-muted/20 opacity-50",
+                inMonth && isWeekend && !isBlocked && "bg-muted/25",
+                isBlocked && "bg-amber-500/10 hover:bg-amber-500/15",
+                isToday && "bg-brand-soft/40 ring-1 ring-inset ring-brand/30",
                 (i + 1) % 7 === 0 && "border-r-0",
                 i >= 35 && "border-b-0",
               )}
             >
-              <span
-                className={cn(
-                  "inline-flex h-5 w-5 items-center justify-center rounded-full font-mono text-[10.5px]",
-                  isToday
-                    ? "bg-brand text-white font-semibold"
-                    : "text-muted-foreground",
-                )}
-              >
-                {d.getDate()}
+              <span className="flex items-center gap-1">
+                <span
+                  className={cn(
+                    "inline-flex h-5 w-5 items-center justify-center rounded-full font-mono text-[10.5px]",
+                    isToday
+                      ? "bg-brand text-white font-semibold"
+                      : isBlocked
+                        ? "font-semibold text-amber-700 dark:text-amber-400"
+                        : "text-muted-foreground",
+                  )}
+                >
+                  {d.getDate()}
+                </span>
+                {isBlocked ? (
+                  <span className="truncate text-[8.5px] font-semibold uppercase tracking-wide text-amber-700/80 dark:text-amber-400/80">
+                    {t("blockedDay")}
+                  </span>
+                ) : null}
               </span>
-              <div className="mt-1 flex flex-col gap-1">
+              <div className="mt-1 flex flex-col gap-0.5">
                 {dayBookings.slice(0, 2).map((b) => (
                   <button
                     key={b.id}
@@ -380,10 +456,12 @@ function MonthGrid({
                       onPickBooking(b);
                     }}
                     className={cn(
-                      "truncate rounded-md px-1.5 py-0.5 text-left text-[10px] font-medium leading-tight",
+                      "truncate rounded-md border-l-2 px-1.5 py-0.5 text-left text-[10px] font-medium leading-tight",
                       b.status === "cancelled" || b.status === "no_show"
-                        ? "bg-muted text-muted-foreground line-through"
-                        : "bg-brand-soft text-brand hover:brightness-95",
+                        ? "border-transparent bg-muted text-muted-foreground line-through"
+                        : b.status === "completed"
+                          ? "border-emerald-500/70 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/15 dark:text-emerald-400"
+                          : "border-brand bg-brand-soft text-brand hover:brightness-95",
                     )}
                     // Hover tooltip with the essentials (phone · ref · zone/city)
                     // — the click-through modal shows the same, clickable.

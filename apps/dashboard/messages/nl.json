@@ -1396,7 +1396,11 @@
     "cardUpcoming": "Aankomende bezichtigingen",
     "cardTotal": "Totaal gepland",
     "cardManual": "Handmatig gepland",
-    "syncNote": "Bezichtigingen worden opgeslagen in AIVENA. Synchronisatie met Google Agenda volgt later."
+    "syncNote": "Amanda boekt alleen binnen jouw beschikbaarheid. Gekoppelde Google Agenda's synchroniseren automatisch.",
+    "availability": "Beschikbaarheid",
+    "availabilityHint": "Bezichtigingsuren en geblokkeerde dagen — Amanda boekt alleen hierbinnen.",
+    "close": "Sluiten",
+    "blockedDay": "Geblokkeerd"
   },
   "calls": {
     "title": "Oproepen",

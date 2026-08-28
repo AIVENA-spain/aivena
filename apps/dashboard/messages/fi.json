@@ -1396,7 +1396,11 @@
     "cardUpcoming": "Tulevat esittelyt",
     "cardTotal": "Ajastettu yhteensä",
     "cardManual": "Ajastettu manuaalisesti",
-    "syncNote": "Esittelyt tallennetaan AIVENAan. Google-kalenterin synkronointi tulee myöhemmin."
+    "syncNote": "Amanda varaa vain saatavuutesi sisällä. Yhdistetyt Google-kalenterit synkronoituvat automaattisesti.",
+    "availability": "Saatavuus",
+    "availabilityHint": "Esittelyajat ja estetyt päivät — Amanda varaa vain näiden sisällä.",
+    "close": "Sulje",
+    "blockedDay": "Estetty"
   },
   "calls": {
     "title": "Puhelut",

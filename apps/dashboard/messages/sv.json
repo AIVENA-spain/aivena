@@ -1396,7 +1396,11 @@
     "cardUpcoming": "Kommande visningar",
     "cardTotal": "Totalt schemalagda",
     "cardManual": "Manuellt schemalagda",
-    "syncNote": "Visningar sparas i AIVENA. Synkronisering med Google Kalender kommer senare."
+    "syncNote": "Amanda bokar bara inom din tillgänglighet. Anslutna Google Kalender synkas automatiskt.",
+    "availability": "Tillgänglighet",
+    "availabilityHint": "Visningstider och blockerade dagar — Amanda bokar bara inom dessa.",
+    "close": "Stäng",
+    "blockedDay": "Blockerad"
   },
   "calls": {
     "title": "Samtal",

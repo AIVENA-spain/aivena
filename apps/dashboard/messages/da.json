@@ -1396,7 +1396,11 @@
     "cardUpcoming": "Kommende fremvisninger",
     "cardTotal": "Planlagt i alt",
     "cardManual": "Manuelt planlagt",
-    "syncNote": "Fremvisninger gemmes i AIVENA. Synkronisering med Google Kalender kommer senere."
+    "syncNote": "Amanda booker kun inden for din tilgængelighed. Tilsluttede Google Kalendere synkroniserer automatisk.",
+    "availability": "Tilgængelighed",
+    "availabilityHint": "Fremvisningstider og blokerede dage — Amanda booker kun inden for disse.",
+    "close": "Luk",
+    "blockedDay": "Blokeret"
   },
   "calls": {
     "title": "Opkald",

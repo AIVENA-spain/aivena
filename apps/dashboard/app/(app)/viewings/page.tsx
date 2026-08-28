@@ -2,6 +2,7 @@ import { apiFetch, ApiError } from "@/lib/api/client";
 import { PageLoadError } from "@/components/shell/page-error";
 import { getCurrentUserContext } from "@/lib/auth/context";
 import type {
+  AmandaSettingsResponse,
   BookingRow,
   BookingsResponse,
   PropertiesResponse,
@@ -25,18 +26,23 @@ export default async function ViewingsPage() {
 
   let bookings: BookingRow[] = [];
   let properties: PropertyRow[] = [];
+  let amanda: AmandaSettingsResponse | null = null;
   try {
-    const [bookingsRes, propsRes] = await Promise.allSettled([
+    const [bookingsRes, propsRes, amandaRes] = await Promise.allSettled([
       apiFetch<BookingsResponse>("/api/v1/bookings"),
       agencyId
         ? apiFetch<PropertiesResponse>(
             `/api/v1/agencies/${encodeURIComponent(agencyId)}/properties`,
           )
         : Promise.resolve({ properties: [] as PropertyRow[] }),
+      // Availability (viewing hours + blocked days) rides the calendar page
+      // too — degrades to null pre-migration, the drawer simply hides.
+      apiFetch<AmandaSettingsResponse>("/api/v1/amanda/settings"),
     ]);
     if (bookingsRes.status === "rejected") throw bookingsRes.reason;
     bookings = bookingsRes.value.bookings;
     if (propsRes.status === "fulfilled") properties = propsRes.value.properties;
+    if (amandaRes.status === "fulfilled") amanda = amandaRes.value;
   } catch (err) {
     const detail =
       err instanceof ApiError
@@ -48,5 +54,5 @@ export default async function ViewingsPage() {
     return <PageLoadError />;
   }
 
-  return <ViewingsWorkspace bookings={bookings} properties={properties} />;
+  return <ViewingsWorkspace bookings={bookings} properties={properties} amanda={amanda} />;
 }

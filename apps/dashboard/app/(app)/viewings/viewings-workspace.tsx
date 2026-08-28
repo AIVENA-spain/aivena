@@ -259,6 +259,7 @@ export function ViewingsWorkspace({
           locale={locale}
           blockedDates={blockedDates}
           blockedSlots={blockedSlots}
+          calendarNotes={calendarNotes}
           weekHours={weekHours}
           onPickDay={(date) => setModal({ kind: "create", presetDate: date })}
           onPickBooking={(b) => setModal({ kind: "edit", booking: b })}
@@ -527,6 +528,7 @@ function TimeGrid({
                     const inSlotBlock = dayBlocks.some((b) => h >= b.from && h < b.to);
                     const red = isBlockedDay || inBreak || inSlotBlock;
                     const note = dayNotes.find((n) => h >= n.from && h < n.to);
+                    const showNoteText = note && h === note.from;
                     return (
                       <div
                         key={h}
@@ -537,15 +539,23 @@ function TimeGrid({
                         title={note ? note.note : red ? t("blockedDay") : closed ? t("closedDay") : undefined}
                         style={{ height: HOUR_PX }}
                         className={cn(
-                          "relative cursor-pointer border-b border-border/40 transition-colors",
+                          "relative cursor-pointer overflow-hidden border-b border-border/40 transition-colors",
                           red ? "bg-red-500/10 hover:bg-red-500/15" : closed ? "bg-muted/40 hover:bg-muted/60" : "hover:bg-brand-soft/30",
                         )}
                       >
-                        {note ? (
+                        {showNoteText ? (
+                          // The note TEXT lives in the calendar itself (Christian
+                          // 2026-08-28): full line in Day view, truncated in Week.
                           <span
-                            aria-hidden
-                            className="absolute right-1 top-1 h-2 w-2 rounded-full bg-violet-500"
-                          />
+                            className={cn(
+                              "mx-1 mt-0.5 block w-fit max-w-[calc(100%-8px)] truncate rounded bg-violet-500/15 px-1.5 py-px font-medium text-violet-700 dark:text-violet-400",
+                              days === 1 ? "text-[11px]" : "text-[9.5px]",
+                            )}
+                          >
+                            {note.note}
+                          </span>
+                        ) : note ? (
+                          <span aria-hidden className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-violet-500" />
                         ) : null}
                       </div>
                     );
@@ -749,6 +759,7 @@ function MonthGrid({
   locale,
   blockedDates,
   blockedSlots,
+  calendarNotes,
   weekHours,
   onPickDay,
   onPickBooking,
@@ -757,6 +768,7 @@ function MonthGrid({
   locale: string;
   blockedDates: string[];
   blockedSlots: BlockedSlot[];
+  calendarNotes: CalendarNote[];
   weekHours: Record<string, number[]> | null;
   onPickDay: (isoDate: string) => void;
   onPickBooking: (b: BookingRow) => void;
@@ -946,6 +958,20 @@ function MonthGrid({
                         {b.from}–{b.to}
                       </span>
                     ))
+                  : null}
+                {inMonth
+                  ? calendarNotes
+                      .filter((n) => n.date === key)
+                      .slice(0, 1)
+                      .map((n) => (
+                        <span
+                          key={`note-${n.date}-${n.from}`}
+                          title={n.note}
+                          className="w-fit max-w-full truncate rounded bg-violet-500/15 px-1 py-px text-[8.5px] font-medium text-violet-700/90 dark:text-violet-400/90"
+                        >
+                          {n.note}
+                        </span>
+                      ))
                   : null}
                 {dayBookings.slice(0, 2).map((b) => (
                   <button

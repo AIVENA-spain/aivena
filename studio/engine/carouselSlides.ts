@@ -188,6 +188,20 @@ function footerBand(agency: string, index: number, total: number, brand: Carouse
   ];
 }
 
+/** Guard a decorative tone against sinking into its ground: when the preferred tone sits within
+ *  a small channel distance of the background (pale gold on cream, etc.), rebuild it as a tint of
+ *  the ink so the device stays visible in EVERY colour world — editions and custom colours alike. */
+export function visibleTone(pref: string, ground: string, ink: string, inkShare = 0.6): string {
+  const n = (h: string) => parseInt(h.slice(1), 16);
+  const d = (a: number, b: number) =>
+    Math.abs(((a >> 16) & 255) - ((b >> 16) & 255)) + Math.abs(((a >> 8) & 255) - ((b >> 8) & 255)) + Math.abs((a & 255) - (b & 255));
+  try {
+    return d(n(pref), n(ground)) >= 48 ? pref : mix(ink, ground, inkShare);
+  } catch {
+    return pref;
+  }
+}
+
 /** The 2026 swipe idiom: a hairline that bleeds off the right edge + a thin arrow. No badges. */
 function swipeCue(cue: string, brand: CarouselBrand, y: number) {
   return [
@@ -229,65 +243,44 @@ function tipsSlide2(plan: CarouselPlan, agency: string, brand: CarouselBrand, to
   });
 }
 
-/** Value slide — one idea: oversized gold numeral, heading, 15-40 word body, open-loop footer pill. */
-function tipSlide(slideIndex: number, tipNumber: number, total: number, tip: { title: string; body: string; teaser: string }, agency: string, brand: CarouselBrand) {
-  // three rotating compositions (Christian 2026-08-28: "not changing it up enough throughout the
-  // slides… make it interesting — font wise, or size wise") — a deck's tips now alternate between
-  // the classic numeral page, an inverted full-colour STATEMENT page, and a ghost-numeral page.
-  const v = (tipNumber - 1) % 3;
-
-  if (v === 1) {
-    // THE STATEMENT — colour-flipped, the title as the hero at display scale
-    const titleTxt = wrap(tip.title, SERIF, 96, W - 2 * M);
-    const tLines = titleTxt.split("\n").length;
-    const elements: any[] = [
-      { type: "text", bbox: [M, 110, 700, 146], content: `Nº ${String(tipNumber).padStart(2, "0")}`, font: SANS, size: 21, colour: brand.gold, align: "left", tracking: 6 },
-      { type: "text", bbox: [M, 230, W - M, 230 + tLines * 110 + 10], content: titleTxt, font: SERIF, size: 96, colour: brand.cream, align: "left", line_height: 110 },
-      { type: "rect", bbox: [M, 250 + tLines * 110 + 40, M + 120, 250 + tLines * 110 + 43], fill: brand.gold },
-      { type: "text", bbox: [M, 880, W - M, 1110], content: wrap(tip.body, SANS, 34, W - 2 * M), font: SANS, size: 34, colour: mix(brand.cream, brand.navy, 0.85), align: "left", line_height: 52, valign: "center" },
-      ...(tip.teaser ? [{
-        type: "text", bbox: [M, 1150, 900, 1198], content: tip.teaser, font: SANS, size: 26,
-        colour: brand.navy, align: "left", weight: "500", valign: "center",
-        pill: { fill: brand.gold, pad_x: 28, pad_y: 14 },
-      }] : []),
-      ...footerBand(agency, slideIndex, total, brand, brand.navy, true),
-    ];
-    return DesignSpec.parse({ background: brand.navy, elements });
-  }
-
-  if (v === 2) {
-    // THE GHOST — an oversized numeral melts into the paper behind a centered title
-    const elements: any[] = [
-      { type: "text", bbox: [420, 120, 1500, 1250], content: String(tipNumber).padStart(2, "0"), font: SERIF, size: 640, colour: mix(brand.cream, brand.navy, 0.9), align: "left" },
-      { type: "text", bbox: [M, 200, W - M, 236], content: `Nº ${String(tipNumber).padStart(2, "0")}`, font: SANS, size: 21, colour: brand.gold, align: "center", tracking: 6 },
-      { type: "text", bbox: [M, 330, W - M, 640], content: wrap(tip.title, SERIF, 70, W - 2 * M - 80), font: SERIF, size: 70, colour: brand.navy, align: "center", line_height: 84, valign: "center" },
-      { type: "rect", bbox: [W / 2 - 60, 690, W / 2 + 60, 693], fill: brand.gold },
-      { type: "text", bbox: [M + 60, 750, W - M - 60, 1080], content: wrap(tip.body, SANS, 34, W - 2 * M - 120), font: SANS, size: 34, colour: brand.text, align: "center", line_height: 54, valign: "center" },
-      ...(tip.teaser ? [{
-        type: "text", bbox: [M, 1145, W - M, 1193], content: tip.teaser, font: SANS, size: 25,
-        colour: brand.cream, align: "center", weight: "500", valign: "center",
-        pill: { fill: brand.navy, pad_x: 28, pad_y: 13 },
-      }] : []),
-      ...footerBand(agency, slideIndex, total, brand, brand.cream, false),
-    ];
-    return DesignSpec.parse({ background: brand.cream, elements });
-  }
-
-  const elements: any[] = [
-    { type: "text", bbox: [M, 70, 640, 340], content: String(tipNumber).padStart(2, "0"), font: SERIF, size: 250, colour: brand.gold, align: "left" },
-    { type: "rect", bbox: [M, 400, M + 84, 404], fill: brand.gold },
-    { type: "text", bbox: [M, 452, W - M, 660], content: wrap(tip.title, SERIF, 64, W - 2 * M), font: SERIF, size: 64, colour: brand.navy, align: "left", line_height: 76 },
-    { type: "text", bbox: [M, 700, W - M, 1080], content: wrap(tip.body, SANS, 36, W - 2 * M), font: SANS, size: 36, colour: brand.text, align: "left", line_height: 56, valign: "center" },
+/** Value slide — ORNAMENTO (Christian 2026-08-28: picked option C for the type deck): double
+ *  hairline frames, the numeral in a ring badge, everything centered; the ground rotates through
+ *  three tints of the brand world so the deck breathes without breaking the dress. */
+function tipSlide(slideIndex: number, tipNumber: number, total: number, tip: { title: string; body: string; teaser: string }, agency: string, brand: CarouselBrand, eyebrow = "") {
+  const tints = [
+    brand.cream,
+    mix(brand.gold, brand.cream, 0.14),
+    mix(brand.navy, brand.cream, 0.07),
   ];
-  if (tip.teaser) {
-    elements.push({
-      type: "text", bbox: [M, 1150, 900, 1198], content: tip.teaser, font: SANS, size: 26,
-      colour: brand.cream, align: "left", weight: "500", valign: "center",
-      pill: { fill: brand.navy, pad_x: 28, pad_y: 14 },
-    });
-  }
-  elements.push(...footerBand(agency, slideIndex, total, brand, brand.cream, false));
-  return DesignSpec.parse({ background: brand.cream, elements });
+  const bg = tints[(tipNumber - 1) % 3];
+  const line = mix(brand.navy, bg, 0.8);
+  const muted = mix(brand.navy, bg, 0.55);
+  const gold = visibleTone(brand.gold, bg, brand.navy, 0.6);
+  const frame = (inset: number, wpx: number) => ([
+    { type: "rect", bbox: [inset, inset, W - inset, inset + wpx], fill: line },
+    { type: "rect", bbox: [inset, H - inset - wpx, W - inset, H - inset], fill: line },
+    { type: "rect", bbox: [inset, inset, inset + wpx, H - inset], fill: line },
+    { type: "rect", bbox: [W - inset - wpx, inset, W - inset, H - inset], fill: line },
+  ]);
+  const cx = W / 2, ringY = 300, ringR = 74;
+  const elements: any[] = [
+    ...frame(36, 2.5), ...frame(64, 1.5),
+    ...(eyebrow ? [{ type: "text", bbox: [M, 132, W - M, 166], content: `·  ${eyebrow.toUpperCase()}  ·`, font: SANS, size: 20, colour: muted, align: "center", weight: "500", tracking: 6 }] : []),
+    // the ring badge: two stacked circles (rounded rects at full radius) — gold ring, ground core
+    { type: "rect", bbox: [cx - ringR, ringY - ringR, cx + ringR, ringY + ringR], fill: gold, radius: ringR },
+    { type: "rect", bbox: [cx - ringR + 5, ringY - ringR + 5, cx + ringR - 5, ringY + ringR - 5], fill: bg, radius: ringR - 5 },
+    { type: "text", bbox: [cx - ringR, ringY - 44, cx + ringR, ringY + 44], content: String(tipNumber).padStart(2, "0"), font: SERIF, size: 62, colour: gold, align: "center", valign: "center" },
+    { type: "text", bbox: [M + 40, 470, W - M - 40, 720], content: wrap(tip.title, SERIF, 76, W - 2 * M - 100), font: SERIF, size: 76, colour: brand.navy, align: "center", line_height: 90, valign: "center" },
+    { type: "rect", bbox: [cx - 11, 764, cx + 11, 786], fill: gold, rotate: 45 },
+    { type: "text", bbox: [M + 70, 850, W - M - 70, 1110], content: wrap(tip.body, SANS, 33, W - 2 * M - 140), font: SANS, size: 33, colour: brand.text, align: "center", line_height: 52, valign: "center" },
+    ...(tip.teaser ? [{
+      type: "text", bbox: [M, 1140, W - M, 1176], content: tip.teaser.toUpperCase(), font: SANS, size: 19,
+      colour: muted, align: "center", weight: "500", tracking: 3,
+    }] : []),
+    { type: "text", bbox: [108, 1214, 700, 1244], content: agency.toUpperCase(), font: SANS, size: 16, colour: muted, align: "left", weight: "500", tracking: 4 },
+    { type: "text", bbox: [700, 1214, W - 108, 1244], content: `${String(slideIndex + 1).padStart(2, "0")} / ${String(total).padStart(2, "0")}`, font: SANS, size: 16, colour: muted, align: "right", tracking: 3 },
+  ];
+  return DesignSpec.parse({ background: bg, elements });
 }
 
 /** Recap — the screenshot/save/forward unit: every point on one branded slide + the save trigger. */
@@ -402,7 +395,7 @@ export function buildPlannedSpecs(
     const total = plan.tips.length + 4;      // cover + slide2 + tips + recap + CTA
     specs.push(tipsCover(plan, agency, brand, total));
     specs.push(tipsSlide2(plan, agency, brand, total));
-    plan.tips.forEach((tip, i) => specs.push(tipSlide(i + 2, i + 1, total, tip, agency, brand)));
+    plan.tips.forEach((tip, i) => specs.push(tipSlide(i + 2, i + 1, total, tip, agency, brand, plan.eyebrow)));
     specs.push(recapSlide(plan, plan.tips.length + 2, total, agency, brand));
     specs.push(ctaSlide(plan, total - 1, total, agency, contact, brand));
   } else {

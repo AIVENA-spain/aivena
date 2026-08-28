@@ -195,7 +195,7 @@ export function StudioHome({
     return initialLibrary.filter((i) => i.section === activeSection);
   }, [initialLibrary, activeSection]);
 
-  if (view === "templates") return <SubViewShell onBack={() => setView("home")}><EditableWizard initialLanguage={uiLanguage} /></SubViewShell>;
+  if (view === "templates") return <SubViewShell onBack={() => setView("home")}><EditableWizard initialLanguage={uiLanguage} prefs={prefs} /></SubViewShell>;
   if (view === "smart") return <SubViewShell onBack={() => setView("home")}><SmartStudio /></SubViewShell>;
   if (view === "carousel") return <SubViewShell onBack={() => { setResumeGenId(undefined); setView("home"); }} crumb="Tips carousel"><CarouselStudio initialTopic={pendingTopic} initialLanguage={pendingLang ?? uiLanguage} resumeGenId={resumeGenId} prefs={prefs} /></SubViewShell>;
   if (view === "taste") return <SubViewShell onBack={() => setView("home")} crumb="Find your style"><TasteGame onDone={() => setView("home")} /></SubViewShell>;

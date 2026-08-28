@@ -2,7 +2,7 @@ import { renderFreeform, DesignSpec } from "./renderFreeform";
 import { textWidth } from "./renderEditable";
 import {
   CarouselPlan, renderPlannedCarousel, buildPlannedSpecs, getPlannedSerif, setPlannedSerif,
-  renderWideSliced, applyGrain, mix, wrap, chrome,
+  renderWideSliced, applyGrain, mix, wrap, chrome, visibleTone,
 } from "./carouselSlides";
 import { CarouselFacts, CarouselCopy, CarouselBrand, renderCarousel } from "./renderCarousel";
 
@@ -140,7 +140,7 @@ function cartelPlanned(plan: CarouselPlan, agency: string, contact: string, bran
 
   // value slides: giant numeral, gamma rotation of grounds
   const gammas = [
-    { bg: CREAM, num: mix(GOLD, CREAM, 0.85), head: NAVY, bodyC: "#333333", kick: TERRA, ruleC: TERRA },
+    { bg: CREAM, num: visibleTone(mix(GOLD, CREAM, 0.85), CREAM, NAVY, 0.16), head: NAVY, bodyC: "#333333", kick: TERRA, ruleC: TERRA },
     { bg: NAVY, num: mix(GOLD, NAVY, 0.45), head: CREAM, bodyC: CREAM, kick: GOLD, ruleC: GOLD },
     { bg: TERRA, num: mix(LIME, TERRA, 0.35), head: LIME, bodyC: LIME, kick: LIME, ruleC: LIME },
   ];
@@ -179,7 +179,7 @@ function cartelPlanned(plan: CarouselPlan, agency: string, contact: string, bran
       ...plan.tips.flatMap((tip, i) => {
         const y = 300 + i * rowH;
         return [
-          { type: "text", bbox: [80, y, 200, y + rowH - 40], content: String(i + 1), font: FR, size: Math.min(72, rowH - 60), colour: brand.gold, align: "center", valign: "center" },
+          { type: "text", bbox: [80, y, 200, y + rowH - 40], content: String(i + 1), font: FR, size: Math.min(72, rowH - 60), colour: visibleTone(brand.gold, CREAM, NAVY, 0.6), align: "center", valign: "center" },
           { type: "text", bbox: [220, y, 1000, y + rowH - 40], content: wrap(tip.title.toUpperCase(), "Anton", 42, 780), font: "Anton", size: 42, colour: NAVY, align: "left", line_height: 50, valign: "center" },
           { type: "rect", bbox: [80, y + rowH - 30, 1000, y + rowH - 28], fill: mix(NAVY, CREAM, 0.25) },
         ];
@@ -459,7 +459,7 @@ export const TYPE_EDITIONS: Record<string, StyleEdition[]> = {
   editorial: [
     {},                                                                  // Caslon classic, brand colours
     { display: "Prata", navy: "#23272f", gold: "#c96a4a" },              // warm ink + terracotta
-    { display: "Playfair Display", navy: "#1e3a34", gold: "#b98d4f" },   // deep green + aged brass
+    { display: "Playfair Display Medium", navy: "#1e3a34", gold: "#b98d4f" },   // deep green + aged brass
   ],
   cartel: [
     {},                                                                  // navy/gold poster classic
@@ -473,7 +473,7 @@ export const TYPE_EDITIONS: Record<string, StyleEdition[]> = {
   ],
   sereno: [
     {},
-    { display: "Playfair Display", navy: "#3a4145", gold: "#a68d72" },   // slate + sand
+    { display: "Playfair Display Medium", navy: "#3a4145", gold: "#a68d72" },   // slate + sand
     { display: "Prata", navy: "#33424e", gold: "#8d9aa6" },              // steel blue, extra air
   ],
 };

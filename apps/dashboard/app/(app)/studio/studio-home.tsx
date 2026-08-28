@@ -40,8 +40,10 @@ type View = "home" | "templates" | "smart" | "renovation" | "carousel" | "librar
 const TYPE_LABEL: Record<string, string> = {
   social_post: "Social post", ad_creative: "Ad creative", renovation: "Redesigned room",
   listing: "Listing image", sold: "Just sold", brand: "Brand", educational: "Educational",
-  launch: "New development", template: "Template",
+  launch: "New development", template: "Template", carousel: "Carousel",
 };
+// carousels re-open into their editing screen — text edits + remixes re-render from stored artwork
+const isEditableCarousel = (it: LibraryItem) => it.content_type === "carousel";
 function labelFor(it: LibraryItem): string {
   return TYPE_LABEL[it.content_type ?? ""] ?? TYPE_LABEL[it.generation_type] ?? "Creation";
 }
@@ -155,6 +157,9 @@ export function StudioHome({
   // a suggestion can pre-fill the carousel form with its topic + language
   const [pendingTopic, setPendingTopic] = useState("");
   const [pendingLang, setPendingLang] = useState<string | undefined>(undefined);
+  // open a past carousel straight into its editing screen (no regeneration)
+  const [resumeGenId, setResumeGenId] = useState<string | undefined>(undefined);
+  const openCarousel = (id: string) => { setMenuId(null); setResumeGenId(id); setView("carousel"); };
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -179,7 +184,7 @@ export function StudioHome({
 
   if (view === "templates") return <SubViewShell onBack={() => setView("home")}><EditableWizard /></SubViewShell>;
   if (view === "smart") return <SubViewShell onBack={() => setView("home")}><SmartStudio /></SubViewShell>;
-  if (view === "carousel") return <SubViewShell onBack={() => setView("home")} crumb="Tips carousel"><CarouselStudio initialTopic={pendingTopic} initialLanguage={pendingLang} /></SubViewShell>;
+  if (view === "carousel") return <SubViewShell onBack={() => { setResumeGenId(undefined); setView("home"); }} crumb="Tips carousel"><CarouselStudio initialTopic={pendingTopic} initialLanguage={pendingLang} resumeGenId={resumeGenId} /></SubViewShell>;
   if (view === "renovation") return <SubViewShell onBack={() => setView("home")}><StudioWizard initialLibrary={initialLibrary} initialFork="renovation" /></SubViewShell>;
 
   if (view === "library") {
@@ -205,10 +210,18 @@ export function StudioHome({
             ) : (
               <div className="grid grid-cols-2 gap-4 p-4 sm:grid-cols-3 lg:grid-cols-5">
                 {libraryItems.map((it) => (
-                  <div key={it.id} className="overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-800">
+                  <div key={it.id}
+                    onClick={isEditableCarousel(it) ? () => openCarousel(it.id) : undefined}
+                    role={isEditableCarousel(it) ? "button" : undefined}
+                    className={`group overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-800 ${isEditableCarousel(it) ? "cursor-pointer transition hover:border-neutral-400 hover:shadow-md dark:hover:border-neutral-600" : ""}`}>
                     <div className="relative aspect-[4/5] bg-neutral-100 dark:bg-neutral-800">
                       {it.image_url ? <img src={it.image_url} alt="" className="h-full w-full object-cover" /> : null}
                       {it.section && <span className="absolute right-2 top-2 max-w-[80%] truncate rounded-md bg-white/90 px-2 py-0.5 text-[11px] font-medium text-neutral-700 shadow">{it.section}</span>}
+                      {isEditableCarousel(it) && (
+                        <span className="absolute bottom-2 right-2 flex items-center gap-1 rounded-md bg-black/55 px-2 py-1 text-[11px] font-medium text-white opacity-0 transition group-hover:opacity-100">
+                          <SquarePen className="h-3 w-3" /> Open &amp; edit
+                        </span>
+                      )}
                     </div>
                     <div className="p-2.5">
                       <div className="truncate text-sm font-medium text-neutral-800 dark:text-neutral-200">{labelFor(it)}</div>
@@ -262,7 +275,7 @@ export function StudioHome({
           desc="Turn a listing into posts, carousels and brochures." onClick={() => setView("templates")} />
         <HeroCard img={asset("hero-advice.jpg")} tint="text-violet-600 dark:text-violet-400"
           icon={<SquarePen className="h-5 w-5" />} title="Create advice content"
-          desc="Generate buyer tips, seller advice and market posts." onClick={() => { setPendingTopic(""); setPendingLang(undefined); setView("carousel"); }} />
+          desc="Generate buyer tips, seller advice and market posts." onClick={() => { setPendingTopic(""); setPendingLang(undefined); setResumeGenId(undefined); setView("carousel"); }} />
         <HeroCard img={asset("hero-room.jpg")} tint="text-amber-600 dark:text-amber-400"
           icon={<Hammer className="h-5 w-5" />} title="Transform a room"
           desc="Create renovation concepts and before/after content." onClick={() => setView("renovation")} />
@@ -278,6 +291,7 @@ export function StudioHome({
           onClick={() => {
             setPendingTopic(sugg?.carousel?.topic ?? "");
             setPendingLang(sugg?.carousel?.language);
+            setResumeGenId(undefined);
             setView("carousel");
           }} />
         <SuggestCard img={sugg?.listing?.thumb_url ?? asset("hero-property.jpg")} icon={<HomeIcon className="h-4 w-4" />}
@@ -303,13 +317,16 @@ export function StudioHome({
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {recent.map((it) => (
-            <div key={it.id} className="relative flex items-center gap-3 rounded-xl border border-neutral-200 bg-white p-3 dark:border-neutral-800 dark:bg-neutral-900">
+            <div key={it.id}
+              onClick={isEditableCarousel(it) ? () => openCarousel(it.id) : undefined}
+              role={isEditableCarousel(it) ? "button" : undefined}
+              className={`relative flex items-center gap-3 rounded-xl border border-neutral-200 bg-white p-3 dark:border-neutral-800 dark:bg-neutral-900 ${isEditableCarousel(it) ? "cursor-pointer transition hover:border-neutral-400 dark:hover:border-neutral-600" : ""}`}>
               <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-neutral-100 dark:bg-neutral-800">
                 {it.image_url ? <img src={it.image_url} alt="" className="h-full w-full object-cover" /> : null}
               </div>
               <div className="min-w-0 flex-1 pr-5">
                 <div className="line-clamp-2 text-sm font-semibold leading-snug text-neutral-900 dark:text-neutral-100">{labelFor(it)}</div>
-                <div className="mt-0.5 text-xs text-neutral-400">Edited {ago(it.created_at)}</div>
+                <div className="mt-0.5 text-xs text-neutral-400">{isEditableCarousel(it) ? "Tap to open & edit" : `Edited ${ago(it.created_at)}`}</div>
               </div>
               <button onClick={(e) => { e.stopPropagation(); setMenuId(menuId === it.id ? null : it.id); }}
                 className="absolute right-2 top-2 rounded-lg p-1.5 text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-neutral-800">
@@ -317,6 +334,12 @@ export function StudioHome({
               </button>
               {menuId === it.id && (
                 <div className="absolute right-2 top-9 z-10 w-40 overflow-hidden rounded-lg border border-neutral-200 bg-white py-1 shadow-lg dark:border-neutral-700 dark:bg-neutral-900" onClick={(e) => e.stopPropagation()}>
+                  {isEditableCarousel(it) && (
+                    <button onClick={() => openCarousel(it.id)}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-neutral-700 hover:bg-neutral-50 dark:text-neutral-200 dark:hover:bg-neutral-800">
+                      <SquarePen className="h-4 w-4" /> Open &amp; edit
+                    </button>
+                  )}
                   <button onClick={() => { window.open(it.image_url, "_blank", "noopener"); setMenuId(null); }}
                     className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-neutral-700 hover:bg-neutral-50 dark:text-neutral-200 dark:hover:bg-neutral-800">
                     <ExternalLink className="h-4 w-4" /> Open image

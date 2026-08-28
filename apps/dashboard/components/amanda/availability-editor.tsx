@@ -7,10 +7,22 @@ import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { saveAmandaSettingsAction } from "@/app/(app)/settings/section-actions";
 
-// The FULL engine-accepted range (8-21) — a narrower grid would make any
-// out-of-grid configured hour an invisible, unremovable phantom (review law).
-const GRID_HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21];
+// Engine-accepted start hours are 8-21, so opening runs 8:00-22:00.
 const GRID_DAYS = [1, 2, 3, 4, 5, 6, 0]; // Mon..Sat, Sun — agency-week order
+const FROM_HOURS = Array.from({ length: 14 }, (_, i) => 8 + i);   // 8..21
+
+/** Per-day range view over the engine's hour-array shape: open = min..max+1.
+ *  (Non-contiguous stored hours render as their spanning range.) */
+function toRange(hs: number[] | undefined): { open: boolean; from: number; to: number } {
+  if (!hs || hs.length === 0) return { open: false, from: 10, to: 19 };
+  return { open: true, from: Math.min(...hs), to: Math.max(...hs) + 1 };
+}
+function toHours(from: number, to: number): number[] {
+  return Array.from({ length: Math.max(0, to - from) }, (_, i) => from + i);
+}
+function hh(n: number): string {
+  return `${String(n).padStart(2, "0")}:00`;
+}
 
 function localDateStr(offsetDays: number): string {
   const d = new Date(Date.now() + offsetDays * 86_400_000);
@@ -46,12 +58,18 @@ export function AvailabilityEditor({
 
   const gridEmpty = GRID_DAYS.every((d) => (hours[String(d)] ?? []).length === 0);
 
-  function toggleHour(day: number, hour: number) {
+  function setDay(day: number, hs: number[]) {
+    setSavedAt(null);
+    setHours((prev) => ({ ...prev, [String(day)]: hs }));
+  }
+
+  function copyToAll(day: number) {
     setSavedAt(null);
     setHours((prev) => {
-      const cur = prev[String(day)] ?? [];
-      const next = cur.includes(hour) ? cur.filter((h) => h !== hour) : [...cur, hour].sort((a, b) => a - b);
-      return { ...prev, [String(day)]: next };
+      const src = prev[String(day)] ?? [];
+      const next: Record<string, number[]> = {};
+      for (const d of GRID_DAYS) next[String(d)] = [...src];
+      return next;
     });
   }
 
@@ -94,34 +112,63 @@ export function AvailabilityEditor({
           <h4 className="text-[12.5px] font-semibold text-foreground">{t("hoursTitle")}</h4>
           <p className="text-[11.5px] text-muted-foreground">{t("hoursHint")}</p>
         </div>
-        <div className="overflow-x-auto">
-          <div className="flex min-w-[420px] flex-col gap-1">
-            {GRID_DAYS.map((day) => (
-              <div key={day} className="flex items-center gap-1.5">
-                <span className="w-10 shrink-0 text-[11.5px] font-medium capitalize text-muted-foreground">{dayName(day)}</span>
-                <div className="flex flex-wrap gap-1">
-                  {GRID_HOURS.map((h) => {
-                    const on = (hours[String(day)] ?? []).includes(h);
-                    return (
-                      <button
-                        key={h}
-                        type="button"
-                        aria-pressed={on}
-                        onClick={() => toggleHour(day, h)}
-                        className={
-                          on
-                            ? "rounded-md bg-brand px-2 py-1 text-[11.5px] tabular-nums text-white transition-colors"
-                            : "rounded-md bg-muted/60 px-2 py-1 text-[11.5px] tabular-nums text-muted-foreground transition-colors hover:bg-muted"
-                        }
-                      >
-                        {String(h).padStart(2, "0")}
-                      </button>
-                    );
-                  })}
-                </div>
+        <div className="flex flex-col gap-1.5">
+          {GRID_DAYS.map((day) => {
+            const r = toRange(hours[String(day)]);
+            return (
+              <div key={day} className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  aria-pressed={r.open}
+                  onClick={() => setDay(day, r.open ? [] : toHours(r.from, r.to))}
+                  className={
+                    r.open
+                      ? "w-14 rounded-md bg-brand px-2 py-1.5 text-[12px] font-semibold capitalize text-white transition-colors"
+                      : "w-14 rounded-md bg-muted/60 px-2 py-1.5 text-[12px] font-medium capitalize text-muted-foreground transition-colors hover:bg-muted"
+                  }
+                >
+                  {dayName(day)}
+                </button>
+                {r.open ? (
+                  <>
+                    <select
+                      value={r.from}
+                      aria-label={t("fromLabel")}
+                      onChange={(e) => {
+                        const from = Number(e.target.value);
+                        setDay(day, toHours(from, Math.max(from + 1, r.to)));
+                      }}
+                      className="h-8 rounded-md border border-border bg-background px-1.5 text-[12.5px] tabular-nums text-foreground focus:outline-none focus:ring-2 focus:ring-brand/40"
+                    >
+                      {FROM_HOURS.map((h) => (
+                        <option key={h} value={h}>{hh(h)}</option>
+                      ))}
+                    </select>
+                    <span className="text-[12px] text-muted-foreground">–</span>
+                    <select
+                      value={r.to}
+                      aria-label={t("toLabel")}
+                      onChange={(e) => setDay(day, toHours(r.from, Number(e.target.value)))}
+                      className="h-8 rounded-md border border-border bg-background px-1.5 text-[12.5px] tabular-nums text-foreground focus:outline-none focus:ring-2 focus:ring-brand/40"
+                    >
+                      {FROM_HOURS.filter((h) => h + 1 > r.from).map((h) => (
+                        <option key={h + 1} value={h + 1}>{hh(h + 1)}</option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => copyToAll(day)}
+                      className="rounded-md px-2 py-1 text-[11.5px] font-medium text-brand hover:bg-brand-soft"
+                    >
+                      {t("copyToAll")}
+                    </button>
+                  </>
+                ) : (
+                  <span className="text-[12px] text-muted-foreground">{t("closedLabel")}</span>
+                )}
               </div>
-            ))}
-          </div>
+            );
+          })}
         </div>
         {gridEmpty ? <p className="text-[11.5px] text-destructive">{t("hoursEmptyWarning")}</p> : null}
       </div>

@@ -921,7 +921,7 @@
       "rejected_url": "Links kunnen niet worden opgeslagen — Amanda stuurt geen links.",
       "rejected_instruction_injection": "Dit leest als een instructie aan Amanda in plaats van een feit — formuleer het als informatie.",
       "hoursTitle": "Bezichtigingsuren",
-      "hoursHint": "Tik op de uren waarop bezichtigingen mogelijk zijn. Amanda biedt alleen deze tijden aan.",
+      "hoursHint": "Tik op een dag om te openen of sluiten en stel de uren in. Amanda biedt alleen bezichtigingen hierbinnen aan.",
       "blockedTitle": "Geblokkeerde dagen",
       "blockedHint": "Feestdagen of vrije dagen — Amanda boekt op deze dagen nooit bezichtigingen.",
       "blockToday": "Vandaag blokkeren",
@@ -929,7 +929,11 @@
       "addDate": "Datum blokkeren",
       "unblock": "Deblokkeren",
       "hoursSaveNote": "Vergeet niet hierboven op Opslaan te drukken om uren en geblokkeerde dagen toe te passen.",
-      "hoursEmptyWarning": "Houd minstens één bezichtigingsuur aan — gebruik geblokkeerde dagen voor vrije tijd."
+      "hoursEmptyWarning": "Houd minstens één bezichtigingsuur aan — gebruik geblokkeerde dagen voor vrije tijd.",
+      "fromLabel": "Van",
+      "toLabel": "Tot",
+      "closedLabel": "Gesloten",
+      "copyToAll": "Elke dag hetzelfde"
     }
   },
   "performance": {

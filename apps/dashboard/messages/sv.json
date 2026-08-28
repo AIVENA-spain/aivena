@@ -921,7 +921,7 @@
       "rejected_url": "Länkar kan inte sparas — Amanda skickar inga länkar.",
       "rejected_instruction_injection": "Det låter som en instruktion till Amanda snarare än ett faktum — formulera det som information.",
       "hoursTitle": "Visningstider",
-      "hoursHint": "Tryck på de timmar då visningar kan ske. Amanda erbjuder bara dessa tider.",
+      "hoursHint": "Tryck på en dag för att öppna eller stänga den och ställ in tiderna. Amanda erbjuder bara visningar inom dessa.",
       "blockedTitle": "Blockerade dagar",
       "blockedHint": "Helgdagar eller lediga dagar — Amanda bokar aldrig visningar dessa dagar.",
       "blockToday": "Blockera idag",
@@ -929,7 +929,11 @@
       "addDate": "Blockera ett datum",
       "unblock": "Avblockera",
       "hoursSaveNote": "Kom ihåg att trycka på Spara ovan för att tider och blockerade dagar ska gälla.",
-      "hoursEmptyWarning": "Behåll minst en visningstid — använd blockerade dagar för ledighet."
+      "hoursEmptyWarning": "Behåll minst en visningstid — använd blockerade dagar för ledighet.",
+      "fromLabel": "Från",
+      "toLabel": "Till",
+      "closedLabel": "Stängt",
+      "copyToAll": "Samma varje dag"
     }
   },
   "performance": {

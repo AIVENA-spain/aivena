@@ -921,7 +921,7 @@
       "rejected_url": "Lenker kan ikke lagres — Amanda sender ikke lenker.",
       "rejected_instruction_injection": "Dette høres ut som en instruks til Amanda, ikke et faktum — formuler det som informasjon.",
       "hoursTitle": "Visningstider",
-      "hoursHint": "Trykk på timene når visninger kan skje. Amanda tilbyr bare disse tidene.",
+      "hoursHint": "Trykk på en dag for å åpne eller stenge den, og sett tidene. Amanda tilbyr bare visninger innenfor disse.",
       "blockedTitle": "Blokkerte dager",
       "blockedHint": "Helligdager eller fridager — Amanda booker aldri visninger på disse dagene.",
       "blockToday": "Blokker i dag",
@@ -929,7 +929,11 @@
       "addDate": "Blokker en dato",
       "unblock": "Fjern blokkering",
       "hoursSaveNote": "Husk å trykke Lagre ovenfor for at tider og blokkerte dager skal gjelde.",
-      "hoursEmptyWarning": "Behold minst én visningstid — bruk blokkerte dager for fri."
+      "hoursEmptyWarning": "Behold minst én visningstid — bruk blokkerte dager for fri.",
+      "fromLabel": "Fra",
+      "toLabel": "Til",
+      "closedLabel": "Stengt",
+      "copyToAll": "Likt hver dag"
     }
   },
   "performance": {

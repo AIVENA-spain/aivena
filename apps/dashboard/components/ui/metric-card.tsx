@@ -6,9 +6,18 @@ import { cn } from "@/lib/utils";
  * Shared KPI / metric card (2026 redesign). Replaces the per-page inline KpiCard
  * definitions (overview, performance) so every metric across the dashboard reads
  * identically: a calm neutral icon chip, a large navy value, an optional green/
- * red delta, and an optional caption. No rainbow tones — the icon chip is neutral;
- * only the delta carries colour (up = green/good, down = red).
+ * red delta, and an optional caption. The icon chip defaults to neutral; a page
+ * may opt into a tinted chip via `tone` (Christian 2026-08-28, viewings colour
+ * pass) — the value/label stay calm either way.
  */
+const TONE_CHIP: Record<string, string> = {
+  neutral: "bg-muted text-muted-foreground",
+  brand: "bg-brand-soft text-brand",
+  emerald: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+  violet: "bg-violet-500/15 text-violet-600 dark:text-violet-400",
+  amber: "bg-amber-500/15 text-amber-700 dark:text-amber-400",
+};
+
 export function MetricCard({
   icon: Icon,
   label,
@@ -16,6 +25,7 @@ export function MetricCard({
   delta,
   caption,
   className,
+  tone = "neutral",
 }: {
   icon?: LucideIcon;
   label: string;
@@ -24,6 +34,8 @@ export function MetricCard({
   delta?: number | null;
   caption?: string | null;
   className?: string;
+  /** Opt-in icon-chip tint (default stays the calm neutral chip). */
+  tone?: "neutral" | "brand" | "emerald" | "violet" | "amber";
 }) {
   const hasDelta = typeof delta === "number" && Number.isFinite(delta);
   const up = hasDelta && (delta as number) >= 0;
@@ -39,7 +51,7 @@ export function MetricCard({
           {label}
         </span>
         {Icon ? (
-          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+          <span className={cn("flex h-7 w-7 shrink-0 items-center justify-center rounded-lg", TONE_CHIP[tone])}>
             <Icon className="h-4 w-4" aria-hidden strokeWidth={1.8} />
           </span>
         ) : null}

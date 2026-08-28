@@ -198,16 +198,19 @@ export function ViewingsWorkspace({
           icon={CalendarClock}
           label={t("cardUpcoming")}
           value={upcomingCount}
+          tone="brand"
         />
         <MetricCard
           icon={CalendarCheck}
           label={t("cardTotal")}
           value={totalCount}
+          tone="emerald"
         />
         <MetricCard
           icon={UserPlus}
           label={t("cardManual")}
           value={manualCount}
+          tone="violet"
         />
       </div>
 
@@ -355,9 +358,9 @@ function MonthGrid({
 
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-card shadow-elevated">
-      {/* Month nav */}
-      <div className="flex items-center justify-between border-b border-border px-4 py-3">
-        <span className="text-[14px] font-semibold capitalize text-foreground">{monthName}</span>
+      {/* Month nav — brand-tinted band so the calendar reads as its own object */}
+      <div className="flex items-center justify-between border-b border-border bg-brand-soft/50 px-4 py-3">
+        <span className="text-[15px] font-bold capitalize text-brand">{monthName}</span>
         <div className="flex items-center gap-1.5">
           <button
             type="button"
@@ -389,11 +392,14 @@ function MonthGrid({
       </div>
 
       {/* Weekday header */}
-      <div className="grid grid-cols-7 border-b border-border bg-muted/30">
-        {weekdayNames.map((w) => (
+      <div className="grid grid-cols-7 border-b border-border bg-brand-soft/30">
+        {weekdayNames.map((w, wi) => (
           <div
             key={w}
-            className="px-2 py-1.5 text-center font-mono text-[9.5px] uppercase tracking-[0.08em] text-muted-foreground"
+            className={cn(
+              "px-2 py-1.5 text-center font-mono text-[9.5px] font-semibold uppercase tracking-[0.08em]",
+              wi >= 5 ? "text-brand/60" : "text-brand/90",
+            )}
           >
             {w}
           </div>
@@ -435,7 +441,9 @@ function MonthGrid({
                       ? "bg-brand text-white font-semibold"
                       : isBlocked
                         ? "font-semibold text-amber-700 dark:text-amber-400"
-                        : "text-muted-foreground",
+                        : dayBookings.length > 0
+                          ? "bg-brand-soft font-semibold text-brand"
+                          : "text-muted-foreground",
                   )}
                 >
                   {d.getDate()}
@@ -460,8 +468,8 @@ function MonthGrid({
                       b.status === "cancelled" || b.status === "no_show"
                         ? "border-transparent bg-muted text-muted-foreground line-through"
                         : b.status === "completed"
-                          ? "border-emerald-500/70 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/15 dark:text-emerald-400"
-                          : "border-brand bg-brand-soft text-brand hover:brightness-95",
+                          ? "border-emerald-500/70 bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/20 dark:text-emerald-400"
+                          : "border-transparent bg-brand text-white shadow-sm hover:brightness-110",
                     )}
                     // Hover tooltip with the essentials (phone · ref · zone/city)
                     // — the click-through modal shows the same, clickable.

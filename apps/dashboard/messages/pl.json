@@ -921,7 +921,7 @@
       "rejected_url": "Linków nie można zapisać — Amanda nie wysyła linków.",
       "rejected_instruction_injection": "To brzmi jak polecenie dla Amandy, a nie fakt — sformułuj to jako informację.",
       "hoursTitle": "Godziny prezentacji",
-      "hoursHint": "Zaznacz godziny, w których możliwe są prezentacje. Amanda proponuje tylko te godziny.",
+      "hoursHint": "Stuknij dzień, aby go otworzyć lub zamknąć, i ustaw godziny. Amanda proponuje prezentacje tylko w ich ramach.",
       "blockedTitle": "Zablokowane dni",
       "blockedHint": "Święta lub dni wolne — Amanda nigdy nie umawia prezentacji w te dni.",
       "blockToday": "Zablokuj dziś",
@@ -929,7 +929,11 @@
       "addDate": "Zablokuj datę",
       "unblock": "Odblokuj",
       "hoursSaveNote": "Pamiętaj, aby nacisnąć Zapisz powyżej, aby godziny i zablokowane dni zaczęły obowiązywać.",
-      "hoursEmptyWarning": "Zostaw co najmniej jedną godzinę prezentacji — na wolne używaj zablokowanych dni."
+      "hoursEmptyWarning": "Zostaw co najmniej jedną godzinę prezentacji — na wolne używaj zablokowanych dni.",
+      "fromLabel": "Od",
+      "toLabel": "Do",
+      "closedLabel": "Zamknięte",
+      "copyToAll": "Tak samo codziennie"
     }
   },
   "performance": {

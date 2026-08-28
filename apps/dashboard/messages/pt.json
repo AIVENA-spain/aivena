@@ -921,7 +921,7 @@
       "rejected_url": "Links não podem ser guardados — a Amanda não envia links.",
       "rejected_instruction_injection": "Parece uma instrução para a Amanda e não um facto — reformula como informação.",
       "hoursTitle": "Horário de visitas",
-      "hoursHint": "Toca nas horas em que as visitas são possíveis. A Amanda só oferece estes horários.",
+      "hoursHint": "Toca num dia para abrir ou fechar e define as horas. A Amanda só propõe visitas dentro delas.",
       "blockedTitle": "Dias bloqueados",
       "blockedHint": "Feriados ou dias de folga — a Amanda nunca marca visitas nestes dias.",
       "blockToday": "Bloquear hoje",
@@ -929,7 +929,11 @@
       "addDate": "Bloquear uma data",
       "unblock": "Desbloquear",
       "hoursSaveNote": "Não te esqueças de carregar em Guardar acima para aplicar os horários e os dias bloqueados.",
-      "hoursEmptyWarning": "Mantém pelo menos uma hora de visita — para folgas usa os dias bloqueados."
+      "hoursEmptyWarning": "Mantém pelo menos uma hora de visita — para folgas usa os dias bloqueados.",
+      "fromLabel": "Das",
+      "toLabel": "Até",
+      "closedLabel": "Fechado",
+      "copyToAll": "Igual todos os dias"
     }
   },
   "performance": {

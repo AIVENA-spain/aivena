@@ -53,8 +53,11 @@ function templateTasteScore(tags: string[] | undefined, prefs: Record<string, st
   if (prefs.font === "sans" && has("sans")) s += 2;
   if (prefs.scale === "bold" && has("bold")) s += 1;
   if (prefs.scale === "calm" && has("calm")) s += 1;
-  for (const face of ["italiana", "anton", "archivo", "jost", "playfair", "prata", "caslon", "fraunces"]) {
-    if (has(face) && (prefs.display_face === face || prefs.serif_face === face || prefs.sans_face === face || prefs.serif_flavor === face)) s += 2;
+  // the face the design LEADS with counts double the small supporting face
+  const chosen = new Set([prefs.display_face, prefs.serif_face, prefs.serif_flavor, prefs.sans_face].filter(Boolean) as string[]);
+  for (const face of chosen) {
+    if (has(`title:${face}`)) s += 2;
+    else if (has(`body:${face}`)) s += 1;
   }
   return s;
 }
@@ -67,6 +70,7 @@ type Defaults = Omit<TemplateMeta, "editable_slots" | "colour_layers"> & {
 type GalleryItem = {
   template_id: string; number?: number; property_id: string; property_title: string | null;
   photos: string[]; palette_locked: boolean; brand: Brand; colour_overrides: Record<string, string>;
+  taste_tags?: string[];
 };
 
 const LANGS = [
@@ -306,10 +310,28 @@ export function EditableWizard({ initialLanguage, prefs = null }: { initialLangu
     if (!prefs) return arr;
     return [...arr].sort((a, b) => templateTasteScore(b.taste_tags, prefs) - templateTasteScore(a.taste_tags, prefs));
   }, [catalogue, photos.length, prefs]);
-  const recommendedIds = useMemo(() => {
+  // "a few templates we recommend" — the TOP matches, not everything above a bar (a threshold
+  // alone badged two thirds of the catalogue and meant nothing). Recommendations come from BOTH
+  // sources: the gallery payload (the landing view) and the catalogue (the property path).
+  const topByTaste = useCallback((items: { id: string; tags?: string[] }[], take: number) => {
     if (!prefs) return new Set<string>();
-    return new Set(catalogue.filter((t) => templateTasteScore(t.taste_tags, prefs) >= 4).map((t) => t.id));
-  }, [catalogue, prefs]);
+    return new Set(
+      items
+        .map((it) => ({ id: it.id, s: templateTasteScore(it.tags, prefs) }))
+        .filter((x) => x.s >= 4)
+        .sort((a, b) => b.s - a.s)
+        .slice(0, take)
+        .map((x) => x.id),
+    );
+  }, [prefs]);
+  const recommendedIds = useMemo(
+    () => topByTaste(gallery.map((g) => ({ id: g.template_id, tags: g.taste_tags })), 6),
+    [gallery, topByTaste],
+  );
+  const recommendedPickerIds = useMemo(
+    () => topByTaste(eligibleTemplates.map((t) => ({ id: t.id, tags: t.taste_tags })), 3),
+    [eligibleTemplates, topByTaste],
+  );
 
   // load an editable template's defaults into the edit state (shared by both entry paths).
   // The template/derived copy is authored in English — when the post language (defaulted to the
@@ -554,6 +576,12 @@ export function EditableWizard({ initialLanguage, prefs = null }: { initialLangu
               <p className="text-sm text-neutral-500 dark:text-neutral-400">
                 Shown with your best listings in a neutral style — pick one to customise in your colours.
               </p>
+              {prefs && recommendedIds.size > 0 && (
+                <p className="mt-1 flex items-center gap-1.5 text-sm font-medium text-emerald-700 dark:text-emerald-400">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  {recommendedIds.size} template{recommendedIds.size === 1 ? "" : "s"} picked for the style you chose — look for the green badge.
+                </p>
+              )}
             </div>
             <button onClick={() => setStep("property")}
               className="rounded-lg border border-neutral-300 px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-200">
@@ -658,7 +686,7 @@ export function EditableWizard({ initialLanguage, prefs = null }: { initialLangu
                   )}
                 </div>
                 <div className="p-2 text-center text-xs font-medium text-muted-foreground">Template {t.number ?? t.id}</div>
-                {recommendedIds.has(t.id) && (
+                {recommendedPickerIds.has(t.id) && (
                   <span className="absolute left-2 top-2 rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-semibold text-white shadow">For your taste</span>
                 )}
                 {thumbs[t.id] && (

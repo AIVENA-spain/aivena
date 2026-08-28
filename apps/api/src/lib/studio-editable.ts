@@ -186,21 +186,29 @@ function tasteTags(m: any): string[] {
   const tags = new Set<string>();
   const slots: any[] = Array.isArray(m.text_slots) ? m.text_slots : [];
   const fonts = slots.map((s) => String(s.font ?? ''));
-  const titleFonts = slots
-    .filter((s) => /title|headline/i.test(`${s.role ?? ''} ${s.id ?? ''}`))
-    .map((s) => String(s.font ?? ''));
+  const isTitle = (s: any) => /title|headline/i.test(`${s.role ?? ''} ${s.id ?? ''}`);
+  const titleFonts = slots.filter(isTitle).map((s) => String(s.font ?? ''));
   if ((titleFonts.length ? titleFonts : fonts).some((f) => SERIF_FACES.test(f))) tags.add('serif');
   else tags.add('sans');
-  for (const f of fonts) {
+  // faces are tagged by ROLE — a display face the design leads with is a much stronger taste
+  // signal than the small body face, so they score differently downstream
+  const faceOf = (f: string) => {
     const lf = f.toLowerCase();
-    if (lf.includes('italiana')) tags.add('italiana');
-    if (lf.includes('anton')) tags.add('anton');
-    if (lf.includes('archivo')) tags.add('archivo');
-    if (lf.includes('jost') || lf.includes('questrial')) tags.add('jost');
-    if (lf.includes('playfair')) tags.add('playfair');
-    if (lf.includes('prata')) tags.add('prata');
-    if (lf.includes('caslon')) tags.add('caslon');
-    if (lf.includes('fraunces')) tags.add('fraunces');
+    if (lf.includes('italiana')) return 'italiana';
+    if (lf.includes('anton')) return 'anton';
+    if (lf.includes('archivo')) return 'archivo';
+    if (lf.includes('jost') || lf.includes('questrial')) return 'jost';
+    if (lf.includes('playfair')) return 'playfair';
+    if (lf.includes('prata')) return 'prata';
+    if (lf.includes('caslon')) return 'caslon';
+    if (lf.includes('fraunces')) return 'fraunces';
+    return null;
+  };
+  const titleSet = new Set(titleFonts.map(faceOf).filter(Boolean) as string[]);
+  for (const t of titleSet) tags.add(`title:${t}`);
+  for (const s of slots) {
+    const face = faceOf(String(s.font ?? ''));
+    if (face && !titleSet.has(face)) tags.add(`body:${face}`);
   }
   const bgHex = m.colour_tokens?.background?.default;
   if (typeof bgHex === 'string' && /^#[0-9a-fA-F]{6}$/.test(bgHex)) {

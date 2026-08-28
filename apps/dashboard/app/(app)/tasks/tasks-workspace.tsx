@@ -1,5 +1,7 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+
 import { useState } from "react";
 import Link from "next/link";
 import { CheckCircle2, ClipboardList, Inbox, Link2, MessageSquareOff } from "lucide-react";
@@ -30,12 +32,17 @@ import {
  * never delete). The reason is one of the RPC whitelist values — never free text.
  */
 export function TasksWorkspace({ tasks }: { tasks: OpsTask[] }) {
+  const router = useRouter();
   const [rows, setRows] = useState<Row[]>(() =>
     tasks.map((task) => ({ task, state: "idle", error: null, reason: DEFAULT_REASON })),
   );
 
   function dispatch(taskId: string, ev: RowEvent) {
     setRows((prev) => prev.map((r) => (r.task.taskId === taskId ? rowReducer(r, ev) : r)));
+    // The sidebar Tasks badge is server-rendered: without this it kept showing
+    // a count for work already done (Christian, 2026-08-28) until the next
+    // navigation. Refresh the server tree the moment a task actually resolves.
+    if (ev.type === "SUCCESS") router.refresh();
   }
 
   function onConfirm(taskId: string) {

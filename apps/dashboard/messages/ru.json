@@ -933,7 +933,11 @@
       "fromLabel": "С",
       "toLabel": "До",
       "closedLabel": "Закрыто",
-      "copyToAll": "Одинаково каждый день"
+      "copyToAll": "Одинаково каждый день",
+      "addBreak": "+ Перерыв",
+      "removeBreak": "Убрать перерыв",
+      "breakLabel": "Перерыв",
+      "allDay": "Весь день"
     }
   },
   "performance": {

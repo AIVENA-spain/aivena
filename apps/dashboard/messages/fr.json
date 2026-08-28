@@ -933,7 +933,11 @@
       "fromLabel": "De",
       "toLabel": "Jusqu'à",
       "closedLabel": "Fermé",
-      "copyToAll": "Pareil chaque jour"
+      "copyToAll": "Pareil chaque jour",
+      "addBreak": "+ Pause",
+      "removeBreak": "Supprimer la pause",
+      "breakLabel": "Pause",
+      "allDay": "Toute la journée"
     }
   },
   "performance": {

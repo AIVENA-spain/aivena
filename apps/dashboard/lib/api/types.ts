@@ -976,6 +976,8 @@ export type AmandaSettingsResponse = {
     viewing_hours_by_weekday?: Record<string, number[]>;
     /** YYYY-MM-DD days Amanda must never book. */
     blocked_dates?: string[];
+    /** One-off hour blocks on a date (meeting, dentist): start hours from..to-1. */
+    blocked_slots?: Array<{ date: string; from: number; to: number }>;
   };
   knowledge?: AmandaKnowledgeEntry[];
 };

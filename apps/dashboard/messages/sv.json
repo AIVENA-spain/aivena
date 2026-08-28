@@ -933,7 +933,11 @@
       "fromLabel": "Från",
       "toLabel": "Till",
       "closedLabel": "Stängt",
-      "copyToAll": "Samma varje dag"
+      "copyToAll": "Samma varje dag",
+      "addBreak": "+ Paus",
+      "removeBreak": "Ta bort paus",
+      "breakLabel": "Paus",
+      "allDay": "Hela dagen"
     }
   },
   "performance": {

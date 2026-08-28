@@ -345,7 +345,7 @@ const STORY_TOOL = {
       hook: { type: 'string', description: 'cover hook over the best photo, max 58 chars, NO digits — the lifestyle promise this specific property makes (you can SEE the photos)' },
       photo_lines: { type: 'array', items: { type: 'string' }, description: 'ONE line per photo, in the exact order given (max 80 chars each): what makes THAT photo worth pausing on — concrete, sensory, human, no digits, never generic ("bright living room" is a failure; "morning light hits the long table first" is the standard)' },
       vibe_scene: { type: 'string', description: "ENGLISH, 15-35 words: one artwork scene capturing this property's VIBE (golf calm / beach morning / village evening...) as a Mediterranean visual metaphor. Concrete nouns. NO interiors, NO building facades, NO landmarks, NO people close-up, NO text." },
-      art_style: { type: 'string', enum: ['bodegon', 'litoral', 'tinta', 'salitre', 'papel', 'arcilla', 'acuarela', 'bordado'], description: 'the artwork style that best matches this property vibe' },
+      art_style: { type: 'string', enum: ['bodegon', 'litoral', 'tinta', 'salitre', 'papel', 'arcilla', 'acuarela', 'bordado', 'pueblo', 'mercado'], description: 'the artwork style that best matches this property vibe' },
       caption: { type: 'string', description: 'SHORT HUMAN caption (max 250 chars): 1-2 plain lines a person would type + one CTA line with the DM keyword. Town once. Facts verbatim only if used. BANNED: dreaming of, hidden gem, look no further, oasis, imagine yourself, sueñas con.' },
       cta_action: { type: 'string', description: 'save/send line, max 100 chars, help-framed' },
       cta_keyword: { type: 'string', description: 'DM keyword pill, max 30 chars' },

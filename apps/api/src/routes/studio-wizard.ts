@@ -803,6 +803,7 @@ route.get('/editable-gallery', async (c) => {
           property_title: chosen.title,
           photos: chosen.photos.slice(0, t.photo_count),
           palette_locked: t.palette_locked,
+          taste_tags: t.taste_tags,                          // lets the gallery badge "For your taste"
           brand: { ...GALLERY_NEUTRAL, gold: hex },          // neutral base, shifting accent in the gold slot
           colour_overrides: galleryAccentOverrides(hex),      // pin the accent to roles every template draws
         };

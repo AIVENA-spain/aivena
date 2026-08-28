@@ -5,6 +5,7 @@ export type NavItem = {
   tKey:
     | "overview"
     | "inbox"
+    | "tasks"
     | "operations"
     | "properties"
     | "viewings"
@@ -19,6 +20,7 @@ export type NavItem = {
   iconName:
     | "overview"
     | "inbox"
+    | "tasks"
     | "operations"
     | "properties"
     | "viewings"
@@ -47,6 +49,12 @@ export type NavItem = {
 export const PRIMARY_NAV: NavItem[] = [
   { tKey: "overview", href: "/", iconName: "overview", roles: ["owner", "agent", "viewer"] },
   { tKey: "inbox", href: "/approvals", iconName: "inbox", roles: ["owner", "agent", "viewer"] },
+  // Tasks EARNED its nav seat (Christian, 2026-08-28): in auto-mode Amanda files
+  // amanda_question / human_review_needed / amanda_booking_confirm tasks, and the
+  // Inbox surfaces ONLY suggested_reply — so /tasks was the sole home for her
+  // office questions and had no way in. Restored until the conversations-first
+  // Inbox redesign absorbs it.
+  { tKey: "tasks", href: "/tasks", iconName: "tasks", roles: ["owner", "agent", "viewer"] },
   // Command Center (/operations) is intentionally NOT in the agency nav — per the
   // 2026-06-27 product correction it's advanced/internal diagnostics + the data
   // source for the AIVENA Assistant (the primary attention layer), not the main

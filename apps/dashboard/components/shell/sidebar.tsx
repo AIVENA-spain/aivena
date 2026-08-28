@@ -7,6 +7,7 @@ import {
   Activity,
   Building2,
   CalendarCheck,
+  CircleCheckBig,
   ImageIcon,
   Inbox,
   LayoutGrid,
@@ -27,6 +28,7 @@ import { AccountChip } from "./account-chip";
 const ICONS: Record<NavItem["iconName"], LucideIcon> = {
   overview: LayoutGrid,
   inbox: Inbox,
+  tasks: CircleCheckBig,
   operations: Activity,
   properties: Building2,
   viewings: CalendarCheck,

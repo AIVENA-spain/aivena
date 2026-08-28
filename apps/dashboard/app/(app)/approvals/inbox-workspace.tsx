@@ -451,15 +451,28 @@ export function InboxWorkspace({
   // flashing the loading skeleton: we keep showing the current (stale) thread
   // and swap it in place once the fresh detail arrives. Used to reconcile the
   // just-sent message's status (queued → delivered) after an approve/dismiss.
+  // In-flight guard (2026-08-28): the 8s live poll must never stack requests —
+  // server actions are serialised, so a pile-up makes the whole thread feel
+  // slow to load. A refetch already running simply skips this tick.
+  const reloadInFlight = useRef(false);
+  // Mirror of threadCache for interval callbacks (no re-subscribe on every keystroke).
+  const threadCacheRef = useRef(threadCache);
+  useEffect(() => { threadCacheRef.current = threadCache; }, [threadCache]);
   const reloadThread = useCallback((taskId: string) => {
+    if (reloadInFlight.current) return;
+    reloadInFlight.current = true;
     loadedRef.current.add(taskId); // already loaded; keep the cached bubble up
     startThreadLoad(async () => {
-      const result = await loadTaskDetailAction(taskId);
-      if (!result.ok) return; // keep the old thread on a transient refetch fail
-      setThreadCache((prev) => ({
-        ...prev,
-        [taskId]: { status: "ok", data: result.detail },
-      }));
+      try {
+        const result = await loadTaskDetailAction(taskId);
+        if (!result.ok) return; // keep the old thread on a transient refetch fail
+        setThreadCache((prev) => ({
+          ...prev,
+          [taskId]: { status: "ok", data: result.detail },
+        }));
+      } finally {
+        reloadInFlight.current = false;
+      }
     });
   }, []);
 
@@ -500,7 +513,10 @@ export function InboxWorkspace({
   useEffect(() => {
     if (!selectedId || view !== "convo") return;
     const id = window.setInterval(() => {
-      if (document.visibilityState === "visible") reloadThread(selectedId);
+      if (document.visibilityState !== "visible") return;
+      // Never compete with the FIRST load of a thread — only keep a loaded one fresh.
+      if (threadCacheRef.current[selectedId]?.status !== "ok") return;
+      reloadThread(selectedId);
     }, 8000);
     return () => window.clearInterval(id);
   }, [selectedId, view, reloadThread]);

@@ -43,6 +43,7 @@ export class FakeBackends implements ToolBackends {
         price: p.price as number, bedrooms: p.bedrooms as number,
         city: p.location_city as string, type: p.property_type as string,
         photos: 14,
+        url: null,
         listed: '2026-08-01',
       })),
       catalogue_note: null,

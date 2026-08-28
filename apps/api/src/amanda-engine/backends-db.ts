@@ -8,6 +8,7 @@ import { sql } from 'drizzle-orm';
 import { withAgency } from '../../../../packages/db/client';
 import { deleteCalendarEventForBooking } from '../routes/calendar-worker';
 import { generalAgentAnswer } from '../routes/amanda-llm';
+import { ownSiteUrl } from './site-link';
 import { wallClockInZone, resolveDatetimePhrase } from './datetime-resolver';
 import { candidateSlots, parseAmandaSettings, slotLabel, type AmandaAgencySettings } from './availability-lib';
 
@@ -19,6 +20,8 @@ export interface BackendCtx {
   agencyId: string;
   /** Trading name — the research call answers as this agency's colleague. */
   agencyName: string;
+  /** The agency's own web hosts; a listing link is shared ONLY if it is theirs. */
+  agencySiteHosts: string[];
   leadId: string;
   conversationId: string;
   leadLanguage: string;
@@ -73,6 +76,7 @@ export function makeDbBackends(ctx: BackendCtx): ToolBackends {
         const rows = await tx.execute(sql`
           SELECT id, external_id, title, price, bedrooms, location_city, property_type,
                  jsonb_array_length(COALESCE(images, '[]'::jsonb)) AS photo_count,
+                 source_url,
                  created_at::date::text AS listed_date,
                  (SELECT count(DISTINCT p2.created_at::date) FROM properties p2
                    WHERE p2.agency_id = current_setting('app.current_agency_id', true)
@@ -118,6 +122,9 @@ export function makeDbBackends(ctx: BackendCtx): ToolBackends {
           price: r.price != null ? Number(r.price) : null, bedrooms: r.bedrooms != null ? Number(r.bedrooms) : null,
           city: (r.location_city as string) ?? null, type: (r.property_type as string) ?? null,
           photos: r.photo_count != null ? Number(r.photo_count) : 0,
+          // Only the agency's OWN listing page — a portal URL would send the
+          // buyer to a competitor's site (Christian, 2026-08-28).
+          url: ownSiteUrl(r.source_url as string | null, ctx.agencySiteHosts),
           listed: importArtifact ? null : (r.listed_date as string) ?? null,
         }));
         const catalogue_note = importArtifact
@@ -135,6 +142,7 @@ export function makeDbBackends(ctx: BackendCtx): ToolBackends {
         const rows = await tx.execute(sql`
           SELECT id, external_id AS ref, title, property_type, status, price, price_currency,
                  jsonb_array_length(COALESCE(images, '[]'::jsonb)) AS photo_count,
+                 source_url,
                  bedrooms, bathrooms, area_sqm, area_built_sqm, area_plot_sqm,
                  location_city, location_region, raw_payload->>'zone' AS zone,
                  features, left(description, 900) AS description, updated_at,
@@ -146,6 +154,10 @@ export function makeDbBackends(ctx: BackendCtx): ToolBackends {
         `);
         const r = (rows as unknown as Array<Record<string, unknown>>)[0];
         if (!r) return null;
+        // Replace the raw source URL with the shareable one (null unless it is
+        // the agency's own site) so a portal link can never reach the model.
+        r.url = ownSiteUrl(r.source_url as string | null, ctx.agencySiteHosts);
+        delete r.source_url;
         // §2 staleness guard: a listing untouched for 45+ days gets an explicit
         // hedge instruction riding the tool result (the model treats tool data
         // as law; the honest framing is deterministic, not hoped-for).

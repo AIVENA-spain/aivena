@@ -10,6 +10,7 @@ import { runTurn, type TurnDeps, type PendingActionView } from './turn';
 import { parseAmandaMode } from './modes';
 import { makeDbBackends, parseAmandaSettings, slotLabel, type AmandaAgencySettings } from './backends-db';
 import { upcomingCalendarNotes } from './availability-lib';
+import { agencyHosts } from './site-link';
 import { isHumanSender } from './sender-lib';
 
 export { isHumanSender } from './sender-lib';
@@ -42,14 +43,19 @@ interface LoadedWorld {
   openTicketNote: string | null;
   humanAnsweredTicketIds: string[];
   agencyKnowledge: string[];
+  /** The agency's OWN web hosts — the only sites whose listing links Amanda
+   *  may share (a portal-sourced URL would send the buyer to a competitor). */
+  agencySiteHosts: string[];
 }
 
 async function loadWorld(row: QueueRow): Promise<LoadedWorld | { skip: string }> {
   return withAgency(row.agency_id, async (tx) => {
     const agencyRows = await tx.execute(sql`
-      SELECT COALESCE(a.trading_name, a.legal_name, a.slug) AS agency_name, s.amanda_mode, s.amanda_settings
+      SELECT COALESCE(a.trading_name, a.legal_name, a.slug) AS agency_name, s.amanda_mode, s.amanda_settings,
+             b.website_url
         FROM agency_settings s
         JOIN agencies a ON a.id = s.agency_id
+        LEFT JOIN agency_branding b ON b.agency_id = s.agency_id
        WHERE s.agency_id = current_setting('app.current_agency_id', true)
        LIMIT 1
     `);
@@ -119,6 +125,7 @@ async function loadWorld(row: QueueRow): Promise<LoadedWorld | { skip: string }>
     return {
       mode,
       agencyName: String(agency.agency_name ?? 'the agency'),
+      agencySiteHosts: agencyHosts([agency.website_url as string | null]),
       settings: parseAmandaSettings(agency.amanda_settings),
       leadFirstName: lead.full_name ? String(lead.full_name).split(/\s+/)[0] : null,
       leadFullName: (lead.full_name as string) ?? null,
@@ -276,7 +283,7 @@ export async function processTurnDb(row: QueueRow): Promise<TurnOutcome> {
   };
 
   const backends = makeDbBackends({
-    agencyId: row.agency_id, agencyName: world.agencyName,
+    agencyId: row.agency_id, agencyName: world.agencyName, agencySiteHosts: world.agencySiteHosts,
     leadId: row.lead_id, conversationId: row.conversation_id,
     leadLanguage: world.leadLanguage, rejectedPropertyIds: world.leadState.rejected_property_ids ?? [],
     settings: world.settings, nowMs: () => Date.now(),

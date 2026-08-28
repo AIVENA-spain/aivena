@@ -26,6 +26,8 @@ export const TIPS_LIBRARY: Record<string, [string, string, string]> = {
   arcilla: ['arcilla.png', 'arcilla-2.png', 'arcilla-3.png'],
   acuarela: ['acuarela.png', 'acuarela-2.png', 'acuarela-3.png'],
   bordado: ['bordado.png', 'bordado-2.png', 'bordado-3.png'],
+  pueblo: ['pueblo.png', 'pueblo-2.png', 'pueblo-3.png'],
+  mercado: ['mercado.png', 'mercado-2.png', 'mercado-3.png'],
 };
 
 /** Colour schemes — all deliberately Spanish-coastal: the longing, the light, the promise. */

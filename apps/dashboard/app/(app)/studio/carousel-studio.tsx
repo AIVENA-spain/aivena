@@ -44,13 +44,16 @@ const LANGS: [string, string][] = [
   ["ru", "Русский"], ["it", "Italiano"], ["pt", "Português"],
 ];
 
+// the AI-imagery tips styles (fresh artwork per topic; colour mood applies to these)
+const AI_STYLE_KEYS = ["bodegon", "litoral", "tinta", "salitre", "papel", "arcilla", "acuarela", "bordado", "pueblo", "mercado"];
+
 // Style example slides ship as static assets (public/studio/carousel-examples/<style>/<n>.jpg)
 // so the picker paints instantly — no fetch, no signed URLs. Counts must match the files on disk.
 const EXAMPLE_COUNTS: Record<string, number> = {
   // tips styles: FULL decks rendered by the production engine (Christian 2026-08-28: "i want
   // all the slides in examples not just 3")
   acuarela: 8, arcilla: 8, bodegon: 8, bordado: 8, cartel: 7, editorial: 7, encalada: 7,
-  litoral: 8, papel: 8, salitre: 8, sereno: 7, tinta: 8,
+  litoral: 8, mercado: 8, papel: 8, pueblo: 8, salitre: 8, sereno: 7, tinta: 8,
   // listing styles (parked out of the UI): partial sample sets remain
   brisa: 2, cuarteto: 2, horizonte: 3, marea: 2, plano: 3, portada: 3, recorte: 2, riviera: 2, ventana: 2,
 };
@@ -83,14 +86,16 @@ const STYLES: Record<CarouselType, [string, string, string][]> = {
     ["cartel", "Cartel", "Bold Spanish poster type, giant numbers"],
     ["encalada", "Encalada", "Mediterranean — limewash, terracotta and olive"],
     ["sereno", "Sereno", "Quiet luxury — fine lines and lots of air"],
-    ["bodegon", "Bodegón", "AI imagery — sculptural objects on turquoise water"],
+    ["bodegon", "Bodegón", "AI imagery — dusk still-life, painted with light"],
     ["litoral", "Litoral", "AI imagery — Mediterranean travel-poster illustration"],
     ["tinta", "Tinta", "AI imagery — two-ink print posters, the riso sun"],
-    ["salitre", "Salitre", "AI imagery — grainy 35mm coastal film photography"],
+    ["salitre", "Salitre", "AI imagery — editorial 35mm film photography"],
     ["papel", "Papel", "AI imagery — layered paper-cut scenes"],
     ["arcilla", "Arcilla", "AI imagery — the handmade clay miniature world"],
     ["acuarela", "Acuarela", "AI imagery — watercolour and ink sketches"],
     ["bordado", "Bordado", "AI imagery — embroidered thread on linen"],
+    ["pueblo", "Pueblo", "AI imagery — Costa Blanca in bloom: white lanes, blue doors, bougainvillea"],
+    ["mercado", "Mercado", "AI imagery — Spanish food & culture: tapas, markets, café mornings"],
   ],
   quote: [
     ["editorial", "Editorial", "Clean and calm — the classic look"],
@@ -126,6 +131,11 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
   const examples = EXAMPLES;
   const [exampleStyle, setExampleStyle] = useState<string | null>(null);
   const [exampleIdx, setExampleIdx] = useState(0);
+  // optional two-colour override (Christian 2026-08-28: "choose from a color wheel two colors
+  // for details for all of the templates including the image ones") — off = agency brand
+  const [customColours, setCustomColours] = useState(false);
+  const [colMain, setColMain] = useState("#1a2b4a");
+  const [colAccent, setColAccent] = useState("#c8a24b");
   const [quoteText, setQuoteText] = useState("");
   const [quoteAuthor, setQuoteAuthor] = useState("");
   const [language, setLanguage] = useState(initialLanguage ?? "es");
@@ -386,7 +396,7 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
               ))}
             </div>
 
-            {["bodegon", "litoral", "tinta", "salitre", "papel", "arcilla", "acuarela", "bordado"].includes(style) && (
+            {AI_STYLE_KEYS.includes(style) && (
               <>
                 <div className="mb-2 mt-7 text-sm font-semibold text-neutral-900 dark:text-neutral-100">Colour mood <span className="font-normal text-neutral-400">(the artwork is generated fresh for your topic)</span></div>
                 <div className="flex flex-wrap gap-2">
@@ -402,8 +412,31 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
               </>
             )}
 
+            <div className="mb-2 mt-7 text-sm font-semibold text-neutral-900 dark:text-neutral-100">5. Detail colours <span className="font-normal text-neutral-400">(optional — your brand colours unless you choose)</span></div>
+            <div className="flex flex-wrap items-center gap-3">
+              <button type="button" onClick={() => setCustomColours((v) => !v)}
+                className={`rounded-lg border px-3.5 py-2 text-xs font-medium transition ${customColours
+                  ? "border-emerald-600 bg-emerald-600 text-white"
+                  : "border-neutral-200 bg-white text-neutral-600 hover:border-neutral-400 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300"}`}>
+                {customColours ? "Using custom colours" : "Choose custom colours"}
+              </button>
+              {customColours && (
+                <>
+                  <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-neutral-700 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300">
+                    <input type="color" value={colMain} onChange={(e) => setColMain(e.target.value)} className="h-6 w-8 cursor-pointer rounded border-0 bg-transparent p-0" />
+                    Main colour
+                  </label>
+                  <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-neutral-700 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300">
+                    <input type="color" value={colAccent} onChange={(e) => setColAccent(e.target.value)} className="h-6 w-8 cursor-pointer rounded border-0 bg-transparent p-0" />
+                    Accent colour
+                  </label>
+                  <span className="text-[11px] text-neutral-400">Main = grounds &amp; headlines · Accent = numbers &amp; details. Artwork keeps the colour mood above.</span>
+                </>
+              )}
+            </div>
+
             <button
-              onClick={() => void start({ type: "tips", topic: topic.trim(), slides: slideTotal, language, style, scheme }, "form")}
+              onClick={() => void start({ type: "tips", topic: topic.trim(), slides: slideTotal, language, style, scheme, ...(customColours ? { brand_navy: colMain, brand_gold: colAccent } : {}) }, "form")}
               disabled={topic.trim().length < 3}
               className="mt-7 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-4 text-[15px] font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-40">
               <Sparkles className="h-4 w-4" /> Create carousel
@@ -508,7 +541,7 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
         <div className="flex flex-col items-center gap-3 py-24 text-neutral-500">
           <Loader2 className="h-7 w-7 animate-spin" />
           <p className="text-sm">{resuming ? "Opening your design…"
-            : ["bodegon", "litoral", "tinta", "salitre", "papel", "arcilla", "acuarela", "bordado"].includes(style) || style === "vibra"
+            : AI_STYLE_KEYS.includes(style) || style === "vibra"
             ? "Writing the copy and painting the artwork — this takes a few minutes. Worth it."
             : ctype === "listing" ? "Building your carousel — under a minute…" : "Writing your carousel — about a minute…"}</p>
         </div>
@@ -549,7 +582,7 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
               {plan.type === "tips" && ([
                 ["hook", "Otra vuelta · new hook", "The AI reframes the cover from a different angle"],
                 ["style", "Otra vuelta · new look", "Same words and artwork, next look"],
-                ...(resultPerSlideArt && ["bodegon", "litoral", "tinta", "salitre", "papel", "arcilla", "acuarela", "bordado"].includes(resultStyle)
+                ...(resultPerSlideArt && AI_STYLE_KEYS.includes(resultStyle)
                   ? [["layout", "Otra vuelta · recompose", "Same everything, slides rearranged"]] : []),
               ] as [typeof remixing, string, string][]).map(([axis, title2, tip]) => (
                 <button key={axis} title={tip} disabled={!!remixing} onClick={() => void remix(axis as "hook" | "style" | "layout")}

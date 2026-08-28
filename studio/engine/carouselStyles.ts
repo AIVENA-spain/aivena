@@ -22,13 +22,16 @@ export type CarouselStyle =
   | "plano" | "portada" | "recorte" | "marea"
   | "cuarteto" | "brisa" | "riviera" | "ventana"
   | "bodegon" | "litoral" | "tinta" | "salitre"
-  | "papel" | "arcilla" | "acuarela" | "bordado";
+  | "papel" | "arcilla" | "acuarela" | "bordado"
+  | "pueblo" | "mercado";
 
 export const PLANNED_STYLES: Record<"tips" | "quote", CarouselStyle[]> = {
   tips: [
     "editorial", "cartel", "encalada", "sereno",
-    // AI-imagery styles (Christian-approved 2026-07-17) — 3-image families from the seeded library
+    // AI-imagery styles (Christian-approved 2026-07-17; pueblo+mercado added 2026-08-28) —
+    // 3-image families from the seeded library
     "bodegon", "litoral", "tinta", "salitre", "papel", "arcilla", "acuarela", "bordado",
+    "pueblo", "mercado",
   ],
   quote: ["editorial", "sereno", "encalada"],
 };

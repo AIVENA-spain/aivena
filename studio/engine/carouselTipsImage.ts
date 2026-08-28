@@ -14,9 +14,11 @@ import { CarouselBrand } from "./renderCarousel";
 
 export type TipsImageStyle =
   | "bodegon" | "litoral" | "tinta" | "salitre"
-  | "papel" | "arcilla" | "acuarela" | "bordado";
+  | "papel" | "arcilla" | "acuarela" | "bordado"
+  | "pueblo" | "mercado";
 export const TIPS_IMAGE_STYLES: TipsImageStyle[] = [
   "bodegon", "litoral", "tinta", "salitre", "papel", "arcilla", "acuarela", "bordado",
+  "pueblo", "mercado",
 ];
 
 const W = 1080, H = 1350;
@@ -38,6 +40,8 @@ const CFG: Record<TipsImageStyle, StyleCfg> = {
   arcilla: { mode: "light", s2: "card", grain: 0.035, ctaY: 0.7 },
   acuarela: { mode: "light", s2: "card", grain: 0.035, ctaY: 0.55 },
   bordado: { mode: "light", s2: "card", grain: 0.035, ctaY: 0.75 },
+  pueblo: { mode: "light", s2: "card", grain: 0.04, ctaY: 0.5 },     // Costa Blanca in bloom (2026-08-28)
+  mercado: { mode: "photo", s2: "card", grain: 0.04, ctaY: 0.55 },   // Spanish food & culture (2026-08-28)
 };
 
 

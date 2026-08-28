@@ -1145,6 +1145,11 @@ route.post('/carousel', async (c) => {
   const style: CarouselStyle = typeof b.style === 'string' && (allowedStyles as string[]).includes(b.style)
     ? (b.style as CarouselStyle) : 'editorial';
   const scheme = typeof b.scheme === 'string' && TIPS_SCHEMES[b.scheme] ? b.scheme : 'clasico';
+  // optional two-colour override (Christian 2026-08-28): main = brand.navy, accent = brand.gold —
+  // chrome/type only; artwork palette stays with the colour-mood scheme
+  const hex = (v: unknown): string | null => typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v) ? v : null;
+  const brandNavy = hex(b.brand_navy);
+  const brandGold = hex(b.brand_gold);
 
   try {
     // ── tips / quote: no property needed — brand + agency identity only ──────
@@ -1174,6 +1179,8 @@ route.post('/carousel', async (c) => {
       `);
       const bRows = bRes as unknown as any[];
       const { agency, brand } = mapBranding(bRows[0] || {});
+      if (brandNavy) brand.navy = brandNavy;
+      if (brandGold) brand.gold = brandGold;
 
       const label = type === 'tips' ? `Tips carousel · ${topic.slice(0, 80)}` : 'Client quote carousel';
       const ins = await tx.execute(sql`
@@ -1181,7 +1188,7 @@ route.post('/carousel', async (c) => {
           (agency_id, generation_type, status, prompt, requested_by, raw_request)
         VALUES
           (${agencyId}, 'social_post', 'processing', ${label}, ${user?.sub ?? null}::uuid,
-           ${JSON.stringify({ engine: 'carousel', content_type: 'carousel', carousel_type: type, carousel_style: style, image_scheme: scheme, include_recap: includeRecap, include_context: includeContext, topic, quote_text: quoteText, quote_author: quoteAuthor, slide_count: slideCount, language })}::jsonb)
+           ${JSON.stringify({ engine: 'carousel', content_type: 'carousel', carousel_type: type, carousel_style: style, image_scheme: scheme, include_recap: includeRecap, include_context: includeContext, topic, quote_text: quoteText, quote_author: quoteAuthor, slide_count: slideCount, language, brand_navy: brandNavy, brand_gold: brandGold })}::jsonb)
         RETURNING id
       `);
       const rows = ins as unknown as Array<{ id: string }>;
@@ -1287,6 +1294,9 @@ route.post('/carousel/update', async (c) => {
     `);
     const bRows = bRes as unknown as any[];
     const { agency, brand } = mapBranding(bRows[0] || {});
+    const rawU = (rows[0].raw_request ?? {}) as Record<string, unknown>;
+    if (typeof rawU.brand_navy === 'string') brand.navy = rawU.brand_navy;
+    if (typeof rawU.brand_gold === 'string') brand.gold = rawU.brand_gold;
     const contact = [agency.web, agency.phone].filter(Boolean).join(' · ');
 
     // re-render in the SAME visual style the carousel was created with
@@ -1404,7 +1414,7 @@ route.get('/suggestions', async (c) => {
 //   style  → same words + artwork, next look in the ring (chrome/type treatment changes)
 //   layout → same everything, per-tip layout rotation shifts (per-slide-art decks only)
 // The remix lands as a NEW generation so the original stays in the library untouched.
-const REMIX_IMG_RING = ['bodegon', 'litoral', 'tinta', 'salitre', 'papel', 'arcilla', 'acuarela', 'bordado'];
+const REMIX_IMG_RING = ['bodegon', 'litoral', 'tinta', 'salitre', 'papel', 'arcilla', 'acuarela', 'bordado', 'pueblo', 'mercado'];
 const REMIX_TYPE_RING = ['editorial', 'cartel', 'encalada', 'sereno'];
 route.post('/carousel/remix', async (c) => {
   const tx = c.get('tx');
@@ -1466,6 +1476,8 @@ route.post('/carousel/remix', async (c) => {
     `);
     const bRows = bRes as unknown as any[];
     const { agency, brand } = mapBranding(bRows[0] || {});
+    if (typeof raw.brand_navy === 'string') brand.navy = raw.brand_navy as string;
+    if (typeof raw.brand_gold === 'string') brand.gold = raw.brand_gold as string;
     const contact = [agency.web, agency.phone].filter(Boolean).join(' · ');
 
     // render synchronously — the deck's own artwork is reused, so this is seconds, not minutes

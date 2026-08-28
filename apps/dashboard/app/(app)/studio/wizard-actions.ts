@@ -195,6 +195,8 @@ export async function carouselAction(input: {
   style?: string;
   scheme?: string;
   slides?: number;
+  brand_navy?: string;   // optional two-colour override: main/ground colour (hex)
+  brand_gold?: string;   // optional two-colour override: accent colour (hex)
 }): Promise<Envelope> {
   return call("/api/studio/carousel", { method: "POST", body: input });
 }

@@ -56,10 +56,16 @@ export function fetchedFieldTokens(toolEvents: ToolEvent[]): Record<'price' | 's
 
 // Times/dates are NOT gated — the slot echo is authoritative via pending-action
 // state, and "17:00" never appears in listing fields.
+// Number shape includes SPACE-separated thousands ("500 000" — the Nordic
+// convention buyers actually type; live demo 2026-08-28: "under 500 000€"
+// tokenized as a lone "000" and killed the reply). The digit-group pattern
+// only crosses a space when another digit follows, so "3 soverom, 500" can't
+// merge across unrelated numbers.
+const NUM = String.raw`\d(?:[\d.,]|[  ](?=\d))*`;
 const PROPERTY_NUMBER_PATTERNS: Array<{ cls: 'price' | 'size' | 'rooms'; re: RegExp }> = [
-  { cls: 'price', re: /(?:€|£|\$)\s?(\d[\d.,]*)/gi },
-  { cls: 'price', re: /(\d[\d.,]*)\s?(?:€|£|euros?|eur\b)/gi },
-  { cls: 'size',  re: /(\d[\d.,]*)\s?(?:m²|m2\b|sqm|square\s?met\w*)/gi },
+  { cls: 'price', re: new RegExp(String.raw`(?:€|£|\$)\s?(${NUM})`, 'gi') },
+  { cls: 'price', re: new RegExp(String.raw`(${NUM})\s?(?:€|£|euros?|eur\b)`, 'gi') },
+  { cls: 'size',  re: new RegExp(String.raw`(${NUM})\s?(?:m²|m2\b|sqm|square\s?met\w*)`, 'gi') },
   { cls: 'rooms', re: /(\d+)\s?(?:\+\s?)?(?:bed|bedroom|bath|bathroom|dormitor|habitac|slaapkamer|schlafzimmer|soverom|sovrum|makuuhuone)/gi },
 ];
 
@@ -73,8 +79,9 @@ export function draftNumbersGrounded(draft: string, toolEvents: ToolEvent[], aut
     for (const m of text.match(/\d+/g) ?? []) {
       sets.price.add(m); sets.size.add(m); sets.rooms.add(m);
     }
-    for (const m of text.match(/\d[\d.,]*\d/g) ?? []) {
-      const c = m.replace(/[.,]/g, '');
+    // Grouped numbers incl. space-thousands ("500 000" → "500000").
+    for (const m of text.match(/\d(?:[\d.,]|[  ](?=\d))*\d/g) ?? []) {
+      const c = m.replace(/[.,\s ]/g, '');
       sets.price.add(c); sets.size.add(c); sets.rooms.add(c);
     }
   }
@@ -84,7 +91,7 @@ export function draftNumbersGrounded(draft: string, toolEvents: ToolEvent[], aut
     let m: RegExpExecArray | null;
     while ((m = re.exec(draft)) !== null) {
       const raw = m[1];
-      const clean = raw.replace(/[.,]/g, '');
+      const clean = raw.replace(/[.,\s ]/g, '');
       if (!sets[cls].has(raw) && !sets[cls].has(clean)) offending.push(raw);
     }
   }
@@ -108,12 +115,15 @@ export async function runGates(
   toolEvents: ToolEvent[],
   verifier: Verifier | null,
   authoritativeTexts: string[] = [],
+  /** Numeric-grounding-only sources (e.g. the buyer's own message): their
+   *  numbers may be echoed, but they are NOT office answers to the verifier. */
+  numericGroundingTexts: string[] = [],
 ): Promise<GateResult> {
   const turnClass = classifyDraft(draft);
   const failures: string[] = [];
   if (turnClass === 'social') return { ok: true, turnClass, failures };
 
-  const numeric = draftNumbersGrounded(draft, toolEvents, authoritativeTexts);
+  const numeric = draftNumbersGrounded(draft, toolEvents, [...authoritativeTexts, ...numericGroundingTexts]);
   if (!numeric.ok) failures.push(`ungrounded_numbers:${numeric.offending.join('|')}`);
 
   if (verifier) {

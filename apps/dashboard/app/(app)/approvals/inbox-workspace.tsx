@@ -493,6 +493,18 @@ export function InboxWorkspace({
     if (selectedId && view === "convo") loadThread(selectedId);
   }, [selectedId, view, loadThread]);
 
+  // LIVE THREAD (Christian 2026-08-28: a conversation happening right now must
+  // show up without a reload): the OPEN conversation refetches every 8s while
+  // the tab is visible — reloadThread merges server truth into the cache and
+  // keeps the old bubbles on a transient failure.
+  useEffect(() => {
+    if (!selectedId || view !== "convo") return;
+    const id = window.setInterval(() => {
+      if (document.visibilityState === "visible") reloadThread(selectedId);
+    }, 8000);
+    return () => window.clearInterval(id);
+  }, [selectedId, view, reloadThread]);
+
   // FIX #1 — after an approve/dismiss the shared server action redirects to
   // /approvals?approved=1 | ?dismissed=1 (revalidating the server rows but
   // dropping ?lead). When that flag lands with a conversation still selected,

@@ -5,7 +5,7 @@
 // same harness behind AMANDA_GOLDEN_LIVE at P1.
 
 import { describe, it, expect } from 'vitest';
-import { runTurn } from '../turn';
+import { runTurn, GATE_FALLBACK } from '../turn';
 import {
   FakeBackends, ScriptedModel, makeDeps, baseContext, inbound, pending,
   textResponse, toolResponse, CHALET,
@@ -133,7 +133,7 @@ describe('golden/core — the law on drafts (§10 validators + §2 gates)', () =
     expect(JSON.stringify(model.requests[1].messages)).toContain('banned:');
   });
 
-  it('S10: still-dirty after one regeneration → escalates, buyer gets NOTHING unvetted', async () => {
+  it('S10: still-dirty after one regeneration → escalates; buyer gets ONLY the pre-vetted holding line', async () => {
     const backends = new FakeBackends();
     const model = new ScriptedModel([
       textResponse('Last chance! Act now!'),
@@ -142,7 +142,9 @@ describe('golden/core — the law on drafts (§10 validators + §2 gates)', () =
     const { deps, journal } = makeDeps(model, backends);
     const r = await runTurn('full', baseContext(), inbound('hmm'), null, deps);
     expect(r.outcome).toBe('escalated');
-    expect(journal.sent).toHaveLength(0);
+    // Dead-air law (2026-08-28): nothing UNVETTED reaches the buyer — but the
+    // deterministic office-framed fallback does, backed by the real task.
+    expect(journal.sent).toEqual([GATE_FALLBACK.en]);
     expect(journal.escalations[0].reason).toBe('gates_failed');
   });
 
@@ -169,7 +171,7 @@ describe('golden/core — the law on drafts (§10 validators + §2 gates)', () =
     const { deps, journal } = makeDeps(model, backends);
     const r = await runTurn('full', baseContext(), inbound('How do I pay the deposit?'), null, deps);
     expect(r.outcome).toBe('escalated');
-    expect(journal.sent).toHaveLength(0);
+    expect(journal.sent).toEqual([GATE_FALLBACK.en]);   // holding line only — never the IBAN
     expect(r.gateFailures.join(',')).toContain('payment_floor');
   });
 
@@ -208,7 +210,7 @@ describe('golden/core — the law on drafts (§10 validators + §2 gates)', () =
     deps.verifier = async () => { throw new Error('verifier down'); };
     const r = await runTurn('full', baseContext(), inbound('How big is it?'), null, deps);
     expect(r.outcome).toBe('escalated');
-    expect(journal.sent).toHaveLength(0);
+    expect(journal.sent).toEqual([GATE_FALLBACK.en]);   // holding line only
     expect(r.gateFailures).toContain('verifier_unavailable');
   });
 });

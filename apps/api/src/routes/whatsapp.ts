@@ -153,9 +153,21 @@ route.get('/reengage-preview', async (c) => {
       LEFT JOIN public.whatsapp_templates t
         ON t.agency_id = l.agency_id
        AND t.template_key = ${TEMPLATE_KEY}
+       -- STRICT language match on the NORMALIZED lead language (live demo
+       -- 2026-08-28: no predicate + unordered LIMIT 1 previewed DANISH to a
+       -- Norwegian lead) + the same provider-truth conditions the send RPC
+       -- enforces, so the preview can never show a body the pipeline refuses.
+       AND t.language = CASE lower(split_part(COALESCE(l.language, 'en'), '-', 1))
+                          WHEN 'no' THEN 'nb' WHEN 'nn' THEN 'nb' WHEN 'nob' THEN 'nb'
+                          ELSE lower(split_part(COALESCE(l.language, 'en'), '-', 1))
+                        END
        AND t.status = 'approved'
+       AND t.provider_status = 'approved'
+       AND t.provider_synced_at IS NOT NULL
+       AND t.provider_template_id IS NOT NULL
       LEFT JOIN public.agency_settings s ON s.agency_id = l.agency_id
       WHERE l.id = ${leadId}::uuid
+      ORDER BY t.approved_at DESC NULLS LAST
       LIMIT 1
     `);
     const rows = result as unknown as Array<{ body: string | null }>;

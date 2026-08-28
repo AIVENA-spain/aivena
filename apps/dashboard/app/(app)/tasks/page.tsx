@@ -1,4 +1,5 @@
 import { apiFetch, ApiError } from "@/lib/api/client";
+import { AutoRefresh } from "@/components/shell/auto-refresh";
 import { PageLoadError } from "@/components/shell/page-error";
 import type { OperationsResponse } from "@/lib/api/types";
 
@@ -18,7 +19,12 @@ export const dynamic = "force-dynamic";
 export default async function TasksPage() {
   try {
     const data = await apiFetch<OperationsResponse>("/api/v1/operations");
-    return <TasksWorkspace tasks={data.actionQueue.items} />;
+    return (
+      <>
+        <AutoRefresh intervalMs={20000} />
+        <TasksWorkspace tasks={data.actionQueue.items} />
+      </>
+    );
   } catch (err) {
     const detail =
       err instanceof ApiError

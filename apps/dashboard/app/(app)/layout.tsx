@@ -28,7 +28,7 @@ function greetingForHour(hour: number): GreetingKey {
 async function getInboxCount(): Promise<number | null> {
   try {
     const res = await apiFetch<TasksResponse>(
-      "/api/v1/tasks?type=suggested_reply&status=pending",
+      "/api/v1/tasks?type=suggested_reply,amanda_question,human_review_needed,amanda_booking_confirm&status=pending",
     );
     return res.tasks.length;
   } catch {

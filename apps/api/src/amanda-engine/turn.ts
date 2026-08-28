@@ -22,7 +22,28 @@ import { validateDraft, screenLanguageDrift } from './validators';
 import { detectConfirmation } from './confirmation';
 import { runActionTool, type AmandaMode } from './modes';
 import { buildSystemPrompt, buildUserContext, type TurnContext, PROMPT_VERSION } from './prompt';
+import { normalizeLeadLanguage } from './validators';
 import type { ToolBackends } from './tools';
+
+// Dead-air law (live demo 2026-08-28: a gate-blocked reply left the buyer in
+// SILENCE): when the draft dies at the gates and a human-review task exists,
+// the buyer still gets an honest, deterministic holding line — office-framed,
+// number-free, pre-vetted, so it needs no gate pass. 13 locales.
+export const GATE_FALLBACK: Record<string, string> = {
+  en: 'Good question — I want to be completely sure of the details here, so a colleague at the office is double-checking. We will get back to you shortly.',
+  es: 'Buena pregunta. Quiero estar totalmente segura de los detalles, así que un compañero de la oficina lo está comprobando. Te respondemos en breve.',
+  de: 'Gute Frage — ich möchte bei den Details ganz sicher sein, deshalb prüft das gerade eine Kollegin im Büro. Wir melden uns in Kürze bei dir.',
+  nl: 'Goede vraag — ik wil helemaal zeker zijn van de details, dus een collega op kantoor kijkt het even na. We komen er snel bij je op terug.',
+  fr: 'Bonne question — je veux être totalement sûre des détails, donc un collègue du bureau vérifie. Nous revenons vers vous très vite.',
+  it: 'Bella domanda — voglio essere del tutto sicura dei dettagli, quindi un collega in ufficio sta verificando. Ti rispondiamo a breve.',
+  pt: 'Boa pergunta — quero ter a certeza absoluta dos detalhes, por isso um colega do escritório está a verificar. Voltamos já ao contacto.',
+  pl: 'Dobre pytanie — chcę mieć całkowitą pewność co do szczegółów, więc kolega z biura to sprawdza. Wkrótce wracamy z odpowiedzią.',
+  sv: 'Bra fråga — jag vill vara helt säker på detaljerna, så en kollega på kontoret dubbelkollar. Vi återkommer strax.',
+  nb: 'Godt spørsmål — jeg vil være helt sikker på detaljene her, så en kollega på kontoret dobbeltsjekker. Vi kommer tilbake til deg snart.',
+  da: 'Godt spørgsmål — jeg vil være helt sikker på detaljerne, så en kollega på kontoret dobbelttjekker. Vi vender snart tilbage.',
+  fi: 'Hyvä kysymys — haluan olla täysin varma yksityiskohdista, joten kollega toimistolla tarkistaa asian. Palaamme pian.',
+  ru: 'Хороший вопрос — я хочу быть полностью уверенной в деталях, поэтому коллега в офисе всё проверяет. Мы скоро вернёмся с ответом.',
+};
 
 export interface PendingActionView {
   id: string;
@@ -194,7 +215,10 @@ export async function runTurn(
       expectedLanguage: buyerWroteEnglish ? undefined : ctx.leadLanguage,
       officeContextPresent,
     });
-    const g = await runGates(text, loop.toolEvents, deps.verifier, authoritative);
+    // The buyer's own message grounds NUMBERS only (echoing "under 500 000€"
+    // back is mirroring, not invention — live demo 2026-08-28); it is never
+    // an "office answer" to the verifier and never earns long-form.
+    const g = await runGates(text, loop.toolEvents, deps.verifier, authoritative, [inbound.text]);
     return [...v.violations, ...g.failures];
   };
   let failures = await judge(draft);
@@ -221,7 +245,16 @@ export async function runTurn(
   }
   if (failures.length > 0) {
     await escalate('gates_failed', failures.join(', '));
-    return { ...base, bookingQueued, outcome: 'escalated', replyText: null, gateFailures: failures, loop, bookingId };
+    // Never dead air: the human-review task is real, so the office-framed
+    // holding line is an honest promise. Deterministic, number-free,
+    // pre-vetted — dispatched under the same mode law (shadow simulates,
+    // approval drafts, assisted/full sends).
+    const fallback = GATE_FALLBACK[normalizeLeadLanguage(ctx.leadLanguage) ?? 'en'] ?? GATE_FALLBACK.en;
+    await runActionTool(mode, 'reply', async () => deps.sendReply(fallback), {
+      simulatedData: { simulated: true },
+      queue: async (kind) => deps.queueDraft(fallback, kind),
+    }).catch(() => { /* the escalation task already covers the human path */ });
+    return { ...base, bookingQueued, outcome: 'escalated', replyText: fallback, gateFailures: failures, loop, bookingId };
   }
 
   // ── 4. Dispatch under the mode law ─────────────────────────────────────────

@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { sql } from 'drizzle-orm';
 import { executeBookingFromPendingAction } from '../amanda-engine/booking-exec';
+import { scrubKnowledge } from '../amanda-engine/knowledge-scrub';
 import { nudgeCalendarSync } from './calendar-worker';
 
 const route = new Hono();
@@ -412,13 +413,14 @@ route.post('/:id/answer-question', async (c) => {
   const user = c.get('user');
   const taskId = c.req.param('id');
 
-  let body: { answer?: unknown } = {};
+  let body: { answer?: unknown; teach?: unknown } = {};
   try {
     body = await c.req.json();
   } catch {
     body = {};
   }
   const answer = typeof body.answer === 'string' ? body.answer.trim().slice(0, 1200) : '';
+  const teach = typeof body.teach === 'string' ? body.teach.trim().slice(0, 800) : '';
   if (!answer) {
     return c.json({ error: 'Please write the answer first.' }, 400);
   }
@@ -438,11 +440,59 @@ route.post('/:id/answer-question', async (c) => {
     UPDATE public.amanda_questions
        SET answer_raw = ${answer}, answered_by = ${user.email}, answered_at = now(), status = 'answered'
      WHERE id = ${task.question_id}::uuid AND status IN ('open', 'clarifying', 'escalated')
-     RETURNING id, short_code, question_text, conversation_id, lead_id, agency_id
-  `)) as unknown as Array<{ id: string; short_code: number; question_text: string; conversation_id: string; lead_id: string; agency_id: string }>;
+     RETURNING id, short_code, question_text, conversation_id, lead_id, agency_id, property_id, question_category
+  `)) as unknown as Array<{ id: string; short_code: number; question_text: string; conversation_id: string; lead_id: string; agency_id: string; property_id: string | null; question_category: string | null }>;
   const q = qRows[0];
   if (!q) {
     return c.json({ error: 'That question was already answered.' }, 409);
+  }
+
+  // ── The learning tap (Christian's two laws, 2026-08-28) ──────────────────
+  // 1. PER-AGENCY: the entry lands in THIS agency's knowledge only (RLS tx +
+  //    explicit agency_id) — one agency's brain never leaks into another's.
+  // 2. GENERAL FACTS ONLY: an answer bound to one property at one moment
+  //    ("yes, THIS price is negotiable") must never become standing knowledge —
+  //    a property-linked ticket or a property-bound category refuses the save
+  //    (the answer still relays to the buyer normally). The scrubber screens
+  //    what remains, exactly like the settings knowledge box.
+  // 'rules' is property-bound in this domain (community/pet/rental rules of
+  // ONE building); 'price' kept as belt though the schema never advertises it.
+  const PROPERTY_BOUND = new Set(['negotiability', 'availability', 'furniture', 'viewing_exception', 'rules', 'price']);
+  let taught = false;
+  let teachRejected: string | null = null;
+  if (teach) {
+    if (q.property_id || PROPERTY_BOUND.has((q.question_category ?? '').toLowerCase())) {
+      teachRejected = 'property_specific';
+    } else {
+      const verdict = scrubKnowledge(teach);
+      if (!verdict.ok) {
+        teachRejected = verdict.reason;
+      } else {
+        // source='ticket_answer' + source_ref = the schema's flywheel seam
+        // (the source CHECK allows only settings|ticket_answer|import —
+        // review-caught: an invalid source would 23514 and roll back the
+        // BUYER'S RELAY with it). Belt: the save rides a SAVEPOINT — a plain
+        // try/catch would leave the tx aborted (25P02) and kill the relay
+        // anyway; a knowledge-save failure must cost only the save.
+        await tx.execute(sql`SAVEPOINT teach_tap`);
+        try {
+          await tx.execute(sql`
+            INSERT INTO public.agency_amanda_knowledge (agency_id, content, status, source, source_ref, screen_result, screened_at, created_by)
+            VALUES (
+              ${q.agency_id}, ${teach}, 'active', 'ticket_answer', ${q.id}::uuid,
+              jsonb_build_object('scrubber', 'deterministic_v1', 'verdict', 'ok', 'via', 'teach_tap', 'question', ${q.question_text.slice(0, 300)}::text),
+              now(), ${user.email}
+            )
+          `);
+          await tx.execute(sql`RELEASE SAVEPOINT teach_tap`);
+          taught = true;
+        } catch (err) {
+          await tx.execute(sql`ROLLBACK TO SAVEPOINT teach_tap`);
+          console.error('[tasks/answer] teach save failed (answer still relays):', err instanceof Error ? err.message.split('\n')[0].slice(0, 120) : 'error');
+          teachRejected = 'save_failed';
+        }
+      }
+    }
   }
 
   await tx.execute(sql`
@@ -465,7 +515,7 @@ route.post('/:id/answer-question', async (c) => {
      WHERE id = ${taskId}::uuid
   `);
 
-  return c.json({ ok: true, shortCode: q.short_code });
+  return c.json({ ok: true, shortCode: q.short_code, taught, teachRejected });
 });
 
 // POST /api/v1/tasks/:id/execute-booking — one-tap confirm of an

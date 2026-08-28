@@ -919,7 +919,17 @@
       "rejected_payment_details": "Bank- eller betalingsopplysninger kan ikke lagres — Amanda skal aldri dele dem.",
       "rejected_discriminatory": "Det ville ekskludert folk urettferdig — kan ikke lagres.",
       "rejected_url": "Lenker kan ikke lagres — Amanda sender ikke lenker.",
-      "rejected_instruction_injection": "Dette høres ut som en instruks til Amanda, ikke et faktum — formuler det som informasjon."
+      "rejected_instruction_injection": "Dette høres ut som en instruks til Amanda, ikke et faktum — formuler det som informasjon.",
+      "hoursTitle": "Visningstider",
+      "hoursHint": "Trykk på timene når visninger kan skje. Amanda tilbyr bare disse tidene.",
+      "blockedTitle": "Blokkerte dager",
+      "blockedHint": "Helligdager eller fridager — Amanda booker aldri visninger på disse dagene.",
+      "blockToday": "Blokker i dag",
+      "blockTomorrow": "Blokker i morgen",
+      "addDate": "Blokker en dato",
+      "unblock": "Fjern blokkering",
+      "hoursSaveNote": "Husk å trykke Lagre ovenfor for at tider og blokkerte dager skal gjelde.",
+      "hoursEmptyWarning": "Behold minst én visningstid — bruk blokkerte dager for fri."
     }
   },
   "performance": {

@@ -95,10 +95,14 @@ async function loadWorld(row: QueueRow): Promise<LoadedWorld | { skip: string }>
        ORDER BY created_at DESC LIMIT 3
     `);
 
+    // NEWEST first + 50 (matches the settings listing): under ASC, entries
+    // taught past the cap silently never reached the prompt while the teach
+    // flow reported success (review-caught); DESC also means the freshest
+    // facts survive the prompt's char truncation.
     const knowledgeRows = await tx.execute(sql`
       SELECT content FROM agency_amanda_knowledge
        WHERE agency_id = current_setting('app.current_agency_id', true) AND status = 'active'
-       ORDER BY created_at ASC LIMIT 30
+       ORDER BY created_at DESC LIMIT 50
     `);
 
     const inboundWordCounts = messages

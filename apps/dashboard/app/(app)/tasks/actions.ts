@@ -61,17 +61,24 @@ function toErr(err: unknown): Err {
 export async function answerQuestionAction(
   taskId: string,
   answer: string,
-): Promise<Ok | Err> {
+  teach?: string,
+): Promise<(Ok & { taught?: boolean; teachRejected?: string | null }) | Err> {
   const trimmed = answer.trim();
   if (!trimmed) {
     return { ok: false, error: "Write the answer first — one line is enough." };
   }
   try {
-    await apiFetch(`/api/v1/tasks/${encodeURIComponent(taskId)}/answer-question`, {
-      method: "POST",
-      body: JSON.stringify({ answer: trimmed.slice(0, 1200) }),
-    });
-    return { ok: true };
+    const res = await apiFetch<{ ok: true; taught?: boolean; teachRejected?: string | null }>(
+      `/api/v1/tasks/${encodeURIComponent(taskId)}/answer-question`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          answer: trimmed.slice(0, 1200),
+          ...(teach && teach.trim() ? { teach: teach.trim().slice(0, 800) } : {}),
+        }),
+      },
+    );
+    return { ok: true, taught: res.taught, teachRejected: res.teachRejected ?? null };
   } catch (err) {
     const detail =
       err instanceof ApiError

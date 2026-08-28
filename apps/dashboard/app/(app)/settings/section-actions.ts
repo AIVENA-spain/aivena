@@ -413,6 +413,8 @@ export async function disconnectCalendarAction(): Promise<ActionResult<{ ok: tru
 export async function saveAmandaSettingsAction(input: {
   viewing_duration_min?: number;
   viewing_notice_hours?: number;
+  viewing_hours_by_weekday?: Record<string, number[]>;
+  blocked_dates?: string[];
 }): Promise<ActionResult<{ ok: true }>> {
   try {
     await apiFetch<{ ok: true }>("/api/v1/amanda/settings", {

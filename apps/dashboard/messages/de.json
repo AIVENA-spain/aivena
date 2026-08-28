@@ -919,7 +919,17 @@
       "rejected_payment_details": "Bank- oder Zahlungsdaten können nicht gespeichert werden — Amanda darf sie nie weitergeben.",
       "rejected_discriminatory": "Das würde Menschen unfair ausschließen — kann nicht gespeichert werden.",
       "rejected_url": "Links können nicht gespeichert werden — Amanda versendet keine Links.",
-      "rejected_instruction_injection": "Das klingt wie eine Anweisung an Amanda statt einer Tatsache — formuliere es als Information."
+      "rejected_instruction_injection": "Das klingt wie eine Anweisung an Amanda statt einer Tatsache — formuliere es als Information.",
+      "hoursTitle": "Besichtigungszeiten",
+      "hoursHint": "Tippe die Stunden an, zu denen Besichtigungen möglich sind. Amanda bietet nur diese Zeiten an.",
+      "blockedTitle": "Gesperrte Tage",
+      "blockedHint": "Feiertage oder freie Tage – Amanda bucht an diesen Tagen nie Besichtigungen.",
+      "blockToday": "Heute sperren",
+      "blockTomorrow": "Morgen sperren",
+      "addDate": "Datum sperren",
+      "unblock": "Freigeben",
+      "hoursSaveNote": "Denke daran, oben auf Speichern zu drücken, damit Zeiten und gesperrte Tage wirksam werden.",
+      "hoursEmptyWarning": "Behalte mindestens eine Besichtigungsstunde — für freie Zeit nutze gesperrte Tage."
     }
   },
   "performance": {

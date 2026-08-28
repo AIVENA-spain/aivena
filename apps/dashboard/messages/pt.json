@@ -919,7 +919,17 @@
       "rejected_payment_details": "Dados bancários ou de pagamento não podem ser guardados — a Amanda nunca os deve partilhar.",
       "rejected_discriminatory": "Isso excluiria pessoas injustamente — não pode ser guardado.",
       "rejected_url": "Links não podem ser guardados — a Amanda não envia links.",
-      "rejected_instruction_injection": "Parece uma instrução para a Amanda e não um facto — reformula como informação."
+      "rejected_instruction_injection": "Parece uma instrução para a Amanda e não um facto — reformula como informação.",
+      "hoursTitle": "Horário de visitas",
+      "hoursHint": "Toca nas horas em que as visitas são possíveis. A Amanda só oferece estes horários.",
+      "blockedTitle": "Dias bloqueados",
+      "blockedHint": "Feriados ou dias de folga — a Amanda nunca marca visitas nestes dias.",
+      "blockToday": "Bloquear hoje",
+      "blockTomorrow": "Bloquear amanhã",
+      "addDate": "Bloquear uma data",
+      "unblock": "Desbloquear",
+      "hoursSaveNote": "Não te esqueças de carregar em Guardar acima para aplicar os horários e os dias bloqueados.",
+      "hoursEmptyWarning": "Mantém pelo menos uma hora de visita — para folgas usa os dias bloqueados."
     }
   },
   "performance": {

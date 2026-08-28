@@ -293,7 +293,20 @@ export async function executeToolCall(
       const question = str('question');
       if (!question) return refuse('missing_question');
       result = await run(
-        () => backends.askAgency(question, str('property_id'), str('category')),
+        async () => {
+          // Resolve ref codes (IC-28746) to the real uuid exactly like
+          // propose_viewing_slots — the downstream general-facts-only teach
+          // guard keys on property_id, so silently dropping a ref-addressed
+          // binding would let one-property answers into standing knowledge
+          // (review-caught LAW 2 bypass). Unresolvable ref → ticket still
+          // files, just unbound (the guard's category belt still applies).
+          let propertyId = str('property_id');
+          if (propertyId && !UUID_RE.test(propertyId)) {
+            const details = await backends.getPropertyDetails(propertyId).catch(() => null);
+            propertyId = details && typeof details.id === 'string' && details.id ? details.id : null;
+          }
+          return backends.askAgency(question, propertyId, str('category'));
+        },
         { simulated: true, ticketId: 'simulated', shortCode: 0 },
       );
       break;

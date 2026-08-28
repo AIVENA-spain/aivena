@@ -919,7 +919,17 @@
       "rejected_payment_details": "Bank- eller betalingsoplysninger kan ikke gemmes — Amanda må aldrig dele dem.",
       "rejected_discriminatory": "Det ville udelukke folk uretfærdigt — kan ikke gemmes.",
       "rejected_url": "Links kan ikke gemmes — Amanda sender ikke links.",
-      "rejected_instruction_injection": "Det lyder som en instruks til Amanda og ikke et faktum — formuler det som information."
+      "rejected_instruction_injection": "Det lyder som en instruks til Amanda og ikke et faktum — formuler det som information.",
+      "hoursTitle": "Fremvisningstider",
+      "hoursHint": "Tryk på de timer, hvor fremvisninger kan finde sted. Amanda tilbyder kun disse tider.",
+      "blockedTitle": "Blokerede dage",
+      "blockedHint": "Helligdage eller fridage — Amanda booker aldrig fremvisninger på disse dage.",
+      "blockToday": "Bloker i dag",
+      "blockTomorrow": "Bloker i morgen",
+      "addDate": "Bloker en dato",
+      "unblock": "Fjern blokering",
+      "hoursSaveNote": "Husk at trykke Gem ovenfor, før tider og blokerede dage træder i kraft.",
+      "hoursEmptyWarning": "Behold mindst én fremvisningstid — brug blokerede dage til fridage."
     }
   },
   "performance": {

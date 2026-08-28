@@ -99,19 +99,25 @@ function cartelPlanned(plan: CarouselPlan, agency: string, contact: string, bran
   const rule = (y: number, colour: string) => ({ type: "rect", bbox: [200, y, 880, y + 2], fill: colour });
   const specs: unknown[] = [];
 
-  // cover: giant ¿ + hook stacked, middle line hollow
-  const lines = stack(plan.hook_title.toUpperCase(), 3);
+  // cover: giant ¿ + hook stacked, middle line hollow. Long hooks (a verbatim provocative line
+  // the user chose) don't fit the 3-line stack device — they get a centered wrapped block instead.
   const coverEls: any[] = [{ type: "text", bbox: [60, 100, 420, 520], content: "¿", font: FR, size: 380, colour: GOLD }];
-  const ys = [470, 640, 880];
-  const sizes = [96, 140, 62];
-  lines.forEach((ln, i) => {
-    coverEls.push({
-      type: "text", bbox: [80, ys[i] ?? 880, 1000, (ys[i] ?? 880) + (sizes[i] ?? 62) + 40], content: ln,
-      font: "Anton", size: sizes[i] ?? 62, colour: i === 2 ? GOLD : CREAM, align: "center",
-      ...(i === 1 ? { hollow: true, stroke_width: 3 } : {}),
+  if (plan.hook_title.length > 48) {
+    coverEls.push({ type: "text", bbox: [80, 440, 1000, 940], content: wrap(plan.hook_title.toUpperCase(), "Anton", 68, 900), font: "Anton", size: 68, colour: CREAM, align: "center", line_height: 84, valign: "center" });
+    coverEls.push(rule(980, GOLD));
+  } else {
+    const lines = stack(plan.hook_title.toUpperCase(), 3);
+    const ys = [470, 640, 880];
+    const sizes = [96, 140, 62];
+    lines.forEach((ln, i) => {
+      coverEls.push({
+        type: "text", bbox: [80, ys[i] ?? 880, 1000, (ys[i] ?? 880) + (sizes[i] ?? 62) + 40], content: ln,
+        font: "Anton", size: sizes[i] ?? 62, colour: i === 2 ? GOLD : CREAM, align: "center",
+        ...(i === 1 ? { hollow: true, stroke_width: 3 } : {}),
+      });
+      if (i < 2) coverEls.push(rule((ys[i + 1] ?? 880) - 24, GOLD));
     });
-    if (i < 2) coverEls.push(rule((ys[i + 1] ?? 880) - 24, GOLD));
-  });
+  }
   coverEls.push({ type: "text", bbox: [80, 1050, 1000, 1082], content: plan.eyebrow.toUpperCase(), font: "Archivo", size: 20, colour: mix(CREAM, NAVY, 0.7), align: "center", tracking: 4 });
   coverEls.push(...band(agency, 1, total, mix("#f3efe6", NAVY, 0.6)));
   specs.push(DesignSpec.parse({ background: NAVY, elements: coverEls }));

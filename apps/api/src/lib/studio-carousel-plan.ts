@@ -139,6 +139,7 @@ export async function planCarousel(opts: {
   const task = opts.type === 'tips'
     ? `Create an EDUCATIONAL carousel: exactly ${Math.min(7, Math.max(1, opts.slideCount ?? 5))} points about: "${opts.topic}".
 Prefer the LOSS/MISTAKE frame — "errors that cost you money", "what nobody warns you about", "what I'd never do" — it is the only hook style with experimental proof. Each point = one slide: punchy title + 15-40 words of genuinely useful, practical advice a real buyer/seller can act on. One idea per point. Each point's "teaser" is an open loop pulling to the next slide; leave the last teaser empty.
+IF THE TOPIC ALREADY READS AS A FINISHED HOOK LINE — a crafted sentence or two with its own punch (often picked from the inspiration ideas, e.g. "Some people buy a home in the sun. Others buy a problem with a pool.") — the user chose those words on purpose: use the line (translated into the post language if needed) VERBATIM as hook_title when it fits 90 chars; if longer, the sharpest sentence verbatim as hook_title and let slide2 carry the rest. NEVER flatten a provocative topic into a generic listicle title — losing its edge is a failure.
 If the hook promises a number ("5 errores"), it MUST equal the number of points delivered.`
     : `Create a CLIENT STORY carousel from this quote (provided by the agency — treat as authentic):
 QUOTE: "${opts.quoteText}"
@@ -192,7 +193,16 @@ Submit with the submit_carousel tool.`;
     }
     const data = (await res.json()) as { content?: { type: string; input?: unknown }[] };
     const tool = data.content?.find((c) => c.type === 'tool_use');
-    const input = { type: opts.type, ...(unesc(tool?.input) as object ?? {}) };  // the requested type always wins
+    const input = { type: opts.type, ...(unesc(tool?.input) as object ?? {}) } as Record<string, unknown>;  // the requested type always wins
+    // Self-heal common model quirks instead of failing the whole generation (2026-08-28: a
+    // string-shaped hashtags field burned all 3 retries and killed Christian's post):
+    if (typeof input.hashtags === 'string') input.hashtags = (input.hashtags as string).split(/[\s,#]+/);
+    if (Array.isArray(input.hashtags)) {
+      input.hashtags = (input.hashtags as unknown[])
+        .filter((h): h is string => typeof h === 'string')
+        .map((h) => h.replace(/^#/, '').trim().slice(0, 40))
+        .filter((h) => h.length >= 2).slice(0, 5);
+    }
     const parsed = PlanSchema.safeParse(input);
     if (!parsed.success) {
       lastErr = parsed.error.issues.slice(0, 5).map((i) => `${i.path.join('.')}: ${i.message}`).join('; ');

@@ -361,6 +361,7 @@ function shapeStatus(r: GenRow) {
     carousel_type: typeof (meta as any)?.carousel_type === 'string' ? (meta as any).carousel_type : undefined,
     carousel_style: typeof (meta as any)?.carousel_style === 'string' ? (meta as any).carousel_style : undefined,
     per_slide_art: (meta as any)?.per_slide_art === true ? true : undefined,
+    artwork_source: typeof (meta as any)?.artwork_source === 'string' ? (meta as any).artwork_source : undefined,
     caption: typeof (meta as any)?.caption === 'string' ? (meta as any).caption : undefined,
     hashtags: Array.isArray((meta as any)?.hashtags) ? (meta as any).hashtags : undefined,
     plan: (meta as any)?.plan && typeof (meta as any).plan === 'object' ? (meta as any).plan : undefined,
@@ -1034,6 +1035,7 @@ async function runPlannedCarousel(opts: {
     let usedStyle = opts.style;
     let imagePaths: string[] = [];
     let perSlideArt = false;
+    let artworkSource: 'fresh_per_slide' | 'fresh_family' | 'library' | 'none' = 'none';
     if (opts.type === 'tips' && isTipsImageStyle(opts.style)) {
       // per-slide artwork: cover scene + one scene PER TIP (every slide's design = that slide's topic);
       // micro-unique every post. Fallbacks: 3-scene family → seeded approved family → editorial deck.
@@ -1044,14 +1046,14 @@ async function runPlannedCarousel(opts: {
       if (allScenes.every((x) => typeof x === 'string' && x.trim().length >= 10)) {
         const fresh = await generateTipsImages({ style: opts.style, scheme: opts.scheme, scenes: allScenes, agencyId, genId });
         if (fresh && fresh.buffers.length === plan.tips.length + 1) {
-          images = fresh.buffers; imagePaths = fresh.paths; perSlideArt = true;
+          images = fresh.buffers; imagePaths = fresh.paths; perSlideArt = true; artworkSource = 'fresh_per_slide';
         }
       }
       if (!images) {
         const fam = await generateTipsImages({ style: opts.style, scheme: opts.scheme, scenes: (plan.image_scenes ?? []).slice(0, 3), agencyId, genId });
-        if (fam && fam.buffers.length === 3) { images = fam.buffers; imagePaths = fam.paths; }
+        if (fam && fam.buffers.length === 3) { images = fam.buffers; imagePaths = fam.paths; artworkSource = 'fresh_family'; }
       }
-      if (!images) images = await loadTipsImages(opts.style);
+      if (!images) { images = await loadTipsImages(opts.style); if (images) artworkSource = 'library'; }
       if (images) {
         slides = perSlideArt
           ? await renderTipsImageStyledV2(opts.style, plan, opts.agency.name, contact, opts.brand, images, opts.language, opts.includeRecap, opts.includeContext)
@@ -1072,7 +1074,7 @@ async function runPlannedCarousel(opts: {
       result_metadata: {
         engine: 'carousel', carousel_type: opts.type, carousel_style: usedStyle, slide_count: stored.length, slides: stored,
         ai_imagery: opts.type === 'tips' && isTipsImageStyle(usedStyle),
-        image_paths: imagePaths, image_scheme: opts.scheme, per_slide_art: perSlideArt, include_recap: opts.includeRecap, include_context: opts.includeContext,
+        image_paths: imagePaths, image_scheme: opts.scheme, per_slide_art: perSlideArt, artwork_source: artworkSource, include_recap: opts.includeRecap, include_context: opts.includeContext,
         plan, caption: plan.caption, hashtags: plan.hashtags,
       },
       completed_at: new Date().toISOString(),

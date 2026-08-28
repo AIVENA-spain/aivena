@@ -1041,12 +1041,19 @@ async function runPlannedCarousel(opts: {
       // micro-unique every post. Fallbacks: 3-scene family → seeded approved family → editorial deck.
       const tipScenes = plan.tips.map((t) => t.scene ?? '');
       const coverScene = plan.image_scenes?.[0] ?? '';
-      const allScenes = [coverScene, ...tipScenes];
+      // slide 2 (context) gets its OWN artwork from image_scenes[1] (Christian 2026-08-28: the
+      // cover-crop reuse on slide 2 "looks bad" on the two attention slides); absent/short → the
+      // renderer falls back to the cover crop as before
+      const contextScene = opts.includeContext ? (plan.image_scenes?.[1] ?? '') : '';
+      const hasContextArt = typeof contextScene === 'string' && contextScene.trim().length >= 10;
+      const allScenes = [coverScene, ...(hasContextArt ? [contextScene] : []), ...tipScenes];
       let images: Buffer[] | null = null;
+      let contextArt = false;
       if (allScenes.every((x) => typeof x === 'string' && x.trim().length >= 10)) {
         const fresh = await generateTipsImages({ style: opts.style, scheme: opts.scheme, scenes: allScenes, agencyId, genId });
-        if (fresh && fresh.buffers.length === plan.tips.length + 1) {
+        if (fresh && fresh.buffers.length === allScenes.length) {
           images = fresh.buffers; imagePaths = fresh.paths; perSlideArt = true; artworkSource = 'fresh_per_slide';
+          contextArt = hasContextArt;
         }
       }
       if (!images) {
@@ -1056,7 +1063,7 @@ async function runPlannedCarousel(opts: {
       if (!images) { images = await loadTipsImages(opts.style); if (images) artworkSource = 'library'; }
       if (images) {
         slides = perSlideArt
-          ? await renderTipsImageStyledV2(opts.style, plan, opts.agency.name, contact, opts.brand, images, opts.language, opts.includeRecap, opts.includeContext)
+          ? await renderTipsImageStyledV2(opts.style, plan, opts.agency.name, contact, opts.brand, images, opts.language, opts.includeRecap, opts.includeContext, 0, contextArt)
           : await renderTipsImageStyled(opts.style, plan, opts.agency.name, contact, opts.brand, images, opts.language);
       } else {
         usedStyle = 'editorial';
@@ -1262,12 +1269,13 @@ route.post('/carousel/update', async (c) => {
     let slides: Buffer[];
     if (priorPlan.type === 'tips' && isTipsImageStyle(storedStyle)) {
       const ownPaths = Array.isArray(meta?.image_paths) ? (meta.image_paths as string[]) : [];
-      const perSlideArt = meta?.per_slide_art === true && ownPaths.length === plan.tips.length + 1;
+      const ctxArt = ownPaths.length === plan.tips.length + 2;   // deck stored with its own context artwork
+      const perSlideArt = meta?.per_slide_art === true && (ownPaths.length === plan.tips.length + 1 || ctxArt);
       const images = (ownPaths.length >= 3 ? await loadGenerationImages(ownPaths) : null)
         ?? await loadTipsImages(storedStyle);
       if (images) {
         slides = perSlideArt
-          ? await renderTipsImageStyledV2(storedStyle, plan, agency.name, contact, brand, images, storedLang, meta?.include_recap !== false, meta?.include_context !== false, typeof meta?.layout_variant === 'number' ? meta.layout_variant : 0)
+          ? await renderTipsImageStyledV2(storedStyle, plan, agency.name, contact, brand, images, storedLang, meta?.include_recap !== false, meta?.include_context !== false, typeof meta?.layout_variant === 'number' ? meta.layout_variant : 0, ctxArt)
           : await renderTipsImageStyled(storedStyle, plan, agency.name, contact, brand, images, storedLang);
       } else {
         slides = await renderPlannedStyled('editorial', plan, agency.name, contact, brand, storedLang);
@@ -1399,7 +1407,8 @@ route.post('/carousel/remix', async (c) => {
       (PLANNED_STYLES.tips as string[]).includes(meta.carousel_style) ? meta.carousel_style : 'editorial';
     const storedLang = typeof raw.language === 'string' ? (raw.language as string) : 'es';
     const ownPaths = Array.isArray(meta?.image_paths) ? (meta.image_paths as string[]) : [];
-    const perSlideArt = meta?.per_slide_art === true && ownPaths.length === priorPlan.tips.length + 1;
+    const ctxArt = ownPaths.length === priorPlan.tips.length + 2;   // deck stored with its own context artwork
+    const perSlideArt = meta?.per_slide_art === true && (ownPaths.length === priorPlan.tips.length + 1 || ctxArt);
     const priorVariant = typeof meta?.layout_variant === 'number' ? (meta.layout_variant as number) : 0;
 
     // the one axis that changes
@@ -1438,7 +1447,7 @@ route.post('/carousel/remix', async (c) => {
         ?? await loadTipsImages(newStyle);
       if (!images) return c.json({ ok: false, error: 'remix_failed', message: GENERIC }, 500);
       slides = perSlideArt
-        ? await renderTipsImageStyledV2(newStyle, plan, agency.name, contact, brand, images, storedLang, meta?.include_recap !== false, meta?.include_context !== false, layoutVariant)
+        ? await renderTipsImageStyledV2(newStyle, plan, agency.name, contact, brand, images, storedLang, meta?.include_recap !== false, meta?.include_context !== false, layoutVariant, ctxArt)
         : await renderTipsImageStyled(newStyle, plan, agency.name, contact, brand, images, storedLang);
     } else {
       slides = await renderPlannedStyled(newStyle, plan, agency.name, contact, brand, storedLang);

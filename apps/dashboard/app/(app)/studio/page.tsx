@@ -4,6 +4,11 @@ import { getCurrentUserContext } from "@/lib/auth/context";
 import { StudioHome } from "./studio-home";
 
 export const dynamic = "force-dynamic";
+// Editing a finished carousel re-renders every slide on the API and waits for the result — the
+// only synchronous request in the Studio. On the platform default (10s) that call was being cut
+// off before it could answer, which is why "Apply colours" and "Apply changes" appeared to do
+// nothing. Slide uploads are now parallel (~4s), and this gives the action real headroom.
+export const maxDuration = 60;
 
 type LibraryItem = {
   id: string;

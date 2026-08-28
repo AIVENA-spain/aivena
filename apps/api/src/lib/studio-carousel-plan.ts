@@ -538,16 +538,31 @@ export async function topicIdeas(language: string, exclude: string[]): Promise<s
   const month = new Date().toLocaleString('en', { month: 'long' });
   const prompt = `You suggest Instagram tips-carousel topics for a real-estate agency on the Spanish coast (buyers are often foreign, sellers often local; the audience dreams of a home in Spain).
 
-Write 6 topic ideas in language "${language}" — SIX GENUINELY DIFFERENT REGISTERS, one each, so the batch never reads as six flavours of the same real-estate advice:
-1. PRACTICAL — a specific, useful how-to angle (buying, selling, owning or the process). Curiosity-driven, never generic ("Why sea-view flats sell in winter" beats "Tips for sellers").
-2. PROVOCATIVE — a bold one-or-two-sentence line that challenges a common belief or names an uncomfortable truth, with a little sting. Style references (write yours FRESH, never copy): "Some people buy a home in Spain. Others buy a problem with a pool." / "The dream of waiting for prices to crash has cost some buyers more than the crash ever would."
-3. THE DREAM — sell the life, not the transaction: mornings, light, slowness, the person you become there. Aspirational and warm, zero warnings. Style reference: "Maybe success isn't retiring one day. Maybe it's building a life you don't need to retire from."
-4. THE SECRET — what insiders/locals/agents know that outsiders don't ("what nobody tells you about…", "the question agents hope you won't ask").
-5. SEASONAL — timely for ${month}, concrete to the coast right now.
-6. WILDCARD — a life-philosophy angle that touches home and place sideways (work, time, family, identity) rather than property mechanics. Style reference: "Everyone talks about work-life balance. Almost nobody talks about location-life balance."
+Write 6 topic ideas in language "${language}".
+
+EVERY idea must be built on a REAL pain point or desire of a REAL person in this audience. Draw from concerns like these (rotate widely, never all from one area):
+- foreign buyers: overpaying, being far away during the process, not knowing the true costs, choosing the wrong town or wrong type of home (apartment vs villa vs townhouse)
+- families relocating with children: schools, making friends, the adaptation year, timing the move
+- retirees moving for the climate: healthcare, distance from grandchildren, community, what daily life is really like
+- paperwork stress: NIE, residency, bank accounts, the process feeling opaque from abroad
+- owning across borders: managing a home in two countries, the empty months, renting it out or not
+- trust: how to know which agent, lawyer or builder to rely on when you don't know anyone here
+- money and culture: how negotiation really works here, what surprises people about prices, local customs around buying
+- sellers: pricing right, presenting the home, why some homes sit unsold
+- renovations: budgeting, finding builders, what's worth doing before selling or after buying
+- getting to know areas: which town fits your life, summer vs winter reality, tourist zones vs living zones
+
+THE TEST — every idea must pass all three, and this test OUTRANKS everything else:
+1. INSTANT: a stranger scrolling understands it in ONE read. No riddles, no poetry that needs decoding, no insider references.
+2. "THAT'S ME": the target person immediately feels it names THEIR worry or THEIR dream.
+3. PAYOFF: it's obvious what they'll learn or feel if they open the post.
+FAILURES to never produce (real rejected examples): "The August terraces that empty out right when the light gets best" (atmospheric, means nothing on first read) · "Why agents go quiet when you ask about the neighbour's terrace extension" (too niche — not a real person's real worry).
+
+VARY THE TONE across the 6 — most practical and direct, one bolder/provocative with a sting ("Some people buy a home in Spain. Others buy a problem with a pool."), one warm dream-selling angle about the life itself, maybe one life-philosophy angle ("Everyone talks about work-life balance. Almost nobody talks about location-life balance.") — but tone is the FLAVOUR; the pain point and instant clarity are the substance. A clear, slightly plain idea beats a clever, unclear one every time. The quoted lines above are register examples only — NEVER output them or close paraphrases of them.
+
 Rules for all 6:
 - NO place names, NO prices, NO statistics, NO legal/tax advice framing (bold lines may gesture at cost/time in the abstract, never with figures).
-- 30-90 characters for the practical/secret/seasonal ones; the provocative, dream and wildcard lines may run up to 150. No emoji, no numbering, no register labels in the output.${exclude.length ? `\n- Do NOT repeat or paraphrase these already-shown ideas:\n${exclude.slice(0, 24).map((t) => `  · ${t}`).join('\n')}` : ''}
+- 30-90 characters for direct ideas; bolder two-sentence lines may run up to 150. No emoji, no numbering, no labels in the output.${exclude.length ? `\n- Do NOT repeat or paraphrase these already-shown ideas:\n${exclude.slice(0, 24).map((t) => `  · ${t}`).join('\n')}` : ''}
 
 Submit with the submit_ideas tool.`;
   try {

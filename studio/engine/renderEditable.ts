@@ -62,9 +62,54 @@ function fkFile(key: string, weight?: string, italic?: boolean): string {
   return FONT_FILES[key] || FONT_FILES.Poppins;
 }
 function fkFont(key: string, weight?: string, italic?: boolean): any { const rel = fkFile(key, weight, italic); if (!_fk.has(rel)) _fk.set(rel, (fontkit as any).openSync(abs(rel))); return _fk.get(rel); }
+
+// ── SCRIPT SAFETY ─────────────────────────────────────────────────────────────
+// A display face that lacks the text's script (most of the vault has no Cyrillic or Greek)
+// still RENDERS, because resvg substitutes another face glyph by glyph — but we MEASURED with
+// the original, so wrapping and shrink-to-fit are computed from widths that were never drawn
+// and the text runs off the canvas. Resolving the face here — for measurement AND for the
+// font-family we emit — keeps the two in agreement in every language, for every template and
+// every style, with no per-call-site knowledge.
+const SCRIPT_FALLBACKS = ['Tinos', 'Prata', 'Poppins'];   // Tinos is the only vault face with Cyrillic + Greek
+const _faceCache = new Map<string, string>();
+function scriptTag(text: string): string {
+  let cyr = false, grk = false, ext = false, other = false;
+  for (const ch of text) {
+    const c = ch.codePointAt(0) ?? 0;
+    if (c < 0x100) continue;
+    if (c >= 0x400 && c <= 0x52f) cyr = true;
+    else if (c >= 0x370 && c <= 0x3ff) grk = true;
+    else if (c < 0x250) ext = true;
+    else other = true;
+  }
+  return `${cyr ? 'c' : ''}${grk ? 'g' : ''}${ext ? 'e' : ''}${other ? 'o' : ''}`;
+}
+function covers(key: string, chars: number[]): boolean {
+  try { const f = fkFont(key); return chars.every((c) => f.hasGlyphForCodePoint(c)); } catch { return false; }
+}
+/** The face that will actually draw this text: the asked-for one when it can set the text's
+ *  LETTERS, else the first vault fallback that can. Latin-only text (the common case) short-
+ *  circuits. Only letters count: a face missing one symbol (Italiana has no €, Prata no …)
+ *  keeps its design face — resvg substitutes that single glyph and the width error is a glyph
+ *  wide, whereas a missing script is a whole line drawn at the wrong width. */
+export function faceForText(fontKey: string, text: string): string {
+  if (!text) return fontKey;
+  const tag = scriptTag(text);
+  if (!tag) return fontKey;
+  const letters = [...new Set([...text].filter((ch) => /\p{L}/u.test(ch)).map((ch) => ch.codePointAt(0) ?? 0).filter((c) => c >= 0x100))];
+  if (!letters.length) return fontKey;
+  const ck = `${fontKey}|${tag}`;
+  const hit = _faceCache.get(ck);
+  if (hit) return hit;
+  let out = fontKey;
+  if (!covers(fontKey, letters)) out = SCRIPT_FALLBACKS.find((f) => covers(f, letters)) ?? fontKey;
+  _faceCache.set(ck, out);
+  return out;
+}
+
 // advance width (px) of one line at a given size — measured with the ACTUAL face file (bold/italic differ).
 export function textWidth(fontKey: string, text: string, size: number, weight?: string, italic?: boolean): number {
-  try { const f = fkFont(fontKey, weight, italic); const run = f.layout(text); let u = 0; for (const g of run.glyphs) u += g.advanceWidth; return (u * size) / f.unitsPerEm; }
+  try { const f = fkFont(faceForText(fontKey, text), weight, italic); const run = f.layout(text); let u = 0; for (const g of run.glyphs) u += g.advanceWidth; return (u * size) / f.unitsPerEm; }
   catch { return text.length * size * 0.55; }
 }
 

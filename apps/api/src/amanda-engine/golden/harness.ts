@@ -50,6 +50,14 @@ export class FakeBackends implements ToolBackends {
   async getPropertyDetails(refOrId: string): Promise<Record<string, unknown> | null> {
     return [CHALET, APARTMENT].find((p) => p.ref === refOrId || p.id === refOrId) ?? null;
   }
+  researchResult: { answer: string; needsTeam: boolean } | null = {
+    answer: 'The Norwegian school on the southern Costa Blanca sits just outside Ciudad Quesada, a few minutes from the town centre.',
+    needsTeam: false,
+  };
+  async researchArea(question: string): Promise<{ answer: string; needsTeam: boolean } | null> {
+    this.journal.push({ effect: 'research_area', detail: { question } });
+    return this.researchResult;
+  }
   async getAreaInfo(area: string): Promise<string | null> {
     return `${area}: family-friendly coastal town, sandy beaches, good international schools nearby.`;
   }

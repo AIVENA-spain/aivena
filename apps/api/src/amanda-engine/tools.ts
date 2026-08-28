@@ -45,6 +45,9 @@ export interface ToolBackends {
   searchProperties(filters: Record<string, unknown>): Promise<PropertySearchResult>;
   getPropertyDetails(refOrId: string): Promise<Record<string, unknown> | null>;
   getAreaInfo(area: string): Promise<string | null>;
+  /** Live local research (Claude + web search — the SAME production path the
+   *  website assistant uses). Returns general AREA knowledge only. */
+  researchArea(question: string): Promise<{ answer: string; needsTeam: boolean } | null>;
   proposeViewingSlots(propertyId: string, preferredTimePhrase: string | null): Promise<SlotProposal>;
   askAgency(question: string, propertyId: string | null, category?: string | null): Promise<TicketRef>;
   handoffToHuman(reason: string, summary: string): Promise<void>;
@@ -101,6 +104,20 @@ export const TOOL_SPECS: ToolSpec[] = [
       name: 'get_area_info',
       description: 'Local area/lifestyle guide for a town or zone (beaches, schools, amenities, vibe).',
       input_schema: { type: 'object', properties: { area: { type: 'string' } }, required: ['area'] },
+    },
+  },
+  {
+    name: 'research_area',
+    toolClass: 'read',
+    schema: {
+      name: 'research_area',
+      description:
+        "Look up a LOCAL or AREA question you cannot answer from the catalogue or the agency notes — where a school, hospital, beach or landmark actually is, what a town or urbanisation is like, distances and travel times, local context. Researches current sources and returns general local information. Use this INSTEAD of ask_agency for anything that is public knowledge rather than something only the agency knows. It NEVER returns property facts (price, size, rooms, features) — those come only from the catalogue. Present what it returns as general local knowledge, and offer to have the office confirm anything the buyer would travel or decide on. Never use it for legal, tax, mortgage or immigration advice — those go to the professionals.",
+      input_schema: {
+        type: 'object',
+        properties: { question: { type: 'string', description: 'The local question in plain English, e.g. "Where exactly is the Norwegian school near Ciudad Quesada?"' } },
+        required: ['question'],
+      },
     },
   },
   {
@@ -267,6 +284,12 @@ export async function executeToolCall(
       const area = str('area');
       if (!area) return refuse('missing_area');
       result = await run(() => backends.getAreaInfo(area));
+      break;
+    }
+    case 'research_area': {
+      const question = str('question');
+      if (!question) return refuse('missing_question');
+      result = await run(() => backends.researchArea(question));
       break;
     }
     case 'propose_viewing_slots': {

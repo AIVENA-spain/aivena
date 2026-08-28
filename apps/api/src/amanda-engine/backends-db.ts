@@ -7,6 +7,7 @@
 import { sql } from 'drizzle-orm';
 import { withAgency } from '../../../../packages/db/client';
 import { deleteCalendarEventForBooking } from '../routes/calendar-worker';
+import { generalAgentAnswer } from '../routes/amanda-llm';
 import { wallClockInZone, resolveDatetimePhrase } from './datetime-resolver';
 import { candidateSlots, parseAmandaSettings, slotLabel, type AmandaAgencySettings } from './availability-lib';
 
@@ -16,6 +17,8 @@ import { UUID_RE, type ToolBackends, type PropertySummary, type PropertySearchRe
 
 export interface BackendCtx {
   agencyId: string;
+  /** Trading name — the research call answers as this agency's colleague. */
+  agencyName: string;
   leadId: string;
   conversationId: string;
   leadLanguage: string;
@@ -152,6 +155,16 @@ export function makeDbBackends(ctx: BackendCtx): ToolBackends {
         delete r.is_stale;
         return r;
       });
+    },
+
+    // Live local research — reuses the SAME production path the website
+    // assistant already runs (Claude + server-side web search, output-safety
+    // screened). AREA knowledge only: it can never return property facts, and
+    // the engine's own gates still hold every number in the final reply.
+    async researchArea(question: string): Promise<{ answer: string; needsTeam: boolean } | null> {
+      const res = await generalAgentAnswer({ agencyName: ctx.agencyName, question, lang: undefined });
+      if (!res.ok || !res.answer) return null;
+      return { answer: res.answer, needsTeam: Boolean(res.needsTeam) };
     },
 
     async getAreaInfo(area: string): Promise<string | null> {

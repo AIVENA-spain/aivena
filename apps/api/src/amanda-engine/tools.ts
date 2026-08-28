@@ -79,6 +79,7 @@ export const TOOL_SPECS: ToolSpec[] = [
           city: { type: 'string' },
           cities: { type: 'array', items: { type: 'string' }, description: 'One or more towns to search at once — use for areas ("Torrevieja and around")' },
           property_type: { type: 'string' },
+          keywords: { type: 'array', items: { type: 'string' }, description: 'Distinguishing words from the buyer\'s description — features or landmarks ("golf", "sea view", "pool", "penthouse", "corner plot"). Every keyword must appear in the listing\'s title, description, or features. Use to pin down a vaguely-referenced property.' },
           sort: { type: 'string', enum: ['newest', 'price_asc', 'price_desc'], description: 'newest = most recently added to the catalogue; omit for best match' },
         },
       },

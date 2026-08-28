@@ -94,6 +94,17 @@ export function makeDbBackends(ctx: BackendCtx): ToolBackends {
         .slice(0, 20);
       const citiesCsv = cityList.join(',');
       const type = typeof filters.property_type === 'string' && filters.property_type.trim() ? `%${filters.property_type.trim().replace(/[%_]/g, '')}%` : null;
+      // keywords: EVERY keyword must appear in title+description+features —
+      // the vague-reference ladder ("the one near the golf in Quesada"):
+      // narrowing traits are conjunctive, like an agent's mental filter.
+      const kwCsv = (Array.isArray(filters.keywords) ? filters.keywords : [])
+        .filter((k): k is string => typeof k === 'string')
+        .flatMap((k) => k.split(','))
+        .map((k) => k.trim().replace(/[%_]/g, ''))
+        .filter((core) => core.length > 0)
+        .map((core) => `%${core}%`)
+        .slice(0, 8)
+        .join(',');
       const sort = filters.sort === 'newest' || filters.sort === 'price_asc' || filters.sort === 'price_desc' ? (filters.sort as string) : null;
       // Read-seam belt: one non-uuid in the list (legacy/bad data) and the
       // ::uuid[] cast would 22P02 every future search for this lead.
@@ -117,6 +128,10 @@ export function makeDbBackends(ctx: BackendCtx): ToolBackends {
              AND (${minBeds}::int IS NULL OR bedrooms >= ${minBeds}::int)
              AND (${citiesCsv} = '' OR location_city ILIKE ANY (string_to_array(${citiesCsv}, ',')))
              AND (${type}::text IS NULL OR property_type ILIKE ${type})
+             AND (${kwCsv} = '' OR (
+               SELECT bool_and((COALESCE(title,'') || ' ' || COALESCE(description,'') || ' ' || COALESCE(features::text,'')) ILIKE k)
+               FROM unnest(string_to_array(${kwCsv}, ',')) AS k
+             ))
              AND (${rejectedCsv} = '' OR NOT (id = ANY(string_to_array(${rejectedCsv}, ',')::uuid[])))
            ORDER BY
              CASE WHEN ${sort}::text = 'newest' THEN created_at END DESC NULLS LAST,

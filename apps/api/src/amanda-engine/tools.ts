@@ -7,6 +7,7 @@
 // confirmation law) — the model only ever PROPOSES slots.
 
 import { runActionTool, type AmandaMode, type ToolClass, type ToolResult } from './modes';
+import { screenResearchQuestion } from './research-screen';
 import type { LeadStateData } from './lead-state-lib';
 
 export interface PropertySummary {
@@ -289,6 +290,12 @@ export async function executeToolCall(
     case 'research_area': {
       const question = str('question');
       if (!question) return refuse('missing_question');
+      // Deterministic law on WHAT may be researched (Christian's condition):
+      // surveillance of a person and discriminatory area-steering are refused
+      // before the question ever leaves the building. The model sees the
+      // refusal and routes it honestly (office / cannot_answer).
+      const screen = screenResearchQuestion(question);
+      if (!screen.ok) return refuse(`research_refused:${screen.reason}`);
       result = await run(() => backends.researchArea(question));
       break;
     }

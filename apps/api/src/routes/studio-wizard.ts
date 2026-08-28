@@ -361,6 +361,7 @@ function shapeStatus(r: GenRow) {
     carousel_type: typeof (meta as any)?.carousel_type === 'string' ? (meta as any).carousel_type : undefined,
     carousel_style: typeof (meta as any)?.carousel_style === 'string' ? (meta as any).carousel_style : undefined,
     per_slide_art: (meta as any)?.per_slide_art === true ? true : undefined,
+    artwork_source: typeof (meta as any)?.artwork_source === 'string' ? (meta as any).artwork_source : undefined,
     caption: typeof (meta as any)?.caption === 'string' ? (meta as any).caption : undefined,
     hashtags: Array.isArray((meta as any)?.hashtags) ? (meta as any).hashtags : undefined,
     plan: (meta as any)?.plan && typeof (meta as any).plan === 'object' ? (meta as any).plan : undefined,
@@ -996,9 +997,36 @@ async function runPlannedCarousel(opts: {
 }): Promise<void> {
   const { genId, agencyId } = opts;
   try {
+    // Variety across generations (Christian 2026-08-28: "a key or a luggage appears" on every
+    // house/moving topic): hand the planner the hero objects from this agency's recent decks so it
+    // must find fresh ones. Best-effort — a fetch failure never blocks the post.
+    let avoidMotifs: string[] = [];
+    if (opts.type === 'tips') {
+      try {
+        const { data: prev } = await supabaseAdmin.from('image_generations')
+          .select('result_metadata').eq('agency_id', agencyId).eq('status', 'completed')
+          .order('created_at', { ascending: false }).limit(14);
+        const motifs = new Set<string>();
+        for (const g of prev ?? []) {
+          const meta = (g as { result_metadata?: { engine?: string; plan?: { image_scenes?: unknown; tips?: { scene?: unknown }[] } } }).result_metadata;
+          if (meta?.engine !== 'carousel') continue;
+          const scenes = [
+            ...(Array.isArray(meta.plan?.image_scenes) ? meta.plan.image_scenes : []),
+            ...(Array.isArray(meta.plan?.tips) ? meta.plan.tips.map((t) => t?.scene) : []),
+          ];
+          for (const s of scenes) {
+            if (typeof s !== 'string' || !s.trim()) continue;
+            const hero = s.split(/[,;—.]/)[0].trim().toLowerCase().split(/\s+/).slice(0, 6).join(' ');
+            if (hero.length >= 6) motifs.add(hero);
+          }
+        }
+        avoidMotifs = [...motifs].slice(0, 18);
+      } catch { /* variety hint only */ }
+    }
     const plan = await planCarousel({
       type: opts.type, topic: opts.topic, quoteText: opts.quoteText, quoteAuthor: opts.quoteAuthor,
       slideCount: opts.slideCount, language: opts.language, agencyName: opts.agency.name,
+      avoidMotifs,
     });
     const contact = [opts.agency.web, opts.agency.phone].filter(Boolean).join(' · ');
     // AI-imagery styles compose the pre-seeded generated family; a library miss falls back to the
@@ -1007,27 +1035,35 @@ async function runPlannedCarousel(opts: {
     let usedStyle = opts.style;
     let imagePaths: string[] = [];
     let perSlideArt = false;
+    let artworkSource: 'fresh_per_slide' | 'fresh_family' | 'library' | 'none' = 'none';
     if (opts.type === 'tips' && isTipsImageStyle(opts.style)) {
       // per-slide artwork: cover scene + one scene PER TIP (every slide's design = that slide's topic);
       // micro-unique every post. Fallbacks: 3-scene family → seeded approved family → editorial deck.
       const tipScenes = plan.tips.map((t) => t.scene ?? '');
       const coverScene = plan.image_scenes?.[0] ?? '';
-      const allScenes = [coverScene, ...tipScenes];
+      // slide 2 (context) gets its OWN artwork from image_scenes[1] (Christian 2026-08-28: the
+      // cover-crop reuse on slide 2 "looks bad" on the two attention slides); absent/short → the
+      // renderer falls back to the cover crop as before
+      const contextScene = opts.includeContext ? (plan.image_scenes?.[1] ?? '') : '';
+      const hasContextArt = typeof contextScene === 'string' && contextScene.trim().length >= 10;
+      const allScenes = [coverScene, ...(hasContextArt ? [contextScene] : []), ...tipScenes];
       let images: Buffer[] | null = null;
+      let contextArt = false;
       if (allScenes.every((x) => typeof x === 'string' && x.trim().length >= 10)) {
         const fresh = await generateTipsImages({ style: opts.style, scheme: opts.scheme, scenes: allScenes, agencyId, genId });
-        if (fresh && fresh.buffers.length === plan.tips.length + 1) {
-          images = fresh.buffers; imagePaths = fresh.paths; perSlideArt = true;
+        if (fresh && fresh.buffers.length === allScenes.length) {
+          images = fresh.buffers; imagePaths = fresh.paths; perSlideArt = true; artworkSource = 'fresh_per_slide';
+          contextArt = hasContextArt;
         }
       }
       if (!images) {
         const fam = await generateTipsImages({ style: opts.style, scheme: opts.scheme, scenes: (plan.image_scenes ?? []).slice(0, 3), agencyId, genId });
-        if (fam && fam.buffers.length === 3) { images = fam.buffers; imagePaths = fam.paths; }
+        if (fam && fam.buffers.length === 3) { images = fam.buffers; imagePaths = fam.paths; artworkSource = 'fresh_family'; }
       }
-      if (!images) images = await loadTipsImages(opts.style);
+      if (!images) { images = await loadTipsImages(opts.style); if (images) artworkSource = 'library'; }
       if (images) {
         slides = perSlideArt
-          ? await renderTipsImageStyledV2(opts.style, plan, opts.agency.name, contact, opts.brand, images, opts.language, opts.includeRecap, opts.includeContext)
+          ? await renderTipsImageStyledV2(opts.style, plan, opts.agency.name, contact, opts.brand, images, opts.language, opts.includeRecap, opts.includeContext, 0, contextArt)
           : await renderTipsImageStyled(opts.style, plan, opts.agency.name, contact, opts.brand, images, opts.language);
       } else {
         usedStyle = 'editorial';
@@ -1045,7 +1081,7 @@ async function runPlannedCarousel(opts: {
       result_metadata: {
         engine: 'carousel', carousel_type: opts.type, carousel_style: usedStyle, slide_count: stored.length, slides: stored,
         ai_imagery: opts.type === 'tips' && isTipsImageStyle(usedStyle),
-        image_paths: imagePaths, image_scheme: opts.scheme, per_slide_art: perSlideArt, include_recap: opts.includeRecap, include_context: opts.includeContext,
+        image_paths: imagePaths, image_scheme: opts.scheme, per_slide_art: perSlideArt, artwork_source: artworkSource, include_recap: opts.includeRecap, include_context: opts.includeContext,
         plan, caption: plan.caption, hashtags: plan.hashtags,
       },
       completed_at: new Date().toISOString(),
@@ -1233,12 +1269,13 @@ route.post('/carousel/update', async (c) => {
     let slides: Buffer[];
     if (priorPlan.type === 'tips' && isTipsImageStyle(storedStyle)) {
       const ownPaths = Array.isArray(meta?.image_paths) ? (meta.image_paths as string[]) : [];
-      const perSlideArt = meta?.per_slide_art === true && ownPaths.length === plan.tips.length + 1;
+      const ctxArt = ownPaths.length === plan.tips.length + 2;   // deck stored with its own context artwork
+      const perSlideArt = meta?.per_slide_art === true && (ownPaths.length === plan.tips.length + 1 || ctxArt);
       const images = (ownPaths.length >= 3 ? await loadGenerationImages(ownPaths) : null)
         ?? await loadTipsImages(storedStyle);
       if (images) {
         slides = perSlideArt
-          ? await renderTipsImageStyledV2(storedStyle, plan, agency.name, contact, brand, images, storedLang, meta?.include_recap !== false, meta?.include_context !== false, typeof meta?.layout_variant === 'number' ? meta.layout_variant : 0)
+          ? await renderTipsImageStyledV2(storedStyle, plan, agency.name, contact, brand, images, storedLang, meta?.include_recap !== false, meta?.include_context !== false, typeof meta?.layout_variant === 'number' ? meta.layout_variant : 0, ctxArt)
           : await renderTipsImageStyled(storedStyle, plan, agency.name, contact, brand, images, storedLang);
       } else {
         slides = await renderPlannedStyled('editorial', plan, agency.name, contact, brand, storedLang);
@@ -1370,7 +1407,8 @@ route.post('/carousel/remix', async (c) => {
       (PLANNED_STYLES.tips as string[]).includes(meta.carousel_style) ? meta.carousel_style : 'editorial';
     const storedLang = typeof raw.language === 'string' ? (raw.language as string) : 'es';
     const ownPaths = Array.isArray(meta?.image_paths) ? (meta.image_paths as string[]) : [];
-    const perSlideArt = meta?.per_slide_art === true && ownPaths.length === priorPlan.tips.length + 1;
+    const ctxArt = ownPaths.length === priorPlan.tips.length + 2;   // deck stored with its own context artwork
+    const perSlideArt = meta?.per_slide_art === true && (ownPaths.length === priorPlan.tips.length + 1 || ctxArt);
     const priorVariant = typeof meta?.layout_variant === 'number' ? (meta.layout_variant as number) : 0;
 
     // the one axis that changes
@@ -1409,7 +1447,7 @@ route.post('/carousel/remix', async (c) => {
         ?? await loadTipsImages(newStyle);
       if (!images) return c.json({ ok: false, error: 'remix_failed', message: GENERIC }, 500);
       slides = perSlideArt
-        ? await renderTipsImageStyledV2(newStyle, plan, agency.name, contact, brand, images, storedLang, meta?.include_recap !== false, meta?.include_context !== false, layoutVariant)
+        ? await renderTipsImageStyledV2(newStyle, plan, agency.name, contact, brand, images, storedLang, meta?.include_recap !== false, meta?.include_context !== false, layoutVariant, ctxArt)
         : await renderTipsImageStyled(newStyle, plan, agency.name, contact, brand, images, storedLang);
     } else {
       slides = await renderPlannedStyled(newStyle, plan, agency.name, contact, brand, storedLang);

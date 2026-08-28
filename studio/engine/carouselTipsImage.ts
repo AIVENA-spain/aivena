@@ -121,12 +121,12 @@ export async function renderTipsImageStyled(
       els.push({ type: "scrim", bbox: [0, 0, W, 620], colour: NAVY, direction: "down" });
       els.push({ type: "text", bbox: [80, 96, 720, 128], content: agency.toUpperCase(), font: "Jost", size: 20, colour: CREAM, align: "left", weight: "500", tracking: 5 });
       els.push({ type: "text", bbox: [80, 200, 1000, 236], content: plan.eyebrow.toUpperCase(), font: "Jost", size: 22, colour: GOLD, align: "left", tracking: 6 });
-      els.push({ type: "text", bbox: [80, 260, 1000, 560], content: wrap(plan.hook_title, FR, 92, 920), font: FR, size: 92, colour: "#f6f1e7", align: "left", line_height: 108 });
+      els.push({ type: "text", bbox: [80, 260, 1000, plan.hook_title.length > 58 ? 660 : 560], content: wrap(plan.hook_title, FR, plan.hook_title.length > 58 ? 70 : 92, 920), font: FR, size: plan.hook_title.length > 58 ? 70 : 92, colour: "#f6f1e7", align: "left", line_height: plan.hook_title.length > 58 ? 84 : 108 });
       els.push(aiTag(mix(CREAM, NAVY, 0.6)));
       els.push(...band(1, mix(CREAM, NAVY, 0.65)));
     } else if (cfg.mode === "light") {
       els.push(noShield({ type: "text", bbox: [80, 200, 1000, 236], content: plan.eyebrow.toUpperCase(), font: "Jost", size: 22, colour: mix(NAVY, CREAM, 0.72), align: "left", tracking: 6 }));
-      els.push(noShield({ type: "text", bbox: [80, 260, 1000, 560], content: wrap(plan.hook_title, FR, 92, 920), font: FR, size: 92, colour: NAVY, align: "left", line_height: 108 }));
+      els.push(noShield({ type: "text", bbox: [80, 260, 1000, plan.hook_title.length > 58 ? 660 : 560], content: wrap(plan.hook_title, FR, plan.hook_title.length > 58 ? 70 : 92, 920), font: FR, size: plan.hook_title.length > 58 ? 70 : 92, colour: NAVY, align: "left", line_height: plan.hook_title.length > 58 ? 84 : 108 }));
       els.push(noShield(aiTag(mix(NAVY, CREAM, 0.5))));
       els.push(...band(1, guard.bandColour === "cream" ? mix(CREAM, NAVY, 0.8) : mix(NAVY, CREAM, 0.6)).map(noShield));
     } else {
@@ -135,7 +135,7 @@ export async function renderTipsImageStyled(
       els.push({ type: "scrim", bbox: [0, 880, W, H], colour: NAVY });
       els.push({ type: "text", bbox: [80, 96, 720, 128], content: agency.toUpperCase(), font: "Jost", size: 20, colour: CREAM, align: "left", weight: "500", tracking: 5 });
       els.push({ type: "text", bbox: [80, 930, 1000, 966], content: plan.eyebrow.toUpperCase(), font: "Jost", size: 22, colour: GOLD, align: "left", tracking: 6 });
-      els.push({ type: "text", bbox: [80, 990, 1000, 1220], content: wrap(plan.hook_title, FR, 88, 920), font: FR, size: 88, colour: "#f6f1e7", align: "left", line_height: 104 });
+      els.push({ type: "text", bbox: [80, plan.hook_title.length > 44 ? 960 : 990, 1000, 1220], content: wrap(plan.hook_title, FR, plan.hook_title.length > 44 ? 62 : 88, 920), font: FR, size: plan.hook_title.length > 44 ? 62 : 88, colour: "#f6f1e7", align: "left", line_height: plan.hook_title.length > 44 ? 76 : 104 });
       els.push(aiTag(mix(CREAM, NAVY, 0.6)));
       els.push(...band(1, mix(CREAM, NAVY, 0.65)));
     }
@@ -276,6 +276,9 @@ export async function renderTipsImageStyledV2(
   style: TipsImageStyle, plan: CarouselPlan, agency: string, contact: string,
   brand: CarouselBrand, images: Buffer[], lang = "es", includeRecap = true, includeContext = true,
   variantOffset = 0,   // OTRA VUELTA layout remix: shifts the per-tip layout rotation
+  contextArt = false,  // Christian 2026-08-28: slide 2 reused the cover art ("looks bad on the two
+                       // slides that catch attention") — when true, images[1] is the context slide's
+                       // OWN artwork and tip artworks start at images[2]
 ): Promise<Buffer[]> {
   const cfg = CFG[style];
   const T = chrome(lang);
@@ -301,12 +304,12 @@ export async function renderTipsImageStyledV2(
       els.push({ type: "scrim", bbox: [0, 0, W, 620], colour: NAVY, direction: "down" });
       els.push({ type: "text", bbox: [80, 96, 720, 128], content: agency.toUpperCase(), font: "Jost", size: 20, colour: CREAM, align: "left", weight: "500", tracking: 5 });
       els.push({ type: "text", bbox: [80, 200, 1000, 236], content: plan.eyebrow.toUpperCase(), font: "Jost", size: 22, colour: GOLD, align: "left", tracking: 6 });
-      els.push({ type: "text", bbox: [80, 260, 1000, 560], content: wrap(plan.hook_title, FR, 92, 920), font: FR, size: 92, colour: "#f6f1e7", align: "left", line_height: 108 });
+      els.push({ type: "text", bbox: [80, 260, 1000, plan.hook_title.length > 58 ? 660 : 560], content: wrap(plan.hook_title, FR, plan.hook_title.length > 58 ? 70 : 92, 920), font: FR, size: plan.hook_title.length > 58 ? 70 : 92, colour: "#f6f1e7", align: "left", line_height: plan.hook_title.length > 58 ? 84 : 108 });
       els.push(aiTag(mix(CREAM, NAVY, 0.6)));
       els.push(...band(1, mix(CREAM, NAVY, 0.65)));
     } else if (cfg.mode === "light") {
       els.push(noShield({ type: "text", bbox: [80, 200, 1000, 236], content: plan.eyebrow.toUpperCase(), font: "Jost", size: 22, colour: mix(NAVY, CREAM, 0.72), align: "left", tracking: 6 }));
-      els.push(noShield({ type: "text", bbox: [80, 260, 1000, 560], content: wrap(plan.hook_title, FR, 92, 920), font: FR, size: 92, colour: NAVY, align: "left", line_height: 108 }));
+      els.push(noShield({ type: "text", bbox: [80, 260, 1000, plan.hook_title.length > 58 ? 660 : 560], content: wrap(plan.hook_title, FR, plan.hook_title.length > 58 ? 70 : 92, 920), font: FR, size: plan.hook_title.length > 58 ? 70 : 92, colour: NAVY, align: "left", line_height: plan.hook_title.length > 58 ? 84 : 108 }));
       els.push(noShield(aiTag(mix(NAVY, CREAM, 0.5))));
       els.push(...band(1, guard.bandColour === "cream" ? mix(CREAM, NAVY, 0.8) : mix(NAVY, CREAM, 0.6)).map(noShield));
     } else {
@@ -315,19 +318,19 @@ export async function renderTipsImageStyledV2(
       els.push({ type: "scrim", bbox: [0, 880, W, H], colour: NAVY });
       els.push({ type: "text", bbox: [80, 96, 720, 128], content: agency.toUpperCase(), font: "Jost", size: 20, colour: CREAM, align: "left", weight: "500", tracking: 5 });
       els.push({ type: "text", bbox: [80, 930, 1000, 966], content: plan.eyebrow.toUpperCase(), font: "Jost", size: 22, colour: GOLD, align: "left", tracking: 6 });
-      els.push({ type: "text", bbox: [80, 990, 1000, 1220], content: wrap(plan.hook_title, FR, 88, 920), font: FR, size: 88, colour: "#f6f1e7", align: "left", line_height: 104 });
+      els.push({ type: "text", bbox: [80, plan.hook_title.length > 44 ? 960 : 990, 1000, 1220], content: wrap(plan.hook_title, FR, plan.hook_title.length > 44 ? 62 : 88, 920), font: FR, size: plan.hook_title.length > 44 ? 62 : 88, colour: "#f6f1e7", align: "left", line_height: plan.hook_title.length > 44 ? 76 : 104 });
       els.push(aiTag(mix(CREAM, NAVY, 0.6)));
       els.push(...band(1, mix(CREAM, NAVY, 0.65)));
     }
     specs.push(DesignSpec.parse({ background: NAVY, elements: els }));
   }
 
-  // 2 · CONTEXT — a tight detail crop of the COVER art in a card (dropped on the shortest decks)
+  // 2 · CONTEXT — its own artwork when available (contextArt), else a tight detail crop of the cover
   if (includeContext) specs.push(DesignSpec.parse({
     background: NAVY,
     elements: [
       { type: "rect", bbox: [310, 130, 770, 590], fill: CREAM, radius: 10 },
-      { type: "photo", photo: 0, bbox: [332, 152, 748, 568], zoom: 1.8, x: 0.5, y: cfg.ctaY },
+      { type: "photo", photo: contextArt && images.length > 1 ? 1 : 0, bbox: [332, 152, 748, 568], ...(contextArt && images.length > 1 ? { zoom: 1.05, x: 0.5, y: 0.5 } : { zoom: 1.8, x: 0.5, y: cfg.ctaY }) },
       { type: "text", bbox: [80, 660, 1000, 696], content: plan.eyebrow.toUpperCase(), font: "Jost", size: 21, colour: GOLD, align: "center", tracking: 6 },
       { type: "text", bbox: [110, 740, 970, 970], content: wrap(plan.slide2_title, FR, 64, 860), font: FR, size: 64, colour: CREAM, align: "center", line_height: 80, valign: "center" },
       { type: "text", bbox: [150, 1020, 930, 1150], content: wrap(plan.slide2_body, "Jost", 29, 720), font: "Jost", size: 29, colour: mix(CREAM, NAVY, 0.85), align: "center", line_height: 44 },
@@ -339,8 +342,10 @@ export async function renderTipsImageStyledV2(
   // 3..N+2 · TIP SLIDES — each with its own art, three layouts rotating
   plan.tips.forEach((tip, i) => {
     // one artwork per tip; when the library returns fewer artworks than tips, CYCLE through
-    // them (1..len-1) instead of repeating the last one on every remaining slide
-    const photo = images.length > 1 ? 1 + (i % (images.length - 1)) : 0;
+    // them instead of repeating the last one on every remaining slide. Tip artworks start after
+    // the cover (and after the context art when it has its own).
+    const base = contextArt && images.length > 2 ? 2 : 1;
+    const photo = images.length > base ? base + (i % (images.length - base)) : 0;
     const slideNo = i + 2 + (includeContext ? 1 : 0);
     const variant = (i + variantOffset) % 3;
     if (variant === 0) {

@@ -99,19 +99,25 @@ function cartelPlanned(plan: CarouselPlan, agency: string, contact: string, bran
   const rule = (y: number, colour: string) => ({ type: "rect", bbox: [200, y, 880, y + 2], fill: colour });
   const specs: unknown[] = [];
 
-  // cover: giant ¿ + hook stacked, middle line hollow
-  const lines = stack(plan.hook_title.toUpperCase(), 3);
+  // cover: giant ¿ + hook stacked, middle line hollow. Long hooks (a verbatim provocative line
+  // the user chose) don't fit the 3-line stack device — they get a centered wrapped block instead.
   const coverEls: any[] = [{ type: "text", bbox: [60, 100, 420, 520], content: "¿", font: FR, size: 380, colour: GOLD }];
-  const ys = [470, 640, 880];
-  const sizes = [96, 140, 62];
-  lines.forEach((ln, i) => {
-    coverEls.push({
-      type: "text", bbox: [80, ys[i] ?? 880, 1000, (ys[i] ?? 880) + (sizes[i] ?? 62) + 40], content: ln,
-      font: "Anton", size: sizes[i] ?? 62, colour: i === 2 ? GOLD : CREAM, align: "center",
-      ...(i === 1 ? { hollow: true, stroke_width: 3 } : {}),
+  if (plan.hook_title.length > 48) {
+    coverEls.push({ type: "text", bbox: [80, 440, 1000, 940], content: wrap(plan.hook_title.toUpperCase(), "Anton", 68, 900), font: "Anton", size: 68, colour: CREAM, align: "center", line_height: 84, valign: "center" });
+    coverEls.push(rule(980, GOLD));
+  } else {
+    const lines = stack(plan.hook_title.toUpperCase(), 3);
+    const ys = [470, 640, 880];
+    const sizes = [96, 140, 62];
+    lines.forEach((ln, i) => {
+      coverEls.push({
+        type: "text", bbox: [80, ys[i] ?? 880, 1000, (ys[i] ?? 880) + (sizes[i] ?? 62) + 40], content: ln,
+        font: "Anton", size: sizes[i] ?? 62, colour: i === 2 ? GOLD : CREAM, align: "center",
+        ...(i === 1 ? { hollow: true, stroke_width: 3 } : {}),
+      });
+      if (i < 2) coverEls.push(rule((ys[i + 1] ?? 880) - 24, GOLD));
     });
-    if (i < 2) coverEls.push(rule((ys[i + 1] ?? 880) - 24, GOLD));
-  });
+  }
   coverEls.push({ type: "text", bbox: [80, 1050, 1000, 1082], content: plan.eyebrow.toUpperCase(), font: "Archivo", size: 20, colour: mix(CREAM, NAVY, 0.7), align: "center", tracking: 4 });
   coverEls.push(...band(agency, 1, total, mix("#f3efe6", NAVY, 0.6)));
   specs.push(DesignSpec.parse({ background: NAVY, elements: coverEls }));
@@ -134,16 +140,26 @@ function cartelPlanned(plan: CarouselPlan, agency: string, contact: string, bran
     { bg: NAVY, num: mix(GOLD, NAVY, 0.45), head: CREAM, bodyC: CREAM, kick: GOLD, ruleC: GOLD },
     { bg: TERRA, num: mix(LIME, TERRA, 0.35), head: LIME, bodyC: LIME, kick: LIME, ruleC: LIME },
   ];
+  // (Christian 2026-08-28: the old empty-poster tip slide — 900px washed numeral + small title at
+  // the bottom — "doesn't look like something someone would pay for". New grammar: the TITLE is the
+  // hero poster type; the numeral becomes a cropped background layer bleeding off the lower-right;
+  // the teaser rides as a pill so the slide carries designed density like editorial does.)
   plan.tips.forEach((tip, i) => {
     const g = gammas[i % 3];
+    const titleTxt = wrap(tip.title.toUpperCase(), "Anton", 84, 900);
+    const tLines = titleTxt.split("\n").length;
+    const yRule = 230 + tLines * 98 + 34;
+    const yBody = yRule + 44;
     specs.push(DesignSpec.parse({
       background: g.bg,
       elements: [
-        { type: "text", bbox: [200, -120, 1080, 900], content: String(i + 1), font: "Anton", size: 900, colour: g.num, align: "center" },
+        { type: "text", bbox: [620, 610, 1560, 1560], content: String(i + 1), font: "Anton", size: 720, colour: g.num, align: "left" },
         { type: "text", bbox: [80, 96, 600, 128], content: `Nº ${i + 1} DE ${plan.tips.length}`, font: "Archivo", size: 20, colour: g.kick, align: "left", tracking: 5 },
-        { type: "text", bbox: [80, 800, 1000, 930], content: wrap(tip.title.toUpperCase(), "Anton", 58, 920), font: "Anton", size: 58, colour: g.head, align: "left", line_height: 70 },
-        { type: "rect", bbox: [80, 966, 760, 968], fill: g.ruleC },
-        { type: "text", bbox: [80, 996, 1000, 1160], content: wrap(tip.body, "Archivo", 32, 920), font: "Archivo", size: 32, colour: g.bodyC, align: "left", line_height: 48 },
+        { type: "rect", bbox: [80, 160, 240, 166], fill: g.ruleC },
+        { type: "text", bbox: [80, 230, 1000, 230 + tLines * 98 + 8], content: titleTxt, font: "Anton", size: 84, colour: g.head, align: "left", line_height: 98 },
+        { type: "rect", bbox: [80, yRule, 560, yRule + 2], fill: g.ruleC },
+        { type: "text", bbox: [80, yBody, 640, yBody + 360], content: wrap(tip.body, "Archivo", 30, 540), font: "Archivo", size: 30, colour: g.bodyC, align: "left", line_height: 46 },
+        ...(tip.teaser ? [{ type: "text", bbox: [80, 1140, 880, 1196], content: tip.teaser.toUpperCase(), font: "Archivo", size: 21, colour: g.bg, align: "left", weight: "500", tracking: 2, valign: "center", pill: { fill: g.head, pad_x: 28, pad_y: 14 } }] : []),
         ...band(agency, i + 3, total, mix(g.head, g.bg, 0.55)),
       ],
     }));

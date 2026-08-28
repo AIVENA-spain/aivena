@@ -47,9 +47,12 @@ const LANGS: [string, string][] = [
 // Style example slides ship as static assets (public/studio/carousel-examples/<style>/<n>.jpg)
 // so the picker paints instantly — no fetch, no signed URLs. Counts must match the files on disk.
 const EXAMPLE_COUNTS: Record<string, number> = {
-  acuarela: 3, arcilla: 3, bodegon: 3, bordado: 3, brisa: 2, cartel: 3, cuarteto: 2,
-  editorial: 3, encalada: 2, horizonte: 3, litoral: 3, marea: 2, papel: 3, plano: 3,
-  portada: 3, recorte: 2, riviera: 2, salitre: 3, sereno: 2, tinta: 3, ventana: 2,
+  // tips styles: FULL decks rendered by the production engine (Christian 2026-08-28: "i want
+  // all the slides in examples not just 3")
+  acuarela: 8, arcilla: 8, bodegon: 8, bordado: 8, cartel: 7, editorial: 7, encalada: 7,
+  litoral: 8, papel: 8, salitre: 8, sereno: 7, tinta: 8,
+  // listing styles (parked out of the UI): partial sample sets remain
+  brisa: 2, cuarteto: 2, horizonte: 3, marea: 2, plano: 3, portada: 3, recorte: 2, riviera: 2, ventana: 2,
 };
 const EXAMPLES: Record<string, string[]> = Object.fromEntries(
   Object.entries(EXAMPLE_COUNTS).map(([k, n]) => [
@@ -131,6 +134,7 @@ export function CarouselStudio({ initialTopic = "", initialLanguage }: { initial
   // otra vuelta (one-axis remix)
   const [resultStyle, setResultStyle] = useState<string>("editorial");
   const [resultPerSlideArt, setResultPerSlideArt] = useState(false);
+  const [resultArtSource, setResultArtSource] = useState<string>("");
   const [remixing, setRemixing] = useState<"" | "hook" | "style" | "layout">("");
   const [remixed, setRemixed] = useState(false);
   // text editing
@@ -154,6 +158,7 @@ export function CarouselStudio({ initialTopic = "", initialLanguage }: { initial
     setPlan(s.plan && typeof s.plan === "object" ? (s.plan as Plan) : null);
     if (typeof s.carousel_style === "string") setResultStyle(s.carousel_style);
     setResultPerSlideArt(s.per_slide_art === true);
+    setResultArtSource(typeof s.artwork_source === "string" ? s.artwork_source : "");
     setEditing(false); setDraft(null); setRemixed(false);
     setPhase("result");
   }
@@ -492,6 +497,12 @@ export function CarouselStudio({ initialTopic = "", initialLanguage }: { initial
           <button onClick={() => { setPhase("form"); setSlides([]); setPlan(null); setCaption(""); }}
             className="mb-4 flex items-center gap-1.5 text-sm text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100"><ArrowLeft className="h-4 w-4" /> New carousel</button>
           <div className="mb-2 flex items-center gap-2 text-sm font-medium text-emerald-700"><Check className="h-4 w-4" /> {slides.length} slides ready — swipe order left to right</div>
+          {resultArtSource === "library" && (
+            <div className="mb-3 flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200">
+              <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              <span>Fresh artwork couldn&rsquo;t be generated just now, so these slides use this look&rsquo;s stock artwork — the same images as the style example. Try <b>Otra vuelta &middot; new look</b>, or generate again in a few minutes for artwork made for your topic.</span>
+            </div>
+          )}
 
           <div className="flex gap-3 overflow-x-auto pb-3">
             {slides.map((u, i) => (

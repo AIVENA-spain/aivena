@@ -65,7 +65,7 @@ const PLAN_TOOL = {
             title: { type: 'string', description: 'the point as a punchy headline, max 62 chars' },
             body: { type: 'string', description: 'the advice: 15-40 words, one idea, concrete and actionable, max 250 chars' },
             teaser: { type: 'string', description: 'OPEN LOOP: one short line teasing the NEXT slide, max 70 chars ("Siguiente: el gasto que todos olvidan"). Leave empty on the last tip.' },
-            scene: { type: 'string', description: "THIS TIP's visual (ENGLISH, 15-40 words): name ONE concrete hero object IN THE FIRST FIVE WORDS that embodies THIS specific tip, then the setting. The hero object must be different from every other slide's hero object (cover included). Same rules as image_scenes: concrete nouns, no interiors, no facades, no landmarks, no close people, no text." },
+            scene: { type: 'string', description: "THIS TIP's visual (ENGLISH, 20-45 words): a small COMPOSED SCENE that literally acts out this tip's advice — name ONE concrete hero object IN THE FIRST FIVE WORDS, then 2-4 supporting props drawn from the tip's own content, arranged together like a styled still (hidden costs → a stack of sealed envelopes fanned beside a small brass tap dripping into a saucer, coins scattered). Someone seeing only the image should be able to guess the advice. The hero object must be different from every other slide's hero object (cover included). NEVER default to keys, suitcases or luggage — use them only when the tip is literally about them. Same rules as image_scenes: concrete nouns, no interiors, no facades, no landmarks, no close people, no text." },
           },
         },
       },
@@ -79,7 +79,7 @@ const PLAN_TOOL = {
       cta_action: { type: 'string', description: 'THE REAL CTA, max 140 chars: a save or send action matched to the post ("Envíaselo a la persona con quien compras" / "Guarda esta guía para tu próxima visita"). Help-framed — never "tag a friend"/"share this"/"follow us" (Meta demotes engagement bait).' },
       cta_keyword: { type: 'string', description: 'the DM keyword pill, max 34 chars: "Escríbenos: GUÍA" style — one word the reader can DM' },
       swipe_cue: { type: 'string', description: 'the "swipe" word in the post language, max 18 chars (es: "Desliza", en: "Swipe")' },
-      image_scenes: { type: 'array', items: { type: 'string' }, description: 'EXACTLY 3 concrete visual scenes (in ENGLISH, 15-40 words each) translating the post topic and its EMOTION into imagery: [0] the cover hero — one familiar Mediterranean object or scene carrying the topic as a visual metaphor (longing, the promise of a better life in Spain); [1] a companion scene in the same world; [2] a quieter closing beat. Rules: concrete nouns only (diffusion fails on abstractions), NO interiors, NO building facades that could read as a real property, NO recognizable landmarks, NO people close-up, NO text in the scene. Example for hidden costs: "a half-submerged terracotta amphora in clear turquoise water".' },
+      image_scenes: { type: 'array', items: { type: 'string' }, description: 'EXACTLY 3 concrete visual scenes (in ENGLISH, 20-45 words each) translating the post topic and its EMOTION into imagery: [0] the COVER — the strongest, most literal scene of the whole deck: a composed scene (hero object + 2-4 supporting props) that STAGES THE TOPIC ITSELF so someone seeing only this image could guess what the post is about. A generic pretty postcard — a shuttered window, a nice door, a plain beach — is a FAILURE unless the topic is literally about it. [1] the SLIDE-2 artwork: a DIFFERENT composed scene restating the topic from a second angle (never a variation of the cover scene — new hero object, new props); [2] a quieter closing beat — this one MAY be a simple single subject (open sea, an empty beach, a lone olive tree). Rules: concrete nouns only (diffusion fails on abstractions), NO interiors, NO building facades that could read as a real property, NO recognizable landmarks, NO people close-up, NO text in the scene. Example cover for "a home you only visit a few times a year": "a garden table under a dust sheet on a terrace, four espresso cups upturned in a row, a wall calendar with four small red circles, drifted pine needles and unopened mail at the foot of a shuttered door".' },
       caption: { type: 'string', description: 'the Instagram caption — SHORT and HUMAN, like an agent typing on their phone: max 3 short lines + one CTA line (under 320 chars total). Contractions, plain words, no rhetorical-question openers, no formulas. BANNED: dreaming of, hidden gem, look no further, imagine yourself, sueñas con, joya escondida. Include one location word naturally. No hashtags inside.' },
       hashtags: { type: 'array', items: { type: 'string' }, description: 'EXACTLY 3-5 hashtags WITHOUT #: geo tags ONLY if the topic names a place, otherwise topic-niche tags + optionally the agency name. NEVER mega-tags like realestate/home/luxury.' },
     },
@@ -130,6 +130,7 @@ export async function planCarousel(opts: {
   language: string;          // 'es', 'en', ...
   agencyName: string;
   region?: string;           // for locally relevant advice + hashtags
+  avoidMotifs?: string[];    // hero objects from this agency's recent posts — variety across generations
 }): Promise<CarouselPlan> {
   const langNames: Record<string, string> = { es: 'Spanish', en: 'English', de: 'German', fr: 'French', nl: 'Dutch', sv: 'Swedish', no: 'Norwegian', da: 'Danish', fi: 'Finnish', pl: 'Polish', ru: 'Russian', it: 'Italian', pt: 'Portuguese' };
   const lang = langNames[opts.language] ?? 'Spanish';
@@ -138,6 +139,7 @@ export async function planCarousel(opts: {
   const task = opts.type === 'tips'
     ? `Create an EDUCATIONAL carousel: exactly ${Math.min(7, Math.max(1, opts.slideCount ?? 5))} points about: "${opts.topic}".
 Prefer the LOSS/MISTAKE frame — "errors that cost you money", "what nobody warns you about", "what I'd never do" — it is the only hook style with experimental proof. Each point = one slide: punchy title + 15-40 words of genuinely useful, practical advice a real buyer/seller can act on. One idea per point. Each point's "teaser" is an open loop pulling to the next slide; leave the last teaser empty.
+IF THE TOPIC ALREADY READS AS A FINISHED HOOK LINE — a crafted sentence or two with its own punch (often picked from the inspiration ideas, e.g. "Some people buy a home in the sun. Others buy a problem with a pool.") — the user chose those words on purpose: use the line (translated into the post language if needed) VERBATIM as hook_title when it fits 90 chars; if longer, the sharpest sentence verbatim as hook_title and let slide2 carry the rest. NEVER flatten a provocative topic into a generic listicle title — losing its edge is a failure.
 If the hook promises a number ("5 errores"), it MUST equal the number of points delivered.`
     : `Create a CLIENT STORY carousel from this quote (provided by the agency — treat as authentic):
 QUOTE: "${opts.quoteText}"
@@ -159,8 +161,9 @@ CAROUSEL DOCTRINE (how these posts win — follow it):
 - The CTA leads with ONE action: a save or send framing (cta_action) + a DM keyword (cta_keyword). Contact details are handled by the design, not by you. NEVER "tag a friend", "share this", "follow for more" — Meta demotes engagement bait; help-framing ("send this to the person you're buying with") is the substitute.
 - Caption: SHORT and human — 3 lines max + a CTA line, written like a person, not a brochure. No clichés, no rhetorical-question openers. Same place rule: no towns unless the topic names one. End with a short P.D. question answerable in ONE word.
 - Hashtags: 3-5 only, no mega-tags.
-- image_scenes: 3 concrete Mediterranean scenes (ENGLISH) that translate the topic's emotion — the longing for a home in Spain, the promise of a better life — into carefully purposeful imagery. One familiar object/scene per beat carrying one extra meaning. Concrete nouns; no interiors, no property facades, no landmarks, no close people, no text.
-- EVERY tip also gets its own "scene": the visual translation of THAT tip specifically. HERO OBJECT LAW: each scene names ONE hero object in its first five words, and no two scenes in the deck (cover included) may share a hero object or lean on the same motif — different objects, different compositions, same world. Repetition across slides is a failure. If the topic tempts you to reuse keys, windows or doors, pick the tip's OWN object instead (bills → tied envelopes; maintenance → a dripping tap; paperwork → a stamped folder).
+- image_scenes: 3 concrete Mediterranean scenes (ENGLISH). [0] is the COVER and it carries the whole post: it must stage the TOPIC so literally that a viewer could guess it from the image alone — never a generic pretty postcard (window, door, beach) unless the topic is literally about it. [1] appears on slide 2 (the second cover Instagram re-serves): a different composed scene, second angle on the topic, new hero object. The closing beat [2] may be one quiet simple subject (sea, beach, a lone tree) for rhythm.
+- EVERY tip also gets its own "scene": a LITERAL visual translation of THAT tip — the props act out the advice, so a viewer who sees only the image could guess the tip. HERO OBJECT LAW: each scene names ONE hero object in its first five words, and no two scenes in the deck (cover included) may share a hero object or lean on the same motif — different objects, different compositions, same world. Repetition across slides is a failure. NEVER default to the stock clichés — keys, suitcases, luggage, generic doors — unless the tip is literally about them; pick the tip's OWN objects instead (bills → tied envelopes; maintenance → a dripping tap; paperwork → a stamped folder; viewings → a pocket torch on a windowsill at dusk).${opts.avoidMotifs?.length ? `
+- RECENTLY USED in this agency's previous posts — do NOT use any of these as a hero object again, find fresh ones: ${opts.avoidMotifs.join('; ')}.` : ''}
 
 HARD RULES:
 - NO specific prices, percentages, statistics, interest rates, tax figures, or legal guarantees anywhere in slide copy. General, evergreen advice only — you have no data source, so any figure would be invented. Use place names for specificity instead of numbers.
@@ -190,7 +193,16 @@ Submit with the submit_carousel tool.`;
     }
     const data = (await res.json()) as { content?: { type: string; input?: unknown }[] };
     const tool = data.content?.find((c) => c.type === 'tool_use');
-    const input = { type: opts.type, ...(unesc(tool?.input) as object ?? {}) };  // the requested type always wins
+    const input = { type: opts.type, ...(unesc(tool?.input) as object ?? {}) } as Record<string, unknown>;  // the requested type always wins
+    // Self-heal common model quirks instead of failing the whole generation (2026-08-28: a
+    // string-shaped hashtags field burned all 3 retries and killed Christian's post):
+    if (typeof input.hashtags === 'string') input.hashtags = (input.hashtags as string).split(/[\s,#]+/);
+    if (Array.isArray(input.hashtags)) {
+      input.hashtags = (input.hashtags as unknown[])
+        .filter((h): h is string => typeof h === 'string')
+        .map((h) => h.replace(/^#/, '').trim().slice(0, 40))
+        .filter((h) => h.length >= 2).slice(0, 5);
+    }
     const parsed = PlanSchema.safeParse(input);
     if (!parsed.success) {
       lastErr = parsed.error.issues.slice(0, 5).map((i) => `${i.path.join('.')}: ${i.message}`).join('; ');
@@ -429,7 +441,7 @@ const IDEAS_TOOL = {
   input_schema: {
     type: 'object' as const,
     properties: {
-      topics: { type: 'array', items: { type: 'string' }, description: '6 carousel topics, each 30-90 chars, in the requested language' },
+      topics: { type: 'array', items: { type: 'string' }, description: '6 carousel topics in the requested language: five of 30-90 chars, plus exactly one provocative hook of up to 150 chars' },
     },
     required: ['topics'],
   },
@@ -442,8 +454,9 @@ export async function topicIdeas(language: string, exclude: string[]): Promise<s
 Write 6 topic ideas in language "${language}". Rules:
 - Each is a TOPIC for a tips/advice carousel (the copywriter will write the hook later) — specific and curiosity-driven, not generic ("Why sea-view flats sell in winter" beats "Tips for sellers").
 - Mix the angles: buying, selling, owning, relocating, financing/process, and one seasonal angle (it is ${month}).
-- NO place names, NO prices, NO statistics, NO legal/tax advice framing.
-- 30-90 characters each, no emoji, no numbering.${exclude.length ? `\n- Do NOT repeat or paraphrase these already-shown ideas:\n${exclude.slice(0, 24).map((t) => `  · ${t}`).join('\n')}` : ''}
+- Exactly ONE of the 6 must be a PROVOCATIVE hook: a bold one-or-two-sentence line that challenges a common belief or names an uncomfortable truth, with a little sting — it should make the reader stop mid-scroll. Style references (write yours FRESH, in "${language}", never copy these): "Some people buy a home in Spain. Others buy a problem with a pool." / "You can always make more money. You cannot buy back ten winters." / "Maybe success isn't retiring one day. Maybe it's building a life you don't need to retire from." / "The dream of waiting for prices to crash has cost some buyers more than the crash ever would."
+- NO place names, NO prices, NO statistics, NO legal/tax advice framing (the provocative line may gesture at cost/time in the abstract, never with figures).
+- 30-90 characters each; the provocative one may run up to 150. No emoji, no numbering.${exclude.length ? `\n- Do NOT repeat or paraphrase these already-shown ideas:\n${exclude.slice(0, 24).map((t) => `  · ${t}`).join('\n')}` : ''}
 
 Submit with the submit_ideas tool.`;
   try {
@@ -460,7 +473,7 @@ Submit with the submit_ideas tool.`;
     const data = (await res.json()) as { content?: { type: string; input?: unknown }[] };
     const input = unesc(data.content?.find((c) => c.type === 'tool_use')?.input) as { topics?: unknown } | undefined;
     const topics = Array.isArray(input?.topics)
-      ? input.topics.filter((t): t is string => typeof t === 'string' && t.trim().length >= 10).map((t) => t.trim().slice(0, 120)).slice(0, 6)
+      ? input.topics.filter((t): t is string => typeof t === 'string' && t.trim().length >= 10).map((t) => t.trim().slice(0, 160)).slice(0, 6)
       : [];
     return topics.length >= 3 ? topics : null;
   } catch {

@@ -14,7 +14,11 @@ import { CarouselBrand } from "./renderCarousel";
 
 const W = 1080, H = 1350;
 const M = 80;                       // doctrine margin (covers IG's 3:4 grid crop + edge safety)
-const SERIF = "Libre Caslon Display";
+let SERIF = "Libre Caslon Display";
+// Edition support (Christian 2026-08-28): the display face is swappable for the duration of a
+// SYNCHRONOUS spec build — set, build, restore; never held across an await.
+export function getPlannedSerif(): string { return SERIF; }
+export function setPlannedSerif(f: string): void { SERIF = f; }
 const SANS = "Jost";
 
 export interface CarouselPlan {
@@ -347,10 +351,10 @@ function ctaSlide(plan: CarouselPlan, slideIndex: number, total: number, agency:
 
 /** Render a PLANNED carousel. Tips: cover → second cover → one slide per tip → recap → CTA.
  *  Quote: cover (verbatim fragment) → context → quote parts → CTA. Deterministic, seconds. */
-export async function renderPlannedCarousel(
+/** Build the editorial deck's specs — SYNCHRONOUS, so display-face swaps can wrap it safely. */
+export function buildPlannedSpecs(
   plan: CarouselPlan, agency: string, contact: string, brand: CarouselBrand,
-): Promise<Buffer[]> {
-  const canvas = { width: W, height: H };
+): any[] {
   const specs: any[] = [];
   if (plan.type === "tips") {
     const total = plan.tips.length + 4;      // cover + slide2 + tips + recap + CTA
@@ -367,6 +371,14 @@ export async function renderPlannedCarousel(
       specs.push(quoteSlide(i + 2, total, part, plan.attribution, i === plan.quote_parts.length - 1, agency, brand)));
     specs.push(ctaSlide(plan, total - 1, total, agency, contact, brand));
   }
+  return specs;
+}
+
+export async function renderPlannedCarousel(
+  plan: CarouselPlan, agency: string, contact: string, brand: CarouselBrand,
+): Promise<Buffer[]> {
+  const canvas = { width: W, height: H };
+  const specs = buildPlannedSpecs(plan, agency, contact, brand);
   const out: Buffer[] = [];
   for (const spec of specs) out.push(await renderFreeform(spec, canvas, []));
   return out;

@@ -995,6 +995,8 @@ async function runPlannedCarousel(opts: {
   slideCount?: number; language: string; style: CarouselStyle; scheme: string; includeRecap: boolean; includeContext: boolean;
   agency: { name: string; web: string; phone: string };
   brand: { navy: string; gold: string; cream: string; text: string };
+  styleEdition?: number;   // type-only styles: which font/colour edition this deck wears
+  lockPalette?: boolean;   // user picked custom colours — edition may not recolour
 }): Promise<void> {
   const { genId, agencyId } = opts;
   try {
@@ -1095,10 +1097,10 @@ async function runPlannedCarousel(opts: {
           : await renderTipsImageStyled(opts.style, plan, opts.agency.name, contact, opts.brand, images, opts.language);
       } else {
         usedStyle = 'editorial';
-        slides = await renderPlannedStyled('editorial', plan, opts.agency.name, contact, opts.brand, opts.language);
+        slides = await renderPlannedStyled('editorial', plan, opts.agency.name, contact, opts.brand, opts.language, opts.styleEdition ?? 0, opts.lockPalette ?? false);
       }
     } else {
-      slides = await renderPlannedStyled(opts.style, plan, opts.agency.name, contact, opts.brand, opts.language);
+      slides = await renderPlannedStyled(opts.style, plan, opts.agency.name, contact, opts.brand, opts.language, opts.styleEdition ?? 0, opts.lockPalette ?? false);
     }
     const stored = await storeSlides(agencyId, genId, slides);
 
@@ -1182,13 +1184,18 @@ route.post('/carousel', async (c) => {
       if (brandNavy) brand.navy = brandNavy;
       if (brandGold) brand.gold = brandGold;
 
+      // each new type-only deck wears a random edition (fonts + colour world) — stored so every
+      // re-render of this deck reproduces the exact same look
+      const styleEdition = Math.floor(Math.random() * 3);
+      const lockPalette = !!(brandNavy || brandGold);
+
       const label = type === 'tips' ? `Tips carousel · ${topic.slice(0, 80)}` : 'Client quote carousel';
       const ins = await tx.execute(sql`
         INSERT INTO image_generations
           (agency_id, generation_type, status, prompt, requested_by, raw_request)
         VALUES
           (${agencyId}, 'social_post', 'processing', ${label}, ${user?.sub ?? null}::uuid,
-           ${JSON.stringify({ engine: 'carousel', content_type: 'carousel', carousel_type: type, carousel_style: style, image_scheme: scheme, include_recap: includeRecap, include_context: includeContext, topic, quote_text: quoteText, quote_author: quoteAuthor, slide_count: slideCount, language, brand_navy: brandNavy, brand_gold: brandGold })}::jsonb)
+           ${JSON.stringify({ engine: 'carousel', content_type: 'carousel', carousel_type: type, carousel_style: style, image_scheme: scheme, include_recap: includeRecap, include_context: includeContext, topic, quote_text: quoteText, quote_author: quoteAuthor, slide_count: slideCount, language, brand_navy: brandNavy, brand_gold: brandGold, style_edition: styleEdition })}::jsonb)
         RETURNING id
       `);
       const rows = ins as unknown as Array<{ id: string }>;
@@ -1198,6 +1205,7 @@ route.post('/carousel', async (c) => {
       void runPlannedCarousel({
         genId, agencyId, type, topic, quoteText, quoteAuthor, slideCount, language, style, scheme, includeRecap, includeContext,
         agency: { name: agency.name, web: agency.web, phone: agency.phone }, brand,
+        styleEdition, lockPalette,
       });
       return c.json({ ok: true, generation_id: genId, status: 'processing' });
     }
@@ -1316,10 +1324,10 @@ route.post('/carousel/update', async (c) => {
           ? await renderTipsImageStyledV2(storedStyle, plan, agency.name, contact, brand, images, storedLang, meta?.include_recap !== false, meta?.include_context !== false, typeof meta?.layout_variant === 'number' ? meta.layout_variant : 0, ctxArt)
           : await renderTipsImageStyled(storedStyle, plan, agency.name, contact, brand, images, storedLang);
       } else {
-        slides = await renderPlannedStyled('editorial', plan, agency.name, contact, brand, storedLang);
+        slides = await renderPlannedStyled('editorial', plan, agency.name, contact, brand, storedLang, typeof rawU.style_edition === 'number' ? rawU.style_edition : 0, !!(rawU.brand_navy || rawU.brand_gold));
       }
     } else {
-      slides = await renderPlannedStyled(storedStyle, plan, agency.name, contact, brand, storedLang);
+      slides = await renderPlannedStyled(storedStyle, plan, agency.name, contact, brand, storedLang, typeof rawU.style_edition === 'number' ? rawU.style_edition : 0, !!(rawU.brand_navy || rawU.brand_gold));
     }
     const stored = await storeSlides(agencyId, genId, slides);
 
@@ -1490,7 +1498,7 @@ route.post('/carousel/remix', async (c) => {
         ? await renderTipsImageStyledV2(newStyle, plan, agency.name, contact, brand, images, storedLang, meta?.include_recap !== false, meta?.include_context !== false, layoutVariant, ctxArt)
         : await renderTipsImageStyled(newStyle, plan, agency.name, contact, brand, images, storedLang);
     } else {
-      slides = await renderPlannedStyled(newStyle, plan, agency.name, contact, brand, storedLang);
+      slides = await renderPlannedStyled(newStyle, plan, agency.name, contact, brand, storedLang, typeof raw.style_edition === 'number' ? raw.style_edition : 0, !!(raw.brand_navy || raw.brand_gold));
     }
 
     const label = `Remix · ${axis} · ${String(raw.topic ?? '').slice(0, 70) || 'tips carousel'}`;

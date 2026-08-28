@@ -1,7 +1,8 @@
 import { renderFreeform, DesignSpec } from "./renderFreeform";
 import { textWidth } from "./renderEditable";
 import {
-  CarouselPlan, renderPlannedCarousel, renderWideSliced, applyGrain, mix, wrap, chrome,
+  CarouselPlan, renderPlannedCarousel, buildPlannedSpecs, getPlannedSerif, setPlannedSerif,
+  renderWideSliced, applyGrain, mix, wrap, chrome,
 } from "./carouselSlides";
 import { CarouselFacts, CarouselCopy, CarouselBrand, renderCarousel } from "./renderCarousel";
 
@@ -42,7 +43,7 @@ export const LISTING_STYLES: CarouselStyle[] = [
 ];
 
 const W = 1080, H = 1350;
-const FR = "Fraunces 115pt";
+let FR = "Fraunces 115pt";   // display face — edition-swappable around a SYNCHRONOUS spec build
 const CAS = "Libre Caslon Display";
 const TERRA = "#c96a4a", OLIVE = "#5a6b4e", LIME = "#f4efe6";
 
@@ -413,14 +414,72 @@ function serenoPlanned(plan: CarouselPlan, agency: string, contact: string, bran
   return specs;
 }
 
-/** PLANNED carousels (tips/quote) in a chosen style. 'editorial' = the approved v2 default. */
+// ═══ TYPE-STYLE EDITIONS (Christian 2026-08-28: "we need to change it up with the text only
+// ones — fonts, colors, many different options since it's just text anyways") ═══════════════
+// Each type-only style ships several EDITIONS: a display face + a colour world. Edition 0 is
+// the original approved look. The edition is chosen at generation time, stored on the row, and
+// re-applied on every re-render so a deck never shifts under text edits or remixes. A user's
+// custom two-colour choice OUTRANKS the edition palette (fonts still rotate). Cartel keeps
+// Anton in all editions — the typeface IS that style; it varies through colour worlds.
+export interface StyleEdition { display?: string; navy?: string; gold?: string; cream?: string }
+export const TYPE_EDITIONS: Record<string, StyleEdition[]> = {
+  editorial: [
+    {},                                                                  // Caslon classic, brand colours
+    { display: "Prata", navy: "#23272f", gold: "#c96a4a" },              // warm ink + terracotta
+    { display: "Playfair Display", navy: "#1e3a34", gold: "#b98d4f" },   // deep green + aged brass
+  ],
+  cartel: [
+    {},                                                                  // navy/gold poster classic
+    { navy: "#b3362b", gold: "#f2e6c9", cream: "#f7f1e3" },              // rojo — Spanish poster red
+    { navy: "#17181c", gold: "#c8a24b", cream: "#efece4" },              // noche — ink black + gold
+  ],
+  encalada: [
+    {},
+    { display: "Italiana", navy: "#2c4a6b", gold: "#a86b3c" },           // azul — indigo + burnt clay
+    { display: "Prata", navy: "#4a4238", gold: "#7d8a6a" },              // tierra — earth + olive
+  ],
+  sereno: [
+    {},
+    { display: "Playfair Display", navy: "#3a4145", gold: "#a68d72" },   // slate + sand
+    { display: "Prata", navy: "#33424e", gold: "#8d9aa6" },              // steel blue, extra air
+  ],
+};
+
+/** PLANNED carousels (tips/quote) in a chosen style. 'editorial' = the approved v2 default.
+ *  edition rotates fonts/colour-worlds on the type-only styles; lockPalette keeps the user's
+ *  own two-colour choice in charge (edition then only swaps the display face). */
 export async function renderPlannedStyled(
   style: CarouselStyle, plan: CarouselPlan, agency: string, contact: string, brand: CarouselBrand, lang = "es",
+  edition = 0, lockPalette = false,
 ): Promise<Buffer[]> {
-  if (style === "cartel" && plan.type === "tips") return renderAll(cartelPlanned(plan, agency, contact, brand, lang), [], 0.05);
-  if (style === "encalada") return renderAll(encaladaPlanned(plan, agency, contact, brand), [], 0.045);
-  if (style === "sereno") return renderAll(serenoPlanned(plan, agency, contact, brand), [], 0.035);
-  return renderPlannedCarousel(plan, agency, contact, brand);
+  const eds = TYPE_EDITIONS[style] ?? [{}];
+  const ed = eds[((edition % eds.length) + eds.length) % eds.length] ?? {};
+  const b = { ...brand };
+  if (!lockPalette) {
+    if (ed.navy) b.navy = ed.navy;
+    if (ed.gold) b.gold = ed.gold;
+    if (ed.cream) b.cream = ed.cream;
+  }
+  // Display-face swap via the module font slots. Specs are built INSIDE the swap window —
+  // which is fully synchronous — and the slots are restored BEFORE any await, so concurrent
+  // generations can never observe each other's fonts.
+  const prevFR = FR, prevSerif = getPlannedSerif();
+  if (ed.display) { FR = ed.display; setPlannedSerif(ed.display); }
+  let specs: unknown[];
+  let grain = 0;
+  try {
+    if (style === "cartel" && plan.type === "tips") { specs = cartelPlanned(plan, agency, contact, b, lang); grain = 0.05; }
+    else if (style === "encalada") { specs = encaladaPlanned(plan, agency, contact, b); grain = 0.045; }
+    else if (style === "sereno") { specs = serenoPlanned(plan, agency, contact, b); grain = 0.035; }
+    else { specs = buildPlannedSpecs(plan, agency, contact, b); }
+  } finally {
+    FR = prevFR;
+    setPlannedSerif(prevSerif);
+  }
+  if (grain > 0) return renderAll(specs, [], grain);
+  const out: Buffer[] = [];
+  for (const spec of specs) out.push(await renderFreeform(spec as DesignSpec, { width: W, height: H }, []));
+  return out;
 }
 
 // ═══ LISTING styles ═══════════════════════════════════════════════════════════

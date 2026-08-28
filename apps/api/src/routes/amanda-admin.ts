@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { sql } from 'drizzle-orm';
 import { scrubKnowledge } from '../amanda-engine/knowledge-scrub';
 import { parseAmandaMode } from '../amanda-engine/modes';
+import { parseAmandaSettings } from '../amanda-engine/backends-db';
 
 /**
  * Amanda auto-mode agency surface (design §6 "smallest lovable settings" +
@@ -40,14 +41,19 @@ route.get('/settings', async (c) => {
          AND status IN ('active', 'pending_review')
        ORDER BY created_at ASC LIMIT 50
     `)) as unknown as Array<{ id: string; content: string; status: string; created_at: string }>;
+    // ONE parse (the engine's own) so the settings card always shows exactly
+    // what Amanda will actually do — defaults included.
+    const parsed = parseAmandaSettings(s);
     return c.json({
       ok: true,
       configured: true,
       mode: parseAmandaMode(r.amanda_mode),
       settings: {
-        viewing_duration_min: typeof s.viewing_duration_min === 'number' ? s.viewing_duration_min : 60,
-        viewing_notice_hours: typeof s.viewing_notice_hours === 'number' ? s.viewing_notice_hours : 24,
-        timezone: typeof s.timezone === 'string' && s.timezone ? s.timezone : 'Europe/Madrid',
+        viewing_duration_min: parsed.viewingDurationMin,
+        viewing_notice_hours: parsed.viewingNoticeHours,
+        timezone: parsed.timezone,
+        viewing_hours_by_weekday: parsed.viewingHoursByWeekday,
+        blocked_dates: parsed.blockedDates,
       },
       knowledge: knowledge.map((k) => ({ id: k.id, content: k.content, status: k.status, createdAt: k.created_at })),
     });
@@ -72,6 +78,33 @@ route.post('/settings', async (c) => {
   }
   if (typeof body.viewing_notice_hours === 'number' && body.viewing_notice_hours >= 1 && body.viewing_notice_hours <= 168) {
     patch.viewing_notice_hours = Math.round(body.viewing_notice_hours);
+  }
+  // Viewing-hours grid: { "0".."6": int hours 8-21 } — the tap grid in settings.
+  // Saved even when a day empties out (an empty object clears back to defaults
+  // at read time via the engine's fallback, so an agency can't brick booking).
+  if (body.viewing_hours_by_weekday && typeof body.viewing_hours_by_weekday === 'object' && !Array.isArray(body.viewing_hours_by_weekday)) {
+    const hours: Record<string, number[]> = {};
+    for (const [k, v] of Object.entries(body.viewing_hours_by_weekday as Record<string, unknown>)) {
+      const day = Number(k);
+      if (!Number.isInteger(day) || day < 0 || day > 6 || !Array.isArray(v)) continue;
+      const hs = (v as unknown[]).filter((h): h is number => typeof h === 'number' && Number.isInteger(h) && h >= 8 && h <= 21);
+      if (hs.length) hours[String(day)] = [...new Set(hs)].sort((a, b) => a - b).slice(0, 14);
+    }
+    // Review-caught trap: saving an all-empty grid would silently fall back
+    // to the DEFAULT hours at read time — the agent sees "everything off,
+    // saved" while Amanda keeps offering 11:00/17:00. Refuse it honestly.
+    if (Object.keys(hours).length === 0) {
+      return c.json({ error: 'Keep at least one viewing hour — for time off use blocked days, or ask us to switch Amanda off.' }, 400);
+    }
+    patch.viewing_hours_by_weekday = hours;
+  }
+  // Blocked days: YYYY-MM-DD only, capped, past dates dropped server-side too.
+  if (Array.isArray(body.blocked_dates)) {
+    const today = new Date().toISOString().slice(0, 10);
+    patch.blocked_dates = [...new Set(
+      (body.blocked_dates as unknown[])
+        .filter((d): d is string => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d) && d >= today)
+    )].sort().slice(0, 120);
   }
   if (Object.keys(patch).length === 0) {
     return c.json({ error: 'Nothing valid to save — durations 15-240 min, notice 1-168 hours.' }, 400);

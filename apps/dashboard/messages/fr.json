@@ -919,7 +919,17 @@
       "rejected_payment_details": "Les coordonnées bancaires ne peuvent pas être enregistrées — Amanda ne doit jamais les partager.",
       "rejected_discriminatory": "Cela exclurait des personnes injustement — impossible à enregistrer.",
       "rejected_url": "Les liens ne peuvent pas être enregistrés — Amanda n'envoie pas de liens.",
-      "rejected_instruction_injection": "Cela ressemble à une instruction pour Amanda plutôt qu'à un fait — reformulez-le comme une information."
+      "rejected_instruction_injection": "Cela ressemble à une instruction pour Amanda plutôt qu'à un fait — reformulez-le comme une information.",
+      "hoursTitle": "Horaires de visite",
+      "hoursHint": "Touchez les heures où les visites sont possibles. Amanda ne propose que ces horaires.",
+      "blockedTitle": "Jours bloqués",
+      "blockedHint": "Jours fériés ou jours de repos — Amanda ne réserve jamais de visite ces jours-là.",
+      "blockToday": "Bloquer aujourd'hui",
+      "blockTomorrow": "Bloquer demain",
+      "addDate": "Bloquer une date",
+      "unblock": "Débloquer",
+      "hoursSaveNote": "N'oubliez pas d'appuyer sur Enregistrer ci-dessus pour appliquer les horaires et les jours bloqués.",
+      "hoursEmptyWarning": "Gardez au moins une heure de visite — pour les congés, utilisez les jours bloqués."
     }
   },
   "performance": {

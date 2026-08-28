@@ -919,7 +919,17 @@
       "rejected_payment_details": "Pankki- tai maksutietoja ei voi tallentaa — Amanda ei saa koskaan jakaa niitä.",
       "rejected_discriminatory": "Se sulkisi ihmisiä pois epäreilusti — ei voi tallentaa.",
       "rejected_url": "Linkkejä ei voi tallentaa — Amanda ei lähetä linkkejä.",
-      "rejected_instruction_injection": "Tämä kuulostaa ohjeelta Amandalle eikä faktalta — muotoile se tiedoksi."
+      "rejected_instruction_injection": "Tämä kuulostaa ohjeelta Amandalle eikä faktalta — muotoile se tiedoksi.",
+      "hoursTitle": "Esittelyajat",
+      "hoursHint": "Napauta tunteja, jolloin esittelyt ovat mahdollisia. Amanda tarjoaa vain näitä aikoja.",
+      "blockedTitle": "Estetyt päivät",
+      "blockedHint": "Pyhäpäivät tai vapaapäivät — Amanda ei koskaan varaa esittelyjä näille päiville.",
+      "blockToday": "Estä tämä päivä",
+      "blockTomorrow": "Estä huominen",
+      "addDate": "Estä päivämäärä",
+      "unblock": "Poista esto",
+      "hoursSaveNote": "Muista painaa Tallenna yllä, jotta ajat ja estetyt päivät tulevat voimaan.",
+      "hoursEmptyWarning": "Pidä vähintään yksi esittelyaika — käytä vapaisiin estettyjä päiviä."
     }
   },
   "performance": {

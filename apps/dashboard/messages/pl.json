@@ -919,7 +919,17 @@
       "rejected_payment_details": "Danych bankowych ani płatniczych nie można zapisać — Amanda nigdy nie może ich udostępniać.",
       "rejected_discriminatory": "To niesprawiedliwie wykluczałoby ludzi — nie można tego zapisać.",
       "rejected_url": "Linków nie można zapisać — Amanda nie wysyła linków.",
-      "rejected_instruction_injection": "To brzmi jak polecenie dla Amandy, a nie fakt — sformułuj to jako informację."
+      "rejected_instruction_injection": "To brzmi jak polecenie dla Amandy, a nie fakt — sformułuj to jako informację.",
+      "hoursTitle": "Godziny prezentacji",
+      "hoursHint": "Zaznacz godziny, w których możliwe są prezentacje. Amanda proponuje tylko te godziny.",
+      "blockedTitle": "Zablokowane dni",
+      "blockedHint": "Święta lub dni wolne — Amanda nigdy nie umawia prezentacji w te dni.",
+      "blockToday": "Zablokuj dziś",
+      "blockTomorrow": "Zablokuj jutro",
+      "addDate": "Zablokuj datę",
+      "unblock": "Odblokuj",
+      "hoursSaveNote": "Pamiętaj, aby nacisnąć Zapisz powyżej, aby godziny i zablokowane dni zaczęły obowiązywać.",
+      "hoursEmptyWarning": "Zostaw co najmniej jedną godzinę prezentacji — na wolne używaj zablokowanych dni."
     }
   },
   "performance": {

@@ -919,7 +919,17 @@
       "rejected_payment_details": "I dati bancari o di pagamento non possono essere salvati — Amanda non deve mai condividerli.",
       "rejected_discriminatory": "Escluderebbe delle persone ingiustamente — non può essere salvato.",
       "rejected_url": "I link non possono essere salvati — Amanda non invia link.",
-      "rejected_instruction_injection": "Sembra un'istruzione per Amanda più che un fatto — riformulalo come informazione."
+      "rejected_instruction_injection": "Sembra un'istruzione per Amanda più che un fatto — riformulalo come informazione.",
+      "hoursTitle": "Orari delle visite",
+      "hoursHint": "Tocca le ore in cui sono possibili le visite. Amanda propone solo questi orari.",
+      "blockedTitle": "Giorni bloccati",
+      "blockedHint": "Festività o giorni liberi: Amanda non prenota mai visite in questi giorni.",
+      "blockToday": "Blocca oggi",
+      "blockTomorrow": "Blocca domani",
+      "addDate": "Blocca una data",
+      "unblock": "Sblocca",
+      "hoursSaveNote": "Ricorda di premere Salva qui sopra perché orari e giorni bloccati abbiano effetto.",
+      "hoursEmptyWarning": "Mantieni almeno un orario di visita — per i giorni liberi usa i giorni bloccati."
     }
   },
   "performance": {

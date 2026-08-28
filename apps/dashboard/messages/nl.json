@@ -919,7 +919,17 @@
       "rejected_payment_details": "Bank- of betaalgegevens kunnen niet worden opgeslagen — Amanda mag ze nooit delen.",
       "rejected_discriminatory": "Dit zou mensen oneerlijk uitsluiten — kan niet worden opgeslagen.",
       "rejected_url": "Links kunnen niet worden opgeslagen — Amanda stuurt geen links.",
-      "rejected_instruction_injection": "Dit leest als een instructie aan Amanda in plaats van een feit — formuleer het als informatie."
+      "rejected_instruction_injection": "Dit leest als een instructie aan Amanda in plaats van een feit — formuleer het als informatie.",
+      "hoursTitle": "Bezichtigingsuren",
+      "hoursHint": "Tik op de uren waarop bezichtigingen mogelijk zijn. Amanda biedt alleen deze tijden aan.",
+      "blockedTitle": "Geblokkeerde dagen",
+      "blockedHint": "Feestdagen of vrije dagen — Amanda boekt op deze dagen nooit bezichtigingen.",
+      "blockToday": "Vandaag blokkeren",
+      "blockTomorrow": "Morgen blokkeren",
+      "addDate": "Datum blokkeren",
+      "unblock": "Deblokkeren",
+      "hoursSaveNote": "Vergeet niet hierboven op Opslaan te drukken om uren en geblokkeerde dagen toe te passen.",
+      "hoursEmptyWarning": "Houd minstens één bezichtigingsuur aan — gebruik geblokkeerde dagen voor vrije tijd."
     }
   },
   "performance": {

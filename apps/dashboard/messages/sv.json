@@ -919,7 +919,17 @@
       "rejected_payment_details": "Bank- eller betalningsuppgifter kan inte sparas — Amanda får aldrig dela dem.",
       "rejected_discriminatory": "Det skulle utesluta människor orättvist — kan inte sparas.",
       "rejected_url": "Länkar kan inte sparas — Amanda skickar inga länkar.",
-      "rejected_instruction_injection": "Det låter som en instruktion till Amanda snarare än ett faktum — formulera det som information."
+      "rejected_instruction_injection": "Det låter som en instruktion till Amanda snarare än ett faktum — formulera det som information.",
+      "hoursTitle": "Visningstider",
+      "hoursHint": "Tryck på de timmar då visningar kan ske. Amanda erbjuder bara dessa tider.",
+      "blockedTitle": "Blockerade dagar",
+      "blockedHint": "Helgdagar eller lediga dagar — Amanda bokar aldrig visningar dessa dagar.",
+      "blockToday": "Blockera idag",
+      "blockTomorrow": "Blockera imorgon",
+      "addDate": "Blockera ett datum",
+      "unblock": "Avblockera",
+      "hoursSaveNote": "Kom ihåg att trycka på Spara ovan för att tider och blockerade dagar ska gälla.",
+      "hoursEmptyWarning": "Behåll minst en visningstid — använd blockerade dagar för ledighet."
     }
   },
   "performance": {

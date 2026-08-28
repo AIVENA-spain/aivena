@@ -272,15 +272,30 @@ function AnswerBox({
   const [answer, setAnswer] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [teachOpen, setTeachOpen] = useState(false);
+  const [teach, setTeach] = useState("");
+  const [teachNote, setTeachNote] = useState<string | null>(null);
 
   function onSend() {
     if (busy || !answer.trim()) return;
     setBusy(true);
     setError(null);
     void (async () => {
-      const res = await answerQuestionAction(taskId, answer);
+      const res = await answerQuestionAction(taskId, answer, teachOpen ? teach : undefined);
       if (res.ok) {
-        onAnswered();
+        if (res.teachRejected) {
+          // The ANSWER went through (Amanda is relaying it) — only the save to
+          // her memory was refused. Tell the agent why, then clear the row.
+          setBusy(false);
+          setTeachNote(
+            res.teachRejected === "property_specific"
+              ? "Answer sent. Not saved to Amanda's memory: it's about one specific property, and she only keeps general facts (taxes, financing, areas, process)."
+              : "Answer sent. Not saved to Amanda's memory: the note didn't pass the safety screen.",
+          );
+          window.setTimeout(onAnswered, 6000);
+        } else {
+          onAnswered();
+        }
       } else {
         setBusy(false);
         setError(res.error);
@@ -321,6 +336,39 @@ function AnswerBox({
           {busy ? "Sending…" : "Send to Amanda"}
         </button>
       </div>
+      {/* Teach Amanda (Christian's learning laws, 2026-08-28): optional, general
+          facts only — property-specific answers are refused server-side, and the
+          entry lands in THIS agency's memory alone. */}
+      {!teachOpen ? (
+        <button
+          type="button"
+          onClick={() => setTeachOpen(true)}
+          className="mt-2 text-[12px] font-medium text-brand hover:underline"
+        >
+          + Teach Amanda this for next time
+        </button>
+      ) : (
+        <div className="mt-2 flex flex-col gap-1.5">
+          <label htmlFor={`teach-${taskId}`} className="text-[12px] font-medium text-foreground">
+            Teach Amanda for next time (optional)
+          </label>
+          <p className="text-[11.5px] text-muted-foreground">
+            Write it as a general fact — taxes, financing, areas, process. Answers about one specific
+            property can&apos;t be saved. Amanda will use this for every future buyer of this agency.
+          </p>
+          <textarea
+            id={`teach-${taskId}`}
+            value={teach}
+            onChange={(e) => setTeach(e.target.value)}
+            disabled={busy}
+            maxLength={800}
+            rows={2}
+            placeholder='e.g. "Non-residents usually need a 30-40% deposit for a Spanish mortgage."'
+            className="min-h-[52px] rounded-md border border-border bg-background px-2.5 py-1.5 text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand/40"
+          />
+        </div>
+      )}
+      {teachNote ? <p className="mt-2 text-[12px] text-muted-foreground">{teachNote}</p> : null}
       {error ? <p className="mt-2 text-[12px] text-destructive">{error}</p> : null}
     </div>
   );

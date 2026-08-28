@@ -17,6 +17,8 @@ export interface AmandaAgencySettings {
   viewingNoticeHours: number;             // default 24
   /** 0=Sun..6=Sat → candidate viewing start hours (agency-local). */
   viewingHoursByWeekday: Record<number, number[]>;
+  /** Agency-local YYYY-MM-DD dates Amanda must never book (holidays, days off). */
+  blockedDates: string[];
 }
 
 const DEFAULT_VIEWING_HOURS: Record<number, number[]> = { 1: [11, 17], 2: [11, 17], 3: [11, 17], 4: [11, 17], 5: [11, 17], 6: [11] };
@@ -47,6 +49,9 @@ export function parseAmandaSettings(raw: unknown): AmandaAgencySettings {
     viewingDurationMin: num(o.viewing_duration_min, 60),
     viewingNoticeHours: num(o.viewing_notice_hours, 24),
     viewingHoursByWeekday: parseViewingHours(o.viewing_hours_by_weekday),
+    blockedDates: Array.isArray(o.blocked_dates)
+      ? (o.blocked_dates as unknown[]).filter((d): d is string => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d)).slice(0, 120)
+      : [],
   };
 }
 
@@ -77,6 +82,10 @@ export function candidateSlots(nowMs: number, s: AmandaAgencySettings, limit = 1
   for (let day = 0; day < 14 && out.length < limit; day++) {
     const probe = nowMs + day * 24 * 3600_000;
     const wc = wallClockInZone(probe, s.timezone);
+    // Blocked days (holidays, days off — set in the dashboard) are skipped
+    // entirely: Amanda can never propose a slot on one.
+    const dateStr = `${wc.year}-${String(wc.month).padStart(2, '0')}-${String(wc.day).padStart(2, '0')}`;
+    if (s.blockedDates.includes(dateStr)) continue;
     const hours = s.viewingHoursByWeekday[wc.weekday] ?? [];
     for (const h of hours) {
       const base = zonedTimeToUtc(wc.year, wc.month, wc.day, h, 0, s.timezone);   // DST-safe

@@ -919,7 +919,17 @@
       "rejected_payment_details": "Bank or payment details can't be stored — Amanda must never share them.",
       "rejected_discriminatory": "That would exclude people unfairly — it can't be saved.",
       "rejected_url": "Links can't be stored — Amanda doesn't send links.",
-      "rejected_instruction_injection": "That reads like an instruction to Amanda rather than a fact — rephrase it as information."
+      "rejected_instruction_injection": "That reads like an instruction to Amanda rather than a fact — rephrase it as information.",
+      "hoursTitle": "Viewing hours",
+      "hoursHint": "Tap the hours when viewings can happen. Amanda only ever offers these times.",
+      "blockedTitle": "Blocked days",
+      "blockedHint": "Holidays or days off — Amanda never books viewings on these days.",
+      "blockToday": "Block today",
+      "blockTomorrow": "Block tomorrow",
+      "addDate": "Block a date",
+      "unblock": "Unblock",
+      "hoursSaveNote": "Remember to press Save above for hours and blocked days to take effect.",
+      "hoursEmptyWarning": "Keep at least one viewing hour — for time off use blocked days."
     }
   },
   "performance": {

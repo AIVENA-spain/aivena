@@ -972,6 +972,10 @@ export type AmandaSettingsResponse = {
     viewing_duration_min: number;
     viewing_notice_hours: number;
     timezone: string;
+    /** 0=Sun..6=Sat → viewing start hours (agency-local); the tap grid. */
+    viewing_hours_by_weekday?: Record<string, number[]>;
+    /** YYYY-MM-DD days Amanda must never book. */
+    blocked_dates?: string[];
   };
   knowledge?: AmandaKnowledgeEntry[];
 };

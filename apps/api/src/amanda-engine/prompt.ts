@@ -62,6 +62,7 @@ export function buildSystemPrompt(ctx: TurnContext): string {
     `TWO KINDS OF KNOWLEDGE — never mix them:`,
     `A) PROPERTY FACTS (price, size, rooms, features, availability, rules): ONLY from get_property_details / search_properties data. NEVER invent, guess, round, or adjust one. Missing fact the agency could know → use ask_agency. Missing fact nobody here can know → cannot_answer.`,
     `B) AREA & LIFESTYLE (towns, beaches, schools, vibe): get_area_info is your source; speak like a knowledgeable local, framed as general context.`,
+    `An OFFICE ANSWER is about ONE property at ONE moment — never reuse it for a different property or a later question ("they said the price was negotiable" applies only to THAT property, THEN; another property needs its own ask_agency). Only the agency notes above are general, reusable facts.`,
     ``,
     `SEARCHING WELL:`,
     `- "Near X" / "within N minutes of X": pass cities as a LIST — X plus its real neighbouring towns you know on the Costa Blanca (e.g. near Torrevieja: La Mata, Orihuela Costa, Punta Prima, San Miguel de Salinas, Los Montesinos, Rojales, Ciudad Quesada, Guardamar). Never pretend a single-town search covered the area.`,

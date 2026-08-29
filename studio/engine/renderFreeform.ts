@@ -282,6 +282,39 @@ export async function renderFreeform(
     return spec.background;
   };
 
+  /** Worst-decile contrast of `colour` under `box` AFTER compositing a vertical gradient veil
+   *  (tone, peak opacity, direction) over the gradient box — the same ramp renderFreeform draws.
+   *  This is what makes RULE 1 a guard rather than a hope: the escalation is not a guess at a
+   *  strength, it is solved until the measurement passes, and reported when it cannot. */
+  const contrastUnderVeil = (
+    box: number[], colour: string, tone: string, peak: number, dir: "up" | "down" | "flat", gbox: number[],
+  ): number | null => {
+    if (!ground) return null;
+    const { data, gw, gh } = ground;
+    const x0 = Math.max(0, Math.floor((box[0] / W) * gw)), x1 = Math.min(gw, Math.ceil((box[2] / W) * gw));
+    const y0 = Math.max(0, Math.floor((box[1] / H) * gh)), y1 = Math.min(gh, Math.ceil((box[3] / H) * gh));
+    if (x1 <= x0 || y1 <= y0) return null;
+    const tm = /^#([0-9a-f]{6})$/i.exec(tone);
+    if (!tm) return null;
+    const tn = parseInt(tm[1], 16), tr = (tn >> 16) & 255, tg = (tn >> 8) & 255, tb = tn & 255;
+    const cl = hexLum(colour);
+    const gy0 = (gbox[1] / H) * gh, gy1 = (gbox[3] / H) * gh;
+    const ratios: number[] = [];
+    for (let y = y0; y < y1; y++) {
+      const t = gy1 > gy0 ? Math.min(1, Math.max(0, (y - gy0) / (gy1 - gy0))) : 0;
+      // "flat" = the soft band: full strength across the type itself (it fades outside this box)
+      const a = dir === "flat" ? peak : peak * (dir === "up" ? t : 1 - t);
+      for (let x = x0; x < x1; x++) {
+        const i = (y * gw + x) * 3;
+        const r = a * tr + (1 - a) * data[i], g = a * tg + (1 - a) * data[i + 1], b2 = a * tb + (1 - a) * data[i + 2];
+        ratios.push(ratio(cl, lum(r, g, b2)));
+      }
+    }
+    if (!ratios.length) return null;
+    ratios.sort((p, q) => p - q);
+    return ratios[Math.floor(ratios.length * 0.1)];
+  };
+
   /** worst-decile contrast of a colour against the ground under a box — the mean is what makes a
    *  busy photo look safe, so the hardest tenth of the pixels decides. */
   const contrastUnder = (box: number[], colour: string): { worst: number; groundLum: number } | null => {
@@ -347,6 +380,27 @@ export async function renderFreeform(
     layers.push({ input: renderTemplatePng(svg, W), left: 0, top: 0 });
     defs = ""; overlaySvg = "";
   };
+  /** RULE 1's veil: full canvas width (so it can never show a vertical edge) and fading to zero
+   *  above and below the type (so it can never show a horizontal one). It reads as light falling
+   *  across the artwork — the one thing the rule allows — and never as a panel. */
+  const softBand = (colour: string, peak: number, y0: number, y1: number): { id: string; box: number[] } => {
+    const id = `g${gradId++}`;
+    const fade = Math.max(60, (y1 - y0) * 1.25);
+    const ry0 = Math.max(0, y0 - fade), ry1 = Math.min(H, y1 + fade);
+    const h = Math.max(1, ry1 - ry0);
+    const a = Math.min(0.999, Math.max(0.001, (y0 - ry0) / h));
+    const b2 = Math.min(0.999, Math.max(a + 0.001, (y1 - ry0) / h));
+    // an edge-anchored end keeps its full strength (a scrim from the canvas edge is normal);
+    // an end inside the canvas fades out completely
+    const startOp = ry0 <= 0 ? peak : 0, endOp = ry1 >= H ? peak : 0;
+    defs += `<linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1">` +
+      `<stop offset="0" stop-color="${colour}" stop-opacity="${startOp}"/>` +
+      `<stop offset="${a.toFixed(3)}" stop-color="${colour}" stop-opacity="${peak}"/>` +
+      `<stop offset="${b2.toFixed(3)}" stop-color="${colour}" stop-opacity="${peak}"/>` +
+      `<stop offset="1" stop-color="${colour}" stop-opacity="${endOp}"/></linearGradient>`;
+    return { id, box: [0, ry0, W, ry1] };
+  };
+
   const gradient = (colour: string, direction: "up" | "down", peak: number): string => {
     const id = `g${gradId++}`;
     const [o0, o1] = direction === "up" ? [0, peak] : [peak, 0];
@@ -529,28 +583,43 @@ export async function renderFreeform(
           const flatLum = ground ? null : hexLum(flatGroundUnder(probe, idx));
           const measureWith = (c: string) => contrastUnder(probe, c)
             ?? (flatLum === null ? null : { worst: ratio(hexLum(c), flatLum), groundLum: flatLum });
-          const alt = el.alt_colour ? measureWith(el.alt_colour) : null;
-          if (alt && alt.worst >= 4.5) inkColour = el.alt_colour!;
-          else if (alt && alt.worst > measured.worst) inkColour = el.alt_colour!;
-          if (hexLum(inkColour) === hexLum(el.colour) && !onPhoto) {
-            // flat ground and no usable alternative: the ground's own light/dark partner, which
-            // is always part of the deck's palette
-            const gl = flatLum ?? 0;
-            const partner = gl > 0.45 ? "#12161c" : "#f6f2e9";
-            const p = measureWith(partner);
-            if (p && p.worst > measured.worst) inkColour = partner;
+          // STEP 2 — recolour within the deck's own palette. The style's alternative first; if it
+          // offers none, the ground's own light/dark partner, which every edition contains. This
+          // is what makes dark type on dark artwork survivable: no veil at any strength can lift
+          // navy off a dusk photograph, but the palette's cream reads instantly.
+          let bestInk = el.colour, bestWorst = measured.worst;
+          // try BOTH palette partners and keep whichever MEASURES best — picking one from the
+          // median luminance alone put light type on a light ground when the median lied
+          const candidates = [el.alt_colour, "#12161c", "#f6f2e9"].filter((c): c is string => !!c);
+          for (const c of candidates) {
+            const m = measureWith(c);
+            if (m && m.worst > bestWorst) { bestWorst = m.worst; bestInk = c; }
+            if (bestWorst >= 4.5) break;
           }
+          inkColour = bestInk;
           // step 2 — a wide, soft directional gradient that reads as light, never a hard panel.
           // Direction and tone follow the ground: darken bright ground, lift dark ground.
-          const best = alt && alt.worst > measured.worst ? alt : measured;
-          if (best.worst < 4.5 && onPhoto) {
+          if (bestWorst < 4.5 && onPhoto) {
             const inkIsLight = hexLum(inkColour) > 0.45;
             const tone = inkIsLight ? "#0B0F14" : "#F6F2E9";
-            const strength = Math.min(0.62, 0.3 + (4.5 - best.worst) * 0.12);
-            const padX = Math.round(el.size * 1.6), padY = Math.round(el.size * 1.4);
-            const gb = clampBox([b[0] - padX, b[1] - padY, b[2] + padX, b[3] + padY * 0.8], W, H);
-            const dir = b[1] + boxH(b) / 2 > H / 2 ? "up" : "down";
-            overlaySvg += `<rect x="${gb[0]}" y="${gb[1]}" width="${boxW(gb)}" height="${boxH(gb)}" fill="url(#${gradient(tone, dir, strength)})"/>`;
+            const padY = Math.round(el.size * 0.5);
+            const y0 = Math.max(0, b[1] - padY), y1 = Math.min(H, b[3] + padY);
+            // SOLVE for the gentlest veil that reaches 4.5:1 — the band holds full strength ACROSS
+            // the type and fades out beyond it, so there is nothing to see but light on the art
+            const CAP = 0.88;
+            const at = (peak: number) => contrastUnderVeil(probe, inkColour, tone, peak, "flat", [0, y0, W, y1]);
+            let chosen = CAP;
+            if ((at(CAP) ?? 0) < 4.5) {
+              console.warn(`[carousel] RULE 1: "${String(el.content).slice(0, 40).replace(/\n/g, ' ')}" still reads ${((at(CAP) ?? 0)).toFixed(2)}:1 on this artwork at the strongest veil — the art brief's quiet zone did not hold`);
+            } else {
+              let lo = 0, hi = CAP;
+              for (let i = 0; i < 7; i++) {
+                const mid = (lo + hi) / 2;
+                if ((at(mid) ?? 0) >= 4.5) { chosen = mid; hi = mid; } else lo = mid;
+              }
+            }
+            const band = softBand(tone, chosen, y0, y1);
+            overlaySvg += `<rect x="0" y="${band.box[1]}" width="${W}" height="${band.box[3] - band.box[1]}" fill="url(#${band.id})"/>`;
           }
         }
       }

@@ -8,6 +8,11 @@ import { renderTemplatePng } from "../src/lib/render";
 // real font vault. The AI never touches pixels or types a digit, so photos stay photos and facts stay facts.
 // (Born from the seedream test where 3 photos were BLENDED into one fake scene with two different prices.)
 
+// RULE 1's last resort when a slide's own palette cannot carry legible text (a fully terracotta
+// slide has nothing dark in it). Preferred order is always alt_colour -> the slide's palette ->
+// these; they are never reached while an in-palette colour reads.
+const NEUTRAL_INKS = ["#12161c", "#f6f2e9"];
+
 const Bbox = z.tuple([z.number(), z.number(), z.number(), z.number()]);
 const HEX = /^#[0-9a-fA-F]{6}$/;
 const Colour = z.string().regex(HEX);
@@ -275,7 +280,10 @@ export async function renderFreeform(
   const specPalette = (): string[] => {
     const out = new Set<string>([spec.background]);
     for (const e of spec.elements) {
-      if (e.type === "text") { out.add(e.colour); if (e.pill) out.add(e.pill.fill); }
+      // a text element with no content never draws (the disabled disclosure stub is one), so its
+      // placeholder colour is not part of this slide's palette — that is how #000000 was getting
+      // back in through the side door
+      if (e.type === "text") { if ((e.content ?? "").trim()) out.add(e.colour); if (e.pill) out.add(e.pill.fill); }
       else if (e.type === "rect" || e.type === "punch") out.add((e as { fill: string }).fill);
       else if (e.type === "scrim") out.add((e as { colour: string }).colour);
       else if (e.type === "doodle") out.add((e as { colour: string }).colour);
@@ -612,16 +620,29 @@ export async function renderFreeform(
           let bestInk = el.colour, bestWorst = measured.worst;
           // try BOTH palette partners and keep whichever MEASURES best — picking one from the
           // median luminance alone put light type on a light ground when the median lied
-          // the style's own alternative first, then the rest of THIS slide's palette
-          const candidates = [el.alt_colour, ...specPalette()].filter((c): c is string => !!c);
-          for (const c of candidates) {
+          // Preference, in order: the style's own alternative, then the rest of THIS slide's
+          // palette, and only if neither can carry the text, a neutral ink. Restricting the
+          // search to the slide's own colours read well as a principle and shipped terracotta
+          // slides at 3.25:1 — including their call-to-action — because a terracotta slide
+          // contains nothing dark. Staying in-palette is the preference; legibility is the rule.
+          // Every candidate is measured and the BEST is kept, not the first that squeaks past.
+          const inPalette = [el.alt_colour, ...specPalette()].filter((c): c is string => !!c);
+          for (const c of inPalette) {
             const m = measureWith(c);
             if (m && m.worst > bestWorst) { bestWorst = m.worst; bestInk = c; }
-            if (bestWorst >= 4.5) break;
+          }
+          if (bestWorst < 4.5) {
+            for (const c of NEUTRAL_INKS) {
+              const m = measureWith(c);
+              if (m && m.worst > bestWorst) { bestWorst = m.worst; bestInk = c; }
+            }
           }
           inkColour = bestInk;
           // step 2 — a wide, soft directional gradient that reads as light, never a hard panel.
           // Direction and tone follow the ground: darken bright ground, lift dark ground.
+          if (bestWorst < 4.5 && (!onPhoto || pillFill)) {
+            console.warn(`[carousel] RULE 1: "${String(el.content).slice(0, 40).replace(/\n/g, ' ')}" reads ${bestWorst.toFixed(2)}:1 on ${pillFill ? 'its pill' : 'this ground'} and no colour available to the deck fixes it`);
+          }
           if (bestWorst < 4.5 && onPhoto && !pillFill) {
             const inkIsLight = hexLum(inkColour) > 0.45;
             const tone = inkIsLight ? "#0B0F14" : "#F6F2E9";

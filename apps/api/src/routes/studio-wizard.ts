@@ -1322,17 +1322,18 @@ route.post('/carousel', async (c) => {
       // writer had no choice but to invent the claim printed on the closing slide. A name and a
       // town are context, not a service: they are passed as context, and the SERVICE claim is
       // only requested when brand_voice or content_style actually describe the business.
-      const agencyServices = [
-        bRows[0]?.brand_voice ? String(bRows[0].brand_voice).slice(0, 200) : null,
-        bRows[0]?.content_style ? String(bRows[0].content_style).slice(0, 200) : null,
+      // brand_voice and content_style describe HOW this agency writes, not WHAT it sells —
+      // labelling them "what they do" made the writer turn a tone note into a service claim,
+      // which is the same fabrication in a new costume. They are passed as voice context only.
+      // Nothing in agency_branding states the agency's actual services yet, so RULE 9's line
+      // stays empty until that field exists: an empty closing line is honest, an invented
+      // speciality is not.
+      const agencyProfile = [
+        bRows[0]?.brand_name ? `Name: ${bRows[0].brand_name}` : null,
+        [bRows[0]?.city, bRows[0]?.region, bRows[0]?.country].filter(Boolean).join(', ') || null,
+        bRows[0]?.brand_voice ? `Voice (how they write, NOT what they sell): ${String(bRows[0].brand_voice).slice(0, 200)}` : null,
+        bRows[0]?.content_style ? `Content style (NOT services): ${String(bRows[0].content_style).slice(0, 200)}` : null,
       ].filter(Boolean).join(' · ') || undefined;
-      const agencyProfile = agencyServices
-        ? [
-          bRows[0]?.brand_name ? `Name: ${bRows[0].brand_name}` : null,
-          [bRows[0]?.city, bRows[0]?.region, bRows[0]?.country].filter(Boolean).join(', ') || null,
-          `What they do: ${agencyServices}`,
-        ].filter(Boolean).join(' · ')
-        : undefined;
 
       // each new type-only deck wears an edition (fonts + colour world) — matched to the agency's
       // taste profile when the this-or-that game has been played, random otherwise; stored so

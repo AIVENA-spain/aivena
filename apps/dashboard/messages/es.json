@@ -635,7 +635,14 @@
       "reviewRequired": "Review required",
       "askFirstLockedHelp": "Approval-first reviews every reply during the pilot — these stay protected and can't be turned off here.",
       "statusComingSoon": "Coming soon",
-      "statusLocked": "Protected"
+      "statusLocked": "Protected",
+      "waOff": "Amanda está apagada",
+      "waShadow": "Solo observa: no se envía nada",
+      "waApproval": "Cada respuesta te espera",
+      "waAuto": "Amanda las envía ella misma",
+      "bookOff": "No mientras Amanda esté apagada",
+      "bookAuto": "Amanda las reserva ella misma",
+      "bookReview": "Cada reserva te espera"
     },
     "voice": {
       "title": "Voz y tono",
@@ -940,7 +947,9 @@
       "breakLabel": "Pausa",
       "allDay": "Todo el día",
       "availabilityInfo": "Las horas en rojo son cuando NO estás disponible: pausas, horas bloqueadas y días bloqueados. Amanda nunca ofrece visitas en tiempo rojo, y también se ve en el calendario.",
-      "whatIsRed": "¿Qué es el tiempo en rojo?"
+      "whatIsRed": "¿Qué es el tiempo en rojo?",
+      "calendarMoved": "La duración de las visitas, los horarios, las pausas y los días libres ahora están en tu calendario: un solo sitio, y Amanda reserva dentro de él.",
+      "calendarMovedLink": "Abrir el calendario"
     },
     "agents": {
       "title": "Tus agentes",
@@ -956,6 +965,23 @@
       "remove": "Eliminar",
       "confirmRemove": "Eliminar",
       "cancel": "Cancelar"
+    },
+    "automation": {
+      "title": "Nivel de automatización",
+      "help": "Cuánto hace Amanda por su cuenta. Cada paso le da un poco más.",
+      "activeBadge": "Activo",
+      "saving": "Guardando…",
+      "handoffNote": "En todos los niveles por encima de Apagado, lo que Amanda no sabe responder pasa a una persona en vez de improvisarse: no es un ajuste, es cómo trabaja.",
+      "offLabel": "Apagado",
+      "offDesc": "Amanda no responde. Cada mensaje espera a tu equipo.",
+      "shadowLabel": "Observando",
+      "shadowDesc": "Amanda escribe lo que habría dicho, pero nada llega al cliente y no se reserva nada. Úsalo para ver cómo lleva conversaciones reales antes de confiárselas.",
+      "approvalLabel": "Borradores, tú envías",
+      "approvalDesc": "Amanda escribe cada respuesta como borrador. Nada sale hasta que alguien lo aprueba, y las reservas también esperan.",
+      "assistedLabel": "Responde sola, las visitas te esperan",
+      "assistedDesc": "Amanda responde preguntas y envía esas respuestas ella misma. Todo lo que te compromete —reservar, mover o cancelar una visita— espera un toque de tu equipo.",
+      "fullLabel": "Responde y reserva",
+      "fullDesc": "Amanda responde y reserva visitas por su cuenta, dentro del horario de tu calendario."
     }
   },
   "performance": {
@@ -1511,5 +1537,20 @@
     "aiMutedNote": "El asistente está en pausa para estos clientes — debe responder una persona. Atiéndalo y contacte al cliente (WhatsApp/teléfono/email). \"Devolver al asistente\" reactiva la pausa.",
     "notifTitle": "{name} quiere hablar con una persona",
     "notifBody": "Abra la bandeja para atender la conversación."
+  },
+  "conversationMode": {
+    "saving": "Guardando…",
+    "agencyOffHint": "Amanda está apagada para toda la agencia: enciéndela primero en Ajustes.",
+    "state_off": "Lo llevas tú",
+    "state_shadow": "Solo observa",
+    "state_approval": "Borradores para ti",
+    "state_assisted": "Amanda responde",
+    "state_full": "Amanda responde y reserva",
+    "optInherit": "Seguir a la agencia ({mode})",
+    "optInheritDesc": "Lo que diga tu nivel de automatización.",
+    "optFull": "Que lo lleve Amanda",
+    "optFullDesc": "Responde y reserva para esta persona, sea cual sea el nivel de la agencia.",
+    "optOff": "Lo llevo yo",
+    "optOffDesc": "Amanda se calla aquí. No se envía nada hasta que la vuelvas a activar."
   }
 }

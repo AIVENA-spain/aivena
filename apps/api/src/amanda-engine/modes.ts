@@ -25,6 +25,19 @@ export function parseAmandaMode(raw: unknown): AmandaMode {
   return AMANDA_MODES.includes(raw as AmandaMode) ? (raw as AmandaMode) : 'off';
 }
 
+/**
+ * Effective mode for ONE conversation. Two rules, in this order:
+ *   1. An agency dial of 'off' is an absolute kill switch — no per-conversation
+ *      override may resurrect Amanda through it.
+ *   2. Otherwise a stored override wins over the agency dial; an unrecognised
+ *      stored value fails closed to 'off' (silence, never a surprise send).
+ */
+export function effectiveMode(agencyMode: AmandaMode, override: string | null | undefined): AmandaMode {
+  if (agencyMode === 'off') return 'off';
+  if (typeof override === 'string' && override.length > 0) return parseAmandaMode(override);
+  return agencyMode;
+}
+
 // Tool classes decide dispatch; individual tools declare membership once.
 export type ToolClass =
   | 'read'            // search_properties, get_property_details, get_lead_profile, get_area_info...

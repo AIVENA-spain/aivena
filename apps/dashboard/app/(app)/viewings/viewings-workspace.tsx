@@ -359,6 +359,8 @@ export function ViewingsWorkspace({
               initialHours={amanda?.settings?.viewing_hours_by_weekday}
               initialBlocked={amanda?.settings?.blocked_dates}
               initialSlots={amanda?.settings?.blocked_slots}
+              initialDuration={amanda?.settings?.viewing_duration_min}
+              initialNotice={amanda?.settings?.viewing_notice_hours}
               onSaved={(hours, blocked, slots) => {
                 setWeekHours(hours);
                 setBlockedDates(blocked);

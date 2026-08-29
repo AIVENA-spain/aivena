@@ -511,3 +511,25 @@ export async function removeAgentAction(id: string): Promise<ActionResult<{ ok: 
     return actionError("removeAgentAction", err);
   }
 }
+
+/**
+ * Automation level — the REAL Amanda dial (off/shadow/approval/assisted/full),
+ * the same five the engine's tool layer enforces. Christian 2026-08-29 asked
+ * for the in-between steps; they already existed in the engine and were simply
+ * never exposed, while Settings showed a locked "approval-first" card that
+ * contradicted the live mode.
+ */
+export async function saveAmandaModeAction(
+  mode: string,
+): Promise<ActionResult<{ mode: string }>> {
+  try {
+    const res = await apiFetch<{ ok: true; mode: string }>("/api/v1/amanda/settings/mode", {
+      method: "POST",
+      body: JSON.stringify({ mode }),
+    });
+    revalidatePath("/settings");
+    return { ok: true, data: { mode: res.mode } };
+  } catch (err) {
+    return actionError("saveAmandaModeAction", err);
+  }
+}

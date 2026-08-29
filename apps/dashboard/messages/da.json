@@ -635,7 +635,14 @@
       "reviewRequired": "Review required",
       "askFirstLockedHelp": "Approval-first reviews every reply during the pilot — these stay protected and can't be turned off here.",
       "statusComingSoon": "Coming soon",
-      "statusLocked": "Protected"
+      "statusLocked": "Protected",
+      "waOff": "Amanda er slået fra",
+      "waShadow": "Kun observation — intet sendes",
+      "waApproval": "Hvert svar venter på dig",
+      "waAuto": "Amanda sender dem selv",
+      "bookOff": "Ikke mens Amanda er slået fra",
+      "bookAuto": "Amanda booker dem selv",
+      "bookReview": "Hver booking venter på dig"
     },
     "voice": {
       "title": "Stemme & tone",
@@ -940,7 +947,9 @@
       "breakLabel": "Pause",
       "allDay": "Hele dagen",
       "availabilityInfo": "De røde tider er, når du IKKE er tilgængelig — pauser, blokerede timer og blokerede dage. Amanda tilbyder aldrig fremvisninger i rød tid, og det vises også i kalenderen.",
-      "whatIsRed": "Hvad er rød tid?"
+      "whatIsRed": "Hvad er rød tid?",
+      "calendarMoved": "Fremvisningernes længde, tider, pauser og fridage ligger nu i din kalender — ét sted, og Amanda booker inden for den.",
+      "calendarMovedLink": "Åbn kalenderen"
     },
     "agents": {
       "title": "Dine mæglere",
@@ -956,6 +965,23 @@
       "remove": "Fjern",
       "confirmRemove": "Fjern",
       "cancel": "Annuller"
+    },
+    "automation": {
+      "title": "Automatiseringsniveau",
+      "help": "Hvor meget Amanda gør selv. Hvert trin giver hende lidt mere.",
+      "activeBadge": "Aktiv",
+      "saving": "Gemmer…",
+      "handoffNote": "På alle niveauer over Fra bliver alt, Amanda ikke kan svare på, sendt til et menneske i stedet for gættet — det er ikke en indstilling, det er sådan hun arbejder.",
+      "offLabel": "Fra",
+      "offDesc": "Amanda svarer slet ikke. Hver besked venter på dit team.",
+      "shadowLabel": "Observerer",
+      "shadowDesc": "Amanda skriver, hvad hun ville have sagt, men intet når kunden, og intet bookes. Brug det til at se, hvordan hun klarer rigtige samtaler, før du betror hende dem.",
+      "approvalLabel": "Udkast, du sender",
+      "approvalDesc": "Amanda skriver hvert svar som udkast. Intet sendes, før nogen godkender det, og bookinger venter også.",
+      "assistedLabel": "Svarer selv, fremvisninger venter på dig",
+      "assistedDesc": "Amanda besvarer spørgsmål og sender selv de svar. Alt, der forpligter dig — booke, flytte eller aflyse en fremvisning — venter på ét tryk fra dit team.",
+      "fullLabel": "Svarer og booker",
+      "fullDesc": "Amanda svarer og booker fremvisninger selv, inden for din kalenders tider."
     }
   },
   "performance": {
@@ -1511,5 +1537,20 @@
     "aiMutedNote": "Assistenten er sat på pause for disse kunder — en person skal svare. Tag den, og kontakt kunden (WhatsApp/telefon/e-mail). \"Tilbage til assistenten\" ophæver pausen.",
     "notifTitle": "{name} vil tale med et menneske",
     "notifBody": "Åbn indbakken for at tage samtalen."
+  },
+  "conversationMode": {
+    "saving": "Gemmer…",
+    "agencyOffHint": "Amanda er slået fra for hele bureauet — slå hende til i Indstillinger først.",
+    "state_off": "Du tager den",
+    "state_shadow": "Kun observation",
+    "state_approval": "Udkast til dig",
+    "state_assisted": "Amanda svarer",
+    "state_full": "Amanda svarer og booker",
+    "optInherit": "Følg bureauet ({mode})",
+    "optInheritDesc": "Det dit automatiseringsniveau siger.",
+    "optFull": "Amanda tager den",
+    "optFullDesc": "Hun svarer og booker for denne person, uanset bureauets niveau.",
+    "optOff": "Jeg tager den",
+    "optOffDesc": "Amanda tier her. Intet sendes, før du slår hende til igen."
   }
 }

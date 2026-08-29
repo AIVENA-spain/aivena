@@ -7,7 +7,7 @@
 import { sql } from 'drizzle-orm';
 import { withAgency } from '../../../../packages/db/client';
 import { runTurn, type TurnDeps, type PendingActionView } from './turn';
-import { parseAmandaMode } from './modes';
+import { parseAmandaMode, effectiveMode } from './modes';
 import { makeDbBackends, parseAmandaSettings, slotLabel, type AmandaAgencySettings } from './backends-db';
 import { upcomingCalendarNotes } from './availability-lib';
 import { agencyHosts } from './site-link';
@@ -61,8 +61,12 @@ async function loadWorld(row: QueueRow): Promise<LoadedWorld | { skip: string }>
     `);
     const agency = (agencyRows as unknown as Array<Record<string, unknown>>)[0];
     if (!agency) return { skip: 'agency_settings_missing' };
-    const mode = parseAmandaMode(agency.amanda_mode);
-    if (mode === 'off') return { skip: 'amanda_mode_off' };
+    const agencyMode = parseAmandaMode(agency.amanda_mode);
+    // Agency OFF is an absolute kill switch: no per-conversation override may
+    // resurrect Amanda through it (Christian's per-person switch is a way to
+    // give her MORE or LESS rope inside a live agency, never a way around a
+    // global stop). Checked before anything else loads.
+    if (agencyMode === 'off') return { skip: 'amanda_mode_off' };
 
     const leadRows = await tx.execute(sql`
       SELECT full_name, phone, language, opt_in_status FROM leads WHERE id = ${row.lead_id}::uuid LIMIT 1
@@ -71,10 +75,19 @@ async function loadWorld(row: QueueRow): Promise<LoadedWorld | { skip: string }>
     if (!lead) return { skip: 'lead_missing' };
 
     const convRows = await tx.execute(sql`
-      SELECT ai_muted_at, human_claimed_at, status FROM conversations WHERE id = ${row.conversation_id}::uuid LIMIT 1
+      SELECT ai_muted_at, human_claimed_at, status, amanda_mode_override
+        FROM conversations WHERE id = ${row.conversation_id}::uuid LIMIT 1
     `);
     const conv = (convRows as unknown as Array<Record<string, unknown>>)[0];
     if (!conv) return { skip: 'conversation_missing' };
+    // Per-conversation override wins inside a live agency. An unrecognised
+    // value would fail closed to 'off' through parseAmandaMode, which for a
+    // STORED override is the safe direction (silence, never a surprise send).
+    const mode = effectiveMode(
+      agencyMode,
+      typeof conv.amanda_mode_override === 'string' ? conv.amanda_mode_override : null,
+    );
+    if (mode === 'off') return { skip: 'amanda_off_for_conversation' };
 
     const msgRows = await tx.execute(sql`
       SELECT direction, content, sent_at, sent_by FROM conversation_messages

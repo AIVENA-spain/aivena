@@ -635,7 +635,14 @@
       "reviewRequired": "Review required",
       "askFirstLockedHelp": "Approval-first reviews every reply during the pilot — these stay protected and can't be turned off here.",
       "statusComingSoon": "Coming soon",
-      "statusLocked": "Protected"
+      "statusLocked": "Protected",
+      "waOff": "A Amanda está desligada",
+      "waShadow": "Só a observar — nada é enviado",
+      "waApproval": "Cada resposta espera por si",
+      "waAuto": "A Amanda envia-as sozinha",
+      "bookOff": "Não enquanto a Amanda estiver desligada",
+      "bookAuto": "A Amanda marca-as sozinha",
+      "bookReview": "Cada marcação espera por si"
     },
     "voice": {
       "title": "Voz e tom",
@@ -940,7 +947,9 @@
       "breakLabel": "Pausa",
       "allDay": "Todo o dia",
       "availabilityInfo": "As horas a vermelho são quando NÃO estás disponível — pausas, horas bloqueadas e dias bloqueados. A Amanda nunca propõe visitas em tempo vermelho, e também aparece no calendário.",
-      "whatIsRed": "O que é o tempo a vermelho?"
+      "whatIsRed": "O que é o tempo a vermelho?",
+      "calendarMoved": "A duração das visitas, os horários, as pausas e os dias de folga estão agora no seu calendário — um só sítio, e a Amanda marca lá dentro.",
+      "calendarMovedLink": "Abrir o calendário"
     },
     "agents": {
       "title": "Os teus agentes",
@@ -956,6 +965,23 @@
       "remove": "Remover",
       "confirmRemove": "Remover",
       "cancel": "Cancelar"
+    },
+    "automation": {
+      "title": "Nível de automação",
+      "help": "Quanto a Amanda faz sozinha. Cada passo entrega-lhe um pouco mais.",
+      "activeBadge": "Ativo",
+      "saving": "A guardar…",
+      "handoffNote": "Em todos os níveis acima de Desligado, o que a Amanda não consegue responder passa para uma pessoa em vez de ser adivinhado — não é uma definição, é como ela trabalha.",
+      "offLabel": "Desligado",
+      "offDesc": "A Amanda não responde. Cada mensagem espera pela sua equipa.",
+      "shadowLabel": "A observar",
+      "shadowDesc": "A Amanda escreve o que teria dito, mas nada chega ao cliente e nada é marcado. Use isto para ver como ela lida com conversas reais antes de lhas confiar.",
+      "approvalLabel": "Rascunhos, você envia",
+      "approvalDesc": "A Amanda escreve cada resposta como rascunho. Nada sai até alguém aprovar, e as marcações também esperam.",
+      "assistedLabel": "Responde sozinha, as visitas esperam por si",
+      "assistedDesc": "A Amanda responde a perguntas e envia essas respostas sozinha. Tudo o que o compromete — marcar, mudar ou cancelar uma visita — espera um toque da sua equipa.",
+      "fullLabel": "Responde e marca",
+      "fullDesc": "A Amanda responde e marca visitas sozinha, dentro dos horários do seu calendário."
     }
   },
   "performance": {
@@ -1511,5 +1537,20 @@
     "aiMutedNote": "O assistente está em pausa para estes clientes — uma pessoa tem de responder. Assuma e contacte o cliente (WhatsApp/telefone/email). \"Devolver ao assistente\" retoma o assistente.",
     "notifTitle": "{name} quer falar com uma pessoa",
     "notifBody": "Abra a caixa de entrada para assumir a conversa."
+  },
+  "conversationMode": {
+    "saving": "A guardar…",
+    "agencyOffHint": "A Amanda está desligada para toda a agência — ligue-a primeiro nas Definições.",
+    "state_off": "É consigo",
+    "state_shadow": "Só a observar",
+    "state_approval": "Rascunhos para si",
+    "state_assisted": "A Amanda responde",
+    "state_full": "A Amanda responde e marca",
+    "optInherit": "Seguir a agência ({mode})",
+    "optInheritDesc": "O que disser o seu nível de automação.",
+    "optFull": "A Amanda trata deste",
+    "optFullDesc": "Responde e marca para esta pessoa, seja qual for o nível da agência.",
+    "optOff": "Eu trato deste",
+    "optOffDesc": "A Amanda cala-se aqui. Nada é enviado até a voltar a ligar."
   }
 }

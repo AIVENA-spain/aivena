@@ -635,7 +635,14 @@
       "reviewRequired": "Review required",
       "askFirstLockedHelp": "Approval-first reviews every reply during the pilot — these stay protected and can't be turned off here.",
       "statusComingSoon": "Coming soon",
-      "statusLocked": "Protected"
+      "statusLocked": "Protected",
+      "waOff": "Amanda is off",
+      "waShadow": "Watching only — nothing is sent",
+      "waApproval": "Every reply waits for you",
+      "waAuto": "Amanda sends these herself",
+      "bookOff": "Not while Amanda is off",
+      "bookAuto": "Amanda books these herself",
+      "bookReview": "Every booking waits for you"
     },
     "voice": {
       "title": "Voice & tone",
@@ -940,7 +947,9 @@
       "breakLabel": "Break",
       "allDay": "All day",
       "availabilityInfo": "The red times are when you are NOT available — breaks, blocked hours and blocked days. Amanda never offers viewings in red time, and it shows in the calendar too.",
-      "whatIsRed": "What is red time?"
+      "whatIsRed": "What is red time?",
+      "calendarMoved": "Viewing length, hours, breaks and days off now live in your calendar — one place, and Amanda books inside it.",
+      "calendarMovedLink": "Open the calendar"
     },
     "agents": {
       "title": "Your agents",
@@ -956,6 +965,23 @@
       "remove": "Remove",
       "confirmRemove": "Remove",
       "cancel": "Cancel"
+    },
+    "automation": {
+      "title": "Automation level",
+      "help": "How much Amanda does on her own. Each step hands her a little more.",
+      "activeBadge": "Active",
+      "saving": "Saving…",
+      "handoffNote": "In every level above Off, anything Amanda cannot answer is handed to a person instead of guessed — that is not a setting, it is how she works.",
+      "offLabel": "Off",
+      "offDesc": "Amanda does not reply at all. Every message waits for your team.",
+      "shadowLabel": "Watching",
+      "shadowDesc": "Amanda writes what she would have said, but nothing reaches the client and nothing is booked. Use this to see how she handles real conversations before trusting her with them.",
+      "approvalLabel": "Drafts, you send",
+      "approvalDesc": "Amanda writes every reply as a draft. Nothing goes out until someone approves it, and bookings wait too.",
+      "assistedLabel": "Replies on her own, bookings wait for you",
+      "assistedDesc": "Amanda answers questions and sends those replies herself. Anything that commits you — booking, moving or cancelling a viewing — waits for one tap from your team.",
+      "fullLabel": "Replies and books",
+      "fullDesc": "Amanda answers and books viewings on her own, inside your calendar hours."
     }
   },
   "performance": {
@@ -1511,5 +1537,20 @@
     "aiMutedNote": "The assistant is paused for these clients — a person must reply. Claim one, then contact the client (WhatsApp/phone/email). \"Back to assistant\" un-pauses it.",
     "notifTitle": "{name} wants to talk to a person",
     "notifBody": "Open the Inbox to claim the conversation."
+  },
+  "conversationMode": {
+    "saving": "Saving…",
+    "agencyOffHint": "Amanda is switched off for the whole agency — turn her on in Settings first.",
+    "state_off": "You're handling this",
+    "state_shadow": "Watching only",
+    "state_approval": "Drafts for you",
+    "state_assisted": "Amanda replies",
+    "state_full": "Amanda replies and books",
+    "optInherit": "Follow the agency ({mode})",
+    "optInheritDesc": "Whatever your automation level says.",
+    "optFull": "Amanda handles this one",
+    "optFullDesc": "She replies and books for this person, whatever the agency level is.",
+    "optOff": "I'll handle this one",
+    "optOffDesc": "Amanda goes quiet here. Nothing is sent until you switch her back on."
   }
 }

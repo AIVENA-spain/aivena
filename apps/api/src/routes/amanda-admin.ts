@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { sql } from 'drizzle-orm';
 import { scrubKnowledge } from '../amanda-engine/knowledge-scrub';
-import { parseAmandaMode } from '../amanda-engine/modes';
+import { parseAmandaMode, AMANDA_MODES } from '../amanda-engine/modes';
 import { parseAmandaSettings } from '../amanda-engine/backends-db';
 
 /**
@@ -165,6 +165,121 @@ route.post('/settings', async (c) => {
      WHERE agency_id = current_setting('app.current_agency_id', true)
   `);
   return c.json({ ok: true, saved: patch });
+});
+
+// Automation level (Christian 2026-08-29: "there should be more options, some
+// in betweens ... ofc it needs to be truthful"). The five modes here are the
+// SAME five dispatchDecision() enforces in the tool layer — the UI describes
+// real behaviour, it does not invent tiers. Previously the dial was read-only
+// and Settings showed a LOCKED "approval-first" card while this agency was
+// actually running 'full' — the page contradicted the engine.
+route.post('/settings/mode', async (c) => {
+  const tx = c.get('tx');
+  const user = c.get('user') as { id?: string; email?: string } | undefined;
+  let body: Record<string, unknown> = {};
+  try {
+    body = (await c.req.json()) as Record<string, unknown>;
+  } catch {
+    body = {};
+  }
+  const raw = typeof body.mode === 'string' ? body.mode : '';
+  // Unknown input must not silently become 'off' (parseAmandaMode fails closed,
+  // which is right for the ENGINE but wrong for a save — it would look like the
+  // agency chose to switch Amanda off). Reject instead.
+  if (!(AMANDA_MODES as readonly string[]).includes(raw)) {
+    return c.json({ error: 'unknown_mode' }, 400);
+  }
+  const mode = parseAmandaMode(raw);
+  const trail = JSON.stringify({
+    mode_changed_at: new Date().toISOString(),
+    mode_changed_by: user?.email ?? user?.id ?? 'unknown',
+  });
+  await tx.execute(sql`
+    UPDATE agency_settings
+       SET amanda_mode = ${mode}::text,
+           amanda_settings = COALESCE(amanda_settings, '{}'::jsonb) || ${trail}::jsonb,
+           updated_at = now()
+     WHERE agency_id = current_setting('app.current_agency_id', true)
+  `);
+  return c.json({ ok: true, mode });
+});
+
+// Per-conversation automation switch (Christian 2026-08-29: "turn off
+// automation on one person fully or turn on automation fully on one person").
+//
+// Two stops existed and disagreed: ai_muted_at / human_claimed_at (set when
+// Amanda hands a conversation to a human) had NO way back — nothing in the
+// product could un-mute. So handing a conversation back to Amanda clears BOTH
+// legacy stops as well as setting the override, otherwise the switch would flip
+// in the UI and change nothing in the engine.
+route.get('/conversations/:id/mode', async (c) => {
+  const tx = c.get('tx');
+  const id = c.req.param('id');
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return c.json({ error: 'bad_id' }, 400);
+  const rows = (await tx.execute(sql`
+    SELECT c.amanda_mode_override, c.ai_muted_at, c.human_claimed_at, s.amanda_mode AS agency_mode
+      FROM conversations c
+      JOIN agency_settings s ON s.agency_id = current_setting('app.current_agency_id', true)
+     WHERE c.id = ${id}::uuid
+     LIMIT 1
+  `)) as unknown as Array<Record<string, unknown>>;
+  const r = rows[0];
+  if (!r) return c.json({ error: 'not_found' }, 404);
+  const agencyMode = parseAmandaMode(r.agency_mode);
+  const override = typeof r.amanda_mode_override === 'string' ? parseAmandaMode(r.amanda_mode_override) : null;
+  const paused = Boolean(r.ai_muted_at) || Boolean(r.human_claimed_at);
+  return c.json({
+    ok: true,
+    agency_mode: agencyMode,
+    override,
+    paused,
+    // What the engine will ACTUALLY do on the next message — the number the UI
+    // shows, so the switch can never disagree with behaviour.
+    effective: agencyMode === 'off' || paused ? 'off' : (override ?? agencyMode),
+  });
+});
+
+route.post('/conversations/:id/mode', async (c) => {
+  const tx = c.get('tx');
+  const user = c.get('user') as { id?: string; email?: string } | undefined;
+  const id = c.req.param('id');
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return c.json({ error: 'bad_id' }, 400);
+  let body: Record<string, unknown> = {};
+  try {
+    body = (await c.req.json()) as Record<string, unknown>;
+  } catch {
+    body = {};
+  }
+  const raw = typeof body.mode === 'string' ? body.mode : '';
+  if (raw !== 'inherit' && !(AMANDA_MODES as readonly string[]).includes(raw)) {
+    return c.json({ error: 'unknown_mode' }, 400);
+  }
+  const actor = user?.email ?? user?.id ?? 'dashboard';
+
+  if (raw === 'off') {
+    // Both stops agree: the override silences the engine, and ai_muted_at keeps
+    // the existing handoff machinery consistent with it.
+    await tx.execute(sql`
+      UPDATE conversations
+         SET amanda_mode_override = 'off',
+             ai_muted_at = COALESCE(ai_muted_at, now()),
+             ai_muted_by = COALESCE(ai_muted_by, ${'dashboard:' + actor.slice(0, 80)}),
+             updated_at = now()
+       WHERE id = ${id}::uuid
+    `);
+  } else {
+    await tx.execute(sql`
+      UPDATE conversations
+         SET amanda_mode_override = ${raw === 'inherit' ? null : raw}::text,
+             ai_muted_at = NULL,
+             ai_muted_by = NULL,
+             human_claimed_at = NULL,
+             human_claimed_by = NULL,
+             updated_at = now()
+       WHERE id = ${id}::uuid
+    `);
+  }
+  return c.json({ ok: true, override: raw === 'inherit' ? null : raw });
 });
 
 route.post('/knowledge', async (c) => {

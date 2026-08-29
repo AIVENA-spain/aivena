@@ -968,7 +968,12 @@
       "saving": "Opslaan…",
       "remove": "Verwijderen",
       "confirmRemove": "Verwijderen",
-      "cancel": "Annuleren"
+      "cancel": "Annuleren",
+      "hoursTitle": "Wanneer mag Amanda {name} bereiken?",
+      "hoursHint": "Diensturen — Amanda pingt deze makelaar alleen daarbinnen. Niet hetzelfde als je bezichtigingsuren.",
+      "setHours": "Uren instellen",
+      "saveHours": "Uren opslaan",
+      "dayOff": "Vrij"
     },
     "automation": {
       "title": "Automatiseringsniveau",

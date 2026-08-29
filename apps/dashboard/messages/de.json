@@ -965,10 +965,15 @@
       "languagesHint": "Sprachen, in denen er ein Gespräch führen kann",
       "numberHint": "Mit Ländervorwahl — so unterscheidet Amanda Makler von Kunden.",
       "add": "Makler hinzufügen",
-      "saving": "Speichern…",
+      "saving": "Wird gespeichert…",
       "remove": "Entfernen",
       "confirmRemove": "Entfernen",
-      "cancel": "Abbrechen"
+      "cancel": "Abbrechen",
+      "hoursTitle": "Wann darf Amanda {name} erreichen?",
+      "hoursHint": "Schichtzeiten — Amanda pingt diesen Makler nur darin. Nicht dasselbe wie Ihre Besichtigungszeiten.",
+      "setHours": "Zeiten festlegen",
+      "saveHours": "Zeiten speichern",
+      "dayOff": "Frei"
     },
     "automation": {
       "title": "Automatisierungsgrad",

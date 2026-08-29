@@ -968,7 +968,12 @@
       "saving": "Zapisywanie…",
       "remove": "Usuń",
       "confirmRemove": "Usuń",
-      "cancel": "Anuluj"
+      "cancel": "Anuluj",
+      "hoursTitle": "Kiedy Amanda może kontaktować się z {name}?",
+      "hoursHint": "Godziny zmiany — Amanda pinguje tego agenta tylko w tych godzinach. To nie to samo co godziny oglądań.",
+      "setHours": "Ustaw godziny",
+      "saveHours": "Zapisz godziny",
+      "dayOff": "Wolne"
     },
     "automation": {
       "title": "Poziom automatyzacji",

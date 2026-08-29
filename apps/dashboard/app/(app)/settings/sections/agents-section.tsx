@@ -6,6 +6,7 @@ import { Users, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { saveAgentAction, removeAgentAction, type AgentRow } from "../section-actions";
+import { AgentHoursEditor } from "@/components/amanda/agent-hours-editor";
 
 // The 13 languages AIVENA speaks — an agent's languages decide who Amanda pings
 // for a given buyer, so this list mirrors the engine's supported set exactly.
@@ -22,6 +23,7 @@ const EMPTY = { id: "", full_name: "", whatsapp_e164: "", email: "", office: "",
 export function AgentsSection({ agents: initial }: { agents: AgentRow[] }) {
   const t = useTranslations("settings.agents");
   const [agents, setAgents] = useState<AgentRow[]>(initial);
+  const [editHours, setEditHours] = useState<string | null>(null);
   const [draft, setDraft] = useState({ ...EMPTY });
   const [error, setError] = useState<string | null>(null);
   const [busy, startSave] = useTransition();
@@ -48,6 +50,8 @@ export function AgentsSection({ agents: initial }: { agents: AgentRow[] }) {
       });
       if (!res.ok) { setError(res.error); return; }
       const saved: AgentRow = {
+        work_hours: null,
+        unavailable_dates: null,
         id: res.data.id, full_name: draft.full_name.trim(), whatsapp_e164: draft.whatsapp_e164.trim(),
         email: draft.email || null, office: draft.office || null, languages: draft.languages,
         receives_pings: true, last_checkin_at: null, status: "active",
@@ -80,7 +84,8 @@ export function AgentsSection({ agents: initial }: { agents: AgentRow[] }) {
       {agents.length > 0 ? (
         <ul className="flex flex-col gap-1.5">
           {agents.map((a) => (
-            <li key={a.id} className="flex flex-wrap items-center gap-2 rounded-md bg-muted/50 px-2.5 py-2 text-[12.5px]">
+            <li key={a.id} className="flex flex-col gap-2">
+            <div className="flex flex-wrap items-center gap-2 rounded-md bg-muted/50 px-2.5 py-2 text-[12.5px]">
               <span className="font-medium text-foreground">{a.full_name}</span>
               <span className="font-mono tabular-nums text-muted-foreground">{a.whatsapp_e164}</span>
               {a.languages.length > 0 ? (
@@ -92,6 +97,13 @@ export function AgentsSection({ agents: initial }: { agents: AgentRow[] }) {
               ) : null}
               {a.office ? <span className="text-muted-foreground">· {a.office}</span> : null}
               <span className="ml-auto flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setEditHours(editHours === a.id ? null : a.id)}
+                  className="rounded px-1.5 py-0.5 text-[11px] font-medium text-brand hover:bg-brand-soft"
+                >
+                  {summariseHours(a.work_hours) ?? t("setHours")}
+                </button>
                 {confirmRemove === a.id ? (
                   <>
                     <button type="button" onClick={() => onRemove(a.id)} disabled={busy}
@@ -108,6 +120,16 @@ export function AgentsSection({ agents: initial }: { agents: AgentRow[] }) {
                   </button>
                 )}
               </span>
+            </div>
+            {editHours === a.id ? (
+              <AgentHoursEditor
+                agent={a}
+                onClose={() => setEditHours(null)}
+                onSaved={(hours) =>
+                  setAgents((prev) => prev.map((x) => (x.id === a.id ? { ...x, work_hours: hours } : x)))
+                }
+              />
+            ) : null}
             </li>
           ))}
         </ul>
@@ -158,4 +180,17 @@ export function AgentsSection({ agents: initial }: { agents: AgentRow[] }) {
       </div>
     </div>
   );
+}
+
+/** "Mon–Fri 09:00–18:00" style summary, or null when nothing is set yet.
+ *  Deliberately shows the RANGE actually stored — never a friendly guess. */
+function summariseHours(wh: Record<string, number[]> | null): string | null {
+  if (!wh) return null;
+  const open = Object.entries(wh).filter(([, hs]) => Array.isArray(hs) && hs.length > 0);
+  if (open.length === 0) return null;
+  const all = open.flatMap(([, hs]) => hs);
+  const from = Math.min(...all);
+  const to = Math.max(...all) + 1;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${open.length}d · ${pad(from)}:00–${pad(to)}:00`;
 }

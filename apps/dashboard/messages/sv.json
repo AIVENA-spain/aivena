@@ -968,7 +968,12 @@
       "saving": "Sparar…",
       "remove": "Ta bort",
       "confirmRemove": "Ta bort",
-      "cancel": "Avbryt"
+      "cancel": "Avbryt",
+      "hoursTitle": "När får Amanda nå {name}?",
+      "hoursHint": "Skifttider — Amanda pingar bara den här mäklaren inom dem. Inte samma sak som dina visningstider.",
+      "setHours": "Ange tider",
+      "saveHours": "Spara tider",
+      "dayOff": "Ledig"
     },
     "automation": {
       "title": "Automatiseringsnivå",

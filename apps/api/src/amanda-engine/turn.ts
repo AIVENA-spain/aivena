@@ -22,7 +22,7 @@ import { validateDraft, screenLanguageDrift } from './validators';
 import { detectConfirmation } from './confirmation';
 import { runActionTool, type AmandaMode } from './modes';
 import { buildSystemPrompt, buildUserContext, type TurnContext, PROMPT_VERSION } from './prompt';
-import { normalizeLeadLanguage, isShapeOnly, trimToBudget, SHORT_MAX_WORDS, LONG_MAX_WORDS } from './validators';
+import { normalizeLeadLanguage, isShapeOnly, trimToBudget, SHORT_MAX_WORDS, MEDIUM_MAX_WORDS, LONG_MAX_WORDS } from './validators';
 import type { ToolBackends } from './tools';
 
 // Dead-air law (live demo 2026-08-28: a gate-blocked reply left the buyer in
@@ -200,10 +200,15 @@ export async function runTurn(
   // — answered off research_area + search_properties — was held to 35 words and
   // died there (Christian, live 2026-08-29). Research and a genuine property
   // search are exactly the turns that need a sentence or two more.
-  const LONG_FORM_TOOLS = ['get_property_details', 'research_area', 'search_properties'];
-  const allowLongForm = loop.toolEvents.some(
-    (ev) => LONG_FORM_TOOLS.includes(ev.tool) && ev.result.ok && !ev.result.refused,
-  );
+  // TWO long-form tiers, not one. Fetching a specific property (or relaying an
+  // office answer) is a summary and earns the full budget. Research and a
+  // search earn the MIDDLE budget: enough for the answer, two homes and one
+  // next step — Christian 2026-08-29 got a bullet-pointed report instead.
+  const usedTool = (name: string) =>
+    loop.toolEvents.some((ev) => ev.tool === name && ev.result.ok && !ev.result.refused);
+  const fullFormTurn = usedTool('get_property_details');
+  const mediumFormTurn = usedTool('research_area') || usedTool('search_properties');
+  const allowLongForm = fullFormTurn || mediumFormTurn;
   const authoritative = ctx.officeAnswerText ? [ctx.officeAnswerText] : [];
   // Office-promise law input: the machinery keeps the promise only when an
   // ask_agency call succeeded THIS turn (simulated counts — shadow parity), a
@@ -219,6 +224,7 @@ export async function runTurn(
     // A relay turn may run long-form: the office answer needs attribution + context.
     const v = validateDraft(text, {
       allowLongForm: allowLongForm || authoritative.length > 0,
+      longFormBudget: fullFormTurn || authoritative.length > 0 ? LONG_MAX_WORDS : MEDIUM_MAX_WORDS,
       mirrorTargetWords: ctx.mirrorTargetWords ?? undefined,
       expectedLanguage: buyerWroteEnglish ? undefined : ctx.leadLanguage,
       officeContextPresent,
@@ -258,7 +264,11 @@ export async function runTurn(
   // correct reply replaced by "a colleague will double-check" plus a take-over
   // card. Truth and safety failures are untouched by this and still escalate.
   if (failures.length > 0 && isShapeOnly(failures)) {
-    const budget = allowLongForm || authoritative.length > 0 ? LONG_MAX_WORDS : SHORT_MAX_WORDS;
+    const budget = fullFormTurn || authoritative.length > 0
+      ? LONG_MAX_WORDS
+      : mediumFormTurn
+        ? MEDIUM_MAX_WORDS
+        : SHORT_MAX_WORDS;
     const trimmed = trimToBudget(draft, budget);
     // Only accept the trim if it actually resolved everything — a trim that
     // still breaks a rule must not sneak past the gates.

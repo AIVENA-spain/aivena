@@ -5,6 +5,7 @@
 
 export interface LintOptions {
   allowLongForm?: boolean;      // broad question / re-engagement / property summary / relay-with-context
+  longFormBudget?: number;      // word cap for THIS long-form turn (medium vs full)
   mirrorTargetWords?: number;   // rolling median of the buyer's last messages (optional)
   /** Lead's language code (raw, e.g. 'no'/'nb'/'pt-BR') — when set and not
    *  English, an English-drift draft is a violation (live demo 2026-08-27:
@@ -26,6 +27,16 @@ export interface LintResult {
 const SHORT_MAX_SENTENCES = 3;
 export const SHORT_MAX_WORDS = 35;
 export const LONG_MAX_WORDS = 120;
+/**
+ * The MIDDLE budget (Christian 2026-08-29: "she answered way too long and not
+ * really confident warm"). Widening long-form to cover research and search was
+ * right — but it handed those turns the full 120-word property-summary budget,
+ * and she wrote a report with bullet points. A researched answer with a couple
+ * of matches is a chat message, not a brochure: room for the answer, two homes
+ * and one next step, and no more.
+ */
+export const MEDIUM_MAX_WORDS = 65;
+const MEDIUM_MAX_SENTENCES = 5;
 
 /** Sentence split that survives multilingual punctuation (., !, ?, ¿…). */
 export function splitSentences(text: string): string[] {
@@ -93,7 +104,13 @@ export function lintDraft(draft: string, opts: LintOptions = {}): LintResult {
   const words = countWords(draft);
 
   if (opts.allowLongForm) {
-    if (words > LONG_MAX_WORDS) violations.push(`too_long:${words}w>${LONG_MAX_WORDS}w`);
+    const cap = opts.longFormBudget ?? LONG_MAX_WORDS;
+    if (words > cap) violations.push(`too_long:${words}w>${cap}w`);
+    // The middle tier keeps its sentence discipline too — 65 words spread over
+    // nine clipped lines still reads as a report, not a person.
+    if (cap <= MEDIUM_MAX_WORDS && sentences.length > MEDIUM_MAX_SENTENCES) {
+      violations.push(`too_many_sentences:${sentences.length}>${MEDIUM_MAX_SENTENCES}`);
+    }
   } else {
     if (sentences.length > SHORT_MAX_SENTENCES) violations.push(`too_many_sentences:${sentences.length}>${SHORT_MAX_SENTENCES}`);
     if (words > SHORT_MAX_WORDS) violations.push(`too_long:${words}w>${SHORT_MAX_WORDS}w`);

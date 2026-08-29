@@ -3,7 +3,7 @@ import {
   splitSentences, countWords, countQuestionSentences, lintDraft,
   screenBannedPatterns, screenPaymentDetails, cooldownOk, validateDraft, COOLDOWN_MS,
   normalizeLeadLanguage, screenLanguageDrift, screenOfficePromise,
-  isShapeOnly, trimToBudget,
+  isShapeOnly, trimToBudget, MEDIUM_MAX_WORDS, LONG_MAX_WORDS,
 } from './validators';
 
 describe('sentence + question counting', () => {
@@ -273,5 +273,47 @@ describe('trimToBudget — removes text, never invents it', () => {
     const out = trimToBudget(draft, 10);
     const dw = draft.split(/\s+/);
     out.split(/\s+/).forEach((w, i) => expect(dw[i]).toBe(w));
+  });
+});
+
+/**
+ * Christian 2026-08-29, after the researched answer finally reached the buyer:
+ * "she answered way too long and not really confident warm". Widening long-form
+ * to research/search was right, but handing those turns the full 120-word
+ * property-summary budget produced a bullet-pointed report. The middle tier is
+ * the fix, and these pin it so it cannot quietly drift back to 120.
+ */
+describe('the middle length tier — a chat message, not a brochure', () => {
+  const words = (n: number) => Array.from({ length: n }, (_, i) => `w${i}`).join(' ') + '.';
+
+  it('a research/search turn is capped at the medium budget, not the full one', () => {
+    const draft = words(MEDIUM_MAX_WORDS + 10);
+    const r = lintDraft(draft, { allowLongForm: true, longFormBudget: MEDIUM_MAX_WORDS });
+    expect(r.ok).toBe(false);
+    expect(r.violations.some((v) => v.startsWith('too_long:'))).toBe(true);
+  });
+
+  it('the same draft passes when the turn genuinely earned the full budget', () => {
+    const draft = words(MEDIUM_MAX_WORDS + 10);
+    expect(lintDraft(draft, { allowLongForm: true, longFormBudget: LONG_MAX_WORDS }).ok).toBe(true);
+  });
+
+  it('medium keeps sentence discipline — 65 words in nine clipped lines is still a report', () => {
+    const draft = Array.from({ length: 9 }, (_, i) => `Line ${i} is here.`).join(' ');
+    const r = lintDraft(draft, { allowLongForm: true, longFormBudget: MEDIUM_MAX_WORDS });
+    expect(r.violations.some((v) => v.startsWith('too_many_sentences:'))).toBe(true);
+  });
+
+  it('the full tier is not sentence-capped — a property summary may run longer', () => {
+    const draft = Array.from({ length: 9 }, (_, i) => `Line ${i} is here.`).join(' ');
+    const r = lintDraft(draft, { allowLongForm: true, longFormBudget: LONG_MAX_WORDS });
+    expect(r.violations.some((v) => v.startsWith('too_many_sentences:'))).toBe(false);
+  });
+
+  it('an over-long medium answer is rescued by trimming, never escalated', () => {
+    const draft = 'The Norwegian school is in Ciudad Quesada. ' + words(MEDIUM_MAX_WORDS + 20);
+    const failures = lintDraft(draft, { allowLongForm: true, longFormBudget: MEDIUM_MAX_WORDS }).violations;
+    expect(isShapeOnly(failures)).toBe(true);
+    expect(countWords(trimToBudget(draft, MEDIUM_MAX_WORDS))).toBeLessThanOrEqual(MEDIUM_MAX_WORDS);
   });
 });

@@ -890,7 +890,8 @@
       "editCommunication": "Kommunikation bearbeiten",
       "manageTeam": "Team verwalten",
       "viewPlan": "Tarif ansehen",
-      "colourLabel": "Markenfarbe"
+      "colourLabel": "Markenfarbe",
+      "agentsOnWhatsapp": "{count} Makler auf WhatsApp"
     },
     "amanda": {
       "title": "Amanda Automodus",

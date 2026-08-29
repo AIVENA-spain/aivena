@@ -890,7 +890,8 @@
       "editCommunication": "Настроить коммуникацию",
       "manageTeam": "Управлять командой",
       "viewPlan": "Посмотреть тариф",
-      "colourLabel": "Цвет бренда"
+      "colourLabel": "Цвет бренда",
+      "agentsOnWhatsapp": "{count} агентов в WhatsApp"
     },
     "amanda": {
       "title": "Автоматический режим Аманды",

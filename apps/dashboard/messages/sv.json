@@ -890,7 +890,8 @@
       "editCommunication": "Redigera kommunikation",
       "manageTeam": "Hantera team",
       "viewPlan": "Visa plan",
-      "colourLabel": "Varumärkesfärg"
+      "colourLabel": "Varumärkesfärg",
+      "agentsOnWhatsapp": "{count} mäklare på WhatsApp"
     },
     "amanda": {
       "title": "Amandas autoläge",

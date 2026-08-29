@@ -890,7 +890,8 @@
       "editCommunication": "Modifica comunicazione",
       "manageTeam": "Gestisci team",
       "viewPlan": "Vedi piano",
-      "colourLabel": "Colore del brand"
+      "colourLabel": "Colore del brand",
+      "agentsOnWhatsapp": "{count} agenti su WhatsApp"
     },
     "amanda": {
       "title": "Modalità automatica di Amanda",

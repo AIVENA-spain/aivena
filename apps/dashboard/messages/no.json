@@ -890,7 +890,8 @@
       "editCommunication": "Rediger kommunikasjon",
       "manageTeam": "Administrer team",
       "viewPlan": "Se plan",
-      "colourLabel": "Merkevarefarge"
+      "colourLabel": "Merkevarefarge",
+      "agentsOnWhatsapp": "{count} meglere på WhatsApp"
     },
     "amanda": {
       "title": "Amandas automodus",

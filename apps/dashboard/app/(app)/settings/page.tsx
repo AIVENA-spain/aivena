@@ -250,9 +250,6 @@ export default async function SettingsPage({
         <div className="flex flex-col gap-6">
           <AiSection branding={branding} initialLanes={lanes} amanda={amandaSettings} />
           <div className="border-t border-border/60 pt-5">
-            <AgentsSection agents={agents} />
-          </div>
-          <div className="border-t border-border/60 pt-5">
             <ChannelsSection
               channels={settings.channels}
               sendingDomain={settings.profile.sending_domain}
@@ -344,12 +341,21 @@ export default async function SettingsPage({
           <span className="font-medium text-foreground">
             {tc("teamMembers", { count: memberCount })}
           </span>
-          <span className="text-muted-foreground">{tc("pilotInvites")}</span>
+          <span className="text-muted-foreground">
+            {tc("agentsOnWhatsapp", { count: agents.length })}
+          </span>
         </div>
       ),
       expandLabel: tc("manageTeam"),
       closeLabel: tc("close"),
-      children: <TeamSection team={settings.team} currentUserId={currentUserId} />,
+      children: (
+        <div className="flex flex-col gap-6">
+          <TeamSection team={settings.team} currentUserId={currentUserId} />
+          <div className="border-t border-border/60 pt-5">
+            <AgentsSection agents={agents} />
+          </div>
+        </div>
+      ),
     },
 
     // 5. Plan & pilot — compact read-only summary.

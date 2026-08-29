@@ -890,7 +890,8 @@
       "editCommunication": "Rediger kommunikation",
       "manageTeam": "Administrer team",
       "viewPlan": "Se plan",
-      "colourLabel": "Brandfarve"
+      "colourLabel": "Brandfarve",
+      "agentsOnWhatsapp": "{count} mæglere på WhatsApp"
     },
     "amanda": {
       "title": "Amandas autotilstand",

@@ -890,7 +890,8 @@
       "editCommunication": "Muokkaa viestintää",
       "manageTeam": "Hallinnoi tiimiä",
       "viewPlan": "Näytä tilaus",
-      "colourLabel": "Brändiväri"
+      "colourLabel": "Brändiväri",
+      "agentsOnWhatsapp": "{count} välittäjää WhatsAppissa"
     },
     "amanda": {
       "title": "Amandan automaattitila",

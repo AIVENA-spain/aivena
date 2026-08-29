@@ -890,7 +890,8 @@
       "editCommunication": "Communicatie bewerken",
       "manageTeam": "Team beheren",
       "viewPlan": "Abonnement bekijken",
-      "colourLabel": "Merkkleur"
+      "colourLabel": "Merkkleur",
+      "agentsOnWhatsapp": "{count} makelaars op WhatsApp"
     },
     "amanda": {
       "title": "Amanda automodus",

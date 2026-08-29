@@ -31,6 +31,7 @@ interface Plan {
   quote_context: string;
   attribution: string;
   cta_heading: string;
+  agency_line: string;
   cta_action: string;
   cta_keyword: string;
   swipe_cue: string;
@@ -781,12 +782,20 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
                 <input value={draft.cta_heading} onChange={(e) => setDraft({ ...draft, cta_heading: e.target.value })} className={field} maxLength={78} />
               </div>
               <div>
+                {/* RULE 9's line renders on the closing slide, so it has to be editable like
+                    every other word on the slides */}
+                <label className={label}>Closing slide — what your agency does</label>
+                <input value={draft.agency_line ?? ""} onChange={(e) => setDraft({ ...draft, agency_line: e.target.value })} className={field} maxLength={170}
+                  placeholder="We help families find homes near the international schools along this coast." />
+              </div>
+              <div>
                 <label className={label}>Closing slide — what you ask people to do</label>
                 <input value={draft.cta_action} onChange={(e) => setDraft({ ...draft, cta_action: e.target.value })} className={field} maxLength={140} />
               </div>
               <div>
-                <label className={label}>Closing slide — DM keyword button</label>
-                <input value={draft.cta_keyword} onChange={(e) => setDraft({ ...draft, cta_keyword: e.target.value })} className={field} maxLength={34} />
+                {/* RULE 8: a sentence, not a code word — the old 34-char cap could not hold one */}
+                <label className={label}>Closing slide — the comment line</label>
+                <input value={draft.cta_keyword} onChange={(e) => setDraft({ ...draft, cta_keyword: e.target.value })} className={field} maxLength={90} />
               </div>
               <div>
                 <label className={label}>Caption</label>

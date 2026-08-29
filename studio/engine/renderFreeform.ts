@@ -269,6 +269,20 @@ export async function renderFreeform(
     return lum((n >> 16) & 255, (n >> 8) & 255, n & 255);
   };
   const ratio = (a: number, b: number) => (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+  /** Every colour this slide is actually made of — backgrounds, panels, pills, other type. RULE 1
+   *  recolours WITHIN the edition's palette, so the candidates come from the deck itself rather
+   *  than from two hardcoded inks that belong to no palette. */
+  const specPalette = (): string[] => {
+    const out = new Set<string>([spec.background]);
+    for (const e of spec.elements) {
+      if (e.type === "text") { out.add(e.colour); if (e.pill) out.add(e.pill.fill); }
+      else if (e.type === "rect" || e.type === "punch") out.add((e as { fill: string }).fill);
+      else if (e.type === "scrim") out.add((e as { colour: string }).colour);
+      else if (e.type === "doodle") out.add((e as { colour: string }).colour);
+    }
+    return [...out];
+  };
+
   /** The flat colour under a text box when there is no artwork to sample: the topmost rect or
    *  punch that actually covers it, else the slide's own background. Exact, and free. */
   const flatGroundUnder = (box: number[], idx: number): string => {
@@ -556,6 +570,11 @@ export async function renderFreeform(
 
       // RULE 1 — measured, then escalated in order. 4.5:1 is the test; the fix is never a panel.
       let inkColour = el.colour;
+      // A pill is drawn UNDER its own text, and it is part of the same text element — so the
+      // ground pass (which strips text) never sees it. Measured against the slide behind the
+      // pill, an inverted button reads 1.00:1 and the escalation recoloured it INTO its own
+      // fill, which is how the primary call-to-action of every deck was being erased.
+      const pillFill = el.pill?.fill ?? null;
       const onPhoto = photoBoxes.some((pb) => overlap(pb, b) > 0.35 * boxW(b) * boxH(b));
       // EVERY text element is measured, not just type over artwork — a headline can be just as
       // unreadable on a flat ground (navy on navy) as on a busy photo. Over artwork the
@@ -565,12 +584,14 @@ export async function renderFreeform(
       if (shieldable) {
         const pad = Math.round(el.size * 0.6);
         const probe = clampBox([b[0] - pad, b[1] - pad, b[2] + pad, b[3] + pad], W, H);
-        const measured = contrastUnder(probe, el.colour)
-          ?? (() => {
-            // no artwork under this block — measure against the flat ground it really sits on
-            const g = hexLum(flatGroundUnder(probe, idx));
-            return { worst: ratio(hexLum(el.colour), g), groundLum: g };
-          })();
+        const measured = pillFill
+          ? (() => { const g = hexLum(pillFill); return { worst: ratio(hexLum(el.colour), g), groundLum: g }; })()
+          : contrastUnder(probe, el.colour)
+            ?? (() => {
+              // no artwork under this block — measure against the flat ground it really sits on
+              const g = hexLum(flatGroundUnder(probe, idx));
+              return { worst: ratio(hexLum(el.colour), g), groundLum: g };
+            })();
         if (!measured) {
           // no ground reading (measurement unavailable) — keep the previous geometric behaviour
           if (onPhoto) {
@@ -580,9 +601,10 @@ export async function renderFreeform(
           }
         } else if (measured.worst < 4.5) {
           // step 1 — recolour within the design's own palette: the spec offers the alternative
-          const flatLum = ground ? null : hexLum(flatGroundUnder(probe, idx));
-          const measureWith = (c: string) => contrastUnder(probe, c)
-            ?? (flatLum === null ? null : { worst: ratio(hexLum(c), flatLum), groundLum: flatLum });
+          const flatLum = pillFill ? hexLum(pillFill) : ground ? null : hexLum(flatGroundUnder(probe, idx));
+          const measureWith = (c: string) => (pillFill || !ground)
+            ? (flatLum === null ? null : { worst: ratio(hexLum(c), flatLum), groundLum: flatLum })
+            : contrastUnder(probe, c);
           // STEP 2 — recolour within the deck's own palette. The style's alternative first; if it
           // offers none, the ground's own light/dark partner, which every edition contains. This
           // is what makes dark type on dark artwork survivable: no veil at any strength can lift
@@ -590,7 +612,8 @@ export async function renderFreeform(
           let bestInk = el.colour, bestWorst = measured.worst;
           // try BOTH palette partners and keep whichever MEASURES best — picking one from the
           // median luminance alone put light type on a light ground when the median lied
-          const candidates = [el.alt_colour, "#12161c", "#f6f2e9"].filter((c): c is string => !!c);
+          // the style's own alternative first, then the rest of THIS slide's palette
+          const candidates = [el.alt_colour, ...specPalette()].filter((c): c is string => !!c);
           for (const c of candidates) {
             const m = measureWith(c);
             if (m && m.worst > bestWorst) { bestWorst = m.worst; bestInk = c; }
@@ -599,7 +622,7 @@ export async function renderFreeform(
           inkColour = bestInk;
           // step 2 — a wide, soft directional gradient that reads as light, never a hard panel.
           // Direction and tone follow the ground: darken bright ground, lift dark ground.
-          if (bestWorst < 4.5 && onPhoto) {
+          if (bestWorst < 4.5 && onPhoto && !pillFill) {
             const inkIsLight = hexLum(inkColour) > 0.45;
             const tone = inkIsLight ? "#0B0F14" : "#F6F2E9";
             const padY = Math.round(el.size * 0.5);

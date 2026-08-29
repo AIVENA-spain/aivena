@@ -419,7 +419,7 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
 
             <div className="mb-2 mt-7 text-sm font-semibold text-neutral-900 dark:text-neutral-100">3. How many slides?</div>
             <div className="flex flex-wrap gap-2">
-              {[3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+              {[3, 4, 5, 6, 7, 8, 9].map((n) => (
                 <button key={n} onClick={() => setSlideTotal(n)}
                   className={`h-11 w-12 rounded-lg border text-sm font-medium transition ${slideTotal === n
                     ? "border-emerald-600 bg-emerald-600 text-white"

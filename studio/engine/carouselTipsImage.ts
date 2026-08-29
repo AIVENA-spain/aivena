@@ -105,9 +105,14 @@ export async function renderTipsImageStyled(
   const T = chrome(lang);
   const NAVY = brand.navy, GOLD = brand.gold, CREAM = brand.cream;
   const n = plan.tips.length;
-  const midAfter = Math.ceil(n / 2);                 // the mid-deck image moment sits after this tip
-  // cover + [context] + tips + moment + [recap] + CTA
-  const total = n + 3 + (includeContext ? 1 : 0) + (includeRecap ? 1 : 0);
+  // RULE 3 — one hero, N tips, one closing. The mid-deck image beat is an EXTRA, so it belongs
+  // with the intro and the recap: present when the agent asked for the fuller deck, absent from
+  // the lean default. Without this the fallback deck shipped 6 slides where every other style
+  // shipped 5, which is the rule holding everywhere except where the artwork failed.
+  const includeMoment = includeContext || includeRecap;
+  const midAfter = includeMoment ? Math.ceil(n / 2) : -1;
+  // cover + [context] + tips + [moment] + [recap] + CTA
+  const total = n + 2 + (includeContext ? 1 : 0) + (includeMoment ? 1 : 0) + (includeRecap ? 1 : 0);
 
   const band = (i: number, colour: string) => [
     { type: "text", bbox: [80, 1272, 640, 1300], content: agency.toUpperCase(), font: "Jost", size: 17, colour, align: "left", weight: "500", tracking: 4 },
@@ -192,8 +197,10 @@ export async function renderTipsImageStyled(
     }
   }
 
-  // ── 3..N+2 · TIP SLIDES (type-led, hero echo crop) + the mid-deck moment ─────
-  let slideNo = 3;
+  // ── TIP SLIDES (type-led, hero echo crop) + the mid-deck moment ──────────────
+  // RULE 3: the first tip is slide 2 when the intro was not drawn, 3 when it was — a hardcoded
+  // 3 here numbered every tip one too high on a deck with no intro.
+  let slideNo = 2 + (includeContext ? 1 : 0);
   plan.tips.forEach((tip, i) => {
     specs.push(DesignSpec.parse({
       background: CREAM,

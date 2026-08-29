@@ -81,7 +81,7 @@ const PLAN_TOOL = {
       attribution: { type: 'string', description: 'quote only: who said it, exactly as provided, prefixed with "— "' },
       cta_heading: { type: 'string', description: 'closing-slide headline, max 78 chars — an invitation, not "Contáctanos"' },
       cta_action: { type: 'string', description: 'THE REAL CTA, max 140 chars: a save or send action matched to the post ("Envíaselo a la persona con quien compras" / "Guarda esta guía para tu próxima visita"). Help-framed — never "tag a friend"/"share this"/"follow us" (Meta demotes engagement bait).' },
-      agency_line: { type: 'string', description: 'RULE 9, max 170 chars: ONE plain sentence naming what this agency helps people with, written from the topic + the agency profile ("We help families find homes near the international schools along this coast."). Omit only if no agency profile was given.' },
+      agency_line: { type: 'string', description: 'RULE 9, max 170 chars: ONE plain sentence naming what this agency helps people with, taken ONLY from the "What they do" facts in the agency profile above. If the prompt gave you no such facts, return an EMPTY STRING — never infer a speciality from the post topic, and never write a service this agency has not stated.' },
       cta_keyword: { type: 'string', description: 'RULE 8, max 90 chars: a COMPLETE, NATURAL SENTENCE in the post language telling the reader exactly what to comment and what they get ("Comment FAMILY and we\'ll send it over."). NEVER a code line ("DM: FAMILY"), never a bare shouted word, never a "P.D." postscript.' },
       swipe_cue: { type: 'string', description: 'the "swipe" word in the post language, max 18 chars (es: "Desliza", en: "Swipe")' },
       image_scenes: { type: 'array', items: { type: 'string' }, description: 'EXACTLY 3 concrete visual scenes (in ENGLISH, 20-45 words each) translating the post topic and its EMOTION into imagery: [0] the COVER — the strongest, most literal scene of the whole deck: a composed scene (hero object + 2-4 supporting props) that STAGES THE TOPIC ITSELF so someone seeing only this image could guess what the post is about. A generic pretty postcard — a shuttered window, a nice door, a plain beach — is a FAILURE unless the topic is literally about it. [1] the SLIDE-2 artwork: a DIFFERENT composed scene restating the topic from a second angle (never a variation of the cover scene — new hero object, new props); [2] a quieter closing beat — this one MAY be a simple single subject (open sea, an empty beach, a lone olive tree). Rules: concrete nouns only (diffusion fails on abstractions), NO interiors, NO building facades that could read as a real property, NO recognizable landmarks, NO people close-up, NO text in the scene. Example cover for "a home you only visit a few times a year": "a garden table under a dust sheet on a terrace, four espresso cups upturned in a row, a wall calendar with four small red circles, drifted pine needles and unopened mail at the foot of a shuttered door".' },
@@ -202,10 +202,36 @@ export function riskyClaims(plan: CarouselPlan): string[] {
   return out;
 }
 
+
+// A COSMETIC overflow must never kill a post. The model routinely writes a 45-character eyebrow
+// or a teaser a few words long; that used to burn all three retries and hard-fail the whole
+// generation — twice now, in front of Christian. These fields are trimmed at a word boundary
+// instead. Structural problems (missing tips, wrong counts, a non-verbatim quote) still retry:
+// those cannot be repaired without the model.
+const SOFT_CAPS: Record<string, number> = {
+  eyebrow: 44, hook_title: 90, slide2_title: 80, slide2_body: 220,
+  recap_title: 60, save_line: 70, cta_heading: 78, agency_line: 170,
+  cta_action: 140, cta_keyword: 90, swipe_cue: 18,
+};
+function trimWords(v: unknown, max: number): unknown {
+  if (typeof v !== 'string' || v.length <= max) return v;
+  const cut = v.slice(0, max);
+  const sp = cut.lastIndexOf(' ');
+  return (sp > max * 0.6 ? cut.slice(0, sp) : cut).replace(/[\s,;:—–-]+$/, '');
+}
+function trimToCaps(input: Record<string, unknown>): void {
+  for (const [k, max] of Object.entries(SOFT_CAPS)) input[k] = trimWords(input[k], max);
+  if (Array.isArray(input.tips)) {
+    input.tips = (input.tips as Record<string, unknown>[]).map((t) => (t && typeof t === 'object'
+      ? { ...t, title: trimWords(t.title, 62), body: trimWords(t.body, 250), teaser: trimWords(t.teaser, 70) }
+      : t));
+  }
+}
+
 /** Doctrine + honesty gate on the generated copy (client quotes exempt — they're the client's words). */
 function planIssues(p: CarouselPlan, quoteSource: string): string | null {
   const advice = [p.hook_title, p.slide2_title, p.slide2_body, p.cta_heading, p.cta_action,
-    p.recap_title, p.save_line, ...p.tips.flatMap((t) => [t.title, t.body, t.teaser])];
+    p.agency_line, p.recap_title, p.save_line, ...p.tips.flatMap((t) => [t.title, t.body, t.teaser])];
   const priced = advice.find((t) => t && BANNED.test(t));
   if (priced) return `copy contains a price/percentage claim ("${priced.slice(0, 60)}") — general advice only, no figures`;
   if (p.type === 'tips' && WEAK_HOOK.test(p.hook_title.trim())) {
@@ -265,7 +291,7 @@ CAROUSEL DOCTRINE (how these posts win — follow it):
 - Slide 2 is a SECOND cover: Instagram re-serves unswiped carousels starting at slide 2, so slide2_title must stand alone with zero context ("Selling this year? This saves you money.").
 - One idea per slide. Each slide answers the question the previous one raised.
 - The recap is the SAVE unit — people screenshot and forward it.
-- THE CLOSING SLIDE SAYS WHAT THE AGENCY DOES. agency_line is ONE plain sentence naming what this agency helps people with, written from the topic + the agency profile above ("We help families find homes near the international schools along this coast."). cta_action stays SHORT — the action itself, nothing else. Contact details are handled by the design, not by you. NEVER "tag a friend", "share this", "follow for more" — Meta demotes engagement bait.
+- THE CLOSING SLIDE SAYS WHAT THE AGENCY DOES — WHEN WE KNOW IT. agency_line is ONE plain sentence built ONLY from the "What they do" facts in the agency profile above. NO such facts in the prompt means agency_line is an EMPTY STRING: inventing a speciality from the post topic would print a claim about this business that may be false. cta_action stays SHORT — the action itself, nothing else. Contact details are handled by the design, not by you. NEVER "tag a friend", "share this", "follow for more" — Meta demotes engagement bait.
 - save_line is the SECONDARY line, demoted under the agency line: the save/keep framing ("Save it for the week the move gets hard.").
 - cta_keyword is a COMPLETE, NATURAL SENTENCE in the post language telling the reader exactly what to comment and what they get ("Comment FAMILY and we'll send it over."). NEVER a code line ("DM: FAMILY", "Escríbenos: GUÍA"), never a bare shouted word, never a "P.D." postscript.
 - Caption: SHORT and human — 3 lines max + a CTA line, written like a person, not a brochure. No clichés, no rhetorical-question openers. Same place rule: no towns unless the topic names one. End with a short question answerable in ONE word — as a plain line, NEVER labelled "P.D." or "P.S.".
@@ -314,6 +340,7 @@ Submit with the submit_carousel tool.`;
         .map((h) => h.replace(/["'\u201c\u201d\u2018\u2019#]/g, '').trim().slice(0, 40))
         .filter((h) => h.length >= 2).slice(0, 5);
     }
+    trimToCaps(input);
     const parsed = PlanSchema.safeParse(input);
     if (!parsed.success) {
       lastErr = parsed.error.issues.slice(0, 5).map((i) => `${i.path.join('.')}: ${i.message}`).join('; ');
@@ -370,7 +397,7 @@ CHECK EVERY TEXT FIELD:
 5. NO REPEATED PROMISE — the cover and the first advice slide must not say the same thing twice. If slide 2 only restates the cover's promise ("the order that saves you weeks" under a cover about the order nobody explains), rewrite it as the FIRST piece of real advice.
 6. TRUE CLAIMS — any statement about the NIE, banks, taxes, residency, mortgages or ownership must be true as written. Prefer "usually / makes it far simpler" to an absolute impossibility you cannot verify. Keep the claim's usefulness; lose the falsehood.
 7. ONE CLEAN SENTENCE — no headline may join two independent clauses with a comma ("…in a new place, they need a plan"). Use an em dash or two sentences.
-8. THE CLOSING — agency_line must say what this agency does for someone with this topic, in one plain sentence; cta_action stays short and is the action alone; save_line carries the save framing, demoted.
+8. THE CLOSING — agency_line may state ONLY a service this agency has actually told us about. If it names a speciality that could not have come from the agency's own facts (a claim inferred from the post topic), EMPTY IT rather than keep it; cta_action stays short and is the action alone; save_line carries the save framing, demoted.
 
 RULES FOR CORRECTIONS:
 - Rewrite in the SAME LANGUAGE as the existing copy, within the same length limits, same warm expert tone.
@@ -413,6 +440,7 @@ Submit with the submit_edited_plan tool.`;
         .map((h) => h.replace(/["'\u201c\u201d\u2018\u2019#]/g, '').trim().slice(0, 40))
         .filter((h) => h.length >= 2).slice(0, 5);
     }
+    trimToCaps(input);
     const parsed = PlanSchema.safeParse(input);
     if (!parsed.success) return null;
     const edited = parsed.data as CarouselPlan;

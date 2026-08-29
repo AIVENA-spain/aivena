@@ -163,6 +163,12 @@ export async function generateTipsImages(opts: {
   // RULE 1: parallel to scenes — the region of each frame the art director keeps quiet, so the
   // image is COMPOSED for its type instead of the type fighting the picture afterwards
   quietZones?: (string | undefined)[];
+  /** called with a human-readable reason when artwork could not be produced, so the deck can
+   *  record why it fell back to stock images instead of leaving the agent guessing */
+  onFail?: (reason: string) => void;
+  /** the two colours the agent chose for this deck — the artwork is asked to be built from them
+   *  so the pictures belong to the post instead of merely sitting behind it */
+  brandColours?: { navy: string; gold: string };
 }): Promise<{ buffers: Buffer[]; paths: string[]; qa?: { reviewed: number; regenerated: number; still_flagged: number } } | null> {
   const files = TIPS_LIBRARY[opts.style];
   const scheme = TIPS_SCHEMES[opts.scheme] ?? TIPS_SCHEMES.clasico;
@@ -173,6 +179,7 @@ export async function generateTipsImages(opts: {
     if (!key) return null;
     const signed = await supabaseAdmin.storage.from(BUCKET)
       .createSignedUrl(`${LIBRARY_PREFIX}/${opts.style}/${files[0]}`, 3600);
+    const fail = (reason: string) => { console.warn(`[carousel-art] ${reason}`); opts.onFail?.(reason); };
     const anchorUrl = signed.data?.signedUrl;
     if (!anchorUrl) return null;
 
@@ -183,29 +190,43 @@ export async function generateTipsImages(opts: {
       // each task knows its siblings so the family can't converge on one motif.
       const siblings = scenes.filter((_, j) => j !== si).map((x) => x.split(/[,.]/)[0].trim()).filter(Boolean).slice(0, 8);
       const medium = TIPS_MEDIUM[opts.style] ? `Render this as ${TIPS_MEDIUM[opts.style]}. ` : '';
-      return `${medium}Keep exactly the same artistic style, technique, texture, grain, lighting mood and colour language as this reference image, but REPLACE THE SUBJECT COMPLETELY with a new scene: ${scene}. Render it as ONE deliberately composed still — every object purposeful and clearly readable, arranged with intent, nothing random. Do NOT reuse the reference image's objects, room, window, or composition — only its technique. ${siblings.length ? `Other images in this set show: ${siblings.join('; ')} — this one must be clearly different from all of them. ` : ''}${extra}${scheme.clause} ${opts.quietZones?.[si] ? `Leave the ${opts.quietZones[si]} of the frame QUIET — continuous low-detail ground with no subject, no props and no busy texture there; the deck sets its headline in it.` : 'Keep generous calm empty space for text.'} ${NEG}`;
+      // the agent's own two colours, carried INTO the picture: not a filter over it, but the
+      // palette the scene is built from, so the artwork and the type belong to the same post
+      const chosen = opts.brandColours
+        ? `Build the scene's colour world around ${opts.brandColours.navy} and ${opts.brandColours.gold} — these two colours should be clearly present in the objects, light and surfaces, not laid over the image as a tint. `
+        : '';
+      return `${medium}${chosen}Keep exactly the same artistic style, technique, texture, grain, lighting mood and colour language as this reference image, but REPLACE THE SUBJECT COMPLETELY with a new scene: ${scene}. Render it as ONE deliberately composed still — every object purposeful and clearly readable, arranged with intent, nothing random. Do NOT reuse the reference image's objects, room, window, or composition — only its technique. ${siblings.length ? `Other images in this set show: ${siblings.join('; ')} — this one must be clearly different from all of them. ` : ''}${extra}${opts.brandColours ? '' : scheme.clause} ${opts.quietZones?.[si] ? `Leave the ${opts.quietZones[si]} of the frame QUIET — continuous low-detail ground with no subject, no props and no busy texture there; the deck sets its headline in it.` : 'Keep generous calm empty space for text.'} ${NEG}`;
     };
     const createTask = async (si: number, extra = ''): Promise<string | null> => {
-      const res = await fetch(KIE_CREATE, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: 'google/nano-banana-edit', input: { prompt: buildPrompt(si, extra), image_urls: [anchorUrl], output_format: 'png' } }),
-      });
-      const cj = (await res.json()) as { data?: { taskId?: string } };
-      return cj?.data?.taskId ?? null;
+      try {
+        const res = await fetch(KIE_CREATE, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model: 'google/nano-banana-edit', input: { prompt: buildPrompt(si, extra), image_urls: [anchorUrl], output_format: 'png' } }),
+        });
+        const cj = (await res.json()) as { code?: number; msg?: string; data?: { taskId?: string } };
+        if (!cj?.data?.taskId) {
+          // the artwork service refused this task — say so, instead of returning a bare null and
+          // letting the deck silently fall back to stock images with no recorded reason
+          fail(`artwork task refused (HTTP ${res.status}, code ${cj?.code ?? '?'}: ${String(cj?.msg ?? 'no message').slice(0, 120)})`);
+          return null;
+        }
+        return cj.data.taskId;
+      } catch (e) {
+        fail(`artwork service unreachable: ${(e as Error).message.slice(0, 120)}`);
+        return null;
+      }
     };
 
-    // Every artwork — first pass and every retry — is produced HERE, so the frame assert has
-    // exactly one place to live and cannot be bypassed.
+    // One artwork, start to finish — used for the frame retry and by the vision-QA retry, so the
+    // RULE 2 assert has exactly one place to live and cannot be bypassed.
     const renderOne = async (si: number, extra = ''): Promise<Buffer | null> => {
       const t = await createTask(si, extra);
       if (!t) return null;
       const buf = await pollTask(key, t, 150_000);
-      if (!buf) return null;
+      if (!buf) { fail(`slide ${si + 1}: the artwork service returned nothing within the time limit`); return null; }
       const band = await blankBandFraction(buf);
       if (band <= 0.12) return buf;
-      // a letterboxed generation: re-issue once telling it to fill the frame, then take the
-      // better of the two rather than shipping a half-empty picture
       console.warn(`[carousel-art] slide ${si + 1}: ${(band * 100).toFixed(0)}% blank band — regenerating to fill the frame`);
       const t2 = await createTask(si, `${extra}IMPORTANT — the previous attempt left a large blank band along one edge. The scene must FILL the entire frame edge to edge, with no border, no letterboxing and no empty band. `);
       const buf2 = t2 ? await pollTask(key, t2, 150_000) : null;
@@ -213,8 +234,20 @@ export async function generateTipsImages(opts: {
       return (await blankBandFraction(buf2)) < band ? buf2 : buf;
     };
 
-    const buffers = await Promise.all(scenes.map((_, si) => renderOne(si)));
-    if (buffers.some((b) => !b)) return null;
+    // Tasks are created ONE AT A TIME and polled together. Creating them all at once (which is
+    // what I changed this to) makes the service refuse the burst, and every refusal came back as
+    // a bare null — the deck then fell back to stock artwork with nothing recorded anywhere.
+    const taskIds: (string | null)[] = [];
+    for (let si = 0; si < scenes.length; si++) taskIds.push(await createTask(si));
+    if (taskIds.some((t) => !t)) return null;
+    const polled = await Promise.all(taskIds.map((t) => pollTask(key, t!, 150_000)));
+    if (polled.some((b) => !b)) { fail('the artwork service did not return every image within the time limit'); return null; }
+    const buffers: (Buffer | null)[] = [...polled];
+    // RULE 2 — assert each frame is filled; a letterboxed one is re-issued (rare, so sequential)
+    for (let si = 0; si < buffers.length; si++) {
+      const band = await blankBandFraction(buffers[si]!);
+      if (band > 0.12) buffers[si] = (await renderOne(si)) ?? buffers[si];
+    }
 
     // VISION REVIEW (Christian 2026-08-28: "it always looks thought through") — look at every
     // image; a reject regenerates ONCE with the reviewer's problem in the prompt. Reviewer

@@ -940,6 +940,21 @@
       "allDay": "Hele dag",
       "availabilityInfo": "De rode tijden zijn wanneer je NIET beschikbaar bent — pauzes, geblokkeerde uren en geblokkeerde dagen. Amanda biedt nooit bezichtigingen aan in rode tijd, en het is ook zichtbaar in de kalender.",
       "whatIsRed": "Wat is rode tijd?"
+    },
+    "agents": {
+      "title": "Jouw makelaars",
+      "subtitle": "Amanda pingt de juiste — op taal, en alleen binnen werktijd.",
+      "empty": "Nog geen makelaars. Voeg hieronder de eerste toe.",
+      "namePlaceholder": "Volledige naam",
+      "emailPlaceholder": "E-mail (optioneel)",
+      "officePlaceholder": "Kantoor (optioneel)",
+      "languagesHint": "Talen waarin hij of zij een gesprek kan voeren",
+      "numberHint": "Inclusief landnummer — zo onderscheidt Amanda makelaars van klanten.",
+      "add": "Makelaar toevoegen",
+      "saving": "Opslaan…",
+      "remove": "Verwijderen",
+      "confirmRemove": "Verwijderen",
+      "cancel": "Annuleren"
     }
   },
   "performance": {

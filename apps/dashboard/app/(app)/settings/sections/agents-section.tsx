@@ -1,0 +1,161 @@
+"use client";
+
+import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
+import { Users, X } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { saveAgentAction, removeAgentAction, type AgentRow } from "../section-actions";
+
+// The 13 languages AIVENA speaks — an agent's languages decide who Amanda pings
+// for a given buyer, so this list mirrors the engine's supported set exactly.
+const LANGS = ["en", "es", "de", "nl", "fr", "it", "pt", "pl", "sv", "nb", "da", "fi", "ru"] as const;
+
+const EMPTY = { id: "", full_name: "", whatsapp_e164: "", email: "", office: "", languages: [] as string[] };
+
+/**
+ * The agent roster (Christian 2026-08-28): "the agency needs to have a place
+ * for managing their real estate agents… so that amanda can ping the agent
+ * that is correct for the client". Names, numbers and languages first — work
+ * hours reuse the availability editor in a following slice.
+ */
+export function AgentsSection({ agents: initial }: { agents: AgentRow[] }) {
+  const t = useTranslations("settings.agents");
+  const [agents, setAgents] = useState<AgentRow[]>(initial);
+  const [draft, setDraft] = useState({ ...EMPTY });
+  const [error, setError] = useState<string | null>(null);
+  const [busy, startSave] = useTransition();
+  const [confirmRemove, setConfirmRemove] = useState<string | null>(null);
+
+  function toggleLang(code: string) {
+    setDraft((d) => ({
+      ...d,
+      languages: d.languages.includes(code) ? d.languages.filter((l) => l !== code) : [...d.languages, code],
+    }));
+  }
+
+  function onSave() {
+    if (busy || !draft.full_name.trim() || !draft.whatsapp_e164.trim()) return;
+    setError(null);
+    startSave(async () => {
+      const res = await saveAgentAction({
+        id: draft.id || undefined,
+        full_name: draft.full_name,
+        whatsapp_e164: draft.whatsapp_e164,
+        email: draft.email || undefined,
+        office: draft.office || undefined,
+        languages: draft.languages,
+      });
+      if (!res.ok) { setError(res.error); return; }
+      const saved: AgentRow = {
+        id: res.data.id, full_name: draft.full_name.trim(), whatsapp_e164: draft.whatsapp_e164.trim(),
+        email: draft.email || null, office: draft.office || null, languages: draft.languages,
+        receives_pings: true, last_checkin_at: null, status: "active",
+      };
+      setAgents((prev) => [...prev.filter((a) => a.id !== saved.id), saved].sort((a, b) => a.full_name.localeCompare(b.full_name)));
+      setDraft({ ...EMPTY });
+    });
+  }
+
+  function onRemove(id: string) {
+    startSave(async () => {
+      const res = await removeAgentAction(id);
+      if (res.ok) { setAgents((prev) => prev.filter((a) => a.id !== id)); setConfirmRemove(null); }
+      else setError(res.error);
+    });
+  }
+
+  return (
+    <div className="flex flex-col gap-4 rounded-lg border border-border/60 p-4">
+      <div className="flex items-center gap-3">
+        <span aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-soft text-brand">
+          <Users className="h-4 w-4" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <h3 className="text-[13px] font-semibold text-foreground">{t("title")}</h3>
+          <p className="text-[11.5px] text-muted-foreground">{t("subtitle")}</p>
+        </div>
+      </div>
+
+      {agents.length > 0 ? (
+        <ul className="flex flex-col gap-1.5">
+          {agents.map((a) => (
+            <li key={a.id} className="flex flex-wrap items-center gap-2 rounded-md bg-muted/50 px-2.5 py-2 text-[12.5px]">
+              <span className="font-medium text-foreground">{a.full_name}</span>
+              <span className="font-mono tabular-nums text-muted-foreground">{a.whatsapp_e164}</span>
+              {a.languages.length > 0 ? (
+                <span className="flex gap-1">
+                  {a.languages.map((l) => (
+                    <span key={l} className="rounded bg-brand-soft px-1.5 py-px text-[10.5px] font-semibold uppercase text-brand">{l}</span>
+                  ))}
+                </span>
+              ) : null}
+              {a.office ? <span className="text-muted-foreground">· {a.office}</span> : null}
+              <span className="ml-auto flex items-center gap-1">
+                {confirmRemove === a.id ? (
+                  <>
+                    <button type="button" onClick={() => onRemove(a.id)} disabled={busy}
+                      className="rounded px-1.5 py-0.5 text-[11px] font-semibold text-destructive hover:bg-destructive/10">
+                      {t("confirmRemove")}
+                    </button>
+                    <button type="button" onClick={() => setConfirmRemove(null)}
+                      className="rounded px-1.5 py-0.5 text-[11px] text-muted-foreground hover:bg-muted">{t("cancel")}</button>
+                  </>
+                ) : (
+                  <button type="button" aria-label={t("remove")} onClick={() => setConfirmRemove(a.id)}
+                    className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground">
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-[12px] text-muted-foreground">{t("empty")}</p>
+      )}
+
+      <div className="flex flex-col gap-2 border-t border-border/60 pt-3">
+        <div className="flex flex-wrap gap-2">
+          <input value={draft.full_name} onChange={(e) => setDraft((d) => ({ ...d, full_name: e.target.value }))}
+            placeholder={t("namePlaceholder")} maxLength={120}
+            className="h-9 min-w-[150px] flex-1 rounded-md border border-border bg-background px-2.5 text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand/40" />
+          <input value={draft.whatsapp_e164} onChange={(e) => setDraft((d) => ({ ...d, whatsapp_e164: e.target.value }))}
+            placeholder="+34 600 111 222" maxLength={24} inputMode="tel"
+            className="h-9 min-w-[150px] flex-1 rounded-md border border-border bg-background px-2.5 text-[13px] tabular-nums text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand/40" />
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <input value={draft.email} onChange={(e) => setDraft((d) => ({ ...d, email: e.target.value }))}
+            placeholder={t("emailPlaceholder")} maxLength={160} type="email"
+            className="h-9 min-w-[150px] flex-1 rounded-md border border-border bg-background px-2.5 text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand/40" />
+          <input value={draft.office} onChange={(e) => setDraft((d) => ({ ...d, office: e.target.value }))}
+            placeholder={t("officePlaceholder")} maxLength={80}
+            className="h-9 min-w-[150px] flex-1 rounded-md border border-border bg-background px-2.5 text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand/40" />
+        </div>
+        <div>
+          <p className="mb-1.5 text-[11.5px] text-muted-foreground">{t("languagesHint")}</p>
+          <div className="flex flex-wrap gap-1">
+            {LANGS.map((l) => {
+              const on = draft.languages.includes(l);
+              return (
+                <button key={l} type="button" aria-pressed={on} onClick={() => toggleLang(l)}
+                  className={on
+                    ? "rounded-md bg-brand px-2 py-1 text-[11.5px] font-semibold uppercase text-white"
+                    : "rounded-md bg-muted/60 px-2 py-1 text-[11.5px] font-medium uppercase text-muted-foreground hover:bg-muted"}>
+                  {l}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button size="sm" onClick={onSave} disabled={busy || !draft.full_name.trim() || !draft.whatsapp_e164.trim()}>
+            {busy ? t("saving") : t("add")}
+          </Button>
+          <span className="text-[11.5px] text-muted-foreground">{t("numberHint")}</span>
+        </div>
+        {error ? <p className="text-[12px] text-destructive">{error}</p> : null}
+      </div>
+    </div>
+  );
+}

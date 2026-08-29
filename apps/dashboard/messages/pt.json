@@ -940,6 +940,21 @@
       "allDay": "Todo o dia",
       "availabilityInfo": "As horas a vermelho são quando NÃO estás disponível — pausas, horas bloqueadas e dias bloqueados. A Amanda nunca propõe visitas em tempo vermelho, e também aparece no calendário.",
       "whatIsRed": "O que é o tempo a vermelho?"
+    },
+    "agents": {
+      "title": "Os teus agentes",
+      "subtitle": "A Amanda avisa o certo — por idioma e só no horário dele.",
+      "empty": "Ainda sem agentes. Adiciona o primeiro abaixo.",
+      "namePlaceholder": "Nome completo",
+      "emailPlaceholder": "Email (opcional)",
+      "officePlaceholder": "Escritório (opcional)",
+      "languagesHint": "Idiomas em que consegue manter uma conversa",
+      "numberHint": "Inclui o indicativo do país — é assim que a Amanda distingue agentes de clientes.",
+      "add": "Adicionar agente",
+      "saving": "A guardar…",
+      "remove": "Remover",
+      "confirmRemove": "Remover",
+      "cancel": "Cancelar"
     }
   },
   "performance": {

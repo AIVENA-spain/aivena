@@ -940,6 +940,21 @@
       "allDay": "Hele dagen",
       "availabilityInfo": "De røde tider er, når du IKKE er tilgængelig — pauser, blokerede timer og blokerede dage. Amanda tilbyder aldrig fremvisninger i rød tid, og det vises også i kalenderen.",
       "whatIsRed": "Hvad er rød tid?"
+    },
+    "agents": {
+      "title": "Dine mæglere",
+      "subtitle": "Amanda pinger den rigtige — efter sprog og kun i arbejdstiden.",
+      "empty": "Ingen mæglere endnu. Tilføj den første nedenfor.",
+      "namePlaceholder": "Fulde navn",
+      "emailPlaceholder": "E-mail (valgfrit)",
+      "officePlaceholder": "Kontor (valgfrit)",
+      "languagesHint": "Sprog vedkommende kan føre en samtale på",
+      "numberHint": "Husk landekoden — sådan skelner Amanda mæglere fra kunder.",
+      "add": "Tilføj mægler",
+      "saving": "Gemmer…",
+      "remove": "Fjern",
+      "confirmRemove": "Fjern",
+      "cancel": "Annuller"
     }
   },
   "performance": {

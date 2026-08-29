@@ -940,6 +940,21 @@
       "allDay": "Ganzer Tag",
       "availabilityInfo": "Die roten Zeiten sind, wenn du NICHT verfügbar bist — Pausen, gesperrte Stunden und gesperrte Tage. Amanda bietet in roter Zeit nie Besichtigungen an, und es erscheint auch im Kalender.",
       "whatIsRed": "Was ist rote Zeit?"
+    },
+    "agents": {
+      "title": "Deine Makler",
+      "subtitle": "Amanda pingt den richtigen an — nach Sprache und nur in seinen Arbeitszeiten.",
+      "empty": "Noch keine Makler. Füge unten den ersten hinzu.",
+      "namePlaceholder": "Vollständiger Name",
+      "emailPlaceholder": "E-Mail (optional)",
+      "officePlaceholder": "Büro (optional)",
+      "languagesHint": "Sprachen, in denen er ein Gespräch führen kann",
+      "numberHint": "Mit Ländervorwahl — so unterscheidet Amanda Makler von Kunden.",
+      "add": "Makler hinzufügen",
+      "saving": "Speichern…",
+      "remove": "Entfernen",
+      "confirmRemove": "Entfernen",
+      "cancel": "Abbrechen"
     }
   },
   "performance": {

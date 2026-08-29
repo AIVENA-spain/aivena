@@ -940,6 +940,21 @@
       "allDay": "Cały dzień",
       "availabilityInfo": "Czerwone godziny to czas, kiedy NIE jesteś dostępny — przerwy, zablokowane godziny i dni. Amanda nigdy nie proponuje prezentacji w czerwonym czasie, co widać też w kalendarzu.",
       "whatIsRed": "Czym jest czerwony czas?"
+    },
+    "agents": {
+      "title": "Twoi agenci",
+      "subtitle": "Amanda pinguje właściwego — według języka i tylko w godzinach pracy.",
+      "empty": "Brak agentów. Dodaj pierwszego poniżej.",
+      "namePlaceholder": "Imię i nazwisko",
+      "emailPlaceholder": "E-mail (opcjonalnie)",
+      "officePlaceholder": "Biuro (opcjonalnie)",
+      "languagesHint": "Języki, w których poprowadzi rozmowę",
+      "numberHint": "Z numerem kierunkowym kraju — tak Amanda odróżnia agentów od klientów.",
+      "add": "Dodaj agenta",
+      "saving": "Zapisywanie…",
+      "remove": "Usuń",
+      "confirmRemove": "Usuń",
+      "cancel": "Anuluj"
     }
   },
   "performance": {

@@ -940,6 +940,21 @@
       "allDay": "Tutto il giorno",
       "availabilityInfo": "Gli orari in rosso sono quando NON sei disponibile — pause, ore bloccate e giorni bloccati. Amanda non propone mai visite nel tempo rosso, e si vede anche nel calendario.",
       "whatIsRed": "Cos'è il tempo in rosso?"
+    },
+    "agents": {
+      "title": "I tuoi agenti",
+      "subtitle": "Amanda avvisa quello giusto — per lingua e solo nel suo orario.",
+      "empty": "Ancora nessun agente. Aggiungi il primo qui sotto.",
+      "namePlaceholder": "Nome completo",
+      "emailPlaceholder": "Email (facoltativa)",
+      "officePlaceholder": "Ufficio (facoltativo)",
+      "languagesHint": "Lingue in cui riesce a sostenere una conversazione",
+      "numberHint": "Includi il prefisso internazionale: così Amanda distingue gli agenti dai clienti.",
+      "add": "Aggiungi agente",
+      "saving": "Salvataggio…",
+      "remove": "Rimuovi",
+      "confirmRemove": "Rimuovi",
+      "cancel": "Annulla"
     }
   },
   "performance": {

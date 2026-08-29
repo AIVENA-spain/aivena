@@ -940,6 +940,21 @@
       "allDay": "Toute la journée",
       "availabilityInfo": "Les heures en rouge sont celles où vous n'êtes PAS disponible — pauses, heures bloquées et jours bloqués. Amanda ne propose jamais de visite sur du temps rouge, et cela apparaît aussi dans le calendrier.",
       "whatIsRed": "Le temps en rouge, c'est quoi ?"
+    },
+    "agents": {
+      "title": "Vos agents",
+      "subtitle": "Amanda alerte le bon — par langue, et seulement pendant ses heures.",
+      "empty": "Aucun agent pour le moment. Ajoutez le premier ci-dessous.",
+      "namePlaceholder": "Nom complet",
+      "emailPlaceholder": "E-mail (facultatif)",
+      "officePlaceholder": "Bureau (facultatif)",
+      "languagesHint": "Langues dans lesquelles il peut tenir une conversation",
+      "numberHint": "Avec l'indicatif du pays — c'est ainsi qu'Amanda distingue les agents des clients.",
+      "add": "Ajouter un agent",
+      "saving": "Enregistrement…",
+      "remove": "Supprimer",
+      "confirmRemove": "Supprimer",
+      "cancel": "Annuler"
     }
   },
   "performance": {

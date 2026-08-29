@@ -940,6 +940,21 @@
       "allDay": "Hela dagen",
       "availabilityInfo": "De röda tiderna är när du INTE är tillgänglig — pauser, blockerade timmar och blockerade dagar. Amanda erbjuder aldrig visningar under röd tid, och det syns även i kalendern.",
       "whatIsRed": "Vad är röd tid?"
+    },
+    "agents": {
+      "title": "Dina mäklare",
+      "subtitle": "Amanda pingar rätt person — efter språk och bara under arbetstid.",
+      "empty": "Inga mäklare än. Lägg till den första nedan.",
+      "namePlaceholder": "Fullständigt namn",
+      "emailPlaceholder": "E-post (valfritt)",
+      "officePlaceholder": "Kontor (valfritt)",
+      "languagesHint": "Språk hen kan föra ett samtal på",
+      "numberHint": "Med landsnummer — så skiljer Amanda mäklare från kunder.",
+      "add": "Lägg till mäklare",
+      "saving": "Sparar…",
+      "remove": "Ta bort",
+      "confirmRemove": "Ta bort",
+      "cancel": "Avbryt"
     }
   },
   "performance": {

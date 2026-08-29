@@ -940,6 +940,21 @@
       "allDay": "Todo el día",
       "availabilityInfo": "Las horas en rojo son cuando NO estás disponible: pausas, horas bloqueadas y días bloqueados. Amanda nunca ofrece visitas en tiempo rojo, y también se ve en el calendario.",
       "whatIsRed": "¿Qué es el tiempo en rojo?"
+    },
+    "agents": {
+      "title": "Tus agentes",
+      "subtitle": "Amanda avisa al correcto: por idioma y solo en su horario.",
+      "empty": "Aún no hay agentes. Añade el primero abajo.",
+      "namePlaceholder": "Nombre completo",
+      "emailPlaceholder": "Email (opcional)",
+      "officePlaceholder": "Oficina (opcional)",
+      "languagesHint": "Idiomas en los que puede mantener una conversación",
+      "numberHint": "Incluye el prefijo del país: así distingue Amanda a los agentes de los clientes.",
+      "add": "Añadir agente",
+      "saving": "Guardando…",
+      "remove": "Eliminar",
+      "confirmRemove": "Eliminar",
+      "cancel": "Cancelar"
     }
   },
   "performance": {

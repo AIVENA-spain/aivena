@@ -940,6 +940,21 @@
       "allDay": "Koko päivä",
       "availabilityInfo": "Punaiset ajat ovat, kun ET ole käytettävissä — tauot, estetyt tunnit ja estetyt päivät. Amanda ei koskaan tarjoa esittelyjä punaisena aikana, ja se näkyy myös kalenterissa.",
       "whatIsRed": "Mitä punainen aika on?"
+    },
+    "agents": {
+      "title": "Välittäjäsi",
+      "subtitle": "Amanda pingaa oikean — kielen mukaan ja vain työaikana.",
+      "empty": "Ei vielä välittäjiä. Lisää ensimmäinen alta.",
+      "namePlaceholder": "Koko nimi",
+      "emailPlaceholder": "Sähköposti (valinnainen)",
+      "officePlaceholder": "Toimisto (valinnainen)",
+      "languagesHint": "Kielet, joilla hän pystyy keskustelemaan",
+      "numberHint": "Maatunnuksen kanssa — näin Amanda erottaa välittäjät asiakkaista.",
+      "add": "Lisää välittäjä",
+      "saving": "Tallennetaan…",
+      "remove": "Poista",
+      "confirmRemove": "Poista",
+      "cancel": "Peruuta"
     }
   },
   "performance": {

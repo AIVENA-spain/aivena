@@ -940,6 +940,21 @@
       "allDay": "All day",
       "availabilityInfo": "The red times are when you are NOT available — breaks, blocked hours and blocked days. Amanda never offers viewings in red time, and it shows in the calendar too.",
       "whatIsRed": "What is red time?"
+    },
+    "agents": {
+      "title": "Your agents",
+      "subtitle": "Amanda pings the right one — by language, and only in their working hours.",
+      "empty": "No agents yet. Add the first one below.",
+      "namePlaceholder": "Full name",
+      "emailPlaceholder": "Email (optional)",
+      "officePlaceholder": "Office (optional)",
+      "languagesHint": "Languages they can hold a conversation in",
+      "numberHint": "Include the country code — this is how Amanda tells agents from clients.",
+      "add": "Add agent",
+      "saving": "Saving…",
+      "remove": "Remove",
+      "confirmRemove": "Remove",
+      "cancel": "Cancel"
     }
   },
   "performance": {

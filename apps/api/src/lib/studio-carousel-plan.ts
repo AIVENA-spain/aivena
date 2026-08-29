@@ -27,8 +27,12 @@ export const PlanSchema = z.object({
   quote_context: z.string().max(220).default(''),
   attribution: z.string().max(62).default(''),
   cta_heading: z.string().min(1).max(78),
+  // RULE 9: what this agency does for someone with this topic — its own field, so it has its own
+  // line and its own type size on the closing slide instead of being crammed into the action.
+  agency_line: z.string().max(170).default(''),
   cta_action: z.string().min(1).max(140),
-  cta_keyword: z.string().min(1).max(34),
+  // RULE 8: a complete sentence, not a code word — 34 chars could not hold one
+  cta_keyword: z.string().min(1).max(90),
   swipe_cue: z.string().min(1).max(18).default('Desliza'),
   image_scenes: z.array(z.string().min(10).max(300)).max(3).default([]),
   caption: z.string().min(1).max(1600),
@@ -77,7 +81,8 @@ const PLAN_TOOL = {
       attribution: { type: 'string', description: 'quote only: who said it, exactly as provided, prefixed with "— "' },
       cta_heading: { type: 'string', description: 'closing-slide headline, max 78 chars — an invitation, not "Contáctanos"' },
       cta_action: { type: 'string', description: 'THE REAL CTA, max 140 chars: a save or send action matched to the post ("Envíaselo a la persona con quien compras" / "Guarda esta guía para tu próxima visita"). Help-framed — never "tag a friend"/"share this"/"follow us" (Meta demotes engagement bait).' },
-      cta_keyword: { type: 'string', description: 'the DM keyword pill, max 34 chars: "Escríbenos: GUÍA" style — one word the reader can DM' },
+      agency_line: { type: 'string', description: 'RULE 9, max 170 chars: ONE plain sentence naming what this agency helps people with, written from the topic + the agency profile ("We help families find homes near the international schools along this coast."). Omit only if no agency profile was given.' },
+      cta_keyword: { type: 'string', description: 'RULE 8, max 90 chars: a COMPLETE, NATURAL SENTENCE in the post language telling the reader exactly what to comment and what they get ("Comment FAMILY and we\'ll send it over."). NEVER a code line ("DM: FAMILY"), never a bare shouted word, never a "P.D." postscript.' },
       swipe_cue: { type: 'string', description: 'the "swipe" word in the post language, max 18 chars (es: "Desliza", en: "Swipe")' },
       image_scenes: { type: 'array', items: { type: 'string' }, description: 'EXACTLY 3 concrete visual scenes (in ENGLISH, 20-45 words each) translating the post topic and its EMOTION into imagery: [0] the COVER — the strongest, most literal scene of the whole deck: a composed scene (hero object + 2-4 supporting props) that STAGES THE TOPIC ITSELF so someone seeing only this image could guess what the post is about. A generic pretty postcard — a shuttered window, a nice door, a plain beach — is a FAILURE unless the topic is literally about it. [1] the SLIDE-2 artwork: a DIFFERENT composed scene restating the topic from a second angle (never a variation of the cover scene — new hero object, new props); [2] a quieter closing beat — this one MAY be a simple single subject (open sea, an empty beach, a lone olive tree). Rules: concrete nouns only (diffusion fails on abstractions), NO interiors, NO building facades that could read as a real property, NO recognizable landmarks, NO people close-up, NO text in the scene. Example cover for "a home you only visit a few times a year": "a garden table under a dust sheet on a terrace, four espresso cups upturned in a row, a wall calendar with four small red circles, drifted pine needles and unopened mail at the foot of a shuttered door".' },
       caption: { type: 'string', description: 'the Instagram caption — SHORT and HUMAN, like an agent typing on their phone: max 3 short lines + one CTA line (under 320 chars total). Contractions, plain words, no rhetorical-question openers, no formulas. BANNED: dreaming of, hidden gem, look no further, imagine yourself, sueñas con, joya escondida. Include one location word naturally. No hashtags inside.' },
@@ -173,6 +178,7 @@ export function normalisePlan(plan: CarouselPlan, language: string): CarouselPla
   plan.cta_heading = oneSentence(plan.cta_heading);
   plan.recap_title = oneSentence(plan.recap_title);
   plan.tips = plan.tips.map((t) => ({ ...t, title: oneSentence(t.title) }));
+  plan.agency_line = oneSentence(plan.agency_line ?? '');
   plan.cta_keyword = commentSentence(plan.cta_keyword, language);
   plan.caption = (plan.caption ?? '').split('\n').map((l) => l.replace(PS_PREFIX, '')).join('\n').trim();
   return plan;
@@ -259,7 +265,7 @@ CAROUSEL DOCTRINE (how these posts win — follow it):
 - Slide 2 is a SECOND cover: Instagram re-serves unswiped carousels starting at slide 2, so slide2_title must stand alone with zero context ("Selling this year? This saves you money.").
 - One idea per slide. Each slide answers the question the previous one raised.
 - The recap is the SAVE unit — people screenshot and forward it.
-- THE CLOSING SLIDE SAYS WHAT THE AGENCY DOES. cta_action OPENS with one plain sentence naming what this agency helps people with, written from the topic + the agency profile above ("We help families find homes near the international schools along this coast."). Then, and only then, the action. Contact details are handled by the design, not by you. NEVER "tag a friend", "share this", "follow for more" — Meta demotes engagement bait.
+- THE CLOSING SLIDE SAYS WHAT THE AGENCY DOES. agency_line is ONE plain sentence naming what this agency helps people with, written from the topic + the agency profile above ("We help families find homes near the international schools along this coast."). cta_action stays SHORT — the action itself, nothing else. Contact details are handled by the design, not by you. NEVER "tag a friend", "share this", "follow for more" — Meta demotes engagement bait.
 - save_line is the SECONDARY line, demoted under the agency line: the save/keep framing ("Save it for the week the move gets hard.").
 - cta_keyword is a COMPLETE, NATURAL SENTENCE in the post language telling the reader exactly what to comment and what they get ("Comment FAMILY and we'll send it over."). NEVER a code line ("DM: FAMILY", "Escríbenos: GUÍA"), never a bare shouted word, never a "P.D." postscript.
 - Caption: SHORT and human — 3 lines max + a CTA line, written like a person, not a brochure. No clichés, no rhetorical-question openers. Same place rule: no towns unless the topic names one. End with a short question answerable in ONE word — as a plain line, NEVER labelled "P.D." or "P.S.".
@@ -364,7 +370,7 @@ CHECK EVERY TEXT FIELD:
 5. NO REPEATED PROMISE — the cover and the first advice slide must not say the same thing twice. If slide 2 only restates the cover's promise ("the order that saves you weeks" under a cover about the order nobody explains), rewrite it as the FIRST piece of real advice.
 6. TRUE CLAIMS — any statement about the NIE, banks, taxes, residency, mortgages or ownership must be true as written. Prefer "usually / makes it far simpler" to an absolute impossibility you cannot verify. Keep the claim's usefulness; lose the falsehood.
 7. ONE CLEAN SENTENCE — no headline may join two independent clauses with a comma ("…in a new place, they need a plan"). Use an em dash or two sentences.
-8. THE CLOSING — cta_action must open by saying what this agency does for someone with this topic, before any save/send framing; save_line carries the save framing, demoted.
+8. THE CLOSING — agency_line must say what this agency does for someone with this topic, in one plain sentence; cta_action stays short and is the action alone; save_line carries the save framing, demoted.
 
 RULES FOR CORRECTIONS:
 - Rewrite in the SAME LANGUAGE as the existing copy, within the same length limits, same warm expert tone.

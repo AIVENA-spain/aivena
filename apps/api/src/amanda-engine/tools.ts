@@ -22,6 +22,9 @@ export interface PropertySummary {
    *  and offer to have them sent; the URLs are deliberately never exposed —
    *  they point at a third-party site (see the share-page decision). */
   photos: number;
+  /** The agency's OWN listing page, or null when the catalogue's link belongs
+   *  to a third-party portal (then she offers photos/a viewing instead). */
+  url: string | null;
   /** Date the listing entered the AGENCY'S CATALOGUE (YYYY-MM-DD) — "in our
    *  catalogue since", not necessarily its first day on the market. Null when
    *  the backend detects the dates are a bulk-import artifact. */

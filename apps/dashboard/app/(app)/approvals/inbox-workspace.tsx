@@ -37,6 +37,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { ConversationModeSwitch } from "@/components/amanda/conversation-mode-switch";
 import { GatedActionButton, GateNote } from "@/components/shell/launch-gate";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -1254,7 +1255,10 @@ function ThreadAndReply({
             {headSubline}
           </div>
         </div>
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-2">
+          {/* Who is answering this ONE person — the switch sits where the
+              decision is made, not three pages away in Settings. */}
+          <ConversationModeSwitch conversationId={lead.conversationId} />
           <ChannelBadge channel={lead.channel} />
         </div>
       </div>

@@ -635,7 +635,14 @@
       "reviewRequired": "Review required",
       "askFirstLockedHelp": "Approval-first reviews every reply during the pilot — these stay protected and can't be turned off here.",
       "statusComingSoon": "Coming soon",
-      "statusLocked": "Protected"
+      "statusLocked": "Protected",
+      "waOff": "Amanda ist aus",
+      "waShadow": "Nur beobachtend — nichts wird gesendet",
+      "waApproval": "Jede Antwort wartet auf Sie",
+      "waAuto": "Amanda sendet diese selbst",
+      "bookOff": "Nicht solange Amanda aus ist",
+      "bookAuto": "Amanda bucht diese selbst",
+      "bookReview": "Jede Buchung wartet auf Sie"
     },
     "voice": {
       "title": "Stimme & Tonfall",
@@ -890,7 +897,8 @@
       "editCommunication": "Kommunikation bearbeiten",
       "manageTeam": "Team verwalten",
       "viewPlan": "Tarif ansehen",
-      "colourLabel": "Markenfarbe"
+      "colourLabel": "Markenfarbe",
+      "agentsOnWhatsapp": "{count} Makler auf WhatsApp"
     },
     "amanda": {
       "title": "Amanda Automodus",
@@ -939,7 +947,41 @@
       "breakLabel": "Pause",
       "allDay": "Ganzer Tag",
       "availabilityInfo": "Die roten Zeiten sind, wenn du NICHT verfügbar bist — Pausen, gesperrte Stunden und gesperrte Tage. Amanda bietet in roter Zeit nie Besichtigungen an, und es erscheint auch im Kalender.",
-      "whatIsRed": "Was ist rote Zeit?"
+      "whatIsRed": "Was ist rote Zeit?",
+      "calendarMoved": "Besichtigungsdauer, Zeiten, Pausen und freie Tage stehen jetzt in Ihrem Kalender — ein Ort, und Amanda bucht darin.",
+      "calendarMovedLink": "Kalender öffnen"
+    },
+    "agents": {
+      "title": "Deine Makler",
+      "subtitle": "Amanda pingt den richtigen an — nach Sprache und nur in seinen Arbeitszeiten.",
+      "empty": "Noch keine Makler. Füge unten den ersten hinzu.",
+      "namePlaceholder": "Vollständiger Name",
+      "emailPlaceholder": "E-Mail (optional)",
+      "officePlaceholder": "Büro (optional)",
+      "languagesHint": "Sprachen, in denen er ein Gespräch führen kann",
+      "numberHint": "Mit Ländervorwahl — so unterscheidet Amanda Makler von Kunden.",
+      "add": "Makler hinzufügen",
+      "saving": "Speichern…",
+      "remove": "Entfernen",
+      "confirmRemove": "Entfernen",
+      "cancel": "Abbrechen"
+    },
+    "automation": {
+      "title": "Automatisierungsgrad",
+      "help": "Wie viel Amanda selbst erledigt. Jede Stufe gibt ihr etwas mehr.",
+      "activeBadge": "Aktiv",
+      "saving": "Wird gespeichert…",
+      "handoffNote": "In jeder Stufe über Aus wird alles, was Amanda nicht beantworten kann, an einen Menschen übergeben statt geraten — das ist keine Einstellung, sondern ihre Arbeitsweise.",
+      "offLabel": "Aus",
+      "offDesc": "Amanda antwortet gar nicht. Jede Nachricht wartet auf Ihr Team.",
+      "shadowLabel": "Beobachtend",
+      "shadowDesc": "Amanda schreibt, was sie gesagt hätte, aber nichts erreicht den Kunden und nichts wird gebucht. So sehen Sie, wie sie echte Gespräche führt, bevor Sie sie ihr anvertrauen.",
+      "approvalLabel": "Entwürfe, Sie senden",
+      "approvalDesc": "Amanda schreibt jede Antwort als Entwurf. Nichts geht raus, bevor es jemand freigibt, und Buchungen warten ebenfalls.",
+      "assistedLabel": "Antwortet selbst, Termine warten auf Sie",
+      "assistedDesc": "Amanda beantwortet Fragen und sendet diese Antworten selbst. Alles, was Sie bindet — Besichtigung buchen, verschieben oder absagen — wartet auf einen Tipp Ihres Teams.",
+      "fullLabel": "Antwortet und bucht",
+      "fullDesc": "Amanda antwortet und bucht Besichtigungen selbst, innerhalb Ihrer Kalenderzeiten."
     }
   },
   "performance": {
@@ -1495,5 +1537,20 @@
     "aiMutedNote": "Der Assistent ist für diese Kunden pausiert — eine Person muss antworten. Übernehmen und den Kunden kontaktieren (WhatsApp/Telefon/E-Mail). \"Zurück an den Assistenten\" hebt die Pause auf.",
     "notifTitle": "{name} möchte mit einer Person sprechen",
     "notifBody": "Posteingang öffnen, um das Gespräch zu übernehmen."
+  },
+  "conversationMode": {
+    "saving": "Wird gespeichert…",
+    "agencyOffHint": "Amanda ist für die ganze Agentur aus — schalten Sie sie zuerst in den Einstellungen ein.",
+    "state_off": "Sie übernehmen",
+    "state_shadow": "Nur beobachtend",
+    "state_approval": "Entwürfe für Sie",
+    "state_assisted": "Amanda antwortet",
+    "state_full": "Amanda antwortet und bucht",
+    "optInherit": "Der Agentur folgen ({mode})",
+    "optInheritDesc": "Was Ihr Automatisierungsgrad vorgibt.",
+    "optFull": "Amanda übernimmt",
+    "optFullDesc": "Sie antwortet und bucht für diese Person, unabhängig vom Agenturgrad.",
+    "optOff": "Ich übernehme",
+    "optOffDesc": "Amanda schweigt hier. Nichts wird gesendet, bis Sie sie wieder einschalten."
   }
 }

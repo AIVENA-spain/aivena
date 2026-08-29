@@ -635,7 +635,14 @@
       "reviewRequired": "Review required",
       "askFirstLockedHelp": "Approval-first reviews every reply during the pilot — these stay protected and can't be turned off here.",
       "statusComingSoon": "Coming soon",
-      "statusLocked": "Protected"
+      "statusLocked": "Protected",
+      "waOff": "Amanda er av",
+      "waShadow": "Bare observerer — ingenting sendes",
+      "waApproval": "Hvert svar venter på deg",
+      "waAuto": "Amanda sender dem selv",
+      "bookOff": "Ikke mens Amanda er av",
+      "bookAuto": "Amanda booker dem selv",
+      "bookReview": "Hver booking venter på deg"
     },
     "voice": {
       "title": "Stemme og tone",
@@ -890,7 +897,8 @@
       "editCommunication": "Rediger kommunikasjon",
       "manageTeam": "Administrer team",
       "viewPlan": "Se plan",
-      "colourLabel": "Merkevarefarge"
+      "colourLabel": "Merkevarefarge",
+      "agentsOnWhatsapp": "{count} meglere på WhatsApp"
     },
     "amanda": {
       "title": "Amandas automodus",
@@ -939,7 +947,41 @@
       "breakLabel": "Pause",
       "allDay": "Hele dagen",
       "availabilityInfo": "De røde tidene er når du IKKE er tilgjengelig — pauser, blokkerte timer og blokkerte dager. Amanda tilbyr aldri visninger i rød tid, og det vises også i kalenderen.",
-      "whatIsRed": "Hva er rød tid?"
+      "whatIsRed": "Hva er rød tid?",
+      "calendarMoved": "Lengde på visninger, tider, pauser og fridager ligger nå i kalenderen din — ett sted, og Amanda booker innenfor den.",
+      "calendarMovedLink": "Åpne kalenderen"
+    },
+    "agents": {
+      "title": "Meglerne dine",
+      "subtitle": "Amanda pinger riktig person — etter språk, og bare i arbeidstiden.",
+      "empty": "Ingen meglere ennå. Legg til den første under.",
+      "namePlaceholder": "Fullt navn",
+      "emailPlaceholder": "E-post (valgfritt)",
+      "officePlaceholder": "Kontor (valgfritt)",
+      "languagesHint": "Språk vedkommende kan føre en samtale på",
+      "numberHint": "Ta med landkode — det er slik Amanda skiller meglere fra kunder.",
+      "add": "Legg til megler",
+      "saving": "Lagrer…",
+      "remove": "Fjern",
+      "confirmRemove": "Fjern",
+      "cancel": "Avbryt"
+    },
+    "automation": {
+      "title": "Automatiseringsnivå",
+      "help": "Hvor mye Amanda gjør selv. Hvert steg gir henne litt mer.",
+      "activeBadge": "Aktiv",
+      "saving": "Lagrer…",
+      "handoffNote": "På alle nivåer over Av blir alt Amanda ikke kan svare på sendt til et menneske i stedet for gjettet — det er ikke en innstilling, det er slik hun jobber.",
+      "offLabel": "Av",
+      "offDesc": "Amanda svarer ikke i det hele tatt. Hver melding venter på teamet ditt.",
+      "shadowLabel": "Observerer",
+      "shadowDesc": "Amanda skriver hva hun ville ha sagt, men ingenting når kunden og ingenting bookes. Bruk det til å se hvordan hun håndterer ekte samtaler før du overlater dem til henne.",
+      "approvalLabel": "Utkast, du sender",
+      "approvalDesc": "Amanda skriver hvert svar som utkast. Ingenting går ut før noen godkjenner det, og visninger venter også.",
+      "assistedLabel": "Svarer selv, visninger venter på deg",
+      "assistedDesc": "Amanda svarer på spørsmål og sender de svarene selv. Alt som forplikter deg — booke, flytte eller avlyse en visning — venter på ett trykk fra teamet ditt.",
+      "fullLabel": "Svarer og booker",
+      "fullDesc": "Amanda svarer og booker visninger selv, innenfor kalendertidene dine."
     }
   },
   "performance": {
@@ -1495,5 +1537,20 @@
     "aiMutedNote": "Assistenten er satt på pause for disse kundene — en person må svare. Ta den og kontakt kunden (WhatsApp/telefon/e-post). \"Tilbake til assistenten\" opphever pausen.",
     "notifTitle": "{name} vil snakke med et menneske",
     "notifBody": "Åpne innboksen for å ta samtalen."
+  },
+  "conversationMode": {
+    "saving": "Lagrer…",
+    "agencyOffHint": "Amanda er av for hele byrået — slå henne på i Innstillinger først.",
+    "state_off": "Du tar denne",
+    "state_shadow": "Bare observerer",
+    "state_approval": "Utkast til deg",
+    "state_assisted": "Amanda svarer",
+    "state_full": "Amanda svarer og booker",
+    "optInherit": "Følg byrået ({mode})",
+    "optInheritDesc": "Det automatiseringsnivået ditt sier.",
+    "optFull": "Amanda tar denne",
+    "optFullDesc": "Hun svarer og booker for denne personen, uansett byråets nivå.",
+    "optOff": "Jeg tar denne",
+    "optOffDesc": "Amanda er stille her. Ingenting sendes før du slår henne på igjen."
   }
 }

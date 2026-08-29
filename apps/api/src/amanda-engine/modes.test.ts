@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { AMANDA_MODES, parseAmandaMode, dispatchDecision, runActionTool, type ToolClass } from './modes';
+import { AMANDA_MODES, parseAmandaMode, dispatchDecision, runActionTool, effectiveMode, type ToolClass } from './modes';
 
 const ACTION_CLASSES: ToolClass[] = ['reply', 'commitment', 'internal_write'];
 
@@ -85,5 +85,29 @@ describe('FULL — executes (validator gates live inside executeReal)', () => {
     const res = await runActionTool('full', 'commitment', real);
     expect(real).toHaveBeenCalledOnce();
     expect(res.data).toEqual({ bookingId: 'b1' });
+  });
+});
+
+describe('effectiveMode — per-conversation override (Christian 2026-08-29)', () => {
+  it('agency off is an absolute kill switch — no override resurrects her', () => {
+    for (const override of ['full', 'assisted', 'approval', 'shadow', 'off', null]) {
+      expect(effectiveMode('off', override)).toBe('off');
+    }
+  });
+
+  it('with no override the conversation follows the agency dial', () => {
+    expect(effectiveMode('approval', null)).toBe('approval');
+    expect(effectiveMode('assisted', undefined)).toBe('assisted');
+    expect(effectiveMode('full', '')).toBe('full');
+  });
+
+  it('an override wins inside a live agency — in both directions', () => {
+    expect(effectiveMode('approval', 'full')).toBe('full');   // "Amanda handles this one"
+    expect(effectiveMode('full', 'off')).toBe('off');         // "I'll handle this one"
+  });
+
+  it('an unrecognised stored override falls silent, never sends', () => {
+    expect(effectiveMode('full', 'sometimes')).toBe('off');
+    expect(effectiveMode('full', 'FULL')).toBe('off');
   });
 });

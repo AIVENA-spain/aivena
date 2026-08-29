@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { sql } from 'drizzle-orm';
 import { scrubKnowledge } from '../amanda-engine/knowledge-scrub';
-import { parseAmandaMode } from '../amanda-engine/modes';
+import { parseAmandaMode, AMANDA_MODES } from '../amanda-engine/modes';
 import { parseAmandaSettings } from '../amanda-engine/backends-db';
 
 /**
@@ -167,6 +167,121 @@ route.post('/settings', async (c) => {
   return c.json({ ok: true, saved: patch });
 });
 
+// Automation level (Christian 2026-08-29: "there should be more options, some
+// in betweens ... ofc it needs to be truthful"). The five modes here are the
+// SAME five dispatchDecision() enforces in the tool layer — the UI describes
+// real behaviour, it does not invent tiers. Previously the dial was read-only
+// and Settings showed a LOCKED "approval-first" card while this agency was
+// actually running 'full' — the page contradicted the engine.
+route.post('/settings/mode', async (c) => {
+  const tx = c.get('tx');
+  const user = c.get('user') as { id?: string; email?: string } | undefined;
+  let body: Record<string, unknown> = {};
+  try {
+    body = (await c.req.json()) as Record<string, unknown>;
+  } catch {
+    body = {};
+  }
+  const raw = typeof body.mode === 'string' ? body.mode : '';
+  // Unknown input must not silently become 'off' (parseAmandaMode fails closed,
+  // which is right for the ENGINE but wrong for a save — it would look like the
+  // agency chose to switch Amanda off). Reject instead.
+  if (!(AMANDA_MODES as readonly string[]).includes(raw)) {
+    return c.json({ error: 'unknown_mode' }, 400);
+  }
+  const mode = parseAmandaMode(raw);
+  const trail = JSON.stringify({
+    mode_changed_at: new Date().toISOString(),
+    mode_changed_by: user?.email ?? user?.id ?? 'unknown',
+  });
+  await tx.execute(sql`
+    UPDATE agency_settings
+       SET amanda_mode = ${mode}::text,
+           amanda_settings = COALESCE(amanda_settings, '{}'::jsonb) || ${trail}::jsonb,
+           updated_at = now()
+     WHERE agency_id = current_setting('app.current_agency_id', true)
+  `);
+  return c.json({ ok: true, mode });
+});
+
+// Per-conversation automation switch (Christian 2026-08-29: "turn off
+// automation on one person fully or turn on automation fully on one person").
+//
+// Two stops existed and disagreed: ai_muted_at / human_claimed_at (set when
+// Amanda hands a conversation to a human) had NO way back — nothing in the
+// product could un-mute. So handing a conversation back to Amanda clears BOTH
+// legacy stops as well as setting the override, otherwise the switch would flip
+// in the UI and change nothing in the engine.
+route.get('/conversations/:id/mode', async (c) => {
+  const tx = c.get('tx');
+  const id = c.req.param('id');
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return c.json({ error: 'bad_id' }, 400);
+  const rows = (await tx.execute(sql`
+    SELECT c.amanda_mode_override, c.ai_muted_at, c.human_claimed_at, s.amanda_mode AS agency_mode
+      FROM conversations c
+      JOIN agency_settings s ON s.agency_id = current_setting('app.current_agency_id', true)
+     WHERE c.id = ${id}::uuid
+     LIMIT 1
+  `)) as unknown as Array<Record<string, unknown>>;
+  const r = rows[0];
+  if (!r) return c.json({ error: 'not_found' }, 404);
+  const agencyMode = parseAmandaMode(r.agency_mode);
+  const override = typeof r.amanda_mode_override === 'string' ? parseAmandaMode(r.amanda_mode_override) : null;
+  const paused = Boolean(r.ai_muted_at) || Boolean(r.human_claimed_at);
+  return c.json({
+    ok: true,
+    agency_mode: agencyMode,
+    override,
+    paused,
+    // What the engine will ACTUALLY do on the next message — the number the UI
+    // shows, so the switch can never disagree with behaviour.
+    effective: agencyMode === 'off' || paused ? 'off' : (override ?? agencyMode),
+  });
+});
+
+route.post('/conversations/:id/mode', async (c) => {
+  const tx = c.get('tx');
+  const user = c.get('user') as { id?: string; email?: string } | undefined;
+  const id = c.req.param('id');
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return c.json({ error: 'bad_id' }, 400);
+  let body: Record<string, unknown> = {};
+  try {
+    body = (await c.req.json()) as Record<string, unknown>;
+  } catch {
+    body = {};
+  }
+  const raw = typeof body.mode === 'string' ? body.mode : '';
+  if (raw !== 'inherit' && !(AMANDA_MODES as readonly string[]).includes(raw)) {
+    return c.json({ error: 'unknown_mode' }, 400);
+  }
+  const actor = user?.email ?? user?.id ?? 'dashboard';
+
+  if (raw === 'off') {
+    // Both stops agree: the override silences the engine, and ai_muted_at keeps
+    // the existing handoff machinery consistent with it.
+    await tx.execute(sql`
+      UPDATE conversations
+         SET amanda_mode_override = 'off',
+             ai_muted_at = COALESCE(ai_muted_at, now()),
+             ai_muted_by = COALESCE(ai_muted_by, ${'dashboard:' + actor.slice(0, 80)}),
+             updated_at = now()
+       WHERE id = ${id}::uuid
+    `);
+  } else {
+    await tx.execute(sql`
+      UPDATE conversations
+         SET amanda_mode_override = ${raw === 'inherit' ? null : raw}::text,
+             ai_muted_at = NULL,
+             ai_muted_by = NULL,
+             human_claimed_at = NULL,
+             human_claimed_by = NULL,
+             updated_at = now()
+       WHERE id = ${id}::uuid
+    `);
+  }
+  return c.json({ ok: true, override: raw === 'inherit' ? null : raw });
+});
+
 route.post('/knowledge', async (c) => {
   const tx = c.get('tx');
   const user = c.get('user');
@@ -204,6 +319,129 @@ route.post('/knowledge/:id/remove', async (c) => {
      WHERE id = ${id}::uuid
        AND agency_id = current_setting('app.current_agency_id', true)
        AND status IN ('active', 'pending_review')
+  `);
+  return c.json({ ok: true });
+});
+
+// ── Agent roster (Christian 2026-08-28) ─────────────────────────────────────
+// "the agency needs to have a place for managing their real estate agents…
+//  name, what language speaks, office and work hours, unavailable hours,
+//  whats email and whatsapp nr, so that amanda can ping the agent that is
+//  correct for the client". RLS-fenced through the request tx like everything
+//  else here. whatsapp_e164 is the STAFF REGISTRY the inbound router checks
+//  before find-or-create-lead, so its format is validated hard on the way in:
+//  a mistyped local number would be an invisible routing failure, not a typo.
+
+const E164 = /^\+[1-9][0-9]{6,14}$/;
+const LANG_CODE = /^[a-z]{2}$/;
+
+/** Accepts what a human types (+34 600 111 222, 0034…) and returns E.164. */
+function toE164(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null;
+  let v = raw.trim().replace(/[\s()\-.]/g, '');
+  if (v.startsWith('00')) v = `+${v.slice(2)}`;
+  return E164.test(v) ? v : null;
+}
+
+route.get('/agents', async (c) => {
+  const tx = c.get('tx');
+  try {
+    const rows = (await tx.execute(sql`
+      SELECT id, full_name, whatsapp_e164, email, languages, office, work_hours,
+             unavailable_dates, receives_pings, last_checkin_at, status
+        FROM agency_agents
+       WHERE agency_id = current_setting('app.current_agency_id', true)
+         AND status <> 'removed'
+       ORDER BY full_name ASC
+    `)) as unknown as Array<Record<string, unknown>>;
+    return c.json({ ok: true, configured: true, agents: rows });
+  } catch (err) {
+    // Pre-migration safety, same convention as the settings GET above.
+    console.error('[amanda-admin] agents read degraded:', err instanceof Error ? err.message.split('\n')[0].slice(0, 120) : 'error');
+    return c.json({ ok: true, configured: false, agents: [] });
+  }
+});
+
+route.post('/agents', async (c) => {
+  const tx = c.get('tx');
+  const agencyId = c.get('agencyId') as string;
+  let body: Record<string, unknown> = {};
+  try { body = (await c.req.json()) as Record<string, unknown>; } catch { body = {}; }
+
+  const fullName = typeof body.full_name === 'string' ? body.full_name.trim().slice(0, 120) : '';
+  if (!fullName) return c.json({ error: 'Give the agent a name.' }, 400);
+
+  const whatsapp = toE164(body.whatsapp_e164);
+  if (!whatsapp) {
+    return c.json({ error: 'That WhatsApp number needs the country code, e.g. +34 600 111 222.' }, 400);
+  }
+  const email = typeof body.email === 'string' && body.email.trim() ? body.email.trim().slice(0, 160) : null;
+  const office = typeof body.office === 'string' && body.office.trim() ? body.office.trim().slice(0, 80) : null;
+  const languages = Array.isArray(body.languages)
+    ? [...new Set((body.languages as unknown[]).filter((l): l is string => typeof l === 'string' && LANG_CODE.test(l)))].slice(0, 8)
+    : [];
+  const receivesPings = body.receives_pings !== false;
+
+  // Same shape + bounds as Amanda's viewing hours, so the UI can reuse the editor.
+  const hours: Record<string, number[]> = {};
+  if (body.work_hours && typeof body.work_hours === 'object' && !Array.isArray(body.work_hours)) {
+    for (const [k, v] of Object.entries(body.work_hours as Record<string, unknown>)) {
+      const day = Number(k);
+      if (!Number.isInteger(day) || day < 0 || day > 6 || !Array.isArray(v)) continue;
+      const hs = (v as unknown[]).filter((h): h is number => typeof h === 'number' && Number.isInteger(h) && h >= 0 && h <= 23);
+      if (hs.length) hours[String(day)] = [...new Set(hs)].sort((a, b) => a - b).slice(0, 24);
+    }
+  }
+  const today = new Date().toISOString().slice(0, 10);
+  const unavailable = Array.isArray(body.unavailable_dates)
+    ? [...new Set((body.unavailable_dates as unknown[]).filter((d): d is string => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d) && d >= today))].sort().slice(0, 120)
+    : [];
+
+  const id = typeof body.id === 'string' && body.id ? body.id : null;
+  try {
+    if (id) {
+      const rows = (await tx.execute(sql`
+        UPDATE agency_agents
+           SET full_name = ${fullName}, whatsapp_e164 = ${whatsapp}, email = ${email},
+               languages = string_to_array(${languages.join(',')}, ','),
+               office = ${office},
+               work_hours = ${JSON.stringify(hours)}::jsonb,
+               unavailable_dates = string_to_array(${unavailable.join(',')}, ','),
+               receives_pings = ${receivesPings}, updated_at = now()
+         WHERE id = ${id}::uuid
+           AND agency_id = current_setting('app.current_agency_id', true)
+         RETURNING id
+      `)) as unknown as unknown[];
+      if (rows.length === 0) return c.json({ error: 'That agent could not be found.' }, 404);
+      return c.json({ ok: true, id });
+    }
+    const rows = (await tx.execute(sql`
+      INSERT INTO agency_agents (agency_id, full_name, whatsapp_e164, email, languages, office,
+                                 work_hours, unavailable_dates, receives_pings)
+      VALUES (${agencyId}, ${fullName}, ${whatsapp}, ${email},
+              string_to_array(${languages.join(',')}, ','), ${office},
+              ${JSON.stringify(hours)}::jsonb,
+              string_to_array(${unavailable.join(',')}, ','), ${receivesPings})
+      RETURNING id
+    `)) as unknown as Array<{ id: string }>;
+    return c.json({ ok: true, id: rows[0]?.id });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : '';
+    if (/agency_agents_agency_id_whatsapp_e164_key|duplicate key/i.test(msg)) {
+      return c.json({ error: 'Another agent already uses that WhatsApp number.' }, 409);
+    }
+    console.error('[amanda-admin] agent save failed:', msg.split('\n')[0].slice(0, 140));
+    return c.json({ error: 'That agent could not be saved — please try again.' }, 500);
+  }
+});
+
+// Soft delete: the number must stop being staff, but history stays truthful.
+route.post('/agents/:id/remove', async (c) => {
+  const tx = c.get('tx');
+  await tx.execute(sql`
+    UPDATE agency_agents SET status = 'removed', receives_pings = false, updated_at = now()
+     WHERE id = ${c.req.param('id')}::uuid
+       AND agency_id = current_setting('app.current_agency_id', true)
   `);
   return c.json({ ok: true });
 });

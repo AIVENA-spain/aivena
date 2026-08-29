@@ -464,3 +464,72 @@ export async function removeAmandaKnowledgeAction(id: string): Promise<ActionRes
     return actionError("removeAmandaKnowledgeAction", err);
   }
 }
+
+// ---------- agent roster (Christian 2026-08-28) ----------
+
+export type AgentRow = {
+  id: string;
+  full_name: string;
+  whatsapp_e164: string;
+  email: string | null;
+  office: string | null;
+  languages: string[];
+  receives_pings: boolean;
+  last_checkin_at: string | null;
+  status: string;
+};
+
+export async function saveAgentAction(input: {
+  id?: string;
+  full_name: string;
+  whatsapp_e164: string;
+  email?: string;
+  office?: string;
+  languages: string[];
+}): Promise<ActionResult<{ id: string }>> {
+  try {
+    const res = await apiFetch<{ ok: true; id: string }>("/api/v1/amanda/agents", {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+    revalidatePath("/settings");
+    return { ok: true, data: { id: res.id } };
+  } catch (err) {
+    return actionError("saveAgentAction", err);
+  }
+}
+
+export async function removeAgentAction(id: string): Promise<ActionResult<{ ok: true }>> {
+  try {
+    await apiFetch<{ ok: true }>(`/api/v1/amanda/agents/${encodeURIComponent(id)}/remove`, {
+      method: "POST",
+      body: "{}",
+    });
+    revalidatePath("/settings");
+    return { ok: true, data: { ok: true } };
+  } catch (err) {
+    return actionError("removeAgentAction", err);
+  }
+}
+
+/**
+ * Automation level — the REAL Amanda dial (off/shadow/approval/assisted/full),
+ * the same five the engine's tool layer enforces. Christian 2026-08-29 asked
+ * for the in-between steps; they already existed in the engine and were simply
+ * never exposed, while Settings showed a locked "approval-first" card that
+ * contradicted the live mode.
+ */
+export async function saveAmandaModeAction(
+  mode: string,
+): Promise<ActionResult<{ mode: string }>> {
+  try {
+    const res = await apiFetch<{ ok: true; mode: string }>("/api/v1/amanda/settings/mode", {
+      method: "POST",
+      body: JSON.stringify({ mode }),
+    });
+    revalidatePath("/settings");
+    return { ok: true, data: { mode: res.mode } };
+  } catch (err) {
+    return actionError("saveAmandaModeAction", err);
+  }
+}

@@ -2,13 +2,12 @@
 
 import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 import { Sparkles, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { AvailabilityEditor } from "@/components/amanda/availability-editor";
 import type { AmandaSettingsResponse } from "@/lib/api/types";
 import {
-  saveAmandaSettingsAction,
   addAmandaKnowledgeAction,
   removeAmandaKnowledgeAction,
 } from "../section-actions";
@@ -24,11 +23,6 @@ import {
 export function AmandaSection({ data }: { data: AmandaSettingsResponse | null }) {
   const t = useTranslations("settings.amanda");
 
-  const [duration, setDuration] = useState<number>(data?.settings?.viewing_duration_min ?? 60);
-  const [notice, setNotice] = useState<number>(data?.settings?.viewing_notice_hours ?? 24);
-  const [savedAt, setSavedAt] = useState<number | null>(null);
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const [saving, startSaving] = useTransition();
 
   const [entries, setEntries] = useState(data?.knowledge ?? []);
   const [draft, setDraft] = useState("");
@@ -44,18 +38,6 @@ export function AmandaSection({ data }: { data: AmandaSettingsResponse | null })
         <p className="text-[12px] text-muted-foreground">{t("notSetUp")}</p>
       </div>
     );
-  }
-
-  function onSave() {
-    setSaveError(null);
-    startSaving(async () => {
-      const res = await saveAmandaSettingsAction({
-        viewing_duration_min: duration,
-        viewing_notice_hours: notice,
-      });
-      if (res.ok) setSavedAt(Date.now());
-      else setSaveError(res.error);
-    });
   }
 
   function onAdd() {
@@ -90,48 +72,17 @@ export function AmandaSection({ data }: { data: AmandaSettingsResponse | null })
     <div className="flex flex-col gap-4 rounded-lg border border-border/60 p-4">
       <Header t={t} mode={data.mode ?? "off"} />
 
-      {/* Viewing numbers — the two knobs the engine actually reads today. */}
-      <div className="flex flex-wrap items-end gap-3">
-        <label className="flex flex-col gap-1 text-[12px] text-muted-foreground">
-          {t("durationLabel")}
-          <input
-            type="number"
-            min={15}
-            max={240}
-            step={15}
-            value={duration}
-            onChange={(e) => setDuration(Number(e.target.value))}
-            className="h-8 w-24 rounded-md border border-border bg-background px-2 text-[13px] text-foreground focus:outline-none focus:ring-2 focus:ring-brand/40"
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-[12px] text-muted-foreground">
-          {t("noticeLabel")}
-          <input
-            type="number"
-            min={1}
-            max={168}
-            value={notice}
-            onChange={(e) => setNotice(Number(e.target.value))}
-            className="h-8 w-24 rounded-md border border-border bg-background px-2 text-[13px] text-foreground focus:outline-none focus:ring-2 focus:ring-brand/40"
-          />
-        </label>
-        <Button size="sm" onClick={onSave} disabled={saving}>
-          {saving ? t("saving") : t("save")}
-        </Button>
-        {savedAt && !saving && !saveError ? (
-          <span className="text-[12px] text-brand">{t("saved")}</span>
-        ) : null}
-      </div>
-      {saveError ? <p className="text-[12px] text-destructive">{saveError}</p> : null}
-
-      {/* Availability (hours grid + blocked days) — the ONE shared editor,
-          also reachable from the Viewings page drawer. */}
-      <div className="border-t border-border/60 pt-3">
-        <AvailabilityEditor
-          initialHours={data.settings?.viewing_hours_by_weekday}
-          initialBlocked={data.settings?.blocked_dates}
-        />
-      </div>
+      {/* Calendar rules live in the CALENDAR (Christian 2026-08-29: "is this
+          section not useless now, since its in the calendar section already?").
+          Viewing length, notice, hours, breaks and blocked days were a second,
+          degraded copy of the Viewings drawer — it could not even edit hour
+          blocks. One editor, one home; this is the signpost to it. */}
+      <p className="rounded-md bg-muted/50 px-3 py-2 text-[12px] text-muted-foreground">
+        {t("calendarMoved")}{" "}
+        <Link href="/viewings" className="font-medium text-brand underline underline-offset-2">
+          {t("calendarMovedLink")}
+        </Link>
+      </p>
 
       {/* Things Amanda should know — screened at save (design §5). */}
       <div className="flex flex-col gap-2 border-t border-border/60 pt-3">

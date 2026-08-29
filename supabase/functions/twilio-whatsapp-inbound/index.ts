@@ -1,23 +1,21 @@
-// twilio-whatsapp-inbound — W6 receive path v2.
+// twilio-whatsapp-inbound — W6 receive path v4 (deployed 2026-08-28, v13).
+// Diff vs v3, and nothing else:
 //
-// REPO CAPTURE 2026-08-26 (Amanda auto-mode P0): byte-exact source of the LIVE
-// deployed version (v10, ezbr_sha256 b23cb3e876d1dd6918e3d3d5e78c0df42d83442e
-// 3133a065b54310fbb1848089). This EF was deploy-only until now — do not edit
-// casually; any change requires an approval-gated redeploy. See
-// docs/amanda-automode/DESIGN_v1.2_2026-08-26.md §8 P0 and CAPTURE_NOTES.md
-// beside this file for the media audit + planned outbox changes.
+//   THE CLEAR LINE (Christian, 2026-08-28): agents message the SAME AIVENA
+//   number as buyers, so the number itself is the only discriminator — and
+//   until now nothing looked. An agent texting in was turned into a LEAD and
+//   answered as if they were house-hunting. The agent roster is now checked
+//   BEFORE find-or-create-lead: a registered agent can never become a lead and
+//   never reaches the buyer engine. The staff lane today only records the
+//   message and stamps last_checkin_at (the ping/reply machinery is the next
+//   slice) — doing nothing is right, becoming a buyer is wrong. Fail-safe: if
+//   the lookup itself errors we fall through to the buyer path exactly as
+//   before, so a broken lookup can never silently swallow real buyers.
 //
-// v2 changes:
-// - After successfully storing a NEW inbound message (not a duplicate), fires
-//   the W4c WhatsApp Suggested Reply webhook in the background
-//   (EdgeRuntime.waitUntil) so Twilio's TwiML response is not delayed.
-//   W4c drafts an AI reply with Claude Haiku and creates the dashboard task.
-//
-// Auth: X-Twilio-Signature HMAC validation against pinned PUBLIC_URL.
-// Flow: validate signature → parse form payload → resolve agency by To number
-// → webhook_events row → find-or-create lead → upsert conversation → insert
-// conversation_message (idempotent on MessageSid) → update lead 24h-window
-// timestamp → trigger W4c (background) → 200 with empty TwiML.
+// Everything else — signature validation, agency resolution, lead/consent
+// creation, conversation upsert, idempotency, outbox, media law, W4C cutover
+// and webhook_events statuses — is byte-identical to v3. verify_jwt stays
+// FALSE (Twilio posts raw; auth is the X-Twilio-Signature HMAC below).
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 
@@ -107,6 +105,42 @@ Deno.serve(async (req) => {
     return twiml();
   }
   const agencyId = agencyRow.agency_id;
+
+  // ── THE CLEAR LINE: staff, or client? (Christian, 2026-08-28) ──────────────
+  // Agents message the SAME AIVENA number as buyers, so the number itself is
+  // the only discriminator — and until now nothing looked. An agent texting in
+  // was turned into a LEAD and answered as if they were house-hunting. The
+  // roster is checked FIRST: a registered agent can never become a lead and
+  // never reaches the buyer engine.
+  //
+  // Today the staff lane only records the message (the ping/reply machinery is
+  // the next slice), which is the correct conservative behaviour: doing
+  // nothing is right, becoming a buyer is wrong. Fail-safe: if the lookup
+  // itself errors we fall through to the buyer path exactly as before, because
+  // an empty roster and a broken lookup must not silently swallow real buyers.
+  try {
+    const { data: staff } = await admin.rpc("lookup_agency_agent", {
+      p_agency_id: agencyId,
+      p_whatsapp: fromNumber,
+    });
+    const agent = Array.isArray(staff) ? staff[0] : staff;
+    if (agent) {
+      await admin.from("webhook_events")
+        .update({
+          processing_status: "staff_message",
+          error_message: `from agent ${agent.full_name}`.slice(0, 240),
+          processed_at: new Date().toISOString(),
+        })
+        .eq("id", webhookEvent?.id);
+      // A reply also proves presence — the shift check-in's whole purpose.
+      await admin.from("agency_agents")
+        .update({ last_checkin_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+        .eq("id", agent.id);
+      return twiml();
+    }
+  } catch (_staffErr) {
+    // Deliberately swallowed — see fail-safe note above.
+  }
 
   const { data: existingLead } = await admin
     .from("leads")

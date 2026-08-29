@@ -635,7 +635,14 @@
       "reviewRequired": "Review required",
       "askFirstLockedHelp": "Approval-first reviews every reply during the pilot — these stay protected and can't be turned off here.",
       "statusComingSoon": "Coming soon",
-      "statusLocked": "Protected"
+      "statusLocked": "Protected",
+      "waOff": "Amanda est arrêtée",
+      "waShadow": "Observation seule — rien n'est envoyé",
+      "waApproval": "Chaque réponse vous attend",
+      "waAuto": "Amanda les envoie elle-même",
+      "bookOff": "Pas tant qu'Amanda est arrêtée",
+      "bookAuto": "Amanda les réserve elle-même",
+      "bookReview": "Chaque réservation vous attend"
     },
     "voice": {
       "title": "Voix et ton",
@@ -890,7 +897,8 @@
       "editCommunication": "Modifier la communication",
       "manageTeam": "Gérer l'équipe",
       "viewPlan": "Voir l'offre",
-      "colourLabel": "Couleur de marque"
+      "colourLabel": "Couleur de marque",
+      "agentsOnWhatsapp": "{count} agents sur WhatsApp"
     },
     "amanda": {
       "title": "Mode auto d'Amanda",
@@ -939,7 +947,41 @@
       "breakLabel": "Pause",
       "allDay": "Toute la journée",
       "availabilityInfo": "Les heures en rouge sont celles où vous n'êtes PAS disponible — pauses, heures bloquées et jours bloqués. Amanda ne propose jamais de visite sur du temps rouge, et cela apparaît aussi dans le calendrier.",
-      "whatIsRed": "Le temps en rouge, c'est quoi ?"
+      "whatIsRed": "Le temps en rouge, c'est quoi ?",
+      "calendarMoved": "La durée des visites, les horaires, les pauses et les jours off sont désormais dans votre agenda — un seul endroit, et Amanda y réserve.",
+      "calendarMovedLink": "Ouvrir l'agenda"
+    },
+    "agents": {
+      "title": "Vos agents",
+      "subtitle": "Amanda alerte le bon — par langue, et seulement pendant ses heures.",
+      "empty": "Aucun agent pour le moment. Ajoutez le premier ci-dessous.",
+      "namePlaceholder": "Nom complet",
+      "emailPlaceholder": "E-mail (facultatif)",
+      "officePlaceholder": "Bureau (facultatif)",
+      "languagesHint": "Langues dans lesquelles il peut tenir une conversation",
+      "numberHint": "Avec l'indicatif du pays — c'est ainsi qu'Amanda distingue les agents des clients.",
+      "add": "Ajouter un agent",
+      "saving": "Enregistrement…",
+      "remove": "Supprimer",
+      "confirmRemove": "Supprimer",
+      "cancel": "Annuler"
+    },
+    "automation": {
+      "title": "Niveau d'automatisation",
+      "help": "Ce qu'Amanda fait seule. Chaque étape lui en confie un peu plus.",
+      "activeBadge": "Actif",
+      "saving": "Enregistrement…",
+      "handoffNote": "À tous les niveaux au-dessus d'Arrêt, ce qu'Amanda ne sait pas répondre passe à une personne plutôt que d'être deviné — ce n'est pas un réglage, c'est sa façon de travailler.",
+      "offLabel": "Arrêt",
+      "offDesc": "Amanda ne répond pas. Chaque message attend votre équipe.",
+      "shadowLabel": "En observation",
+      "shadowDesc": "Amanda écrit ce qu'elle aurait dit, mais rien n'arrive au client et rien n'est réservé. Utilisez-le pour voir comment elle gère de vraies conversations avant de les lui confier.",
+      "approvalLabel": "Brouillons, vous envoyez",
+      "approvalDesc": "Amanda rédige chaque réponse en brouillon. Rien ne part avant approbation, et les réservations attendent aussi.",
+      "assistedLabel": "Répond seule, les visites vous attendent",
+      "assistedDesc": "Amanda répond aux questions et envoie ces réponses elle-même. Tout ce qui vous engage — réserver, déplacer ou annuler une visite — attend une validation de votre équipe.",
+      "fullLabel": "Répond et réserve",
+      "fullDesc": "Amanda répond et réserve les visites seule, dans les horaires de votre agenda."
     }
   },
   "performance": {
@@ -1495,5 +1537,20 @@
     "aiMutedNote": "L'assistant est en pause pour ces clients — une personne doit répondre. Prenez-le en charge puis contactez le client (WhatsApp/téléphone/email). \"Rendre à l'assistant\" réactive l'assistant.",
     "notifTitle": "{name} veut parler à une personne",
     "notifBody": "Ouvrez la boîte pour prendre la conversation."
+  },
+  "conversationMode": {
+    "saving": "Enregistrement…",
+    "agencyOffHint": "Amanda est arrêtée pour toute l'agence — activez-la d'abord dans les Réglages.",
+    "state_off": "Vous vous en occupez",
+    "state_shadow": "Observation seule",
+    "state_approval": "Brouillons pour vous",
+    "state_assisted": "Amanda répond",
+    "state_full": "Amanda répond et réserve",
+    "optInherit": "Suivre l'agence ({mode})",
+    "optInheritDesc": "Ce que dit votre niveau d'automatisation.",
+    "optFull": "Amanda s'en occupe",
+    "optFullDesc": "Elle répond et réserve pour cette personne, quel que soit le niveau de l'agence.",
+    "optOff": "Je m'en occupe",
+    "optOffDesc": "Amanda se tait ici. Rien n'est envoyé tant que vous ne la réactivez pas."
   }
 }

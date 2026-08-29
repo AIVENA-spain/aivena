@@ -4,6 +4,7 @@ import { Check } from "lucide-react";
 import type { AmandaSettingsResponse, ReplyLanes, SettingsResponse } from "@/lib/api/types";
 import { hasAutoSend } from "../automation-safety";
 import { AmandaSection } from "./amanda-section";
+import { AutomationLevel } from "./automation-level";
 
 /**
  * AI behaviour & approvals — accordion body. Fully READ-ONLY / locked for pilot:
@@ -43,8 +44,29 @@ export async function AiSection({
   // Effective review state per lane (default_lane governs unset lanes).
   const defaultReview = initialLanes?.default_lane !== "auto_send";
   const followup = effectiveReview(initialLanes?.by_action?.followup, defaultReview);
+
+  // WhatsApp replies and bookings are governed by the AMANDA dial, not by the
+  // email reply-lanes. Reading them from the lanes produced a live falsehood:
+  // on 2026-08-29 this page told Christian "WhatsApp replies · inherited from
+  // approval-first · PROTECTED" while the agency was running amanda_mode=full
+  // and Amanda was auto-sending. These two rows now read the mode itself.
+  const amandaMode = (amanda?.mode ?? "off") as "off" | "shadow" | "approval" | "assisted" | "full";
+  const whatsappRow: { state: "review" | "comingSoon" | "off"; note: string } =
+    amandaMode === "off"
+      ? { state: "comingSoon", note: t("waOff") }
+      : amandaMode === "shadow"
+        ? { state: "comingSoon", note: t("waShadow") }
+        : amandaMode === "approval"
+          ? { state: "review", note: t("waApproval") }
+          : { state: "off", note: t("waAuto") };
+  const bookingsRow: { state: "review" | "comingSoon" | "off"; note: string } =
+    amandaMode === "off" || amandaMode === "shadow"
+      ? { state: "comingSoon", note: t("bookOff") }
+      : amandaMode === "full"
+        ? { state: "off", note: t("bookAuto") }
+        : { state: "review", note: t("bookReview") };
+
   const email = effectiveReview(initialLanes?.by_channel?.email, defaultReview);
-  const whatsapp = effectiveReview(initialLanes?.by_channel?.whatsapp, defaultReview);
 
   return (
     <div className="flex flex-col gap-5">
@@ -92,46 +114,17 @@ export async function AiSection({
         </div>
       </div>
 
-      {/* Automation level — locked approval-first */}
-      <fieldset className="flex flex-col gap-2.5 border-t border-border pt-4">
-        <legend className="text-[13px] font-semibold text-foreground">{t("levelGroupLabel")}</legend>
-        <p className="text-[11.5px] text-muted-foreground">{t("levelGroupHelp")}</p>
-        <div className="mt-1 flex flex-col gap-1">
-          <div className="flex items-start gap-3 rounded-lg border border-brand bg-brand-soft px-3 py-2 text-[13px]">
-            <span aria-hidden className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 border-brand">
-              <span className="h-2 w-2 rounded-full bg-brand" />
-            </span>
-            <span className="flex flex-1 flex-col gap-0.5">
-              <span className="flex items-center gap-2">
-                <span className="font-medium text-foreground">{t("levelNone")}</span>
-                <span className="rounded-full bg-brand-soft px-2 py-0.5 text-[10px] font-semibold text-brand">{t("recommendedBadge")}</span>
-                <span className="text-[10.5px] font-medium text-muted-foreground">{t("lockedNote")}</span>
-              </span>
-              <span className="text-[11.5px] text-muted-foreground">{t("levelNoneDesc")}</span>
-            </span>
-          </div>
-          <div className="flex items-start gap-3 rounded-lg border border-border bg-muted/40 px-3 py-2 text-[13px] opacity-60" title={t("everythingAutoTooltip")}>
-            <span aria-hidden className="mt-0.5 h-4 w-4 shrink-0 rounded-full border-2 border-muted-foreground/40" />
-            <span className="flex flex-1 flex-col gap-0.5">
-              <span className="flex items-center gap-2">
-                <span className="font-medium text-foreground">{t("levelAll")}</span>
-                <span className="text-[10.5px] font-medium text-muted-foreground">{t("everythingAutoOff")}</span>
-              </span>
-              <span className="text-[11.5px] text-muted-foreground">{t("everythingAutoTooltip")}</span>
-            </span>
-          </div>
-        </div>
-      </fieldset>
+      <AutomationLevel mode={amandaMode} />
 
       {/* Always ask me first — locked/read-only effective review state */}
       <fieldset className="flex flex-col gap-1 border-t border-border pt-4">
         <legend className="text-[13px] font-semibold text-foreground">{t("overridesGroupLabel")}</legend>
         <p className="text-[11.5px] text-muted-foreground">{t("askFirstLockedHelp")}</p>
         <div className="mt-1 flex flex-col gap-0.5">
-          <LockedRow label={t("ovScheduling")} state="comingSoon" note={t("bookingsDisabled")} t={t} />
+          <LockedRow label={t("ovScheduling")} state={bookingsRow.state} note={bookingsRow.note} t={t} />
           <LockedRow label={t("ovFollowups")} state={followup.review ? "review" : "off"} note={followup.inherited ? t("inheritedNote") : t("reviewRequired")} t={t} />
           <LockedRow label={t("ovEmail")} state={email.review ? "review" : "off"} note={email.inherited ? t("inheritedNote") : t("reviewRequired")} t={t} />
-          <LockedRow label={t("ovWhatsapp")} state={whatsapp.review ? "review" : "off"} note={whatsapp.inherited ? t("inheritedNote") : t("reviewRequired")} t={t} />
+          <LockedRow label={t("ovWhatsapp")} state={whatsappRow.state} note={whatsappRow.note} t={t} />
         </div>
       </fieldset>
     </div>

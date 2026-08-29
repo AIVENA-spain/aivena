@@ -635,7 +635,14 @@
       "reviewRequired": "Review required",
       "askFirstLockedHelp": "Approval-first reviews every reply during the pilot — these stay protected and can't be turned off here.",
       "statusComingSoon": "Coming soon",
-      "statusLocked": "Protected"
+      "statusLocked": "Protected",
+      "waOff": "Amanda staat uit",
+      "waShadow": "Alleen meekijken — er wordt niets verstuurd",
+      "waApproval": "Elk antwoord wacht op jou",
+      "waAuto": "Amanda verstuurt deze zelf",
+      "bookOff": "Niet zolang Amanda uit staat",
+      "bookAuto": "Amanda boekt deze zelf",
+      "bookReview": "Elke boeking wacht op jou"
     },
     "voice": {
       "title": "Stem & toon",
@@ -890,7 +897,8 @@
       "editCommunication": "Communicatie bewerken",
       "manageTeam": "Team beheren",
       "viewPlan": "Abonnement bekijken",
-      "colourLabel": "Merkkleur"
+      "colourLabel": "Merkkleur",
+      "agentsOnWhatsapp": "{count} makelaars op WhatsApp"
     },
     "amanda": {
       "title": "Amanda automodus",
@@ -939,7 +947,41 @@
       "breakLabel": "Pauze",
       "allDay": "Hele dag",
       "availabilityInfo": "De rode tijden zijn wanneer je NIET beschikbaar bent — pauzes, geblokkeerde uren en geblokkeerde dagen. Amanda biedt nooit bezichtigingen aan in rode tijd, en het is ook zichtbaar in de kalender.",
-      "whatIsRed": "Wat is rode tijd?"
+      "whatIsRed": "Wat is rode tijd?",
+      "calendarMoved": "Duur van bezichtigingen, tijden, pauzes en vrije dagen staan nu in je agenda — één plek, en Amanda boekt daarbinnen.",
+      "calendarMovedLink": "Agenda openen"
+    },
+    "agents": {
+      "title": "Jouw makelaars",
+      "subtitle": "Amanda pingt de juiste — op taal, en alleen binnen werktijd.",
+      "empty": "Nog geen makelaars. Voeg hieronder de eerste toe.",
+      "namePlaceholder": "Volledige naam",
+      "emailPlaceholder": "E-mail (optioneel)",
+      "officePlaceholder": "Kantoor (optioneel)",
+      "languagesHint": "Talen waarin hij of zij een gesprek kan voeren",
+      "numberHint": "Inclusief landnummer — zo onderscheidt Amanda makelaars van klanten.",
+      "add": "Makelaar toevoegen",
+      "saving": "Opslaan…",
+      "remove": "Verwijderen",
+      "confirmRemove": "Verwijderen",
+      "cancel": "Annuleren"
+    },
+    "automation": {
+      "title": "Automatiseringsniveau",
+      "help": "Hoeveel Amanda zelf doet. Elke stap geeft haar wat meer.",
+      "activeBadge": "Actief",
+      "saving": "Opslaan…",
+      "handoffNote": "Op elk niveau boven Uit gaat alles wat Amanda niet kan beantwoorden naar een mens in plaats van gegokt te worden — dat is geen instelling, zo werkt ze.",
+      "offLabel": "Uit",
+      "offDesc": "Amanda antwoordt niet. Elk bericht wacht op je team.",
+      "shadowLabel": "Meekijken",
+      "shadowDesc": "Amanda schrijft wat ze gezegd zou hebben, maar niets bereikt de klant en er wordt niets geboekt. Zo zie je hoe ze echte gesprekken doet voordat je ze toevertrouwt.",
+      "approvalLabel": "Concepten, jij verstuurt",
+      "approvalDesc": "Amanda schrijft elk antwoord als concept. Er gaat niets uit tot iemand goedkeurt, en boekingen wachten ook.",
+      "assistedLabel": "Antwoordt zelf, bezichtigingen wachten op jou",
+      "assistedDesc": "Amanda beantwoordt vragen en verstuurt die antwoorden zelf. Alles wat je vastlegt — een bezichtiging boeken, verzetten of annuleren — wacht op één tik van je team.",
+      "fullLabel": "Antwoordt en boekt",
+      "fullDesc": "Amanda antwoordt en boekt bezichtigingen zelf, binnen je agendatijden."
     }
   },
   "performance": {
@@ -1495,5 +1537,20 @@
     "aiMutedNote": "De assistent is gepauzeerd voor deze klanten — een mens moet reageren. Pak het op en neem contact op (WhatsApp/telefoon/e-mail). \"Terug naar assistent\" heft de pauze op.",
     "notifTitle": "{name} wil een mens spreken",
     "notifBody": "Open de inbox om het gesprek op te pakken."
+  },
+  "conversationMode": {
+    "saving": "Opslaan…",
+    "agencyOffHint": "Amanda staat uit voor het hele kantoor — zet haar eerst aan in Instellingen.",
+    "state_off": "Jij doet dit",
+    "state_shadow": "Alleen meekijken",
+    "state_approval": "Concepten voor jou",
+    "state_assisted": "Amanda antwoordt",
+    "state_full": "Amanda antwoordt en boekt",
+    "optInherit": "Volg het kantoor ({mode})",
+    "optInheritDesc": "Wat je automatiseringsniveau zegt.",
+    "optFull": "Amanda doet deze",
+    "optFullDesc": "Ze antwoordt en boekt voor deze persoon, ongeacht het kantoorniveau.",
+    "optOff": "Ik doe deze",
+    "optOffDesc": "Amanda zwijgt hier. Er wordt niets verstuurd tot je haar weer aanzet."
   }
 }

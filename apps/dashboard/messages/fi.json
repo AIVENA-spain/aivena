@@ -635,7 +635,14 @@
       "reviewRequired": "Review required",
       "askFirstLockedHelp": "Approval-first reviews every reply during the pilot — these stay protected and can't be turned off here.",
       "statusComingSoon": "Coming soon",
-      "statusLocked": "Protected"
+      "statusLocked": "Protected",
+      "waOff": "Amanda on pois päältä",
+      "waShadow": "Vain seuraa — mitään ei lähetetä",
+      "waApproval": "Jokainen vastaus odottaa sinua",
+      "waAuto": "Amanda lähettää ne itse",
+      "bookOff": "Ei silloin kun Amanda on pois päältä",
+      "bookAuto": "Amanda varaa ne itse",
+      "bookReview": "Jokainen varaus odottaa sinua"
     },
     "voice": {
       "title": "Ääni ja sävy",
@@ -890,7 +897,8 @@
       "editCommunication": "Muokkaa viestintää",
       "manageTeam": "Hallinnoi tiimiä",
       "viewPlan": "Näytä tilaus",
-      "colourLabel": "Brändiväri"
+      "colourLabel": "Brändiväri",
+      "agentsOnWhatsapp": "{count} välittäjää WhatsAppissa"
     },
     "amanda": {
       "title": "Amandan automaattitila",
@@ -939,7 +947,41 @@
       "breakLabel": "Tauko",
       "allDay": "Koko päivä",
       "availabilityInfo": "Punaiset ajat ovat, kun ET ole käytettävissä — tauot, estetyt tunnit ja estetyt päivät. Amanda ei koskaan tarjoa esittelyjä punaisena aikana, ja se näkyy myös kalenterissa.",
-      "whatIsRed": "Mitä punainen aika on?"
+      "whatIsRed": "Mitä punainen aika on?",
+      "calendarMoved": "Esittelyjen kesto, ajat, tauot ja vapaapäivät ovat nyt kalenterissasi — yksi paikka, ja Amanda varaa sen sisällä.",
+      "calendarMovedLink": "Avaa kalenteri"
+    },
+    "agents": {
+      "title": "Välittäjäsi",
+      "subtitle": "Amanda pingaa oikean — kielen mukaan ja vain työaikana.",
+      "empty": "Ei vielä välittäjiä. Lisää ensimmäinen alta.",
+      "namePlaceholder": "Koko nimi",
+      "emailPlaceholder": "Sähköposti (valinnainen)",
+      "officePlaceholder": "Toimisto (valinnainen)",
+      "languagesHint": "Kielet, joilla hän pystyy keskustelemaan",
+      "numberHint": "Maatunnuksen kanssa — näin Amanda erottaa välittäjät asiakkaista.",
+      "add": "Lisää välittäjä",
+      "saving": "Tallennetaan…",
+      "remove": "Poista",
+      "confirmRemove": "Poista",
+      "cancel": "Peruuta"
+    },
+    "automation": {
+      "title": "Automaation taso",
+      "help": "Kuinka paljon Amanda hoitaa itse. Jokainen askel antaa hänelle hieman lisää.",
+      "activeBadge": "Käytössä",
+      "saving": "Tallennetaan…",
+      "handoffNote": "Kaikilla Pois-tasoa korkeammilla tasoilla se, mihin Amanda ei osaa vastata, siirtyy ihmiselle eikä sitä arvata — tämä ei ole asetus vaan hänen työtapansa.",
+      "offLabel": "Pois",
+      "offDesc": "Amanda ei vastaa lainkaan. Jokainen viesti odottaa tiimiäsi.",
+      "shadowLabel": "Seuraa",
+      "shadowDesc": "Amanda kirjoittaa, mitä olisi sanonut, mutta mikään ei tavoita asiakasta eikä mitään varata. Näin näet, miten hän hoitaa oikeita keskusteluja ennen kuin luotat ne hänelle.",
+      "approvalLabel": "Luonnokset, sinä lähetät",
+      "approvalDesc": "Amanda kirjoittaa jokaisen vastauksen luonnokseksi. Mitään ei lähde ennen hyväksyntää, ja varaukset odottavat myös.",
+      "assistedLabel": "Vastaa itse, esittelyt odottavat sinua",
+      "assistedDesc": "Amanda vastaa kysymyksiin ja lähettää ne vastaukset itse. Kaikki sinua sitova — esittelyn varaaminen, siirto tai peruutus — odottaa tiimisi yhtä napautusta.",
+      "fullLabel": "Vastaa ja varaa",
+      "fullDesc": "Amanda vastaa ja varaa esittelyt itse, kalenterisi aikojen sisällä."
     }
   },
   "performance": {
@@ -1495,5 +1537,20 @@
     "aiMutedNote": "Avustaja on tauolla näiden asiakkaiden osalta — ihmisen on vastattava. Ota tehtävä ja ota yhteyttä asiakkaaseen (WhatsApp/puhelin/sähköposti). \"Takaisin avustajalle\" poistaa tauon.",
     "notifTitle": "{name} haluaa puhua ihmiselle",
     "notifBody": "Avaa saapuneet ottaaksesi keskustelun."
+  },
+  "conversationMode": {
+    "saving": "Tallennetaan…",
+    "agencyOffHint": "Amanda on pois päältä koko toimistolta — kytke hänet ensin päälle Asetuksissa.",
+    "state_off": "Hoidat tämän itse",
+    "state_shadow": "Vain seuraa",
+    "state_approval": "Luonnokset sinulle",
+    "state_assisted": "Amanda vastaa",
+    "state_full": "Amanda vastaa ja varaa",
+    "optInherit": "Seuraa toimistoa ({mode})",
+    "optInheritDesc": "Sitä mitä automaation tasosi sanoo.",
+    "optFull": "Amanda hoitaa tämän",
+    "optFullDesc": "Hän vastaa ja varaa tälle henkilölle riippumatta toimiston tasosta.",
+    "optOff": "Hoidan tämän itse",
+    "optOffDesc": "Amanda vaikenee tässä. Mitään ei lähetetä ennen kuin kytket hänet takaisin."
   }
 }

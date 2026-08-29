@@ -32,6 +32,8 @@ import { ChecklistSection } from "./sections/checklist-section";
 import { SetupProgressSection } from "./sections/setup-progress-section";
 import { BrandingSection } from "./sections/branding-section";
 import { AiSection } from "./sections/ai-section";
+import { AgentsSection } from "./sections/agents-section";
+import type { AgentRow } from "./section-actions";
 import { CalendarResultBanner } from "./sections/calendar-section";
 import { ChannelsSection } from "./sections/channels-section";
 import { LanguagesSection } from "./sections/languages-section";
@@ -70,7 +72,7 @@ export default async function SettingsPage({
   // ?calendar=connected|error; the banner scrubs the param client-side.
   const { calendar: calendarResult } = await searchParams;
 
-  const [settingsRes, prefsRes, readinessRes, ctx, feedRes, calendarRes, amandaRes] = await Promise.allSettled([
+  const [settingsRes, prefsRes, readinessRes, ctx, feedRes, calendarRes, amandaRes, agentsRes] = await Promise.allSettled([
     apiFetch<SettingsResponse>("/api/v1/settings"),
     apiFetch<PreferencesResponse>("/api/v1/me/preferences"),
     apiFetch<ReadinessResponse>("/api/v1/readiness"),
@@ -78,6 +80,7 @@ export default async function SettingsPage({
     apiFetch<{ ok: true; config: FeedConfig | null }>("/api/v1/settings/feed"),
     apiFetch<CalendarStatusResponse>("/api/v1/calendar/status"),
     apiFetch<AmandaSettingsResponse>("/api/v1/amanda/settings"),
+    apiFetch<{ ok: true; agents: AgentRow[] }>("/api/v1/amanda/agents"),
   ]);
 
   if (settingsRes.status === "rejected") {
@@ -110,6 +113,8 @@ export default async function SettingsPage({
   const amandaSettings: AmandaSettingsResponse | null =
     amandaRes.status === "fulfilled" ? amandaRes.value : null;
   if (amandaRes.status === "rejected") logFailure("amanda-settings", amandaRes.reason);
+  const agents: AgentRow[] = agentsRes.status === "fulfilled" ? (agentsRes.value.agents ?? []) : [];
+  if (agentsRes.status === "rejected") logFailure("amanda-agents", agentsRes.reason);
 
   const currentUserId = ctx.status === "fulfilled" && ctx.value ? ctx.value.userId : "";
 
@@ -336,12 +341,21 @@ export default async function SettingsPage({
           <span className="font-medium text-foreground">
             {tc("teamMembers", { count: memberCount })}
           </span>
-          <span className="text-muted-foreground">{tc("pilotInvites")}</span>
+          <span className="text-muted-foreground">
+            {tc("agentsOnWhatsapp", { count: agents.length })}
+          </span>
         </div>
       ),
       expandLabel: tc("manageTeam"),
       closeLabel: tc("close"),
-      children: <TeamSection team={settings.team} currentUserId={currentUserId} />,
+      children: (
+        <div className="flex flex-col gap-6">
+          <TeamSection team={settings.team} currentUserId={currentUserId} />
+          <div className="border-t border-border/60 pt-5">
+            <AgentsSection agents={agents} />
+          </div>
+        </div>
+      ),
     },
 
     // 5. Plan & pilot — compact read-only summary.

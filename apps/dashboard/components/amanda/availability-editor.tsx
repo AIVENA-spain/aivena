@@ -59,11 +59,18 @@ export function AvailabilityEditor({
   initialHours,
   initialBlocked,
   initialSlots,
+  initialDuration,
+  initialNotice,
   onSaved,
 }: {
   initialHours: Record<string, number[]> | undefined;
   initialBlocked: string[] | undefined;
   initialSlots?: BlockedSlot[];
+  /** Viewing length + notice live HERE now (Christian 2026-08-29: the Settings
+   *  copy of the calendar was a duplicate) — they are calendar rules, so they
+   *  belong with the hours they constrain, and save in the same round trip. */
+  initialDuration?: number;
+  initialNotice?: number;
   onSaved?: (hours: Record<string, number[]>, blocked: string[], slots: BlockedSlot[]) => void;
 }) {
   const t = useTranslations("settings.amanda");
@@ -77,6 +84,8 @@ export function AvailabilityEditor({
   const [blockDraft, setBlockDraft] = useState("");
   const [blockFrom, setBlockFrom] = useState<number | "">("");   // "" = all day
   const [blockTo, setBlockTo] = useState<number | "">("");
+  const [duration, setDuration] = useState<number>(initialDuration ?? 60);
+  const [notice, setNotice] = useState<number>(initialNotice ?? 24);
   const [showInfo, setShowInfo] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -125,6 +134,8 @@ export function AvailabilityEditor({
         viewing_hours_by_weekday: hours,
         blocked_dates: blocked,
         blocked_slots: slots,
+        viewing_duration_min: duration,
+        viewing_notice_hours: notice,
       });
       if (res.ok) {
         setSavedAt(Date.now());
@@ -144,6 +155,40 @@ export function AvailabilityEditor({
 
   return (
     <div className="flex flex-col gap-4">
+      {/* Viewing length + notice — the two numbers that shape every slot she
+          offers, so they sit above the grid they constrain. */}
+      <div className="flex flex-wrap items-end gap-3">
+        <label className="flex flex-col gap-1 text-[12px] text-muted-foreground">
+          {t("durationLabel")}
+          <input
+            type="number"
+            min={15}
+            max={240}
+            step={15}
+            value={duration}
+            onChange={(e) => {
+              setSavedAt(null);
+              setDuration(Number(e.target.value));
+            }}
+            className="h-8 w-24 rounded-md border border-border bg-background px-2 text-[13px] text-foreground focus:outline-none focus:ring-2 focus:ring-brand/40"
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-[12px] text-muted-foreground">
+          {t("noticeLabel")}
+          <input
+            type="number"
+            min={1}
+            max={168}
+            value={notice}
+            onChange={(e) => {
+              setSavedAt(null);
+              setNotice(Number(e.target.value));
+            }}
+            className="h-8 w-24 rounded-md border border-border bg-background px-2 text-[13px] text-foreground focus:outline-none focus:ring-2 focus:ring-brand/40"
+          />
+        </label>
+      </div>
+
       {/* Viewing-hours tap grid — Amanda only ever offers these start times. */}
       <div className="flex flex-col gap-2">
         <div>

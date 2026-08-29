@@ -7,9 +7,10 @@
 import { sql } from 'drizzle-orm';
 import { withAgency } from '../../../../packages/db/client';
 import { runTurn, type TurnDeps, type PendingActionView } from './turn';
-import { parseAmandaMode } from './modes';
+import { parseAmandaMode, effectiveMode } from './modes';
 import { makeDbBackends, parseAmandaSettings, slotLabel, type AmandaAgencySettings } from './backends-db';
 import { upcomingCalendarNotes } from './availability-lib';
+import { agencyHosts } from './site-link';
 import { isHumanSender } from './sender-lib';
 
 export { isHumanSender } from './sender-lib';
@@ -42,21 +43,30 @@ interface LoadedWorld {
   openTicketNote: string | null;
   humanAnsweredTicketIds: string[];
   agencyKnowledge: string[];
+  /** The agency's OWN web hosts — the only sites whose listing links Amanda
+   *  may share (a portal-sourced URL would send the buyer to a competitor). */
+  agencySiteHosts: string[];
 }
 
 async function loadWorld(row: QueueRow): Promise<LoadedWorld | { skip: string }> {
   return withAgency(row.agency_id, async (tx) => {
     const agencyRows = await tx.execute(sql`
-      SELECT COALESCE(a.trading_name, a.legal_name, a.slug) AS agency_name, s.amanda_mode, s.amanda_settings
+      SELECT COALESCE(a.trading_name, a.legal_name, a.slug) AS agency_name, s.amanda_mode, s.amanda_settings,
+             b.website_url
         FROM agency_settings s
         JOIN agencies a ON a.id = s.agency_id
+        LEFT JOIN agency_branding b ON b.agency_id = s.agency_id
        WHERE s.agency_id = current_setting('app.current_agency_id', true)
        LIMIT 1
     `);
     const agency = (agencyRows as unknown as Array<Record<string, unknown>>)[0];
     if (!agency) return { skip: 'agency_settings_missing' };
-    const mode = parseAmandaMode(agency.amanda_mode);
-    if (mode === 'off') return { skip: 'amanda_mode_off' };
+    const agencyMode = parseAmandaMode(agency.amanda_mode);
+    // Agency OFF is an absolute kill switch: no per-conversation override may
+    // resurrect Amanda through it (Christian's per-person switch is a way to
+    // give her MORE or LESS rope inside a live agency, never a way around a
+    // global stop). Checked before anything else loads.
+    if (agencyMode === 'off') return { skip: 'amanda_mode_off' };
 
     const leadRows = await tx.execute(sql`
       SELECT full_name, phone, language, opt_in_status FROM leads WHERE id = ${row.lead_id}::uuid LIMIT 1
@@ -65,10 +75,19 @@ async function loadWorld(row: QueueRow): Promise<LoadedWorld | { skip: string }>
     if (!lead) return { skip: 'lead_missing' };
 
     const convRows = await tx.execute(sql`
-      SELECT ai_muted_at, human_claimed_at, status FROM conversations WHERE id = ${row.conversation_id}::uuid LIMIT 1
+      SELECT ai_muted_at, human_claimed_at, status, amanda_mode_override
+        FROM conversations WHERE id = ${row.conversation_id}::uuid LIMIT 1
     `);
     const conv = (convRows as unknown as Array<Record<string, unknown>>)[0];
     if (!conv) return { skip: 'conversation_missing' };
+    // Per-conversation override wins inside a live agency. An unrecognised
+    // value would fail closed to 'off' through parseAmandaMode, which for a
+    // STORED override is the safe direction (silence, never a surprise send).
+    const mode = effectiveMode(
+      agencyMode,
+      typeof conv.amanda_mode_override === 'string' ? conv.amanda_mode_override : null,
+    );
+    if (mode === 'off') return { skip: 'amanda_off_for_conversation' };
 
     const msgRows = await tx.execute(sql`
       SELECT direction, content, sent_at, sent_by FROM conversation_messages
@@ -119,6 +138,7 @@ async function loadWorld(row: QueueRow): Promise<LoadedWorld | { skip: string }>
     return {
       mode,
       agencyName: String(agency.agency_name ?? 'the agency'),
+      agencySiteHosts: agencyHosts([agency.website_url as string | null]),
       settings: parseAmandaSettings(agency.amanda_settings),
       leadFirstName: lead.full_name ? String(lead.full_name).split(/\s+/)[0] : null,
       leadFullName: (lead.full_name as string) ?? null,
@@ -276,7 +296,7 @@ export async function processTurnDb(row: QueueRow): Promise<TurnOutcome> {
   };
 
   const backends = makeDbBackends({
-    agencyId: row.agency_id, agencyName: world.agencyName,
+    agencyId: row.agency_id, agencyName: world.agencyName, agencySiteHosts: world.agencySiteHosts,
     leadId: row.lead_id, conversationId: row.conversation_id,
     leadLanguage: world.leadLanguage, rejectedPropertyIds: world.leadState.rejected_property_ids ?? [],
     settings: world.settings, nowMs: () => Date.now(),

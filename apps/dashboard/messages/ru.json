@@ -642,7 +642,9 @@
       "waAuto": "Amanda отправляет их сама",
       "bookOff": "Не пока Amanda выключена",
       "bookAuto": "Amanda бронирует их сама",
-      "bookReview": "Каждая бронь ждёт вас"
+      "bookReview": "Каждая бронь ждёт вас",
+      "statusAuto": "АВТОМАТИЧЕСКИ",
+      "askFirstHelp": "Что Amanda делает с каждым пунктом сейчас — задаётся уровнем автоматизации выше."
     },
     "voice": {
       "title": "Голос и тон",
@@ -780,10 +782,12 @@
       "colMember": "Member",
       "colRole": "Role",
       "colAccess": "Access",
-      "invitePilotNote": "Team invites are handled by AIVENA during pilot — contact us to add agents.",
+      "invitePilotNote": "Доступы к панели во время пилота настраивает AIVENA. Агентов для Amanda добавляют ниже — доступ им не нужен.",
       "inviteDisabledNote": "Available after pilot.",
       "accessFull": "Full access",
-      "accessScoped": "Scoped access"
+      "accessScoped": "Scoped access",
+      "loginsTitle": "Доступы к панели",
+      "loginsHint": "Люди, которые входят в AIVENA и работают в панели."
     },
     "plan": {
       "title": "Тариф и использование",

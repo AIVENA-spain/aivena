@@ -111,3 +111,49 @@ describe('effectiveMode — per-conversation override (Christian 2026-08-29)', (
     expect(effectiveMode('full', 'FULL')).toBe('off');
   });
 });
+
+/**
+ * The Settings copy is a PROMISE to the agency. Christian 2026-08-29: "make
+ * sure that they all would work as it says it would and that thats possible."
+ * Each case below is the literal sentence shown under that level in Settings,
+ * asserted against what the tool layer actually does. If someone edits the copy
+ * or the dispatch and they stop agreeing, this fails.
+ */
+describe('automation level copy matches engine behaviour', () => {
+  it('Off — "Amanda does not reply at all"', () => {
+    expect(dispatchDecision('off', 'reply').kind).toBe('refuse');
+    expect(dispatchDecision('off', 'commitment').kind).toBe('refuse');
+    expect(dispatchDecision('off', 'read').kind).toBe('refuse');
+  });
+
+  it('Watching — "nothing reaches the client and nothing is booked"', () => {
+    expect(dispatchDecision('shadow', 'reply').kind).toBe('simulate');
+    expect(dispatchDecision('shadow', 'commitment').kind).toBe('simulate');
+    expect(dispatchDecision('shadow', 'internal_write').kind).toBe('simulate');
+    // Reads still run — she needs real facts to draft a realistic "would have said".
+    expect(dispatchDecision('shadow', 'read').kind).toBe('execute');
+  });
+
+  it('Drafts, you send — "nothing goes out until someone approves it, and bookings wait too"', () => {
+    expect(dispatchDecision('approval', 'reply').kind).toBe('queue_draft');
+    expect(dispatchDecision('approval', 'commitment').kind).toBe('queue_draft');
+  });
+
+  it('Replies on her own, bookings wait — "sends those replies herself", booking "waits for one tap"', () => {
+    expect(dispatchDecision('assisted', 'reply').kind).toBe('execute');
+    expect(dispatchDecision('assisted', 'commitment').kind).toBe('queue_one_tap');
+  });
+
+  it('Replies and books — "answers and books viewings on her own"', () => {
+    expect(dispatchDecision('full', 'reply').kind).toBe('execute');
+    expect(dispatchDecision('full', 'commitment').kind).toBe('execute');
+  });
+
+  it('every level above Off still reaches a human for what she cannot answer', () => {
+    // handoff_to_human / ask_agency are internal_write: real from approval up,
+    // which is why "handed to a person" is stated as a fact, not sold as a tier.
+    for (const m of ['approval', 'assisted', 'full'] as const) {
+      expect(dispatchDecision(m, 'internal_write').kind).toBe('execute');
+    }
+  });
+});

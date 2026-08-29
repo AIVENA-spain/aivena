@@ -1,21 +1,23 @@
-// twilio-whatsapp-inbound — W6 receive path v4 (deployed 2026-08-28, v13).
-// Diff vs v3, and nothing else:
+// twilio-whatsapp-inbound — W6 receive path v5 (2026-08-29).
 //
-//   THE CLEAR LINE (Christian, 2026-08-28): agents message the SAME AIVENA
-//   number as buyers, so the number itself is the only discriminator — and
-//   until now nothing looked. An agent texting in was turned into a LEAD and
-//   answered as if they were house-hunting. The agent roster is now checked
-//   BEFORE find-or-create-lead: a registered agent can never become a lead and
-//   never reaches the buyer engine. The staff lane today only records the
-//   message and stamps last_checkin_at (the ping/reply machinery is the next
-//   slice) — doing nothing is right, becoming a buyer is wrong. Fail-safe: if
-//   the lookup itself errors we fall through to the buyer path exactly as
-//   before, so a broken lookup can never silently swallow real buyers.
+//   REPO-vs-LIVE WARNING (found 2026-08-29): this file had DIVERGED badly from
+//   the deployed function — the repo copy was still v2 plus the v4 clear-line
+//   block, missing ALL of v3 (the amanda_inbound_queue outbox, the funnel
+//   event, the media/button descriptors, the W4C cutover). Deploying it would
+//   have stopped every queue row and silenced Amanda in production. This file
+//   was therefore rebuilt from the DEPLOYED source (supabase get_edge_function
+//   on v13), and v5 applied on top. ALWAYS diff against live before deploying.
 //
-// Everything else — signature validation, agency resolution, lead/consent
-// creation, conversation upsert, idempotency, outbox, media law, W4C cutover
-// and webhook_events statuses — is byte-identical to v3. verify_jwt stays
-// FALSE (Twilio posts raw; auth is the X-Twilio-Signature HMAC below).
+//   v5: honour conversations.amanda_mode_override in BOTH mode decisions this
+//   function makes — what to enqueue, and whether legacy W4C drafts.
+//
+//   v4 (2026-08-28) THE CLEAR LINE: agents message the SAME AIVENA number as
+//   buyers, so the number itself is the only discriminator. The agent roster is
+//   checked BEFORE find-or-create-lead: a registered agent can never become a
+//   lead and never reaches the buyer engine. Fail-safe: if the lookup errors we
+//   fall through to the buyer path, so a broken lookup can never swallow buyers.
+//
+// verify_jwt stays FALSE (Twilio posts raw; auth is the X-Twilio-Signature HMAC).
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 
@@ -74,6 +76,12 @@ Deno.serve(async (req) => {
   const body        = params.get("Body") ?? "";
   const profileName = params.get("ProfileName") ?? null;
   const numMedia    = parseInt(params.get("NumMedia") ?? "0", 10) || 0;
+  // v3: media descriptors + interactive-reply context (persisted, not fetched).
+  const mediaUrl0        = params.get("MediaUrl0") ?? null;
+  const mediaContentType = params.get("MediaContentType0") ?? null;
+  const buttonPayload    = params.get("ButtonPayload") ?? null;
+  const buttonText       = params.get("ButtonText") ?? null;
+  const repliedMessageSid = params.get("OriginalRepliedMessageSid") ?? null;
 
   const fromNumber = fromRaw.replace(/^whatsapp:/, "");
   const toNumber   = toRaw.replace(/^whatsapp:/, "");
@@ -84,7 +92,7 @@ Deno.serve(async (req) => {
 
   const { data: agencyRow } = await admin
     .from("agency_settings")
-    .select("agency_id")
+    .select("agency_id, amanda_mode")
     .eq("whatsapp_from_number", toNumber)
     .eq("whatsapp_provider", "twilio")
     .maybeSingle();
@@ -106,18 +114,7 @@ Deno.serve(async (req) => {
   }
   const agencyId = agencyRow.agency_id;
 
-  // ── THE CLEAR LINE: staff, or client? (Christian, 2026-08-28) ──────────────
-  // Agents message the SAME AIVENA number as buyers, so the number itself is
-  // the only discriminator — and until now nothing looked. An agent texting in
-  // was turned into a LEAD and answered as if they were house-hunting. The
-  // roster is checked FIRST: a registered agent can never become a lead and
-  // never reaches the buyer engine.
-  //
-  // Today the staff lane only records the message (the ping/reply machinery is
-  // the next slice), which is the correct conservative behaviour: doing
-  // nothing is right, becoming a buyer is wrong. Fail-safe: if the lookup
-  // itself errors we fall through to the buyer path exactly as before, because
-  // an empty roster and a broken lookup must not silently swallow real buyers.
+  // ── THE CLEAR LINE: staff, or client? (v4) ────────────────────────────────
   try {
     const { data: staff } = await admin.rpc("lookup_agency_agent", {
       p_agency_id: agencyId,
@@ -139,7 +136,7 @@ Deno.serve(async (req) => {
       return twiml();
     }
   } catch (_staffErr) {
-    // Deliberately swallowed — see fail-safe note above.
+    // Deliberately swallowed — fail-safe to the buyer path (see header note).
   }
 
   const { data: existingLead } = await admin
@@ -173,7 +170,7 @@ Deno.serve(async (req) => {
         opt_in_at: new Date().toISOString(),
         last_inbound_whatsapp_at: new Date().toISOString(),
         received_at: new Date().toISOString(),
-        raw_payload: { twilio_message_sid: messageSid, profile_name: profileName, via: "twilio_whatsapp_inbound_v2" },
+        raw_payload: { twilio_message_sid: messageSid, profile_name: profileName, via: "twilio_whatsapp_inbound_v4" },
         dedup_key: `whatsapp:${agencyId}:${fromNumber}`,
       })
       .select("id")
@@ -183,6 +180,15 @@ Deno.serve(async (req) => {
       return twiml();
     }
     leadId = newLead.id;
+    // Amanda data pack (design §11.4): the funnel starts here. Best-effort.
+    await admin.from("amanda_funnel_events").insert({
+      agency_id: agencyId,
+      lead_id: leadId,
+      event_type: "lead_created",
+      amanda_attributed: false,
+      source: "whatsapp_inbound",
+      metadata: {},
+    }).then(({ error }) => { if (error) console.error("funnel lead_created:", error.code); });
     await admin.from("consent_log").insert({
       agency_id: agencyId,
       lead_id: leadId,
@@ -250,7 +256,12 @@ Deno.serve(async (req) => {
       provider_message_id: messageSid,
       status: "received",
       sent_at: new Date().toISOString(),
-      raw_payload: { profile_name: profileName, num_media: numMedia, via: "twilio_whatsapp_inbound_v2" },
+      raw_payload: {
+        profile_name: profileName, num_media: numMedia, via: "twilio_whatsapp_inbound_v4",
+        media_url: mediaUrl0, media_content_type: mediaContentType,
+        button_payload: buttonPayload, button_text: buttonText,
+        replied_message_sid: repliedMessageSid,
+      },
     });
 
   const finalStatus = msgErr
@@ -261,28 +272,95 @@ Deno.serve(async (req) => {
     .update({ processing_status: finalStatus, lead_id: leadId, processed_at: new Date().toISOString(), error_message: msgErr && msgErr.code !== "23505" ? msgErr.message?.slice(0, 240) : null })
     .eq("id", webhookEvent?.id);
 
-  // v2: trigger W4c AI reply drafting in the background (new messages only —
-  // Twilio retries / duplicates must not double-draft). Failure is non-fatal:
-  // the message is stored; a missed draft surfaces as a quiet thread, and the
-  // operator still sees the inbound in the dashboard.
-  if (finalStatus === "processed" && body.trim().length > 0) {
-    const w4cCall = fetch(W4C_WEBHOOK_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+  const amandaMode = (agencyRow as { amanda_mode?: string }).amanda_mode ?? "off";
+
+  // ── v5: the per-conversation switch has to be honoured HERE too ───────────
+  // The dashboard switch (conversations.amanda_mode_override) decides who
+  // answers ONE person. This function makes two decisions off the mode — what
+  // to enqueue, and whether legacy W4C drafts — and both read the AGENCY mode
+  // only. Two real holes that opened the moment the switch shipped:
+  //   * agency 'shadow' + a conversation raised to 'full' → the engine sends
+  //     AND W4C drafts the same inbound: one buyer reply plus a stray task.
+  //   * agency 'full' + "I'll handle this one" → no engine turn (correct), but
+  //     W4C would still draft, so the person who asked for silence gets an AI
+  //     suggestion anyway.
+  // Agency 'off' still wins absolutely and is never raised by an override.
+  let convOverride: string | null = null;
+  try {
+    const { data: ovRow } = await admin
+      .from("conversations")
+      .select("amanda_mode_override")
+      .eq("id", conversationId)
+      .maybeSingle();
+    const ov = (ovRow as { amanda_mode_override?: string | null } | null)?.amanda_mode_override;
+    if (typeof ov === "string" && ov.length > 0) convOverride = ov;
+  } catch (_ovErr) {
+    // Fail-safe: the agency mode governs, exactly as it did before v5.
+  }
+  const effectiveMode = amandaMode === "off" ? "off" : (convOverride ?? amandaMode);
+  const silencedForThisPerson = convOverride === "off";
+
+  if (finalStatus === "processed") {
+    // v3 OUTBOX — only when the dial is on (an 'off' agency's rows would
+    // accumulate unbounded with nothing draining them). Media messages are
+    // enqueued TOO (kind 'media') — v10's body-length gate silently dropped
+    // caption-less voice notes from the AI path.
+    // Unique(provider_message_id, kind) makes redeliveries no-ops.
+    if (effectiveMode !== "off") {
+      const { error: queueErr } = await admin.from("amanda_inbound_queue").insert({
         agency_id: agencyId,
-        lead_id: leadId,
         conversation_id: conversationId,
-        message_body: body,
-        profile_name: profileName,
+        lead_id: leadId,
         provider_message_id: messageSid,
-      }),
-    }).catch(() => { /* non-fatal */ });
-    try {
-      // @ts-ignore EdgeRuntime is provided by the Supabase Edge runtime
-      EdgeRuntime.waitUntil(w4cCall);
-    } catch {
-      await w4cCall;
+        kind: numMedia > 0 ? "media" : "message",
+        payload: {
+          body,
+          profile_name: profileName,
+          num_media: numMedia,
+          media_url: mediaUrl0,
+          media_content_type: mediaContentType,
+          button_payload: buttonPayload,
+          button_text: buttonText,
+          replied_message_sid: repliedMessageSid,
+        },
+        status: "pending",
+      });
+      if (queueErr && queueErr.code !== "23505") {
+        await admin.from("webhook_events").update({ error_message: ("queue: " + queueErr.message).slice(0, 240) }).eq("id", webhookEvent?.id);
+      }
+    }
+
+    // Legacy W4C drafting: per-agency cutover, deterministic. The engine is the
+    // drafter once the EFFECTIVE dial reaches approval/assisted/full — W4C
+    // firing too would double-draft every inbound. off/shadow keep W4C
+    // (shadow runs the engine SILENTLY alongside for comparison).
+    const engineIsDrafter = ["approval", "assisted", "full"].includes(effectiveMode);
+    if (
+      body.trim().length > 0 &&
+      !engineIsDrafter &&
+      // "I'll handle this one" means no AI writes here at all — not the engine,
+      // and not the legacy drafter either.
+      !silencedForThisPerson &&
+      Deno.env.get("AMANDA_W4C_DISABLED") !== "true"
+    ) {
+      const w4cCall = fetch(W4C_WEBHOOK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          agency_id: agencyId,
+          lead_id: leadId,
+          conversation_id: conversationId,
+          message_body: body,
+          profile_name: profileName,
+          provider_message_id: messageSid,
+        }),
+      }).catch(() => { /* non-fatal */ });
+      try {
+        // @ts-ignore EdgeRuntime is provided by the Supabase Edge runtime
+        EdgeRuntime.waitUntil(w4cCall);
+      } catch {
+        await w4cCall;
+      }
     }
   }
 

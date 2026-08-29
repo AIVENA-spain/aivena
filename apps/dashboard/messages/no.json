@@ -642,7 +642,9 @@
       "waAuto": "Amanda sender dem selv",
       "bookOff": "Ikke mens Amanda er av",
       "bookAuto": "Amanda booker dem selv",
-      "bookReview": "Hver booking venter på deg"
+      "bookReview": "Hver booking venter på deg",
+      "statusAuto": "AUTOMATISK",
+      "askFirstHelp": "Hva Amanda gjør med hver av disse akkurat nå — bestemt av automatiseringsnivået ditt over."
     },
     "voice": {
       "title": "Stemme og tone",
@@ -780,10 +782,12 @@
       "colMember": "Member",
       "colRole": "Role",
       "colAccess": "Access",
-      "invitePilotNote": "Team invites are handled by AIVENA during pilot — contact us to add agents.",
+      "invitePilotNote": "Dashbord-innlogginger håndteres av AIVENA under piloten. Meglere for Amanda legges til under, og trenger ingen innlogging.",
       "inviteDisabledNote": "Available after pilot.",
       "accessFull": "Full access",
-      "accessScoped": "Scoped access"
+      "accessScoped": "Scoped access",
+      "loginsTitle": "Dashbord-innlogginger",
+      "loginsHint": "Personer som logger inn på AIVENA og bruker dashbordet."
     },
     "plan": {
       "title": "Abonnement og bruk",

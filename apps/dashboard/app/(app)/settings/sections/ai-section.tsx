@@ -119,7 +119,7 @@ export async function AiSection({
       {/* Always ask me first — locked/read-only effective review state */}
       <fieldset className="flex flex-col gap-1 border-t border-border pt-4">
         <legend className="text-[13px] font-semibold text-foreground">{t("overridesGroupLabel")}</legend>
-        <p className="text-[11.5px] text-muted-foreground">{t("askFirstLockedHelp")}</p>
+        <p className="text-[11.5px] text-muted-foreground">{t("askFirstHelp")}</p>
         <div className="mt-1 flex flex-col gap-0.5">
           <LockedRow label={t("ovScheduling")} state={bookingsRow.state} note={bookingsRow.note} t={t} />
           <LockedRow label={t("ovFollowups")} state={followup.review ? "review" : "off"} note={followup.inherited ? t("inheritedNote") : t("reviewRequired")} t={t} />
@@ -167,7 +167,11 @@ function LockedRow({
       <span className={`text-[13px] ${state === "comingSoon" ? "text-muted-foreground" : "text-foreground"}`}>{label}</span>
       <span className="text-[11px] text-muted-foreground">· {note}</span>
       <span className="ml-auto shrink-0 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-        {state === "comingSoon" ? t("statusComingSoon") : t("statusLocked")}
+        {state === "comingSoon"
+          ? t("statusComingSoon")
+          : state === "off"
+            ? t("statusAuto")
+            : t("statusLocked")}
       </span>
     </div>
   );

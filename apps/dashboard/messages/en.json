@@ -642,7 +642,9 @@
       "waAuto": "Amanda sends these herself",
       "bookOff": "Not while Amanda is off",
       "bookAuto": "Amanda books these herself",
-      "bookReview": "Every booking waits for you"
+      "bookReview": "Every booking waits for you",
+      "statusAuto": "AUTOMATIC",
+      "askFirstHelp": "What Amanda does with each of these right now — set by your automation level above."
     },
     "voice": {
       "title": "Voice & tone",
@@ -780,10 +782,12 @@
       "colMember": "Member",
       "colRole": "Role",
       "colAccess": "Access",
-      "invitePilotNote": "Team invites are handled by AIVENA during pilot — contact us to add agents.",
+      "invitePilotNote": "Dashboard logins are handled by AIVENA during the pilot. Adding agents for Amanda is below, and needs no login.",
       "inviteDisabledNote": "Available after pilot.",
       "accessFull": "Full access",
-      "accessScoped": "Scoped access"
+      "accessScoped": "Scoped access",
+      "loginsTitle": "Dashboard logins",
+      "loginsHint": "People who sign in to AIVENA and use the dashboard."
     },
     "plan": {
       "title": "Plan & usage",

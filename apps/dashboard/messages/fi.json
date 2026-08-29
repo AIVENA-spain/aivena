@@ -642,7 +642,9 @@
       "waAuto": "Amanda lähettää ne itse",
       "bookOff": "Ei silloin kun Amanda on pois päältä",
       "bookAuto": "Amanda varaa ne itse",
-      "bookReview": "Jokainen varaus odottaa sinua"
+      "bookReview": "Jokainen varaus odottaa sinua",
+      "statusAuto": "AUTOMAATTINEN",
+      "askFirstHelp": "Mitä Amanda tekee kullekin juuri nyt — määräytyy yllä olevan automaation tason mukaan."
     },
     "voice": {
       "title": "Ääni ja sävy",
@@ -780,10 +782,12 @@
       "colMember": "Member",
       "colRole": "Role",
       "colAccess": "Access",
-      "invitePilotNote": "Team invites are handled by AIVENA during pilot — contact us to add agents.",
+      "invitePilotNote": "Hallintapaneelin kirjautumiset hoitaa AIVENA pilotin ajan. Välittäjät Amandalle lisätään alta, eikä siihen tarvita kirjautumista.",
       "inviteDisabledNote": "Available after pilot.",
       "accessFull": "Full access",
-      "accessScoped": "Scoped access"
+      "accessScoped": "Scoped access",
+      "loginsTitle": "Hallintapaneelin kirjautumiset",
+      "loginsHint": "Henkilöt, jotka kirjautuvat AIVENAan ja käyttävät paneelia."
     },
     "plan": {
       "title": "Tilaus ja käyttö",

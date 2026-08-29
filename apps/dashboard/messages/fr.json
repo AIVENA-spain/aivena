@@ -642,7 +642,9 @@
       "waAuto": "Amanda les envoie elle-même",
       "bookOff": "Pas tant qu'Amanda est arrêtée",
       "bookAuto": "Amanda les réserve elle-même",
-      "bookReview": "Chaque réservation vous attend"
+      "bookReview": "Chaque réservation vous attend",
+      "statusAuto": "AUTOMATIQUE",
+      "askFirstHelp": "Ce qu'Amanda fait de chacun en ce moment — défini par votre niveau d'automatisation ci-dessus."
     },
     "voice": {
       "title": "Voix et ton",
@@ -780,10 +782,12 @@
       "colMember": "Member",
       "colRole": "Role",
       "colAccess": "Access",
-      "invitePilotNote": "Team invites are handled by AIVENA during pilot — contact us to add agents.",
+      "invitePilotNote": "Les accès au tableau de bord sont gérés par AIVENA pendant le pilote. L'ajout d'agents pour Amanda est ci-dessous et ne demande aucun accès.",
       "inviteDisabledNote": "Available after pilot.",
       "accessFull": "Full access",
-      "accessScoped": "Scoped access"
+      "accessScoped": "Scoped access",
+      "loginsTitle": "Accès au tableau de bord",
+      "loginsHint": "Les personnes qui se connectent à AIVENA et utilisent le tableau de bord."
     },
     "plan": {
       "title": "Forfait et utilisation",

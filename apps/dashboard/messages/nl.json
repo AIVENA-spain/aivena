@@ -642,7 +642,9 @@
       "waAuto": "Amanda verstuurt deze zelf",
       "bookOff": "Niet zolang Amanda uit staat",
       "bookAuto": "Amanda boekt deze zelf",
-      "bookReview": "Elke boeking wacht op jou"
+      "bookReview": "Elke boeking wacht op jou",
+      "statusAuto": "AUTOMATISCH",
+      "askFirstHelp": "Wat Amanda hier nu mee doet — bepaald door je automatiseringsniveau hierboven."
     },
     "voice": {
       "title": "Stem & toon",
@@ -780,10 +782,12 @@
       "colMember": "Member",
       "colRole": "Role",
       "colAccess": "Access",
-      "invitePilotNote": "Team invites are handled by AIVENA during pilot — contact us to add agents.",
+      "invitePilotNote": "Dashboard-logins regelt AIVENA tijdens de pilot. Makelaars toevoegen voor Amanda staat hieronder en heeft geen login nodig.",
       "inviteDisabledNote": "Available after pilot.",
       "accessFull": "Full access",
-      "accessScoped": "Scoped access"
+      "accessScoped": "Scoped access",
+      "loginsTitle": "Dashboard-logins",
+      "loginsHint": "Mensen die inloggen bij AIVENA en het dashboard gebruiken."
     },
     "plan": {
       "title": "Abonnement & gebruik",

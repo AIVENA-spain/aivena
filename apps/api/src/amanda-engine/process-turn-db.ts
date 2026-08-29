@@ -418,9 +418,11 @@ export async function processTurnDb(row: QueueRow): Promise<TurnOutcome> {
 
     async queueBookingConfirm(pendingActionId, echo) {
       // Own task type — NEVER 'suggested_reply' (the approve RPC would text the
-      // placeholder to the buyer). No executor exists yet: the task surfaces on
-      // /tasks for visibility; the one-tap execute endpoint is the P2 build,
-      // and until then agencies below FULL simply don't auto-book (honest).
+      // placeholder to the buyer). The one-tap executor SHIPPED: this task
+      // surfaces on /tasks with ConfirmBookingBox, which calls
+      // POST /tasks/:id/execute-booking → executeBookingFromPendingAction.
+      // That is what makes the "bookings wait for one tap" automation level an
+      // honest description rather than a promise (verified 2026-08-29).
       await withAgency(row.agency_id, async (tx) => {
         await tx.execute(sql`
           INSERT INTO dashboard_tasks (agency_id, lead_id, conversation_id, task_type, title, message_body, channel, platform, priority, status, raw_payload)

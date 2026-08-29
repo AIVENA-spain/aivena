@@ -67,6 +67,7 @@ export default async function SettingsPage({
   const t = await getTranslations("settings");
   const ta = await getTranslations("settings.accordion");
   const tc = await getTranslations("settings.cards");
+  const tt = await getTranslations("settings.team");
   const locale = intlLocaleFor(await getLocale());
   // Calendar OAuth round-trip result — the API callback redirects here with
   // ?calendar=connected|error; the banner scrubs the param client-side.
@@ -349,8 +350,18 @@ export default async function SettingsPage({
       expandLabel: tc("manageTeam"),
       closeLabel: tc("close"),
       children: (
+        // Two DIFFERENT things live here and were reading as one bolted onto
+        // the other (Christian 2026-08-29: "i dont see that it has been changed
+        // into this area yet"). Headed as siblings: logins are seats, agents
+        // are phones, and an agent needs no login to be pinged.
         <div className="flex flex-col gap-6">
-          <TeamSection team={settings.team} currentUserId={currentUserId} />
+          <div className="flex flex-col gap-2">
+            <div>
+              <h4 className="text-[12.5px] font-semibold text-foreground">{tt("loginsTitle")}</h4>
+              <p className="text-[11.5px] text-muted-foreground">{tt("loginsHint")}</p>
+            </div>
+            <TeamSection team={settings.team} currentUserId={currentUserId} />
+          </div>
           <div className="border-t border-border/60 pt-5">
             <AgentsSection agents={agents} />
           </div>

@@ -294,10 +294,13 @@ export function mapPropertyRow(r: any): DeriveProperty {
 }
 // agency_branding row → { agency contact, brand colours }. Sensible fallbacks so a half-filled brand never crashes.
 export function mapBranding(b: any): { agency: DeriveAgency; brand: BrandColours } {
-  const web = String(b?.website_url || 'aivena.es').replace(/^https?:\/\//, '').replace(/\/$/, '');
+  // RULE 10 — contact details come from agency_branding, never from a literal. The old fallbacks
+  // ("aivena.es", "Your Agency") were the only hardcoded contact that could reach a rendered
+  // slide; empty is correct, and every renderer already skips an empty text block.
+  const web = String(b?.website_url || '').replace(/^https?:\/\//, '').replace(/\/$/, '');
   return {
     agency: {
-      name: b?.brand_name || 'Your Agency',
+      name: b?.brand_name || '',
       phone: b?.phone || b?.whatsapp_number || '',
       web,
       email: b?.sender_email || '',

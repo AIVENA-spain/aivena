@@ -98,13 +98,16 @@ export function isTipsImageStyle(s: string): s is TipsImageStyle {
 export async function renderTipsImageStyled(
   style: TipsImageStyle, plan: CarouselPlan, agency: string, contact: string,
   brand: CarouselBrand, images: Buffer[], lang = "es",
+  // RULE 3 — the 3-image fallback deck follows the same structure law as the per-slide deck
+  includeContext = true, includeRecap = true,
 ): Promise<Buffer[]> {
   const cfg = CFG[style];
   const T = chrome(lang);
   const NAVY = brand.navy, GOLD = brand.gold, CREAM = brand.cream;
   const n = plan.tips.length;
   const midAfter = Math.ceil(n / 2);                 // the mid-deck image moment sits after this tip
-  const total = n + 5;                               // cover + context + tips + moment + recap + CTA
+  // cover + [context] + tips + moment + [recap] + CTA
+  const total = n + 3 + (includeContext ? 1 : 0) + (includeRecap ? 1 : 0);
 
   const band = (i: number, colour: string) => [
     { type: "text", bbox: [80, 1272, 640, 1300], content: agency.toUpperCase(), font: "Jost", size: 17, colour, align: "left", weight: "500", tracking: 4 },
@@ -146,8 +149,8 @@ export async function renderTipsImageStyled(
     specs.push(DesignSpec.parse({ background: NAVY, elements: els }));
   }
 
-  // ── 2 · CONTEXT (img1) — the standalone second cover ─────────────────────────
-  {
+  // ── 2 · CONTEXT (img1) — the standalone second cover (RULE 3: opt-in) ────────
+  if (includeContext) {
     if (cfg.s2 === "card") {
       specs.push(DesignSpec.parse({
         background: NAVY,
@@ -225,8 +228,8 @@ export async function renderTipsImageStyled(
     }
   });
 
-  // ── RECAP — the save unit (type-led, hero echo) ──────────────────────────────
-  {
+  // ── RECAP — the save unit (RULE 3: opt-in) ───────────────────────────────────
+  if (includeRecap) {
     const rowH = Math.min(150, 760 / n);
     specs.push(DesignSpec.parse({
       background: CREAM,
@@ -393,8 +396,10 @@ export async function renderTipsImageStyledV2(
       if (cfg.mode === "light") {
         els.push(noShield({ type: "text", bbox: [80, 110, 280, 300], content: String(i + 1).padStart(2, "0"), font: FR, size: 150, colour: NAVY, align: "left" }));
         els.push(noShield({ type: "text", bbox: [80, 300, 1000, 470], content: wrap(tip.title, FR, 58, 900), font: FR, size: 58, colour: NAVY, align: "left", line_height: 70 }));
-        els.push({ type: "rect", bbox: [64, 960, 1016, 1215], fill: CREAM, radius: 10, opacity: 0.94 });
-        els.push({ type: "text", bbox: [100, 995, 980, 1180], content: wrap(tip.body, "Jost", 31, 860), font: "Jost", size: 31, colour: mix(NAVY, CREAM, 0.9), align: "left", line_height: 46, valign: "center" });
+        // RULE 1: this used to be a cream panel behind the body — a hard-edged box standing in
+        // for a legibility fix. The measured check in renderFreeform now handles this block:
+        // it recolours within the palette, or lays a wide soft gradient, only if it must.
+        els.push({ type: "text", bbox: [100, 995, 980, 1180], content: wrap(tip.body, "Jost", 31, 860), font: "Jost", size: 31, colour: mix(NAVY, CREAM, 0.9), alt_colour: CREAM, align: "left", line_height: 46, valign: "center" });
         els.push(noShield(aiTag(mix(NAVY, CREAM, 0.5))));
         els.push(...band(slideNo, mix(NAVY, CREAM, 0.6)).map(noShield));
       } else {

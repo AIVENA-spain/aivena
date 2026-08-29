@@ -1,3 +1,4 @@
+import sharp from 'sharp';
 import { supabaseAdmin } from './supabase-admin';
 import { critiqueArtwork } from './studio-carousel-art';
 
@@ -31,6 +32,64 @@ export const TIPS_LIBRARY: Record<string, [string, string, string]> = {
 };
 
 /** Colour schemes — all deliberately Spanish-coastal: the longing, the light, the promise. */
+/** RULE 11 — ONE artwork medium per deck. Until now the medium existed only as pixels in the
+ *  style's anchor image, while the same prompt sentence orders the model AWAY from that
+ *  reference ("replace the subject completely") — so every slide drifted on its own and a deck
+ *  could come back part painted, part photographic. Naming it in words, in the one prompt
+ *  builder, holds all of a deck's slides to the same medium on the first pass and on the
+ *  vision-QA retry alike. */
+/** RULE 2 — artwork fills its frame or the slide does not ship. The failure we actually get is
+ *  a letterboxed generation: a band of flat, near-identical rows (or columns) at an edge, with
+ *  the picture squeezed into the rest. Detected on ONE cheap greyscale pass — a leading or
+ *  trailing run of rows/columns whose own variation is near zero and whose brightness barely
+ *  moves. Returns the fraction of the frame that band eats, 0 when the frame is filled. */
+export async function blankBandFraction(buf: Buffer): Promise<number> {
+  try {
+    const W = 64, H = 80;
+    const { data } = await sharp(buf).greyscale().resize(W, H, { fit: 'fill' }).raw().toBuffer({ resolveWithObject: true });
+    const rowStat = (r: number) => {
+      let sum = 0; for (let x = 0; x < W; x++) sum += data[r * W + x];
+      const mean = sum / W;
+      let v = 0; for (let x = 0; x < W; x++) v += (data[r * W + x] - mean) ** 2;
+      return { mean, sd: Math.sqrt(v / W) };
+    };
+    const colStat = (c: number) => {
+      let sum = 0; for (let y = 0; y < H; y++) sum += data[y * W + c];
+      const mean = sum / H;
+      let v = 0; for (let y = 0; y < H; y++) v += (data[y * W + c] - mean) ** 2;
+      return { mean, sd: Math.sqrt(v / H) };
+    };
+    const run = (n: number, stat: (i: number) => { mean: number; sd: number }, from: 'start' | 'end') => {
+      const first = stat(from === 'start' ? 0 : n - 1);
+      if (first.sd > 4) return 0;
+      let k = 0;
+      for (let i = 0; i < n; i++) {
+        const s = stat(from === 'start' ? i : n - 1 - i);
+        if (s.sd > 4 || Math.abs(s.mean - first.mean) > 6) break;
+        k++;
+      }
+      return k / n;
+    };
+    return Math.max(
+      run(H, rowStat, 'start'), run(H, rowStat, 'end'),
+      run(W, colStat, 'start'), run(W, colStat, 'end'),
+    );
+  } catch { return 0; }
+}
+
+export const TIPS_MEDIUM: Record<string, string> = {
+  bodegon: 'a photographic old-master still life, natural dusk light',
+  salitre: 'a 35mm editorial film photograph',
+  pueblo: 'a natural-light travel photograph',
+  mercado: 'a natural-light food and market photograph',
+  litoral: 'a painted mid-century travel-poster illustration',
+  tinta: 'a two-ink riso-print illustration',
+  papel: 'a layered paper-cut illustration',
+  arcilla: 'a photograph of a handmade clay miniature scene',
+  acuarela: 'a watercolour and ink illustration',
+  bordado: 'an embroidered-thread-on-linen illustration',
+};
+
 export const TIPS_SCHEMES: Record<string, { label: string; clause: string }> = {
   clasico: { label: 'Clásico', clause: 'Keep exactly the same colour palette as the reference image.' },
   atardecer: { label: 'Atardecer', clause: 'Shift the colour palette to warm terracotta, burnt orange, dusty pink and soft sand — a Spanish sunset — keeping the same Mediterranean warmth and the same amount of calm empty space.' },
@@ -101,6 +160,9 @@ export async function generateTipsImages(opts: {
   // parallel to scenes: the art-director's IDEA per scene — presence turns on the vision reviewer
   // (each image is LOOKED AT before it ships; rejects regenerate once with the problem fed back)
   ideas?: string[];
+  // RULE 1: parallel to scenes — the region of each frame the art director keeps quiet, so the
+  // image is COMPOSED for its type instead of the type fighting the picture afterwards
+  quietZones?: (string | undefined)[];
 }): Promise<{ buffers: Buffer[]; paths: string[]; qa?: { reviewed: number; regenerated: number; still_flagged: number } } | null> {
   const files = TIPS_LIBRARY[opts.style];
   const scheme = TIPS_SCHEMES[opts.scheme] ?? TIPS_SCHEMES.clasico;
@@ -120,7 +182,8 @@ export async function generateTipsImages(opts: {
       // keep only the technique; the reference's objects/room/composition must NOT reappear, and
       // each task knows its siblings so the family can't converge on one motif.
       const siblings = scenes.filter((_, j) => j !== si).map((x) => x.split(/[,.]/)[0].trim()).filter(Boolean).slice(0, 8);
-      return `Keep exactly the same artistic style, technique, texture, grain, lighting mood and colour language as this reference image, but REPLACE THE SUBJECT COMPLETELY with a new scene: ${scene}. Render it as ONE deliberately composed still — every object purposeful and clearly readable, arranged with intent, nothing random. Do NOT reuse the reference image's objects, room, window, or composition — only its technique. ${siblings.length ? `Other images in this set show: ${siblings.join('; ')} — this one must be clearly different from all of them. ` : ''}${extra}${scheme.clause} Keep generous calm empty space for text. ${NEG}`;
+      const medium = TIPS_MEDIUM[opts.style] ? `Render this as ${TIPS_MEDIUM[opts.style]}. ` : '';
+      return `${medium}Keep exactly the same artistic style, technique, texture, grain, lighting mood and colour language as this reference image, but REPLACE THE SUBJECT COMPLETELY with a new scene: ${scene}. Render it as ONE deliberately composed still — every object purposeful and clearly readable, arranged with intent, nothing random. Do NOT reuse the reference image's objects, room, window, or composition — only its technique. ${siblings.length ? `Other images in this set show: ${siblings.join('; ')} — this one must be clearly different from all of them. ` : ''}${extra}${scheme.clause} ${opts.quietZones?.[si] ? `Leave the ${opts.quietZones[si]} of the frame QUIET — continuous low-detail ground with no subject, no props and no busy texture there; the deck sets its headline in it.` : 'Keep generous calm empty space for text.'} ${NEG}`;
     };
     const createTask = async (si: number, extra = ''): Promise<string | null> => {
       const res = await fetch(KIE_CREATE, {
@@ -132,11 +195,25 @@ export async function generateTipsImages(opts: {
       return cj?.data?.taskId ?? null;
     };
 
-    const tasks: (string | null)[] = [];
-    for (let si = 0; si < scenes.length; si++) tasks.push(await createTask(si));
-    if (tasks.some((t) => !t)) return null;
+    // Every artwork — first pass and every retry — is produced HERE, so the frame assert has
+    // exactly one place to live and cannot be bypassed.
+    const renderOne = async (si: number, extra = ''): Promise<Buffer | null> => {
+      const t = await createTask(si, extra);
+      if (!t) return null;
+      const buf = await pollTask(key, t, 150_000);
+      if (!buf) return null;
+      const band = await blankBandFraction(buf);
+      if (band <= 0.12) return buf;
+      // a letterboxed generation: re-issue once telling it to fill the frame, then take the
+      // better of the two rather than shipping a half-empty picture
+      console.warn(`[carousel-art] slide ${si + 1}: ${(band * 100).toFixed(0)}% blank band — regenerating to fill the frame`);
+      const t2 = await createTask(si, `${extra}IMPORTANT — the previous attempt left a large blank band along one edge. The scene must FILL the entire frame edge to edge, with no border, no letterboxing and no empty band. `);
+      const buf2 = t2 ? await pollTask(key, t2, 150_000) : null;
+      if (!buf2) return buf;
+      return (await blankBandFraction(buf2)) < band ? buf2 : buf;
+    };
 
-    const buffers = await Promise.all(tasks.map((t) => pollTask(key, t!, 150_000)));
+    const buffers = await Promise.all(scenes.map((_, si) => renderOne(si)));
     if (buffers.some((b) => !b)) return null;
 
     // VISION REVIEW (Christian 2026-08-28: "it always looks thought through") — look at every
@@ -151,8 +228,7 @@ export async function generateTipsImages(opts: {
         if (!verdict) continue;
         qa.reviewed++;
         if (verdict.acceptable) continue;
-        const retryTask = await createTask(si, `IMPORTANT — a previous attempt at this scene was rejected in review: "${verdict.problem}". Avoid that specific problem; render the scene cleanly and unambiguously. `);
-        const retry = retryTask ? await pollTask(key, retryTask, 150_000) : null;
+        const retry = await renderOne(si, `IMPORTANT — a previous attempt at this scene was rejected in review: "${verdict.problem}". Avoid that specific problem; render the scene cleanly and unambiguously. `);
         if (retry) {
           qa.regenerated++;
           const second = await critiqueArtwork(retry, idea, scenes[si]);

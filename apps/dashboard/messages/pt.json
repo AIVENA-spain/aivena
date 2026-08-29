@@ -968,7 +968,12 @@
       "saving": "A guardar…",
       "remove": "Remover",
       "confirmRemove": "Remover",
-      "cancel": "Cancelar"
+      "cancel": "Cancelar",
+      "hoursTitle": "Quando pode a Amanda contactar {name}?",
+      "hoursHint": "Horário de turno — a Amanda só contacta este agente dentro dele. Não é o mesmo que os seus horários de visita.",
+      "setHours": "Definir horário",
+      "saveHours": "Guardar horário",
+      "dayOff": "Folga"
     },
     "automation": {
       "title": "Nível de automação",

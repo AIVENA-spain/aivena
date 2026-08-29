@@ -968,7 +968,12 @@
       "saving": "Salvataggio…",
       "remove": "Rimuovi",
       "confirmRemove": "Rimuovi",
-      "cancel": "Annulla"
+      "cancel": "Annulla",
+      "hoursTitle": "Quando può Amanda contattare {name}?",
+      "hoursHint": "Orario di turno: Amanda avvisa questo agente solo dentro questo orario. Non è lo stesso dei tuoi orari di visita.",
+      "setHours": "Imposta orario",
+      "saveHours": "Salva orario",
+      "dayOff": "Riposo"
     },
     "automation": {
       "title": "Livello di automazione",

@@ -477,6 +477,10 @@ export type AgentRow = {
   receives_pings: boolean;
   last_checkin_at: string | null;
   status: string;
+  /** Per-agent shift hours: { "0".."6": [hour, ...] }. Amanda only pings an
+   *  agent inside these — the roster promise "only in their working hours". */
+  work_hours: Record<string, number[]> | null;
+  unavailable_dates: string[] | null;
 };
 
 export async function saveAgentAction(input: {
@@ -486,6 +490,8 @@ export async function saveAgentAction(input: {
   email?: string;
   office?: string;
   languages: string[];
+  work_hours?: Record<string, number[]>;
+  unavailable_dates?: string[];
 }): Promise<ActionResult<{ id: string }>> {
   try {
     const res = await apiFetch<{ ok: true; id: string }>("/api/v1/amanda/agents", {

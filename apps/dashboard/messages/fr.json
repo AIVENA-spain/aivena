@@ -968,7 +968,12 @@
       "saving": "Enregistrement…",
       "remove": "Supprimer",
       "confirmRemove": "Supprimer",
-      "cancel": "Annuler"
+      "cancel": "Annuler",
+      "hoursTitle": "Quand Amanda peut-elle joindre {name} ?",
+      "hoursHint": "Horaires de service — Amanda ne sollicite cet agent que dans ce créneau. Différent de vos horaires de visite.",
+      "setHours": "Définir les horaires",
+      "saveHours": "Enregistrer",
+      "dayOff": "Repos"
     },
     "automation": {
       "title": "Niveau d'automatisation",

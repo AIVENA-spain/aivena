@@ -19,7 +19,7 @@ import { env } from '../../../../packages/config/env';
 const API = 'https://api.anthropic.com/v1/messages';
 const HDRS = { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' };
 
-export interface ArtBrief { idea: string; scene: string }
+export interface ArtBrief { idea: string; scene: string; quiet_zone?: string }
 export interface ArtDirection { cover: ArtBrief; context: ArtBrief | null; tips: ArtBrief[] }
 
 const BRIEF_SHAPE = {
@@ -28,6 +28,7 @@ const BRIEF_SHAPE = {
   properties: {
     idea: { type: 'string', description: 'ONE sentence: what the viewer must understand at a glance from this image alone' },
     scene: { type: 'string', description: 'the scene to render (ENGLISH, 20-45 words): concrete stageable objects only, hero object named in the first five words' },
+    quiet_zone: { type: 'string', enum: ['top third', 'bottom third', 'left third', 'right third'], description: 'the region of THIS image that stays quiet — continuous low-detail ground (sky, wall, water, table top) with the subject composed clear of it. The deck sets its type there.' },
   },
 };
 
@@ -65,6 +66,7 @@ YOUR PROCESS for every slide, in order:
 1. IDEA — one sentence: what must a viewer understand at a glance, seeing only this image?
 2. STRATEGY — choose what serves the idea best: quiet irony (a surface that looks perfect with trouble hinted at the margins), a staged still that literally acts out the advice, or a calm single-subject beat. Subtlety beats shock; suggestion beats depiction. MATCH THE TOPIC'S REGISTER: for dream/philosophical/aspirational topics, the scenes are luminous and desirable — morning light, a set table, an open window to the sea — with NO flaws or trouble anywhere; save the hidden-trouble grammar for practical warning topics.
 3. SCENE — 20-45 words of concrete, stageable objects. Hero object in the first five words, then 2-4 supporting props. Every object must earn its place in the idea.
+4. QUIET ZONE — name the third of the frame that stays QUIET, and compose the subject clear of it. The deck's headline is set there, so it must be continuous, low-detail, near-flat ground that belongs in the scene (open sky, a plain wall, still water, an empty table top) — never emptiness bolted on as a band, and never a busy area you simply hope reads as calm. Write the scene so the quiet zone is a natural part of the composition.
 
 THE STANDARD (learn from this example): topic "Some buy a home in Spain. Others buy a renovation." A large hole or crater in a floor is WRONG — image models render damage as surreal voids, and destruction reads cheap. RIGHT is the hidden-trouble version: "a freshly painted white wall, one corner of the new paint lifting to show an older ochre layer beneath, a folded dust sheet and a spirit level resting against the skirting, warm afternoon light" — the house looks good at first glance; the story is in the details.
 

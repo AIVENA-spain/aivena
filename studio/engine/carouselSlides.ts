@@ -45,8 +45,7 @@ export interface CarouselPlan {
 
 /** Measured word-wrap: freeform splits on \n only (and shrink-fits the widest line), so paragraphs
  *  must be broken into lines HERE, at the real rendered width, or long copy shrinks to nothing. */
-export function wrap(text: string, font: string, size: number, maxW: number, weight?: string): string {
-  const words = text.replace(/\s+/g, " ").trim().split(" ");
+function greedyLines(words: string[], font: string, size: number, maxW: number, weight?: string): string[] {
   const lines: string[] = [];
   let line = "";
   for (const w of words) {
@@ -55,7 +54,28 @@ export function wrap(text: string, font: string, size: number, maxW: number, wei
     else line = probe;
   }
   if (line) lines.push(line);
-  return lines.join("\n");
+  return lines;
+}
+
+/** RULE 6 — headline lines are BALANCED: the last line is never dramatically shorter than the
+ *  lines above it. Greedy wrapping packs each line full and dumps the remainder on the last one
+ *  ("…they need a / plan"). After the greedy pass we look for the narrowest width that still
+ *  produces the SAME number of lines and re-wrap at that width: the same break count, spread
+ *  evenly, and never a wider line than the caller asked for. This is the single line breaker in
+ *  the carousel engine, so every style and every edition gets it from here. */
+export function wrap(text: string, font: string, size: number, maxW: number, weight?: string): string {
+  const words = text.replace(/\s+/g, " ").trim().split(" ");
+  const lines = greedyLines(words, font, size, maxW, weight);
+  if (lines.length < 2) return lines.join("\n");
+  const widest = Math.max(...lines.map((l) => textWidth(font, l, size, weight)));
+  let lo = Math.max(...words.map((w) => textWidth(font, w, size, weight))), hi = widest, best = lines;
+  // ~8 probes is plenty at these widths and keeps the cost invisible next to rendering
+  for (let i = 0; i < 8 && hi - lo > 4; i++) {
+    const mid = (lo + hi) / 2;
+    const cand = greedyLines(words, font, size, mid, weight);
+    if (cand.length <= lines.length) { best = cand; hi = mid; } else lo = mid;
+  }
+  return best.join("\n");
 }
 
 // ── CHROME i18n (Christian 2026-07-16: "carousels chooseable in all languages") ─────────────────
@@ -389,15 +409,21 @@ function ctaSlide(plan: CarouselPlan, slideIndex: number, total: number, agency:
 /** Build the editorial deck's specs — SYNCHRONOUS, so display-face swaps can wrap it safely. */
 export function buildPlannedSpecs(
   plan: CarouselPlan, agency: string, contact: string, brand: CarouselBrand,
+  // RULE 3 — a deck is one hero, N tips, one closing. The intro ("second cover") and the recap
+  // are opt-in; the slide numbering is baked into each spec as it is built, so the decision has
+  // to be made HERE and not by dropping specs afterwards.
+  includeContext = true, includeRecap = true,
 ): any[] {
   const specs: any[] = [];
   if (plan.type === "tips") {
-    const total = plan.tips.length + 4;      // cover + slide2 + tips + recap + CTA
-    specs.push(tipsCover(plan, agency, brand, total));
-    specs.push(tipsSlide2(plan, agency, brand, total));
-    plan.tips.forEach((tip, i) => specs.push(tipSlide(i + 2, i + 1, total, tip, agency, brand, plan.eyebrow)));
-    specs.push(recapSlide(plan, plan.tips.length + 2, total, agency, brand));
-    specs.push(ctaSlide(plan, total - 1, total, agency, contact, brand));
+    const total = plan.tips.length + 2 + (includeContext ? 1 : 0) + (includeRecap ? 1 : 0);
+    let n = 0;
+    specs.push(tipsCover(plan, agency, brand, total)); n++;
+    if (includeContext) { specs.push(tipsSlide2(plan, agency, brand, total)); n++; }
+    plan.tips.forEach((tip, i) => specs.push(tipSlide(n + i, i + 1, total, tip, agency, brand, plan.eyebrow)));
+    n += plan.tips.length;
+    if (includeRecap) { specs.push(recapSlide(plan, n, total, agency, brand)); n++; }
+    specs.push(ctaSlide(plan, n, total, agency, contact, brand));
   } else {
     const total = plan.quote_parts.length + 3;  // cover + context + parts + CTA
     specs.push(quoteCover(plan, agency, brand, total));

@@ -33,7 +33,7 @@ import { directScenes } from '../lib/studio-carousel-art';
 import { renderTipsImageStyled, renderTipsImageStyledV2, isTipsImageStyle } from '../../../../studio/engine/carouselTipsImage';
 import { renderFreeform, type DesignSpec } from '../../../../studio/engine/renderFreeform';
 import { applyGrain, photoPalette } from '../../../../studio/engine/carouselSlides';
-import { loadTipsImages, generateTipsImages, loadGenerationImages, TIPS_SCHEMES } from '../lib/studio-carousel-image';
+import { loadTipsImages, generateTipsImages, loadGenerationImages, TIPS_SCHEMES, TIPS_MEDIUM } from '../lib/studio-carousel-image';
 
 /**
  * Studio wizard proxy (W13 v0.6) — the browser's ONLY door to Vega's image
@@ -975,6 +975,12 @@ function mergeSlideColours(
   return out;
 }
 
+/** RULE 10 — contact details are assembled in ONE place, always from agency_branding (mapBranding
+ *  reads brand_name / website_url / phone). No carousel path builds this string itself. */
+function contactLine(agency: { web?: string | null; phone?: string | null }): string {
+  return [agency.web, agency.phone].filter(Boolean).join(' · ');
+}
+
 async function renderWithSlideColours<B extends { navy: string; gold: string }>(
   brand: B,
   slideCols: Record<string, { navy?: string; gold?: string }>,
@@ -1100,6 +1106,7 @@ async function runPlannedCarousel(opts: {
   slideCount?: number; language: string; style: CarouselStyle; scheme: string; includeRecap: boolean; includeContext: boolean;
   agency: { name: string; web: string; phone: string };
   brand: { navy: string; gold: string; cream: string; text: string };
+  agencyProfile?: string;  // RULE 9: what the agency does — the closing slide is written from it
   styleEdition?: number;   // type-only styles: which font/colour edition this deck wears
   lockPalette?: boolean;   // user picked custom colours — edition may not recolour
   agencyTaste?: string;    // one-line taste profile from the this-or-that game (art-director hint)
@@ -1135,19 +1142,19 @@ async function runPlannedCarousel(opts: {
     let plan = await planCarousel({
       type: opts.type, topic: opts.topic, quoteText: opts.quoteText, quoteAuthor: opts.quoteAuthor,
       slideCount: opts.slideCount, language: opts.language, agencyName: opts.agency.name,
-      avoidMotifs,
+      agencyProfile: opts.agencyProfile, avoidMotifs,
     });
     // EDITOR pass (Christian 2026-08-28): a skeptical second read of the copy — sense, value,
     // trust — before anything renders. Quote decks are verbatim client words and skip it.
     let copyQa: { revised: boolean; notes: string[] } | undefined;
     if (opts.type === 'tips') {
-      const edited = await editPlan(plan, opts.topic ?? '');
+      const edited = await editPlan(plan, opts.topic ?? '', opts.language);
       if (edited) {
         plan = edited.plan;
         copyQa = { revised: edited.notes.length > 0, notes: edited.notes };
       }
     }
-    const contact = [opts.agency.web, opts.agency.phone].filter(Boolean).join(' · ');
+    const contact = contactLine(opts.agency);
     // AI-imagery styles compose the pre-seeded generated family; a library miss falls back to the
     // editorial type-only deck — an image can never block a post (spec fallback rule)
     let slides: Buffer[];
@@ -1190,10 +1197,14 @@ async function runPlannedCarousel(opts: {
       const allIdeas = direction
         ? [direction.cover.idea, ...(hasContextArt && direction.context ? [direction.context.idea] : hasContextArt ? [''] : []), ...direction.tips.map((b) => b.idea)]
         : undefined;
+      // RULE 1: the quiet region the director composed for, in the same order as the scenes
+      const allZones = direction
+        ? [direction.cover.quiet_zone, ...(hasContextArt ? [direction.context?.quiet_zone] : []), ...direction.tips.map((b) => b.quiet_zone)]
+        : undefined;
       let images: Buffer[] | null = null;
       let contextArt = false;
       if (allScenes.every((x) => typeof x === 'string' && x.trim().length >= 10)) {
-        const fresh = await generateTipsImages({ style: opts.style, scheme: opts.scheme, scenes: allScenes, agencyId, genId, ideas: allIdeas });
+        const fresh = await generateTipsImages({ style: opts.style, scheme: opts.scheme, scenes: allScenes, agencyId, genId, ideas: allIdeas, quietZones: allZones });
         if (fresh && fresh.buffers.length === allScenes.length) {
           images = fresh.buffers; imagePaths = fresh.paths; perSlideArt = true; artworkSource = 'fresh_per_slide';
           contextArt = hasContextArt;
@@ -1208,13 +1219,13 @@ async function runPlannedCarousel(opts: {
       if (images) {
         slides = perSlideArt
           ? await renderTipsImageStyledV2(opts.style, plan, opts.agency.name, contact, opts.brand, images, opts.language, opts.includeRecap, opts.includeContext, 0, contextArt)
-          : await renderTipsImageStyled(opts.style, plan, opts.agency.name, contact, opts.brand, images, opts.language);
+          : await renderTipsImageStyled(opts.style, plan, opts.agency.name, contact, opts.brand, images, opts.language, opts.includeContext, opts.includeRecap);
       } else {
         usedStyle = 'editorial';
-        slides = await renderPlannedStyled('editorial', plan, opts.agency.name, contact, opts.brand, opts.language, opts.styleEdition ?? 0, opts.lockPalette ?? false);
+        slides = await renderPlannedStyled('editorial', plan, opts.agency.name, contact, opts.brand, opts.language, opts.styleEdition ?? 0, opts.lockPalette ?? false, opts.includeContext, opts.includeRecap);
       }
     } else {
-      slides = await renderPlannedStyled(opts.style, plan, opts.agency.name, contact, opts.brand, opts.language, opts.styleEdition ?? 0, opts.lockPalette ?? false);
+      slides = await renderPlannedStyled(opts.style, plan, opts.agency.name, contact, opts.brand, opts.language, opts.styleEdition ?? 0, opts.lockPalette ?? false, opts.includeContext, opts.includeRecap);
     }
     const stored = await storeSlides(agencyId, genId, slides);
 
@@ -1275,8 +1286,12 @@ route.post('/carousel', async (c) => {
       // 'slides' = TOTAL deck length the agent asked for (3..10): cover + [context when >=5] + tips +
       // [recap when >=7] + CTA. Legacy slide_count (= tips) still honoured.
       const slidesTotal = Number.isInteger(b.slides) ? Math.min(10, Math.max(3, b.slides as number)) : null;
-      const includeContext = slidesTotal === null ? true : slidesTotal >= 5;
-      const includeRecap = slidesTotal === null ? true : slidesTotal >= 7;
+      // RULE 3 — a deck is ONE hero, N tips, ONE closing. The intro ("second cover") and the
+      // recap were on by default, which is how a cover promising "the order nobody explains"
+      // was followed by a slide promising the same thing again before any advice arrived.
+      // They are opt-in now: the agent asks for them by name, nothing adds them silently.
+      const includeContext = b.include_context === true;
+      const includeRecap = b.include_recap === true;
       const slideCount = slidesTotal !== null
         ? Math.min(7, Math.max(1, slidesTotal - 2 - (includeContext ? 1 : 0) - (includeRecap ? 1 : 0)))
         : (Number.isInteger(b.slide_count) ? Math.min(7, Math.max(3, b.slide_count as number)) : 5);
@@ -1289,7 +1304,8 @@ route.post('/carousel', async (c) => {
 
       const bRes = await tx.execute(sql`
         SELECT brand_name, primary_color, accent_color, background_color, text_color,
-               phone, whatsapp_number, website_url, sender_email, email_signature_name, creative_prefs
+               phone, whatsapp_number, website_url, sender_email, email_signature_name, creative_prefs,
+               city, region, country, tone, brand_voice, content_style
         FROM agency_branding WHERE agency_id = ${agencyId} LIMIT 1
       `);
       const bRows = bRes as unknown as any[];
@@ -1298,6 +1314,16 @@ route.post('/carousel', async (c) => {
       if (brandGold) brand.gold = brandGold;
       const prefs = (bRows[0]?.creative_prefs && typeof bRows[0].creative_prefs === 'object'
         ? bRows[0].creative_prefs : null) as Record<string, string> | null;
+      // RULE 9: what this agency actually does — assembled from agency_branding, never invented.
+      // Empty for an agency that has filled nothing in, and the planner then omits the claim
+      // rather than making one up.
+      const agencyProfile = [
+        bRows[0]?.brand_name ? `Name: ${bRows[0].brand_name}` : null,
+        [bRows[0]?.city, bRows[0]?.region, bRows[0]?.country].filter(Boolean).join(', ') || null,
+        bRows[0]?.brand_voice ? `Voice: ${String(bRows[0].brand_voice).slice(0, 200)}` : null,
+        bRows[0]?.content_style ? `Content style: ${String(bRows[0].content_style).slice(0, 200)}` : null,
+        bRows[0]?.tone ? `Tone: ${String(bRows[0].tone).slice(0, 120)}` : null,
+      ].filter(Boolean).join(' · ') || undefined;
 
       // each new type-only deck wears an edition (fonts + colour world) — matched to the agency's
       // taste profile when the this-or-that game has been played, random otherwise; stored so
@@ -1328,7 +1354,7 @@ route.post('/carousel', async (c) => {
       void runPlannedCarousel({
         genId, agencyId, type, topic, quoteText, quoteAuthor, slideCount, language, style, scheme, includeRecap, includeContext,
         agency: { name: agency.name, web: agency.web, phone: agency.phone }, brand,
-        styleEdition, lockPalette, agencyTaste,
+        agencyProfile, styleEdition, lockPalette, agencyTaste,
       });
       return c.json({ ok: true, generation_id: genId, status: 'processing' });
     }
@@ -1449,7 +1475,7 @@ route.post('/carousel/update', async (c) => {
     const effGold = hexColour(b.brand_gold) ?? (typeof rawU.brand_gold === 'string' ? rawU.brand_gold : null);
     if (effNavy) brand.navy = effNavy;
     if (effGold) brand.gold = effGold;
-    const contact = [agency.web, agency.phone].filter(Boolean).join(' · ');
+    const contact = contactLine(agency);
 
     // PER-SLIDE colours (Christian 2026-08-28: "no matter what color i choose, in some places
     // one color wont show as good as it does in other places — it must be possible to change on
@@ -1478,12 +1504,12 @@ route.post('/carousel/update', async (c) => {
       if (images) {
         slides = await renderDeck((br) => perSlideArt
           ? renderTipsImageStyledV2(storedStyle, plan, agency.name, contact, br, images, storedLang, meta?.include_recap !== false, meta?.include_context !== false, typeof meta?.layout_variant === 'number' ? meta.layout_variant : 0, ctxArtEff)
-          : renderTipsImageStyled(storedStyle, plan, agency.name, contact, br, images, storedLang));
+          : renderTipsImageStyled(storedStyle, plan, agency.name, contact, br, images, storedLang, meta?.include_context === true, meta?.include_recap === true));
       } else {
-        slides = await renderDeck((br) => renderPlannedStyled('editorial', plan, agency.name, contact, br, storedLang, typeof rawU.style_edition === 'number' ? rawU.style_edition : 0, !!(effNavy || effGold)));
+        slides = await renderDeck((br) => renderPlannedStyled('editorial', plan, agency.name, contact, br, storedLang, typeof rawU.style_edition === 'number' ? rawU.style_edition : 0, !!(effNavy || effGold), meta?.include_context === true, meta?.include_recap === true));
       }
     } else {
-      slides = await renderDeck((br) => renderPlannedStyled(storedStyle, plan, agency.name, contact, br, storedLang, typeof rawU.style_edition === 'number' ? rawU.style_edition : 0, !!(effNavy || effGold)));
+      slides = await renderDeck((br) => renderPlannedStyled(storedStyle, plan, agency.name, contact, br, storedLang, typeof rawU.style_edition === 'number' ? rawU.style_edition : 0, !!(effNavy || effGold), meta?.include_context === true, meta?.include_recap === true));
     }
     const stored = await storeSlides(agencyId, genId, slides);
 
@@ -1583,7 +1609,15 @@ route.get('/suggestions', async (c) => {
 //   style  → same words + artwork, next look in the ring (chrome/type treatment changes)
 //   layout → same everything, per-tip layout rotation shifts (per-slide-art decks only)
 // The remix lands as a NEW generation so the original stays in the library untouched.
+// RULE 11 — one medium per deck: a style remix rotates WITHIN the deck's medium, so an
+// illustrated deck never comes back photographic (the compositions advance too, so the axis
+// still looks new). Keyed off TIPS_MEDIUM, the single place the medium is declared.
 const REMIX_IMG_RING = ['bodegon', 'litoral', 'tinta', 'salitre', 'papel', 'arcilla', 'acuarela', 'bordado', 'pueblo', 'mercado'];
+const isPhotoMedium = (style: string) => /photograph/i.test(TIPS_MEDIUM[style] ?? '');
+const mediumRing = (style: string) => {
+  const same = REMIX_IMG_RING.filter((s) => isPhotoMedium(s) === isPhotoMedium(style));
+  return same.length > 1 ? same : REMIX_IMG_RING;
+};
 
 /** strict #rrggbb or null — the only shape the colour override accepts */
 const hexColour = (v: unknown): string | null => typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v) ? v : null;
@@ -1721,7 +1755,7 @@ route.post('/carousel/remix', async (c) => {
       // swapping the style key alone could return a deck the agent could not tell apart. The
       // compositions now advance with it. On a type-only deck the EDITION moves too, which
       // changes the display face and the colour world — the biggest visible change available.
-      const ring = isTipsImageStyle(storedStyle) ? REMIX_IMG_RING : REMIX_TYPE_RING;
+      const ring = isTipsImageStyle(storedStyle) ? mediumRing(storedStyle) : REMIX_TYPE_RING;
       const at = ring.indexOf(storedStyle);
       newStyle = ring[(at + 1) % ring.length] as CarouselStyle;
       if (isTipsImageStyle(newStyle) && perSlideArt) layoutVariant = (priorVariant + 1) % 6;
@@ -1743,7 +1777,7 @@ route.post('/carousel/remix', async (c) => {
     const { agency, brand } = mapBranding(bRows[0] || {});
     if (typeof raw.brand_navy === 'string') brand.navy = raw.brand_navy as string;
     if (typeof raw.brand_gold === 'string') brand.gold = raw.brand_gold as string;
-    const contact = [agency.web, agency.phone].filter(Boolean).join(' · ');
+    const contact = contactLine(agency);
 
     // render synchronously — the deck's own artwork is reused, so this is seconds, not minutes
     let slides: Buffer[];
@@ -1761,10 +1795,10 @@ route.post('/carousel/remix', async (c) => {
       const ctxArtEff = ctxArt && !!own;
       slides = await renderWithSlideColours(brand, remixSlideCols, (br) => perSlideArt
         ? renderTipsImageStyledV2(newStyle, plan, agency.name, contact, br, images, storedLang, meta?.include_recap !== false, meta?.include_context !== false, layoutVariant, ctxArtEff)
-        : renderTipsImageStyled(newStyle, plan, agency.name, contact, br, images, storedLang));
+        : renderTipsImageStyled(newStyle, plan, agency.name, contact, br, images, storedLang, meta?.include_context === true, meta?.include_recap === true));
     } else {
       slides = await renderWithSlideColours(brand, remixSlideCols, (br) =>
-        renderPlannedStyled(newStyle, plan, agency.name, contact, br, storedLang, styleEdition, !!(raw.brand_navy || raw.brand_gold)));
+        renderPlannedStyled(newStyle, plan, agency.name, contact, br, storedLang, styleEdition, !!(raw.brand_navy || raw.brand_gold), meta?.include_context === true, meta?.include_recap === true));
     }
 
     // A style remix repaints the deck in the NEW style's edition palette, so the parent's

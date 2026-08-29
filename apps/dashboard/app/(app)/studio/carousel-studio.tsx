@@ -429,9 +429,10 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
             </div>
             <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-neutral-400">
               {(() => {
-                const ctx = slideTotal >= 5, rec = slideTotal >= 7;
-                const tips = Math.min(7, Math.max(1, slideTotal - 2 - (ctx ? 1 : 0) - (rec ? 1 : 0)));
-                const parts = ["1 cover", ...(ctx ? ["1 intro"] : []), `${tips} tip${tips > 1 ? "s" : ""}`, ...(rec ? ["1 summary"] : []), "1 closing slide"];
+                // RULE 3 — a deck is one hero, N tips, one closing. The intro and summary slides
+                // are no longer added by slide count, so the preview must not promise them.
+                const tips = Math.min(7, Math.max(1, slideTotal - 2));
+                const parts = ["1 cover", `${tips} tip${tips > 1 ? "s" : ""}`, "1 closing slide"];
                 return parts.map((part, i) => (
                   <span key={part} className="flex items-center gap-2">{i > 0 && <span>+</span>}<span>{part}</span></span>
                 ));
@@ -552,13 +553,11 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
                 <div className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">What&rsquo;s included</div>
                 <div className="mt-2 flex flex-col gap-1.5 text-[13px] text-neutral-600 dark:text-neutral-300">
                   {(() => {
-                    const ctx = slideTotal >= 5, rec = slideTotal >= 7;
-                    const tips = Math.min(7, Math.max(1, slideTotal - 2 - (ctx ? 1 : 0) - (rec ? 1 : 0)));
+                    // RULE 3 — hero → tips → closing; no intro or summary is added silently
+                    const tips = Math.min(7, Math.max(1, slideTotal - 2));
                     return [
                       "Cover slide with strong hook",
-                      ...(ctx ? ["Intro slide that sets the scene"] : []),
                       `${tips} practical tip slide${tips > 1 ? "s" : ""}`,
-                      ...(rec ? ["Summary slide worth saving"] : []),
                       "Closing slide with takeaway",
                     ].map((line) => (
                       <div key={line} className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />{line}</div>

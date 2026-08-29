@@ -103,6 +103,99 @@ function norm(s: string): string {
     .replace(/^[\s.,;:¡!¿?—–-]+/, '').replace(/[\s.,;:¡!¿?—–-]+$/, '');
 }
 
+
+// ── THE COPY RULES (Christian 2026-08-28, carousel rules pass) ────────────────
+// Deterministic, language-aware, and applied at EVERY exit of this module — planCarousel,
+// editPlan and remixHook all return through normalisePlan(), so a rule cannot hold on one path
+// and not another. Nothing here redesigns a palette, font, edition or layout.
+
+// RULE 7 — a headline is ONE clean sentence: never two independent clauses joined by a comma.
+// Detected by the shape that actually produces it: a comma followed by a subject pronoun that
+// starts a new clause. Fixed with an em dash, which is what the sentence meant.
+const CLAUSE_STARTERS = [
+  // en, es, de, fr, nl, it, pt, sv, no, da, fi, pl, ru
+  'they', 'it', 'you', 'we', 'he', 'she', 'that', 'this', 'there', 'i',
+  'ellos', 'ellas', 'eso', 'esto', 'tú', 'usted', 'nosotros', 'él', 'ella',
+  'sie', 'er', 'es', 'wir', 'du', 'das', 'dies',
+  'ils', 'elles', 'il', 'elle', 'nous', 'vous', 'cela', 'ça',
+  'zij', 'ze', 'het', 'hij', 'wij', 'jij', 'dat', 'dit',
+  'loro', 'lui', 'lei', 'noi', 'voi', 'questo', 'quello',
+  'eles', 'elas', 'ele', 'ela', 'nós', 'isso', 'isto',
+  'de', 'den', 'det', 'vi', 'du', 'han', 'hon',
+  'oni', 'ono', 'to', 'my', 'ty',
+  'они', 'это', 'мы', 'вы', 'он', 'она', 'оно',
+];
+export function oneSentence(text: string): string {
+  const t = (text ?? '').trim();
+  if (!t) return t;
+  // only the FIRST comma splice matters — a headline is short by construction
+  return t.replace(/,\s+([^\s,]+)/, (m, next: string) => {
+    const w = String(next).toLowerCase().replace(/[^\p{L}]/gu, '');
+    return CLAUSE_STARTERS.includes(w) ? ` — ${next}` : m;
+  });
+}
+
+// RULE 8 — the comment keyword is a SENTENCE, not a code line, and never a "P.D." postscript.
+const KEYWORD_SENTENCE: Record<string, (w: string) => string> = {
+  en: (w) => `Comment ${w} and we'll send it over.`,
+  es: (w) => `Escribe ${w} en los comentarios y te lo enviamos.`,
+  de: (w) => `Kommentiere ${w} und wir schicken es dir.`,
+  fr: (w) => `Commentez ${w} et nous vous l'envoyons.`,
+  nl: (w) => `Reageer met ${w} en we sturen het je toe.`,
+  it: (w) => `Commenta ${w} e te lo inviamo.`,
+  pt: (w) => `Comente ${w} e nós enviamos.`,
+  sv: (w) => `Kommentera ${w} så skickar vi det.`,
+  no: (w) => `Kommenter ${w}, så sender vi det.`,
+  da: (w) => `Kommenter ${w}, så sender vi det.`,
+  fi: (w) => `Kommentoi ${w}, niin lähetämme sen.`,
+  pl: (w) => `Napisz ${w} w komentarzu, a wyślemy Ci to.`,
+  ru: (w) => `Напишите ${w} в комментариях, и мы пришлём это.`,
+};
+const PS_PREFIX = /^\s*(p\.?\s?d\.?|p\.?\s?s\.?|п\.?\s?с\.?)\s*[—–:-]?\s*/i;
+export function commentSentence(raw: string, language: string): string {
+  let t = (raw ?? '').replace(PS_PREFIX, '').trim();
+  if (!t) return t;
+  // "Escríbenos: GUÍA" / "DM: FAMILY" — a label plus a shouted code word is not a sentence
+  const code = t.match(/^[\p{L}\s'’]{0,18}[:·—–-]\s*([\p{Lu}\p{N}\s]{2,24})$/u);
+  const bare = /^[\p{Lu}\p{N}]{2,24}$/u.test(t) ? t : null;
+  const word = code ? code[1].trim() : bare;
+  if (word) {
+    const make = KEYWORD_SENTENCE[language] ?? KEYWORD_SENTENCE.en;
+    return make(word);
+  }
+  return t;
+}
+
+/** Every plan this module hands out passes through here — one implementation, no per-path drift. */
+export function normalisePlan(plan: CarouselPlan, language: string): CarouselPlan {
+  plan.hook_title = oneSentence(plan.hook_title);
+  plan.slide2_title = oneSentence(plan.slide2_title);
+  plan.cta_heading = oneSentence(plan.cta_heading);
+  plan.recap_title = oneSentence(plan.recap_title);
+  plan.tips = plan.tips.map((t) => ({ ...t, title: oneSentence(t.title) }));
+  plan.cta_keyword = commentSentence(plan.cta_keyword, language);
+  plan.caption = (plan.caption ?? '').split('\n').map((l) => l.replace(PS_PREFIX, '')).join('\n').trim();
+  return plan;
+}
+
+// RULE 4 — every factual claim must be TRUE. Claims are wanted; wrong ones are not. This detector
+// does not rewrite copy: it flags an absolute impossibility asserted about the regulated subjects
+// so the editor can verify or hedge it. Christian's live example: "without a local account you
+// cannot pay utilities, taxes, or a mortgage" — false, SEPA forbids refusing a Eurozone IBAN.
+const RISK_DOMAIN = /\b(nie|tie|padr[oó]n|banco?|bank|iban|impuesto|tax|hacienda|residencia|residency|hipoteca|mortgage|escritura|notar|propiedad|ownership|visa|empadronamiento)\w*/i;
+const ABSOLUTE = /\b(cannot|can't|no puedes?|nunca|never|imposible|impossible|siempre|always|obligatorio|mandatory|required by law|must have|hay que tener|sin \w+ no|without \w+ you)\b/i;
+export function riskyClaims(plan: CarouselPlan): string[] {
+  const lines = [plan.hook_title, plan.slide2_title, plan.slide2_body, plan.cta_action,
+    ...plan.tips.flatMap((t) => [t.title, t.body])].filter(Boolean);
+  const out: string[] = [];
+  for (const l of lines) {
+    for (const sentence of String(l).split(/(?<=[.!?])\s+/)) {
+      if (RISK_DOMAIN.test(sentence) && ABSOLUTE.test(sentence)) out.push(sentence.trim().slice(0, 160));
+    }
+  }
+  return out;
+}
+
 /** Doctrine + honesty gate on the generated copy (client quotes exempt — they're the client's words). */
 function planIssues(p: CarouselPlan, quoteSource: string): string | null {
   const advice = [p.hook_title, p.slide2_title, p.slide2_body, p.cta_heading, p.cta_action,
@@ -130,6 +223,8 @@ export async function planCarousel(opts: {
   language: string;          // 'es', 'en', ...
   agencyName: string;
   region?: string;           // for locally relevant advice + hashtags
+  /** RULE 9: what this agency actually does — the closing slide is written from it */
+  agencyProfile?: string;
   avoidMotifs?: string[];    // hero objects from this agency's recent posts — variety across generations
 }): Promise<CarouselPlan> {
   const langNames: Record<string, string> = { es: 'Spanish', en: 'English', de: 'German', fr: 'French', nl: 'Dutch', sv: 'Swedish', no: 'Norwegian', da: 'Danish', fi: 'Finnish', pl: 'Polish', ru: 'Russian', it: 'Italian', pt: 'Portuguese' };
@@ -150,7 +245,9 @@ QUOTE: "${opts.quoteText}"
 ATTRIBUTION: "${opts.quoteAuthor ?? ''}"
 The COVER (quote_hook) is the most concrete, emotional VERBATIM fragment of the quote (max 120 chars) — never a "Testimonial" label. Split the full quote VERBATIM into 2-3 readable chunks (quote_parts) — one chunk only if the quote is a single short sentence; do NOT rewrite, embellish or translate the quote itself. slide2_title + quote_context set the scene using ONLY what the quote itself reveals (no invented details about the client). attribution exactly as provided, prefixed "— ".`;
 
-  const prompt = `You are the social media content director for "${opts.agencyName}", a real-estate agency in ${region}, Spain. Their goals: local authority, saves and sends, buyer/seller DMs — not likes.
+  const prompt = `You are the social media content director for "${opts.agencyName}", a real-estate agency in ${region}, Spain. Their goals: local authority, saves and sends, buyer/seller DMs — not likes.${opts.agencyProfile ? `
+
+THE AGENCY (write the closing slide from this): ${opts.agencyProfile}` : ''}
 
 ${task}
 
@@ -162,12 +259,16 @@ CAROUSEL DOCTRINE (how these posts win — follow it):
 - Slide 2 is a SECOND cover: Instagram re-serves unswiped carousels starting at slide 2, so slide2_title must stand alone with zero context ("Selling this year? This saves you money.").
 - One idea per slide. Each slide answers the question the previous one raised.
 - The recap is the SAVE unit — people screenshot and forward it.
-- The CTA leads with ONE action: a save or send framing (cta_action) + a DM keyword (cta_keyword). Contact details are handled by the design, not by you. NEVER "tag a friend", "share this", "follow for more" — Meta demotes engagement bait; help-framing ("send this to the person you're buying with") is the substitute.
-- Caption: SHORT and human — 3 lines max + a CTA line, written like a person, not a brochure. No clichés, no rhetorical-question openers. Same place rule: no towns unless the topic names one. End with a short P.D. question answerable in ONE word.
+- THE CLOSING SLIDE SAYS WHAT THE AGENCY DOES. cta_action OPENS with one plain sentence naming what this agency helps people with, written from the topic + the agency profile above ("We help families find homes near the international schools along this coast."). Then, and only then, the action. Contact details are handled by the design, not by you. NEVER "tag a friend", "share this", "follow for more" — Meta demotes engagement bait.
+- save_line is the SECONDARY line, demoted under the agency line: the save/keep framing ("Save it for the week the move gets hard.").
+- cta_keyword is a COMPLETE, NATURAL SENTENCE in the post language telling the reader exactly what to comment and what they get ("Comment FAMILY and we'll send it over."). NEVER a code line ("DM: FAMILY", "Escríbenos: GUÍA"), never a bare shouted word, never a "P.D." postscript.
+- Caption: SHORT and human — 3 lines max + a CTA line, written like a person, not a brochure. No clichés, no rhetorical-question openers. Same place rule: no towns unless the topic names one. End with a short question answerable in ONE word — as a plain line, NEVER labelled "P.D." or "P.S.".
 - Hashtags: 3-5 only, no mega-tags.
 - image_scenes: 3 concrete Mediterranean scenes (ENGLISH). [0] is the COVER and it carries the whole post: it must stage the TOPIC so literally that a viewer could guess it from the image alone — never a generic pretty postcard (window, door, beach) unless the topic is literally about it. [1] appears on slide 2 (the second cover Instagram re-serves): a different composed scene, second angle on the topic, new hero object. The closing beat [2] may be one quiet simple subject (sea, beach, a lone tree) for rhythm.
 - EVERY tip also gets its own "scene": a LITERAL visual translation of THAT tip — the props act out the advice, so a viewer who sees only the image could guess the tip. HERO OBJECT LAW: each scene names ONE hero object in its first five words, and no two scenes in the deck (cover included) may share a hero object or lean on the same motif — different objects, different compositions, same world. Repetition across slides is a failure. NEVER default to the stock clichés — keys, suitcases, luggage, generic doors — unless the tip is literally about them; pick the tip's OWN objects instead (bills → tied envelopes; maintenance → a dripping tap; paperwork → a stamped folder; viewings → a pocket torch on a windowsill at dusk).${opts.avoidMotifs?.length ? `
 - RECENTLY USED in this agency's previous posts — do NOT use any of these as a hero object again, find fresh ones: ${opts.avoidMotifs.join('; ')}.` : ''}
+
+- EVERY FACTUAL CLAIM MUST BE TRUE. Claims are wanted — vague advice is worthless — but a wrong one destroys trust. For anything about the NIE, banks, taxes, residency, mortgages or ownership: state what is USUALLY true and why it helps, never an absolute impossibility you cannot verify. Worked example of the failure: "without a local account you cannot pay utilities, taxes or a mortgage" is FALSE — Eurozone SEPA rules forbid refusing a valid IBAN from another member state. The honest version keeps the value: "a Spanish account makes utilities, taxes and a mortgage far simpler to run".
 
 HARD RULES:
 - NO specific prices, percentages, statistics, interest rates, tax figures, or legal guarantees anywhere in slide copy. General, evergreen advice only — you have no data source, so any figure would be invented. Use place names for specificity instead of numbers.
@@ -219,7 +320,7 @@ Submit with the submit_carousel tool.`;
     plan.quote_parts = plan.quote_parts.map(dequote);
     const issue = planIssues(plan, opts.quoteText ?? '');
     if (issue) { lastErr = issue; continue; }
-    return plan;
+    return normalisePlan(plan, opts.language);
   }
   throw new Error(`carousel plan invalid after retries: ${lastErr}`);
 }
@@ -242,10 +343,16 @@ const EDIT_TOOL = {
   },
 } as const;
 
-export async function editPlan(plan: CarouselPlan, topic: string): Promise<{ plan: CarouselPlan; notes: string[] } | null> {
+export async function editPlan(plan: CarouselPlan, topic: string, language = 'es'): Promise<{ plan: CarouselPlan; notes: string[] } | null> {
+  // RULE 4 — the deterministic detector names the exact sentences that assert an absolute about
+  // a regulated subject, so the editor verifies or hedges THOSE rather than re-reading blind.
+  const flagged = riskyClaims(plan);
   const prompt = `You are the skeptical EDITOR at a real-estate agency on the Spanish coast. The reader of this Instagram carousel is a potential client — every slide must make sense on first read, teach something useful, and sound like an agent they can trust. Review the plan below and correct ONLY what fails.
 
-POST TOPIC: "${topic}"
+POST TOPIC: "${topic}"${flagged.length ? `
+
+CLAIMS FLAGGED FOR VERIFICATION — each of these asserts an absolute about the NIE, banks, taxes, residency, mortgages or ownership. Verify each one. If it is not true as written, rewrite it so it stays USEFUL but true (keep the claim, lose the falsehood). Do not simply delete the advice:
+${flagged.map((f) => `- "${f}"`).join('\n')}` : ''}
 THE PLAN (JSON):
 ${JSON.stringify({ ...plan, image_scenes: undefined, tips: plan.tips.map((t) => ({ ...t, scene: undefined })) }, null, 1)}
 
@@ -254,6 +361,10 @@ CHECK EVERY TEXT FIELD:
 2. VALUE — the reader must finish each tip knowing something specific they can DO: a question to ask, a check to schedule, a decision rule. Vague filler ("be careful", "keep an eye on it") fails.
 3. TRUST — no invented facts, figures or statistics; nothing a seasoned local agent wouldn't stand behind; no scaremongering, no overpromising.
 4. DELIVERY — each tip title's promise must be delivered by its body; the cover hook's promise must be delivered by the deck as a whole. This includes REGISTER: a dreamy or philosophical topic answered with a warnings-and-mistakes listicle is a failure — the deck's tone must match the topic's tone.
+5. NO REPEATED PROMISE — the cover and the first advice slide must not say the same thing twice. If slide 2 only restates the cover's promise ("the order that saves you weeks" under a cover about the order nobody explains), rewrite it as the FIRST piece of real advice.
+6. TRUE CLAIMS — any statement about the NIE, banks, taxes, residency, mortgages or ownership must be true as written. Prefer "usually / makes it far simpler" to an absolute impossibility you cannot verify. Keep the claim's usefulness; lose the falsehood.
+7. ONE CLEAN SENTENCE — no headline may join two independent clauses with a comma ("…in a new place, they need a plan"). Use an em dash or two sentences.
+8. THE CLOSING — cta_action must open by saying what this agency does for someone with this topic, before any save/send framing; save_line carries the save framing, demoted.
 
 RULES FOR CORRECTIONS:
 - Rewrite in the SAME LANGUAGE as the existing copy, within the same length limits, same warm expert tone.
@@ -301,7 +412,7 @@ Submit with the submit_edited_plan tool.`;
     const edited = parsed.data as CarouselPlan;
     if (edited.tips.length !== plan.tips.length) return null;   // the editor may not add or drop slides
     if (planIssues(edited, '')) return null;
-    return { plan: edited, notes };
+    return { plan: normalisePlan(edited, language), notes };
   } catch {
     return null;
   }
@@ -513,7 +624,7 @@ Submit with the submit_remix tool.`;
       hook_title: z.string().min(1).max(90),
       swipe_cue: z.string().min(1).max(18),
     }).safeParse(input);
-    return out.success ? out.data : null;
+    return out.success ? { ...out.data, hook_title: oneSentence(out.data.hook_title) } : null;
   } catch {
     return null;
   }

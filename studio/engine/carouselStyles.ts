@@ -76,18 +76,31 @@ function initials(agency: string): string {
   return agency.split(/\s+/).filter(Boolean).slice(0, 3).map((w) => w[0]?.toUpperCase() ?? "").join("") || "···";
 }
 /** split a headline into N visually balanced stacked lines (cartel bills) */
-function stack(text: string, n: number): string[] {
+/** Cartel's cover is the ONE headline in the engine that does not go through wrap() — its three
+ *  lines have fixed y positions and fixed sizes (96/140/62), which is the device. RULE 6 still
+ *  applies to it: the split is now chosen by MEASURED width at each line's own size, picking the
+ *  division with the least difference between the lines, instead of counting characters. The
+ *  3-line contract, the positions and the sizes are untouched. */
+function stack(text: string, n: number, font = "Anton", sizes?: number[]): string[] {
   const words = text.replace(/\s+/g, " ").trim().split(" ");
   if (words.length <= n) return words;
-  const per = Math.ceil(words.join(" ").length / n);
-  const lines: string[] = [];
-  let line = "";
-  for (const w of words) {
-    if (line && (line + " " + w).length > per && lines.length < n - 1) { lines.push(line); line = w; }
-    else line = line ? line + " " + w : w;
-  }
-  if (line) lines.push(line);
-  return lines;
+  const at = (i: number) => sizes?.[i] ?? 100;
+  const widthsOf = (lines: string[]) => lines.map((l, i) => textWidth(font, l, at(i)));
+  let best: string[] | null = null, bestScore = Infinity;
+  // walk every way of cutting the word list into n contiguous lines (n is 3 — the search is tiny)
+  const cut = (start: number, left: number, acc: string[]) => {
+    if (left === 1) {
+      const lines = [...acc, words.slice(start).join(" ")];
+      if (lines.some((l) => !l)) return;
+      const w = widthsOf(lines);
+      const score = Math.max(...w) - Math.min(...w);
+      if (score < bestScore) { bestScore = score; best = lines; }
+      return;
+    }
+    for (let i = start + 1; i <= words.length - (left - 1); i++) cut(i, left - 1, [...acc, words.slice(start, i).join(" ")]);
+  };
+  cut(0, n, []);
+  return best ?? words.slice(0, n);
 }
 async function renderAll(specs: unknown[], photos: Buffer[], grain: number): Promise<Buffer[]> {
   const out: Buffer[] = [];
@@ -96,10 +109,14 @@ async function renderAll(specs: unknown[], photos: Buffer[], grain: number): Pro
 }
 
 // ═══ CARTEL — planned (tips) ══════════════════════════════════════════════════
-function cartelPlanned(plan: CarouselPlan, agency: string, contact: string, brand: CarouselBrand, lang = "es"): unknown[] {
+function cartelPlanned(plan: CarouselPlan, agency: string, contact: string, brand: CarouselBrand, lang = "es",
+  // RULE 3 — one hero, N tips, one closing. The intro and the recap are opt-in; slide numbers
+  // are baked into each spec as it is built, so this is decided here, never by dropping specs.
+  includeContext = true, includeRecap = true,
+): unknown[] {
   const T = chrome(lang);
   const NAVY = brand.navy, GOLD = brand.gold, CREAM = brand.cream;
-  const total = plan.tips.length + 4;
+  const total = plan.tips.length + 2 + (includeContext ? 1 : 0) + (includeRecap ? 1 : 0);
   const rule = (y: number, colour: string) => ({ type: "rect", bbox: [200, y, 880, y + 2], fill: colour });
   const specs: unknown[] = [];
 
@@ -110,9 +127,9 @@ function cartelPlanned(plan: CarouselPlan, agency: string, contact: string, bran
     coverEls.push({ type: "text", bbox: [80, 440, 1000, 940], content: wrap(plan.hook_title.toUpperCase(), "Anton", 68, 900), font: "Anton", size: 68, colour: CREAM, align: "center", line_height: 84, valign: "center" });
     coverEls.push(rule(980, GOLD));
   } else {
-    const lines = stack(plan.hook_title.toUpperCase(), 3);
     const ys = [470, 640, 880];
     const sizes = [96, 140, 62];
+    const lines = stack(plan.hook_title.toUpperCase(), 3, "Anton", sizes);
     lines.forEach((ln, i) => {
       coverEls.push({
         type: "text", bbox: [80, ys[i] ?? 880, 1000, (ys[i] ?? 880) + (sizes[i] ?? 62) + 40], content: ln,
@@ -127,7 +144,7 @@ function cartelPlanned(plan: CarouselPlan, agency: string, contact: string, bran
   specs.push(DesignSpec.parse({ background: NAVY, elements: coverEls }));
 
   // slide 2: terracotta gamma turn
-  specs.push(DesignSpec.parse({
+  if (includeContext) specs.push(DesignSpec.parse({
     background: TERRA,
     elements: [
       { type: "text", bbox: [80, 260, 1000, 560], content: wrap(plan.slide2_title.toUpperCase(), "Anton", 100, 900), font: "Anton", size: 100, colour: LIME, align: "center", line_height: 114, valign: "center" },
@@ -164,14 +181,14 @@ function cartelPlanned(plan: CarouselPlan, agency: string, contact: string, bran
         { type: "rect", bbox: [80, yRule, 560, yRule + 2], fill: g.ruleC },
         { type: "text", bbox: [80, yBody, 640, yBody + 360], content: wrap(tip.body, "Archivo", 30, 540), font: "Archivo", size: 30, colour: g.bodyC, align: "left", line_height: 46 },
         ...(tip.teaser ? [{ type: "text", bbox: [80, 1140, 880, 1196], content: tip.teaser.toUpperCase(), font: "Archivo", size: 21, colour: g.bg, align: "left", weight: "500", tracking: 2, valign: "center", pill: { fill: g.head, pad_x: 28, pad_y: 14 } }] : []),
-        ...band(agency, i + 3, total, mix(g.head, g.bg, 0.55)),
+        ...band(agency, i + 2 + (includeContext ? 1 : 0), total, mix(g.head, g.bg, 0.55)),
       ],
     }));
   });
 
   // recap: the bill
   const rowH = Math.min(152, 800 / plan.tips.length);
-  specs.push(DesignSpec.parse({
+  if (includeRecap) specs.push(DesignSpec.parse({
     background: CREAM,
     elements: [
       { type: "text", bbox: [80, 110, 1000, 175], content: wrap(plan.recap_title.toUpperCase(), "Anton", 60, 920), font: "Anton", size: 60, colour: NAVY, align: "center" },
@@ -206,7 +223,11 @@ function cartelPlanned(plan: CarouselPlan, agency: string, contact: string, bran
 }
 
 // ═══ ENCALADA — planned (tips + quote) ════════════════════════════════════════
-function encaladaPlanned(plan: CarouselPlan, agency: string, contact: string, brand: CarouselBrand): unknown[] {
+function encaladaPlanned(plan: CarouselPlan, agency: string, contact: string, brand: CarouselBrand,
+  // RULE 3 — one hero, N tips, one closing. The intro and the recap are opt-in; slide numbers
+  // are baked into each spec as it is built, so this is decided here, never by dropping specs.
+  includeContext = true, includeRecap = true,
+): unknown[] {
   const NAVY = brand.navy;
   const inkMuted = mix(NAVY, LIME, 0.55);
   const tiles = (y: number) => Array.from({ length: 18 }, (_, i) => ({
@@ -214,7 +235,7 @@ function encaladaPlanned(plan: CarouselPlan, agency: string, contact: string, br
   }));
   const isQuote = plan.type === "quote";
   const n = isQuote ? plan.quote_parts.length : plan.tips.length;
-  const total = n + (isQuote ? 3 : 4);
+  const total = isQuote ? n + 3 : n + 2 + (includeContext ? 1 : 0) + (includeRecap ? 1 : 0);
   const specs: unknown[] = [];
 
   // cover: pure type on limewash, sun mark, tile band as the single motif
@@ -231,7 +252,7 @@ function encaladaPlanned(plan: CarouselPlan, agency: string, contact: string, br
   }));
 
   // slide 2: standalone context on terracotta
-  specs.push(DesignSpec.parse({
+  if (includeContext) specs.push(DesignSpec.parse({
     background: TERRA,
     elements: [
       { type: "rect", bbox: [80, 300, 164, 304], fill: LIME },
@@ -252,7 +273,7 @@ function encaladaPlanned(plan: CarouselPlan, agency: string, contact: string, br
             { type: "rect", bbox: [90, 1046, 154, 1049], fill: OLIVE },
             { type: "text", bbox: [90, 1076, 990, 1118], content: plan.attribution, font: "Questrial", size: 28, colour: inkMuted, align: "left", tracking: 1 },
           ] : []),
-          ...band(agency, i + 3, total, inkMuted),
+          ...band(agency, i + 2 + (includeContext ? 1 : 0), total, inkMuted),
         ],
       }));
     });
@@ -269,13 +290,13 @@ function encaladaPlanned(plan: CarouselPlan, agency: string, contact: string, br
           { type: "text", bbox: [80, 456, 1000, 660], content: wrap(tip.title, FR, 62, 920), font: FR, size: 62, colour: head, align: "left", line_height: 76 },
           { type: "text", bbox: [80, 700, 1000, 1080], content: wrap(tip.body, "Jost", 35, 920), font: "Jost", size: 35, colour: bodyC, align: "left", line_height: 54, valign: "center" },
           ...(tip.teaser ? [{ type: "text", bbox: [80, 1130, 900, 1178], content: tip.teaser, font: "Jost", size: 25, colour: dark ? TERRA : LIME, align: "left", weight: "500", valign: "center", pill: { fill: dark ? LIME : OLIVE, pad_x: 26, pad_y: 13 } }] : []),
-          ...band(agency, i + 3, total, dark ? mix(LIME, TERRA, 0.75) : inkMuted),
+          ...band(agency, i + 2 + (includeContext ? 1 : 0), total, dark ? mix(LIME, TERRA, 0.75) : inkMuted),
         ],
       }));
     });
     // recap: LA FICHA list
     const rowH = Math.min(150, 760 / plan.tips.length);
-    specs.push(DesignSpec.parse({
+    if (includeRecap) specs.push(DesignSpec.parse({
       background: LIME,
       elements: [
         { type: "text", bbox: [80, 120, 1000, 154], content: plan.eyebrow.toUpperCase(), font: "Questrial", size: 21, colour: TERRA, align: "center", tracking: 7 },
@@ -310,13 +331,17 @@ function encaladaPlanned(plan: CarouselPlan, agency: string, contact: string, br
 }
 
 // ═══ SERENO — planned (tips + quote) ══════════════════════════════════════════
-function serenoPlanned(plan: CarouselPlan, agency: string, contact: string, brand: CarouselBrand): unknown[] {
+function serenoPlanned(plan: CarouselPlan, agency: string, contact: string, brand: CarouselBrand,
+  // RULE 3 — one hero, N tips, one closing. The intro and the recap are opt-in; slide numbers
+  // are baked into each spec as it is built, so this is decided here, never by dropping specs.
+  includeContext = true, includeRecap = true,
+): unknown[] {
   const NAVY = brand.navy, GOLD = brand.gold;
   const warm = "#f5f1e8";
   const inkMuted = mix(NAVY, warm, 0.55);
   const isQuote = plan.type === "quote";
   const n = isQuote ? plan.quote_parts.length : plan.tips.length;
-  const total = n + (isQuote ? 3 : 4);
+  const total = isQuote ? n + 3 : n + 2 + (includeContext ? 1 : 0) + (includeRecap ? 1 : 0);
   const spine = (i: number) => ({ type: "text", bbox: [980, 400, 1050, 950], content: `${agency.toUpperCase()} · Nº ${String(i).padStart(2, "0")} · MMXXVI`, font: "Glacial Indifference", size: 18, colour: inkMuted, tracking: 5, rotate: 90, align: "center" });
   const folioLine = (i: number, colour: string) => ({ type: "text", bbox: [96, 1240, 940, 1270], content: `Nº ${String(i).padStart(2, "0")} — ${String(total).padStart(2, "0")} · ${agency.toUpperCase()}`, font: "Jost", size: 16, colour, align: "left", tracking: 3 });
   const specs: unknown[] = [];
@@ -335,7 +360,7 @@ function serenoPlanned(plan: CarouselPlan, agency: string, contact: string, bran
   }));
 
   // slide 2 — plate context
-  specs.push(DesignSpec.parse({
+  if (includeContext) specs.push(DesignSpec.parse({
     background: warm,
     elements: [
       { type: "text", bbox: [96, 96, 700, 128], content: plan.eyebrow.toUpperCase(), font: "Glacial Indifference", size: 19, colour: GOLD, align: "left", tracking: 6 },
@@ -413,7 +438,7 @@ function serenoPlanned(plan: CarouselPlan, agency: string, contact: string, bran
     });
     // recap: stacked light numerals
     const rowH = Math.min(150, 780 / plan.tips.length);
-    specs.push(DesignSpec.parse({
+    if (includeRecap) specs.push(DesignSpec.parse({
       background: warm,
       elements: [
         ...frame([40, 40, 1040, 1310], NAVY, 1.5, 0.35),
@@ -483,7 +508,7 @@ export const TYPE_EDITIONS: Record<string, StyleEdition[]> = {
  *  own two-colour choice in charge (edition then only swaps the display face). */
 export async function renderPlannedStyled(
   style: CarouselStyle, plan: CarouselPlan, agency: string, contact: string, brand: CarouselBrand, lang = "es",
-  edition = 0, lockPalette = false,
+  edition = 0, lockPalette = false, includeContext = true, includeRecap = true,
 ): Promise<Buffer[]> {
   const eds = TYPE_EDITIONS[style] ?? [{}];
   const ed = eds[((edition % eds.length) + eds.length) % eds.length] ?? {};
@@ -501,10 +526,10 @@ export async function renderPlannedStyled(
   let specs: unknown[];
   let grain = 0;
   try {
-    if (style === "cartel" && plan.type === "tips") { specs = cartelPlanned(plan, agency, contact, b, lang); grain = 0.05; }
-    else if (style === "encalada") { specs = encaladaPlanned(plan, agency, contact, b); grain = 0.045; }
-    else if (style === "sereno") { specs = serenoPlanned(plan, agency, contact, b); grain = 0.035; }
-    else { specs = buildPlannedSpecs(plan, agency, contact, b); }
+    if (style === "cartel" && plan.type === "tips") { specs = cartelPlanned(plan, agency, contact, b, lang, includeContext, includeRecap); grain = 0.05; }
+    else if (style === "encalada") { specs = encaladaPlanned(plan, agency, contact, b, includeContext, includeRecap); grain = 0.045; }
+    else if (style === "sereno") { specs = serenoPlanned(plan, agency, contact, b, includeContext, includeRecap); grain = 0.035; }
+    else { specs = buildPlannedSpecs(plan, agency, contact, b, includeContext, includeRecap); }
   } finally {
     FR = prevFR;
     setPlannedSerif(prevSerif);

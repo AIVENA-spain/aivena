@@ -88,6 +88,10 @@ export const FreeformElement = z.discriminatedUnion("type", [
     // authored styles set shield:false when the ground is known-light (e.g. gouache sky, riso paper)
     // and the automatic legibility gradient would smear the design
     shield: z.boolean().optional(),
+    // RULE 1, step 1: the SAME palette's other ink for this block. When the measured contrast
+    // under the type fails, the renderer switches to this before it reaches for a gradient —
+    // recolouring within the edition's own palette rather than dimming the artwork.
+    alt_colour: Colour.optional(),
     // display-type devices (carousel styles 2026-07-16): rotate the block around its centre;
     // hollow = outline-only type (stroke in the text colour, no fill) — the editorial poster look
     rotate: z.number().min(-90).max(90).optional(),
@@ -194,13 +198,142 @@ function overlap(a: number[], b: number[]): number {
  * (the first live run broke exactly here: a white card drawn after two photos in the spec was painted over
  * them, hiding both). SVG runs between photos are rasterised as interleaved layers.
  */
+/** RULE 5 — no slide is more than a third empty. Measured in the SPEC domain (element boxes),
+ *  not by scanning pixels: what matters is one big CONTIGUOUS dead region, not the total amount
+ *  of white space, so designed air is left alone. Returns the largest empty axis-aligned
+ *  rectangle as a fraction of the canvas, using the classic largest-rectangle-in-histogram scan
+ *  over a coarse occupancy grid. */
+export function deadRegionFraction(boxes: number[][], W: number, H: number, cols = 36, rows = 45): number {
+  const grid = new Uint8Array(cols * rows);
+  for (const b of boxes) {
+    const x0 = Math.max(0, Math.floor((b[0] / W) * cols)), x1 = Math.min(cols, Math.ceil((b[2] / W) * cols));
+    const y0 = Math.max(0, Math.floor((b[1] / H) * rows)), y1 = Math.min(rows, Math.ceil((b[3] / H) * rows));
+    for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) grid[y * cols + x] = 1;
+  }
+  const heights = new Array<number>(cols).fill(0);
+  let best = 0;
+  for (let y = 0; y < rows; y++) {
+    for (let x = 0; x < cols; x++) heights[x] = grid[y * cols + x] ? 0 : heights[x] + 1;
+    const stack: number[] = [];
+    for (let x = 0; x <= cols; x++) {
+      const h = x === cols ? 0 : heights[x];
+      while (stack.length && heights[stack[stack.length - 1]] >= h) {
+        const top = stack.pop()!;
+        const left = stack.length ? stack[stack.length - 1] + 1 : 0;
+        best = Math.max(best, heights[top] * (x - left));
+      }
+      stack.push(x);
+    }
+  }
+  return best / (cols * rows);
+}
+
 export async function renderFreeform(
   spec: DesignSpec,
   canvas: { width: number; height: number },
   photos: Buffer[],
+  /** internal: the ground pass renders the same slide WITHOUT its type, to measure what the type
+   *  will actually sit on. Never set by callers. */
+  _groundPass = false,
 ): Promise<Buffer> {
   const sharp = (await import("sharp")).default;
   const W = Math.round(canvas.width), H = Math.round(canvas.height);
+
+  // ── RULE 1 — type always sits on quiet ground, and never on a box ──────────────────────────
+  // The old test was geometric: "does this text box overlap a photo?" — which is why an eyebrow
+  // could run across a world map and still pass. The test is now photometric and applies to
+  // every style: render the slide's GROUND once (same spec, type removed), then measure the
+  // real WCAG contrast under each text block. The measurement is the test; the fix escalates
+  // recolour → wide soft gradient, and never a hard-edged panel.
+  let ground: { data: Buffer; gw: number; gh: number } | null = null;
+  const hasTextOverArt = !_groundPass
+    && spec.elements.some((e) => e.type === "text")
+    && spec.elements.some((e) => e.type === "photo");
+  if (hasTextOverArt) {
+    try {
+      const bare = { ...spec, elements: spec.elements.filter((e) => e.type !== "text") } as DesignSpec;
+      const png = await renderFreeform(bare, canvas, photos, true);
+      const gw = 108, gh = Math.max(1, Math.round((H / W) * gw));
+      const { data } = await sharp(png).resize(gw, gh, { fit: "fill" }).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+      ground = { data, gw, gh };
+    } catch { ground = null; }
+  }
+  const lum = (r: number, g: number, bl: number) => {
+    const f = (c: number) => { const v = c / 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; };
+    return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(bl);
+  };
+  const hexLum = (hex: string) => {
+    const m = /^#([0-9a-f]{6})$/i.exec(hex ?? "");
+    if (!m) return 0;
+    const n = parseInt(m[1], 16);
+    return lum((n >> 16) & 255, (n >> 8) & 255, n & 255);
+  };
+  const ratio = (a: number, b: number) => (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+  /** The flat colour under a text box when there is no artwork to sample: the topmost rect or
+   *  punch that actually covers it, else the slide's own background. Exact, and free. */
+  const flatGroundUnder = (box: number[], idx: number): string => {
+    for (let i = idx - 1; i >= 0; i--) {
+      const e = spec.elements[i];
+      if (e.type !== "rect" && e.type !== "punch") continue;
+      if ((e as { opacity?: number }).opacity !== undefined && (e as { opacity?: number }).opacity! < 0.85) continue;
+      const eb = clampBox(e.bbox, W, H);
+      if (overlap(eb, box) > 0.6 * boxW(box) * boxH(box)) return (e as { fill: string }).fill;
+    }
+    return spec.background;
+  };
+
+  /** Worst-decile contrast of `colour` under `box` AFTER compositing a vertical gradient veil
+   *  (tone, peak opacity, direction) over the gradient box — the same ramp renderFreeform draws.
+   *  This is what makes RULE 1 a guard rather than a hope: the escalation is not a guess at a
+   *  strength, it is solved until the measurement passes, and reported when it cannot. */
+  const contrastUnderVeil = (
+    box: number[], colour: string, tone: string, peak: number, dir: "up" | "down" | "flat", gbox: number[],
+  ): number | null => {
+    if (!ground) return null;
+    const { data, gw, gh } = ground;
+    const x0 = Math.max(0, Math.floor((box[0] / W) * gw)), x1 = Math.min(gw, Math.ceil((box[2] / W) * gw));
+    const y0 = Math.max(0, Math.floor((box[1] / H) * gh)), y1 = Math.min(gh, Math.ceil((box[3] / H) * gh));
+    if (x1 <= x0 || y1 <= y0) return null;
+    const tm = /^#([0-9a-f]{6})$/i.exec(tone);
+    if (!tm) return null;
+    const tn = parseInt(tm[1], 16), tr = (tn >> 16) & 255, tg = (tn >> 8) & 255, tb = tn & 255;
+    const cl = hexLum(colour);
+    const gy0 = (gbox[1] / H) * gh, gy1 = (gbox[3] / H) * gh;
+    const ratios: number[] = [];
+    for (let y = y0; y < y1; y++) {
+      const t = gy1 > gy0 ? Math.min(1, Math.max(0, (y - gy0) / (gy1 - gy0))) : 0;
+      // "flat" = the soft band: full strength across the type itself (it fades outside this box)
+      const a = dir === "flat" ? peak : peak * (dir === "up" ? t : 1 - t);
+      for (let x = x0; x < x1; x++) {
+        const i = (y * gw + x) * 3;
+        const r = a * tr + (1 - a) * data[i], g = a * tg + (1 - a) * data[i + 1], b2 = a * tb + (1 - a) * data[i + 2];
+        ratios.push(ratio(cl, lum(r, g, b2)));
+      }
+    }
+    if (!ratios.length) return null;
+    ratios.sort((p, q) => p - q);
+    return ratios[Math.floor(ratios.length * 0.1)];
+  };
+
+  /** worst-decile contrast of a colour against the ground under a box — the mean is what makes a
+   *  busy photo look safe, so the hardest tenth of the pixels decides. */
+  const contrastUnder = (box: number[], colour: string): { worst: number; groundLum: number } | null => {
+    if (!ground) return null;
+    const { data, gw, gh } = ground;
+    const x0 = Math.max(0, Math.floor((box[0] / W) * gw)), x1 = Math.min(gw, Math.ceil((box[2] / W) * gw));
+    const y0 = Math.max(0, Math.floor((box[1] / H) * gh)), y1 = Math.min(gh, Math.ceil((box[3] / H) * gh));
+    if (x1 <= x0 || y1 <= y0) return null;
+    const cl = hexLum(colour), ratios: number[] = [], lums: number[] = [];
+    for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
+      const i = (y * gw + x) * 3;
+      const gl = lum(data[i], data[i + 1], data[i + 2]);
+      lums.push(gl); ratios.push(ratio(cl, gl));
+    }
+    if (!ratios.length) return null;
+    ratios.sort((a, b) => a - b);
+    lums.sort((a, b) => a - b);
+    return { worst: ratios[Math.floor(ratios.length * 0.1)], groundLum: lums[Math.floor(lums.length / 2)] };
+  };
 
   const photoBoxes = spec.elements.filter((e) => e.type === "photo").map((e) => clampBox(e.bbox, W, H));
   // legibility coverage: does anything EARLIER in the order shade this text box?
@@ -212,6 +345,31 @@ export async function renderFreeform(
     return covered / Math.max(1, boxW(textBox) * boxH(textBox));
   };
 
+  // RULE 5 — act only where the rule sanctions it: a single small photo stranded in a large dead
+  // field (Christian's "postage-stamp image floating in a navy field with the bottom 40% blank").
+  // Type-only slides have no photo and are never touched, and a photo already covering half the
+  // canvas is a deliberate composition.
+  if (!_groundPass) {
+    const drawn = spec.elements.filter((e) => e.type !== "scrim").map((e) => clampBox(e.bbox, W, H));
+    const dead = deadRegionFraction(drawn, W, H);
+    const photos_ = spec.elements.filter((e) => e.type === "photo");
+    if (dead > 1 / 3 && photos_.length === 1) {
+      const ph = photos_[0] as { bbox: [number, number, number, number] };
+      const cb = clampBox(ph.bbox, W, H);
+      const area = boxW(cb) * boxH(cb);
+      if (area < 0.5 * W * H) {
+        // grow the frame around its own centre, up to the point where the dead region is no
+        // longer the story — never past the canvas, never past 62% of it
+        const cx = (ph.bbox[0] + ph.bbox[2]) / 2, cy = (ph.bbox[1] + ph.bbox[3]) / 2;
+        const k = Math.min(1.6, Math.sqrt((0.5 * W * H) / Math.max(1, area)));
+        const nw = boxW(ph.bbox) * k / 2, nh = boxH(ph.bbox) * k / 2;
+        const grown = clampBox([cx - nw, cy - nh, cx + nw, cy + nh], W, H);
+        ph.bbox = [grown[0], grown[1], grown[2], grown[3]];
+        console.warn(`[carousel] slide had a ${(dead * 100).toFixed(0)}% dead region — its artwork was scaled ${k.toFixed(2)}x to fill it`);
+      }
+    }
+  }
+
   const layers: { input: Buffer; left: number; top: number }[] = [];
   let defs = "";
   let overlaySvg = "";
@@ -222,6 +380,27 @@ export async function renderFreeform(
     layers.push({ input: renderTemplatePng(svg, W), left: 0, top: 0 });
     defs = ""; overlaySvg = "";
   };
+  /** RULE 1's veil: full canvas width (so it can never show a vertical edge) and fading to zero
+   *  above and below the type (so it can never show a horizontal one). It reads as light falling
+   *  across the artwork — the one thing the rule allows — and never as a panel. */
+  const softBand = (colour: string, peak: number, y0: number, y1: number): { id: string; box: number[] } => {
+    const id = `g${gradId++}`;
+    const fade = Math.max(60, (y1 - y0) * 1.25);
+    const ry0 = Math.max(0, y0 - fade), ry1 = Math.min(H, y1 + fade);
+    const h = Math.max(1, ry1 - ry0);
+    const a = Math.min(0.999, Math.max(0.001, (y0 - ry0) / h));
+    const b2 = Math.min(0.999, Math.max(a + 0.001, (y1 - ry0) / h));
+    // an edge-anchored end keeps its full strength (a scrim from the canvas edge is normal);
+    // an end inside the canvas fades out completely
+    const startOp = ry0 <= 0 ? peak : 0, endOp = ry1 >= H ? peak : 0;
+    defs += `<linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1">` +
+      `<stop offset="0" stop-color="${colour}" stop-opacity="${startOp}"/>` +
+      `<stop offset="${a.toFixed(3)}" stop-color="${colour}" stop-opacity="${peak}"/>` +
+      `<stop offset="${b2.toFixed(3)}" stop-color="${colour}" stop-opacity="${peak}"/>` +
+      `<stop offset="1" stop-color="${colour}" stop-opacity="${endOp}"/></linearGradient>`;
+    return { id, box: [0, ry0, W, ry1] };
+  };
+
   const gradient = (colour: string, direction: "up" | "down", peak: number): string => {
     const id = `g${gradId++}`;
     const [o0, o1] = direction === "up" ? [0, peak] : [peak, 0];
@@ -375,12 +554,74 @@ export async function renderFreeform(
       const lines = textStr.split("\n").map((l) => l.trim()).filter(Boolean);
       if (!lines.length) continue;
 
-      // legibility floor — a SOFT gradient, never a box (the first run's grey plates looked like wireframes).
+      // RULE 1 — measured, then escalated in order. 4.5:1 is the test; the fix is never a panel.
+      let inkColour = el.colour;
       const onPhoto = photoBoxes.some((pb) => overlap(pb, b) > 0.35 * boxW(b) * boxH(b));
-      if (el.shield !== false && onPhoto && coverage(b, idx) < 0.5) {
-        const padX = Math.round(el.size * 1.2), padY = Math.round(el.size * 1.1);
-        const gb = clampBox([b[0] - padX, b[1] - padY, b[2] + padX, b[3] + padY * 0.6], W, H);
-        overlaySvg += `<rect x="${gb[0]}" y="${gb[1]}" width="${boxW(gb)}" height="${boxH(gb)}" fill="url(#${gradient("#0B0F14", "up", 0.55)})"/>`;
+      // EVERY text element is measured, not just type over artwork — a headline can be just as
+      // unreadable on a flat ground (navy on navy) as on a busy photo. Over artwork the
+      // escalation may reach a gradient; on flat ground the only honest fix is the palette's
+      // other ink, so it stops after the recolour.
+      const shieldable = el.shield !== false && coverage(b, idx) < 0.5;
+      if (shieldable) {
+        const pad = Math.round(el.size * 0.6);
+        const probe = clampBox([b[0] - pad, b[1] - pad, b[2] + pad, b[3] + pad], W, H);
+        const measured = contrastUnder(probe, el.colour)
+          ?? (() => {
+            // no artwork under this block — measure against the flat ground it really sits on
+            const g = hexLum(flatGroundUnder(probe, idx));
+            return { worst: ratio(hexLum(el.colour), g), groundLum: g };
+          })();
+        if (!measured) {
+          // no ground reading (measurement unavailable) — keep the previous geometric behaviour
+          if (onPhoto) {
+            const padX = Math.round(el.size * 1.2), padY = Math.round(el.size * 1.1);
+            const gb = clampBox([b[0] - padX, b[1] - padY, b[2] + padX, b[3] + padY * 0.6], W, H);
+            overlaySvg += `<rect x="${gb[0]}" y="${gb[1]}" width="${boxW(gb)}" height="${boxH(gb)}" fill="url(#${gradient("#0B0F14", "up", 0.55)})"/>`;
+          }
+        } else if (measured.worst < 4.5) {
+          // step 1 — recolour within the design's own palette: the spec offers the alternative
+          const flatLum = ground ? null : hexLum(flatGroundUnder(probe, idx));
+          const measureWith = (c: string) => contrastUnder(probe, c)
+            ?? (flatLum === null ? null : { worst: ratio(hexLum(c), flatLum), groundLum: flatLum });
+          // STEP 2 — recolour within the deck's own palette. The style's alternative first; if it
+          // offers none, the ground's own light/dark partner, which every edition contains. This
+          // is what makes dark type on dark artwork survivable: no veil at any strength can lift
+          // navy off a dusk photograph, but the palette's cream reads instantly.
+          let bestInk = el.colour, bestWorst = measured.worst;
+          // try BOTH palette partners and keep whichever MEASURES best — picking one from the
+          // median luminance alone put light type on a light ground when the median lied
+          const candidates = [el.alt_colour, "#12161c", "#f6f2e9"].filter((c): c is string => !!c);
+          for (const c of candidates) {
+            const m = measureWith(c);
+            if (m && m.worst > bestWorst) { bestWorst = m.worst; bestInk = c; }
+            if (bestWorst >= 4.5) break;
+          }
+          inkColour = bestInk;
+          // step 2 — a wide, soft directional gradient that reads as light, never a hard panel.
+          // Direction and tone follow the ground: darken bright ground, lift dark ground.
+          if (bestWorst < 4.5 && onPhoto) {
+            const inkIsLight = hexLum(inkColour) > 0.45;
+            const tone = inkIsLight ? "#0B0F14" : "#F6F2E9";
+            const padY = Math.round(el.size * 0.5);
+            const y0 = Math.max(0, b[1] - padY), y1 = Math.min(H, b[3] + padY);
+            // SOLVE for the gentlest veil that reaches 4.5:1 — the band holds full strength ACROSS
+            // the type and fades out beyond it, so there is nothing to see but light on the art
+            const CAP = 0.88;
+            const at = (peak: number) => contrastUnderVeil(probe, inkColour, tone, peak, "flat", [0, y0, W, y1]);
+            let chosen = CAP;
+            if ((at(CAP) ?? 0) < 4.5) {
+              console.warn(`[carousel] RULE 1: "${String(el.content).slice(0, 40).replace(/\n/g, ' ')}" still reads ${((at(CAP) ?? 0)).toFixed(2)}:1 on this artwork at the strongest veil — the art brief's quiet zone did not hold`);
+            } else {
+              let lo = 0, hi = CAP;
+              for (let i = 0; i < 7; i++) {
+                const mid = (lo + hi) / 2;
+                if ((at(mid) ?? 0) >= 4.5) { chosen = mid; hi = mid; } else lo = mid;
+              }
+            }
+            const band = softBand(tone, chosen, y0, y1);
+            overlaySvg += `<rect x="0" y="${band.box[1]}" width="${W}" height="${band.box[3] - band.box[1]}" fill="url(#${band.id})"/>`;
+          }
+        }
       }
 
       // The face that will actually DRAW this block: when the design's face lacks the text's
@@ -415,8 +656,8 @@ export async function renderFreeform(
       const wNum = el.weight ? (/^\d+$/.test(el.weight) ? el.weight : "700") : "";
       // hollow = outline-only display type: stroke in the text colour, no fill
       const paint = el.hollow
-        ? ` fill="none" stroke="${el.colour}" stroke-width="${(el.stroke_width ?? Math.max(1.5, size / 40)).toFixed(1)}"`
-        : ` fill="${el.colour}"`;
+        ? ` fill="none" stroke="${inkColour}" stroke-width="${(el.stroke_width ?? Math.max(1.5, size / 40)).toFixed(1)}"`
+        : ` fill="${inkColour}"`;
       const attrs = (wNum ? ` font-weight="${wNum}"` : "") + (el.italic ? ` font-style="italic"` : "") +
         (el.tracking ? ` letter-spacing="${(el.tracking * (size / el.size)).toFixed(2)}"` : "");
 

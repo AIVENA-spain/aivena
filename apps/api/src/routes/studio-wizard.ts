@@ -1163,6 +1163,8 @@ async function runPlannedCarousel(opts: {
     let perSlideArt = false;
     let artworkSource: 'fresh_per_slide' | 'fresh_family' | 'library' | 'none' = 'none';
     let artworkQa: { reviewed: number; regenerated: number; still_flagged: number } | undefined;
+    let artworkError: string | undefined;
+    const onFail = (reason: string) => { artworkError = artworkError ?? reason; };
     if (opts.type === 'tips' && isTipsImageStyle(opts.style)) {
       // per-slide artwork: cover scene + one scene PER TIP (every slide's design = that slide's topic);
       // micro-unique every post. Fallbacks: 3-scene family → seeded approved family → editorial deck.
@@ -1204,7 +1206,7 @@ async function runPlannedCarousel(opts: {
       let images: Buffer[] | null = null;
       let contextArt = false;
       if (allScenes.every((x) => typeof x === 'string' && x.trim().length >= 10)) {
-        const fresh = await generateTipsImages({ style: opts.style, scheme: opts.scheme, scenes: allScenes, agencyId, genId, ideas: allIdeas, quietZones: allZones });
+        const fresh = await generateTipsImages({ style: opts.style, scheme: opts.scheme, scenes: allScenes, agencyId, genId, ideas: allIdeas, quietZones: allZones, brandColours: opts.lockPalette ? { navy: opts.brand.navy, gold: opts.brand.gold } : undefined, onFail });
         if (fresh && fresh.buffers.length === allScenes.length) {
           images = fresh.buffers; imagePaths = fresh.paths; perSlideArt = true; artworkSource = 'fresh_per_slide';
           contextArt = hasContextArt;
@@ -1212,7 +1214,7 @@ async function runPlannedCarousel(opts: {
         }
       }
       if (!images) {
-        const fam = await generateTipsImages({ style: opts.style, scheme: opts.scheme, scenes: (plan.image_scenes ?? []).slice(0, 3), agencyId, genId });
+        const fam = await generateTipsImages({ style: opts.style, scheme: opts.scheme, scenes: (plan.image_scenes ?? []).slice(0, 3), agencyId, genId, brandColours: opts.lockPalette ? { navy: opts.brand.navy, gold: opts.brand.gold } : undefined, onFail });
         if (fam && fam.buffers.length === 3) { images = fam.buffers; imagePaths = fam.paths; artworkSource = 'fresh_family'; }
       }
       if (!images) { images = await loadTipsImages(opts.style); if (images) artworkSource = 'library'; }
@@ -1236,7 +1238,7 @@ async function runPlannedCarousel(opts: {
       result_metadata: {
         engine: 'carousel', carousel_type: opts.type, carousel_style: usedStyle, slide_count: stored.length, slides: stored,
         ai_imagery: opts.type === 'tips' && isTipsImageStyle(usedStyle),
-        image_paths: imagePaths, image_scheme: opts.scheme, per_slide_art: perSlideArt, artwork_source: artworkSource, artwork_qa: artworkQa, copy_qa: copyQa, include_recap: opts.includeRecap, include_context: opts.includeContext,
+        image_paths: imagePaths, image_scheme: opts.scheme, per_slide_art: perSlideArt, artwork_source: artworkSource, artwork_error: artworkError, artwork_qa: artworkQa, copy_qa: copyQa, include_recap: opts.includeRecap, include_context: opts.includeContext,
         plan, caption: plan.caption, hashtags: plan.hashtags,
       },
       completed_at: new Date().toISOString(),
@@ -1322,17 +1324,18 @@ route.post('/carousel', async (c) => {
       // writer had no choice but to invent the claim printed on the closing slide. A name and a
       // town are context, not a service: they are passed as context, and the SERVICE claim is
       // only requested when brand_voice or content_style actually describe the business.
-      const agencyServices = [
-        bRows[0]?.brand_voice ? String(bRows[0].brand_voice).slice(0, 200) : null,
-        bRows[0]?.content_style ? String(bRows[0].content_style).slice(0, 200) : null,
+      // brand_voice and content_style describe HOW this agency writes, not WHAT it sells —
+      // labelling them "what they do" made the writer turn a tone note into a service claim,
+      // which is the same fabrication in a new costume. They are passed as voice context only.
+      // Nothing in agency_branding states the agency's actual services yet, so RULE 9's line
+      // stays empty until that field exists: an empty closing line is honest, an invented
+      // speciality is not.
+      const agencyProfile = [
+        bRows[0]?.brand_name ? `Name: ${bRows[0].brand_name}` : null,
+        [bRows[0]?.city, bRows[0]?.region, bRows[0]?.country].filter(Boolean).join(', ') || null,
+        bRows[0]?.brand_voice ? `Voice (how they write, NOT what they sell): ${String(bRows[0].brand_voice).slice(0, 200)}` : null,
+        bRows[0]?.content_style ? `Content style (NOT services): ${String(bRows[0].content_style).slice(0, 200)}` : null,
       ].filter(Boolean).join(' · ') || undefined;
-      const agencyProfile = agencyServices
-        ? [
-          bRows[0]?.brand_name ? `Name: ${bRows[0].brand_name}` : null,
-          [bRows[0]?.city, bRows[0]?.region, bRows[0]?.country].filter(Boolean).join(', ') || null,
-          `What they do: ${agencyServices}`,
-        ].filter(Boolean).join(' · ')
-        : undefined;
 
       // each new type-only deck wears an edition (fonts + colour world) — matched to the agency's
       // taste profile when the this-or-that game has been played, random otherwise; stored so

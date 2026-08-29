@@ -174,7 +174,8 @@ function cartelPlanned(plan: CarouselPlan, agency: string, contact: string, bran
     specs.push(DesignSpec.parse({
       background: g.bg,
       elements: [
-        { type: "text", bbox: [620, 610, 1560, 1560], content: String(i + 1), font: "Anton", size: 720, colour: g.num, align: "left" },
+        // shield:false — a deliberately washed background numeral, not copy (RULE 1 opt-out)
+        { type: "text", bbox: [620, 610, 1560, 1560], content: String(i + 1), font: "Anton", size: 720, colour: g.num, align: "left", shield: false },
         { type: "text", bbox: [80, 96, 600, 128], content: `Nº ${i + 1} DE ${plan.tips.length}`, font: "Archivo", size: 20, colour: g.kick, align: "left", tracking: 5 },
         { type: "rect", bbox: [80, 160, 240, 166], fill: g.ruleC },
         { type: "text", bbox: [80, 230, 1000, 230 + tLines * 98 + 8], content: titleTxt, font: "Anton", size: 84, colour: g.head, align: "left", line_height: 98 },
@@ -385,7 +386,7 @@ function serenoPlanned(plan: CarouselPlan, agency: string, contact: string, bran
             { type: "rect", bbox: [96, 1046, 160, 1048], fill: GOLD },
             { type: "text", bbox: [96, 1076, 940, 1116], content: plan.attribution, font: "Glacial Indifference", size: 24, colour: inkMuted, align: "left", tracking: 2 },
           ] : []),
-          folioLine(i + 3, inkMuted),
+          folioLine(i + 2 + (includeContext ? 1 : 0), inkMuted),
         ],
       }));
     });
@@ -398,13 +399,14 @@ function serenoPlanned(plan: CarouselPlan, agency: string, contact: string, bran
         specs.push(DesignSpec.parse({
           background: warm,
           elements: [
-            { type: "text", bbox: [560, 60, 1500, 1300], content: String(i + 1).padStart(2, "0"), font: FR, size: 620, colour: mix(warm, GOLD, 0.68), align: "left" },
+            // shield:false — the grand ghost numeral is a background device (RULE 1 opt-out)
+            { type: "text", bbox: [560, 60, 1500, 1300], content: String(i + 1).padStart(2, "0"), font: FR, size: 620, colour: mix(warm, GOLD, 0.68), align: "left", shield: false },
             { type: "text", bbox: [96, 110, 800, 140], content: `Nº ${i + 1} · ${plan.eyebrow.toUpperCase()}`, font: "Glacial Indifference", size: 19, colour: inkMuted, align: "left", tracking: 5 },
             { type: "rect", bbox: [96, 200, 240, 201.5], fill: NAVY, opacity: 0.4 },
             { type: "text", bbox: [96, 280, 620, 700], content: wrap(tip.title, FR, 54, 520), font: FR, size: 54, colour: NAVY, align: "left", line_height: 68 },
             { type: "text", bbox: [96, 760, 600, 1110], content: wrap(tip.body, "Jost", 30, 500), font: "Jost", size: 30, colour: mix(NAVY, warm, 0.8), align: "left", line_height: 48, valign: "center" },
             ...(tip.teaser ? [{ type: "text", bbox: [96, 1140, 900, 1186], content: tip.teaser.toUpperCase(), font: "Glacial Indifference", size: 19, colour: inkMuted, align: "left", tracking: 4 }] : []),
-            spine(i + 3), folioLine(i + 3, inkMuted),
+            spine(i + 2 + (includeContext ? 1 : 0)), folioLine(i + 2 + (includeContext ? 1 : 0), inkMuted),
           ],
         }));
         return;
@@ -420,7 +422,7 @@ function serenoPlanned(plan: CarouselPlan, agency: string, contact: string, bran
             { type: "rect", bbox: [480, 790, 600, 791.5], fill: NAVY, opacity: 0.4 },
             { type: "text", bbox: [170, 850, 910, 1110], content: wrap(tip.body, "Jost", 31, 700), font: "Jost", size: 31, colour: mix(NAVY, warm, 0.8), align: "center", line_height: 50, valign: "center" },
             ...(tip.teaser ? [{ type: "text", bbox: [96, 1150, 984, 1190], content: tip.teaser.toUpperCase(), font: "Glacial Indifference", size: 18, colour: inkMuted, align: "center", tracking: 4 }] : []),
-            folioLine(i + 3, inkMuted),
+            folioLine(i + 2 + (includeContext ? 1 : 0), inkMuted),
           ],
         }));
         return;
@@ -434,7 +436,7 @@ function serenoPlanned(plan: CarouselPlan, agency: string, contact: string, bran
           { type: "text", bbox: [96, 490, 940, 700], content: wrap(tip.title, FR, 60, 840), font: FR, size: 60, colour: NAVY, align: "left", line_height: 74 },
           { type: "text", bbox: [96, 740, 940, 1100], content: wrap(tip.body, "Jost", 34, 840), font: "Jost", size: 34, colour: mix(NAVY, warm, 0.8), align: "left", line_height: 54, valign: "center" },
           ...(tip.teaser ? [{ type: "text", bbox: [96, 1140, 900, 1186], content: tip.teaser.toUpperCase(), font: "Glacial Indifference", size: 19, colour: inkMuted, align: "left", tracking: 4 }] : []),
-          spine(i + 3), folioLine(i + 3, inkMuted),
+          spine(i + 2 + (includeContext ? 1 : 0)), folioLine(i + 2 + (includeContext ? 1 : 0), inkMuted),
         ],
       }));
     });

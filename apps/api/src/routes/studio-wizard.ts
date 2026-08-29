@@ -1285,7 +1285,9 @@ route.post('/carousel', async (c) => {
       const quoteAuthor = typeof b.quote_author === 'string' ? b.quote_author.trim().slice(0, 80) : '';
       // 'slides' = TOTAL deck length the agent asked for (3..10): cover + [context when >=5] + tips +
       // [recap when >=7] + CTA. Legacy slide_count (= tips) still honoured.
-      const slidesTotal = Number.isInteger(b.slides) ? Math.min(10, Math.max(3, b.slides as number)) : null;
+      // 7 tips is the plan schema's hard max, so with one hero and one closing the deck ceiling
+      // is 9 — asking for 10 used to silently return 9.
+      const slidesTotal = Number.isInteger(b.slides) ? Math.min(9, Math.max(3, b.slides as number)) : null;
       // RULE 3 — a deck is ONE hero, N tips, ONE closing. The intro ("second cover") and the
       // recap were on by default, which is how a cover promising "the order nobody explains"
       // was followed by a slide promising the same thing again before any advice arrived.
@@ -1314,16 +1316,23 @@ route.post('/carousel', async (c) => {
       if (brandGold) brand.gold = brandGold;
       const prefs = (bRows[0]?.creative_prefs && typeof bRows[0].creative_prefs === 'object'
         ? bRows[0].creative_prefs : null) as Record<string, string> | null;
-      // RULE 9: what this agency actually does — assembled from agency_branding, never invented.
-      // Empty for an agency that has filled nothing in, and the planner then omits the claim
-      // rather than making one up.
-      const agencyProfile = [
-        bRows[0]?.brand_name ? `Name: ${bRows[0].brand_name}` : null,
-        [bRows[0]?.city, bRows[0]?.region, bRows[0]?.country].filter(Boolean).join(', ') || null,
-        bRows[0]?.brand_voice ? `Voice: ${String(bRows[0].brand_voice).slice(0, 200)}` : null,
-        bRows[0]?.content_style ? `Content style: ${String(bRows[0].content_style).slice(0, 200)}` : null,
-        bRows[0]?.tone ? `Tone: ${String(bRows[0].tone).slice(0, 120)}` : null,
+      // RULE 9: what this agency actually does — and ONLY from fields that actually say so.
+      // The first version passed the name, town and tone as "the agency profile", which is
+      // non-empty for every branded agency but says nothing about their services — so the
+      // writer had no choice but to invent the claim printed on the closing slide. A name and a
+      // town are context, not a service: they are passed as context, and the SERVICE claim is
+      // only requested when brand_voice or content_style actually describe the business.
+      const agencyServices = [
+        bRows[0]?.brand_voice ? String(bRows[0].brand_voice).slice(0, 200) : null,
+        bRows[0]?.content_style ? String(bRows[0].content_style).slice(0, 200) : null,
       ].filter(Boolean).join(' · ') || undefined;
+      const agencyProfile = agencyServices
+        ? [
+          bRows[0]?.brand_name ? `Name: ${bRows[0].brand_name}` : null,
+          [bRows[0]?.city, bRows[0]?.region, bRows[0]?.country].filter(Boolean).join(', ') || null,
+          `What they do: ${agencyServices}`,
+        ].filter(Boolean).join(' · ')
+        : undefined;
 
       // each new type-only deck wears an edition (fonts + colour world) — matched to the agency's
       // taste profile when the this-or-that game has been played, random otherwise; stored so
@@ -1503,7 +1512,7 @@ route.post('/carousel/update', async (c) => {
       const ctxArtEff = ctxArt && !!own;
       if (images) {
         slides = await renderDeck((br) => perSlideArt
-          ? renderTipsImageStyledV2(storedStyle, plan, agency.name, contact, br, images, storedLang, meta?.include_recap !== false, meta?.include_context !== false, typeof meta?.layout_variant === 'number' ? meta.layout_variant : 0, ctxArtEff)
+          ? renderTipsImageStyledV2(storedStyle, plan, agency.name, contact, br, images, storedLang, meta?.include_recap === true, meta?.include_context === true, typeof meta?.layout_variant === 'number' ? meta.layout_variant : 0, ctxArtEff)
           : renderTipsImageStyled(storedStyle, plan, agency.name, contact, br, images, storedLang, meta?.include_context === true, meta?.include_recap === true));
       } else {
         slides = await renderDeck((br) => renderPlannedStyled('editorial', plan, agency.name, contact, br, storedLang, typeof rawU.style_edition === 'number' ? rawU.style_edition : 0, !!(effNavy || effGold), meta?.include_context === true, meta?.include_recap === true));
@@ -1794,7 +1803,7 @@ route.post('/carousel/remix', async (c) => {
       // same guard as /carousel/update: library stand-in → drop ctxArt or the rotation collapses
       const ctxArtEff = ctxArt && !!own;
       slides = await renderWithSlideColours(brand, remixSlideCols, (br) => perSlideArt
-        ? renderTipsImageStyledV2(newStyle, plan, agency.name, contact, br, images, storedLang, meta?.include_recap !== false, meta?.include_context !== false, layoutVariant, ctxArtEff)
+        ? renderTipsImageStyledV2(newStyle, plan, agency.name, contact, br, images, storedLang, meta?.include_recap === true, meta?.include_context === true, layoutVariant, ctxArtEff)
         : renderTipsImageStyled(newStyle, plan, agency.name, contact, br, images, storedLang, meta?.include_context === true, meta?.include_recap === true));
     } else {
       slides = await renderWithSlideColours(brand, remixSlideCols, (br) =>
@@ -1832,7 +1841,7 @@ route.post('/carousel/remix', async (c) => {
       engine: 'carousel', carousel_type: 'tips', carousel_style: newStyle, slide_count: stored.length, slides: stored,
       plan, caption: plan.caption, hashtags: plan.hashtags,
       image_paths: ownPaths, image_scheme: meta?.image_scheme, per_slide_art: perSlideArt,
-      include_recap: meta?.include_recap !== false, include_context: meta?.include_context !== false,
+      include_recap: meta?.include_recap === true, include_context: meta?.include_context === true,
       layout_variant: layoutVariant, remix_of: parentId, remix_axis: axis,
     };
     await tx.execute(sql`

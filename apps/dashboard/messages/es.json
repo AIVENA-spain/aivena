@@ -1545,7 +1545,12 @@
     "release": "Devolver al asistente",
     "aiMutedNote": "El asistente está en pausa para estos clientes — debe responder una persona. Atiéndalo y contacte al cliente (WhatsApp/teléfono/email). \"Devolver al asistente\" reactiva la pausa.",
     "notifTitle": "{name} quiere hablar con una persona",
-    "notifBody": "Abra la bandeja para atender la conversación."
+    "notifBody": "Abra la bandeja para atender la conversación.",
+    "answerIt": "Responder",
+    "sendAnswer": "Enviar respuesta",
+    "answerPlaceholder": "Responde a {name} directamente: esto le llega por WhatsApp.",
+    "answerHandsBack": "Amanda retoma la conversación después.",
+    "cancel": "Cancelar"
   },
   "conversationMode": {
     "saving": "Guardando…",

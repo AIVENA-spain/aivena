@@ -1545,7 +1545,12 @@
     "release": "Rendre à l'assistant",
     "aiMutedNote": "L'assistant est en pause pour ces clients — une personne doit répondre. Prenez-le en charge puis contactez le client (WhatsApp/téléphone/email). \"Rendre à l'assistant\" réactive l'assistant.",
     "notifTitle": "{name} veut parler à une personne",
-    "notifBody": "Ouvrez la boîte pour prendre la conversation."
+    "notifBody": "Ouvrez la boîte pour prendre la conversation.",
+    "answerIt": "Répondre",
+    "sendAnswer": "Envoyer la réponse",
+    "answerPlaceholder": "Répondez directement à {name} — cela part sur WhatsApp.",
+    "answerHandsBack": "Amanda reprend la conversation ensuite.",
+    "cancel": "Annuler"
   },
   "conversationMode": {
     "saving": "Enregistrement…",

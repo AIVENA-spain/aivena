@@ -1545,7 +1545,12 @@
     "release": "Tilbage til assistenten",
     "aiMutedNote": "Assistenten er sat på pause for disse kunder — en person skal svare. Tag den, og kontakt kunden (WhatsApp/telefon/e-mail). \"Tilbage til assistenten\" ophæver pausen.",
     "notifTitle": "{name} vil tale med et menneske",
-    "notifBody": "Åbn indbakken for at tage samtalen."
+    "notifBody": "Åbn indbakken for at tage samtalen.",
+    "answerIt": "Svar",
+    "sendAnswer": "Send svar",
+    "answerPlaceholder": "Svar {name} direkte — det går til dem på WhatsApp.",
+    "answerHandsBack": "Amanda tager samtalen igen bagefter.",
+    "cancel": "Annuller"
   },
   "conversationMode": {
     "saving": "Gemmer…",

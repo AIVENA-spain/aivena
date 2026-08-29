@@ -2,12 +2,14 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Hand, Loader2, PhoneCall, Undo2 } from "lucide-react";
+import { Hand, Loader2, MessageSquare, PhoneCall, Undo2 } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { RelativeTime } from "@/components/ui/relative-time";
+import { sendFreeformAction } from "./composer-actions";
+import { setConversationModeAction } from "./amanda-mode-actions";
 import {
   getHandoffQueueAction,
   claimHandoffAction,
@@ -31,6 +33,7 @@ import {
  * contacts the client via WhatsApp/phone/email (send paths gated elsewhere).
  */
 export function HandoffQueue({ agencyId }: { agencyId: string }) {
+  const [answering, setAnswering] = useState<string | null>(null);
   const t = useTranslations("handoffs");
   const [rows, setRows] = useState<HandoffRow[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
@@ -130,6 +133,28 @@ export function HandoffQueue({ agencyId }: { agencyId: string }) {
     };
   }, [agencyId, refresh]);
 
+  // Answer-and-done (Christian 2026-08-29: "i would rather just answer fast a
+  // spesific question and finished"). Sending the answer ALSO hands the
+  // conversation back to Amanda — the escalation muted her, and leaving her
+  // muted after the question is answered would silently end the conversation.
+  async function onAnswer(row: HandoffRow, text: string) {
+    const body = text.trim();
+    if (!body) return;
+    setBusy(row.lead_id);
+    const sent = await sendFreeformAction(row.lead_id, body, null, "whatsapp");
+    if (!sent.ok) {
+      setError(sent.error);
+      setBusy(null);
+      return;
+    }
+    if (row.conversation_id) {
+      await setConversationModeAction(row.conversation_id, "inherit");
+    }
+    setAnswering(null);
+    setBusy(null);
+    await refresh(true);
+  }
+
   async function onClaim(leadId: string) {
     setBusy(leadId);
     const res = await claimHandoffAction(leadId);
@@ -192,7 +217,7 @@ export function HandoffQueue({ agencyId }: { agencyId: string }) {
                   </span>
                 </div>
                 {r.last_message ? (
-                  <p className="mt-0.5 truncate text-[12px] text-muted-foreground">“{r.last_message}”</p>
+                  <p className="mt-0.5 text-[12px] leading-snug text-foreground">“{r.last_message}”</p>
                 ) : null}
                 {claimed ? (
                   <p className="mt-0.5 text-[11.5px] font-medium text-emerald-700 dark:text-emerald-400">
@@ -212,11 +237,30 @@ export function HandoffQueue({ agencyId }: { agencyId: string }) {
                   {t("release")}
                 </Button>
               ) : (
-                <Button size="sm" disabled={busy === r.lead_id} onClick={() => void onClaim(r.lead_id)}>
-                  {busy === r.lead_id ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <Hand className="h-3.5 w-3.5" aria-hidden />}
-                  {t("claim")}
-                </Button>
+                <span className="flex shrink-0 items-center gap-1.5">
+                  <Button
+                    size="sm"
+                    variant={answering === r.lead_id ? "outline" : "default"}
+                    disabled={busy === r.lead_id}
+                    onClick={() => setAnswering(answering === r.lead_id ? null : r.lead_id)}
+                  >
+                    <MessageSquare className="h-3.5 w-3.5" aria-hidden />
+                    {t("answerIt")}
+                  </Button>
+                  <Button variant="outline" size="sm" disabled={busy === r.lead_id} onClick={() => void onClaim(r.lead_id)}>
+                    {busy === r.lead_id ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <Hand className="h-3.5 w-3.5" aria-hidden />}
+                    {t("claim")}
+                  </Button>
+                </span>
               )}
+              {answering === r.lead_id && !claimed ? (
+                <AnswerBox
+                  row={r}
+                  busy={busy === r.lead_id}
+                  onCancel={() => setAnswering(null)}
+                  onSend={(text) => void onAnswer(r, text)}
+                />
+              ) : null}
             </li>
           );
         })}
@@ -224,5 +268,47 @@ export function HandoffQueue({ agencyId }: { agencyId: string }) {
 
       <p className="mt-2 text-[11px] leading-snug text-red-800/80 dark:text-red-300/80">{t("aiMutedNote")}</p>
     </section>
+  );
+}
+
+/**
+ * Answer-and-done. The buyer's question is already on the card above; this is
+ * just the reply. Sending it hands the conversation back to Amanda, so one
+ * answered question does not quietly become a conversation nobody owns.
+ */
+function AnswerBox({
+  row,
+  busy,
+  onCancel,
+  onSend,
+}: {
+  row: HandoffRow;
+  busy: boolean;
+  onCancel: () => void;
+  onSend: (text: string) => void;
+}) {
+  const t = useTranslations("handoffs");
+  const [text, setText] = useState("");
+  return (
+    <div className="mt-2 flex w-full flex-col gap-2 rounded-md border border-border bg-card p-2.5">
+      <textarea
+        autoFocus
+        rows={3}
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder={t("answerPlaceholder", { name: row.full_name ?? "" })}
+        className="w-full resize-y rounded-md border border-border bg-background px-2.5 py-2 text-[13px] text-foreground focus:outline-none focus:ring-2 focus:ring-brand/40"
+      />
+      <div className="flex items-center gap-2">
+        <Button size="sm" disabled={busy || text.trim().length === 0} onClick={() => onSend(text)}>
+          {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : null}
+          {t("sendAnswer")}
+        </Button>
+        <button type="button" onClick={onCancel} className="text-[11.5px] text-muted-foreground hover:text-foreground">
+          {t("cancel")}
+        </button>
+        <span className="ml-auto text-[11px] text-muted-foreground">{t("answerHandsBack")}</span>
+      </div>
+    </div>
   );
 }

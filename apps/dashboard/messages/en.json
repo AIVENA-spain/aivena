@@ -1545,7 +1545,12 @@
     "release": "Back to assistant",
     "aiMutedNote": "The assistant is paused for these clients — a person must reply. Claim one, then contact the client (WhatsApp/phone/email). \"Back to assistant\" un-pauses it.",
     "notifTitle": "{name} wants to talk to a person",
-    "notifBody": "Open the Inbox to claim the conversation."
+    "notifBody": "Open the Inbox to claim the conversation.",
+    "answerIt": "Answer it",
+    "sendAnswer": "Send answer",
+    "answerPlaceholder": "Answer {name} directly — this goes straight to them on WhatsApp.",
+    "answerHandsBack": "Amanda picks the conversation back up after this.",
+    "cancel": "Cancel"
   },
   "conversationMode": {
     "saving": "Saving…",

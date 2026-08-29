@@ -24,8 +24,8 @@ export interface LintResult {
 }
 
 const SHORT_MAX_SENTENCES = 3;
-const SHORT_MAX_WORDS = 35;
-const LONG_MAX_WORDS = 120;
+export const SHORT_MAX_WORDS = 35;
+export const LONG_MAX_WORDS = 120;
 
 /** Sentence split that survives multilingual punctuation (., !, ?, ¿…). */
 export function splitSentences(text: string): string[] {
@@ -42,6 +42,48 @@ export function countWords(text: string): number {
 /** Interrogative SENTENCES (not '?' characters — "17:00?" mid-list is one). */
 export function countQuestionSentences(text: string): number {
   return splitSentences(text).filter((s) => /[?？]\s*$/.test(s) || /^[¿]/.test(s)).length;
+}
+
+/**
+ * SHAPE vs TRUTH (Christian 2026-08-29, live: "she should have been able to
+ * just make a search and find this out herself").
+ *
+ * She DID. She researched the Norwegian school, wrote a correct 42-word answer,
+ * and the 35-word cap binned it — so the buyer got "a colleague will
+ * double-check" and Christian got a take-over card for a question Amanda had
+ * already answered. A correct answer was destroyed for being seven words long.
+ *
+ * These violations are about SHAPE. They are fixable by trimming, and a draft
+ * that fails ONLY these must never be escalated to a human — it must be cut to
+ * length and sent. Everything NOT on this list (ungrounded numbers, verifier
+ * rejection, wrong language, banned patterns, payment floor, unfiled office
+ * promise) is about TRUTH or SAFETY, where killing the draft is correct.
+ */
+const SHAPE_ONLY_PREFIXES = ['too_long:', 'too_many_sentences:', 'mirror_band:', 'multiple_questions'];
+
+export function isShapeOnly(violations: string[]): boolean {
+  return violations.length > 0 && violations.every((v) => SHAPE_ONLY_PREFIXES.some((p) => v.startsWith(p)));
+}
+
+/**
+ * Deterministic trim to a word budget. Keeps WHOLE sentences from the front —
+ * Amanda answers first, so the front is the substance — and never emits a
+ * truncated fragment: if even the first sentence is over budget it is kept
+ * intact. Removes text only; it can never introduce a fact.
+ */
+export function trimToBudget(text: string, maxWords: number): string {
+  if (countWords(text) <= maxWords) return text;
+  const sentences = splitSentences(text);
+  if (sentences.length <= 1) return text;
+  const kept: string[] = [];
+  let used = 0;
+  for (const sentence of sentences) {
+    const w = countWords(sentence);
+    if (kept.length > 0 && used + w > maxWords) break;
+    kept.push(sentence);
+    used += w;
+  }
+  return kept.join(' ').trim();
 }
 
 /** The length law (§10 B1) + question discipline (§10 B2). */

@@ -22,7 +22,7 @@ import { validateDraft, screenLanguageDrift } from './validators';
 import { detectConfirmation } from './confirmation';
 import { runActionTool, type AmandaMode } from './modes';
 import { buildSystemPrompt, buildUserContext, type TurnContext, PROMPT_VERSION } from './prompt';
-import { normalizeLeadLanguage } from './validators';
+import { normalizeLeadLanguage, isShapeOnly, trimToBudget, SHORT_MAX_WORDS, LONG_MAX_WORDS } from './validators';
 import type { ToolBackends } from './tools';
 
 // Dead-air law (live demo 2026-08-28: a gate-blocked reply left the buyer in
@@ -195,7 +195,15 @@ export async function runTurn(
   // Long-form (≤120 words) is deterministically earned, never assumed: only a
   // turn that actually fetched full property details may run longer (§10 B1 —
   // "summarizing a property they requested"). Everything else stays short.
-  const allowLongForm = loop.toolEvents.some((ev) => ev.tool === 'get_property_details' && ev.result.ok && !ev.result.refused);
+  // A turn that did REAL work earns room to report it. Previously only
+  // get_property_details did, so "is there anything near the Norwegian school?"
+  // — answered off research_area + search_properties — was held to 35 words and
+  // died there (Christian, live 2026-08-29). Research and a genuine property
+  // search are exactly the turns that need a sentence or two more.
+  const LONG_FORM_TOOLS = ['get_property_details', 'research_area', 'search_properties'];
+  const allowLongForm = loop.toolEvents.some(
+    (ev) => LONG_FORM_TOOLS.includes(ev.tool) && ev.result.ok && !ev.result.refused,
+  );
   const authoritative = ctx.officeAnswerText ? [ctx.officeAnswerText] : [];
   // Office-promise law input: the machinery keeps the promise only when an
   // ask_agency call succeeded THIS turn (simulated counts — shadow parity), a
@@ -240,6 +248,25 @@ export async function runTurn(
         failures = [];
       } else {
         failures = fixedFailures;
+      }
+    }
+  }
+  // SHAPE-ONLY RESCUE. If everything still wrong with the draft is shape —
+  // too long, too many sentences, over the mirror band — then the ANSWER is
+  // sound and only its size is not. Cut it to the budget deterministically and
+  // send. Escalating here is what produced the live failure: a researched,
+  // correct reply replaced by "a colleague will double-check" plus a take-over
+  // card. Truth and safety failures are untouched by this and still escalate.
+  if (failures.length > 0 && isShapeOnly(failures)) {
+    const budget = allowLongForm || authoritative.length > 0 ? LONG_MAX_WORDS : SHORT_MAX_WORDS;
+    const trimmed = trimToBudget(draft, budget);
+    // Only accept the trim if it actually resolved everything — a trim that
+    // still breaks a rule must not sneak past the gates.
+    if (trimmed && trimmed !== draft) {
+      const afterTrim = await judge(trimmed);
+      if (afterTrim.length === 0) {
+        draft = trimmed;
+        failures = [];
       }
     }
   }

@@ -1545,7 +1545,12 @@
     "release": "Zurück an den Assistenten",
     "aiMutedNote": "Der Assistent ist für diese Kunden pausiert — eine Person muss antworten. Übernehmen und den Kunden kontaktieren (WhatsApp/Telefon/E-Mail). \"Zurück an den Assistenten\" hebt die Pause auf.",
     "notifTitle": "{name} möchte mit einer Person sprechen",
-    "notifBody": "Posteingang öffnen, um das Gespräch zu übernehmen."
+    "notifBody": "Posteingang öffnen, um das Gespräch zu übernehmen.",
+    "answerIt": "Beantworten",
+    "sendAnswer": "Antwort senden",
+    "answerPlaceholder": "Antworten Sie {name} direkt — das geht per WhatsApp an sie.",
+    "answerHandsBack": "Amanda übernimmt das Gespräch danach wieder.",
+    "cancel": "Abbrechen"
   },
   "conversationMode": {
     "saving": "Wird gespeichert…",

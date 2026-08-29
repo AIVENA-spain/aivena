@@ -1545,7 +1545,12 @@
     "release": "Torna all'assistente",
     "aiMutedNote": "L'assistente è in pausa per questi clienti — deve rispondere una persona. Prendilo in carico e contatta il cliente (WhatsApp/telefono/email). \"Torna all'assistente\" riattiva l'assistente.",
     "notifTitle": "{name} vuole parlare con una persona",
-    "notifBody": "Apri la posta per prendere in carico la conversazione."
+    "notifBody": "Apri la posta per prendere in carico la conversazione.",
+    "answerIt": "Rispondi",
+    "sendAnswer": "Invia risposta",
+    "answerPlaceholder": "Rispondi a {name} direttamente: le arriva su WhatsApp.",
+    "answerHandsBack": "Amanda riprende la conversazione dopo.",
+    "cancel": "Annulla"
   },
   "conversationMode": {
     "saving": "Salvataggio…",

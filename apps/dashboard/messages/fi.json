@@ -1545,7 +1545,12 @@
     "release": "Takaisin avustajalle",
     "aiMutedNote": "Avustaja on tauolla näiden asiakkaiden osalta — ihmisen on vastattava. Ota tehtävä ja ota yhteyttä asiakkaaseen (WhatsApp/puhelin/sähköposti). \"Takaisin avustajalle\" poistaa tauon.",
     "notifTitle": "{name} haluaa puhua ihmiselle",
-    "notifBody": "Avaa saapuneet ottaaksesi keskustelun."
+    "notifBody": "Avaa saapuneet ottaaksesi keskustelun.",
+    "answerIt": "Vastaa",
+    "sendAnswer": "Lähetä vastaus",
+    "answerPlaceholder": "Vastaa henkilölle {name} suoraan — tämä menee WhatsAppiin.",
+    "answerHandsBack": "Amanda jatkaa keskustelua tämän jälkeen.",
+    "cancel": "Peruuta"
   },
   "conversationMode": {
     "saving": "Tallennetaan…",

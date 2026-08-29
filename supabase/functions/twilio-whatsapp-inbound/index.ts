@@ -108,6 +108,41 @@ Deno.serve(async (req) => {
   }
   const agencyId = agencyRow.agency_id;
 
+  // ── THE CLEAR LINE: staff, or client? (Christian, 2026-08-28) ──────────────
+  // Agents message the SAME AIVENA number as buyers, so the number itself is
+  // the only discriminator — and until now nothing looked. An agent texting in
+  // was turned into a LEAD and answered as if they were house-hunting. The
+  // roster is checked FIRST: a registered agent can never become a lead and
+  // never reaches the buyer engine.
+  //
+  // Today the staff lane only records the message (the ping/reply machinery is
+  // the next slice), which is the correct conservative behaviour: doing
+  // nothing is right, becoming a buyer is wrong. Fail-safe: if the lookup
+  // itself errors we fall through to the buyer path exactly as before, because
+  // an empty roster and a broken lookup must not silently swallow real buyers.
+  try {
+    const { data: staff } = await admin.rpc("lookup_agency_agent", {
+      p_agency_id: agencyId,
+      p_whatsapp: fromNumber,
+    });
+    const agent = Array.isArray(staff) ? staff[0] : staff;
+    if (agent) {
+      await admin.from("webhook_events")
+        .update({
+          processing_status: "staff_message",
+          error_message: `from agent ${agent.full_name}`.slice(0, 240),
+        })
+        .eq("id", webhookEvent?.id);
+      // A reply also proves presence — the shift check-in's whole purpose.
+      await admin.from("agency_agents")
+        .update({ last_checkin_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+        .eq("id", agent.id);
+      return twiml();
+    }
+  } catch (_staffErr) {
+    // Deliberately swallowed — see fail-safe note above.
+  }
+
   const { data: existingLead } = await admin
     .from("leads")
     .select("id, language")

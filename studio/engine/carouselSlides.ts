@@ -35,6 +35,7 @@ export interface CarouselPlan {
   quote_context: string;                      // quote type slide 2: restates only what the quote itself says
   attribution: string;                        // quote type: who said it
   cta_heading: string;                        // CTA headline
+  agency_line: string;                        // RULE 9: what this agency does — the closing slide's first claim
   cta_action: string;                         // the KPI action line (save/send framing) — the real CTA
   cta_keyword: string;                        // DM keyword pill text ("Escríbenos: GUÍA")
   swipe_cue: string;                          // "Desliza" / "Swipe" in the post language
@@ -191,10 +192,23 @@ export async function photoPalette(buf: Buffer): Promise<{ accent: string; groun
 
 /** Blend two #rrggbb colours — the deterministic way to hit the 60% "meta" opacity tier for TEXT
  *  (the freeform text element has no opacity, so we mix the ink toward the ground instead). */
+/** Normalise a colour to 6-digit hex. Brand colours are typed by agencies, so "#333", "abc123"
+ *  and an empty field all reach here; mix() used to emit "#2f09NaN" for those, which fails
+ *  DesignSpec validation and takes the WHOLE deck down rather than one element. */
+export function hex6(h: string, fallback = "#000000"): string {
+  const t = String(h ?? "").trim();
+  if (/^#[0-9a-fA-F]{6}$/.test(t)) return t.toLowerCase();
+  if (/^[0-9a-fA-F]{6}$/.test(t)) return `#${t.toLowerCase()}`;
+  const m = /^#?([0-9a-fA-F]{3})$/.exec(t);
+  if (m) { const [r, g, b] = m[1].toLowerCase().split(""); return `#${r}${r}${g}${g}${b}${b}`; }
+  return fallback;
+}
+
 export function mix(ink: string, ground: string, inkShare: number): string {
-  const c = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  const c = (h: string) => [1, 3, 5].map((i) => parseInt(hex6(h).slice(i, i + 2), 16));
   const [a, b] = [c(ink), c(ground)];
-  return "#" + a.map((v, i) => Math.round(v * inkShare + b[i] * (1 - inkShare)).toString(16).padStart(2, "0")).join("");
+  const t = Math.min(1, Math.max(0, Number.isFinite(inkShare) ? inkShare : 0.5));
+  return "#" + a.map((v, i) => Math.round(v * t + b[i] * (1 - t)).toString(16).padStart(2, "0")).join("");
 }
 
 /** The identical bottom band on every slide: agency (left) + editorial "02 / 08" page mark (right),
@@ -212,7 +226,7 @@ function footerBand(agency: string, index: number, total: number, brand: Carouse
  *  a small channel distance of the background (pale gold on cream, etc.), rebuild it as a tint of
  *  the ink so the device stays visible in EVERY colour world — editions and custom colours alike. */
 export function visibleTone(pref: string, ground: string, ink: string, inkShare = 0.6): string {
-  const n = (h: string) => parseInt(h.slice(1), 16);
+  const n = (h: string) => parseInt(hex6(h).slice(1), 16);
   const d = (a: number, b: number) =>
     Math.abs(((a >> 16) & 255) - ((b >> 16) & 255)) + Math.abs(((a >> 8) & 255) - ((b >> 8) & 255)) + Math.abs((a & 255) - (b & 255));
   try {
@@ -389,10 +403,11 @@ function ctaSlide(plan: CarouselPlan, slideIndex: number, total: number, agency:
       { type: "rect", bbox: [M, 300, M + 84, 304], fill: brand.gold },
       { type: "text", bbox: [M, 356, W - M, 700], content: wrap(plan.cta_heading, SERIF, 92, W - 2 * M), font: SERIF, size: 92, colour: brand.cream, align: "left", line_height: 106, valign: "center" },
       // the real CTA: the save/send action line, largest text after the heading
-      { type: "text", bbox: [M, 760, W - M, 920], content: wrap(plan.cta_action, SANS, 36, W - 2 * M, "500"), font: SANS, size: 36, colour: brand.cream, align: "left", weight: "500", line_height: 54 },
+      ...(plan.agency_line ? [{ type: "text", bbox: [M, 730, W - M, 850], content: wrap(plan.agency_line, SERIF, 40, W - 2 * M), font: SERIF, size: 40, colour: brand.cream, align: "left", line_height: 54 }] : []),
+      { type: "text", bbox: [M, plan.agency_line ? 890 : 760, W - M, plan.agency_line ? 980 : 920], content: wrap(plan.cta_action, SANS, 32, W - 2 * M, "500"), font: SANS, size: 32, colour: mix(brand.cream, brand.navy, 0.85), align: "left", weight: "500", line_height: 46 },
       // the DM keyword as the single button
       {
-        type: "text", bbox: [M, 980, 720, 1040], content: plan.cta_keyword.toUpperCase(), font: SANS, size: 25,
+        type: "text", bbox: [M, 980, 720, 1040], content: plan.cta_keyword, font: SANS, size: 23,
         colour: brand.navy, align: "left", weight: "600", tracking: 3, valign: "center",
         pill: { fill: brand.gold, pad_x: 40, pad_y: 20 },
       },

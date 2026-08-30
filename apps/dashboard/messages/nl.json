@@ -1552,7 +1552,9 @@
     "answerHandsBack": "Amanda pakt het gesprek daarna weer op.",
     "cancel": "Annuleren",
     "aboutRefs": "Betreft: {refs}",
-    "amandaWanted": "Amanda wilde versturen"
+    "amandaWanted": "Amanda wilde versturen",
+    "questionNotifTitle": "{name} — het kantoor moet iets beantwoorden",
+    "questionNotifBody": "Amanda heeft het kantoor een vraag gesteld. Open Taken om te antwoorden."
   },
   "conversationMode": {
     "saving": "Opslaan…",

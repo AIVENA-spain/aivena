@@ -350,6 +350,32 @@ export function makeDbBackends(ctx: BackendCtx): ToolBackends {
         `);
         return { ticketId: String(r.id), shortCode: Number(r.short_code) };
       });
+      // LIVE PING (Christian 2026-08-30: "where can i see this office question
+      // tho, i havent gotten anything notification"). The question and its task
+      // were both filed correctly — nothing announced them. Until now the ONLY
+      // realtime event in the whole engine fired on escalateToHuman, so
+      // "Amanda is stuck" alerted the agency while "Amanda is working and needs
+      // ONE fact" — the genuinely actionable one — alerted nobody.
+      //
+      // Deliberately NOT the handoff path: this must not set needs_human_since,
+      // because that pauses Amanda and tells the agent "a person must reply".
+      // She is still handling this conversation; she just needs an answer.
+      // Own transaction: a failed ping can never roll back the filed ticket.
+      await withAgency(A, async (tx) => {
+        await tx.execute(sql`
+          SELECT realtime.send(
+            jsonb_build_object(
+              'lead_id', ${ctx.leadId}::uuid,
+              'lead_name', (SELECT COALESCE(full_name, '') FROM leads WHERE id = ${ctx.leadId}::uuid),
+              'question', ${q}::text,
+              'at', now()
+            ),
+            'question_filed',
+            'agency:' || ${A} || ':handoffs',
+            true
+          )
+        `);
+      }).catch(() => { /* the task is filed and visible on /tasks regardless */ });
       try {
         return await attempt();
       } catch (err) {

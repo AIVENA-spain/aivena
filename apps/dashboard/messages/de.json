@@ -1552,7 +1552,9 @@
     "answerHandsBack": "Amanda übernimmt das Gespräch danach wieder.",
     "cancel": "Abbrechen",
     "aboutRefs": "Betrifft: {refs}",
-    "amandaWanted": "Amanda wollte senden"
+    "amandaWanted": "Amanda wollte senden",
+    "questionNotifTitle": "{name} — das Büro muss etwas beantworten",
+    "questionNotifBody": "Amanda hat dem Büro eine Frage gestellt. Öffnen Sie Aufgaben, um zu antworten."
   },
   "conversationMode": {
     "saving": "Wird gespeichert…",

@@ -1552,7 +1552,9 @@
     "answerHandsBack": "Amanda tar över samtalet igen efteråt.",
     "cancel": "Avbryt",
     "aboutRefs": "Gäller: {refs}",
-    "amandaWanted": "Amanda ville skicka"
+    "amandaWanted": "Amanda ville skicka",
+    "questionNotifTitle": "{name} — kontoret behöver svara på något",
+    "questionNotifBody": "Amanda har ställt en fråga till kontoret. Öppna Uppgifter för att svara."
   },
   "conversationMode": {
     "saving": "Sparar…",

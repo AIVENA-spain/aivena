@@ -1552,7 +1552,9 @@
     "answerHandsBack": "A Amanda retoma a conversa a seguir.",
     "cancel": "Cancelar",
     "aboutRefs": "Sobre: {refs}",
-    "amandaWanted": "A Amanda queria enviar"
+    "amandaWanted": "A Amanda queria enviar",
+    "questionNotifTitle": "{name} — o escritório tem de responder a algo",
+    "questionNotifBody": "A Amanda fez uma pergunta ao escritório. Abra Tarefas para responder."
   },
   "conversationMode": {
     "saving": "A guardar…",

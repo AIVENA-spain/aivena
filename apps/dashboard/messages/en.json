@@ -1552,7 +1552,9 @@
     "answerHandsBack": "Amanda picks the conversation back up after this.",
     "cancel": "Cancel",
     "aboutRefs": "About: {refs}",
-    "amandaWanted": "Amanda wanted to send"
+    "amandaWanted": "Amanda wanted to send",
+    "questionNotifTitle": "{name} — the office needs to answer something",
+    "questionNotifBody": "Amanda asked the office a question. Open Tasks to answer it."
   },
   "conversationMode": {
     "saving": "Saving…",

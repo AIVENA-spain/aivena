@@ -1552,7 +1552,9 @@
     "answerHandsBack": "После этого Amanda снова ведёт диалог.",
     "cancel": "Отмена",
     "aboutRefs": "Об объектах: {refs}",
-    "amandaWanted": "Amanda хотела отправить"
+    "amandaWanted": "Amanda хотела отправить",
+    "questionNotifTitle": "{name} — офису нужно кое-что ответить",
+    "questionNotifBody": "Amanda задала вопрос офису. Откройте «Задачи», чтобы ответить."
   },
   "conversationMode": {
     "saving": "Сохранение…",

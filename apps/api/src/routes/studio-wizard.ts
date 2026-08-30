@@ -988,9 +988,10 @@ function contactLine(agency: { web?: string | null; phone?: string | null }): st
 async function renderWithSlideColours<B extends { navy: string; gold: string }>(
   brand: B,
   slideCols: Record<string, { navy?: string; gold?: string }>,
-  render: (b: B) => Promise<Buffer[]>,
+  render: (b: B, locked: boolean) => Promise<Buffer[]>,
+  deckLocked = false,
 ): Promise<Buffer[]> {
-  const base = await render(brand);
+  const base = await render(brand, deckLocked);
   const groups = new Map<string, number[]>();
   base.forEach((_, i) => {
     const o = slideCols[String(i)];
@@ -1002,7 +1003,7 @@ async function renderWithSlideColours<B extends { navy: string; gold: string }>(
   });
   for (const [key, idxs] of groups) {
     const [navy, gold] = key.split('|');
-    const pass = await render({ ...brand, navy, gold });
+    const pass = await render({ ...brand, navy, gold }, true);
     for (const i of idxs) if (pass[i]) base[i] = pass[i];
   }
   return base;
@@ -1500,7 +1501,8 @@ route.post('/carousel/update', async (c) => {
     // the deck colours; a slide with no override keeps them.
     const priorSlideCols = (rawU.slide_colours && typeof rawU.slide_colours === 'object' ? rawU.slide_colours : {}) as Record<string, { navy?: string; gold?: string }>;
     const slideCols = mergeSlideColours(priorSlideCols, b.slide_colours);
-    const renderDeck = (render: (b: typeof brand) => Promise<Buffer[]>) => renderWithSlideColours(brand, slideCols, render);
+    const renderDeck = (render: (b: typeof brand, locked: boolean) => Promise<Buffer[]>) =>
+      renderWithSlideColours(brand, slideCols, render, !!(effNavy || effGold));
 
     // re-render in the SAME visual style the carousel was created with
     const storedStyle: CarouselStyle = typeof meta?.carousel_style === 'string' &&
@@ -1522,10 +1524,10 @@ route.post('/carousel/update', async (c) => {
           ? renderTipsImageStyledV2(storedStyle, plan, agency.name, contact, br, images, storedLang, meta?.include_recap === true, meta?.include_context === true, typeof meta?.layout_variant === 'number' ? meta.layout_variant : 0, ctxArtEff)
           : renderTipsImageStyled(storedStyle, plan, agency.name, contact, br, images, storedLang, meta?.include_context === true, meta?.include_recap === true));
       } else {
-        slides = await renderDeck((br) => renderPlannedStyled('editorial', plan, agency.name, contact, br, storedLang, typeof rawU.style_edition === 'number' ? rawU.style_edition : 0, !!(effNavy || effGold), meta?.include_context === true, meta?.include_recap === true));
+        slides = await renderDeck((br, locked) => renderPlannedStyled('editorial', plan, agency.name, contact, br, storedLang, typeof rawU.style_edition === 'number' ? rawU.style_edition : 0, locked, meta?.include_context === true, meta?.include_recap === true));
       }
     } else {
-      slides = await renderDeck((br) => renderPlannedStyled(storedStyle, plan, agency.name, contact, br, storedLang, typeof rawU.style_edition === 'number' ? rawU.style_edition : 0, !!(effNavy || effGold), meta?.include_context === true, meta?.include_recap === true));
+      slides = await renderDeck((br, locked) => renderPlannedStyled(storedStyle, plan, agency.name, contact, br, storedLang, typeof rawU.style_edition === 'number' ? rawU.style_edition : 0, locked, meta?.include_context === true, meta?.include_recap === true));
     }
     const stored = await storeSlides(agencyId, genId, slides);
 
@@ -1556,12 +1558,29 @@ route.post('/carousel/update', async (c) => {
 
 // ── POST /api/studio/carousel/topic-ideas — GET INSPIRED: 6 fresh tips topics (free) ──
 route.post('/carousel/topic-ideas', async (c) => {
+  const tx = c.get('tx');
+  const agencyId = c.get('agencyId');
   const b = await readJson(c);
   const language = typeof b.language === 'string' && b.language.trim() ? b.language.trim().slice(0, 5) : 'es';
   const exclude = Array.isArray(b.exclude)
     ? (b.exclude as unknown[]).filter((x): x is string => typeof x === 'string').slice(0, 24) : [];
   try {
-    const topics = await topicIdeas(language, exclude);
+    // Christian 2026-08-30: "i feel like i have seen the same ones over and over again — they
+    // shouldn't get resent as inspiration over and over, it should be new ones, just a few
+    // reused every time and changed the way they're said." The client only excluded what it had
+    // shown in THIS session, so a fresh visit re-offered the same ideas. The agency's OWN
+    // history is the real exclusion list: every topic it has been shown or generated from.
+    let seen: string[] = [];
+    try {
+      const hist = await tx.execute(sql`
+        SELECT DISTINCT raw_request->>'topic' AS topic
+        FROM image_generations
+        WHERE agency_id = ${agencyId} AND raw_request->>'topic' IS NOT NULL
+        LIMIT 60
+      `);
+      seen = (hist as unknown as Array<{ topic: string }>).map((r) => r.topic).filter(Boolean);
+    } catch { /* history unavailable — the session list still applies */ }
+    const topics = await topicIdeas(language, [...new Set([...exclude, ...seen])].slice(0, 60));
     if (!topics) return c.json({ ok: false, error: 'ideas_failed', message: "Couldn't think of ideas right now — please try again." }, 502);
     return c.json({ ok: true, topics });
   } catch (err) {
@@ -1813,8 +1832,9 @@ route.post('/carousel/remix', async (c) => {
         ? renderTipsImageStyledV2(newStyle, plan, agency.name, contact, br, images, storedLang, meta?.include_recap === true, meta?.include_context === true, layoutVariant, ctxArtEff)
         : renderTipsImageStyled(newStyle, plan, agency.name, contact, br, images, storedLang, meta?.include_context === true, meta?.include_recap === true));
     } else {
-      slides = await renderWithSlideColours(brand, remixSlideCols, (br) =>
-        renderPlannedStyled(newStyle, plan, agency.name, contact, br, storedLang, styleEdition, !!(raw.brand_navy || raw.brand_gold), meta?.include_context === true, meta?.include_recap === true));
+      slides = await renderWithSlideColours(brand, remixSlideCols, (br, locked) =>
+        renderPlannedStyled(newStyle, plan, agency.name, contact, br, storedLang, styleEdition, locked, meta?.include_context === true, meta?.include_recap === true),
+        !!(raw.brand_navy || raw.brand_gold));
     }
 
     // A style remix repaints the deck in the NEW style's edition palette, so the parent's

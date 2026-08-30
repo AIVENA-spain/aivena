@@ -171,6 +171,19 @@ export function commentSentence(raw: string, language: string): string {
   return t;
 }
 
+/** Christian 2026-08-30: he picked a Get Inspired line and the cover came back rewritten. A topic
+ *  typed as a subject ("how to tell if a town suits daily life") is a brief; a line that already
+ *  READS as a headline is the agent's own writing and must survive to the cover. The test is
+ *  shape, not length: it fits a cover, it is not phrased as an instruction to the writer, and it
+ *  is a written line rather than a subject fragment. */
+export function topicIsHeadline(topic: string): boolean {
+  const t = (topic ?? '').trim();
+  if (t.length < 18 || t.length > 90) return false;
+  if (/^(how to|what to|tips? (on|for)|guide to|ideas? for|about|write|make|create)\b/i.test(t)) return false;
+  if (/[:;]\s/.test(t)) return false;
+  return /\s/.test(t);
+}
+
 /** Every plan this module hands out passes through here — one implementation, no per-path drift. */
 export function normalisePlan(plan: CarouselPlan, language: string): CarouselPlan {
   plan.hook_title = oneSentence(plan.hook_title);
@@ -347,6 +360,8 @@ Submit with the submit_carousel tool.`;
       continue;
     }
     const plan = parsed.data as CarouselPlan;
+    // the agent's own headline is not the writer's to rewrite
+    if (opts.type === 'tips' && opts.topic && topicIsHeadline(opts.topic)) plan.hook_title = opts.topic.trim();
     // the slides draw their own quotation glyphs — strip any the model added around the fragments
     const dequote = (s: string) => s.replace(/^["“”«»'\s]+/, '').replace(/["“”«»'\s]+$/, '');
     plan.quote_hook = dequote(plan.quote_hook);
@@ -401,7 +416,7 @@ CHECK EVERY TEXT FIELD:
 
 RULES FOR CORRECTIONS:
 - Rewrite in the SAME LANGUAGE as the existing copy, within the same length limits, same warm expert tone.
-- Keep the hook_title unless it fails a check (the user may have chosen it deliberately).
+- NEVER change hook_title. The agent either wrote it or approved it; it is not yours to improve.
 - Change as little as possible — this is an edit, not a rewrite.
 - Artwork is handled by a separate art director: do NOT create, review or mention image_scenes or tip scenes.
 - Return the FULL plan (all fields, corrected where needed) with review_notes listing each fix in one short English sentence. If everything passes, return the plan unchanged with an empty review_notes array.
@@ -707,7 +722,7 @@ VARY THE TONE across the 6 — most practical and direct, one bolder/provocative
 
 Rules for all 6:
 - NO place names, NO prices, NO statistics, NO legal/tax advice framing (bold lines may gesture at cost/time in the abstract, never with figures).
-- 30-90 characters for direct ideas; bolder two-sentence lines may run up to 150. No emoji, no numbering, no labels in the output.${exclude.length ? `\n- Do NOT repeat or paraphrase these already-shown ideas:\n${exclude.slice(0, 24).map((t) => `  · ${t}`).join('\n')}` : ''}
+- 30-90 characters for direct ideas; bolder two-sentence lines may run up to 150. No emoji, no numbering, no labels in the output.${exclude.length ? `\n- These have ALREADY been shown to this agency. At most ONE of your six may revisit a subject from this list, and if it does it must be said a completely different way — a different angle, a different opening, different words. The other five must be subjects that are NOT on it:\n${exclude.slice(0, 24).map((t) => `  · ${t}`).join('\n')}` : ''}
 
 Submit with the submit_ideas tool.`;
   try {

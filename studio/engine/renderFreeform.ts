@@ -358,15 +358,6 @@ export async function renderFreeform(
   };
 
   const photoBoxes = spec.elements.filter((e) => e.type === "photo").map((e) => clampBox(e.bbox, W, H));
-  // legibility coverage: does anything EARLIER in the order shade this text box?
-  const coverage = (textBox: number[], idx: number): number => {
-    let covered = 0;
-    spec.elements.slice(0, idx).forEach((e) => {
-      if (e.type === "rect" || e.type === "scrim") covered = Math.max(covered, overlap(clampBox(e.bbox, W, H), textBox));
-    });
-    return covered / Math.max(1, boxW(textBox) * boxH(textBox));
-  };
-
   // RULE 5 — act only where the rule sanctions it: a single small photo stranded in a large dead
   // field (Christian's "postage-stamp image floating in a navy field with the bottom 40% blank").
   // Type-only slides have no photo and are never touched, and a photo already covering half the
@@ -375,6 +366,13 @@ export async function renderFreeform(
     const drawn = spec.elements.filter((e) => e.type !== "scrim").map((e) => clampBox(e.bbox, W, H));
     const dead = deadRegionFraction(drawn, W, H);
     const photos_ = spec.elements.filter((e) => e.type === "photo");
+    // RULE 5 is "no slide more than a third empty" — for EVERY slide. The repair below only
+    // exists for one shape (a lone stranded photo), and the measurement used to be skipped
+    // entirely for anything else, so the four type-only styles were never checked at all.
+    // Measure always; repair where a repair exists; report where it does not.
+    if (dead > 1 / 3 && photos_.length !== 1) {
+      console.warn(`[carousel] RULE 5: this slide is ${(100 * dead).toFixed(0)}% empty in one block and has no photo to grow — the layout has to close the gap`);
+    }
     if (dead > 1 / 3 && photos_.length === 1) {
       const ph = photos_[0] as { bbox: [number, number, number, number] };
       const cb = clampBox(ph.bbox, W, H);
@@ -594,7 +592,14 @@ export async function renderFreeform(
       // strict floor still governs anything at reading size.
       const isLarge = el.size >= 40 || (el.size >= 30 && !!el.weight);
       const floor = isLarge ? 3 : 4.5;
-      const shieldable = el.shield !== false && coverage(b, idx) < 0.5;
+      // Christian's RULE 1 is "type on quiet ground, NEVER on a box". This gate used to read
+      // `coverage(b, idx) < 0.5` — if a rect already sat under the text it was assumed shielded
+      // and skipped. That is the rule inverted: a shape under the type is not proof of
+      // legibility, it is the thing that has to be measured. It exempted 18 text elements across
+      // the four type styles — every numbered medallion and the agency's own ring monogram, which
+      // shipped at 1.31:1 in Christian's deck. flatGroundUnder() already returns the covering
+      // shape's fill, so the measurement below handles a box correctly once it is allowed to run.
+      const shieldable = el.shield !== false;
       if (shieldable) {
         const pad = Math.round(el.size * 0.6);
         const probe = clampBox([b[0] - pad, b[1] - pad, b[2] + pad, b[3] + pad], W, H);
@@ -603,7 +608,7 @@ export async function renderFreeform(
           : contrastUnder(probe, el.colour)
             ?? (() => {
               // no artwork under this block — measure against the flat ground it really sits on
-              const g = hexLum(flatGroundUnder(probe, idx));
+              const g = hexLum(flatGroundUnder(b, idx));
               return { worst: ratio(hexLum(el.colour), g), groundLum: g };
             })();
         if (!measured) {
@@ -615,7 +620,7 @@ export async function renderFreeform(
           }
         } else if (measured.worst < floor) {
           // step 1 — recolour within the design's own palette: the spec offers the alternative
-          const flatLum = pillFill ? hexLum(pillFill) : ground ? null : hexLum(flatGroundUnder(probe, idx));
+          const flatLum = pillFill ? hexLum(pillFill) : ground ? null : hexLum(flatGroundUnder(b, idx));
           const measureWith = (c: string) => (pillFill || !ground)
             ? (flatLum === null ? null : { worst: ratio(hexLum(c), flatLum), groundLum: flatLum })
             : contrastUnder(probe, c);
@@ -647,7 +652,7 @@ export async function renderFreeform(
           // step 2 — a wide, soft directional gradient that reads as light, never a hard panel.
           // Direction and tone follow the ground: darken bright ground, lift dark ground.
           if (bestWorst < floor && (!onPhoto || pillFill)) {
-            console.warn(`[carousel] RULE 1: "${String(el.content).slice(0, 40).replace(/\n/g, ' ')}" reads ${bestWorst.toFixed(2)}:1 on ${pillFill ? 'its pill' : 'this ground'} and no colour available to the deck fixes it`);
+            console.warn(`[carousel] RULE 1: "${String(el.content).slice(0, 40).replace(/\n/g, ' ')}" reads ${bestWorst.toFixed(2)}:1 (floor ${floor}) in ${bestInk} on ${pillFill ?? flatGroundUnder(b, idx)} — the best ink the deck has`);
           }
           if (bestWorst < floor && onPhoto && !pillFill) {
             const inkIsLight = hexLum(inkColour) > 0.45;

@@ -58,25 +58,59 @@ function greedyLines(words: string[], font: string, size: number, maxW: number, 
   return lines;
 }
 
-/** RULE 6 — headline lines are BALANCED: the last line is never dramatically shorter than the
- *  lines above it. Greedy wrapping packs each line full and dumps the remainder on the last one
- *  ("…they need a / plan"). After the greedy pass we look for the narrowest width that still
- *  produces the SAME number of lines and re-wrap at that width: the same break count, spread
- *  evenly, and never a wider line than the caller asked for. This is the single line breaker in
- *  the carousel engine, so every style and every edition gets it from here. */
+/** RULE 6 — headline lines are BALANCED: no line dramatically shorter or longer than its
+ *  siblings. Greedy wrapping packs each line full and dumps the remainder on the last one
+ *  ("…they need a / plan"). The first repair searched for the narrowest width that still gave
+ *  the SAME line count — but bounding the WIDEST line puts no floor under the NARROWEST, so a
+ *  widow survives it. Christian's own cover proved it: "Simple steps to price your home right
+ *  instead of guessing" came out 674 / 728 / 661 / 381px — a one-word last line at 52% of the
+ *  widest, when 674 / 728 / 552 / 490 was available under the identical cap.
+ *
+ *  So the objective is now raggedness itself. Keep the greedy line COUNT (never add a line, and
+ *  never exceed the width the caller asked for), then choose the split that minimises the spread
+ *  between the widest and narrowest line, breaking ties on the squared deviation so the middle
+ *  lines even out too. Exact, by dynamic programming over the words — headlines are short enough
+ *  that this is free. This is the single line breaker in the carousel engine, so every style and
+ *  every edition gets it from here. */
 export function wrap(text: string, font: string, size: number, maxW: number, weight?: string): string {
   const words = text.replace(/\s+/g, " ").trim().split(" ");
   const lines = greedyLines(words, font, size, maxW, weight);
-  if (lines.length < 2) return lines.join("\n");
-  const widest = Math.max(...lines.map((l) => textWidth(font, l, size, weight)));
-  let lo = Math.max(...words.map((w) => textWidth(font, w, size, weight))), hi = widest, best = lines;
-  // ~8 probes is plenty at these widths and keeps the cost invisible next to rendering
-  for (let i = 0; i < 8 && hi - lo > 4; i++) {
-    const mid = (lo + hi) / 2;
-    const cand = greedyLines(words, font, size, mid, weight);
-    if (cand.length <= lines.length) { best = cand; hi = mid; } else lo = mid;
-  }
-  return best.join("\n");
+  const K = lines.length;
+  if (K < 2) return lines.join("\n");
+
+  const N = words.length;
+  const widthOf = (i: number, j: number) => textWidth(font, words.slice(i, j).join(" "), size, weight);
+
+  // Spread (widest minus narrowest) has no optimal substructure, so a per-cell DP can discard the
+  // prefix the global optimum needs. A headline is short enough to settle exactly: the number of
+  // K-line splits is C(N-1, K-1), a few hundred at these lengths. Past the guard the greedy split
+  // stands rather than spending real time on one cover line.
+  let combos = 1;
+  for (let t = 0; t < K - 1; t++) combos = (combos * (N - 1 - t)) / (t + 1);
+  if (!isFinite(combos) || combos > 20000) return lines.join("\n");
+
+  let best: string[] | null = null, bestSpread = Infinity, bestSq = Infinity;
+  const cuts: number[] = [];
+  const walk = (from: number, remaining: number) => {
+    if (remaining === 0) {
+      const bounds = [0, ...cuts, N];
+      let mx = 0, mn = Infinity, sq = 0;
+      for (let k = 0; k < K; k++) {
+        const wd = widthOf(bounds[k], bounds[k + 1]);
+        if (wd > maxW && bounds[k + 1] - bounds[k] > 1) return;   // never wider than the caller asked
+        mx = Math.max(mx, wd); mn = Math.min(mn, wd); sq += wd * wd;
+      }
+      const spread = mx - mn;
+      if (spread < bestSpread || (spread === bestSpread && sq < bestSq)) {
+        bestSpread = spread; bestSq = sq;
+        best = Array.from({ length: K }, (_, k) => words.slice(bounds[k], bounds[k + 1]).join(" "));
+      }
+      return;
+    }
+    for (let i = from; i <= N - remaining; i++) { cuts.push(i); walk(i + 1, remaining - 1); cuts.pop(); }
+  };
+  walk(1, K - 1);
+  return (best ?? lines).join("\n");
 }
 
 // ── CHROME i18n (Christian 2026-07-16: "carousels chooseable in all languages") ─────────────────

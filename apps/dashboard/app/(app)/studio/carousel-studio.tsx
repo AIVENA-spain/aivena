@@ -79,8 +79,10 @@ function tasteScore(styleKey: string, prefs: Record<string, string> | null): num
 const EXAMPLE_COUNTS: Record<string, number> = {
   // tips styles: FULL decks rendered by the production engine (Christian 2026-08-28: "i want
   // all the slides in examples not just 3")
+  // sereno = Christian's own reviewed deck (2026-08-30), the first example replaced under the
+  // rules pass: 6 slides, hero + 4 tips + closing, in his brand colours
   acuarela: 8, arcilla: 8, bodegon: 8, bordado: 8, cartel: 7, editorial: 7, encalada: 7,
-  litoral: 8, mercado: 8, papel: 8, pueblo: 8, salitre: 8, sereno: 7, tinta: 8,
+  litoral: 8, mercado: 8, papel: 8, pueblo: 8, salitre: 8, sereno: 6, tinta: 8,
   // listing styles (parked out of the UI): partial sample sets remain
   brisa: 2, cuarteto: 2, horizonte: 3, marea: 2, plano: 3, portada: 3, recorte: 2, riviera: 2, ventana: 2,
 };

@@ -588,6 +588,12 @@ export async function renderFreeform(
       // unreadable on a flat ground (navy on navy) as on a busy photo. Over artwork the
       // escalation may reach a gradient; on flat ground the only honest fix is the palette's
       // other ink, so it stops after the recolour.
+      // WCAG sets 4.5:1 for body copy and 3:1 for LARGE text — a distinction the first pass
+      // ignored, so a 60px headline in an agency's own brand green (4.37:1 on cream) was
+      // replaced with near-black over 0.13 of a ratio point. Big type is legible at 3:1; the
+      // strict floor still governs anything at reading size.
+      const isLarge = el.size >= 40 || (el.size >= 30 && !!el.weight);
+      const floor = isLarge ? 3 : 4.5;
       const shieldable = el.shield !== false && coverage(b, idx) < 0.5;
       if (shieldable) {
         const pad = Math.round(el.size * 0.6);
@@ -607,7 +613,7 @@ export async function renderFreeform(
             const gb = clampBox([b[0] - padX, b[1] - padY, b[2] + padX, b[3] + padY * 0.6], W, H);
             overlaySvg += `<rect x="${gb[0]}" y="${gb[1]}" width="${boxW(gb)}" height="${boxH(gb)}" fill="url(#${gradient("#0B0F14", "up", 0.55)})"/>`;
           }
-        } else if (measured.worst < 4.5) {
+        } else if (measured.worst < floor) {
           // step 1 — recolour within the design's own palette: the spec offers the alternative
           const flatLum = pillFill ? hexLum(pillFill) : ground ? null : hexLum(flatGroundUnder(probe, idx));
           const measureWith = (c: string) => (pillFill || !ground)
@@ -631,7 +637,7 @@ export async function renderFreeform(
             const m = measureWith(c);
             if (m && m.worst > bestWorst) { bestWorst = m.worst; bestInk = c; }
           }
-          if (bestWorst < 4.5) {
+          if (bestWorst < floor) {
             for (const c of NEUTRAL_INKS) {
               const m = measureWith(c);
               if (m && m.worst > bestWorst) { bestWorst = m.worst; bestInk = c; }
@@ -640,10 +646,10 @@ export async function renderFreeform(
           inkColour = bestInk;
           // step 2 — a wide, soft directional gradient that reads as light, never a hard panel.
           // Direction and tone follow the ground: darken bright ground, lift dark ground.
-          if (bestWorst < 4.5 && (!onPhoto || pillFill)) {
+          if (bestWorst < floor && (!onPhoto || pillFill)) {
             console.warn(`[carousel] RULE 1: "${String(el.content).slice(0, 40).replace(/\n/g, ' ')}" reads ${bestWorst.toFixed(2)}:1 on ${pillFill ? 'its pill' : 'this ground'} and no colour available to the deck fixes it`);
           }
-          if (bestWorst < 4.5 && onPhoto && !pillFill) {
+          if (bestWorst < floor && onPhoto && !pillFill) {
             const inkIsLight = hexLum(inkColour) > 0.45;
             const tone = inkIsLight ? "#0B0F14" : "#F6F2E9";
             const padY = Math.round(el.size * 0.5);
@@ -653,13 +659,13 @@ export async function renderFreeform(
             const CAP = 0.88;
             const at = (peak: number) => contrastUnderVeil(probe, inkColour, tone, peak, "flat", [0, y0, W, y1]);
             let chosen = CAP;
-            if ((at(CAP) ?? 0) < 4.5) {
+            if ((at(CAP) ?? 0) < floor) {
               console.warn(`[carousel] RULE 1: "${String(el.content).slice(0, 40).replace(/\n/g, ' ')}" still reads ${((at(CAP) ?? 0)).toFixed(2)}:1 on this artwork at the strongest veil — the art brief's quiet zone did not hold`);
             } else {
               let lo = 0, hi = CAP;
               for (let i = 0; i < 7; i++) {
                 const mid = (lo + hi) / 2;
-                if ((at(mid) ?? 0) >= 4.5) { chosen = mid; hi = mid; } else lo = mid;
+                if ((at(mid) ?? 0) >= floor) { chosen = mid; hi = mid; } else lo = mid;
               }
             }
             const band = softBand(tone, chosen, y0, y1);

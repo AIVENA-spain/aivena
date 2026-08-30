@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Hand, Loader2, MessageSquare, PhoneCall, Undo2 } from "lucide-react";
 
@@ -34,6 +35,7 @@ import {
  */
 export function HandoffQueue({ agencyId }: { agencyId: string }) {
   const [answering, setAnswering] = useState<string | null>(null);
+  const router = useRouter();
   const t = useTranslations("handoffs");
   const [rows, setRows] = useState<HandoffRow[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
@@ -123,6 +125,30 @@ export function HandoffQueue({ agencyId }: { agencyId: string }) {
       if (disposed) return;
       channel
         .on("broadcast", { event: "handoff_requested" }, () => void refresh(true))
+        // An office question is NOT a handoff — Amanda keeps the conversation,
+        // she just needs one fact. It has no row in this queue, so it gets its
+        // own chime and notification pointing at Tasks. Before this it filed
+        // silently and the agent only found it by wandering onto that page
+        // (Christian 2026-08-30: "i havent gotten anything notification").
+        .on("broadcast", { event: "question_filed" }, (msg) => {
+          const p = (msg?.payload ?? {}) as { lead_name?: string; question?: string };
+          chime();
+          try {
+            if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+              const n = new Notification(
+                t("questionNotifTitle", { name: p.lead_name || t("unknownVisitor") }),
+                { body: p.question || t("questionNotifBody"), tag: "amanda-question" },
+              );
+              n.onclick = () => {
+                window.focus();
+                router.push("/tasks");
+              };
+            }
+          } catch {
+            /* notifications are best-effort */
+          }
+          router.refresh();   // repaint the Tasks badge in the sidebar
+        })
         .subscribe();
     });
     const poll = setInterval(() => void refresh(true), 60_000);

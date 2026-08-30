@@ -1552,7 +1552,9 @@
     "answerHandsBack": "Amanda jatkaa keskustelua tämän jälkeen.",
     "cancel": "Peruuta",
     "aboutRefs": "Koskee: {refs}",
-    "amandaWanted": "Amanda halusi lähettää"
+    "amandaWanted": "Amanda halusi lähettää",
+    "questionNotifTitle": "{name} — toimiston pitää vastata johonkin",
+    "questionNotifBody": "Amanda esitti toimistolle kysymyksen. Avaa Tehtävät vastataksesi."
   },
   "conversationMode": {
     "saving": "Tallennetaan…",

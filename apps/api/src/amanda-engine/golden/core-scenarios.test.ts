@@ -10,6 +10,7 @@ import {
   FakeBackends, ScriptedModel, makeDeps, baseContext, inbound, pending,
   textResponse, toolResponse, CHALET,
 } from './harness';
+import { buildSystemPrompt } from '../prompt';
 
 const WARM_REPLY = 'It has a lovely private pool and a big terrace. Would you like to see it in person?';
 
@@ -663,5 +664,28 @@ describe('golden/core — answers that MUST reach the buyer', () => {
     for (const line of Object.values(GATE_FALLBACK)) {
       expect(line.toLowerCase()).not.toMatch(/office|oficina|büro|kontor|bureau|ufficio|escritório|biura|toimisto|офис/);
     }
+  });
+});
+
+/**
+ * Christian 2026-08-30, on the first genuinely good conversation: "she offered
+ * to send pictures again ... the last message was pretty repetitive."
+ *
+ * Both are prompt laws, so the machine cannot enforce them — but the prompt
+ * TEXT can be pinned. A future edit that quietly drops either rule fails here.
+ */
+describe('golden/core — prompt laws that survived a live complaint', () => {
+  it('the photo ban is absolute, not a "do not promise" that leaves offering open', () => {
+    const p = buildSystemPrompt({ agencyName: 'Test', leadLanguage: 'nb' } as never);
+    expect(p).toContain('PHOTOS — ABSOLUTE');
+    expect(p).toMatch(/never offer, suggest, or ask whether they would like to see pictures/i);
+    // The old wording is what the model routed around — it must not come back.
+    expect(p).not.toMatch(/do NOT promise to send photos yourself/);
+  });
+
+  it('the anti-padding law is present and names the real failure', () => {
+    const p = buildSystemPrompt({ agencyName: 'Test', leadLanguage: 'nb' } as never);
+    expect(p).toContain('NEVER PAD');
+    expect(p).toMatch(/ONE fact dressed up three times/);
   });
 });

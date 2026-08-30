@@ -1552,7 +1552,9 @@
     "answerHandsBack": "Amanda przejmie rozmowę z powrotem.",
     "cancel": "Anuluj",
     "aboutRefs": "Dotyczy: {refs}",
-    "amandaWanted": "Amanda chciała wysłać"
+    "amandaWanted": "Amanda chciała wysłać",
+    "questionNotifTitle": "{name} — biuro musi na coś odpowiedzieć",
+    "questionNotifBody": "Amanda zadała biuru pytanie. Otwórz Zadania, aby odpowiedzieć."
   },
   "conversationMode": {
     "saving": "Zapisywanie…",

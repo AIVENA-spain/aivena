@@ -395,7 +395,17 @@ export async function editPlan(plan: CarouselPlan, topic: string, language = 'es
   // RULE 4 — the deterministic detector names the exact sentences that assert an absolute about
   // a regulated subject, so the editor verifies or hedges THOSE rather than re-reading blind.
   const flagged = riskyClaims(plan);
-  const prompt = `You are the skeptical EDITOR at a real-estate agency on the Spanish coast. The reader of this Instagram carousel is a potential client — every slide must make sense on first read, teach something useful, and sound like an agent they can trust. Review the plan below and correct ONLY what fails.
+  // Christian's 2026-08-30 English deck came back with recap_title translated INTO Spanish, and
+  // the editor's own note said it had "corrected" it. The prompt casts the editor as working on
+  // the Spanish coast and never once states the deck's language, so with nothing to anchor to it
+  // inferred Spanish and rewrote a field. The deck's language is not the editor's to revisit.
+  const LANGS: Record<string, string> = { es: 'Spanish', en: 'English', de: 'German', fr: 'French', nl: 'Dutch', sv: 'Swedish', no: 'Norwegian', da: 'Danish', fi: 'Finnish', pl: 'Polish', ru: 'Russian', it: 'Italian', pt: 'Portuguese' };
+  const deckLang = LANGS[language] ?? 'Spanish';
+  const prompt = `You are the skeptical EDITOR at a real-estate agency on the Spanish coast.
+
+THIS DECK IS WRITTEN IN ${deckLang.toUpperCase()}. Every field you return must stay in ${deckLang}. The
+language was chosen by the agent, not by you — never translate a field, and never "correct" one that
+looks out of place to you. If a field is already in ${deckLang}, leave its language alone. The reader of this Instagram carousel is a potential client — every slide must make sense on first read, teach something useful, and sound like an agent they can trust. Review the plan below and correct ONLY what fails.
 
 POST TOPIC: "${topic}"${flagged.length ? `
 

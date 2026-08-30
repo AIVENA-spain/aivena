@@ -130,13 +130,23 @@ const CLAUSE_STARTERS = [
   'oni', 'ono', 'to', 'my', 'ty',
   'они', 'это', 'мы', 'вы', 'он', 'она', 'оно',
 ];
+// A subordinate opener makes the comma structural, not a splice: "If you want a quick sale, you
+// need a realistic price" is one correct sentence. Without this the wider sweep below would
+// convert it, and a gate that damages good copy is worse than one that misses bad copy.
+const SUBORDINATE_OPENER = /^(if|when|while|because|since|after|before|although|though|unless|until|whenever|wherever|as|si|cuando|mientras|porque|aunque|hasta|wenn|wenn|weil|obwohl|während|bevor|nachdem|falls|quand|lorsque|parce|bien|si|als|omdat|terwijl|hoewel|voordat|quando|mentre|perché|sebbene|quando|porque|embora|när|medan|eftersom|när|fordi|hvis|mens|selv|jos|kun|koska|vaikka|jeśli|kiedy|ponieważ|chociaż|если|когда|потому|хотя)\b/i;
+
 export function oneSentence(text: string): string {
   const t = (text ?? '').trim();
   if (!t) return t;
-  // only the FIRST comma splice matters — a headline is short by construction
-  return t.replace(/,\s+([^\s,]+)/, (m, next: string) => {
-    const w = String(next).toLowerCase().replace(/[^\p{L}]/gu, '');
-    return CLAUSE_STARTERS.includes(w) ? ` — ${next}` : m;
+  // EVERY comma, not only the first. Checking one comma meant the module's own teaching example
+  // of a splice — "In a new place, buyers hesitate, they need a plan" — passed untouched, because
+  // the first comma is not the splice. Subordinate-opener lines are left alone entirely.
+  if (SUBORDINATE_OPENER.test(t)) return t;
+  return t.replace(/,(\s+)([^\s,]+)/g, (m, gap: string, next: string) => {
+    // "you'll" must truncate AT the apostrophe, not concatenate across it — stripping every
+    // non-letter turned it into "youll", so no contracted pronoun was ever recognised.
+    const w = String(next).toLowerCase().split(/['\u2019]/)[0].replace(/[^\p{L}]/gu, '');
+    return CLAUSE_STARTERS.includes(w) ? ` —${gap}${next}` : m;
   });
 }
 
@@ -688,7 +698,18 @@ Submit with the submit_remix tool.`;
       hook_title: z.string().min(1).max(90),
       swipe_cue: z.string().min(1).max(18),
     }).safeParse(input);
-    return out.success ? { ...out.data, hook_title: oneSentence(out.data.hook_title) } : null;
+    if (!out.success) return null;
+    const hook = oneSentence(out.data.hook_title);
+    // "Try a new angle" writes a brand-new cover and, until now, nothing checked it. The normal
+    // path puts every hook through planIssues (RULE 4's price/percentage ban and the weak-opener
+    // ban) and through riskyClaims -> the editor's verification block. The remix path has no
+    // editor pass at all, so a remixed cover could assert a price, a percentage, or a flat legal
+    // absolute — "Without a Spanish bank account you cannot sell your home" — with no gate
+    // between the model and the slide. A cover is the most-read line in the deck; the false ones
+    // are rejected here rather than shipped, and the route already tells the agent to try again.
+    if (BANNED.test(hook) || WEAK_HOOK.test(hook.trim())) return null;
+    if (riskyClaims({ ...plan, hook_title: hook } as CarouselPlan).length) return null;
+    return { ...out.data, hook_title: hook };
   } catch {
     return null;
   }

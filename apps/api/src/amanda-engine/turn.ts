@@ -232,7 +232,16 @@ export async function runTurn(
     // The buyer's own message grounds NUMBERS only (echoing "under 500 000€"
     // back is mirroring, not invention — live demo 2026-08-28); it is never
     // an "office answer" to the verifier and never earns long-form.
-    const g = await runGates(text, loop.toolEvents, deps.verifier, authoritative, [inbound.text]);
+    // What Amanda and the agency have ALREADY said to this buyer. Those turns
+    // passed these gates before they were sent and are sitting on the buyer's
+    // phone, so restating them is continuity — not a fact appearing from
+    // nowhere. Without this, answering a question a SECOND time (no tool calls,
+    // because she already knows) is rejected as ungrounded (live 2026-08-30).
+    const alreadyTold = ctx.recentTurns
+      .filter((t) => t.role === 'amanda' || t.role === 'agent')
+      .map((t) => t.text)
+      .filter((t) => t.trim().length > 0);
+    const g = await runGates(text, loop.toolEvents, deps.verifier, authoritative, [inbound.text], alreadyTold);
     return [...v.violations, ...g.failures];
   };
   let failures = await judge(draft);

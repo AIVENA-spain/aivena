@@ -69,7 +69,8 @@ async function loadWorld(row: QueueRow): Promise<LoadedWorld | { skip: string }>
     if (agencyMode === 'off') return { skip: 'amanda_mode_off' };
 
     const leadRows = await tx.execute(sql`
-      SELECT full_name, phone, language, opt_in_status FROM leads WHERE id = ${row.lead_id}::uuid LIMIT 1
+      SELECT full_name, phone, language, opt_in_status, human_claimed_at
+        FROM leads WHERE id = ${row.lead_id}::uuid LIMIT 1
     `);
     const lead = (leadRows as unknown as Array<Record<string, unknown>>)[0];
     if (!lead) return { skip: 'lead_missing' };
@@ -145,7 +146,16 @@ async function loadWorld(row: QueueRow): Promise<LoadedWorld | { skip: string }>
       leadPhone: (lead.phone as string) ?? null,
       leadLanguage: (lead.language as string) || 'en',
       leadState,
-      aiMuted: Boolean(conv.ai_muted_at) || Boolean(conv.human_claimed_at),
+      // THREE claims, not two. The handoff queue's "I'll take it" writes
+      // leads.human_claimed_at, and the dashboard then tells the agent "the
+      // assistant is paused for these clients — a person must reply". The
+      // engine only ever read the CONVERSATION flags, so that promise was
+      // false: Amanda would keep answering over a colleague who had taken the
+      // conversation (found live 2026-08-30). Any of the three pauses her.
+      aiMuted:
+        Boolean(conv.ai_muted_at) ||
+        Boolean(conv.human_claimed_at) ||
+        Boolean(lead.human_claimed_at),
       optedOut: lead.opt_in_status === 'opted_out',
       recentTurns: messages.map((m) => ({
         // Human-sent outbound (operator approvals carry sent_by) is 'agent' —

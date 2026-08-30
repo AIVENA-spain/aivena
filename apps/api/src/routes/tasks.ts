@@ -398,6 +398,29 @@ route.post('/:id/dismiss', async (c) => {
         ${operatorEmail}
       )
     `);
+    // Resolving the LAST open review task must also clear the red "Needs a
+    // human" card. Christian 2026-08-30 resolved all three tasks and the card
+    // stayed up, because leads.needs_human_since is set by the engine on
+    // escalation and only ever cleared by release_human_handoff — nothing in
+    // the Tasks page touched it. Own statement, best-effort: a failure here
+    // must never turn a successful resolve into an error.
+    try {
+      await tx.execute(sql`
+        UPDATE leads l
+           SET needs_human_since = NULL, updated_at = now()
+         WHERE l.id = (SELECT lead_id FROM dashboard_tasks WHERE id = ${taskId}::uuid)
+           AND l.needs_human_since IS NOT NULL
+           AND NOT EXISTS (
+             SELECT 1 FROM dashboard_tasks t
+              WHERE t.lead_id = l.id
+                AND t.task_type = 'human_review_needed'
+                AND t.status = 'pending'
+                AND t.id <> ${taskId}::uuid
+           )
+      `);
+    } catch (clearErr) {
+      console.error('[tasks/dismiss] needs_human clear skipped:', clearErr);
+    }
     return c.json({ ok: true });
   } catch (err) {
     const pg = asPgError(err);

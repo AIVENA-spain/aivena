@@ -363,6 +363,10 @@ function shapeStatus(r: GenRow) {
     carousel_style: typeof (meta as any)?.carousel_style === 'string' ? (meta as any).carousel_style : undefined,
     per_slide_art: (meta as any)?.per_slide_art === true ? true : undefined,
     artwork_source: typeof (meta as any)?.artwork_source === 'string' ? (meta as any).artwork_source : undefined,
+    // which slides this deck actually contains — the edit form must not offer fields for an
+    // intro or a recap the deck does not have (RULE 3 made both opt-in)
+    include_context: (meta as any)?.include_context === true,
+    include_recap: (meta as any)?.include_recap === true,
     brand_navy: typeof (r as any).raw_request?.brand_navy === 'string' ? (r as any).raw_request.brand_navy : undefined,
     brand_gold: typeof (r as any).raw_request?.brand_gold === 'string' ? (r as any).raw_request.brand_gold : undefined,
     // the colours the deck actually rendered with (override ?? edition ?? brand) — seeds the pickers

@@ -179,6 +179,9 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
   const [resultStyle, setResultStyle] = useState<string>("editorial");
   const [resultPerSlideArt, setResultPerSlideArt] = useState(false);
   const [resultArtSource, setResultArtSource] = useState<string>("");
+  // RULE 3: a deck only has an intro / recap when it was asked for — the editor must match
+  const [hasIntro, setHasIntro] = useState(false);
+  const [hasRecap, setHasRecap] = useState(false);
   const [remixing, setRemixing] = useState<"" | "hook" | "style" | "layout">("");
   const [remixed, setRemixed] = useState(false);
   // text editing
@@ -224,6 +227,8 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
     if (typeof s.carousel_style === "string") setResultStyle(s.carousel_style);
     setResultPerSlideArt(s.per_slide_art === true);
     setResultArtSource(typeof s.artwork_source === "string" ? s.artwork_source : "");
+    setHasIntro(s.include_context === true);
+    setHasRecap(s.include_recap === true);
     // open the pickers on the colours the deck ACTUALLY rendered with (explicit override →
     // render colours stored at creation → generic default only for pre-fix decks)
     setResColMain(typeof s.brand_navy === "string" ? (s.brand_navy as string) : typeof s.render_navy === "string" ? (s.render_navy as string) : "#1a2b4a");
@@ -729,6 +734,7 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
                   <textarea value={draft.quote_hook} onChange={(e) => setDraft({ ...draft, quote_hook: e.target.value })} className={field} maxLength={120} />
                 </div>
               )}
+              {hasIntro && (<>
               <div>
                 <label className={label}>Slide 2 — headline (works on its own — some people see this slide first)</label>
                 <input value={draft.slide2_title} onChange={(e) => setDraft({ ...draft, slide2_title: e.target.value })} className={field} maxLength={80} />
@@ -739,6 +745,7 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
                   onChange={(e) => setDraft(draft.type === "quote" ? { ...draft, quote_context: e.target.value } : { ...draft, slide2_body: e.target.value })}
                   className={field} maxLength={220} />
               </div>
+              </>)}
               {draft.type === "tips" && draft.tips.map((t, i) => (
                 <div key={i} className="flex flex-col gap-2 rounded-lg border border-neutral-200 p-3 dark:border-neutral-700">
                   <span className="text-xs font-semibold text-neutral-400">Point {i + 1}</span>
@@ -752,6 +759,7 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
               ))}
               {draft.type === "tips" && (
                 <>
+              {hasRecap && (<>
                   <div>
                     <label className={label}>Recap slide — heading</label>
                     <input value={draft.recap_title} onChange={(e) => setDraft({ ...draft, recap_title: e.target.value })} className={field} maxLength={60} />
@@ -760,6 +768,7 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
                     <label className={label}>Recap slide — save line</label>
                     <input value={draft.save_line} onChange={(e) => setDraft({ ...draft, save_line: e.target.value })} className={field} maxLength={70} />
                   </div>
+              </>)}
                 </>
               )}
               {draft.type === "quote" && (
@@ -786,7 +795,7 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
                     every other word on the slides */}
                 <label className={label}>Closing slide — what your agency does</label>
                 <input value={draft.agency_line ?? ""} onChange={(e) => setDraft({ ...draft, agency_line: e.target.value })} className={field} maxLength={170}
-                  placeholder="We help families find homes near the international schools along this coast." />
+                  placeholder="Empty until your brand kit says what you do — we never invent it" />
               </div>
               <div>
                 <label className={label}>Closing slide — what you ask people to do</label>

@@ -1550,7 +1550,9 @@
     "sendAnswer": "Lähetä vastaus",
     "answerPlaceholder": "Vastaa henkilölle {name} suoraan — tämä menee WhatsAppiin.",
     "answerHandsBack": "Amanda jatkaa keskustelua tämän jälkeen.",
-    "cancel": "Peruuta"
+    "cancel": "Peruuta",
+    "aboutRefs": "Koskee: {refs}",
+    "amandaWanted": "Amanda halusi lähettää"
   },
   "conversationMode": {
     "saving": "Tallennetaan…",

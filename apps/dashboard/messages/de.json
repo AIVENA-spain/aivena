@@ -1550,7 +1550,9 @@
     "sendAnswer": "Antwort senden",
     "answerPlaceholder": "Antworten Sie {name} direkt — das geht per WhatsApp an sie.",
     "answerHandsBack": "Amanda übernimmt das Gespräch danach wieder.",
-    "cancel": "Abbrechen"
+    "cancel": "Abbrechen",
+    "aboutRefs": "Betrifft: {refs}",
+    "amandaWanted": "Amanda wollte senden"
   },
   "conversationMode": {
     "saving": "Wird gespeichert…",

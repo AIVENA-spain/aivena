@@ -595,3 +595,73 @@ describe('golden/core — mode dial edges', () => {
     expect(r.outcome).toBe('sent');
   });
 });
+
+/**
+ * THE SUITE'S BLIND SPOT, and why none of the 44 scenarios above caught a
+ * single one of this week's four live failures.
+ *
+ * Almost every scenario asks "is a BAD draft blocked?". Not one asked "is a
+ * GOOD draft SENT?". Every live failure was the second kind — a correct,
+ * researched answer destroyed on its way out, which Christian experienced as
+ * Amanda being stupid and evasive. He named the risk exactly (2026-08-30):
+ * "im just afraid that we make progress in this spesific conversation, but that
+ * in another scenario with different questions she would break."
+ *
+ * These are the four real failures, frozen. A gate that starts eating correct
+ * answers again fails here first, not on his phone.
+ */
+describe('golden/core — answers that MUST reach the buyer', () => {
+  const school = 'The Norwegian school sits right in the middle of Ciudad Quesada, about ten minutes from the beach.';
+
+  it('L1 (2026-08-29): a researched answer a little over the short cap is TRIMMED and sent, never escalated', async () => {
+    const backends = new FakeBackends();
+    const long = `${school} It is a popular spot with Scandinavian families, and there are homes nearby that would suit you well. Shall I show you a couple?`;
+    const model = new ScriptedModel([
+      toolResponse('research_area', { area: 'Ciudad Quesada' }),
+      textResponse(long),
+      textResponse(long),
+    ]);
+    const { deps, journal } = makeDeps(model, backends);
+    deps.verifier = async () => true;
+    const r = await runTurn('full', baseContext(), inbound('Is there anything near the Norwegian school?'), null, deps);
+    expect(r.outcome).toBe('sent');
+    expect(journal.sent[0]).not.toBe(GATE_FALLBACK.en);
+    expect(journal.sent[0]).toContain('Ciudad Quesada');
+  });
+
+  it('L2 (2026-08-30): re-answering with NO tool calls is grounded by what she already told this buyer', async () => {
+    const backends = new FakeBackends();
+    const ctx = baseContext();
+    ctx.recentTurns = [
+      { role: 'buyer', text: 'Anything near the Norwegian school?', at: '2026-08-29T20:00:00Z' },
+      { role: 'amanda', text: `${school} A three-bed townhouse there is 220 000 EUR.`, at: '2026-08-29T20:01:00Z' },
+    ];
+    const model = new ScriptedModel([textResponse('Yes — that one is in Quesada, close to the school, at 220 000 EUR.')]);
+    const { deps, journal } = makeDeps(model, backends);
+    deps.verifier = async () => true;
+    const r = await runTurn('full', ctx, inbound('Is the house in Quesada, near the school?'), null, deps);
+    expect(r.outcome).toBe('sent');
+    expect(journal.sent[0]).not.toBe(GATE_FALLBACK.en);
+  });
+
+  it('L3: a number she NEVER said is still blocked, even with history present', async () => {
+    const backends = new FakeBackends();
+    const ctx = baseContext();
+    ctx.recentTurns = [{ role: 'amanda', text: 'That townhouse is 220 000 EUR.', at: '2026-08-29T20:01:00Z' }];
+    const model = new ScriptedModel([
+      textResponse('There is also one at 149 000 EUR.'),
+      textResponse('There is also one at 149 000 EUR nearby.'),
+    ]);
+    const { deps, journal } = makeDeps(model, backends);
+    deps.verifier = async () => true;
+    const r = await runTurn('full', ctx, inbound('Anything cheaper?'), null, deps);
+    expect(r.outcome).toBe('escalated');
+    expect(journal.sent).toEqual([GATE_FALLBACK.en]);
+  });
+
+  it('L4 (2026-08-30): the dead-air line never blames the office — that manufactured fake agent errands', async () => {
+    for (const line of Object.values(GATE_FALLBACK)) {
+      expect(line.toLowerCase()).not.toMatch(/office|oficina|büro|kontor|bureau|ufficio|escritório|biura|toimisto|офис/);
+    }
+  });
+});

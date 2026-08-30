@@ -1550,7 +1550,9 @@
     "sendAnswer": "Отправить ответ",
     "answerPlaceholder": "Ответьте {name} напрямую — это уйдёт в WhatsApp.",
     "answerHandsBack": "После этого Amanda снова ведёт диалог.",
-    "cancel": "Отмена"
+    "cancel": "Отмена",
+    "aboutRefs": "Об объектах: {refs}",
+    "amandaWanted": "Amanda хотела отправить"
   },
   "conversationMode": {
     "saving": "Сохранение…",

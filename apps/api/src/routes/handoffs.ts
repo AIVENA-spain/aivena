@@ -27,6 +27,37 @@ route.get('/', async (c) => {
   try {
     const result = await tx.execute(sql`SELECT * FROM public.get_human_handoff_queue()`);
     const rows = result as unknown as Array<Record<string, unknown>>;
+    // Enrich with WHY Amanda stopped (Christian 2026-08-30: the card "just says
+    // exactly what i wrote from martes phone ... even if a agent wanted to
+    // answer that they dont know which proeprty its about either"). The open
+    // review task already holds the buyer's question, the properties in play
+    // and the reply Amanda wanted to send; carrying them here turns the card
+    // from a nudge into something answerable in one read. Read-only, no
+    // migration, and a failure degrades to the plain card.
+    try {
+      const ctxRows = (await tx.execute(sql`
+        SELECT DISTINCT ON (lead_id)
+               lead_id,
+               raw_payload->>'buyer_asked'   AS buyer_asked,
+               raw_payload->>'blocked_draft' AS blocked_draft,
+               raw_payload->'property_refs'  AS property_refs
+          FROM dashboard_tasks
+         WHERE agency_id = current_setting('app.current_agency_id', true)
+           AND task_type = 'human_review_needed'
+           AND status = 'pending'
+         ORDER BY lead_id, created_at DESC
+      `)) as unknown as Array<Record<string, unknown>>;
+      const byLead = new Map(ctxRows.map((r) => [String(r.lead_id), r]));
+      for (const r of rows) {
+        const extra = byLead.get(String(r.lead_id));
+        if (!extra) continue;
+        r.buyer_asked = extra.buyer_asked ?? null;
+        r.blocked_draft = extra.blocked_draft ?? null;
+        r.property_refs = extra.property_refs ?? null;
+      }
+    } catch (ctxErr) {
+      console.error('[handoffs/list] context enrich skipped:', ctxErr);
+    }
     return c.json({ ok: true, data: rows });
   } catch (err) {
     console.error('[handoffs/list] read failed:', err);

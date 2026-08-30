@@ -1550,7 +1550,9 @@
     "sendAnswer": "Skicka svar",
     "answerPlaceholder": "Svara {name} direkt — det går till dem på WhatsApp.",
     "answerHandsBack": "Amanda tar över samtalet igen efteråt.",
-    "cancel": "Avbryt"
+    "cancel": "Avbryt",
+    "aboutRefs": "Gäller: {refs}",
+    "amandaWanted": "Amanda ville skicka"
   },
   "conversationMode": {
     "saving": "Sparar…",

@@ -1550,7 +1550,9 @@
     "sendAnswer": "Envoyer la réponse",
     "answerPlaceholder": "Répondez directement à {name} — cela part sur WhatsApp.",
     "answerHandsBack": "Amanda reprend la conversation ensuite.",
-    "cancel": "Annuler"
+    "cancel": "Annuler",
+    "aboutRefs": "Concerne : {refs}",
+    "amandaWanted": "Amanda voulait envoyer"
   },
   "conversationMode": {
     "saving": "Enregistrement…",

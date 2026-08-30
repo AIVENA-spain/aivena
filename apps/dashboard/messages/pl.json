@@ -1550,7 +1550,9 @@
     "sendAnswer": "Wyślij odpowiedź",
     "answerPlaceholder": "Odpowiedz {name} bezpośrednio — to trafi do niej na WhatsAppa.",
     "answerHandsBack": "Amanda przejmie rozmowę z powrotem.",
-    "cancel": "Anuluj"
+    "cancel": "Anuluj",
+    "aboutRefs": "Dotyczy: {refs}",
+    "amandaWanted": "Amanda chciała wysłać"
   },
   "conversationMode": {
     "saving": "Zapisywanie…",

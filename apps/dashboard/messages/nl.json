@@ -1550,7 +1550,9 @@
     "sendAnswer": "Antwoord versturen",
     "answerPlaceholder": "Antwoord {name} direct — dit gaat via WhatsApp naar hen.",
     "answerHandsBack": "Amanda pakt het gesprek daarna weer op.",
-    "cancel": "Annuleren"
+    "cancel": "Annuleren",
+    "aboutRefs": "Betreft: {refs}",
+    "amandaWanted": "Amanda wilde versturen"
   },
   "conversationMode": {
     "saving": "Opslaan…",

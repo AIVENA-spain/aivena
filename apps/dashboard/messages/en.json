@@ -1550,7 +1550,9 @@
     "sendAnswer": "Send answer",
     "answerPlaceholder": "Answer {name} directly — this goes straight to them on WhatsApp.",
     "answerHandsBack": "Amanda picks the conversation back up after this.",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "aboutRefs": "About: {refs}",
+    "amandaWanted": "Amanda wanted to send"
   },
   "conversationMode": {
     "saving": "Saving…",

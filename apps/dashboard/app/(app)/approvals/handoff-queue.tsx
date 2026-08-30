@@ -219,6 +219,19 @@ export function HandoffQueue({ agencyId }: { agencyId: string }) {
                 {r.last_message ? (
                   <p className="mt-0.5 text-[12px] leading-snug text-foreground">“{r.last_message}”</p>
                 ) : null}
+                {r.property_refs && r.property_refs.length > 0 ? (
+                  <p className="mt-0.5 text-[11.5px] text-muted-foreground">
+                    {t("aboutRefs", { refs: r.property_refs.join(", ") })}
+                  </p>
+                ) : null}
+                {r.blocked_draft ? (
+                  <div className="mt-1.5 rounded-md border-l-2 border-brand/50 bg-brand-soft/40 px-2.5 py-1.5">
+                    <p className="text-[10.5px] font-semibold uppercase tracking-wide text-brand">
+                      {t("amandaWanted")}
+                    </p>
+                    <p className="mt-0.5 text-[12px] leading-snug text-foreground">{r.blocked_draft}</p>
+                  </div>
+                ) : null}
                 {claimed ? (
                   <p className="mt-0.5 text-[11.5px] font-medium text-emerald-700 dark:text-emerald-400">
                     {t("claimedBy", { agent: r.human_claimed_by ?? "" })}
@@ -288,7 +301,9 @@ function AnswerBox({
   onSend: (text: string) => void;
 }) {
   const t = useTranslations("handoffs");
-  const [text, setText] = useState("");
+  // Pre-filled with the reply Amanda already wrote: the agent's job is to
+  // approve or correct it, not to research the answer from scratch.
+  const [text, setText] = useState(row.blocked_draft ?? "");
   return (
     <div className="mt-2 flex w-full flex-col gap-2 rounded-md border border-border bg-card p-2.5">
       <textarea

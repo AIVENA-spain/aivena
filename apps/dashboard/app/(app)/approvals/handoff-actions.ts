@@ -20,6 +20,12 @@ export type HandoffRow = {
   human_claimed_at: string | null;
   conversation_id: string | null;
   last_message: string | null;
+  /** Why Amanda stopped — from the open review task. blocked_draft is the reply
+   *  she wanted to send, so the agent approves or corrects rather than starting
+   *  from nothing. */
+  buyer_asked?: string | null;
+  blocked_draft?: string | null;
+  property_refs?: string[] | null;
 };
 
 type Ok<T> = { ok: true; data: T };

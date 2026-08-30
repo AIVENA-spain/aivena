@@ -188,7 +188,12 @@ route.get('/', async (c) => {
       dt.id,
       dt.task_type,
       dt.status,
-      dt.message_subject,
+      -- The engine writes its headline to dt.title (n8n-era tasks use
+      -- message_subject). Reading only message_subject meant every Amanda
+      -- escalation arrived with a NULL subject and the dashboard fell back to
+      -- one generic per-type sentence, so three different escalations were
+      -- indistinguishable (Christian 2026-08-30). Take whichever exists.
+      COALESCE(dt.message_subject, dt.title) AS message_subject,
       dt.message_body,
       dt.conversation_id,
       dt.created_at,

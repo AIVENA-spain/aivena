@@ -28,7 +28,7 @@ import { type CarouselPlan, chrome as carouselChrome } from '../../../../studio/
 import {
   renderPlannedStyled, renderListingStyled, vibraListing, PLANNED_STYLES, LISTING_STYLES, TYPE_EDITIONS, type CarouselStyle,
 } from '../../../../studio/engine/carouselStyles';
-import { planCarousel, editPlan, remixHook, topicIdeas, listingCopy, listingStory, PlanSchema } from '../lib/studio-carousel-plan';
+import { planCarousel, editPlan, remixHook, topicIdeas, listingCopy, listingStory, PlanSchema, normalisePlan } from '../lib/studio-carousel-plan';
 import { directScenes } from '../lib/studio-carousel-art';
 import { renderTipsImageStyled, renderTipsImageStyledV2, isTipsImageStyle } from '../../../../studio/engine/carouselTipsImage';
 import { renderFreeform, type DesignSpec } from '../../../../studio/engine/renderFreeform';
@@ -1472,7 +1472,14 @@ route.post('/carousel/update', async (c) => {
     if (!parsed.success) {
       return c.json({ ok: false, error: 'invalid_plan', message: 'Some of the edited text is too long or missing.' }, 400);
     }
-    const plan = parsed.data as CarouselPlan;
+    // RULE 7 and RULE 8 are enforced in normalisePlan(), which until now ran only on the paths
+    // where a MODEL wrote the copy. A human editing the same fields here reached the renderer
+    // untouched: "DM: PRICE" shipped as the closing pill, a tip title kept its comma splice, and
+    // a "P.D." caption line survived — the three things those rules exist to prevent. Worse, the
+    // un-normalised plan is stored back below and read as priorPlan by /carousel/remix, so one
+    // edit propagated into every later deck. The rule belongs to every path or it is not a rule.
+    const editLang = typeof rows[0].raw_request?.language === 'string' ? (rows[0].raw_request.language as string) : 'es';
+    const plan = normalisePlan(parsed.data as CarouselPlan, editLang);
     if (plan.tips.length !== priorPlan.tips.length || plan.quote_parts.length !== priorPlan.quote_parts.length) {
       return c.json({ ok: false, error: 'invalid_plan', message: 'You can edit the text, but not add or remove slides.' }, 400);
     }
@@ -1492,6 +1499,20 @@ route.post('/carousel/update', async (c) => {
     const effGold = hexColour(b.brand_gold) ?? (typeof rawU.brand_gold === 'string' ? rawU.brand_gold : null);
     if (effNavy) brand.navy = effNavy;
     if (effGold) brand.gold = effGold;
+    // A per-slide override changes ONE channel; the other has to come from the colours this deck
+    // actually rendered with, not from the agency's defaults. Creation already stores those as
+    // render_navy/render_gold (the picker reads them), but this path never did — so on a deck
+    // wearing an edition palette, touching the accent under one slide also snapped that slide's
+    // headline back to the agency navy and shifted its paper. Same reason an override that
+    // happened to equal the agency's own hex was compared equal to the base and silently dropped.
+    if (!effNavy && typeof rawU.render_navy === 'string') brand.navy = rawU.render_navy;
+    if (!effGold && typeof rawU.render_gold === 'string') brand.gold = rawU.render_gold;
+    {
+      const edStyle = typeof meta?.carousel_style === 'string' ? meta.carousel_style : '';
+      const edN = typeof rawU.style_edition === 'number' ? rawU.style_edition : 0;
+      const edCream = !(effNavy || effGold) ? ((TYPE_EDITIONS[edStyle] ?? [])[edN] ?? {}).cream : undefined;
+      if (edCream) brand.cream = edCream;
+    }
     const contact = contactLine(agency);
 
     // PER-SLIDE colours (Christian 2026-08-28: "no matter what color i choose, in some places
@@ -1524,10 +1545,10 @@ route.post('/carousel/update', async (c) => {
           ? renderTipsImageStyledV2(storedStyle, plan, agency.name, contact, br, images, storedLang, meta?.include_recap === true, meta?.include_context === true, typeof meta?.layout_variant === 'number' ? meta.layout_variant : 0, ctxArtEff)
           : renderTipsImageStyled(storedStyle, plan, agency.name, contact, br, images, storedLang, meta?.include_context === true, meta?.include_recap === true));
       } else {
-        slides = await renderDeck((br, locked) => renderPlannedStyled('editorial', plan, agency.name, contact, br, storedLang, typeof rawU.style_edition === 'number' ? rawU.style_edition : 0, locked, meta?.include_context === true, meta?.include_recap === true));
+        slides = await renderDeck((br, locked) => renderPlannedStyled('editorial', plan, agency.name, contact, br, storedLang, typeof rawU.style_edition === 'number' ? rawU.style_edition : 0, locked, meta?.include_context === true, meta?.include_recap === true, !!(effNavy || effGold)));
       }
     } else {
-      slides = await renderDeck((br, locked) => renderPlannedStyled(storedStyle, plan, agency.name, contact, br, storedLang, typeof rawU.style_edition === 'number' ? rawU.style_edition : 0, locked, meta?.include_context === true, meta?.include_recap === true));
+      slides = await renderDeck((br, locked) => renderPlannedStyled(storedStyle, plan, agency.name, contact, br, storedLang, typeof rawU.style_edition === 'number' ? rawU.style_edition : 0, locked, meta?.include_context === true, meta?.include_recap === true, !!(effNavy || effGold)));
     }
     const stored = await storeSlides(agencyId, genId, slides);
 
@@ -1814,6 +1835,20 @@ route.post('/carousel/remix', async (c) => {
     if (typeof raw.brand_gold === 'string') brand.gold = raw.brand_gold as string;
     const contact = contactLine(agency);
 
+    // A style remix repaints the deck in the NEW style's edition palette, so the parent's
+    // "colours actually rendered" no longer describe this child — recompute them, or the
+    // finished-deck pickers would open on the old style's colours and overwrite the new look.
+    // Computed BEFORE the render, not after: a per-slide override supplies one channel and the
+    // other has to come from what this child actually wears, or the override pass repaints the
+    // slide out of the new style's edition entirely.
+    const remixLock = !!(raw.brand_navy || raw.brand_gold);
+    const remixEd = !remixLock ? ((TYPE_EDITIONS[newStyle] ?? [])[styleEdition] ?? {}) : {};
+    const remixNavy = (typeof raw.brand_navy === 'string' ? raw.brand_navy : null) ?? remixEd.navy ?? brand.navy;
+    const remixGold = (typeof raw.brand_gold === 'string' ? raw.brand_gold : null) ?? remixEd.gold ?? brand.gold;
+    brand.navy = remixNavy;
+    brand.gold = remixGold;
+    if (remixEd.cream) brand.cream = remixEd.cream;
+
     // render synchronously — the deck's own artwork is reused, so this is seconds, not minutes
     let slides: Buffer[];
     // the deck's per-slide colour overrides ride through every remix — without this a remix
@@ -1833,17 +1868,9 @@ route.post('/carousel/remix', async (c) => {
         : renderTipsImageStyled(newStyle, plan, agency.name, contact, br, images, storedLang, meta?.include_context === true, meta?.include_recap === true));
     } else {
       slides = await renderWithSlideColours(brand, remixSlideCols, (br, locked) =>
-        renderPlannedStyled(newStyle, plan, agency.name, contact, br, storedLang, styleEdition, locked, meta?.include_context === true, meta?.include_recap === true),
+        renderPlannedStyled(newStyle, plan, agency.name, contact, br, storedLang, styleEdition, locked, meta?.include_context === true, meta?.include_recap === true, remixLock),
         !!(raw.brand_navy || raw.brand_gold));
     }
-
-    // A style remix repaints the deck in the NEW style's edition palette, so the parent's
-    // "colours actually rendered" no longer describe this child — recompute them, or the
-    // finished-deck pickers would open on the old style's colours and overwrite the new look.
-    const remixLock = !!(raw.brand_navy || raw.brand_gold);
-    const remixEd = !remixLock ? ((TYPE_EDITIONS[newStyle] ?? [])[styleEdition] ?? {}) : {};
-    const remixNavy = (typeof raw.brand_navy === 'string' ? raw.brand_navy : null) ?? remixEd.navy ?? brand.navy;
-    const remixGold = (typeof raw.brand_gold === 'string' ? raw.brand_gold : null) ?? remixEd.gold ?? brand.gold;
 
     const label = `Remix · ${axis} · ${String(raw.topic ?? '').slice(0, 70) || 'tips carousel'}`;
     const ins = await tx.execute(sql`

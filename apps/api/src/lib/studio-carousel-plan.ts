@@ -243,8 +243,13 @@ function trimToCaps(input: Record<string, unknown>): void {
 
 /** Doctrine + honesty gate on the generated copy (client quotes exempt — they're the client's words). */
 function planIssues(p: CarouselPlan, quoteSource: string): string | null {
+  // Hand-maintained field list, and it had drifted behind the schema: caption, eyebrow and
+  // cta_keyword were all missing. The first two print on the post and the slide; the third
+  // prints in the closing pill. A price or percentage claim in any of them walked straight
+  // past the honesty gate that exists to stop exactly that.
   const advice = [p.hook_title, p.slide2_title, p.slide2_body, p.cta_heading, p.cta_action,
-    p.agency_line, p.recap_title, p.save_line, ...p.tips.flatMap((t) => [t.title, t.body, t.teaser])];
+    p.agency_line, p.recap_title, p.save_line, p.caption, p.eyebrow, p.cta_keyword,
+    ...p.tips.flatMap((t) => [t.title, t.body, t.teaser])];
   const priced = advice.find((t) => t && BANNED.test(t));
   if (priced) return `copy contains a price/percentage claim ("${priced.slice(0, 60)}") — general advice only, no figures`;
   if (p.type === 'tips' && WEAK_HOOK.test(p.hook_title.trim())) {

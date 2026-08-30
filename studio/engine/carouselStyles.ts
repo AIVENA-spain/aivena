@@ -250,7 +250,11 @@ function encaladaPlanned(plan: CarouselPlan, agency: string, contact: string, br
   }));
   const isQuote = plan.type === "quote";
   const n = isQuote ? plan.quote_parts.length : plan.tips.length;
-  const total = isQuote ? n + 3 : n + 2 + (includeContext ? 1 : 0) + (includeRecap ? 1 : 0);
+  // RULE 3 — the quote branch counted a context slide unconditionally while the builder below
+  // skips it when includeContext is false, so a 3-part quote deck built 5 slides and numbered
+  // them 01-04 then 06 of 06. include_context has no UI and defaults to false, so every quote
+  // deck through the API hit this. Both branches now count what is actually pushed.
+  const total = isQuote ? n + 2 + (includeContext ? 1 : 0) : n + 2 + (includeContext ? 1 : 0) + (includeRecap ? 1 : 0);
   const specs: unknown[] = [];
 
   // cover: pure type on limewash, sun mark, tile band as the single motif
@@ -357,7 +361,11 @@ function serenoPlanned(plan: CarouselPlan, agency: string, contact: string, bran
   const inkMuted = mix(NAVY, warm, 0.55);
   const isQuote = plan.type === "quote";
   const n = isQuote ? plan.quote_parts.length : plan.tips.length;
-  const total = isQuote ? n + 3 : n + 2 + (includeContext ? 1 : 0) + (includeRecap ? 1 : 0);
+  // RULE 3 — the quote branch counted a context slide unconditionally while the builder below
+  // skips it when includeContext is false, so a 3-part quote deck built 5 slides and numbered
+  // them 01-04 then 06 of 06. include_context has no UI and defaults to false, so every quote
+  // deck through the API hit this. Both branches now count what is actually pushed.
+  const total = isQuote ? n + 2 + (includeContext ? 1 : 0) : n + 2 + (includeContext ? 1 : 0) + (includeRecap ? 1 : 0);
   const spine = (i: number) => ({ type: "text", bbox: [980, 400, 1050, 950], content: `${agency.toUpperCase()} · Nº ${String(i).padStart(2, "0")} · MMXXVI`, font: "Glacial Indifference", size: 18, colour: inkMuted, tracking: 5, rotate: 90, align: "center" });
   const folioLine = (i: number, colour: string) => ({ type: "text", bbox: [96, 1240, 940, 1270], content: `Nº ${String(i).padStart(2, "0")} — ${String(total).padStart(2, "0")} · ${agency.toUpperCase()}`, font: "Jost", size: 16, colour, align: "left", tracking: 3 });
   const specs: unknown[] = [];
@@ -527,6 +535,13 @@ export const TYPE_EDITIONS: Record<string, StyleEdition[]> = {
 export async function renderPlannedStyled(
   style: CarouselStyle, plan: CarouselPlan, agency: string, contact: string, brand: CarouselBrand, lang = "es",
   edition = 0, lockPalette = false, includeContext = true, includeRecap = true,
+  // lockPalette was doing two unrelated jobs at once: "keep the edition out of these colours" and
+  // "rebuild the style's signature accents from them". Fused, a per-slide override on an
+  // otherwise-untouched deck had to lock the edition out (or the edition simply overwrote the
+  // agent's colour and the override did nothing) — and in doing so it also repainted that one
+  // slide's paper and accents out of the deck. They are now separate: an override locks the
+  // edition for its slide; only a deck the agent actually chose colours for derives the accents.
+  deriveAccents = lockPalette,
 ): Promise<Buffer[]> {
   const eds = TYPE_EDITIONS[style] ?? [{}];
   const ed = eds[((edition % eds.length) + eds.length) % eds.length] ?? {};
@@ -542,7 +557,7 @@ export async function renderPlannedStyled(
   const prevFR = FR, prevSerif = getPlannedSerif();
   if (ed.display) { FR = ed.display; setPlannedSerif(ed.display); }
   // the agent's chosen colours reach the styles' signature accents too
-  const restoreAccents = lockPalette ? useBrandAccents(b) : () => { [TERRA, OLIVE, LIME] = [TERRA_D, OLIVE_D, LIME_D]; };
+  const restoreAccents = deriveAccents ? useBrandAccents(b) : () => { [TERRA, OLIVE, LIME] = [TERRA_D, OLIVE_D, LIME_D]; };
   let specs: unknown[];
   let grain = 0;
   try {

@@ -1570,5 +1570,13 @@
     "optFullDesc": "Odpowiada i rezerwuje dla tej osoby, niezależnie od poziomu biura.",
     "optOff": "Zajmę się tym sam",
     "optOffDesc": "Amanda tu milczy. Nic nie zostanie wysłane, dopóki jej nie włączysz."
+  },
+  "notifications": {
+    "empty": "Nic nowego. Usłyszysz sygnał, gdy coś się pojawi.",
+    "handoffTitle": "Klient potrzebuje człowieka",
+    "handoffBody": "Amanda przekazała rozmowę. Otwórz Skrzynkę.",
+    "questionTitle": "{name} — biuro musi na coś odpowiedzieć",
+    "questionBody": "Amanda zadała biuru pytanie. Otwórz Zadania.",
+    "someone": "Klient"
   }
 }

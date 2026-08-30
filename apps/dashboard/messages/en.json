@@ -1570,5 +1570,13 @@
     "optFullDesc": "She replies and books for this person, whatever the agency level is.",
     "optOff": "I'll handle this one",
     "optOffDesc": "Amanda goes quiet here. Nothing is sent until you switch her back on."
+  },
+  "notifications": {
+    "empty": "Nothing new. You'll hear a chime when something needs you.",
+    "handoffTitle": "A client needs a person",
+    "handoffBody": "Amanda handed a conversation over. Open the Inbox to take it.",
+    "questionTitle": "{name} — the office needs to answer something",
+    "questionBody": "Amanda asked the office a question. Open Tasks to answer it.",
+    "someone": "A client"
   }
 }

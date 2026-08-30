@@ -3,6 +3,7 @@ import {
   splitSentences, countWords, countQuestionSentences, lintDraft,
   screenBannedPatterns, screenPaymentDetails, cooldownOk, validateDraft, COOLDOWN_MS,
   normalizeLeadLanguage, screenLanguageDrift, screenOfficePromise,
+  isShapeOnly, trimToBudget, MEDIUM_MAX_WORDS, LONG_MAX_WORDS,
 } from './validators';
 
 describe('sentence + question counting', () => {
@@ -209,5 +210,110 @@ describe('validateDraft — the combined law', () => {
   });
   it('passes the kind of message Amanda should actually send', () => {
     expect(validateDraft('I checked with the office — they say there is some room on the price. Would you like me to set up a viewing?').ok).toBe(true);
+  });
+});
+
+/**
+ * The live failure this pins (Christian 2026-08-29): Amanda researched the
+ * Norwegian school, wrote a correct 42-word answer, and the 35-word cap binned
+ * it — the buyer got a holding line and the agent got a take-over card for a
+ * question she had already answered. Shape must never be treated as truth.
+ */
+describe('isShapeOnly — only cosmetic failures may be rescued', () => {
+  it('length and sentence-count failures are shape', () => {
+    expect(isShapeOnly(['too_long:42w>35w'])).toBe(true);
+    expect(isShapeOnly(['too_long:42w>35w', 'too_many_sentences:4>3'])).toBe(true);
+    expect(isShapeOnly(['mirror_band:30w>20w'])).toBe(true);
+    expect(isShapeOnly(['multiple_questions'])).toBe(true);
+  });
+
+  it('truth and safety failures are NEVER shape', () => {
+    for (const v of [
+      'ungrounded_numbers:450000',
+      'verifier_rejected',
+      'verifier_unavailable',
+      'banned:act now',
+      'payment_floor:iban',
+      'wrong_language_WRITE_THE_WHOLE_REPLY_IN_nb_not_English',
+      'office_promise_without_filed_question_CALL_ask_agency_or_DROP_the_promise',
+    ]) {
+      expect(isShapeOnly([v])).toBe(false);
+    }
+  });
+
+  it('one truth failure poisons an otherwise cosmetic set', () => {
+    expect(isShapeOnly(['too_long:42w>35w', 'ungrounded_numbers:450000'])).toBe(false);
+  });
+
+  it('an empty failure list is not a rescue case', () => {
+    expect(isShapeOnly([])).toBe(false);
+  });
+});
+
+describe('trimToBudget — removes text, never invents it', () => {
+  it('keeps whole sentences from the front until the budget is spent', () => {
+    const draft = 'Yes, there are two homes a short walk from the Norwegian school. One is a three-bed villa. The other is a townhouse with a pool. Shall I send you the details?';
+    const out = trimToBudget(draft, 20);
+    expect(countWords(out)).toBeLessThanOrEqual(20);
+    expect(draft.startsWith(out.slice(0, 40))).toBe(true);
+  });
+
+  it('never emits a truncated fragment — a single over-budget sentence is kept whole', () => {
+    const one = 'This is one single very long sentence that runs well past any budget we might set for it here';
+    expect(trimToBudget(one, 5)).toBe(one);
+  });
+
+  it('leaves a draft that already fits completely alone', () => {
+    const short = 'Yes, two homes are near that school.';
+    expect(trimToBudget(short, 35)).toBe(short);
+  });
+
+  it('output is always a substring-prefix of the original words (no new facts)', () => {
+    const draft = 'The villa is in Quesada. It has a private pool. Viewings are possible this week.';
+    const out = trimToBudget(draft, 10);
+    const dw = draft.split(/\s+/);
+    out.split(/\s+/).forEach((w, i) => expect(dw[i]).toBe(w));
+  });
+});
+
+/**
+ * Christian 2026-08-29, after the researched answer finally reached the buyer:
+ * "she answered way too long and not really confident warm". Widening long-form
+ * to research/search was right, but handing those turns the full 120-word
+ * property-summary budget produced a bullet-pointed report. The middle tier is
+ * the fix, and these pin it so it cannot quietly drift back to 120.
+ */
+describe('the middle length tier — a chat message, not a brochure', () => {
+  const words = (n: number) => Array.from({ length: n }, (_, i) => `w${i}`).join(' ') + '.';
+
+  it('a research/search turn is capped at the medium budget, not the full one', () => {
+    const draft = words(MEDIUM_MAX_WORDS + 10);
+    const r = lintDraft(draft, { allowLongForm: true, longFormBudget: MEDIUM_MAX_WORDS });
+    expect(r.ok).toBe(false);
+    expect(r.violations.some((v) => v.startsWith('too_long:'))).toBe(true);
+  });
+
+  it('the same draft passes when the turn genuinely earned the full budget', () => {
+    const draft = words(MEDIUM_MAX_WORDS + 10);
+    expect(lintDraft(draft, { allowLongForm: true, longFormBudget: LONG_MAX_WORDS }).ok).toBe(true);
+  });
+
+  it('medium keeps sentence discipline — 65 words in nine clipped lines is still a report', () => {
+    const draft = Array.from({ length: 9 }, (_, i) => `Line ${i} is here.`).join(' ');
+    const r = lintDraft(draft, { allowLongForm: true, longFormBudget: MEDIUM_MAX_WORDS });
+    expect(r.violations.some((v) => v.startsWith('too_many_sentences:'))).toBe(true);
+  });
+
+  it('the full tier is not sentence-capped — a property summary may run longer', () => {
+    const draft = Array.from({ length: 9 }, (_, i) => `Line ${i} is here.`).join(' ');
+    const r = lintDraft(draft, { allowLongForm: true, longFormBudget: LONG_MAX_WORDS });
+    expect(r.violations.some((v) => v.startsWith('too_many_sentences:'))).toBe(false);
+  });
+
+  it('an over-long medium answer is rescued by trimming, never escalated', () => {
+    const draft = 'The Norwegian school is in Ciudad Quesada. ' + words(MEDIUM_MAX_WORDS + 20);
+    const failures = lintDraft(draft, { allowLongForm: true, longFormBudget: MEDIUM_MAX_WORDS }).violations;
+    expect(isShapeOnly(failures)).toBe(true);
+    expect(countWords(trimToBudget(draft, MEDIUM_MAX_WORDS))).toBeLessThanOrEqual(MEDIUM_MAX_WORDS);
   });
 });

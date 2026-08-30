@@ -1545,7 +1545,14 @@
     "release": "Terug naar assistent",
     "aiMutedNote": "De assistent is gepauzeerd voor deze klanten — een mens moet reageren. Pak het op en neem contact op (WhatsApp/telefoon/e-mail). \"Terug naar assistent\" heft de pauze op.",
     "notifTitle": "{name} wil een mens spreken",
-    "notifBody": "Open de inbox om het gesprek op te pakken."
+    "notifBody": "Open de inbox om het gesprek op te pakken.",
+    "answerIt": "Beantwoorden",
+    "sendAnswer": "Antwoord versturen",
+    "answerPlaceholder": "Antwoord {name} direct — dit gaat via WhatsApp naar hen.",
+    "answerHandsBack": "Amanda pakt het gesprek daarna weer op.",
+    "cancel": "Annuleren",
+    "aboutRefs": "Betreft: {refs}",
+    "amandaWanted": "Amanda wilde versturen"
   },
   "conversationMode": {
     "saving": "Opslaan…",

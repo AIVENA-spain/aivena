@@ -1545,7 +1545,14 @@
     "release": "Devolver ao assistente",
     "aiMutedNote": "O assistente está em pausa para estes clientes — uma pessoa tem de responder. Assuma e contacte o cliente (WhatsApp/telefone/email). \"Devolver ao assistente\" retoma o assistente.",
     "notifTitle": "{name} quer falar com uma pessoa",
-    "notifBody": "Abra a caixa de entrada para assumir a conversa."
+    "notifBody": "Abra a caixa de entrada para assumir a conversa.",
+    "answerIt": "Responder",
+    "sendAnswer": "Enviar resposta",
+    "answerPlaceholder": "Responda a {name} diretamente — isto vai por WhatsApp.",
+    "answerHandsBack": "A Amanda retoma a conversa a seguir.",
+    "cancel": "Cancelar",
+    "aboutRefs": "Sobre: {refs}",
+    "amandaWanted": "A Amanda queria enviar"
   },
   "conversationMode": {
     "saving": "A guardar…",

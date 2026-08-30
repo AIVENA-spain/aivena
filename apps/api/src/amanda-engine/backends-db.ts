@@ -77,12 +77,12 @@ export function makeDbBackends(ctx: BackendCtx): ToolBackends {
           SELECT id, external_id, title, price, bedrooms, location_city, property_type,
                  jsonb_array_length(COALESCE(images, '[]'::jsonb)) AS photo_count,
                  source_url,
-                 created_at::date::text AS listed_date,
-                 (SELECT count(DISTINCT p2.created_at::date) FROM properties p2
+                 COALESCE(listed_at, created_at)::date::text AS listed_date,
+                 (SELECT count(DISTINCT COALESCE(p2.listed_at, p2.created_at)::date) FROM properties p2
                    WHERE p2.agency_id = current_setting('app.current_agency_id', true)
                      AND (p2.status IS NULL OR p2.status NOT IN ('sold', 'withdrawn', 'inactive', 'archived'))
                  ) AS catalogue_distinct_days,
-                 (SELECT min(p2.created_at) < now() - interval '30 days' FROM properties p2
+                 (SELECT min(COALESCE(p2.listed_at, p2.created_at)) < now() - interval '30 days' FROM properties p2
                    WHERE p2.agency_id = current_setting('app.current_agency_id', true)
                      AND (p2.status IS NULL OR p2.status NOT IN ('sold', 'withdrawn', 'inactive', 'archived'))
                  ) AS catalogue_oldest_old
@@ -99,13 +99,18 @@ export function makeDbBackends(ctx: BackendCtx): ToolBackends {
              ))
              AND (${rejectedCsv} = '' OR NOT (id = ANY(string_to_array(${rejectedCsv}, ',')::uuid[])))
            ORDER BY
-             CASE WHEN ${sort}::text = 'newest' THEN created_at END DESC NULLS LAST,
+             CASE WHEN ${sort}::text = 'newest' THEN COALESCE(listed_at, created_at) END DESC NULLS LAST,
              CASE WHEN ${sort}::text = 'price_asc' THEN price END ASC NULLS LAST,
              CASE WHEN ${sort}::text = 'price_desc' THEN price END DESC NULLS LAST,
              updated_at DESC NULLS LAST
            LIMIT 5
         `);
         const list = rows as unknown as Array<Record<string, unknown>>;
+        // Newness is judged on COALESCE(listed_at, created_at): listed_at is what
+        // the SOURCE says (a feed's own date), created_at is merely when the row
+        // reached us. The demo catalogue has no listed_at, so it falls back and
+        // the bulk-import rider below correctly fires; the day a real feed
+        // supplies dates, that rider switches itself off with no code change.
         // Honesty rider (§2), two distinct truths (review-verified):
         //   · BULK-IMPORT ARTIFACT — 1-2 distinct created dates AND the oldest
         //     is 30+ days back: the dates are import timestamps, not market
@@ -128,7 +133,7 @@ export function makeDbBackends(ctx: BackendCtx): ToolBackends {
           listed: importArtifact ? null : (r.listed_date as string) ?? null,
         }));
         const catalogue_note = importArtifact
-          ? 'CATALOGUE CANNOT RANK NEWNESS: all listings entered the system on the same bulk-import date, so "newest" and listing dates are not knowable from this data. Never claim any of these is new, just in, or listed on a date — say honestly that you cannot rank by newness and offer to ask the office what has come in recently.'
+          ? 'NEWNESS NOT RANKABLE: every listing here entered on one bulk-import date, so you CANNOT know what is newest or when anything was listed. NEVER claim a property is new, just in, or listed on a date. Do NOT narrate this limitation to the buyer — it is our internal plumbing, and explaining it makes the agency sound unreliable about its own stock. Just answer with the matches you DO have, warmly and without apology. If they specifically want what is newest, offer in ONE short line to ask the office what has come in recently.'
           : sort === 'newest' && distinctDays <= 2
             ? 'THE WHOLE CATALOGUE IS BRAND NEW: everything came in within the last day or two, so all of these are effectively just in — say that honestly rather than ranking them against each other.'
             : null;

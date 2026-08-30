@@ -69,7 +69,8 @@ async function loadWorld(row: QueueRow): Promise<LoadedWorld | { skip: string }>
     if (agencyMode === 'off') return { skip: 'amanda_mode_off' };
 
     const leadRows = await tx.execute(sql`
-      SELECT full_name, phone, language, opt_in_status FROM leads WHERE id = ${row.lead_id}::uuid LIMIT 1
+      SELECT full_name, phone, language, opt_in_status, human_claimed_at
+        FROM leads WHERE id = ${row.lead_id}::uuid LIMIT 1
     `);
     const lead = (leadRows as unknown as Array<Record<string, unknown>>)[0];
     if (!lead) return { skip: 'lead_missing' };
@@ -145,7 +146,16 @@ async function loadWorld(row: QueueRow): Promise<LoadedWorld | { skip: string }>
       leadPhone: (lead.phone as string) ?? null,
       leadLanguage: (lead.language as string) || 'en',
       leadState,
-      aiMuted: Boolean(conv.ai_muted_at) || Boolean(conv.human_claimed_at),
+      // THREE claims, not two. The handoff queue's "I'll take it" writes
+      // leads.human_claimed_at, and the dashboard then tells the agent "the
+      // assistant is paused for these clients — a person must reply". The
+      // engine only ever read the CONVERSATION flags, so that promise was
+      // false: Amanda would keep answering over a colleague who had taken the
+      // conversation (found live 2026-08-30). Any of the three pauses her.
+      aiMuted:
+        Boolean(conv.ai_muted_at) ||
+        Boolean(conv.human_claimed_at) ||
+        Boolean(lead.human_claimed_at),
       optedOut: lead.opt_in_status === 'opted_out',
       recentTurns: messages.map((m) => ({
         // Human-sent outbound (operator approvals carry sent_by) is 'agent' —
@@ -437,15 +447,45 @@ export async function processTurnDb(row: QueueRow): Promise<TurnOutcome> {
       });
     },
 
-    async escalateToHuman(reason, detail) {
+    async escalateToHuman(reason, detail, context) {
+      // A task an agent can act on in five seconds (Christian 2026-08-30: every
+      // one of these read "AIVENA wasn't sure how to handle something" — no
+      // property, no question, nothing answerable, and "even if a agent wanted
+      // to answer that they dont know which proeprty its about either").
+      //
+      // The title carries the buyer's actual question. The body carries the
+      // reply Amanda WANTED to send — which in every live case so far was
+      // correct and merely unverified — so the agent approves or corrects it
+      // instead of researching from scratch. The draft also rides in
+      // raw_payload so the answer box can pre-fill with it.
+      const asked = (context?.buyerAsked ?? '').trim().replace(/\s+/g, ' ');
+      const blocked = (context?.blockedDraft ?? '').trim();
+      const refs = (context?.propertyRefs ?? []).filter(Boolean);
+      const who = world.leadFullName ?? 'The buyer';
+      const title = asked
+        ? `${who} asked: ${asked.slice(0, 90)}${asked.length > 90 ? '…' : ''}`
+        : 'Amanda needs a human on this reply';
+      const bodyParts = [
+        asked ? `They asked: "${asked.slice(0, 300)}"` : null,
+        refs.length ? `About: ${refs.join(', ')}` : null,
+        blocked ? `Amanda wanted to reply:\n"${blocked.slice(0, 600)}"\n\nShe could not confirm it, so it needs your eye — send it as it is, correct it, or answer differently.` : null,
+        blocked ? null : detail.slice(0, 400),
+      ].filter(Boolean);
       await withAgency(row.agency_id, async (tx) => {
         await tx.execute(sql`
           INSERT INTO dashboard_tasks (agency_id, lead_id, conversation_id, task_type, title, message_body, channel, platform, priority, status, raw_payload)
           VALUES (
             ${row.agency_id}, ${row.lead_id}::uuid, ${row.conversation_id},
-            'human_review_needed', 'Amanda needs a human on this reply', ${detail.slice(0, 800)},
+            'human_review_needed', ${title.slice(0, 200)}, ${bodyParts.join('\n\n').slice(0, 1200)},
             'whatsapp', 'twilio', 'high', 'pending',
-            jsonb_build_object('reason', ${reason}::text, 'via', 'amanda_engine')
+            jsonb_build_object(
+              'reason', ${reason}::text,
+              'via', 'amanda_engine',
+              'buyer_asked', ${asked}::text,
+              'blocked_draft', ${blocked}::text,
+              'property_refs', ${JSON.stringify(refs)}::jsonb,
+              'gate_detail', ${detail.slice(0, 400)}::text
+            )
           )
         `);
       });

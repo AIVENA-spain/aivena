@@ -5,6 +5,7 @@
 
 export interface LintOptions {
   allowLongForm?: boolean;      // broad question / re-engagement / property summary / relay-with-context
+  longFormBudget?: number;      // word cap for THIS long-form turn (medium vs full)
   mirrorTargetWords?: number;   // rolling median of the buyer's last messages (optional)
   /** Lead's language code (raw, e.g. 'no'/'nb'/'pt-BR') — when set and not
    *  English, an English-drift draft is a violation (live demo 2026-08-27:
@@ -24,8 +25,18 @@ export interface LintResult {
 }
 
 const SHORT_MAX_SENTENCES = 3;
-const SHORT_MAX_WORDS = 35;
-const LONG_MAX_WORDS = 120;
+export const SHORT_MAX_WORDS = 35;
+export const LONG_MAX_WORDS = 120;
+/**
+ * The MIDDLE budget (Christian 2026-08-29: "she answered way too long and not
+ * really confident warm"). Widening long-form to cover research and search was
+ * right — but it handed those turns the full 120-word property-summary budget,
+ * and she wrote a report with bullet points. A researched answer with a couple
+ * of matches is a chat message, not a brochure: room for the answer, two homes
+ * and one next step, and no more.
+ */
+export const MEDIUM_MAX_WORDS = 65;
+const MEDIUM_MAX_SENTENCES = 5;
 
 /** Sentence split that survives multilingual punctuation (., !, ?, ¿…). */
 export function splitSentences(text: string): string[] {
@@ -44,6 +55,48 @@ export function countQuestionSentences(text: string): number {
   return splitSentences(text).filter((s) => /[?？]\s*$/.test(s) || /^[¿]/.test(s)).length;
 }
 
+/**
+ * SHAPE vs TRUTH (Christian 2026-08-29, live: "she should have been able to
+ * just make a search and find this out herself").
+ *
+ * She DID. She researched the Norwegian school, wrote a correct 42-word answer,
+ * and the 35-word cap binned it — so the buyer got "a colleague will
+ * double-check" and Christian got a take-over card for a question Amanda had
+ * already answered. A correct answer was destroyed for being seven words long.
+ *
+ * These violations are about SHAPE. They are fixable by trimming, and a draft
+ * that fails ONLY these must never be escalated to a human — it must be cut to
+ * length and sent. Everything NOT on this list (ungrounded numbers, verifier
+ * rejection, wrong language, banned patterns, payment floor, unfiled office
+ * promise) is about TRUTH or SAFETY, where killing the draft is correct.
+ */
+const SHAPE_ONLY_PREFIXES = ['too_long:', 'too_many_sentences:', 'mirror_band:', 'multiple_questions'];
+
+export function isShapeOnly(violations: string[]): boolean {
+  return violations.length > 0 && violations.every((v) => SHAPE_ONLY_PREFIXES.some((p) => v.startsWith(p)));
+}
+
+/**
+ * Deterministic trim to a word budget. Keeps WHOLE sentences from the front —
+ * Amanda answers first, so the front is the substance — and never emits a
+ * truncated fragment: if even the first sentence is over budget it is kept
+ * intact. Removes text only; it can never introduce a fact.
+ */
+export function trimToBudget(text: string, maxWords: number): string {
+  if (countWords(text) <= maxWords) return text;
+  const sentences = splitSentences(text);
+  if (sentences.length <= 1) return text;
+  const kept: string[] = [];
+  let used = 0;
+  for (const sentence of sentences) {
+    const w = countWords(sentence);
+    if (kept.length > 0 && used + w > maxWords) break;
+    kept.push(sentence);
+    used += w;
+  }
+  return kept.join(' ').trim();
+}
+
 /** The length law (§10 B1) + question discipline (§10 B2). */
 export function lintDraft(draft: string, opts: LintOptions = {}): LintResult {
   const violations: string[] = [];
@@ -51,7 +104,13 @@ export function lintDraft(draft: string, opts: LintOptions = {}): LintResult {
   const words = countWords(draft);
 
   if (opts.allowLongForm) {
-    if (words > LONG_MAX_WORDS) violations.push(`too_long:${words}w>${LONG_MAX_WORDS}w`);
+    const cap = opts.longFormBudget ?? LONG_MAX_WORDS;
+    if (words > cap) violations.push(`too_long:${words}w>${cap}w`);
+    // The middle tier keeps its sentence discipline too — 65 words spread over
+    // nine clipped lines still reads as a report, not a person.
+    if (cap <= MEDIUM_MAX_WORDS && sentences.length > MEDIUM_MAX_SENTENCES) {
+      violations.push(`too_many_sentences:${sentences.length}>${MEDIUM_MAX_SENTENCES}`);
+    }
   } else {
     if (sentences.length > SHORT_MAX_SENTENCES) violations.push(`too_many_sentences:${sentences.length}>${SHORT_MAX_SENTENCES}`);
     if (words > SHORT_MAX_WORDS) violations.push(`too_long:${words}w>${SHORT_MAX_WORDS}w`);

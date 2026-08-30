@@ -118,17 +118,36 @@ export async function runGates(
   /** Numeric-grounding-only sources (e.g. the buyer's own message): their
    *  numbers may be echoed, but they are NOT office answers to the verifier. */
   numericGroundingTexts: string[] = [],
+  /** What Amanda ALREADY TOLD THIS BUYER in earlier turns (live failure
+   *  2026-08-30: she re-answered a question she had answered 13 hours before,
+   *  called no tools because she already knew, and the verifier rejected the
+   *  draft as ungrounded — so the buyer got the office-holding line for a
+   *  question already answered).
+   *
+   *  Those earlier messages passed these same gates before they were sent, and
+   *  the buyer has them on their phone. Repeating them is CONTINUITY, not
+   *  invention. They ground the draft and are shown to the verifier — but they
+   *  are deliberately NOT `authoritativeTexts`, because that flag also unlocks
+   *  the long-form word budget, and a follow-up answer must stay short. A newly
+   *  invented number still appears in neither the tools nor this history, so it
+   *  is still caught. */
+  conversationHistoryTexts: string[] = [],
 ): Promise<GateResult> {
   const turnClass = classifyDraft(draft);
   const failures: string[] = [];
   if (turnClass === 'social') return { ok: true, turnClass, failures };
 
-  const numeric = draftNumbersGrounded(draft, toolEvents, [...authoritativeTexts, ...numericGroundingTexts]);
+  const numeric = draftNumbersGrounded(draft, toolEvents, [
+    ...authoritativeTexts,
+    ...numericGroundingTexts,
+    ...conversationHistoryTexts,
+  ]);
   if (!numeric.ok) failures.push(`ungrounded_numbers:${numeric.offending.join('|')}`);
 
   if (verifier) {
     try {
-      if (!(await verifier(draft, toolEvents, authoritativeTexts))) failures.push('verifier_rejected');
+      const verifierContext = [...authoritativeTexts, ...conversationHistoryTexts];
+      if (!(await verifier(draft, toolEvents, verifierContext))) failures.push('verifier_rejected');
     } catch {
       failures.push('verifier_unavailable');   // fail closed: no verifier, no fact-bearing send
     }

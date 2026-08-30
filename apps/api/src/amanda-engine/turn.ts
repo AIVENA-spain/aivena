@@ -22,27 +22,42 @@ import { validateDraft, screenLanguageDrift } from './validators';
 import { detectConfirmation } from './confirmation';
 import { runActionTool, type AmandaMode } from './modes';
 import { buildSystemPrompt, buildUserContext, type TurnContext, PROMPT_VERSION } from './prompt';
-import { normalizeLeadLanguage } from './validators';
+import { normalizeLeadLanguage, isShapeOnly, trimToBudget, SHORT_MAX_WORDS, MEDIUM_MAX_WORDS, LONG_MAX_WORDS } from './validators';
 import type { ToolBackends } from './tools';
 
 // Dead-air law (live demo 2026-08-28: a gate-blocked reply left the buyer in
 // SILENCE): when the draft dies at the gates and a human-review task exists,
 // the buyer still gets an honest, deterministic holding line — office-framed,
 // number-free, pre-vetted, so it needs no gate pass. 13 locales.
+/**
+ * Dead-air line, sent when a draft dies at the gates.
+ *
+ * It used to say "a colleague at the office is double-checking". That was the
+ * SAME sentence for every failure — and across one live afternoon four
+ * completely different gate failures produced four identical office lines, so
+ * Christian's read was "she sends almost everything back to the office even if
+ * she can check or do it herself" (2026-08-30). She was not choosing to
+ * escalate; this text was speaking for her. It also manufactured office work
+ * for agents out of what were, every time, OUR bugs.
+ *
+ * It now promises only what is actually true: a human task IS filed, so
+ * somebody will come back. No third party is invoked, no office is blamed, and
+ * an agent is not handed a fake errand.
+ */
 export const GATE_FALLBACK: Record<string, string> = {
-  en: 'Good question — I want to be completely sure of the details here, so a colleague at the office is double-checking. We will get back to you shortly.',
-  es: 'Buena pregunta. Quiero estar totalmente segura de los detalles, así que un compañero de la oficina lo está comprobando. Te respondemos en breve.',
-  de: 'Gute Frage — ich möchte bei den Details ganz sicher sein, deshalb prüft das gerade eine Kollegin im Büro. Wir melden uns in Kürze bei dir.',
-  nl: 'Goede vraag — ik wil helemaal zeker zijn van de details, dus een collega op kantoor kijkt het even na. We komen er snel bij je op terug.',
-  fr: 'Bonne question — je veux être totalement sûre des détails, donc un collègue du bureau vérifie. Nous revenons vers vous très vite.',
-  it: 'Bella domanda — voglio essere del tutto sicura dei dettagli, quindi un collega in ufficio sta verificando. Ti rispondiamo a breve.',
-  pt: 'Boa pergunta — quero ter a certeza absoluta dos detalhes, por isso um colega do escritório está a verificar. Voltamos já ao contacto.',
-  pl: 'Dobre pytanie — chcę mieć całkowitą pewność co do szczegółów, więc kolega z biura to sprawdza. Wkrótce wracamy z odpowiedzią.',
-  sv: 'Bra fråga — jag vill vara helt säker på detaljerna, så en kollega på kontoret dubbelkollar. Vi återkommer strax.',
-  nb: 'Godt spørsmål — jeg vil være helt sikker på detaljene her, så en kollega på kontoret dobbeltsjekker. Vi kommer tilbake til deg snart.',
-  da: 'Godt spørgsmål — jeg vil være helt sikker på detaljerne, så en kollega på kontoret dobbelttjekker. Vi vender snart tilbage.',
-  fi: 'Hyvä kysymys — haluan olla täysin varma yksityiskohdista, joten kollega toimistolla tarkistaa asian. Palaamme pian.',
-  ru: 'Хороший вопрос — я хочу быть полностью уверенной в деталях, поэтому коллега в офисе всё проверяет. Мы скоро вернёмся с ответом.',
+  en: 'Let me double-check that one properly and come straight back to you.',
+  es: 'Deja que lo confirme bien y te respondo enseguida.',
+  de: 'Das schaue ich mir kurz genau an und melde mich gleich bei dir.',
+  nl: 'Ik zoek dat even goed uit en kom er zo bij je op terug.',
+  fr: 'Je vérifie cela correctement et je reviens vers vous tout de suite.',
+  it: 'Lo controllo bene e ti rispondo subito.',
+  pt: 'Deixe-me confirmar isso bem e volto já com a resposta.',
+  pl: 'Sprawdzę to dokładnie i zaraz wracam z odpowiedzią.',
+  sv: 'Jag dubbelkollar det ordentligt och återkommer strax.',
+  nb: 'La meg dobbeltsjekke det ordentlig, så kommer jeg straks tilbake til deg.',
+  da: 'Lad mig lige tjekke det ordentligt, så vender jeg tilbage med det samme.',
+  fi: 'Tarkistan sen kunnolla ja palaan asiaan heti.',
+  ru: 'Уточню это как следует и сразу вернусь к вам с ответом.',
 };
 
 export interface PendingActionView {
@@ -76,7 +91,17 @@ export interface TurnDeps {
   /** Reply dispatch effects per mode. */
   sendReply(text: string): Promise<{ providerMessageId: string | null }>;
   queueDraft(text: string, kind: 'draft' | 'one_tap'): Promise<void>;
-  escalateToHuman(reason: string, detail: string): Promise<void>;
+  escalateToHuman(
+    reason: string,
+    detail: string,
+    /** What the agent needs to act in five seconds (Christian 2026-08-30: every
+     *  task read "AIVENA wasn't sure how to handle something" — no property, no
+     *  question, nothing answerable). buyerAsked is the question in the buyer's
+     *  own words; blockedDraft is the reply Amanda WANTED to send, which is
+     *  usually correct and only unverified, so the agent's job is approve or
+     *  correct rather than research from scratch. */
+    context?: { buyerAsked?: string; blockedDraft?: string; propertyRefs?: string[] },
+  ): Promise<void>;
 }
 
 export type TurnOutcomeKind =
@@ -181,8 +206,11 @@ export async function runTurn(
 
   // Escalation is an internal write: real task in live modes, SIMULATED in
   // shadow — shadow must never spawn agent-visible tasks (reviewer-confirmed).
-  const escalate = (reason: string, detail: string) =>
-    runActionTool(mode, 'internal_write', () => deps.escalateToHuman(reason, detail));
+  const escalate = (
+    reason: string,
+    detail: string,
+    context?: { buyerAsked?: string; blockedDraft?: string; propertyRefs?: string[] },
+  ) => runActionTool(mode, 'internal_write', () => deps.escalateToHuman(reason, detail, context));
 
   let draft = loop.text?.trim() ?? '';
   if (!draft) {
@@ -195,7 +223,20 @@ export async function runTurn(
   // Long-form (≤120 words) is deterministically earned, never assumed: only a
   // turn that actually fetched full property details may run longer (§10 B1 —
   // "summarizing a property they requested"). Everything else stays short.
-  const allowLongForm = loop.toolEvents.some((ev) => ev.tool === 'get_property_details' && ev.result.ok && !ev.result.refused);
+  // A turn that did REAL work earns room to report it. Previously only
+  // get_property_details did, so "is there anything near the Norwegian school?"
+  // — answered off research_area + search_properties — was held to 35 words and
+  // died there (Christian, live 2026-08-29). Research and a genuine property
+  // search are exactly the turns that need a sentence or two more.
+  // TWO long-form tiers, not one. Fetching a specific property (or relaying an
+  // office answer) is a summary and earns the full budget. Research and a
+  // search earn the MIDDLE budget: enough for the answer, two homes and one
+  // next step — Christian 2026-08-29 got a bullet-pointed report instead.
+  const usedTool = (name: string) =>
+    loop.toolEvents.some((ev) => ev.tool === name && ev.result.ok && !ev.result.refused);
+  const fullFormTurn = usedTool('get_property_details');
+  const mediumFormTurn = usedTool('research_area') || usedTool('search_properties');
+  const allowLongForm = fullFormTurn || mediumFormTurn;
   const authoritative = ctx.officeAnswerText ? [ctx.officeAnswerText] : [];
   // Office-promise law input: the machinery keeps the promise only when an
   // ask_agency call succeeded THIS turn (simulated counts — shadow parity), a
@@ -211,6 +252,7 @@ export async function runTurn(
     // A relay turn may run long-form: the office answer needs attribution + context.
     const v = validateDraft(text, {
       allowLongForm: allowLongForm || authoritative.length > 0,
+      longFormBudget: fullFormTurn || authoritative.length > 0 ? LONG_MAX_WORDS : MEDIUM_MAX_WORDS,
       mirrorTargetWords: ctx.mirrorTargetWords ?? undefined,
       expectedLanguage: buyerWroteEnglish ? undefined : ctx.leadLanguage,
       officeContextPresent,
@@ -218,7 +260,16 @@ export async function runTurn(
     // The buyer's own message grounds NUMBERS only (echoing "under 500 000€"
     // back is mirroring, not invention — live demo 2026-08-28); it is never
     // an "office answer" to the verifier and never earns long-form.
-    const g = await runGates(text, loop.toolEvents, deps.verifier, authoritative, [inbound.text]);
+    // What Amanda and the agency have ALREADY said to this buyer. Those turns
+    // passed these gates before they were sent and are sitting on the buyer's
+    // phone, so restating them is continuity — not a fact appearing from
+    // nowhere. Without this, answering a question a SECOND time (no tool calls,
+    // because she already knows) is rejected as ungrounded (live 2026-08-30).
+    const alreadyTold = ctx.recentTurns
+      .filter((t) => t.role === 'amanda' || t.role === 'agent')
+      .map((t) => t.text)
+      .filter((t) => t.trim().length > 0);
+    const g = await runGates(text, loop.toolEvents, deps.verifier, authoritative, [inbound.text], alreadyTold);
     return [...v.violations, ...g.failures];
   };
   let failures = await judge(draft);
@@ -243,8 +294,44 @@ export async function runTurn(
       }
     }
   }
+  // SHAPE-ONLY RESCUE. If everything still wrong with the draft is shape —
+  // too long, too many sentences, over the mirror band — then the ANSWER is
+  // sound and only its size is not. Cut it to the budget deterministically and
+  // send. Escalating here is what produced the live failure: a researched,
+  // correct reply replaced by "a colleague will double-check" plus a take-over
+  // card. Truth and safety failures are untouched by this and still escalate.
+  if (failures.length > 0 && isShapeOnly(failures)) {
+    const budget = fullFormTurn || authoritative.length > 0
+      ? LONG_MAX_WORDS
+      : mediumFormTurn
+        ? MEDIUM_MAX_WORDS
+        : SHORT_MAX_WORDS;
+    const trimmed = trimToBudget(draft, budget);
+    // Only accept the trim if it actually resolved everything — a trim that
+    // still breaks a rule must not sneak past the gates.
+    if (trimmed && trimmed !== draft) {
+      const afterTrim = await judge(trimmed);
+      if (afterTrim.length === 0) {
+        draft = trimmed;
+        failures = [];
+      }
+    }
+  }
   if (failures.length > 0) {
-    await escalate('gates_failed', failures.join(', '));
+    const refsSeen = Array.from(new Set(
+      loop.toolEvents
+        .flatMap((ev) => {
+          const data = ev.result?.data as { results?: Array<{ ref?: string | null }>; ref?: string | null } | undefined;
+          if (Array.isArray(data?.results)) return data.results.map((r) => r?.ref ?? null);
+          return [data?.ref ?? null];
+        })
+        .filter((r): r is string => typeof r === 'string' && r.length > 0),
+    )).slice(0, 4);
+    await escalate('gates_failed', failures.join(', '), {
+      buyerAsked: inbound.text,
+      blockedDraft: draft,
+      propertyRefs: refsSeen,
+    });
     // Never dead air: the human-review task is real, so the office-framed
     // holding line is an honest promise. Deterministic, number-free,
     // pre-vetted — dispatched under the same mode law (shadow simulates,

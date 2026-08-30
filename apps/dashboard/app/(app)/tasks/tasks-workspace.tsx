@@ -174,8 +174,22 @@ function TaskRow({
               </Pill>
             ) : null}
           </div>
-          <p className="text-[12.5px] leading-snug text-muted-foreground">{whyItMatters(task.type)}</p>
-          {age ? <p className="text-[11px] text-muted-foreground">{age}</p> : null}
+          {/* The task's OWN words first. The per-type line is a fallback, not a
+              replacement: it used to overwrite every task, so three different
+              escalations all read "AIVENA wasn't sure how to handle something"
+              and an agent could not tell them apart, let alone answer one
+              (Christian 2026-08-30). The engine now writes a real title (the
+              buyer's question) and a real body (the properties in play plus the
+              reply Amanda wanted to send) — show those. */}
+          {task.title ? (
+            <p className="text-[12.5px] font-medium leading-snug text-foreground">{task.title}</p>
+          ) : null}
+          {task.body ? (
+            <p className="mt-0.5 whitespace-pre-line text-[12.5px] leading-snug text-muted-foreground">{task.body}</p>
+          ) : (
+            <p className="text-[12.5px] leading-snug text-muted-foreground">{whyItMatters(task.type)}</p>
+          )}
+          {age ? <p className="mt-0.5 text-[11px] text-muted-foreground">{age}</p> : null}
         </div>
 
         {/* Right: action zone (two-step confirm). Resolved rows never reach here —

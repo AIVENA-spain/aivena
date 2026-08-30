@@ -1545,7 +1545,14 @@
     "release": "Wróć do asystenta",
     "aiMutedNote": "Asystent jest wstrzymany dla tych klientów — odpowiedzieć musi człowiek. Przejmij zgłoszenie i skontaktuj się z klientem (WhatsApp/telefon/e-mail). \"Wróć do asystenta\" wznawia asystenta.",
     "notifTitle": "{name} chce rozmawiać z człowiekiem",
-    "notifBody": "Otwórz skrzynkę, aby przejąć rozmowę."
+    "notifBody": "Otwórz skrzynkę, aby przejąć rozmowę.",
+    "answerIt": "Odpowiedz",
+    "sendAnswer": "Wyślij odpowiedź",
+    "answerPlaceholder": "Odpowiedz {name} bezpośrednio — to trafi do niej na WhatsAppa.",
+    "answerHandsBack": "Amanda przejmie rozmowę z powrotem.",
+    "cancel": "Anuluj",
+    "aboutRefs": "Dotyczy: {refs}",
+    "amandaWanted": "Amanda chciała wysłać"
   },
   "conversationMode": {
     "saving": "Zapisywanie…",

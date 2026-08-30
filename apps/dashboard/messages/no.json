@@ -1570,5 +1570,13 @@
     "optFullDesc": "Hun svarer og booker for denne personen, uansett byråets nivå.",
     "optOff": "Jeg tar denne",
     "optOffDesc": "Amanda er stille her. Ingenting sendes før du slår henne på igjen."
+  },
+  "notifications": {
+    "empty": "Ingenting nytt. Du hører et lydsignal når noe trenger deg.",
+    "handoffTitle": "En kunde trenger et menneske",
+    "handoffBody": "Amanda har gitt fra seg en samtale. Åpne Innboksen.",
+    "questionTitle": "{name} — kontoret må svare på noe",
+    "questionBody": "Amanda har stilt kontoret et spørsmål. Åpne Oppgaver.",
+    "someone": "En kunde"
   }
 }

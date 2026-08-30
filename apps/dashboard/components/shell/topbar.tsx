@@ -1,9 +1,12 @@
 "use client";
 
-import { type ReactNode } from "react";
+import { type ReactNode, useCallback, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Bell, CalendarDays } from "lucide-react";
+import Link from "next/link";
+
+import { NotificationCenter, type ShellNotice } from "./notification-center";
 
 import type { UserContext } from "@/lib/auth/context";
 import { PRIMARY_NAV, ADMIN_NAV } from "./nav-config";
@@ -32,8 +35,12 @@ export function Topbar({
   dateLabel,
   inboxCount,
   brandName,
+  agencyId,
 }: {
   ctx: UserContext;
+  /** Drives the live notification feed behind the bell. Null = no agency
+   *  resolved yet, and the bell simply stays quiet rather than erroring. */
+  agencyId?: string | null;
   /** Pre-computed on the server so client hydration matches. */
   greetingKey: "greetingMorning" | "greetingAfternoon" | "greetingEvening";
   dateLabel: string;
@@ -156,15 +163,89 @@ export function Topbar({
           // DATA-SEAM: bind to <notifications> read contract from Vega when ready.
           We deliberately do NOT show a fabricated badge.
         */}
-        <button
-          type="button"
-          aria-label={tBar("notificationsLabel")}
-          disabled
-          className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground shadow-soft transition-colors hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          <Bell className="h-4 w-4" aria-hidden strokeWidth={1.7} />
-        </button>
+        <NotificationBell agencyId={agencyId ?? null} />
       </div>
     </header>
+  );
+}
+
+/**
+ * The bell — a real control at last. It was a `disabled` button since it
+ * shipped, so an agent had no way to see anything had happened unless they
+ * were standing on the right page (Christian 2026-08-30). It now carries the
+ * live feed from NotificationCenter: a count while unread, and a panel that
+ * lists what arrived and takes you to the page that can act on it.
+ */
+function NotificationBell({ agencyId }: { agencyId: string | null }) {
+  const tBar = useTranslations("shell.topbar");
+  const t = useTranslations("notifications");
+  const [notices, setNotices] = useState<ShellNotice[]>([]);
+  const [open, setOpen] = useState(false);
+  const [readAt, setReadAt] = useState<number>(0);
+
+  const onNotices = useCallback((next: ShellNotice[]) => setNotices(next), []);
+  const unread = notices.filter((n) => n.at > readAt).length;
+
+  return (
+    <div className="relative">
+      {agencyId ? <NotificationCenter agencyId={agencyId} onNotices={onNotices} /> : null}
+      <button
+        type="button"
+        aria-label={tBar("notificationsLabel")}
+        onClick={() => {
+          setOpen((v) => !v);
+          setReadAt(Date.now());
+          // Asking only on a real click keeps the browser prompt from firing
+          // at page load, which browsers ignore and users resent.
+          try {
+            if (typeof Notification !== "undefined" && Notification.permission === "default") {
+              void Notification.requestPermission();
+            }
+          } catch {
+            /* permission is best-effort */
+          }
+        }}
+        className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground shadow-soft transition-colors hover:bg-muted hover:text-foreground"
+      >
+        <Bell className="h-4 w-4" aria-hidden strokeWidth={1.7} />
+        {unread > 0 ? (
+          <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold text-white">
+            {unread > 9 ? "9+" : unread}
+          </span>
+        ) : null}
+      </button>
+
+      {open ? (
+        <>
+          <button
+            type="button"
+            aria-hidden
+            tabIndex={-1}
+            onClick={() => setOpen(false)}
+            className="fixed inset-0 z-30 cursor-default"
+          />
+          <div className="absolute right-0 z-40 mt-2 w-80 rounded-lg border border-border bg-card p-1 shadow-elevated">
+            {notices.length === 0 ? (
+              <p className="px-3 py-4 text-[12.5px] text-muted-foreground">{t("empty")}</p>
+            ) : (
+              <ul className="max-h-96 overflow-y-auto">
+                {notices.map((n) => (
+                  <li key={n.id}>
+                    <Link
+                      href={n.href}
+                      onClick={() => setOpen(false)}
+                      className="flex flex-col gap-0.5 rounded-md px-3 py-2 hover:bg-muted"
+                    >
+                      <span className="text-[12.5px] font-medium text-foreground">{n.name}</span>
+                      <span className="line-clamp-2 text-[11.5px] leading-snug text-muted-foreground">{n.detail}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </>
+      ) : null}
+    </div>
   );
 }

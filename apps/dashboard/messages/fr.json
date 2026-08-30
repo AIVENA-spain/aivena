@@ -1570,5 +1570,13 @@
     "optFullDesc": "Elle répond et réserve pour cette personne, quel que soit le niveau de l'agence.",
     "optOff": "Je m'en occupe",
     "optOffDesc": "Amanda se tait ici. Rien n'est envoyé tant que vous ne la réactivez pas."
+  },
+  "notifications": {
+    "empty": "Rien de nouveau. Un son vous préviendra.",
+    "handoffTitle": "Un client a besoin d'une personne",
+    "handoffBody": "Amanda a transmis une conversation. Ouvrez la Boîte de réception.",
+    "questionTitle": "{name} — le bureau doit répondre à quelque chose",
+    "questionBody": "Amanda a posé une question au bureau. Ouvrez Tâches.",
+    "someone": "Un client"
   }
 }

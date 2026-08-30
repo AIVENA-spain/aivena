@@ -291,8 +291,37 @@ export function makeDbBackends(ctx: BackendCtx): ToolBackends {
     },
 
     async askAgency(question: string, propertyId: string | null, category?: string | null): Promise<TicketRef> {
-      const q = question.slice(0, 800);
       const propId = propertyId && UUID_RE.test(propertyId) ? propertyId : null;
+      // STAMP THE PROPERTY ON THE QUESTION (Christian 2026-08-30: "a agent that
+      // isnt updated on this chat wont know what villa its talking about, so it
+      // should include reference nr so agent can just make a quick search in
+      // the properties section"). The model writes "this villa" because it has
+      // the conversation; the agent picking the ticket up does not. Done in
+      // CODE, not by asking the prompt nicely — a reference the agent needs to
+      // search with must never depend on the model remembering to include it.
+      let stamp = '';
+      if (propId) {
+        try {
+          const pr = (await withAgency(A, async (tx) => tx.execute(sql`
+            SELECT external_id, location_city, property_type, bedrooms, price
+              FROM properties WHERE id = ${propId}::uuid LIMIT 1
+          `))) as unknown as Array<Record<string, unknown>>;
+          const p0 = pr[0];
+          if (p0) {
+            const bits = [
+              p0.external_id ? `ref ${String(p0.external_id)}` : null,
+              p0.property_type ? String(p0.property_type) : null,
+              p0.bedrooms != null ? `${Number(p0.bedrooms)} bed` : null,
+              p0.location_city ? String(p0.location_city) : null,
+              p0.price != null ? `${Number(p0.price).toLocaleString('en-GB')} EUR` : null,
+            ].filter(Boolean);
+            if (bits.length) stamp = `\n\nProperty: ${bits.join(' · ')}`;
+          }
+        } catch (_stampErr) {
+          /* a missing stamp must never block the ticket */
+        }
+      }
+      const q = (question.slice(0, 700) + stamp).slice(0, 800);
       const cat = category && /^[a-z_]{3,32}$/i.test(category) ? category.toLowerCase() : null;
       // A 23505 (concurrent mint of the same live short_code, partial unique
       // index) aborts its transaction — the single retry must be a FRESH tx.

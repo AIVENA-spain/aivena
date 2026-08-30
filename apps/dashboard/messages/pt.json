@@ -1570,5 +1570,13 @@
     "optFullDesc": "Responde e marca para esta pessoa, seja qual for o nível da agência.",
     "optOff": "Eu trato deste",
     "optOffDesc": "A Amanda cala-se aqui. Nada é enviado até a voltar a ligar."
+  },
+  "notifications": {
+    "empty": "Nada de novo. Ouvirá um som quando for preciso.",
+    "handoffTitle": "Um cliente precisa de uma pessoa",
+    "handoffBody": "A Amanda passou uma conversa. Abra a Caixa de entrada.",
+    "questionTitle": "{name} — o escritório tem de responder a algo",
+    "questionBody": "A Amanda fez uma pergunta ao escritório. Abra Tarefas.",
+    "someone": "Um cliente"
   }
 }

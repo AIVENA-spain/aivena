@@ -1570,5 +1570,13 @@
     "optFullDesc": "Hän vastaa ja varaa tälle henkilölle riippumatta toimiston tasosta.",
     "optOff": "Hoidan tämän itse",
     "optOffDesc": "Amanda vaikenee tässä. Mitään ei lähetetä ennen kuin kytket hänet takaisin."
+  },
+  "notifications": {
+    "empty": "Ei uutta. Kuulet äänen, kun jotain tarvitsee sinua.",
+    "handoffTitle": "Asiakas tarvitsee ihmisen",
+    "handoffBody": "Amanda siirsi keskustelun. Avaa Saapuneet.",
+    "questionTitle": "{name} — toimiston pitää vastata johonkin",
+    "questionBody": "Amanda esitti toimistolle kysymyksen. Avaa Tehtävät.",
+    "someone": "Asiakas"
   }
 }

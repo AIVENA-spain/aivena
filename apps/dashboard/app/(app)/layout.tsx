@@ -100,6 +100,9 @@ export default async function AppLayout({
     getSettings(),
   ]);
   const brandName = settings?.branding?.brand_name ?? null;
+  // Feeds the topbar bell's live channel. Already on the user context, so this
+  // costs nothing extra — the notifications just had nowhere to live before.
+  const agencyId = ctx.activeAgency?.agencyId ?? null;
 
   // ─── Locale resolution + cookie reconciliation ───────────────────────────
   // Precedence (v1.14.5): the user's personal `ui_language` wins; falling back
@@ -162,6 +165,7 @@ export default async function AppLayout({
           dateLabel={dateLabel}
           inboxCount={inboxCount}
           brandName={brandName}
+          agencyId={agencyId}
         />
         <main className="flex-1 overflow-y-auto px-4 py-5 sm:px-6 sm:py-6">
           <div className="mx-auto w-full max-w-7xl">{children}</div>

@@ -42,25 +42,6 @@ type TemplateMeta = {
   taste_tags?: string[];
 };
 
-/** How well a template's manifest-derived tags match the agency's taste profile. */
-function templateTasteScore(tags: string[] | undefined, prefs: Record<string, string> | null): number {
-  if (!tags || !prefs) return 0;
-  const has = (t: string) => tags.includes(t);
-  let s = 0;
-  if (prefs.ground === "dark" && has("dark")) s += 2;
-  if (prefs.ground === "light" && has("light")) s += 2;
-  if (prefs.font === "serif" && has("serif")) s += 2;
-  if (prefs.font === "sans" && has("sans")) s += 2;
-  if (prefs.scale === "bold" && has("bold")) s += 1;
-  if (prefs.scale === "calm" && has("calm")) s += 1;
-  // the face the design LEADS with counts double the small supporting face
-  const chosen = new Set([prefs.display_face, prefs.serif_face, prefs.serif_flavor, prefs.sans_face].filter(Boolean) as string[]);
-  for (const face of chosen) {
-    if (has(`title:${face}`)) s += 2;
-    else if (has(`body:${face}`)) s += 1;
-  }
-  return s;
-}
 type Defaults = Omit<TemplateMeta, "editable_slots" | "colour_layers"> & {
   editable_slots: (TemplateMeta["editable_slots"][number] & { value: string })[];
   colour_layers: (TemplateMeta["colour_layers"][number] & { value: string })[];
@@ -113,7 +94,7 @@ async function runLimited<T>(items: T[], n: number, fn: (t: T, i: number) => Pro
   await Promise.all(workers);
 }
 
-export function EditableWizard({ initialLanguage, prefs = null }: { initialLanguage?: string; prefs?: Record<string, string> | null } = {}) {
+export function EditableWizard({ initialLanguage }: { initialLanguage?: string } = {}) {
   const [step, setStep] = useState<"gallery" | "property" | "template" | "edit" | "classic">("gallery");
   const [editFrom, setEditFrom] = useState<"gallery" | "template">("gallery");
 
@@ -302,35 +283,9 @@ export function EditableWizard({ initialLanguage, prefs = null }: { initialLangu
     if (r.ok) { setClassicFiled(true); const sec = classicSection.trim(); if (sec && !sections.includes(sec)) setSections((prev) => [...prev, sec].sort()); }
     else setErr(r.message as string);
   }
-
-  // taste-sorted (Christian 2026-08-28: the taste game "will decide for the property post type
-  // templates too — give them a few templates that we recommend based on their preferences")
-  const eligibleTemplates = useMemo(() => {
-    const arr = catalogue.filter((t) => t.photo_count === photos.length);
-    if (!prefs) return arr;
-    return [...arr].sort((a, b) => templateTasteScore(b.taste_tags, prefs) - templateTasteScore(a.taste_tags, prefs));
-  }, [catalogue, photos.length, prefs]);
-  // "a few templates we recommend" — the TOP matches, not everything above a bar (a threshold
-  // alone badged two thirds of the catalogue and meant nothing). Recommendations come from BOTH
-  // sources: the gallery payload (the landing view) and the catalogue (the property path).
-  const topByTaste = useCallback((items: { id: string; tags?: string[] }[], take: number) => {
-    if (!prefs) return new Set<string>();
-    return new Set(
-      items
-        .map((it) => ({ id: it.id, s: templateTasteScore(it.tags, prefs) }))
-        .filter((x) => x.s >= 4)
-        .sort((a, b) => b.s - a.s)
-        .slice(0, take)
-        .map((x) => x.id),
-    );
-  }, [prefs]);
-  const recommendedIds = useMemo(
-    () => topByTaste(gallery.map((g) => ({ id: g.template_id, tags: g.taste_tags })), 6),
-    [gallery, topByTaste],
-  );
-  const recommendedPickerIds = useMemo(
-    () => topByTaste(eligibleTemplates.map((t) => ({ id: t.id, tags: t.taste_tags })), 3),
-    [eligibleTemplates, topByTaste],
+  const eligibleTemplates = useMemo(
+    () => catalogue.filter((t) => t.photo_count === photos.length),
+    [catalogue, photos.length],
   );
 
   // load an editable template's defaults into the edit state (shared by both entry paths).
@@ -588,12 +543,6 @@ export function EditableWizard({ initialLanguage, prefs = null }: { initialLangu
               <p className="text-sm text-neutral-500 dark:text-neutral-400">
                 Shown with your best listings in a neutral style — pick one to customise in your colours.
               </p>
-              {prefs && recommendedIds.size > 0 && (
-                <p className="mt-1 flex items-center gap-1.5 text-sm font-medium text-emerald-700 dark:text-emerald-400">
-                  <Sparkles className="h-3.5 w-3.5" />
-                  {recommendedIds.size} template{recommendedIds.size === 1 ? "" : "s"} picked for the style you chose — look for the green badge.
-                </p>
-              )}
             </div>
             <button onClick={() => setStep("property")}
               className="rounded-lg border border-neutral-300 px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-200">
@@ -631,9 +580,6 @@ export function EditableWizard({ initialLanguage, prefs = null }: { initialLangu
                     <span className="font-medium text-neutral-600 dark:text-neutral-300">Template {item.number ?? item.template_id}</span>
                     <span className="text-neutral-400 opacity-0 transition group-hover:opacity-100">Customise →</span>
                   </div>
-                  {recommendedIds.has(item.template_id) && (
-                    <span className="absolute left-2 top-2 rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-semibold text-white shadow">For your taste</span>
-                  )}
                   {galleryThumbs[item.template_id] && (
                     <button type="button" title="See it full size"
                       onClick={(e) => { e.stopPropagation(); setEnlarged({ src: galleryThumbs[item.template_id]!, title: `Template ${item.number ?? item.template_id}`, pick: () => useGalleryTemplate(item) }); }}
@@ -698,9 +644,6 @@ export function EditableWizard({ initialLanguage, prefs = null }: { initialLangu
                   )}
                 </div>
                 <div className="p-2 text-center text-xs font-medium text-muted-foreground">Template {t.number ?? t.id}</div>
-                {recommendedPickerIds.has(t.id) && (
-                  <span className="absolute left-2 top-2 rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-semibold text-white shadow">For your taste</span>
-                )}
                 {thumbs[t.id] && (
                   <button type="button" title="See it full size"
                     onClick={(e) => { e.stopPropagation(); setEnlarged({ src: thumbs[t.id]!, title: `Template ${t.number ?? t.id} — your listing`, pick: () => pickTemplate(t) }); }}

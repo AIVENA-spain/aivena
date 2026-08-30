@@ -45,7 +45,20 @@ export const LISTING_STYLES: CarouselStyle[] = [
 const W = 1080, H = 1350;
 let FR = "Fraunces 115pt";   // display face — edition-swappable around a SYNCHRONOUS spec build
 const CAS = "Libre Caslon Display";
-const TERRA = "#c96a4a", OLIVE = "#5a6b4e", LIME = "#f4efe6";
+let TERRA = "#c96a4a", OLIVE = "#5a6b4e", LIME = "#f4efe6";
+const TERRA_D = TERRA, OLIVE_D = OLIVE, LIME_D = LIME;
+/** Christian 2026-08-30: he chose two blues and the deck came back terracotta, olive and brown.
+ *  These are a style's signature accents, but they were module constants, so a chosen palette
+ *  could never reach them. When the agent has picked colours (lockPalette), the accents are
+ *  rebuilt FROM those colours — the style keeps its structure and rhythm, in their palette.
+ *  Set and restored around the synchronous spec build, exactly like the display face. */
+function useBrandAccents(brand: CarouselBrand): () => void {
+  const prev: [string, string, string] = [TERRA, OLIVE, LIME];
+  TERRA = mix(brand.gold, brand.navy, 0.72);      // the warm accent slot
+  OLIVE = mix(brand.navy, brand.gold, 0.78);      // the deep secondary
+  LIME = mix(brand.cream, brand.gold, 0.94);      // the pale ground
+  return () => { [TERRA, OLIVE, LIME] = prev; };
+}
 
 // ── shared devices ────────────────────────────────────────────────────────────
 function frame(b: [number, number, number, number], colour: string, w = 1.5, opacity?: number) {
@@ -528,6 +541,8 @@ export async function renderPlannedStyled(
   // generations can never observe each other's fonts.
   const prevFR = FR, prevSerif = getPlannedSerif();
   if (ed.display) { FR = ed.display; setPlannedSerif(ed.display); }
+  // the agent's chosen colours reach the styles' signature accents too
+  const restoreAccents = lockPalette ? useBrandAccents(b) : () => { [TERRA, OLIVE, LIME] = [TERRA_D, OLIVE_D, LIME_D]; };
   let specs: unknown[];
   let grain = 0;
   try {
@@ -538,6 +553,7 @@ export async function renderPlannedStyled(
   } finally {
     FR = prevFR;
     setPlannedSerif(prevSerif);
+    restoreAccents();
   }
   if (grain > 0) return renderAll(specs, [], grain);
   const out: Buffer[] = [];

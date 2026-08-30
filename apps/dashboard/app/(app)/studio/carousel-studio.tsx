@@ -48,31 +48,6 @@ const LANGS: [string, string][] = [
 // the AI-imagery tips styles (fresh artwork per topic; colour mood applies to these)
 const AI_STYLE_KEYS = ["bodegon", "litoral", "tinta", "salitre", "papel", "arcilla", "acuarela", "bordado", "pueblo", "mercado"];
 
-// each style's visual traits, matched against the agency's this-or-that taste profile to rank
-// the picker ("we should base the templates on that for this specific agency")
-const STYLE_TRAITS: Record<string, Record<string, string>> = {
-  editorial: { font: "serif", scale: "calm", ground: "light", density: "minimal", mood: "calm", serif: "classic" },
-  cartel: { font: "sans", scale: "bold", ground: "dark", density: "decorated", mood: "bold", numerals: "big", intensity: "rich" },
-  encalada: { font: "serif", scale: "calm", ground: "light", accent: "warm", density: "decorated", devices: "ornamented" },
-  sereno: { font: "serif", scale: "calm", ground: "light", intensity: "muted", density: "minimal", mood: "calm", serif: "display" },
-  bodegon: { artwork: "photo", ground: "dark", intensity: "rich", mood: "calm" },
-  litoral: { artwork: "illustration", illo: "painterly", intensity: "rich", mood: "bold" },
-  tinta: { artwork: "illustration", illo: "crafted", intensity: "rich", density: "decorated", mood: "bold" },
-  salitre: { artwork: "photo", ground: "light", intensity: "muted", density: "minimal", mood: "calm" },
-  papel: { artwork: "illustration", illo: "crafted", intensity: "rich" },
-  arcilla: { artwork: "illustration", illo: "crafted", intensity: "muted", mood: "calm" },
-  acuarela: { artwork: "illustration", illo: "painterly", intensity: "muted", mood: "calm" },
-  bordado: { artwork: "illustration", illo: "crafted", density: "decorated", devices: "ornamented" },
-  pueblo: { artwork: "photo", intensity: "rich", accent: "warm", mood: "bold" },
-  mercado: { artwork: "photo", intensity: "rich", accent: "warm" },
-};
-function tasteScore(styleKey: string, prefs: Record<string, string> | null): number {
-  if (!prefs) return 0;
-  const t = STYLE_TRAITS[styleKey] ?? {};
-  let s = 0;
-  for (const [k, v] of Object.entries(t)) if (prefs[k] === v) s++;
-  return s;
-}
 
 // Style example slides ship as static assets (public/studio/carousel-examples/<style>/<n>.jpg)
 // so the picker paints instantly — no fetch, no signed URLs. Counts must match the files on disk.
@@ -133,7 +108,7 @@ const STYLES: Record<CarouselType, [string, string, string][]> = {
   ],
 };
 
-export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId, prefs = null }: { initialTopic?: string; initialLanguage?: string; resumeGenId?: string; prefs?: Record<string, string> | null } = {}) {
+export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId }: { initialTopic?: string; initialLanguage?: string; resumeGenId?: string } = {}) {
   const [phase, setPhase] = useState<Phase>("form");   // tips-only: land straight on the form
   const [ctype] = useState<CarouselType>("tips");
   const [slides, setSlides] = useState<string[]>([]);
@@ -447,9 +422,9 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
               })()}
             </div>
 
-            <div className="mb-2 mt-7 text-sm font-semibold text-neutral-900 dark:text-neutral-100">4. Choose a look &amp; feel{prefs ? <span className="ml-2 font-normal text-neutral-400">sorted for your taste</span> : null}</div>
+            <div className="mb-2 mt-7 text-sm font-semibold text-neutral-900 dark:text-neutral-100">4. Choose a look &amp; feel</div>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-              {(prefs ? [...STYLES.tips].sort((a, b) => tasteScore(b[0], prefs) - tasteScore(a[0], prefs)) : STYLES.tips).map(([key, name, desc], gi) => (
+              {STYLES.tips.map(([key, name, desc]) => (
                 <div key={key} role="button" tabIndex={0}
                   onClick={() => { setStyle(key); setPreviewIdx(0); }}
                   onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setStyle(key); setPreviewIdx(0); } }}
@@ -457,9 +432,6 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
                     ? "border-emerald-600 ring-1 ring-emerald-600"
                     : "border-neutral-200 bg-white hover:border-neutral-400 dark:border-neutral-700 dark:bg-neutral-900"}`}>
                   <img src={examples[key][0]} alt={name} className="aspect-square w-full rounded-t-xl object-cover object-top" />
-                  {prefs && gi < 3 && tasteScore(key, prefs) >= 2 && (
-                    <span className="absolute left-2 top-2 rounded-full bg-emerald-600/95 px-2 py-0.5 text-[10px] font-semibold text-white">For your taste</span>
-                  )}
                   <div className="p-2.5">
                     <div className="text-[13px] font-semibold text-neutral-900 dark:text-neutral-100">{name.replace(" ✦ Recommended", "")}</div>
                     <div className="mt-0.5 text-[11px] leading-snug text-neutral-500 dark:text-neutral-400">{desc.replace(/^AI imagery — /, "")}</div>

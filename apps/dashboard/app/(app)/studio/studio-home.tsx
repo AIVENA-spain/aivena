@@ -10,9 +10,8 @@ import { EditableWizard } from "./editable-wizard";
 import { StudioWizard } from "./studio-wizard";
 import { SmartStudio } from "./smart-studio";
 import { CarouselStudio } from "./carousel-studio";
-import { TasteGame } from "./taste-game";
 import { downloadImage } from "./property-picker";
-import { studioSuggestionsAction, studioPreferencesAction } from "./wizard-actions";
+import { studioSuggestionsAction } from "./wizard-actions";
 import { withBasePath } from "@/lib/base-path";
 
 type Suggestions = {
@@ -35,7 +34,7 @@ type LibraryItem = {
   content_type: string | null; created_at: string; section?: string | null;
 };
 type Quota = { used?: number; quota?: number | null; remaining?: number | null; plan_tier?: string; unlimited?: boolean } | null;
-type View = "home" | "templates" | "smart" | "renovation" | "carousel" | "library" | "taste";
+type View = "home" | "templates" | "smart" | "renovation" | "carousel" | "library";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 const TYPE_LABEL: Record<string, string> = {
@@ -171,17 +170,6 @@ export function StudioHome({
     return () => { cancelled = true; };
   }, []);
 
-  // the agency's taste profile (this-or-that game) — drives style recommendations in the wizard
-  const [prefs, setPrefs] = useState<Record<string, string> | null>(null);
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const r = await studioPreferencesAction();
-      if (!cancelled && r.ok && r.prefs && typeof r.prefs === "object") setPrefs(r.prefs as Record<string, string>);
-    })();
-    return () => { cancelled = true; };
-  }, [view === "taste"]);   // refetch after the game saves and the user returns
-
   // ── the full library grid (its own sub-view), grouped by your sections ──
   const sections = useMemo(() => {
     const s = new Set<string>();
@@ -195,10 +183,9 @@ export function StudioHome({
     return initialLibrary.filter((i) => i.section === activeSection);
   }, [initialLibrary, activeSection]);
 
-  if (view === "templates") return <SubViewShell onBack={() => setView("home")}><EditableWizard initialLanguage={uiLanguage} prefs={prefs} /></SubViewShell>;
+  if (view === "templates") return <SubViewShell onBack={() => setView("home")}><EditableWizard initialLanguage={uiLanguage} /></SubViewShell>;
   if (view === "smart") return <SubViewShell onBack={() => setView("home")}><SmartStudio /></SubViewShell>;
-  if (view === "carousel") return <SubViewShell onBack={() => { setResumeGenId(undefined); setView("home"); }} crumb="Tips carousel"><CarouselStudio initialTopic={pendingTopic} initialLanguage={pendingLang ?? uiLanguage} resumeGenId={resumeGenId} prefs={prefs} /></SubViewShell>;
-  if (view === "taste") return <SubViewShell onBack={() => setView("home")} crumb="Find your style"><TasteGame onDone={() => setView("home")} /></SubViewShell>;
+  if (view === "carousel") return <SubViewShell onBack={() => { setResumeGenId(undefined); setView("home"); }} crumb="Tips carousel"><CarouselStudio initialTopic={pendingTopic} initialLanguage={pendingLang ?? uiLanguage} resumeGenId={resumeGenId} /></SubViewShell>;
   if (view === "renovation") return <SubViewShell onBack={() => setView("home")}><StudioWizard initialLibrary={initialLibrary} initialFork="renovation" /></SubViewShell>;
 
   if (view === "library") {
@@ -273,9 +260,6 @@ export function StudioHome({
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={() => setView("taste")} className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3.5 py-2 text-sm font-medium text-neutral-700 transition hover:border-neutral-400 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300">
-            <Sparkles className="h-4 w-4" /> {prefs ? "Retune your style" : "Find your style"}
-          </button>
           <Link href="/settings" className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3.5 py-2 text-sm font-medium text-neutral-700 transition hover:border-neutral-400 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300">
             <Palette className="h-4 w-4" /> Brand kit
           </Link>

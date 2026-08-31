@@ -103,7 +103,11 @@ export async function renderTipsImageStyled(
 ): Promise<Buffer[]> {
   const cfg = CFG[style];
   const T = chrome(lang);
-  const NAVY = brand.navy, GOLD = brand.gold, CREAM = brand.cream;
+  // Christian 2026-08-31: "all the templates has editable colors and that the colors are actually
+  // correct not hardcoded in." brand.text was never destructured here, so the ink slot reached
+  // NONE of the ten AI-imagery styles, and the largest mark in every deck — the cover hook title —
+  // was the literal "#f6f1e7" rather than the agency's paper.
+  const NAVY = brand.navy, GOLD = brand.gold, CREAM = brand.cream, INK = brand.text;
   const n = plan.tips.length;
   // RULE 3 — one hero, N tips, one closing. The mid-deck image beat is an EXTRA, so it belongs
   // with the intro and the recap: present when the agent asked for the fuller deck, absent from
@@ -140,7 +144,7 @@ export async function renderTipsImageStyled(
       els.push({ type: "scrim", bbox: [0, 0, W, 620], colour: NAVY, direction: "down" });
       els.push({ type: "text", bbox: [80, 96, 720, 128], content: agency.toUpperCase(), font: "Jost", size: 20, colour: CREAM, align: "left", weight: "500", tracking: 5 });
       els.push({ type: "text", bbox: [80, 200, 1000, 236], content: plan.eyebrow.toUpperCase(), font: "Jost", size: 22, colour: GOLD, align: "left", tracking: 6 });
-      els.push({ type: "text", bbox: [80, 260, 1000, plan.hook_title.length > 58 ? 660 : 560], content: wrap(plan.hook_title, FR, plan.hook_title.length > 58 ? 70 : 92, 920), font: FR, size: plan.hook_title.length > 58 ? 70 : 92, colour: "#f6f1e7", align: "left", line_height: plan.hook_title.length > 58 ? 84 : 108 });
+      els.push({ type: "text", bbox: [80, 260, 1000, plan.hook_title.length > 58 ? 660 : 560], content: wrap(plan.hook_title, FR, plan.hook_title.length > 58 ? 70 : 92, 920), font: FR, size: plan.hook_title.length > 58 ? 70 : 92, colour: CREAM, align: "left", line_height: plan.hook_title.length > 58 ? 84 : 108 });
       els.push(aiTag(mix(CREAM, NAVY, 0.6)));
       els.push(...band(1, mix(CREAM, NAVY, 0.65)));
     } else if (cfg.mode === "light") {
@@ -154,7 +158,7 @@ export async function renderTipsImageStyled(
       els.push({ type: "scrim", bbox: [0, 880, W, H], colour: NAVY });
       els.push({ type: "text", bbox: [80, 96, 720, 128], content: agency.toUpperCase(), font: "Jost", size: 20, colour: CREAM, align: "left", weight: "500", tracking: 5 });
       els.push({ type: "text", bbox: [80, 930, 1000, 966], content: plan.eyebrow.toUpperCase(), font: "Jost", size: 22, colour: GOLD, align: "left", tracking: 6 });
-      els.push({ type: "text", bbox: [80, plan.hook_title.length > 44 ? 960 : 990, 1000, 1220], content: wrap(plan.hook_title, FR, plan.hook_title.length > 44 ? 62 : 88, 920), font: FR, size: plan.hook_title.length > 44 ? 62 : 88, colour: "#f6f1e7", align: "left", line_height: plan.hook_title.length > 44 ? 76 : 104 });
+      els.push({ type: "text", bbox: [80, plan.hook_title.length > 44 ? 960 : 990, 1000, 1220], content: wrap(plan.hook_title, FR, plan.hook_title.length > 44 ? 62 : 88, 920), font: FR, size: plan.hook_title.length > 44 ? 62 : 88, colour: CREAM, align: "left", line_height: plan.hook_title.length > 44 ? 76 : 104 });
       els.push(aiTag(mix(CREAM, NAVY, 0.6)));
       els.push(...band(1, mix(CREAM, NAVY, 0.65)));
     }
@@ -182,7 +186,7 @@ export async function renderTipsImageStyled(
         elements: [
           { type: "text", bbox: [80, 120, 1000, 156], content: plan.eyebrow.toUpperCase(), font: "Jost", size: 21, colour: GOLD, align: "left", tracking: 6 },
           { type: "text", bbox: [80, 220, 1000, 520], content: wrap(plan.slide2_title, FR, 76, 920), font: FR, size: 76, colour: NAVY, align: "left", line_height: 92, valign: "center" },
-          { type: "text", bbox: [80, 580, 1000, 720], content: wrap(plan.slide2_body, "Jost", 32, 920), font: "Jost", size: 32, colour: mix(NAVY, CREAM, 0.85), align: "left", line_height: 48 },
+          { type: "text", bbox: [80, 580, 1000, 720], content: wrap(plan.slide2_body, "Jost", 32, 920), font: "Jost", size: 32, colour: mix(INK, CREAM, 0.85), align: "left", line_height: 48 },
           { type: "photo", photo: 1, bbox: [0, 800, 1080, 1210], zoom: 1.15, x: 0.5, y: 0.6 },
           { type: "rect", bbox: [0, 796, 1080, 800], fill: NAVY },
           noShield(aiTag(mix(NAVY, CREAM, 0.5), true)),
@@ -196,7 +200,7 @@ export async function renderTipsImageStyled(
           { type: "photo", photo: 1, bbox: [0, 0, W, H] },
           { type: "scrim", bbox: [0, 0, W, 560], colour: NAVY, direction: "down" },
           { type: "text", bbox: [80, 130, 1000, 166], content: plan.eyebrow.toUpperCase(), font: "Jost", size: 21, colour: GOLD, align: "left", tracking: 6 },
-          { type: "text", bbox: [80, 210, 1000, 470], content: wrap(plan.slide2_title, FR, 72, 920), font: FR, size: 72, colour: "#f6f1e7", align: "left", line_height: 88 },
+          { type: "text", bbox: [80, 210, 1000, 470], content: wrap(plan.slide2_title, FR, 72, 920), font: FR, size: 72, colour: CREAM, align: "left", line_height: 88 },
           aiTag(mix(CREAM, NAVY, 0.6)),
           ...band(2, mix(CREAM, NAVY, 0.65)),
         ],
@@ -216,7 +220,7 @@ export async function renderTipsImageStyled(
         { type: "photo", photo: (i + 1) % images.length, bbox: [860, 90, 1010, 240], zoom: 2.4, x: 0.5, y: 0.6 },
         { type: "rect", bbox: [80, 400, 164, 404], fill: GOLD },
         { type: "text", bbox: [80, 452, 1000, 650], content: wrap(tip.title, FR, 64, 920), font: FR, size: 64, colour: NAVY, align: "left", line_height: 78 },
-        { type: "text", bbox: [80, 700, 1000, 1080], content: wrap(tip.body, "Jost", 36, 920), font: "Jost", size: 36, colour: mix(NAVY, CREAM, 0.85), align: "left", line_height: 56, valign: "center" },
+        { type: "text", bbox: [80, 700, 1000, 1080], content: wrap(tip.body, "Jost", 36, 920), font: "Jost", size: 36, colour: mix(INK, CREAM, 0.85), align: "left", line_height: 56, valign: "center" },
         ...(tip.teaser ? [{ type: "text", bbox: [80, 1140, 900, 1188], content: tip.teaser, font: "Jost", size: 26, colour: CREAM, align: "left", weight: "500", valign: "center", pill: { fill: NAVY, pad_x: 28, pad_y: 14 } }] : []),
         ...band(slideNo, mix(NAVY, CREAM, 0.55)),
       ],
@@ -233,7 +237,7 @@ export async function renderTipsImageStyled(
       } else {
         els.push({ type: "scrim", bbox: [0, 820, W, H], colour: NAVY });
         els.push({ type: "scrim", bbox: [0, 1000, W, H], colour: NAVY });
-        els.push({ type: "text", bbox: [80, 1030, 1000, 1220], content: wrap(line, FR, 64, 920), font: FR, size: 64, colour: "#f6f1e7", align: "left", line_height: 80 });
+        els.push({ type: "text", bbox: [80, 1030, 1000, 1220], content: wrap(line, FR, 64, 920), font: FR, size: 64, colour: CREAM, align: "left", line_height: 80 });
         els.push(aiTag(mix(CREAM, NAVY, 0.6)));
         els.push(...band(slideNo, mix(CREAM, NAVY, 0.65)));
       }
@@ -304,7 +308,11 @@ export async function renderTipsImageStyledV2(
 ): Promise<Buffer[]> {
   const cfg = CFG[style];
   const T = chrome(lang);
-  const NAVY = brand.navy, GOLD = brand.gold, CREAM = brand.cream;
+  // Christian 2026-08-31: "all the templates has editable colors and that the colors are actually
+  // correct not hardcoded in." brand.text was never destructured here, so the ink slot reached
+  // NONE of the ten AI-imagery styles, and the largest mark in every deck — the cover hook title —
+  // was the literal "#f6f1e7" rather than the agency's paper.
+  const NAVY = brand.navy, GOLD = brand.gold, CREAM = brand.cream, INK = brand.text;
   const n = plan.tips.length;
   const total = n + 2 + (includeContext ? 1 : 0) + (includeRecap ? 1 : 0);
 
@@ -333,7 +341,7 @@ export async function renderTipsImageStyledV2(
       els.push({ type: "scrim", bbox: [0, 0, W, 620], colour: NAVY, direction: "down" });
       els.push({ type: "text", bbox: [80, 96, 720, 128], content: agency.toUpperCase(), font: "Jost", size: 20, colour: CREAM, align: "left", weight: "500", tracking: 5 });
       els.push({ type: "text", bbox: [80, 200, 1000, 236], content: plan.eyebrow.toUpperCase(), font: "Jost", size: 22, colour: GOLD, align: "left", tracking: 6 });
-      els.push({ type: "text", bbox: [80, 260, 1000, plan.hook_title.length > 58 ? 660 : 560], content: wrap(plan.hook_title, FR, plan.hook_title.length > 58 ? 70 : 92, 920), font: FR, size: plan.hook_title.length > 58 ? 70 : 92, colour: "#f6f1e7", align: "left", line_height: plan.hook_title.length > 58 ? 84 : 108 });
+      els.push({ type: "text", bbox: [80, 260, 1000, plan.hook_title.length > 58 ? 660 : 560], content: wrap(plan.hook_title, FR, plan.hook_title.length > 58 ? 70 : 92, 920), font: FR, size: plan.hook_title.length > 58 ? 70 : 92, colour: CREAM, align: "left", line_height: plan.hook_title.length > 58 ? 84 : 108 });
       els.push(aiTag(mix(CREAM, NAVY, 0.6)));
       els.push(...band(1, mix(CREAM, NAVY, 0.65)));
     } else if (cfg.mode === "light") {
@@ -347,7 +355,7 @@ export async function renderTipsImageStyledV2(
       els.push({ type: "scrim", bbox: [0, 880, W, H], colour: NAVY });
       els.push({ type: "text", bbox: [80, 96, 720, 128], content: agency.toUpperCase(), font: "Jost", size: 20, colour: CREAM, align: "left", weight: "500", tracking: 5 });
       els.push({ type: "text", bbox: [80, 930, 1000, 966], content: plan.eyebrow.toUpperCase(), font: "Jost", size: 22, colour: GOLD, align: "left", tracking: 6 });
-      els.push({ type: "text", bbox: [80, plan.hook_title.length > 44 ? 960 : 990, 1000, 1220], content: wrap(plan.hook_title, FR, plan.hook_title.length > 44 ? 62 : 88, 920), font: FR, size: plan.hook_title.length > 44 ? 62 : 88, colour: "#f6f1e7", align: "left", line_height: plan.hook_title.length > 44 ? 76 : 104 });
+      els.push({ type: "text", bbox: [80, plan.hook_title.length > 44 ? 960 : 990, 1000, 1220], content: wrap(plan.hook_title, FR, plan.hook_title.length > 44 ? 62 : 88, 920), font: FR, size: plan.hook_title.length > 44 ? 62 : 88, colour: CREAM, align: "left", line_height: plan.hook_title.length > 44 ? 76 : 104 });
       els.push(aiTag(mix(CREAM, NAVY, 0.6)));
       els.push(...band(1, mix(CREAM, NAVY, 0.65)));
     }
@@ -390,7 +398,7 @@ export async function renderTipsImageStyledV2(
           { type: "rect", bbox: [0, 596, W, 600], fill: GOLD, opacity: 0.6 },
           { type: "text", bbox: [80, 640, 300, 800], content: String(i + 1).padStart(2, "0"), font: FR, size: 130, colour: GOLD, align: "left" },
           { type: "text", bbox: [320, 656, 1000, 830], content: wrap(tip.title, FR, 56, 660), font: FR, size: 56, colour: NAVY, align: "left", line_height: 68 },
-          { type: "text", bbox: [80, 860, 1000, 1120], content: wrap(tip.body, "Jost", 33, 920), font: "Jost", size: 33, colour: mix(NAVY, CREAM, 0.85), align: "left", line_height: 50, valign: "center" },
+          { type: "text", bbox: [80, 860, 1000, 1120], content: wrap(tip.body, "Jost", 33, 920), font: "Jost", size: 33, colour: mix(INK, CREAM, 0.85), align: "left", line_height: 50, valign: "center" },
           ...(tip.teaser ? [{ type: "text", bbox: [80, 1150, 900, 1196], content: tip.teaser, font: "Jost", size: 25, colour: CREAM, align: "left", weight: "500", valign: "center", pill: { fill: NAVY, pad_x: 26, pad_y: 13 } }] : []),
           aiTag(mix(NAVY, CREAM, 0.5)),
           ...band(slideNo, mix(NAVY, CREAM, 0.55)),
@@ -406,7 +414,7 @@ export async function renderTipsImageStyledV2(
           { type: "text", bbox: [80, 100, 520, 330], content: String(i + 1).padStart(2, "0"), font: FR, size: 200, colour: GOLD, align: "left" },
           { type: "text", bbox: [80, 360, 520, 640], content: wrap(tip.title, FR, 54, 440), font: FR, size: 54, colour: NAVY, align: "left", line_height: 66, valign: "center" },
           { type: "rect", bbox: [80, 690, 164, 694], fill: GOLD },
-          { type: "text", bbox: [80, 740, 1000, 1080], content: wrap(tip.body, "Jost", 34, 920), font: "Jost", size: 34, colour: mix(NAVY, CREAM, 0.85), align: "left", line_height: 52, valign: "center" },
+          { type: "text", bbox: [80, 740, 1000, 1080], content: wrap(tip.body, "Jost", 34, 920), font: "Jost", size: 34, colour: mix(INK, CREAM, 0.85), align: "left", line_height: 52, valign: "center" },
           ...(tip.teaser ? [{ type: "text", bbox: [80, 1140, 900, 1188], content: tip.teaser, font: "Jost", size: 25, colour: CREAM, align: "left", weight: "500", valign: "center", pill: { fill: NAVY, pad_x: 26, pad_y: 13 } }] : []),
           aiTag(mix(NAVY, CREAM, 0.5)),
           ...band(slideNo, mix(NAVY, CREAM, 0.55)),
@@ -429,7 +437,7 @@ export async function renderTipsImageStyledV2(
         els.push({ type: "scrim", bbox: [0, 760, W, H], colour: NAVY });
         els.push({ type: "scrim", bbox: [0, 960, W, H], colour: NAVY });
         els.push({ type: "text", bbox: [80, 100, 320, 260], content: String(i + 1).padStart(2, "0"), font: FR, size: 130, colour: GOLD, align: "left" });
-        els.push({ type: "text", bbox: [80, 900, 1000, 1050], content: wrap(tip.title, FR, 58, 920), font: FR, size: 58, colour: "#f6f1e7", align: "left", line_height: 70 });
+        els.push({ type: "text", bbox: [80, 900, 1000, 1050], content: wrap(tip.title, FR, 58, 920), font: FR, size: 58, colour: CREAM, align: "left", line_height: 70 });
         els.push({ type: "text", bbox: [80, 1080, 1000, 1220], content: wrap(tip.body, "Jost", 30, 920), font: "Jost", size: 30, colour: mix(CREAM, NAVY, 0.9), align: "left", line_height: 44 });
         els.push(aiTag(mix(CREAM, NAVY, 0.6)));
         els.push(...band(slideNo, mix(CREAM, NAVY, 0.65)));

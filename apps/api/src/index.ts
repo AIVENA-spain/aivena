@@ -39,6 +39,7 @@ import amandaAdminRoute from './routes/amanda-admin';
 import { drainAmandaInbound, drainBusy, engineEnabled, requestDrainStop } from './amanda-engine/outbox-worker';
 import { processTurnDb } from './amanda-engine/process-turn-db';
 import { sweepViewingReminders } from './amanda-engine/viewing-reminders';
+import { pingTick } from './amanda-engine/agent-ping';
 
 Sentry.init({
   dsn: env.SENTRY_DSN,
@@ -268,6 +269,26 @@ if (engineEnabled()) {
     }
   };
   setInterval(() => { void reminderTick(); }, 30 * 60_000);
+
+  // Agent question pings — every 2 minutes. Cheap: the query only returns
+  // questions that are OPEN and due, and the worker declines to send far more
+  // often than it sends (nobody on shift, window closed, already pinged), each
+  // decline recorded rather than retried in a spin. Gated behind the same
+  // AMANDA_PING_ENABLED flag discipline as the engine so it can be switched off
+  // without a deploy.
+  if (process.env.AMANDA_PING_ENABLED === 'true') {
+    const pingTickRun = async () => {
+      try {
+        const outcomes = await pingTick();
+        const sent = outcomes.filter((o) => o.sent).length;
+        if (sent > 0) logger.info('Agent pings sent', { sent, considered: outcomes.length });
+      } catch (err) {
+        console.error('[agent-ping] tick failed', err instanceof Error ? err.message.split('\n')[0].slice(0, 200) : 'error');
+      }
+    };
+    setInterval(() => { void pingTickRun(); }, 2 * 60_000);
+    logger.info('Agent ping worker armed');
+  }
 }
 
 export default app;

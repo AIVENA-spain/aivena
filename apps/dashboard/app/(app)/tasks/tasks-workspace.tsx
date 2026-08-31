@@ -348,7 +348,16 @@ function AnswerBox({
         <div className="mb-2 flex items-center gap-2.5 rounded-md border border-border bg-card p-2">
           {property.image ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={property.image} alt="" loading="lazy" className="h-12 w-16 shrink-0 rounded object-cover" />
+            // Most catalogue images are hotlinked from the source site and can
+            // 403. A broken-image icon looks like our bug, so drop to the
+            // placeholder instead.
+            <img
+              src={property.image}
+              alt=""
+              loading="lazy"
+              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+              className="h-12 w-16 shrink-0 rounded object-cover"
+            />
           ) : (
             <span aria-hidden className="flex h-12 w-16 shrink-0 items-center justify-center rounded bg-muted text-muted-foreground">
               <Building2 className="h-4 w-4" />

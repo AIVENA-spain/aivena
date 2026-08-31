@@ -1,4 +1,11 @@
-// twilio-whatsapp-inbound — W6 receive path v5 (2026-08-29).
+// twilio-whatsapp-inbound — W6 receive path v6 (2026-08-31).
+//
+//   v6: THE AGENT'S REPLY IS THE ANSWER. A staff message used to be recorded
+//   and dropped. When we have pinged that agent a question, their next message
+//   is matched back to it (by the PING we sent, never by parsing their words),
+//   the question is answered, the mirrored dashboard task is cleared, and the
+//   same ticket_answered row the dashboard files is enqueued — so Amanda relays
+//   it to the buyer in the buyer's language under the same mode law.
 //
 //   REPO-vs-LIVE WARNING (found 2026-08-29): this file had DIVERGED badly from
 //   the deployed function — the repo copy was still v2 plus the v4 clear-line
@@ -122,17 +129,111 @@ Deno.serve(async (req) => {
     });
     const agent = Array.isArray(staff) ? staff[0] : staff;
     if (agent) {
-      await admin.from("webhook_events")
-        .update({
-          processing_status: "staff_message",
-          error_message: `from agent ${agent.full_name}`.slice(0, 240),
-          processed_at: new Date().toISOString(),
-        })
-        .eq("id", webhookEvent?.id);
       // A reply also proves presence — the shift check-in's whole purpose.
       await admin.from("agency_agents")
         .update({ last_checkin_at: new Date().toISOString(), updated_at: new Date().toISOString() })
         .eq("id", agent.id);
+
+      // ── v6: THE REPLY IS THE ANSWER ────────────────────────────────────────
+      // Until now a staff message was recorded and dropped. If we pinged this
+      // agent a question, their next message IS the answer to it — that is what
+      // the ping literally asks for — so it is matched back and relayed to the
+      // buyer in the buyer's own language, exactly as answering in the
+      // dashboard does. Matched by the PING we sent, never by reading their
+      // text: the agent should be able to answer in plain words.
+      let answeredCode: number | null = null;
+      try {
+        const { data: pings } = await admin
+          .from("agent_messages")
+          .select("question_id")
+          .eq("agent_id", agent.id)
+          .eq("direction", "outbound")
+          .eq("kind", "question_ping")
+          .not("question_id", "is", null)
+          .order("created_at", { ascending: false })
+          .limit(5);
+
+        for (const ping of pings ?? []) {
+          const { data: q } = await admin
+            .from("amanda_questions")
+            .select("id, agency_id, conversation_id, lead_id, short_code, question_text, status")
+            .eq("id", (ping as { question_id: string }).question_id)
+            .maybeSingle();
+          const open = q && ["open", "clarifying", "escalated"].includes(String(q.status));
+          if (!open || body.trim().length === 0) continue;
+
+          await admin.from("amanda_questions")
+            .update({
+              answer_raw: body.slice(0, 2000),
+              answered_by: agent.full_name,
+              answered_at: new Date().toISOString(),
+              status: "answered",
+            })
+            .eq("id", q.id);
+
+          await admin.from("amanda_question_events").insert({
+            agency_id: q.agency_id,
+            question_id: q.id,
+            event_type: "answer_received",
+            detail: { answered_by: agent.full_name, via: "whatsapp_agent_reply" },
+          });
+
+          // The relay ride — the SAME row the dashboard answer path files, so
+          // Amanda handles both identically and the mode law still governs.
+          await admin.from("amanda_inbound_queue").insert({
+            agency_id: q.agency_id,
+            conversation_id: q.conversation_id,
+            lead_id: q.lead_id,
+            provider_message_id: `ticket-answer:${q.id}`,
+            kind: "ticket_answered",
+            payload: {
+              question_id: q.id,
+              short_code: q.short_code,
+              question: q.question_text,
+              answer: body.slice(0, 2000),
+            },
+            status: "pending",
+          });
+
+          // Clear the mirrored dashboard task so it stops asking for an answer
+          // that has already arrived.
+          await admin.from("dashboard_tasks")
+            .update({ status: "handled", handled_at: new Date().toISOString(), handled_by: agent.full_name })
+            .eq("task_type", "amanda_question")
+            .eq("status", "pending")
+            .filter("raw_payload->>amanda_question_id", "eq", q.id);
+
+          await admin.from("agent_messages").insert({
+            agency_id: q.agency_id, agent_id: agent.id, direction: "inbound",
+            kind: "reply", body: body.slice(0, 2000), question_id: q.id,
+            provider_message_id: messageSid, status: "received",
+          });
+
+          answeredCode = Number(q.short_code) || null;
+          break;
+        }
+      } catch (_replyErr) {
+        // Never fatal: the message is still logged below and the question stays
+        // open in the dashboard, which is the safe direction.
+      }
+
+      if (answeredCode === null) {
+        await admin.from("agent_messages").insert({
+          agency_id: agencyId, agent_id: agent.id, direction: "inbound",
+          kind: body.trim().length > 0 ? "note" : "reply",
+          body: body.slice(0, 2000), provider_message_id: messageSid, status: "received",
+        }).then(({ error }) => { if (error) console.error("staff note:", error.code); });
+      }
+
+      await admin.from("webhook_events")
+        .update({
+          processing_status: "staff_message",
+          error_message: (answeredCode
+            ? `agent ${agent.full_name} answered Q${answeredCode}`
+            : `from agent ${agent.full_name}`).slice(0, 240),
+          processed_at: new Date().toISOString(),
+        })
+        .eq("id", webhookEvent?.id);
       return twiml();
     }
   } catch (_staffErr) {

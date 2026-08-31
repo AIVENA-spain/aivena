@@ -164,7 +164,14 @@ route.get('/', async (c) => {
                p.property_type AS property_type,
                p.bedrooms      AS property_bedrooms,
                p.price         AS property_price,
-               (COALESCE(p.images, '[]'::jsonb) -> 0 ->> 'url') AS property_image
+               -- images holds PLAIN STRINGS in this catalogue, but the object
+               -- shape {url: ...} exists elsewhere in the codebase. Handle both,
+               -- or the card silently shows a placeholder forever.
+               CASE jsonb_typeof(COALESCE(p.images, '[]'::jsonb) -> 0)
+                 WHEN 'string' THEN COALESCE(p.images, '[]'::jsonb) ->> 0
+                 WHEN 'object' THEN COALESCE(p.images, '[]'::jsonb) -> 0 ->> 'url'
+                 ELSE NULL
+               END AS property_image
           FROM public.dashboard_tasks dt
           LEFT JOIN public.leads l ON l.id = dt.lead_id
           LEFT JOIN public.amanda_questions aq

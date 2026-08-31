@@ -135,3 +135,22 @@ export function pickAgent(
   // must not be surfaced to anyone as a problem.
   return { agent: order(onShift)[0], reason: 'ok', languageCompromise: Boolean(lang) };
 }
+
+/** The message an agent receives inside an open window. */
+export function buildPingBody(opts: {
+  shortCode: number;
+  question: string;
+  leadName: string | null;
+  agencyName: string | null;
+}): string {
+  const who = opts.leadName?.trim() || 'A client';
+  // Reply-to-answer is stated plainly: the agent's next message IS the answer,
+  // and the short code is how a human can disambiguate if two are open.
+  return [
+    `${who} asked something you can answer (Q${opts.shortCode}):`,
+    '',
+    opts.question.trim(),
+    '',
+    'Reply to this message and I will pass your answer straight back to them.',
+  ].join('\n');
+}

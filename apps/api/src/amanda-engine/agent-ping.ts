@@ -20,7 +20,7 @@
 
 import { sql } from 'drizzle-orm';
 import { db, withAgency } from '../../../../packages/db/client';
-import { pickAgent, windowOpen, type PingableAgent } from './agent-ping-lib';
+import { pickAgent, windowOpen, buildPingBody, type PingableAgent } from './agent-ping-lib';
 import { sendToAgent } from './agent-send';
 
 const AGENCY_TZ = 'Europe/Madrid';
@@ -33,25 +33,6 @@ export interface PingOutcome {
   shortCode: number;
   sent: boolean;
   reason: string;
-}
-
-/** The message an agent receives inside an open window. */
-export function buildPingBody(opts: {
-  shortCode: number;
-  question: string;
-  leadName: string | null;
-  agencyName: string | null;
-}): string {
-  const who = opts.leadName?.trim() || 'A client';
-  // Reply-to-answer is stated plainly: the agent's next message IS the answer,
-  // and the short code is how a human can disambiguate if two are open.
-  return [
-    `${who} asked something you can answer (Q${opts.shortCode}):`,
-    '',
-    opts.question.trim(),
-    '',
-    'Reply to this message and I will pass your answer straight back to them.',
-  ].join('\n');
 }
 
 async function agencyPingContext(agencyId: string): Promise<{

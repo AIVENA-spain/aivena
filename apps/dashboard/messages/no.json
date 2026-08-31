@@ -974,7 +974,10 @@
       "hoursHint": "Vakttider — Amanda pinger bare denne megleren innenfor dem. Ikke det samme som visningstidene dine.",
       "setHours": "Angi tider",
       "saveHours": "Lagre tider",
-      "dayOff": "Fri"
+      "dayOff": "Fri",
+      "edit": "Rediger",
+      "saveChanges": "Lagre endringer",
+      "cancelEdit": "Avbryt"
     },
     "automation": {
       "title": "Automatiseringsnivå",

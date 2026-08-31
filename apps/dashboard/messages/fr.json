@@ -974,7 +974,10 @@
       "hoursHint": "Horaires de service — Amanda ne sollicite cet agent que dans ce créneau. Différent de vos horaires de visite.",
       "setHours": "Définir les horaires",
       "saveHours": "Enregistrer",
-      "dayOff": "Repos"
+      "dayOff": "Repos",
+      "edit": "Modifier",
+      "saveChanges": "Enregistrer",
+      "cancelEdit": "Annuler"
     },
     "automation": {
       "title": "Niveau d'automatisation",

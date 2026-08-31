@@ -974,7 +974,10 @@
       "hoursHint": "Vuoron ajat — Amanda pingaa tätä välittäjää vain niiden sisällä. Ei sama kuin esittelyaikasi.",
       "setHours": "Aseta ajat",
       "saveHours": "Tallenna ajat",
-      "dayOff": "Vapaa"
+      "dayOff": "Vapaa",
+      "edit": "Muokkaa",
+      "saveChanges": "Tallenna muutokset",
+      "cancelEdit": "Peruuta"
     },
     "automation": {
       "title": "Automaation taso",

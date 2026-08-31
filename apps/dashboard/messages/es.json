@@ -974,7 +974,10 @@
       "hoursHint": "Horario de turno: Amanda solo avisa a este agente dentro de él. No es lo mismo que tu horario de visitas.",
       "setHours": "Definir horario",
       "saveHours": "Guardar horario",
-      "dayOff": "Día libre"
+      "dayOff": "Día libre",
+      "edit": "Editar",
+      "saveChanges": "Guardar cambios",
+      "cancelEdit": "Cancelar"
     },
     "automation": {
       "title": "Nivel de automatización",

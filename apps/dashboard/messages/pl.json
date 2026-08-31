@@ -974,7 +974,10 @@
       "hoursHint": "Godziny zmiany — Amanda pinguje tego agenta tylko w tych godzinach. To nie to samo co godziny oglądań.",
       "setHours": "Ustaw godziny",
       "saveHours": "Zapisz godziny",
-      "dayOff": "Wolne"
+      "dayOff": "Wolne",
+      "edit": "Edytuj",
+      "saveChanges": "Zapisz zmiany",
+      "cancelEdit": "Anuluj"
     },
     "automation": {
       "title": "Poziom automatyzacji",

@@ -974,7 +974,10 @@
       "hoursHint": "Diensturen — Amanda pingt deze makelaar alleen daarbinnen. Niet hetzelfde als je bezichtigingsuren.",
       "setHours": "Uren instellen",
       "saveHours": "Uren opslaan",
-      "dayOff": "Vrij"
+      "dayOff": "Vrij",
+      "edit": "Bewerken",
+      "saveChanges": "Wijzigingen opslaan",
+      "cancelEdit": "Annuleren"
     },
     "automation": {
       "title": "Automatiseringsniveau",

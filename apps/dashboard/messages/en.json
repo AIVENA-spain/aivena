@@ -974,7 +974,10 @@
       "hoursHint": "Shift hours — Amanda only pings this agent inside them. Not the same as your viewing hours.",
       "setHours": "Set hours",
       "saveHours": "Save hours",
-      "dayOff": "Day off"
+      "dayOff": "Day off",
+      "edit": "Edit",
+      "saveChanges": "Save changes",
+      "cancelEdit": "Cancel"
     },
     "automation": {
       "title": "Automation level",

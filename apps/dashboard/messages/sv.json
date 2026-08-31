@@ -974,7 +974,10 @@
       "hoursHint": "Skifttider — Amanda pingar bara den här mäklaren inom dem. Inte samma sak som dina visningstider.",
       "setHours": "Ange tider",
       "saveHours": "Spara tider",
-      "dayOff": "Ledig"
+      "dayOff": "Ledig",
+      "edit": "Redigera",
+      "saveChanges": "Spara ändringar",
+      "cancelEdit": "Avbryt"
     },
     "automation": {
       "title": "Automatiseringsnivå",

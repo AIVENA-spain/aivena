@@ -974,7 +974,10 @@
       "hoursHint": "Vagttider — Amanda pinger kun denne mægler inden for dem. Ikke det samme som dine fremvisningstider.",
       "setHours": "Angiv tider",
       "saveHours": "Gem tider",
-      "dayOff": "Fri"
+      "dayOff": "Fri",
+      "edit": "Rediger",
+      "saveChanges": "Gem ændringer",
+      "cancelEdit": "Annuller"
     },
     "automation": {
       "title": "Automatiseringsniveau",

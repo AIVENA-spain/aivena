@@ -66,9 +66,12 @@ export function AgentsSection({ agents: initial }: { agents: AgentRow[] }) {
         languages: draft.languages,
       });
       if (!res.ok) { setError(res.error); return; }
+      const previous = agents.find((a) => a.id === res.data.id);
       const saved: AgentRow = {
-        work_hours: null,
-        unavailable_dates: null,
+        // Hours are edited in their own panel and are NOT part of this form, so
+        // keep whatever the agent already had rather than blanking the row.
+        work_hours: previous?.work_hours ?? null,
+        unavailable_dates: previous?.unavailable_dates ?? null,
         id: res.data.id, full_name: draft.full_name.trim(), whatsapp_e164: draft.whatsapp_e164.trim(),
         email: draft.email || null, office: draft.office || null, languages: draft.languages,
         receives_pings: true, last_checkin_at: null, status: "active",
@@ -102,7 +105,9 @@ export function AgentsSection({ agents: initial }: { agents: AgentRow[] }) {
         <ul className="flex flex-col gap-1.5">
           {agents.map((a) => (
             <li key={a.id} className="flex flex-col gap-2">
-            <div className="flex flex-wrap items-center gap-2 rounded-md bg-muted/50 px-2.5 py-2 text-[12.5px]">
+            <div className={`flex flex-wrap items-center gap-2 rounded-md px-2.5 py-2 text-[12.5px] ${
+              draft.id === a.id ? "bg-brand-soft ring-1 ring-brand/30" : "bg-muted/50"
+            }`}>
               <span className="font-medium text-foreground">{a.full_name}</span>
               <span className="font-mono tabular-nums text-muted-foreground">{a.whatsapp_e164}</span>
               {a.languages.length > 0 ? (
@@ -120,6 +125,28 @@ export function AgentsSection({ agents: initial }: { agents: AgentRow[] }) {
                   className="rounded px-1.5 py-0.5 text-[11px] font-medium text-brand hover:bg-brand-soft"
                 >
                   {summariseHours(a.work_hours, locale) ?? t("setHours")}
+                </button>
+                {/* Christian 2026-08-31: "i should have been shown there as a
+                    added agent with a edit button". He was shown — but with no
+                    way to change anything, so retyping into the add form was
+                    the only move available, and that failed as a duplicate. */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setError(null);
+                    setEditHours(null);
+                    setDraft({
+                      id: a.id,
+                      full_name: a.full_name,
+                      whatsapp_e164: a.whatsapp_e164,
+                      email: a.email ?? "",
+                      office: a.office ?? "",
+                      languages: [...a.languages],
+                    });
+                  }}
+                  className="rounded px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+                >
+                  {t("edit")}
                 </button>
                 {confirmRemove === a.id ? (
                   <>
@@ -189,8 +216,17 @@ export function AgentsSection({ agents: initial }: { agents: AgentRow[] }) {
         </div>
         <div className="flex items-center gap-2">
           <Button size="sm" onClick={onSave} disabled={busy || !draft.full_name.trim() || !draft.whatsapp_e164.trim()}>
-            {busy ? t("saving") : t("add")}
+            {busy ? t("saving") : draft.id ? t("saveChanges") : t("add")}
           </Button>
+          {draft.id ? (
+            <button
+              type="button"
+              onClick={() => { setDraft({ ...EMPTY }); setError(null); }}
+              className="text-[11.5px] text-muted-foreground hover:text-foreground"
+            >
+              {t("cancelEdit")}
+            </button>
+          ) : null}
           <span className="text-[11.5px] text-muted-foreground">{t("numberHint")}</span>
         </div>
         {error ? <p className="text-[12px] text-destructive">{error}</p> : null}

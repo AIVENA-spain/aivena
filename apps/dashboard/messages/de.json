@@ -974,7 +974,10 @@
       "hoursHint": "Schichtzeiten — Amanda pingt diesen Makler nur darin. Nicht dasselbe wie Ihre Besichtigungszeiten.",
       "setHours": "Zeiten festlegen",
       "saveHours": "Zeiten speichern",
-      "dayOff": "Frei"
+      "dayOff": "Frei",
+      "edit": "Bearbeiten",
+      "saveChanges": "Änderungen speichern",
+      "cancelEdit": "Abbrechen"
     },
     "automation": {
       "title": "Automatisierungsgrad",

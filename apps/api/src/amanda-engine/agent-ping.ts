@@ -24,8 +24,10 @@ import { pickAgent, windowOpen, buildPingBody, type PingableAgent } from './agen
 import { sendToAgent } from './agent-send';
 
 const AGENCY_TZ = 'Europe/Madrid';
-/** Re-offer a question to (possibly) another agent after this long unanswered. */
+/** Re-offer a question after this long unanswered. Kept in sync with the
+ *  interval inside pick_due_agent_pings, which is where the claim happens. */
 const REPING_AFTER_MIN = 45;
+void REPING_AFTER_MIN;
 const MAX_PINGS_PER_QUESTION = 3;
 
 export interface PingOutcome {
@@ -74,16 +76,14 @@ async function agencyPingContext(agencyId: string): Promise<{
 
 /** One pass over every agency with questions due a ping. */
 export async function pingTick(nowMs: number = Date.now()): Promise<PingOutcome[]> {
+  // SECURITY DEFINER picker. amanda_questions forces RLS and this connection
+  // carries no app.current_agency_id, so a direct SELECT here matched NOTHING
+  // and the worker silently found zero questions every tick — identical from
+  // the outside to the flag being off. The picker also CLAIMS (it moves
+  // next_ping_at as it hands the row out), so two workers cannot take the same
+  // question and a crash mid-send costs one window rather than a spin.
   const due = (await db.execute(sql`
-    SELECT q.id, q.agency_id, q.short_code, q.question_text, q.question_lang,
-           q.pings_sent, l.full_name AS lead_name
-      FROM amanda_questions q
-      LEFT JOIN leads l ON l.id = q.lead_id
-     WHERE q.status IN ('open', 'clarifying')
-       AND COALESCE(q.pings_sent, 0) < ${MAX_PINGS_PER_QUESTION}
-       AND (q.next_ping_at IS NULL OR q.next_ping_at <= now())
-     ORDER BY q.created_at ASC
-     LIMIT 20
+    SELECT * FROM public.pick_due_agent_pings(20)
   `)) as unknown as Array<Record<string, unknown>>;
 
   const outcomes: PingOutcome[] = [];
@@ -94,17 +94,10 @@ export async function pingTick(nowMs: number = Date.now()): Promise<PingOutcome[
     const agencyId = String(row.agency_id);
     const shortCode = Number(row.short_code ?? 0);
 
+    // The picker already moved next_ping_at when it handed this row out, so a
+    // miss is simply recorded — nothing to write, nothing to spin.
     const note = async (reason: string, sent: boolean) => {
       outcomes.push({ questionId, shortCode, sent, reason });
-      // Always push the next attempt out, even on a miss, so a question that
-      // cannot be delivered does not spin the worker every tick.
-      await withAgency(agencyId, async (tx) => {
-        await tx.execute(sql`
-          UPDATE amanda_questions
-             SET next_ping_at = now() + (${REPING_AFTER_MIN} || ' minutes')::interval
-           WHERE id = ${questionId}::uuid
-        `);
-      }).catch(() => { /* a bookkeeping miss must not stop the pass */ });
     };
 
     try {

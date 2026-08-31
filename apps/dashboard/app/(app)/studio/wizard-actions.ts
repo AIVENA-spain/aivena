@@ -1,9 +1,7 @@
-/** The four colours a deck wears — main / accent / paper (the beige) / ink (the black). */
-export type SlotColours = { main?: string; accent?: string; paper?: string; ink?: string };
-
 "use server";
 
 import { apiFetch, ApiError } from "@/lib/api/client";
+import type { SlotColours } from "./slot-colours";
 
 /**
  * Server actions for the Studio wizard. Each is a thin pass-through to the Hono

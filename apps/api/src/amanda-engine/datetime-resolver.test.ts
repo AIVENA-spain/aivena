@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { resolveDatetimePhrase, parseTime, zonedTimeToUtc, wallClockInZone } from './datetime-resolver';
+import { resolveDatetimePhrase, parseTime, zonedTimeToUtc, wallClockInZone , resolvePreferredDay } from './datetime-resolver';
 
 const TZ = 'Europe/Madrid';
 // Wednesday 2026-08-26 12:00 Madrid (CEST, UTC+2) = 10:00Z
@@ -73,5 +73,42 @@ describe('resolveDatetimePhrase', () => {
   });
   it('rejects resolved times in the past', () => {
     expect(resolveDatetimePhrase('today at 09:00', NOW, TZ)).toEqual({ ok: false, reason: 'past' });
+  });
+});
+
+/**
+ * Live 2026-08-31: Marte said "I'm available all day on Thursday" and Amanda
+ * replied that Thursday was not possible — on a day the calendar was open
+ * 13:00-20:00. The phrase resolver had rejected it as missing_time, the caller
+ * fell back to generic slots, and Amanda read Tuesday/Wednesday coming back as
+ * proof Thursday was full.
+ */
+describe('resolvePreferredDay — a day without a time is still a day', () => {
+  const TZ = 'Europe/Madrid';
+  // Monday 31 August 2026, 16:00 Madrid.
+  const MON = Date.parse('2026-08-31T14:00:00Z');
+
+  it('"Thursday" resolves to the coming Thursday', () => {
+    const d = resolvePreferredDay('Thursday', MON, TZ);
+    expect(d).toEqual({ year: 2026, month: 9, day: 3 });
+  });
+
+  it('handles the way people actually say it', () => {
+    for (const phrase of ['all day Thursday', 'I am free on thursday', 'thursday works']) {
+      expect(resolvePreferredDay(phrase, MON, TZ)).toEqual({ year: 2026, month: 9, day: 3 });
+    }
+  });
+
+  it('a phrase WITH a time still resolves to that same day', () => {
+    expect(resolvePreferredDay('Thursday at 17:00', MON, TZ)).toEqual({ year: 2026, month: 9, day: 3 });
+  });
+
+  it('today stays today when the day is named on the day itself', () => {
+    expect(resolvePreferredDay('monday', MON, TZ)).toEqual({ year: 2026, month: 8, day: 31 });
+  });
+
+  it('returns null for something that is not a day at all', () => {
+    expect(resolvePreferredDay('whenever suits you', MON, TZ)).toBeNull();
+    expect(resolvePreferredDay('', MON, TZ)).toBeNull();
   });
 });

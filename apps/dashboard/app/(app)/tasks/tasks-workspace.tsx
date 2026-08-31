@@ -304,6 +304,7 @@ function AnswerBox({
   const [teachOpen, setTeachOpen] = useState(false);
   const [teach, setTeach] = useState("");
   const [teachNote, setTeachNote] = useState<string | null>(null);
+  const [sent, setSent] = useState(false);
 
   function onSend() {
     if (busy || !answer.trim()) return;
@@ -323,6 +324,13 @@ function AnswerBox({
           );
           window.setTimeout(onAnswered, 6000);
         } else {
+          // Clear the busy state BEFORE handing off. It used to rely on this
+          // row disappearing to reset the button, so any lag in the refresh
+          // left "Sending…" on screen forever — Christian watched a relay that
+          // had already reached the buyer still claiming to be in flight
+          // (2026-08-31). Positive confirmation, then the list catches up.
+          setBusy(false);
+          setSent(true);
           onAnswered();
         }
       } else {
@@ -412,7 +420,7 @@ function AnswerBox({
           disabled={busy || !answer.trim()}
           className={cn(buttonVariants({ variant: "default", size: "sm" }), "shrink-0")}
         >
-          {busy ? "Sending…" : "Send to Amanda"}
+          {busy ? "Sending…" : sent ? "Sent" : "Send to Amanda"}
         </button>
       </div>
       {/* Teach Amanda (Christian's learning laws, 2026-08-28): optional, general

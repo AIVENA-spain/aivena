@@ -9,7 +9,7 @@ import { withAgency } from '../../../../packages/db/client';
 import { deleteCalendarEventForBooking } from '../routes/calendar-worker';
 import { generalAgentAnswer } from '../routes/amanda-llm';
 import { ownSiteUrl } from './site-link';
-import { wallClockInZone, resolveDatetimePhrase } from './datetime-resolver';
+import { wallClockInZone, resolveDatetimePhrase, resolvePreferredDay } from './datetime-resolver';
 import { candidateSlots, parseAmandaSettings, slotLabel, type AmandaAgencySettings } from './availability-lib';
 
 export { candidateSlots, parseAmandaSettings, slotLabel, type AmandaAgencySettings } from './availability-lib';
@@ -221,7 +221,27 @@ export function makeDbBackends(ctx: BackendCtx): ToolBackends {
           if (t > nowMs + s.viewingNoticeHours * 3600_000) candidates.push(t);
         }
       }
-      candidates.push(...candidateSlots(nowMs, s));
+
+      // HONOUR THE DAY THEY NAMED. "I'm free Thursday" carries no time, so the
+      // exact-instant resolver above rejects it and we used to fall straight
+      // through to the generic list — then Amanda, seeing Tuesday and Wednesday
+      // come back, told a buyer who was free all Thursday that Thursday was not
+      // possible, on a day the calendar was open 13:00-20:00 (live 2026-08-31).
+      // Slots on the requested day go FIRST; the generic list still follows, so
+      // a day that genuinely has nothing free degrades to real alternatives
+      // instead of a false "no".
+      const generic = candidateSlots(nowMs, s);
+      const wantedDay = preferredTimePhrase
+        ? resolvePreferredDay(preferredTimePhrase, nowMs, s.timezone)
+        : null;
+      if (wantedDay) {
+        const onThatDay = generic.filter((ms) => {
+          const wc = wallClockInZone(ms, s.timezone);
+          return wc.year === wantedDay.year && wc.month === wantedDay.month && wc.day === wantedDay.day;
+        });
+        candidates.push(...onThatDay);
+      }
+      candidates.push(...generic);
 
       // Phase 1 (one tx): sweep dead holds, find free slots, create the pending
       // actions. Holds are inserted in phase 2, OUTSIDE this tx: an EXCLUDE

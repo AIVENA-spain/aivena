@@ -52,6 +52,14 @@ const FRIENDLY: Record<string, string> = {
   valuation_failed:    "Something went wrong preparing your valuation — please try again, and contact the agency if it keeps happening.",
 };
 
+/** Same helper the studio and send-executor edge functions use — an early
+ *  mismatch exit leaks key bytes through response timing. */
+function constantTimeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let d = 0; for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return d === 0;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST")   return j(405, { ok: false, error: "method_not_allowed" });
@@ -61,7 +69,7 @@ Deno.serve(async (req) => {
   if (!launched) {
     const testKey = Deno.env.get("AIVENA_VALUATION_TEST_KEY");
     const given   = req.headers.get("x-aivena-valuation-test");
-    if (!testKey || !given || given !== testKey) {
+    if (!testKey || !given || !constantTimeEqual(given, testKey)) {
       return j(503, { ok: false, error: "valuation_unavailable", message: FRIENDLY.valuation_unavailable });
     }
   }

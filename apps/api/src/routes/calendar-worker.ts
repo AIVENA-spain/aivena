@@ -258,7 +258,31 @@ async function getFreshAccessToken(agencyId: string, clientId: string, clientSec
 
   const req = buildRefreshRequest({ refreshToken: cred.refresh_token, clientId, clientSecret });
   const resp = await fetch(req.url, { method: req.method, headers: req.headers, body: req.body });
-  if (!resp.ok) return cred.access_token;
+  if (!resp.ok) {
+    // Google answers a REVOKED or dead refresh token with 400 invalid_grant.
+    // That is permanent: every later sweep fails identically. The old line
+    // returned the expired token and recorded nothing, so a disconnected
+    // calendar degraded silently forever and nobody at the agency was told.
+    // Mark it so the dashboard can ask them to reconnect. Transient failures
+    // (5xx, network) keep the old behaviour and simply retry next sweep.
+    let code = '';
+    try {
+      const body = (await resp.json()) as { error?: unknown };
+      code = typeof body.error === 'string' ? body.error : '';
+    } catch { /* not JSON — status alone decides */ }
+    if (resp.status === 400 || resp.status === 401 || code === 'invalid_grant') {
+      await db.execute(sql`
+        SELECT * FROM public.revoke_agency_oauth_credential(
+          ${agencyId}, ${PROVIDER}, ${`google_refresh_failed:${code || resp.status}`}
+        )
+      `);
+      // Never log the body: only the error CODE and status, never a token.
+      console.warn('[calendar/worker] calendar disconnected, reconnect needed', agencyId, code || resp.status);
+      return null;
+    }
+    console.warn('[calendar/worker] token refresh failed transiently', agencyId, resp.status);
+    return cred.access_token;
+  }
   const parsed = parseGoogleTokenResponse((await resp.json()) as Record<string, unknown>, Date.now());
   await db.execute(sql`
     SELECT * FROM public.store_agency_oauth_credential(

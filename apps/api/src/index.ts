@@ -276,7 +276,18 @@ if (engineEnabled()) {
   // decline recorded rather than retried in a spin. Gated behind the same
   // AMANDA_PING_ENABLED flag discipline as the engine so it can be switched off
   // without a deploy.
-  if (process.env.AMANDA_PING_ENABLED === 'true') {
+  // Tolerant of how the flag was typed. A masked Railway variable cannot be
+  // read back, so an exact-string check turns a typo ('True', '1', a trailing
+  // space) into a worker that is silently never armed with nothing on screen to
+  // say why. Accept the obvious affirmatives and STATE the decision at boot, so
+  // "is the pinger on?" is answerable from the logs instead of by inference.
+  const pingFlag = (process.env.AMANDA_PING_ENABLED ?? '').trim().toLowerCase();
+  const pingArmed = ['true', '1', 'yes', 'on'].includes(pingFlag);
+  logger.info('Agent ping worker', {
+    armed: pingArmed,
+    flagPresent: pingFlag.length > 0,   // value never logged, only presence
+  });
+  if (pingArmed) {
     const pingTickRun = async () => {
       try {
         const outcomes = await pingTick();

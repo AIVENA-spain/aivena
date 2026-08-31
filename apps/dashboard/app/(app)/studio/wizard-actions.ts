@@ -1,6 +1,7 @@
 "use server";
 
 import { apiFetch, ApiError } from "@/lib/api/client";
+import type { SlotColours } from "./slot-colours";
 
 /**
  * Server actions for the Studio wizard. Each is a thin pass-through to the Hono
@@ -195,8 +196,13 @@ export async function carouselAction(input: {
   style?: string;
   scheme?: string;
   slides?: number;
-  brand_navy?: string;   // optional two-colour override: main/ground colour (hex)
-  brand_gold?: string;   // optional two-colour override: accent colour (hex)
+  // optional colour override — four slots. The legacy two are still accepted by the API.
+  brand_main?: string;    // grounds and headlines
+  brand_accent?: string;  // the second colour: alternating grounds, numerals, details
+  brand_paper?: string;   // the pale ground ("the beige")
+  brand_ink?: string;     // the dark text ("the black")
+  brand_navy?: string;
+  brand_gold?: string;
 }): Promise<Envelope> {
   return call("/api/studio/carousel", { method: "POST", body: input });
 }
@@ -212,16 +218,18 @@ export async function saveStudioPreferencesAction(prefs: Record<string, string>)
 export async function carouselUpdateAction(
   generationId: string,
   plan: unknown,
-  colours?: { navy?: string; gold?: string },
-  // per-slide overrides keyed by slide index; an entry with neither colour clears that slide
-  slideColours?: Record<number, { navy?: string; gold?: string }>,
+  colours?: SlotColours,
+  // per-slide overrides keyed by slide index; an entry with no colours clears that slide
+  slideColours?: Record<number, SlotColours>,
 ): Promise<Envelope> {
   return call("/api/studio/carousel/update", {
     method: "POST",
     body: {
       generation_id: generationId, plan,
-      ...(colours?.navy ? { brand_navy: colours.navy } : {}),
-      ...(colours?.gold ? { brand_gold: colours.gold } : {}),
+      ...(colours?.main ? { brand_main: colours.main } : {}),
+      ...(colours?.accent ? { brand_accent: colours.accent } : {}),
+      ...(colours?.paper ? { brand_paper: colours.paper } : {}),
+      ...(colours?.ink ? { brand_ink: colours.ink } : {}),
       ...(slideColours ? { slide_colours: slideColours } : {}),
     },
   });
@@ -239,7 +247,7 @@ export async function carouselRemixAction(
   generationId: string,
   axis: "hook" | "style" | "layout",
   // the per-slide colours currently on screen — a remix must not discard picks the agent can see
-  slideColours?: Record<number, { navy?: string; gold?: string }>,
+  slideColours?: Record<number, SlotColours>,
 ): Promise<Envelope> {
   return call("/api/studio/carousel/remix", {
     method: "POST",

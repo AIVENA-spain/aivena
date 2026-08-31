@@ -108,6 +108,25 @@ const STYLES: Record<CarouselType, [string, string, string][]> = {
   ],
 };
 
+/** The four colours a deck wears. They map onto the engine's navy/gold/cream/text; the API accepts
+ *  both these names and the legacy navy/gold, so decks saved before today still open correctly. */
+type SlotCols = { main?: string; accent?: string; paper?: string; ink?: string };
+const SLOT_UI = [
+  { key: "main" as const, label: "Main colour" },
+  { key: "accent" as const, label: "Accent colour" },
+  { key: "paper" as const, label: "Paper" },
+  { key: "ink" as const, label: "Text colour" },
+];
+/** A stored override may still speak {navy, gold} — read it either way. */
+function readSlots(v: SlotCols & { navy?: string; gold?: string }): SlotCols {
+  return {
+    ...((v.main ?? v.navy) ? { main: v.main ?? v.navy } : {}),
+    ...((v.accent ?? v.gold) ? { accent: v.accent ?? v.gold } : {}),
+    ...(v.paper ? { paper: v.paper } : {}),
+    ...(v.ink ? { ink: v.ink } : {}),
+  };
+}
+
 export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId }: { initialTopic?: string; initialLanguage?: string; resumeGenId?: string } = {}) {
   const [phase, setPhase] = useState<Phase>("form");   // tips-only: land straight on the form
   const [ctype] = useState<CarouselType>("tips");
@@ -140,13 +159,21 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
   const [customColours, setCustomColours] = useState(false);
   const [colMain, setColMain] = useState("#1a2b4a");
   const [colAccent, setColAccent] = useState("#c8a24b");
+  const [colPaper, setColPaper] = useState("#f4f1ea");
+  const [colInk, setColInk] = useState("#333333");
   // colours are also editable on the FINISHED deck (Christian 2026-08-28: "sometimes you chose
   // wrong just and need to change to see") — re-renders from stored artwork, no regeneration
   const [resColMain, setResColMain] = useState("#1a2b4a");
   const [resColAccent, setResColAccent] = useState("#c8a24b");
+  // Christian 2026-08-31: "since there is at least 2 other colors also, i would like to have those
+  // colors customisable also, so you can change the beige or the black etc"
+  const [resColPaper, setResColPaper] = useState("#f4f1ea");
+  const [resColInk, setResColInk] = useState("#333333");
   const [recolouring, setRecolouring] = useState(false);
+  const deckSlot = (k: keyof SlotCols) =>
+    k === "main" ? resColMain : k === "accent" ? resColAccent : k === "paper" ? resColPaper : resColInk;
   // per-slide colour overrides (index → colours); empty means the slide follows the deck
-  const [slideCols, setSlideCols] = useState<Record<number, { navy?: string; gold?: string }>>({});
+  const [slideCols, setSlideCols] = useState<Record<number, SlotCols>>({});
   const [quoteText, setQuoteText] = useState("");
   const [quoteAuthor, setQuoteAuthor] = useState("");
   const [language, setLanguage] = useState(LANGS.some(([c]) => c === initialLanguage) ? initialLanguage! : "es");
@@ -210,8 +237,10 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
     // render colours stored at creation → generic default only for pre-fix decks)
     setResColMain(typeof s.brand_navy === "string" ? (s.brand_navy as string) : typeof s.render_navy === "string" ? (s.render_navy as string) : "#1a2b4a");
     setResColAccent(typeof s.brand_gold === "string" ? (s.brand_gold as string) : typeof s.render_gold === "string" ? (s.render_gold as string) : "#c8a24b");
+    setResColPaper(typeof s.brand_paper === "string" ? (s.brand_paper as string) : typeof s.render_paper === "string" ? (s.render_paper as string) : "#f4f1ea");
+    setResColInk(typeof s.brand_ink === "string" ? (s.brand_ink as string) : typeof s.render_ink === "string" ? (s.render_ink as string) : "#333333");
     setSlideCols(s.slide_colours && typeof s.slide_colours === "object"
-      ? Object.fromEntries(Object.entries(s.slide_colours as Record<string, { navy?: string; gold?: string }>).map(([k, v]) => [Number(k), v]))
+      ? Object.fromEntries(Object.entries(s.slide_colours as Record<string, SlotCols>).map(([k, v]) => [Number(k), readSlots(v)]))
       : {});
     setEditing(false); setDraft(null); setRemixed(false);
     setPhase("result");
@@ -333,6 +362,12 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
     }
     if (typeof r.brand_gold === "string" || typeof r.render_gold === "string") {
       setResColAccent((r.brand_gold as string) ?? (r.render_gold as string));
+    }
+    if (typeof r.brand_paper === "string" || typeof r.render_paper === "string") {
+      setResColPaper((r.brand_paper as string) ?? (r.render_paper as string));
+    }
+    if (typeof r.brand_ink === "string" || typeof r.render_ink === "string") {
+      setResColInk((r.brand_ink as string) ?? (r.render_ink as string));
     }
     setEditing(false); setDraft(null); setSaved(false); setSection(""); setRemixed(true);
   }
@@ -475,21 +510,20 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
               </button>
               {customColours && (
                 <>
-                  <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-neutral-700 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300">
-                    <input type="color" value={colMain} onChange={(e) => setColMain(e.target.value)} className="h-6 w-8 cursor-pointer rounded border-0 bg-transparent p-0" />
-                    Main colour
-                  </label>
-                  <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-neutral-700 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300">
-                    <input type="color" value={colAccent} onChange={(e) => setColAccent(e.target.value)} className="h-6 w-8 cursor-pointer rounded border-0 bg-transparent p-0" />
-                    Accent colour
-                  </label>
-                  <span className="text-[11px] text-neutral-400">Main = grounds &amp; headlines · Accent = numbers &amp; details. Artwork keeps the colour mood above.</span>
+                  {([["Main colour", colMain, setColMain], ["Accent colour", colAccent, setColAccent],
+                     ["Paper", colPaper, setColPaper], ["Text colour", colInk, setColInk]] as const).map(([label, val, set]) => (
+                    <label key={label} className="flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-neutral-700 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300">
+                      <input type="color" value={val} onChange={(e) => set(e.target.value)} className="h-6 w-8 cursor-pointer rounded border-0 bg-transparent p-0" />
+                      {label}
+                    </label>
+                  ))}
+                  <span className="text-[11px] text-neutral-400">Main and Accent take turns on the full-colour slides · Paper is the pale ground · Text is the ink on it.</span>
                 </>
               )}
             </div>
 
             <button
-              onClick={() => void start({ type: "tips", topic: topic.trim(), slides: slideTotal, language, style, scheme, ...(customColours ? { brand_navy: colMain, brand_gold: colAccent } : {}) }, "form")}
+              onClick={() => void start({ type: "tips", topic: topic.trim(), slides: slideTotal, language, style, scheme, ...(customColours ? { brand_main: colMain, brand_accent: colAccent, brand_paper: colPaper, brand_ink: colInk } : {}) }, "form")}
               disabled={topic.trim().length < 3}
               className="mt-7 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-4 text-[15px] font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-40">
               <Sparkles className="h-4 w-4" /> Create carousel
@@ -621,14 +655,12 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
                   <Download className="h-3.5 w-3.5" /> Slide {i + 1}
                 </button>
                 <div className="mt-1.5 flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-neutral-300 px-2 py-1.5 dark:border-neutral-700">
-                  <input type="color" title={`Main colour · slide ${i + 1}`}
-                    value={slideCols[i]?.navy ?? resColMain}
-                    onChange={(e) => setSlideCols((p) => ({ ...p, [i]: { ...p[i], navy: e.target.value } }))}
-                    className="h-5 w-6 cursor-pointer rounded border-0 bg-transparent p-0" />
-                  <input type="color" title={`Accent colour · slide ${i + 1}`}
-                    value={slideCols[i]?.gold ?? resColAccent}
-                    onChange={(e) => setSlideCols((p) => ({ ...p, [i]: { ...p[i], gold: e.target.value } }))}
-                    className="h-5 w-6 cursor-pointer rounded border-0 bg-transparent p-0" />
+                  {SLOT_UI.map(({ key, label }) => (
+                    <input key={key} type="color" title={`${label} · slide ${i + 1}`}
+                      value={slideCols[i]?.[key] ?? deckSlot(key)}
+                      onChange={(e) => setSlideCols((p) => ({ ...p, [i]: { ...p[i], [key]: e.target.value } }))}
+                      className="h-5 w-5 cursor-pointer rounded border-0 bg-transparent p-0" />
+                  ))}
                   {slideCols[i] ? (
                     <button title="Follow the deck colours again" onClick={() => setSlideCols((p) => { const n = { ...p }; delete n[i]; return n; })}
                       className="text-[10px] font-medium text-neutral-400 underline hover:text-neutral-600">reset</button>

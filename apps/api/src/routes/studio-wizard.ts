@@ -28,6 +28,7 @@ import { type CarouselPlan, chrome as carouselChrome } from '../../../../studio/
 import {
   renderPlannedStyled, renderListingStyled, vibraListing, PLANNED_STYLES, LISTING_STYLES, TYPE_EDITIONS, type CarouselStyle,
 } from '../../../../studio/engine/carouselStyles';
+import type { CarouselBrand } from '../../../../studio/engine/renderCarousel';
 import { planCarousel, editPlan, remixHook, topicIdeas, listingCopy, listingStory, PlanSchema, normalisePlan } from '../lib/studio-carousel-plan';
 import { directScenes } from '../lib/studio-carousel-art';
 import { renderTipsImageStyled, renderTipsImageStyledV2, isTipsImageStyle } from '../../../../studio/engine/carouselTipsImage';
@@ -369,9 +370,13 @@ function shapeStatus(r: GenRow) {
     include_recap: (meta as any)?.include_recap === true,
     brand_navy: typeof (r as any).raw_request?.brand_navy === 'string' ? (r as any).raw_request.brand_navy : undefined,
     brand_gold: typeof (r as any).raw_request?.brand_gold === 'string' ? (r as any).raw_request.brand_gold : undefined,
+    brand_paper: typeof (r as any).raw_request?.brand_paper === 'string' ? (r as any).raw_request.brand_paper : undefined,
+    brand_ink: typeof (r as any).raw_request?.brand_ink === 'string' ? (r as any).raw_request.brand_ink : undefined,
     // the colours the deck actually rendered with (override ?? edition ?? brand) — seeds the pickers
     render_navy: typeof (r as any).raw_request?.render_navy === 'string' ? (r as any).raw_request.render_navy : undefined,
     render_gold: typeof (r as any).raw_request?.render_gold === 'string' ? (r as any).raw_request.render_gold : undefined,
+    render_paper: typeof (r as any).raw_request?.render_paper === 'string' ? (r as any).raw_request.render_paper : undefined,
+    render_ink: typeof (r as any).raw_request?.render_ink === 'string' ? (r as any).raw_request.render_ink : undefined,
     // per-slide colour overrides, so reopening a deck shows the fine-tuning it was saved with
     slide_colours: (r as any).raw_request?.slide_colours && typeof (r as any).raw_request.slide_colours === 'object'
       ? (r as any).raw_request.slide_colours : undefined,
@@ -961,20 +966,60 @@ route.post('/editable-generate', async (c) => {
  *  per-slide brands would mean threading a palette through every spec builder in the engine.
  *  Used by BOTH the edit path and the remix path — a remix that ignored these would hand back a
  *  deck repainted in the deck colours while the pickers still showed the per-slide ones. */
-/** Merge an incoming per-slide colour map over the stored one. An entry with neither colour
+/** FOUR SLOTS, not two. Christian 2026-08-31: "since there is at least 2 other colors also, i
+ *  would like to have those colors customisable also, so you can change the beige or the black
+ *  etc." He is right that they exist: agency_branding has carried primary/accent/background/text
+ *  since the beginning, mapBranding reads all four, and CarouselBrand carries all four into every
+ *  renderer. Only two were ever CHOOSABLE, so the paper and the ink sat at their seed defaults for
+ *  every agency that has ever used Studio.
+ *
+ *  main = the dominant colour · accent = the second · paper = the pale ground · ink = the dark
+ *  text. They map onto the engine's existing navy/gold/cream/text, so nothing downstream changes. */
+export const SLOTS = ['main', 'accent', 'paper', 'ink'] as const;
+export type SlotColours = Partial<Record<(typeof SLOTS)[number], string>>;
+const SLOT_FIELD = { main: 'navy', accent: 'gold', paper: 'cream', ink: 'text' } as const;
+
+/** Read the four slots out of a request body. Accepts the legacy two-colour keys as well, because
+ *  every stored deck and the deployed dashboard still speak brand_navy / brand_gold. */
+function parseSlots(src: Record<string, unknown>, prefix = 'brand_'): SlotColours {
+  const out: SlotColours = {};
+  for (const k of SLOTS) {
+    const v = hexColour(src[`${prefix}${k}`]);
+    if (v) out[k] = v;
+  }
+  if (!out.main) { const v = hexColour(src[`${prefix}navy`]); if (v) out.main = v; }
+  if (!out.accent) { const v = hexColour(src[`${prefix}gold`]); if (v) out.accent = v; }
+  return out;
+}
+
+function applySlots<B extends CarouselBrand>(brand: B, s: SlotColours): B {
+  const bv = brand as unknown as Record<string, string>;
+  for (const k of SLOTS) { const v = s[k]; if (v) bv[SLOT_FIELD[k]] = v; }
+  return brand;
+}
+
+/** Merge an incoming per-slide colour map over the stored one. An entry with no colours at all
  *  clears that slide (it goes back to following the deck). */
 function mergeSlideColours(
-  prior: Record<string, { navy?: string; gold?: string }>,
+  prior: Record<string, unknown>,
   incoming: unknown,
-): Record<string, { navy?: string; gold?: string }> {
-  const out = { ...prior };
+): Record<string, SlotColours> {
+  // Every deck already stored speaks {navy, gold}. parseSlots reads those as main/accent, so the
+  // old rows convert on read; without this an existing per-slide override would still be in the
+  // row, still be echoed to the picker, and quietly stop painting.
+  const out: Record<string, SlotColours> = {};
+  for (const [k, v] of Object.entries(prior ?? {})) {
+    const n = parseSlots((v ?? {}) as Record<string, unknown>, '');
+    if (Object.keys(n).length) out[k] = n;
+  }
   if (!incoming || typeof incoming !== 'object') return out;
   for (const [k, v] of Object.entries(incoming as Record<string, unknown>)) {
     const i = Number(k);
     if (!Number.isInteger(i) || i < 0 || i > 12) continue;
-    const nv = hexColour((v as any)?.navy), gd = hexColour((v as any)?.gold);
-    if (!nv && !gd) { delete out[String(i)]; continue; }
-    out[String(i)] = { ...(nv ? { navy: nv } : {}), ...(gd ? { gold: gd } : {}) };
+    const src = (v ?? {}) as Record<string, unknown>;
+    const next = parseSlots(src, '');
+    if (!Object.keys(next).length) { delete out[String(i)]; continue; }
+    out[String(i)] = next;
   }
   return out;
 }
@@ -985,25 +1030,29 @@ function contactLine(agency: { web?: string | null; phone?: string | null }): st
   return [agency.web, agency.phone].filter(Boolean).join(' · ');
 }
 
-async function renderWithSlideColours<B extends { navy: string; gold: string }>(
+async function renderWithSlideColours<B extends CarouselBrand>(
   brand: B,
-  slideCols: Record<string, { navy?: string; gold?: string }>,
+  slideCols: Record<string, SlotColours>,
   render: (b: B, locked: boolean) => Promise<Buffer[]>,
   deckLocked = false,
 ): Promise<Buffer[]> {
   const base = await render(brand, deckLocked);
   const groups = new Map<string, number[]>();
+  const bv = brand as unknown as Record<string, string>;
+  const resolve = (o: SlotColours) => SLOTS.map((k) => o[k] ?? bv[SLOT_FIELD[k]]);
+  const deckKey = SLOTS.map((k) => bv[SLOT_FIELD[k]]).join('|');
   base.forEach((_, i) => {
     const o = slideCols[String(i)];
-    if (!o || (!o.navy && !o.gold)) return;
-    const navy = o.navy ?? brand.navy, gold = o.gold ?? brand.gold;
-    if (navy === brand.navy && gold === brand.gold) return;
-    const key = `${navy}|${gold}`;
+    if (!o || !Object.keys(o).length) return;
+    const key = resolve(o).join('|');
+    if (key === deckKey) return;              // the override IS the deck palette — nothing to redraw
     groups.set(key, [...(groups.get(key) ?? []), i]);
   });
   for (const [key, idxs] of groups) {
-    const [navy, gold] = key.split('|');
-    const pass = await render({ ...brand, navy, gold }, true);
+    const parts = key.split('|');
+    const b = { ...brand } as unknown as Record<string, string>;
+    SLOTS.forEach((k, j) => { b[SLOT_FIELD[k]] = parts[j]; });
+    const pass = await render(b as unknown as B, true);
     for (const i of idxs) if (pass[i]) base[i] = pass[i];
   }
   return base;
@@ -1281,8 +1330,9 @@ route.post('/carousel', async (c) => {
   const scheme = typeof b.scheme === 'string' && TIPS_SCHEMES[b.scheme] ? b.scheme : 'clasico';
   // optional two-colour override (Christian 2026-08-28): main = brand.navy, accent = brand.gold —
   // chrome/type only; artwork palette stays with the colour-mood scheme
-  const brandNavy = hexColour(b.brand_navy);
-  const brandGold = hexColour(b.brand_gold);
+  const chosen = parseSlots(b);                       // main / accent / paper / ink
+  const brandNavy = chosen.main ?? null;
+  const brandGold = chosen.accent ?? null;
 
   try {
     // ── tips / quote: no property needed — brand + agency identity only ──────
@@ -1319,8 +1369,7 @@ route.post('/carousel', async (c) => {
       `);
       const bRows = bRes as unknown as any[];
       const { agency, brand } = mapBranding(bRows[0] || {});
-      if (brandNavy) brand.navy = brandNavy;
-      if (brandGold) brand.gold = brandGold;
+      applySlots(brand, chosen);
       const prefs = (bRows[0]?.creative_prefs && typeof bRows[0].creative_prefs === 'object'
         ? bRows[0].creative_prefs : null) as Record<string, string> | null;
       // RULE 9: what this agency actually does — and ONLY from fields that actually say so.
@@ -1346,14 +1395,18 @@ route.post('/carousel', async (c) => {
       // taste profile when the this-or-that game has been played, random otherwise; stored so
       // every re-render of this deck reproduces the exact same look
       const styleEdition = pickEditionForTaste(style, prefs, { navy: brand.navy, gold: brand.gold });
-      const lockPalette = !!(brandNavy || brandGold);
+      // any chosen slot locks the palette — otherwise setting only the paper or only the ink
+      // would leave the edition free to overwrite it
+      const lockPalette = Object.keys(chosen).length > 0;
       const agencyTaste = tasteLine(prefs);
       // The colours this deck will ACTUALLY render with (override ?? edition palette ?? agency
       // brand) — stored so the finished-deck colour pickers open on the truth instead of generic
       // defaults, which silently overwrote real brand/edition colours on "Apply colours".
       const edPal = !lockPalette ? ((TYPE_EDITIONS[style] ?? [])[styleEdition] ?? {}) : {};
-      const renderNavy = brandNavy ?? edPal.navy ?? brand.navy;
-      const renderGold = brandGold ?? edPal.gold ?? brand.gold;
+      const renderNavy = chosen.main ?? edPal.navy ?? brand.navy;
+      const renderGold = chosen.accent ?? edPal.gold ?? brand.gold;
+      const renderPaper = chosen.paper ?? edPal.cream ?? brand.cream;
+      const renderInk = chosen.ink ?? brand.text;
 
       const label = type === 'tips' ? `Tips carousel · ${topic.slice(0, 80)}` : 'Client quote carousel';
       const ins = await tx.execute(sql`
@@ -1361,7 +1414,7 @@ route.post('/carousel', async (c) => {
           (agency_id, generation_type, status, prompt, requested_by, raw_request)
         VALUES
           (${agencyId}, 'social_post', 'processing', ${label}, ${user?.sub ?? null}::uuid,
-           ${JSON.stringify({ engine: 'carousel', content_type: 'carousel', carousel_type: type, carousel_style: style, image_scheme: scheme, include_recap: includeRecap, include_context: includeContext, topic, quote_text: quoteText, quote_author: quoteAuthor, slide_count: slideCount, language, brand_navy: brandNavy, brand_gold: brandGold, render_navy: renderNavy, render_gold: renderGold, style_edition: styleEdition })}::jsonb)
+           ${JSON.stringify({ engine: 'carousel', content_type: 'carousel', carousel_type: type, carousel_style: style, image_scheme: scheme, include_recap: includeRecap, include_context: includeContext, topic, quote_text: quoteText, quote_author: quoteAuthor, slide_count: slideCount, language, brand_navy: brandNavy, brand_gold: brandGold, brand_paper: chosen.paper ?? null, brand_ink: chosen.ink ?? null, render_navy: renderNavy, render_gold: renderGold, render_paper: renderPaper, render_ink: renderInk, style_edition: styleEdition })}::jsonb)
         RETURNING id
       `);
       const rows = ins as unknown as Array<{ id: string }>;
@@ -1495,24 +1548,27 @@ route.post('/carousel/update', async (c) => {
     // persisted so every later re-render keeps it (Christian 2026-08-28: "possible to edit
     // those colors when you get to the finished product too")
     const rawU = (rows[0].raw_request ?? {}) as Record<string, unknown>;
-    const effNavy = hexColour(b.brand_navy) ?? (typeof rawU.brand_navy === 'string' ? rawU.brand_navy : null);
-    const effGold = hexColour(b.brand_gold) ?? (typeof rawU.brand_gold === 'string' ? rawU.brand_gold : null);
-    if (effNavy) brand.navy = effNavy;
-    if (effGold) brand.gold = effGold;
-    // A per-slide override changes ONE channel; the other has to come from the colours this deck
-    // actually rendered with, not from the agency's defaults. Creation already stores those as
-    // render_navy/render_gold (the picker reads them), but this path never did — so on a deck
-    // wearing an edition palette, touching the accent under one slide also snapped that slide's
-    // headline back to the agency navy and shifted its paper. Same reason an override that
-    // happened to equal the agency's own hex was compared equal to the base and silently dropped.
-    if (!effNavy && typeof rawU.render_navy === 'string') brand.navy = rawU.render_navy;
-    if (!effGold && typeof rawU.render_gold === 'string') brand.gold = rawU.render_gold;
+    // A NEW choice on this edit wins; otherwise the deck keeps whatever it already chose.
+    const chosenU: SlotColours = { ...parseSlots(rawU), ...parseSlots(b) };
+    applySlots(brand, chosenU);
+    // A per-slide override changes ONE channel; the others have to come from the colours this deck
+    // actually rendered with, not from the agency's defaults. Creation stores those as render_*
+    // (the picker reads them), but this path never did — so on a deck wearing an edition palette,
+    // touching the accent under one slide also snapped that slide's headline back to the agency
+    // navy and shifted its paper. Same reason an override that happened to equal the agency's own
+    // hex compared equal to the base and was silently dropped.
+    const rendered = parseSlots(rawU, 'render_');
+    for (const k of SLOTS) if (!chosenU[k] && rendered[k]) applySlots(brand, { [k]: rendered[k] });
     {
+      // an unlocked deck still wears its edition's paper, which render_paper may predate
       const edStyle = typeof meta?.carousel_style === 'string' ? meta.carousel_style : '';
       const edN = typeof rawU.style_edition === 'number' ? rawU.style_edition : 0;
-      const edCream = !(effNavy || effGold) ? ((TYPE_EDITIONS[edStyle] ?? [])[edN] ?? {}).cream : undefined;
+      const edCream = !Object.keys(chosenU).length && !rendered.paper
+        ? ((TYPE_EDITIONS[edStyle] ?? [])[edN] ?? {}).cream : undefined;
       if (edCream) brand.cream = edCream;
     }
+    const effNavy = chosenU.main ?? null, effGold = chosenU.accent ?? null;
+    const deckLocked = Object.keys(chosenU).length > 0;
     const contact = contactLine(agency);
 
     // PER-SLIDE colours (Christian 2026-08-28: "no matter what color i choose, in some places
@@ -1520,10 +1576,10 @@ route.post('/carousel/update', async (c) => {
     // each page individually"). One palette cannot serve a full-bleed colour ground and a cream
     // page with fine gold rules equally well. Overrides are keyed by slide index and merge over
     // the deck colours; a slide with no override keeps them.
-    const priorSlideCols = (rawU.slide_colours && typeof rawU.slide_colours === 'object' ? rawU.slide_colours : {}) as Record<string, { navy?: string; gold?: string }>;
+    const priorSlideCols = (rawU.slide_colours && typeof rawU.slide_colours === 'object' ? rawU.slide_colours : {}) as Record<string, unknown>;
     const slideCols = mergeSlideColours(priorSlideCols, b.slide_colours);
     const renderDeck = (render: (b: typeof brand, locked: boolean) => Promise<Buffer[]>) =>
-      renderWithSlideColours(brand, slideCols, render, !!(effNavy || effGold));
+      renderWithSlideColours(brand, slideCols, render, deckLocked);
 
     // re-render in the SAME visual style the carousel was created with
     const storedStyle: CarouselStyle = typeof meta?.carousel_style === 'string' &&
@@ -1545,10 +1601,10 @@ route.post('/carousel/update', async (c) => {
           ? renderTipsImageStyledV2(storedStyle, plan, agency.name, contact, br, images, storedLang, meta?.include_recap === true, meta?.include_context === true, typeof meta?.layout_variant === 'number' ? meta.layout_variant : 0, ctxArtEff)
           : renderTipsImageStyled(storedStyle, plan, agency.name, contact, br, images, storedLang, meta?.include_context === true, meta?.include_recap === true));
       } else {
-        slides = await renderDeck((br, locked) => renderPlannedStyled('editorial', plan, agency.name, contact, br, storedLang, typeof rawU.style_edition === 'number' ? rawU.style_edition : 0, locked, meta?.include_context === true, meta?.include_recap === true, !!(effNavy || effGold)));
+        slides = await renderDeck((br, locked) => renderPlannedStyled('editorial', plan, agency.name, contact, br, storedLang, typeof rawU.style_edition === 'number' ? rawU.style_edition : 0, locked, meta?.include_context === true, meta?.include_recap === true, deckLocked));
       }
     } else {
-      slides = await renderDeck((br, locked) => renderPlannedStyled(storedStyle, plan, agency.name, contact, br, storedLang, typeof rawU.style_edition === 'number' ? rawU.style_edition : 0, locked, meta?.include_context === true, meta?.include_recap === true, !!(effNavy || effGold)));
+      slides = await renderDeck((br, locked) => renderPlannedStyled(storedStyle, plan, agency.name, contact, br, storedLang, typeof rawU.style_edition === 'number' ? rawU.style_edition : 0, locked, meta?.include_context === true, meta?.include_recap === true, deckLocked));
     }
     const stored = await storeSlides(agencyId, genId, slides);
 
@@ -1559,10 +1615,14 @@ route.post('/carousel/update', async (c) => {
         ...meta, slide_count: stored.length, slides: stored,
         plan, caption: plan.caption, hashtags: plan.hashtags,
       },
-      ...(hexColour(b.brand_navy) || hexColour(b.brand_gold) || b.slide_colours
+      ...(Object.keys(parseSlots(b)).length || b.slide_colours
         ? { raw_request: { ...rawU, slide_colours: slideCols,
-            ...(effNavy ? { brand_navy: effNavy, render_navy: effNavy } : {}),
-            ...(effGold ? { brand_gold: effGold, render_gold: effGold } : {}) } }
+            // store BOTH the choice and what it actually rendered as, under the new slot keys
+            // and the legacy two so a deck saved today still opens in the deployed dashboard
+            ...(chosenU.main ? { brand_navy: chosenU.main, render_navy: chosenU.main, brand_main: chosenU.main, render_main: chosenU.main } : {}),
+            ...(chosenU.accent ? { brand_gold: chosenU.accent, render_gold: chosenU.accent, brand_accent: chosenU.accent, render_accent: chosenU.accent } : {}),
+            ...(chosenU.paper ? { brand_paper: chosenU.paper, render_paper: chosenU.paper } : {}),
+            ...(chosenU.ink ? { brand_ink: chosenU.ink, render_ink: chosenU.ink } : {}) } }
         : {}),
       updated_at: new Date().toISOString(),
     }).eq('id', genId).eq('agency_id', agencyId);
@@ -1831,8 +1891,8 @@ route.post('/carousel/remix', async (c) => {
     `);
     const bRows = bRes as unknown as any[];
     const { agency, brand } = mapBranding(bRows[0] || {});
-    if (typeof raw.brand_navy === 'string') brand.navy = raw.brand_navy as string;
-    if (typeof raw.brand_gold === 'string') brand.gold = raw.brand_gold as string;
+    const chosenR = parseSlots(raw);
+    applySlots(brand, chosenR);
     const contact = contactLine(agency);
 
     // A style remix repaints the deck in the NEW style's edition palette, so the parent's
@@ -1841,20 +1901,20 @@ route.post('/carousel/remix', async (c) => {
     // Computed BEFORE the render, not after: a per-slide override supplies one channel and the
     // other has to come from what this child actually wears, or the override pass repaints the
     // slide out of the new style's edition entirely.
-    const remixLock = !!(raw.brand_navy || raw.brand_gold);
+    const remixLock = Object.keys(chosenR).length > 0;
     const remixEd = !remixLock ? ((TYPE_EDITIONS[newStyle] ?? [])[styleEdition] ?? {}) : {};
-    const remixNavy = (typeof raw.brand_navy === 'string' ? raw.brand_navy : null) ?? remixEd.navy ?? brand.navy;
-    const remixGold = (typeof raw.brand_gold === 'string' ? raw.brand_gold : null) ?? remixEd.gold ?? brand.gold;
-    brand.navy = remixNavy;
-    brand.gold = remixGold;
-    if (remixEd.cream) brand.cream = remixEd.cream;
+    const remixNavy = chosenR.main ?? remixEd.navy ?? brand.navy;
+    const remixGold = chosenR.accent ?? remixEd.gold ?? brand.gold;
+    const remixPaper = chosenR.paper ?? remixEd.cream ?? brand.cream;
+    const remixInk = chosenR.ink ?? brand.text;
+    brand.navy = remixNavy; brand.gold = remixGold; brand.cream = remixPaper; brand.text = remixInk;
 
     // render synchronously — the deck's own artwork is reused, so this is seconds, not minutes
     let slides: Buffer[];
     // the deck's per-slide colour overrides ride through every remix — without this a remix
     // repainted everything in the deck colours while the pickers still showed the per-slide ones
     const remixSlideCols = mergeSlideColours(
-      (raw.slide_colours && typeof raw.slide_colours === 'object' ? raw.slide_colours : {}) as Record<string, { navy?: string; gold?: string }>,
+      (raw.slide_colours && typeof raw.slide_colours === 'object' ? raw.slide_colours : {}) as Record<string, unknown>,
       b.slide_colours,
     );
     if (isTipsImageStyle(newStyle)) {
@@ -1869,7 +1929,7 @@ route.post('/carousel/remix', async (c) => {
     } else {
       slides = await renderWithSlideColours(brand, remixSlideCols, (br, locked) =>
         renderPlannedStyled(newStyle, plan, agency.name, contact, br, storedLang, styleEdition, locked, meta?.include_context === true, meta?.include_recap === true, remixLock),
-        !!(raw.brand_navy || raw.brand_gold));
+        remixLock);
     }
 
     const label = `Remix · ${axis} · ${String(raw.topic ?? '').slice(0, 70) || 'tips carousel'}`;
@@ -1878,7 +1938,7 @@ route.post('/carousel/remix', async (c) => {
         (agency_id, generation_type, status, prompt, requested_by, raw_request)
       VALUES
         (${agencyId}, 'social_post', 'processing', ${label}, ${user?.sub ?? null}::uuid,
-         ${JSON.stringify({ ...raw, engine: 'carousel', content_type: 'carousel', carousel_style: newStyle, style_edition: styleEdition, render_navy: remixNavy, render_gold: remixGold, slide_colours: remixSlideCols, remix_of: parentId, remix_axis: axis })}::jsonb)
+         ${JSON.stringify({ ...raw, engine: 'carousel', content_type: 'carousel', carousel_style: newStyle, style_edition: styleEdition, render_navy: remixNavy, render_gold: remixGold, render_paper: remixPaper, render_ink: remixInk, render_main: remixNavy, render_accent: remixGold, slide_colours: remixSlideCols, remix_of: parentId, remix_axis: axis })}::jsonb)
       RETURNING id
     `);
     const insRows = ins as unknown as Array<{ id: string }>;
@@ -1912,9 +1972,9 @@ route.post('/carousel/remix', async (c) => {
       ok: true, generation_id: genId,
       // the child's OWN colours — without these the result-screen pickers keep showing the
       // parent style's palette and one "Apply colours" repaints the remix back to the old look
-      render_navy: remixNavy, render_gold: remixGold, slide_colours: remixSlideCols,
-      brand_navy: typeof raw.brand_navy === 'string' ? raw.brand_navy : undefined,
-      brand_gold: typeof raw.brand_gold === 'string' ? raw.brand_gold : undefined,
+      render_navy: remixNavy, render_gold: remixGold, render_paper: remixPaper, render_ink: remixInk,
+      slide_colours: remixSlideCols,
+      brand_navy: chosenR.main, brand_gold: chosenR.accent, brand_paper: chosenR.paper, brand_ink: chosenR.ink,
       slides: stored.map((sl) => sl.url), plan, caption: plan.caption, hashtags: plan.hashtags,
       carousel_style: newStyle, per_slide_art: perSlideArt,
     });

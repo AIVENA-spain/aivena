@@ -315,12 +315,25 @@ function tipsSlide2(plan: CarouselPlan, agency: string, brand: CarouselBrand, to
  *  hairline frames, the numeral in a ring badge, everything centered; the ground rotates through
  *  three tints of the brand world so the deck breathes without breaking the dress. */
 function tipSlide(slideIndex: number, tipNumber: number, total: number, tip: { title: string; body: string; teaser: string }, agency: string, brand: CarouselBrand, eyebrow = "") {
-  const tints = [
-    brand.cream,
-    mix(brand.gold, brand.cream, 0.14),
-    mix(brand.navy, brand.cream, 0.07),
-  ];
-  const bg = tints[(tipNumber - 1) % 3];
+  // Christian 2026-08-31: "i think i like having this template as every second color not some
+  // here some there." The ground cycled through THREE tints on a 3-step rotation, so a four-tip
+  // deck came out cream, rose, a lighter one, rose — no rhythm, just one slide that looked like
+  // a mistake. It now alternates: odd tips on the paper, even tips carrying colour, which is the
+  // rhythm he approved in encalada (paper · paper · colour · paper · colour · paper). The two
+  // coloured slides take a turn each so the deck still shows both brand colours.
+  //
+  // The STRENGTH is measured, not guessed. At 0.14 the alternation was invisible on his palette —
+  // his sand sits close to his paper, so the tinted slides looked identical to the plain ones. At
+  // 0.30 it was obvious, and the titles on exactly those slides flipped from his blue to black:
+  // the darker ground pushed his blue to 2.49:1, under the near-miss line, so RULE 1 correctly
+  // replaced it — reintroducing the very inconsistency he asked to remove, one layer down. 0.26
+  // is the boundary (2.53:1). 0.24 keeps a margin and is nearly as visible.
+  const tinted = tipNumber % 2 === 0;
+  const bg = !tinted
+    ? brand.cream
+    : (Math.floor(tipNumber / 2) % 2 === 1
+        ? mix(brand.gold, brand.cream, 0.24)
+        : mix(brand.navy, brand.cream, 0.14));
   const line = mix(brand.navy, bg, 0.8);
   const muted = mix(brand.navy, bg, 0.55);
   const gold = visibleTone(brand.gold, bg, brand.navy, 0.6);

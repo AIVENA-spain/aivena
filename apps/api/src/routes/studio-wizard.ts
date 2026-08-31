@@ -1484,8 +1484,21 @@ route.post('/carousel', async (c) => {
       // every re-render of this deck reproduces the exact same look
       const styleEdition = pickEditionForTaste(style, prefs, { navy: brand.navy, gold: brand.gold });
       // any chosen slot locks the palette — otherwise setting only the paper or only the ink
-      // would leave the edition free to overwrite it
-      const lockPalette = Object.keys(chosen).length > 0;
+      // would leave the edition free to overwrite it.
+      //
+      // AND an agency that has set its own brand colours counts as having chosen. Until today
+      // nobody could change accent/paper/ink, so every agency sat on the signup seed and letting
+      // those beat the edition palette would have made every deck look identical — which is why
+      // editions override. Now that Settings writes all four, Christian saved his and expected
+      // posts to use them; with the edition picked at random he had a 2-in-3 chance of getting
+      // the style's colours instead. Deliberate beats decorative. Fonts still rotate per edition,
+      // so the editions keep doing the job they exist for.
+      const SEED_BRAND: Record<string, string> = {
+        navy: '#0b2545', gold: '#c9a45c', cream: '#f8f5ef', text: '#1f2933',
+      };
+      const agencyChoseColours = (['navy', 'gold', 'cream', 'text'] as const)
+        .some((k) => (brand[k] ?? '').toLowerCase() !== SEED_BRAND[k]);
+      const lockPalette = Object.keys(chosen).length > 0 || agencyChoseColours;
       const agencyTaste = tasteLine(prefs);
       // The colours this deck will ACTUALLY render with (override ?? edition palette ?? agency
       // brand) — stored so the finished-deck colour pickers open on the truth instead of generic

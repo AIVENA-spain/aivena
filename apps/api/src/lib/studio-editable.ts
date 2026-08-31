@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import sharp from 'sharp';
 import { randomUUID, createHash } from 'node:crypto';
 import { supabaseAdmin } from './supabase-admin';
 import { STUDIO_ROOT } from './studio-data-root';
@@ -400,7 +401,41 @@ function signedFor(key: string) {
  * DETERMINISTIC: an existing object is reused (one signed-url round-trip instead of a full render), and a race
  * that already wrote the key is treated as a hit. Throws on genuine storage failure (caller maps to Law-2).
  */
-export async function renderAndStore(opts: RenderOpts): Promise<{ image_url: string; storage_path: string }> {
+/** The cache key is a pure function of the render inputs, and renderInputsHash reads photo REFS (urls),
+ *  never the photo bytes — so a caller can ask "is this tile already rendered?" before downloading a
+ *  single photo. The gallery route does exactly that: it was fetching 80 photos, ~9.9 MB, on every
+ *  warm load and throwing them away because the cache probe sat further down inside renderAndStore. */
+export function editableCacheKey(opts: RenderOpts): string | null {
+  if (!opts.agencyId) return null;
+  return `editable/${opts.agencyId}/${opts.propertyId || 'x'}/${opts.templateId}/${renderInputsHash(opts)}.png`;
+}
+
+/** A gallery tile is about 250 CSS px wide and was being served the full 1080x1350 PNG — measured across
+ *  the live objects at 1683 KB average, 3437 KB worst, ~54 MB for one gallery load. The same render at
+ *  360w WebP is ~18 KB. Written next to the PNG so the editor and the enlarge view keep the full file. */
+const THUMB_SUFFIX = '.thumb.webp';
+async function storeThumb(key: string, png: Buffer): Promise<string | null> {
+  const tkey = key.replace(/\.png$/, THUMB_SUFFIX);
+  try {
+    const hit = await signedFor(tkey);
+    if (!hit.error && hit.data?.signedUrl) return hit.data.signedUrl;
+    const webp = await sharp(png).resize(360, null, { withoutEnlargement: true }).webp({ quality: 80 }).toBuffer();
+    await supabaseAdmin.storage.from(OUT_BUCKET).upload(tkey, webp, { contentType: 'image/webp', upsert: false });
+    const signed = await signedFor(tkey);
+    return signed.error ? null : (signed.data?.signedUrl ?? null);
+  } catch { return null; }   // a thumbnail is an optimisation — never fail a render for it
+}
+
+/** Is this key already rendered? Returns the signed urls if so. Used by the gallery route to answer a
+ *  warm tile without touching storage for photos. */
+export async function signedForKey(key: string): Promise<{ image_url: string; thumb_url?: string } | null> {
+  const hit = await signedFor(key);
+  if (hit.error || !hit.data?.signedUrl) return null;
+  const t = await signedFor(key.replace(/\.png$/, THUMB_SUFFIX));
+  return { image_url: hit.data.signedUrl, ...(!t.error && t.data?.signedUrl ? { thumb_url: t.data.signedUrl } : {}) };
+}
+
+export async function renderAndStore(opts: RenderOpts): Promise<{ image_url: string; storage_path: string; thumb_url?: string }> {
   const deterministic = !!opts.agencyId;
   const key = deterministic
     ? `editable/${opts.agencyId}/${opts.propertyId || 'x'}/${opts.templateId}/${renderInputsHash(opts)}.png`
@@ -408,7 +443,11 @@ export async function renderAndStore(opts: RenderOpts): Promise<{ image_url: str
 
   if (deterministic) {
     const hit = await signedFor(key);
-    if (!hit.error && hit.data?.signedUrl) return { image_url: hit.data.signedUrl, storage_path: key };
+    if (!hit.error && hit.data?.signedUrl) {
+      const t = await signedFor(key.replace(/\.png$/, THUMB_SUFFIX));
+      return { image_url: hit.data.signedUrl, storage_path: key,
+        ...(!t.error && t.data?.signedUrl ? { thumb_url: t.data.signedUrl } : {}) };
+    }
   }
 
   const png = await renderEditableTemplate(opts);
@@ -423,7 +462,8 @@ export async function renderAndStore(opts: RenderOpts): Promise<{ image_url: str
   }
   const signed = await signedFor(key);
   if (signed.error || !signed.data?.signedUrl) throw new Error(`studio-editable sign: ${signed.error?.message}`);
-  return { image_url: signed.data.signedUrl, storage_path: key };
+  const thumb = deterministic ? await storeThumb(key, png) : null;
+  return { image_url: signed.data.signedUrl, storage_path: key, ...(thumb ? { thumb_url: thumb } : {}) };
 }
 
 /** The effective default text per slot + colour per layer, for pre-filling the editing form (no render). */

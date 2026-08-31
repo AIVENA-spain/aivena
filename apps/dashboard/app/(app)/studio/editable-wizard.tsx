@@ -1,5 +1,6 @@
 "use client";
 
+import { BASE_PATH } from "@/lib/base-path";
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { ArrowLeft, Check, Download, Loader2, Maximize2, Minus, Plus, Save, Search, Sparkles, X } from "lucide-react";
 import {
@@ -179,13 +180,22 @@ export function EditableWizard({ initialLanguage }: { initialLanguage?: string }
       setGallery(items);
       setGalleryThumbs(Object.fromEntries(items.map((t) => [t.template_id, undefined])));
       setGalleryLoading(false);
+      // A plain fetch, NOT the server action. editablePreviewAction is a "use server"
+      // export, and Next serialises those into one queue — so runLimited(items, 4) has
+      // always had an effective concurrency of ONE, which is why the tiles filled in
+      // strictly top to bottom. A Route Handler is not queued, so the 4 is real.
       await runLimited(items, 4, async (item) => {
-        const r = await editablePreviewAction({
-          template_id: item.template_id, property_id: item.property_id,
-          photos: item.photos, brand: item.brand, colour_overrides: item.colour_overrides,
-        });
+        const r = await fetch(`${BASE_PATH}/api/studio/editable-preview`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            template_id: item.template_id, property_id: item.property_id,
+            photos: item.photos, brand: item.brand, colour_overrides: item.colour_overrides,
+          }),
+        }).then((res) => res.json() as Promise<Record<string, unknown>>)
+          .catch(() => ({ ok: false } as Record<string, unknown>));
         if (cancelled) return;
-        setGalleryThumbs((prev) => ({ ...prev, [item.template_id]: r.ok ? (r.image_url as string) : null }));
+        setGalleryThumbs((prev) => ({ ...prev, [item.template_id]: r.ok ? ((r.thumb_url as string) ?? (r.image_url as string)) : null }));
       });
     })();
     return () => { cancelled = true; };

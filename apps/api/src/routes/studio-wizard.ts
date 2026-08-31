@@ -7,6 +7,8 @@ import {
   catalogue as editableCatalogue,
   editableDefaults,
   renderAndStore,
+  editableCacheKey,
+  signedForKey,
   mapPropertyRow,
   mapBranding,
   isKnownTemplate,
@@ -737,26 +739,44 @@ route.post('/editable-preview', async (c) => {
     // watermark-free images. Handles are generation IDS only (agency-scoped lookup), never client-supplied URLs.
     const cleanedIds = Array.isArray(b.cleaned_generation_ids)
       ? (b.cleaned_generation_ids as unknown[]).filter((x): x is string => typeof x === 'string') : [];
-    const buffers: Buffer[] = cleanedIds.length ? await cleanedBuffers(tx, agencyId, cleanedIds) : [];
-    if (!buffers.length) {
-      for (const ref of refs) { const buf = await loadPhotoBuffer(ref); if (buf) buffers.push(buf); }
-    }
-    if (buffers.length === 0) return c.json({ ok: false, error: 'photo_fetch_failed', message: "The selected photos couldn't be loaded." }, 422);
-
     // AUTO: a tapped scheme overrides the agency's own brand (validated hex quad). MANUAL: per-layer wheel picks.
     const brand = isBrandColours(b.brand) ? b.brand : loaded.brand;
     const obj = (v: unknown) => (v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, string>) : undefined);
-    const stored = await renderAndStore({
-      templateId, property: loaded.property, agency: loaded.agency, brand, photoBuffers: buffers,
+    const renderOpts = {
+      templateId, property: loaded.property, agency: loaded.agency, brand,
       textOverrides: obj(b.text_overrides),
       colourOverrides: obj(b.colour_overrides),
       manualColours: obj(b.manual_colours),
       positionOverrides: parsePositions(b.position_overrides),
       sizeOverrides: parseSizes(b.size_overrides),
       photoTransforms: parsePhotoTransforms(b.photo_transforms),
-      agencyId, propertyId, photoRefs: cleanedIds.length ? cleanedIds : refs, // deterministic cache key → reuse identical renders, no churn
+      agencyId, propertyId, photoRefs: cleanedIds.length ? cleanedIds : refs,
+    };
+
+    // ASK THE CACHE BEFORE FETCHING A SINGLE PHOTO. The key hashes photo REFS, not photo bytes, so it is
+    // fully computable here — but the probe used to sit inside renderAndStore, below the download loop.
+    // Every warm gallery load was therefore fetching 80 photos (~9.9 MB) and discarding them: a 4-photo
+    // tile spent ~0.8s of its ~1.5s step on images it already had rendered.
+    const cacheKey = editableCacheKey(renderOpts as never);
+    if (cacheKey) {
+      const hit = await signedForKey(cacheKey);
+      if (hit) return c.json({ ok: true, template_id: templateId, image_url: hit.image_url,
+        ...(hit.thumb_url ? { thumb_url: hit.thumb_url } : {}), storage_path: cacheKey });
+    }
+
+    const buffers: Buffer[] = cleanedIds.length ? await cleanedBuffers(tx, agencyId, cleanedIds) : [];
+    if (!buffers.length) {
+      // in parallel — a cold 4-photo tile pays one photo's latency, not four in a row
+      const loaded4 = await Promise.all(refs.map((ref) => loadPhotoBuffer(ref)));
+      for (const buf of loaded4) if (buf) buffers.push(buf);
+    }
+    if (buffers.length === 0) return c.json({ ok: false, error: 'photo_fetch_failed', message: "The selected photos couldn't be loaded." }, 422);
+
+    const stored = await renderAndStore({
+      ...renderOpts, photoBuffers: buffers,
     });
-    return c.json({ ok: true, template_id: templateId, image_url: stored.image_url, storage_path: stored.storage_path });
+    return c.json({ ok: true, template_id: templateId, image_url: stored.image_url,
+      ...(stored.thumb_url ? { thumb_url: stored.thumb_url } : {}), storage_path: stored.storage_path });
   } catch (err) {
     console.error('[studio/editable-preview] failed:', err);
     return c.json({ ok: false, error: 'preview_failed', message: GENERIC }, 500);

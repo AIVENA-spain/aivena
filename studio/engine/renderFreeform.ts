@@ -645,9 +645,20 @@ export async function renderFreeform(
           // slides at 3.25:1 — including their call-to-action — because a terracotta slide
           // contains nothing dark. Staying in-palette is the preference; legibility is the rule.
           // Every candidate is measured and the BEST is kept, not the first that squeaks past.
-          // A colour the agent picked themselves is not the engine's to overrule. Still measured,
-          // still reported below — the studio shows the ratio — but it ships as chosen.
-          const deliberate = (spec.chosen_colours ?? []).some((c) => c.toLowerCase() === el.colour.toLowerCase());
+          // A colour the agent picked is not the engine's to overrule — but only where honouring it
+          // still leaves words a person can read. Exempting a chosen colour OUTRIGHT was too broad,
+          // and the render showed it within minutes: the engine also uses the agent's PAPER as
+          // reversed type on a coloured ground, and his own off-white on his own sand measures
+          // 1.6:1. That is not a choice he made, it is the engine reaching for a colour that
+          // happens to be his, and the result was a slide of near-invisible text.
+          //
+          // So the exemption is for a NEAR MISS, not for anything at all. His brand blue reads
+          // 2.82:1 against a floor of 3 — 0.18 short, invisible to the eye, and his to keep. A
+          // colour more than half a point under the floor is not a near miss; the words genuinely
+          // cannot be read, and the engine fixes it and says so.
+          const NEAR_MISS = 0.5;
+          const deliberate = (spec.chosen_colours ?? []).some((c) => c.toLowerCase() === el.colour.toLowerCase())
+            && measured.worst >= floor - NEAR_MISS;
           const inPalette = deliberate ? [] : [el.alt_colour, ...specPalette()].filter((c): c is string => !!c);
           for (const c of inPalette) {
             const m = measureWith(c);

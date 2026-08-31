@@ -292,16 +292,24 @@ function encaladaPlanned(plan: CarouselPlan, agency: string, contact: string, br
 
   if (isQuote) {
     plan.quote_parts.forEach((part, i) => {
+      // Every quote slide was the paper, and the closing slide moving to the paper left a quote
+      // deck with NOT ONE coloured ground — six beige slides. It takes the same alternation as
+      // the tips so both chosen colours appear here too.
+      const dark = i % 2 === 1;
+      const feature = Math.floor(i / 2) % 2 === 0 ? TERRA : OLIVE;
+      const bg = dark ? feature : LIME;
+      const quoteInk = dark ? LIME : NAVY;
+      const quiet = dark ? mix(LIME, feature, 0.75) : inkMuted;
       specs.push(DesignSpec.parse({
-        background: LIME,
+        background: bg,
         elements: [
-          { type: "text", bbox: [70, 110, 380, 310], content: "“", font: FR, size: 230, colour: TERRA, align: "left" },
-          { type: "text", bbox: [90, 340, 990, 980], content: wrap(part, FR, 60, 900), font: FR, size: 60, colour: NAVY, align: "left", line_height: 82, valign: "center" },
+          { type: "text", bbox: [70, 110, 380, 310], content: "“", font: FR, size: 230, colour: dark ? mix(LIME, feature, 0.55) : TERRA, align: "left" },
+          { type: "text", bbox: [90, 340, 990, 980], content: wrap(part, FR, 60, 900), font: FR, size: 60, colour: quoteInk, align: "left", line_height: 82, valign: "center" },
           ...(i === plan.quote_parts.length - 1 && plan.attribution ? [
-            { type: "rect", bbox: [90, 1046, 154, 1049], fill: OLIVE },
-            { type: "text", bbox: [90, 1076, 990, 1118], content: plan.attribution, font: "Questrial", size: 28, colour: inkMuted, align: "left", tracking: 1 },
+            { type: "rect", bbox: [90, 1046, 154, 1049], fill: dark ? LIME : OLIVE },
+            { type: "text", bbox: [90, 1076, 990, 1118], content: plan.attribution, font: "Questrial", size: 28, colour: quiet, align: "left", tracking: 1 },
           ] : []),
-          ...band(agency, i + 2 + (includeContext ? 1 : 0), total, inkMuted),
+          ...band(agency, i + 2 + (includeContext ? 1 : 0), total, quiet),
         ],
       }));
     });
@@ -319,7 +327,10 @@ function encaladaPlanned(plan: CarouselPlan, agency: string, contact: string, br
       specs.push(DesignSpec.parse({
         background: bg,
         elements: [
-          { type: "text", bbox: [80, 80, 620, 350], content: String(i + 1).padStart(2, "0"), font: FR, size: 240, colour: dark ? mix(LIME, TERRA, 0.4) : brand.gold, align: "left" },
+          // the wash has to be mixed against the ground this slide ACTUALLY got — when the
+          // feature colour alternates, mixing against TERRA tints the numeral on a slide that
+          // is not TERRA, and on the accent slide it read as a smear of the other colour
+          { type: "text", bbox: [80, 80, 620, 350], content: String(i + 1).padStart(2, "0"), font: FR, size: 240, colour: dark ? mix(LIME, feature, 0.4) : brand.gold, align: "left" },
           { type: "rect", bbox: [80, 404, 164, 408], fill: dark ? LIME : OLIVE },
           { type: "text", bbox: [80, 456, 1000, 660], content: wrap(tip.title, FR, 62, 920), font: FR, size: 62, colour: head, align: "left", line_height: 76 },
           { type: "text", bbox: [80, 700, 1000, 1080], content: wrap(tip.body, "Jost", 35, 920), font: "Jost", size: 35, colour: bodyC, align: "left", line_height: 54, valign: "center" },

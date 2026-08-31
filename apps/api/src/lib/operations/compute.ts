@@ -105,6 +105,17 @@ export type OpenTaskRow = {
   title: string | null;
   body?: string | null;      // message_body — the question text for amanda_question rows
   created_at: string | null; // ISO
+  /** Joined through the question's own property_id in the route. */
+  property?: {
+    id: string;
+    ref: string | null;
+    title: string | null;
+    city: string | null;
+    type: string | null;
+    bedrooms: number | null;
+    price: number | null;
+    image: string | null;
+  } | null;
 };
 
 export type LifecycleRow = {
@@ -187,10 +198,27 @@ export type OperationsResponse = {
       priority: string | null;
       temperature: string | null;
       title: string | null;
+      /** message_body — for amanda_question rows this is the question itself.
+       *  It was being returned without ever being declared here, which is how
+       *  the property field below could be added to the QUERY and still never
+       *  reach the client: this shaping layer names what it carries. */
+      body: string | null;
       createdAt: string | null;
       ageHours: number | null;
       /** True = this lead is openable in the Inbox (has a dashboard_inbox row). */
       inInbox: boolean;
+      /** The property an Amanda question is about, so the agent answering it
+       *  can see WHICH one without having read the conversation. */
+      property: {
+        id: string;
+        ref: string | null;
+        title: string | null;
+        city: string | null;
+        type: string | null;
+        bedrooms: number | null;
+        price: number | null;
+        image: string | null;
+      } | null;
     }>;
     available: boolean;
   };
@@ -416,6 +444,11 @@ export function computeOperations(agencyId: string, s: OperationsSignals): Opera
     createdAt: t.created_at,
     ageHours: ageHours(t.created_at, now),
     inInbox: t.lead_id ? inboxLeadIds.has(t.lead_id) : false,
+    // The property an Amanda question is about. This shaping layer drops any
+    // field it does not name, so adding the column to the query was not enough
+    // — it has to be carried explicitly here or the card never renders
+    // (Christian 2026-08-31: "i still dont see the property being shown").
+    property: t.property ?? null,
   }));
 
   // ---- Providers ------------------------------------------------------------

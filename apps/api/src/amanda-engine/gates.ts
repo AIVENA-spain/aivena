@@ -72,7 +72,28 @@ const PROPERTY_NUMBER_PATTERNS: Array<{ cls: 'price' | 'size' | 'rooms'; re: Reg
 /** Deterministic numeric grounding: a stated property-fact number must exist in
  *  the matching STRUCTURED field of something fetched this turn — or in an
  *  AUTHORITATIVE agency-authored text (an office answer being relayed, design
- *  §3b: the relay is the AGENCY'S words; its numbers are trusted-layer). */
+ *  §3b: the relay is the AGENCY'S words; its numbers are trusted-layer).
+ *
+ *  KNOWN AND DELIBERATE COVERAGE LIMIT (audited 2026-08-31 — do not "fix"
+ *  without reading this). A price is only seen when a currency marker sits
+ *  DIRECTLY beside the number. These shapes are NOT caught here:
+ *      "1,2 millioner euro"   — a scale word breaks the adjacency
+ *      "Prisen er 390000"     — no currency marker at all
+ *
+ *  Both were measured, and BOTH CANDIDATE FIXES WERE TESTED AND REJECTED:
+ *    · Gating bare numbers >= 10000 blocks correct answers — measured against
+ *      real sentences it killed "Torrevieja har rundt 85 000 innbyggere" (a
+ *      true research fact) and the agency's own phone number. Destroying a
+ *      correct answer is the worse failure; that is the whole lesson of the
+ *      2026-08-29/31 gate incidents.
+ *    · Scale words need "1,2 millioner" normalised to 1200000, but a comma is
+ *      a DECIMAL point in Norwegian and a THOUSANDS separator in English. A
+ *      parser that guesses wrong blocks a correct price.
+ *
+ *  These shapes are NOT unchecked: classifyDraft treats any digit as
+ *  fact-bearing, so they still face the independent LLM verifier. They rest on
+ *  ONE layer rather than two. That is the accurate risk statement, and the
+ *  tests below pin it so the gap stays visible and deliberate. */
 export function draftNumbersGrounded(draft: string, toolEvents: ToolEvent[], authoritativeTexts: string[] = []): { ok: boolean; offending: string[] } {
   const sets = fetchedFieldTokens(toolEvents);
   for (const text of authoritativeTexts) {

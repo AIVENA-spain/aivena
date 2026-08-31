@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { safeErr } from '../lib/safe-error';
 import {
   listMembershipsForUser,
   supabaseAdmin,
@@ -100,7 +101,7 @@ route.get('/preferences', async (c) => {
     .maybeSingle();
 
   if (error) {
-    console.error('[me/preferences] load failed:', error.message);
+    console.error('[me/preferences] load failed:', safeErr(error));
     return c.json(
       { error: 'Something went wrong — please refresh, and contact support if it persists.' },
       500,
@@ -181,7 +182,7 @@ route.patch('/preferences', async (c) => {
     .single();
 
   if (error) {
-    console.error('[me/preferences] save failed:', error.message);
+    console.error('[me/preferences] save failed:', safeErr(error));
     return c.json(
       { error: 'Something went wrong — please try again, and contact support if it persists.' },
       500,

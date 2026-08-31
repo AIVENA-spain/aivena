@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { sql } from 'drizzle-orm';
 import type { Tx } from '../../../../packages/db/client';
 import { WhatsAppReadinessSchema } from './whatsapp';
+import { safeErr } from '../lib/safe-error';
 import {
   computeOperations,
   type OperationsSignals,
@@ -41,7 +42,7 @@ async function safe<T>(tx: Tx, fn: (sp: Tx) => Promise<T>, fallback: T): Promise
   try {
     return await tx.transaction(async (sp) => fn(sp as unknown as Tx));
   } catch (err) {
-    console.error('[operations] signal degraded:', err instanceof Error ? err.message : err);
+    console.error('[operations] signal degraded:', safeErr(err));
     return fallback;
   }
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { draftNumbersGrounded, runGates, type Verifier } from './gates';
+import { draftNumbersGrounded, runGates, classifyDraft, type Verifier } from './gates';
 import type { ToolEvent } from './tools';
 
 const searchEvent = (data: unknown): ToolEvent => ({
@@ -78,5 +78,38 @@ describe('conversation history grounds a repeat answer', () => {
     await runGates('MI4010 is 195 000 EUR.', [], spy, ['office said so'], [], alreadyTold);
     expect(seen).toContain('office said so');
     expect(seen).toContain(alreadyTold[0]);
+  });
+});
+
+/**
+ * Pins the AUDITED coverage boundary of the deterministic price gate
+ * (2026-08-31). These are not aspirational — they record what the gate does and
+ * does not see, so nobody assumes protection that is not there, and so a future
+ * change that alters the boundary shows up here rather than in a buyer's chat.
+ */
+describe('price gate — audited coverage boundary', () => {
+  const noTools: ToolEvent[] = [];
+
+  it('CATCHES a price with a currency marker beside it', () => {
+    for (const draft of ['The villa is 390.000 €', 'Prisen er 390 000 EUR', 'It is €390,000']) {
+      expect(draftNumbersGrounded(draft, noTools).ok, draft).toBe(false);
+    }
+  });
+
+  it('grounds that same price when the office actually said it', () => {
+    const r = draftNumbersGrounded('The villa is 390.000 €', noTools, ['The price is 390000 EUR']);
+    expect(r.ok).toBe(true);
+  });
+
+  it('DOES NOT catch a scale word or a bare number — known, deliberate, verifier-covered', () => {
+    for (const draft of ['Den koster 1,2 millioner euro', 'Prisen er 390000']) {
+      expect(draftNumbersGrounded(draft, noTools).ok, draft).toBe(true);
+    }
+  });
+
+  it('and that is WHY those drafts must still be fact-bearing (so the verifier sees them)', () => {
+    // The safety of the gap depends entirely on this staying true.
+    expect(classifyDraft('Den koster 1,2 millioner euro')).toBe('fact_bearing');
+    expect(classifyDraft('Prisen er 390000')).toBe('fact_bearing');
   });
 });

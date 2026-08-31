@@ -81,7 +81,8 @@ export async function pollCalendarSyncs(limit = 10): Promise<{ processed: number
     try {
       context = await fetchBookingContext(agencyId, rows.map((r) => r.booking_id));
     } catch (err) {
-      console.error('[calendar/worker] context lookup failed — re-queueing agency batch as transient', agencyId, err instanceof Error ? err.message : 'error');
+      console.error('[calendar/worker] context lookup failed — re-queueing agency batch as transient', agencyId,
+        err instanceof Error ? err.message.split('\n')[0].slice(0, 200) : 'error');
       for (const row of rows) await safeMarkTransient(agencyId, row.booking_id, 'context_lookup_failed');
       continue;
     }
@@ -121,7 +122,15 @@ export async function pollCalendarSyncs(limit = 10): Promise<{ processed: number
         // A thrown row (network blip mid-refresh, DB hiccup) must not abort the
         // rest of the batch NOR strand this booking in 'syncing' — best-effort
         // transient mark keeps it on the retry path.
-        console.error('[calendar/worker] booking sync threw', row.booking_id, err instanceof Error ? err.message : 'error');
+        // FIRST LINE ONLY. Drizzle's DrizzleQueryError message is
+        // `Failed query: <sql>\nparams: <bind values>` — and this catch wraps
+        // syncOneBooking, whose FIRST statement is deps.getAccessToken →
+        // store_agency_oauth_credential(agencyId, provider, ACCESS_TOKEN,
+        // REFRESH_TOKEN, …). syncOneBooking has no try/catch of its own, so a
+        // DB failure there put live Google tokens into the logs. The sibling
+        // delete path (line ~203) and calendar.ts already do it this way.
+        console.error('[calendar/worker] booking sync threw', row.booking_id,
+          err instanceof Error ? err.message.split('\n')[0].slice(0, 200) : 'error');
         await safeMarkTransient(agencyId, row.booking_id, 'worker_exception');
       }
     }

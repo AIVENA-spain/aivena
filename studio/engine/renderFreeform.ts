@@ -115,6 +115,14 @@ export const FreeformElement = z.discriminatedUnion("type", [
 export type FreeformElement = z.infer<typeof FreeformElement>;
 
 export const DesignSpec = z.object({
+  /** Colours the AGENT deliberately chose — from Settings or the per-deck pickers. Christian
+   *  2026-08-31: "if i am deciding to do it from this stage it must be intentional and no one would
+   *  choose a color for text that couldnt be seen. its more for the actual when ai generates so
+   *  text will be visable." RULE 1 exists to stop the MACHINE shipping type nobody can read; it was
+   *  also overruling a person. His own brand blue measured 2.82:1 against his paper and the
+   *  large-text floor is 3, so his cover headline shipped grey — it missed by 0.18. A colour on
+   *  this list is measured and REPORTED exactly as before, but never substituted. */
+  chosen_colours: z.array(Colour).optional(),
   background: Colour,
   elements: z.array(FreeformElement).min(1).max(300),  // seamless wide strips carry a whole deck in one spec
 });
@@ -637,12 +645,26 @@ export async function renderFreeform(
           // slides at 3.25:1 — including their call-to-action — because a terracotta slide
           // contains nothing dark. Staying in-palette is the preference; legibility is the rule.
           // Every candidate is measured and the BEST is kept, not the first that squeaks past.
-          const inPalette = [el.alt_colour, ...specPalette()].filter((c): c is string => !!c);
+          // A colour the agent picked is not the engine's to overrule — but only where honouring it
+          // still leaves words a person can read. Exempting a chosen colour OUTRIGHT was too broad,
+          // and the render showed it within minutes: the engine also uses the agent's PAPER as
+          // reversed type on a coloured ground, and his own off-white on his own sand measures
+          // 1.6:1. That is not a choice he made, it is the engine reaching for a colour that
+          // happens to be his, and the result was a slide of near-invisible text.
+          //
+          // So the exemption is for a NEAR MISS, not for anything at all. His brand blue reads
+          // 2.82:1 against a floor of 3 — 0.18 short, invisible to the eye, and his to keep. A
+          // colour more than half a point under the floor is not a near miss; the words genuinely
+          // cannot be read, and the engine fixes it and says so.
+          const NEAR_MISS = 0.5;
+          const deliberate = (spec.chosen_colours ?? []).some((c) => c.toLowerCase() === el.colour.toLowerCase())
+            && measured.worst >= floor - NEAR_MISS;
+          const inPalette = deliberate ? [] : [el.alt_colour, ...specPalette()].filter((c): c is string => !!c);
           for (const c of inPalette) {
             const m = measureWith(c);
             if (m && m.worst > bestWorst) { bestWorst = m.worst; bestInk = c; }
           }
-          if (bestWorst < floor) {
+          if (bestWorst < floor && !deliberate) {
             for (const c of NEUTRAL_INKS) {
               const m = measureWith(c);
               if (m && m.worst > bestWorst) { bestWorst = m.worst; bestInk = c; }

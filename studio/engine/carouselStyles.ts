@@ -608,6 +608,14 @@ export async function renderPlannedStyled(
     setPlannedSerif(prevSerif);
     restoreAccents();
   }
+  // When the palette is the agent's own — chosen in Settings or in the per-deck pickers — those four
+  // colours are declared to the rasteriser as DELIBERATE, so RULE 1 measures and reports them but
+  // never swaps them out. On an unlocked deck the colours are the style's, not a person's, and the
+  // rule governs them exactly as before.
+  if (deriveAccents) {
+    const chosen = [b.navy, b.gold, b.cream, b.text];
+    specs = specs.map((sp) => ({ ...(sp as Record<string, unknown>), chosen_colours: chosen }));
+  }
   if (grain > 0) return renderAll(specs, [], grain);
   const out: Buffer[] = [];
   for (const spec of specs) out.push(await renderFreeform(spec as DesignSpec, { width: W, height: H }, []));

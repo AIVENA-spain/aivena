@@ -43,12 +43,25 @@ export default async function StudioPage() {
 
   // Library + quota both fetched for first paint; either failing is non-fatal
   // (the wizard still works and refetches after each generation).
-  const [libRes, quotaRes] = await Promise.allSettled([
+  // Christian 2026-08-31: "i had to set the colors myself in the custom section." The custom
+  // colour pickers started on stock values, so the three he did not retype (accent, paper, ink)
+  // silently used #c8a24b / #f4f1ea / #333333 instead of the brand he had just saved in Settings.
+  // Fetched here, in parallel with the two calls the page already makes, so it costs nothing.
+  const [libRes, quotaRes, brandRes] = await Promise.allSettled([
     apiFetch<{ ok: boolean; items?: LibraryItem[] }>("/api/studio/library"),
     apiFetch<{ ok: boolean; quota?: Quota }>(
       "/api/v1/images/quota?type=social_post",
     ),
+    apiFetch<{ branding?: { primary_color?: string | null; accent_color?: string | null;
+      background_color?: string | null; text_color?: string | null } }>("/api/v1/settings"),
   ]);
+  const b = brandRes.status === "fulfilled" ? brandRes.value.branding : undefined;
+  const brand = {
+    main: b?.primary_color || "#1a2b4a",
+    accent: b?.accent_color || "#c8a24b",
+    paper: b?.background_color || "#f4f1ea",
+    ink: b?.text_color || "#333333",
+  };
 
   if (
     libRes.status === "fulfilled" &&
@@ -71,6 +84,7 @@ export default async function StudioPage() {
 
   return (
     <StudioHome
+      brand={brand}
       initialLibrary={library}
       quota={quota}
       firstName={firstName}

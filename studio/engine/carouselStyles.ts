@@ -162,7 +162,7 @@ function cartelPlanned(plan: CarouselPlan, agency: string, contact: string, bran
     });
   }
   coverEls.push({ type: "text", bbox: [80, 1050, 1000, 1082], content: plan.eyebrow.toUpperCase(), font: "Archivo", size: 20, colour: mix(CREAM, NAVY, 0.7), align: "center", tracking: 4 });
-  coverEls.push(...band(agency, 1, total, mix("#f3efe6", NAVY, 0.6)));
+  coverEls.push(...band(agency, 1, total, mix(CREAM, NAVY, 0.6)));
   specs.push(DesignSpec.parse({ background: NAVY, elements: coverEls }));
 
   // slide 2: terracotta gamma turn
@@ -179,7 +179,7 @@ function cartelPlanned(plan: CarouselPlan, agency: string, contact: string, bran
 
   // value slides: giant numeral, gamma rotation of grounds
   const gammas = [
-    { bg: CREAM, num: visibleTone(mix(GOLD, CREAM, 0.85), CREAM, NAVY, 0.16), head: NAVY, bodyC: "#333333", kick: TERRA, ruleC: TERRA },
+    { bg: CREAM, num: visibleTone(mix(GOLD, CREAM, 0.85), CREAM, NAVY, 0.16), head: NAVY, bodyC: brand.text, kick: TERRA, ruleC: TERRA },
     { bg: NAVY, num: mix(GOLD, NAVY, 0.45), head: CREAM, bodyC: CREAM, kick: GOLD, ruleC: GOLD },
     { bg: TERRA, num: mix(LIME, TERRA, 0.35), head: LIME, bodyC: LIME, kick: LIME, ruleC: LIME },
   ];
@@ -391,8 +391,12 @@ function serenoPlanned(plan: CarouselPlan, agency: string, contact: string, bran
   includeContext = true, includeRecap = true,
 ): unknown[] {
   const NAVY = brand.navy, GOLD = brand.gold;
-  const warm = "#f5f1e8";
-  const inkMuted = mix(NAVY, warm, 0.55);
+  // Christian 2026-08-31: "all the templates has editable colors and that the colors are actually
+  // correct not hardcoded in." Sereno was the one style that failed that outright — this literal
+  // painted FIVE of its six grounds, and neither an agency's own background colour nor an edition
+  // could move it. Measured before the fix: an agency picking #fdf4d3 got #f5f1e8 on every slide.
+  const warm = brand.cream;
+  const inkMuted = mix(brand.text, warm, 0.55);
   const isQuote = plan.type === "quote";
   const n = isQuote ? plan.quote_parts.length : plan.tips.length;
   // RULE 3 — the quote branch counted a context slide unconditionally while the builder below
@@ -424,7 +428,7 @@ function serenoPlanned(plan: CarouselPlan, agency: string, contact: string, bran
       { type: "text", bbox: [96, 96, 700, 128], content: plan.eyebrow.toUpperCase(), font: "Glacial Indifference", size: 19, colour: GOLD, align: "left", tracking: 6 },
       { type: "rect", bbox: [96, 380, 240, 381.5], fill: NAVY, opacity: 0.4 },
       { type: "text", bbox: [96, 430, 940, 830], content: wrap(plan.slide2_title, FR, 72, 840), font: FR, size: 72, colour: NAVY, align: "left", line_height: 88, valign: "center" },
-      { type: "text", bbox: [96, 890, 940, 1090], content: wrap(isQuote ? plan.quote_context : plan.slide2_body, "Jost", 32, 840), font: "Jost", size: 32, colour: mix(NAVY, warm, 0.8), align: "left", line_height: 50 },
+      { type: "text", bbox: [96, 890, 940, 1090], content: wrap(isQuote ? plan.quote_context : plan.slide2_body, "Jost", 32, 840), font: "Jost", size: 32, colour: mix(brand.text, warm, 0.8), align: "left", line_height: 50 },
       spine(2), folioLine(2, inkMuted),
     ],
   }));
@@ -459,7 +463,7 @@ function serenoPlanned(plan: CarouselPlan, agency: string, contact: string, bran
             { type: "text", bbox: [96, 110, 800, 140], content: `Nº ${i + 1} · ${plan.eyebrow.toUpperCase()}`, font: "Glacial Indifference", size: 19, colour: inkMuted, align: "left", tracking: 5 },
             { type: "rect", bbox: [96, 200, 240, 201.5], fill: NAVY, opacity: 0.4 },
             { type: "text", bbox: [96, 280, 620, 700], content: wrap(tip.title, FR, 54, 520), font: FR, size: 54, colour: NAVY, align: "left", line_height: 68 },
-            { type: "text", bbox: [96, 760, 600, 1110], content: wrap(tip.body, "Jost", 30, 500), font: "Jost", size: 30, colour: mix(NAVY, warm, 0.8), align: "left", line_height: 48, valign: "center" },
+            { type: "text", bbox: [96, 760, 600, 1110], content: wrap(tip.body, "Jost", 30, 500), font: "Jost", size: 30, colour: mix(brand.text, warm, 0.8), align: "left", line_height: 48, valign: "center" },
             ...(tip.teaser ? [{ type: "text", bbox: [96, 1140, 900, 1186], content: tip.teaser.toUpperCase(), font: "Glacial Indifference", size: 19, colour: inkMuted, align: "left", tracking: 4 }] : []),
             spine(i + 2 + (includeContext ? 1 : 0)), folioLine(i + 2 + (includeContext ? 1 : 0), inkMuted),
           ],
@@ -475,7 +479,7 @@ function serenoPlanned(plan: CarouselPlan, agency: string, contact: string, bran
             { type: "text", bbox: [96, 280, 984, 400], content: String(i + 1).padStart(2, "0"), font: FR, size: 96, colour: GOLD, align: "center" },
             { type: "text", bbox: [130, 460, 950, 740], content: wrap(tip.title, FR, 62, 780), font: FR, size: 62, colour: NAVY, align: "center", line_height: 78, valign: "center" },
             { type: "rect", bbox: [480, 790, 600, 791.5], fill: NAVY, opacity: 0.4 },
-            { type: "text", bbox: [170, 850, 910, 1110], content: wrap(tip.body, "Jost", 31, 700), font: "Jost", size: 31, colour: mix(NAVY, warm, 0.8), align: "center", line_height: 50, valign: "center" },
+            { type: "text", bbox: [170, 850, 910, 1110], content: wrap(tip.body, "Jost", 31, 700), font: "Jost", size: 31, colour: mix(brand.text, warm, 0.8), align: "center", line_height: 50, valign: "center" },
             ...(tip.teaser ? [{ type: "text", bbox: [96, 1150, 984, 1190], content: tip.teaser.toUpperCase(), font: "Glacial Indifference", size: 18, colour: inkMuted, align: "center", tracking: 4 }] : []),
             folioLine(i + 2 + (includeContext ? 1 : 0), inkMuted),
           ],
@@ -489,7 +493,7 @@ function serenoPlanned(plan: CarouselPlan, agency: string, contact: string, bran
           { type: "text", bbox: [96, 170, 700, 400], content: String(i + 1).padStart(2, "0"), font: FR, size: 190, colour: GOLD, align: "left" },
           { type: "rect", bbox: [96, 440, 240, 441.5], fill: NAVY, opacity: 0.4 },
           { type: "text", bbox: [96, 490, 940, 700], content: wrap(tip.title, FR, 60, 840), font: FR, size: 60, colour: NAVY, align: "left", line_height: 74 },
-          { type: "text", bbox: [96, 740, 940, 1100], content: wrap(tip.body, "Jost", 34, 840), font: "Jost", size: 34, colour: mix(NAVY, warm, 0.8), align: "left", line_height: 54, valign: "center" },
+          { type: "text", bbox: [96, 740, 940, 1100], content: wrap(tip.body, "Jost", 34, 840), font: "Jost", size: 34, colour: mix(brand.text, warm, 0.8), align: "left", line_height: 54, valign: "center" },
           ...(tip.teaser ? [{ type: "text", bbox: [96, 1140, 900, 1186], content: tip.teaser.toUpperCase(), font: "Glacial Indifference", size: 19, colour: inkMuted, align: "left", tracking: 4 }] : []),
           spine(i + 2 + (includeContext ? 1 : 0)), folioLine(i + 2 + (includeContext ? 1 : 0), inkMuted),
         ],
@@ -526,7 +530,7 @@ function serenoPlanned(plan: CarouselPlan, agency: string, contact: string, bran
       { type: "text", bbox: [180, plan.agency_line ? 920 : 850, 900, plan.agency_line ? 980 : 950], content: wrap(plan.cta_action, "Jost", 26, 720), font: "Jost", size: 26, colour: mix("#f3efe6", NAVY, 0.8), align: "center", line_height: 38 },
       { type: "text", bbox: [300, 1000, 780, 1058], content: plan.cta_keyword, font: "Glacial Indifference", size: 22, colour: NAVY, align: "center", weight: "500", tracking: 4, valign: "center", pill: { fill: GOLD, pad_x: 40, pad_y: 20 } },
       { type: "text", bbox: [140, 1120, 940, 1150], content: contact, font: "Jost", size: 20, colour: mix("#f3efe6", NAVY, 0.65), align: "center", tracking: 2 },
-      { type: "text", bbox: [96, 1240, 984, 1270], content: `Nº ${String(total).padStart(2, "0")} — ${String(total).padStart(2, "0")} · ${agency.toUpperCase()} · MMXXVI`, font: "Jost", size: 16, colour: mix("#f3efe6", NAVY, 0.6), align: "center", tracking: 3 },
+      { type: "text", bbox: [96, 1240, 984, 1270], content: `Nº ${String(total).padStart(2, "0")} — ${String(total).padStart(2, "0")} · ${agency.toUpperCase()} · MMXXVI`, font: "Jost", size: 16, colour: mix(warm, NAVY, 0.6), align: "center", tracking: 3 },
     ],
   }));
   return specs;
@@ -705,8 +709,8 @@ async function horizonteListing(facts: CarouselFacts, copy: CarouselCopy, brand:
         ];
       }),
       { type: "text", bbox: [80, 1140, 940, 1190], content: T.save_sheet, font: "Jost", size: 26, colour: NAVY, align: "left", weight: "500", valign: "center", pill: { fill: GOLD, pad_x: 30, pad_y: 14 } },
-      { type: "text", bbox: [80, 1272, 640, 1300], content: facts.agency.toUpperCase(), font: "Jost", size: 17, colour: mix("#f3efe6", NAVY, 0.6), align: "left", weight: "500", tracking: 4 },
-      { type: "text", bbox: [640, 1272, 1000, 1300], content: `Nº ${String(total - 1).padStart(2, "0")} — ${String(total).padStart(2, "0")}`, font: "Jost", size: 17, colour: mix("#f3efe6", NAVY, 0.6), align: "right", tracking: 3 },
+      { type: "text", bbox: [80, 1272, 640, 1300], content: facts.agency.toUpperCase(), font: "Jost", size: 17, colour: mix(CREAM, NAVY, 0.6), align: "left", weight: "500", tracking: 4 },
+      { type: "text", bbox: [640, 1272, 1000, 1300], content: `Nº ${String(total - 1).padStart(2, "0")} — ${String(total).padStart(2, "0")}`, font: "Jost", size: 17, colour: mix(CREAM, NAVY, 0.6), align: "right", tracking: 3 },
     ],
   }));
 
@@ -719,7 +723,7 @@ async function horizonteListing(facts: CarouselFacts, copy: CarouselCopy, brand:
       { type: "text", bbox: [110, 610, 970, 790], content: wrap(copy.cta_action || T.save_cta, "Jost", 34, 860, "500"), font: "Jost", size: 34, colour: CREAM, align: "center", weight: "500", line_height: 50, valign: "center" },
       { type: "text", bbox: [320, 880, 760, 940], content: (copy.cta_keyword || `${T.write_us}: ${T.visit_kw}`).toUpperCase(), font: "Jost", size: 25, colour: NAVY, align: "center", weight: "600", tracking: 3, valign: "center", pill: { fill: GOLD, pad_x: 40, pad_y: 20 } },
       { type: "text", bbox: [110, 1040, 970, 1070], content: facts.contact, font: "Jost", size: 21, colour: mix("#f3efe6", NAVY, 0.65), align: "center", tracking: 2 },
-      { type: "text", bbox: [640, 1272, 1000, 1300], content: `Nº ${String(total).padStart(2, "0")} — ${String(total).padStart(2, "0")}`, font: "Jost", size: 17, colour: mix("#f3efe6", NAVY, 0.6), align: "right", tracking: 3 },
+      { type: "text", bbox: [640, 1272, 1000, 1300], content: `Nº ${String(total).padStart(2, "0")} — ${String(total).padStart(2, "0")}`, font: "Jost", size: 17, colour: mix(CREAM, NAVY, 0.6), align: "right", tracking: 3 },
     ],
   }));
 
@@ -750,7 +754,7 @@ function cartelListing(facts: CarouselFacts, copy: CarouselCopy, brand: Carousel
       { type: "text", bbox: [80, 660, 1000, 760], content: wrap((copy.hook || facts.title).toUpperCase(), "Anton", 54, 920), font: "Anton", size: 54, colour: GOLD, align: "center", line_height: 66 },
       ...(facts.price ? [{ type: "text", bbox: [80, 830, 1000, 990], content: facts.price, font: "Anton", size: 130, colour: CREAM, align: "center", hollow: true, stroke_width: 3 }] : []),
       { type: "text", bbox: [80, 1050, 1000, 1082], content: (facts.specs || facts.location).toUpperCase(), font: "Archivo", size: 20, colour: mix(CREAM, NAVY, 0.7), align: "center", tracking: 4 },
-      ...band(facts.agency, 1, total, mix("#f3efe6", NAVY, 0.6)),
+      ...band(facts.agency, 1, total, mix(CREAM, NAVY, 0.6)),
     ],
   }));
 
@@ -884,8 +888,12 @@ function encaladaListing(facts: CarouselFacts, copy: CarouselCopy, brand: Carous
 function serenoListing(facts: CarouselFacts, copy: CarouselCopy, brand: CarouselBrand, photoCount: number, lang = "es"): unknown[] {
   const T = chrome(lang);
   const NAVY = brand.navy, GOLD = brand.gold;
-  const warm = "#f5f1e8";
-  const inkMuted = mix(NAVY, warm, 0.55);
+  // Christian 2026-08-31: "all the templates has editable colors and that the colors are actually
+  // correct not hardcoded in." Sereno was the one style that failed that outright — this literal
+  // painted FIVE of its six grounds, and neither an agency's own background colour nor an edition
+  // could move it. Measured before the fix: an agency picking #fdf4d3 got #f5f1e8 on every slide.
+  const warm = brand.cream;
+  const inkMuted = mix(brand.text, warm, 0.55);
   const total = Math.min(3, photoCount) + 2;
   const folioLine = (i: number, colour: string) => ({ type: "text", bbox: [96, 1240, 940, 1270], content: `Nº ${String(i).padStart(2, "0")} — ${String(total).padStart(2, "0")} · ${facts.agency.toUpperCase()}`, font: "Jost", size: 16, colour, align: "left", tracking: 3 });
   const specs: unknown[] = [];
@@ -967,7 +975,7 @@ function serenoListing(facts: CarouselFacts, copy: CarouselCopy, brand: Carousel
       { type: "text", bbox: [140, 640, 940, 790], content: wrap(copy.cta_action || T.save_cta, FR, 54, 800), font: FR, size: 54, colour: brand.cream, align: "center", line_height: 70, valign: "center" },
       { type: "text", bbox: [320, 870, 760, 930], content: (copy.cta_keyword || `${T.write_us}: ${T.visit_kw}`).toUpperCase(), font: "Glacial Indifference", size: 24, colour: NAVY, align: "center", weight: "500", tracking: 4, valign: "center", pill: { fill: GOLD, pad_x: 40, pad_y: 20 } },
       { type: "text", bbox: [140, 1020, 940, 1050], content: facts.contact, font: "Jost", size: 20, colour: mix("#f3efe6", NAVY, 0.65), align: "center", tracking: 2 },
-      { type: "text", bbox: [96, 1240, 984, 1270], content: `Nº ${String(total).padStart(2, "0")} — ${String(total).padStart(2, "0")} · ${facts.agency.toUpperCase()} · MMXXVI`, font: "Jost", size: 16, colour: mix("#f3efe6", NAVY, 0.6), align: "center", tracking: 3 },
+      { type: "text", bbox: [96, 1240, 984, 1270], content: `Nº ${String(total).padStart(2, "0")} — ${String(total).padStart(2, "0")} · ${facts.agency.toUpperCase()} · MMXXVI`, font: "Jost", size: 16, colour: mix(warm, NAVY, 0.6), align: "center", tracking: 3 },
     ],
   }));
   return specs;

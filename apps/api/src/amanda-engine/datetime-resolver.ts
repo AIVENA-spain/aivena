@@ -157,3 +157,28 @@ export function resolveDatetimePhrase(phrase: string, nowUtcMs: number, timeZone
     explicit: { weekday: WEEKDAYS_EN[wc.weekday], day: wc.day, month: wc.month, year: wc.year, hour: wc.hour, minute: wc.minute },
   };
 }
+
+/**
+ * A DAY without a time — "Thursday", "all day Thursday", "the 4th".
+ *
+ * The single most common sentence in booking a viewing is "I'm free Thursday",
+ * and resolveDatetimePhrase rejects it with missing_time because it is built to
+ * pin an exact instant. The caller then fell back to generic slots, and Amanda
+ * — seeing Tuesday and Wednesday come back — told a buyer who was free all
+ * Thursday that Thursday was not possible, on a day her calendar was open
+ * 13:00-20:00 (live, 2026-08-31).
+ *
+ * Reuses the full phrase parser rather than duplicating it: probe with a late
+ * time so a same-day mention stays today, and keep only the date.
+ */
+export function resolvePreferredDay(
+  phrase: string,
+  nowUtcMs: number,
+  timeZone: string,
+): { year: number; month: number; day: number } | null {
+  const direct = resolveDatetimePhrase(phrase, nowUtcMs, timeZone);
+  if (direct.ok) return { year: direct.explicit.year, month: direct.explicit.month, day: direct.explicit.day };
+  if (direct.reason !== 'missing_time') return null;
+  const probe = resolveDatetimePhrase(`${phrase} 23:59`, nowUtcMs, timeZone);
+  return probe.ok ? { year: probe.explicit.year, month: probe.explicit.month, day: probe.explicit.day } : null;
+}

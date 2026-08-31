@@ -152,3 +152,45 @@ describe('weekdays are understood in every supported language', () => {
     if (r.ok) expect(r.explicit.weekday).toBe('thursday');
   });
 });
+
+/**
+ * The other half of the weekday gap, found the same evening: "tomorrow" was
+ * English and Spanish only. Marte wrote "imrg" (i morgen), it was unreadable,
+ * the slot search fell back to generic times, and Amanda labelled a WEDNESDAY
+ * slot "i morgen" when tomorrow was Tuesday. The verifier blocked it.
+ */
+describe('today and tomorrow in every supported language', () => {
+  const TZ = 'Europe/Madrid';
+  const MON = Date.parse('2026-08-31T14:00:00Z');   // Monday 31 Aug, 16:00 Madrid
+  const TUE = { year: 2026, month: 9, day: 1 };
+
+  it('tomorrow, in all thirteen', () => {
+    for (const word of [
+      'tomorrow', 'manana', 'demain', 'domani', 'amanha', 'jutro',
+      'imorgon', 'i morgon', 'imorgen', 'i morgen', 'huomenna', 'завтра',
+    ]) {
+      expect(resolvePreferredDay(word, MON, TZ), `failed for "${word}"`).toEqual(TUE);
+    }
+  });
+
+  it('today, in all thirteen', () => {
+    const today = { year: 2026, month: 8, day: 31 };
+    for (const word of [
+      'today', 'hoy', 'heute', 'vandaag', "aujourd'hui", 'oggi', 'hoje',
+      'dzisiaj', 'idag', 'i dag', 'tanaan', 'сегодня',
+    ]) {
+      expect(resolvePreferredDay(word, MON, TZ), `failed for "${word}"`).toEqual(today);
+    }
+  });
+
+  it('bare "morgen" is NOT tomorrow — in Norwegian it means morning', () => {
+    // A false positive puts a wrong DATE in front of a buyer; a false negative
+    // just falls back to honest alternatives. This must stay a false negative.
+    expect(resolvePreferredDay('god morgen', MON, TZ)).toBeNull();
+    expect(resolvePreferredDay('på morgenen', MON, TZ)).toBeNull();
+  });
+
+  it('a real sentence still resolves', () => {
+    expect(resolvePreferredDay('Kunne vi tatt det i morgen isteden?', MON, TZ)).toEqual(TUE);
+  });
+});

@@ -135,9 +135,28 @@ export function resolveDatetimePhrase(phrase: string, nowUtcMs: number, timeZone
 
   let target: { y: number; m: number; d: number } | null = null;
 
-  if (/\b(today|hoy)\b/.test(p)) {
+  // "today" / "tomorrow" in every supported language — the other half of the
+  // weekday gap. Marte wrote "imrg" (i morgen); it was unreadable, the slot
+  // search fell back to generic times, and Amanda then LABELLED a Wednesday
+  // slot "i morgen" because that is what the buyer had asked for. The verifier
+  // caught it (live 2026-08-31) — tomorrow was Tuesday.
+  //
+  // Bare "morgen" is deliberately NOT here: in Norwegian and Danish it means
+  // MORNING, so "god morgen" would silently become tomorrow. German and Dutch
+  // speakers writing bare "morgen" therefore fall through — a false negative
+  // degrades to an honest "here is what I have", while a false positive puts a
+  // wrong date in front of a buyer. That trade is the whole point.
+  const UNI = (words: string[]) =>
+    new RegExp(`(?<![\\p{L}\\p{N}])(?:${words.join('|')})(?![\\p{L}\\p{N}])`, 'u');
+  const TODAY = UNI(['today', 'hoy', 'heute', 'vandaag', "aujourd'hui", 'aujourdhui', 'oggi',
+                     'hoje', 'dzisiaj', 'dzis', 'idag', 'i dag', 'tanaan', 'сегодня']);
+  const TOMORROW = UNI(['tomorrow', 'manana', 'demain', 'domani', 'amanha', 'jutro',
+                        'imorgon', 'i morgon', 'imorgen', 'i morgen', 'i morra',
+                        'huomenna', 'завтра']);
+
+  if (TODAY.test(p)) {
     target = { y: now.year, m: now.month, d: now.day };
-  } else if (/\b(tomorrow|manana)\b/.test(p)) {
+  } else if (TOMORROW.test(p)) {
     const t = wallClockInZone(nowUtcMs + 24 * 3600_000, timeZone);
     target = { y: t.year, m: t.month, d: t.day };
   }

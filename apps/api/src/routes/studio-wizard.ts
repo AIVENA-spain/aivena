@@ -1024,6 +1024,38 @@ function mergeSlideColours(
   return out;
 }
 
+
+/** Christian 2026-08-31: "i putted a bright orange color on the 2nd slide to see where it shows up
+ *  and it didnt." It didn't because #ff6f00 reads 2.43:1 on the cream paper and RULE 1 — the rule
+ *  he set — swaps an unreadable ink for a legible one. That is correct, and it was SILENT: the
+ *  warning in the renderer only fires when no colour works at all, so a choice that simply gets
+ *  overruled disappears without a word. A picker that ignores you and says nothing is worse than
+ *  one that refuses you. These notes go back with the render so the UI can say what happened. */
+function contrast(a: string, b: string): number {
+  const lum = (h: string) => {
+    const [r, g, bl] = [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255);
+    const f = (c: number) => (c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+    return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(bl);
+  };
+  const [x, y] = [lum(a), lum(b)];
+  return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+}
+
+function colourNotes(brand: CarouselBrand, slideCols: Record<string, SlotColours>): string[] {
+  const notes: string[] = [];
+  const check = (ink: string, paper: string, where: string) => {
+    const r = contrast(ink, paper);
+    if (r >= 4.5) return;
+    notes.push(`${where} ${ink} reads ${r.toFixed(1)}:1 against the paper — body text needs 4.5:1, so a darker ink was used instead. Pick something deeper if you want to see this colour.`);
+  };
+  check(brand.text, brand.cream, 'Your text colour');
+  for (const [k, o] of Object.entries(slideCols)) {
+    if (!o.ink) continue;
+    check(o.ink, o.paper ?? brand.cream, `Slide ${Number(k) + 1}'s text colour`);
+  }
+  return notes.slice(0, 4);
+}
+
 /** RULE 10 — contact details are assembled in ONE place, always from agency_branding (mapBranding
  *  reads brand_name / website_url / phone). No carousel path builds this string itself. */
 function contactLine(agency: { web?: string | null; phone?: string | null }): string {
@@ -1629,6 +1661,7 @@ route.post('/carousel/update', async (c) => {
 
     return c.json({
       ok: true, id: genId, slide_colours: slideCols,
+      colour_notes: colourNotes(brand, slideCols),
       slides: stored.map((s) => s.url), plan, caption: plan.caption, hashtags: plan.hashtags,
     });
   } catch (err) {

@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 
 import { useState } from "react";
 import Link from "next/link";
-import { CheckCircle2, ClipboardList, Inbox, Link2, MessageSquareOff } from "lucide-react";
+import { Building2, CheckCircle2, ClipboardList, Inbox, Link2, MessageSquareOff } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
@@ -253,7 +253,12 @@ function TaskRow({
           Amanda relays it to the buyer, mode-governed. Self-contained state so
           the two-step Resolve machinery above stays untouched. */}
       {task.type === "amanda_question" && state !== "saving" ? (
-        <AnswerBox taskId={task.taskId} question={task.body ?? null} onAnswered={onAnswered} />
+        <AnswerBox
+          taskId={task.taskId}
+          question={task.body ?? null}
+          property={task.property ?? null}
+          onAnswered={onAnswered}
+        />
       ) : null}
 
       {/* Amanda booking confirm: ONE TAP books the buyer-accepted slot through
@@ -284,10 +289,12 @@ function TaskRow({
 function AnswerBox({
   taskId,
   question,
+  property,
   onAnswered,
 }: {
   taskId: string;
   question: string | null;
+  property?: OpsTask["property"];
   onAnswered: () => void;
 }) {
   const [answer, setAnswer] = useState("");
@@ -331,6 +338,46 @@ function AnswerBox({
           <span className="font-semibold">Amanda asks:</span> {question}
         </p>
       ) : null}
+
+      {/* WHICH property (Christian 2026-08-31). An agent picking this up was
+          never in the conversation, so "this villa" identifies nothing — the
+          card is what turns a question into something answerable, and the ref
+          is what they search the Properties page with. Rendered independently
+          of the question text so it shows even when a question arrives bare. */}
+      {property ? (
+        <div className="mb-2 flex items-center gap-2.5 rounded-md border border-border bg-card p-2">
+          {property.image ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={property.image} alt="" loading="lazy" className="h-12 w-16 shrink-0 rounded object-cover" />
+          ) : (
+            <span aria-hidden className="flex h-12 w-16 shrink-0 items-center justify-center rounded bg-muted text-muted-foreground">
+              <Building2 className="h-4 w-4" />
+            </span>
+          )}
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[12.5px] font-medium text-foreground">
+              {property.title
+                || [property.bedrooms ? `${property.bedrooms} bed` : null, property.type, property.city]
+                     .filter(Boolean).join(" · ")
+                || "Property"}
+            </p>
+            <p className="truncate text-[11.5px] text-muted-foreground">
+              {[
+                property.ref ? `Ref ${property.ref}` : null,
+                property.city,
+                property.price != null ? `${property.price.toLocaleString()} EUR` : null,
+              ].filter(Boolean).join(" · ")}
+            </p>
+          </div>
+          <Link
+            href={`/properties?q=${encodeURIComponent(property.ref ?? property.id)}`}
+            className="shrink-0 rounded px-2 py-1 text-[11.5px] font-medium text-brand hover:bg-brand-soft"
+          >
+            Open
+          </Link>
+        </div>
+      ) : null}
+
       <div className="flex flex-wrap items-center gap-2">
         <label className="sr-only" htmlFor={`answer-${taskId}`}>
           Your answer

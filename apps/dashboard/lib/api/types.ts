@@ -902,6 +902,19 @@ export type OpsTask = {
   title: string | null;
   /** message_body — for amanda_question rows this is the question text. */
   body?: string | null;
+  /** The property the question is about, joined through the question's own
+   *  property_id. An agent picking up "this villa" was never in the
+   *  conversation, so the card is what makes the question answerable. */
+  property?: {
+    id: string;
+    ref: string | null;
+    title: string | null;
+    city: string | null;
+    type: string | null;
+    bedrooms: number | null;
+    price: number | null;
+    image: string | null;
+  } | null;
   createdAt: string | null;
   ageHours: number | null;
   /** True = this lead is openable in the Inbox (has a dashboard_inbox row). */

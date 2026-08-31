@@ -56,7 +56,7 @@
     },
     "icon": {
       "default": "#bf5b3d",
-      "locked": true
+      "locked": false
     },
     "overlay": {
       "default": "#000000",

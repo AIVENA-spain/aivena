@@ -82,7 +82,7 @@
   "colour_tokens": {
     "background": {
       "default": "#cac6ba",
-      "locked": true
+      "locked": false
     },
     "overlay": {
       "default": "#cac6ba",
@@ -110,11 +110,11 @@
     },
     "divider": {
       "default": "#343434",
-      "locked": true
+      "locked": false
     },
     "icon": {
       "default": "#343434",
-      "locked": true
+      "locked": false
     },
     "stat.label": {
       "default": "#343434",

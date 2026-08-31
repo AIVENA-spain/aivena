@@ -52,7 +52,7 @@
     },
     "divider": {
       "default": "#c25b3b",
-      "locked": true
+      "locked": false
     },
     "icon": {
       "default": "#26241f",

@@ -251,11 +251,22 @@ export function HandoffQueue({ agencyId }: { agencyId: string }) {
                   </p>
                 ) : null}
                 {r.blocked_draft ? (
-                  <div className="mt-1.5 rounded-md border-l-2 border-brand/50 bg-brand-soft/40 px-2.5 py-1.5">
-                    <p className="text-[10.5px] font-semibold uppercase tracking-wide text-brand">
-                      {t("amandaWanted")}
+                  <div className={`mt-1.5 rounded-md border-l-2 px-2.5 py-1.5 ${
+                    r.draft_failed_fact_check
+                      ? "border-amber-500/60 bg-amber-500/10"
+                      : "border-brand/50 bg-brand-soft/40"
+                  }`}>
+                    <p className={`text-[10.5px] font-semibold uppercase tracking-wide ${
+                      r.draft_failed_fact_check ? "text-amber-700 dark:text-amber-400" : "text-brand"
+                    }`}>
+                      {r.draft_failed_fact_check ? t("draftFailedCheck") : t("amandaWanted")}
                     </p>
                     <p className="mt-0.5 text-[12px] leading-snug text-foreground">{r.blocked_draft}</p>
+                    {r.draft_failed_fact_check ? (
+                      <p className="mt-1 text-[11px] leading-snug text-amber-700 dark:text-amber-400">
+                        {t("draftFailedHint")}
+                      </p>
+                    ) : null}
                   </div>
                 ) : null}
                 {claimed ? (
@@ -329,7 +340,10 @@ function AnswerBox({
   const t = useTranslations("handoffs");
   // Pre-filled with the reply Amanda already wrote: the agent's job is to
   // approve or correct it, not to research the answer from scratch.
-  const [text, setText] = useState(row.blocked_draft ?? "");
+  // Pre-fill ONLY a draft that was stopped for its SHAPE. One stopped by the
+  // fact check is wrong by definition, so the box starts empty and the draft
+  // stays visible above as something to correct, never something to send.
+  const [text, setText] = useState(row.draft_failed_fact_check ? "" : (row.blocked_draft ?? ""));
   return (
     <div className="mt-2 flex w-full flex-col gap-2 rounded-md border border-border bg-card p-2.5">
       <textarea

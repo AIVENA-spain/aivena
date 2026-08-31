@@ -1562,7 +1562,9 @@
     "aboutRefs": "About: {refs}",
     "amandaWanted": "Amanda wanted to send",
     "questionNotifTitle": "{name} — the office needs to answer something",
-    "questionNotifBody": "Amanda asked the office a question. Open Tasks to answer it."
+    "questionNotifBody": "Amanda asked the office a question. Open Tasks to answer it.",
+    "draftFailedCheck": "Amanda drafted this but it failed a fact check",
+    "draftFailedHint": "Do not send as-is — check it before answering."
   },
   "conversationMode": {
     "saving": "Saving…",

@@ -1562,7 +1562,9 @@
     "aboutRefs": "Riguarda: {refs}",
     "amandaWanted": "Amanda voleva inviare",
     "questionNotifTitle": "{name} — l'ufficio deve rispondere a qualcosa",
-    "questionNotifBody": "Amanda ha fatto una domanda all'ufficio. Apri Attività per rispondere."
+    "questionNotifBody": "Amanda ha fatto una domanda all'ufficio. Apri Attività per rispondere.",
+    "draftFailedCheck": "La bozza di Amanda non ha superato la verifica",
+    "draftFailedHint": "Non inviarla così com'è: controllala prima di rispondere."
   },
   "conversationMode": {
     "saving": "Salvataggio…",

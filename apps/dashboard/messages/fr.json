@@ -1562,7 +1562,9 @@
     "aboutRefs": "Concerne : {refs}",
     "amandaWanted": "Amanda voulait envoyer",
     "questionNotifTitle": "{name} — le bureau doit répondre à quelque chose",
-    "questionNotifBody": "Amanda a posé une question au bureau. Ouvrez Tâches pour répondre."
+    "questionNotifBody": "Amanda a posé une question au bureau. Ouvrez Tâches pour répondre.",
+    "draftFailedCheck": "Le brouillon d'Amanda a échoué à la vérification",
+    "draftFailedHint": "Ne l'envoyez pas tel quel — vérifiez avant de répondre."
   },
   "conversationMode": {
     "saving": "Enregistrement…",

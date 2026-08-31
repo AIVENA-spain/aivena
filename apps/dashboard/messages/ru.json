@@ -1562,7 +1562,9 @@
     "aboutRefs": "Об объектах: {refs}",
     "amandaWanted": "Amanda хотела отправить",
     "questionNotifTitle": "{name} — офису нужно кое-что ответить",
-    "questionNotifBody": "Amanda задала вопрос офису. Откройте «Задачи», чтобы ответить."
+    "questionNotifBody": "Amanda задала вопрос офису. Откройте «Задачи», чтобы ответить.",
+    "draftFailedCheck": "Черновик Amanda не прошёл проверку фактов",
+    "draftFailedHint": "Не отправляйте как есть — сначала проверьте."
   },
   "conversationMode": {
     "saving": "Сохранение…",

@@ -1562,7 +1562,9 @@
     "aboutRefs": "Dotyczy: {refs}",
     "amandaWanted": "Amanda chciała wysłać",
     "questionNotifTitle": "{name} — biuro musi na coś odpowiedzieć",
-    "questionNotifBody": "Amanda zadała biuru pytanie. Otwórz Zadania, aby odpowiedzieć."
+    "questionNotifBody": "Amanda zadała biuru pytanie. Otwórz Zadania, aby odpowiedzieć.",
+    "draftFailedCheck": "Wersja Amandy nie przeszła weryfikacji faktów",
+    "draftFailedHint": "Nie wysyłaj bez zmian — sprawdź przed odpowiedzią."
   },
   "conversationMode": {
     "saving": "Zapisywanie…",

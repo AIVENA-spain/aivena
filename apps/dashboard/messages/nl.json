@@ -1562,7 +1562,9 @@
     "aboutRefs": "Betreft: {refs}",
     "amandaWanted": "Amanda wilde versturen",
     "questionNotifTitle": "{name} — het kantoor moet iets beantwoorden",
-    "questionNotifBody": "Amanda heeft het kantoor een vraag gesteld. Open Taken om te antwoorden."
+    "questionNotifBody": "Amanda heeft het kantoor een vraag gesteld. Open Taken om te antwoorden.",
+    "draftFailedCheck": "Amanda's concept haalde de feitencontrole niet",
+    "draftFailedHint": "Niet ongewijzigd versturen — controleer het eerst."
   },
   "conversationMode": {
     "saving": "Opslaan…",

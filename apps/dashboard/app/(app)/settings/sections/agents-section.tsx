@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Users, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,22 @@ import { AgentHoursEditor } from "@/components/amanda/agent-hours-editor";
 // The 13 languages AIVENA speaks — an agent's languages decide who Amanda pings
 // for a given buyer, so this list mirrors the engine's supported set exactly.
 const LANGS = ["en", "es", "de", "nl", "fr", "it", "pt", "pl", "sv", "nb", "da", "fi", "ru"] as const;
+
+/** Two-letter codes are unreadable to the person filling this in — "NB" and
+ *  "NL" and "DA" mean nothing at a glance (Christian 2026-08-31: "its a little
+ *  hard to know which language is what here when its just 2 letters"). The
+ *  browser knows every language name in the reader's own language, so we ask
+ *  it rather than shipping 13 x 13 hand-written labels. */
+function languageName(code: string, locale: string): string {
+  try {
+    const dn = new Intl.DisplayNames([locale], { type: "language" });
+    const name = dn.of(code === "nb" ? "nb" : code);
+    if (name && name.toLowerCase() !== code) return name.charAt(0).toUpperCase() + name.slice(1);
+  } catch {
+    /* fall through to the code */
+  }
+  return code.toUpperCase();
+}
 
 const EMPTY = { id: "", full_name: "", whatsapp_e164: "", email: "", office: "", languages: [] as string[] };
 
@@ -22,6 +38,7 @@ const EMPTY = { id: "", full_name: "", whatsapp_e164: "", email: "", office: "",
  */
 export function AgentsSection({ agents: initial }: { agents: AgentRow[] }) {
   const t = useTranslations("settings.agents");
+  const locale = useLocale();
   const [agents, setAgents] = useState<AgentRow[]>(initial);
   const [editHours, setEditHours] = useState<string | null>(null);
   const [draft, setDraft] = useState({ ...EMPTY });
@@ -91,7 +108,7 @@ export function AgentsSection({ agents: initial }: { agents: AgentRow[] }) {
               {a.languages.length > 0 ? (
                 <span className="flex gap-1">
                   {a.languages.map((l) => (
-                    <span key={l} className="rounded bg-brand-soft px-1.5 py-px text-[10.5px] font-semibold uppercase text-brand">{l}</span>
+                    <span key={l} className="rounded bg-brand-soft px-1.5 py-px text-[10.5px] font-semibold text-brand">{languageName(l, locale)}</span>
                   ))}
                 </span>
               ) : null}
@@ -160,11 +177,11 @@ export function AgentsSection({ agents: initial }: { agents: AgentRow[] }) {
             {LANGS.map((l) => {
               const on = draft.languages.includes(l);
               return (
-                <button key={l} type="button" aria-pressed={on} onClick={() => toggleLang(l)}
+                <button key={l} type="button" aria-pressed={on} title={languageName(l, locale)} onClick={() => toggleLang(l)}
                   className={on
-                    ? "rounded-md bg-brand px-2 py-1 text-[11.5px] font-semibold uppercase text-white"
-                    : "rounded-md bg-muted/60 px-2 py-1 text-[11.5px] font-medium uppercase text-muted-foreground hover:bg-muted"}>
-                  {l}
+                    ? "rounded-md bg-brand px-2.5 py-1 text-[11.5px] font-semibold text-white"
+                    : "rounded-md bg-muted/60 px-2.5 py-1 text-[11.5px] font-medium text-muted-foreground hover:bg-muted"}>
+                  {languageName(l, locale)}
                 </button>
               );
             })}

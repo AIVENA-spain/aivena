@@ -73,7 +73,12 @@ export function ChannelsSection({
     <div className="flex flex-col gap-1">
       {hasReadiness ? (
         // D3 — live provider readiness from GET /api/v1/readiness (honest states).
-        <ProviderCards providers={providers!} />
+        // Calendar is filtered OUT here: the CalendarSection card below is the
+        // real, connectable one, and showing both meant Calendar appeared twice
+        // in the same panel saying two different things — a readiness row
+        // reading "watcher not live" directly above a card reading "Connected"
+        // (Christian 2026-08-31: "why is calendar listed 2 times here").
+        <ProviderCards providers={providers!.filter((p) => p.provider !== "calendar")} />
       ) : (
         // Fallback — static rows when readiness can't load (e.g. non-owner 403).
         <>

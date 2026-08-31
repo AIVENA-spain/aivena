@@ -644,7 +644,8 @@
       "bookAuto": "A Amanda marca-as sozinha",
       "bookReview": "Cada marcação espera por si",
       "statusAuto": "AUTOMÁTICO",
-      "askFirstHelp": "O que a Amanda faz com cada um neste momento — definido pelo seu nível de automação acima."
+      "askFirstHelp": "O que a Amanda faz com cada um neste momento — definido pelo seu nível de automação acima.",
+      "followupToneNone": "Ainda sem tom definido."
     },
     "voice": {
       "title": "Voz e tom",

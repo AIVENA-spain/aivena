@@ -1,5 +1,4 @@
 import { getTranslations } from "next-intl/server";
-import { Check } from "lucide-react";
 
 import type { AmandaSettingsResponse, ReplyLanes, SettingsResponse } from "@/lib/api/types";
 import { hasAutoSend } from "../automation-safety";
@@ -16,6 +15,7 @@ import { AutomationLevel } from "./automation-level";
  *   no editable OFF state (OFF must never mean auto_send), so the rows are
  *   locked/read-only — no per-lane write path is exposed and no save exists.
  */
+// Kept for the ToneKey union used by the read-only chip below.
 const TONE_VALUES = ["warm", "formal", "concise", "playful", "luxury"] as const;
 
 type Effective = { review: boolean; inherited: boolean };
@@ -87,20 +87,20 @@ export async function AiSection({
           <h3 className="text-[13px] font-semibold text-foreground">{t("followupToneLabel")}</h3>
           <p className="text-[11.5px] text-muted-foreground">{t("followupToneDisabled")}</p>
         </div>
-        <div className="flex flex-wrap items-center gap-2" aria-disabled>
-          {TONE_VALUES.map((value) => {
-            const active = currentTone === value;
-            return (
-              <span
-                key={value}
-                className={`cursor-not-allowed rounded-full border px-3.5 py-1.5 text-[12px] font-medium ${
-                  active ? "border-brand/30 bg-brand-soft text-brand opacity-70" : "border-border bg-muted/40 text-muted-foreground"
-                }`}
-              >
-                {tv(`tone${capitalize(value)}` as ToneKey)}
-              </span>
-            );
-          })}
+        {/* ONE chip for the tone actually in use, not five greyed options.
+            Five pills that cannot be pressed read as a broken picker, and
+            Christian tried to press them (2026-08-31: "also not tap on the
+            follow up tone settings"). Tone is genuinely not wired to sending
+            yet, so offering a choice would be a fake control — showing the
+            current value and saying so is the honest version. */}
+        <div className="flex flex-wrap items-center gap-2">
+          {currentTone ? (
+            <span className="rounded-full border border-border bg-muted/40 px-3.5 py-1.5 text-[12px] font-medium text-muted-foreground">
+              {tv(`tone${capitalize(currentTone)}` as ToneKey)}
+            </span>
+          ) : (
+            <span className="text-[12px] text-muted-foreground">{t("followupToneNone")}</span>
+          )}
         </div>
         <div className="mt-1 flex flex-col gap-1.5">
           <h3 className="text-[13px] font-semibold text-foreground">{tv("describeLabel")}</h3>
@@ -156,14 +156,16 @@ function LockedRow({
   const checked = state === "review";
   return (
     <div className="flex items-center gap-2.5 py-1.5">
+      {/* A DOT, not a checkbox. These rows are DERIVED from the automation
+          level above — there is nothing to tick, and rendering them as
+          checkboxes invited exactly the click that does nothing (Christian
+          2026-08-31: "i cant tap on the 'always ask me for' buttons, it doesnt
+          allow me to check or un check any"). A control that cannot be operated
+          must not look operable. */}
       <span
         aria-hidden
-        className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
-          checked ? "border-brand bg-brand text-brand-fg" : "border-muted-foreground/40 bg-muted/40"
-        }`}
-      >
-        {checked ? <Check className="h-3 w-3" /> : null}
-      </span>
+        className={`h-2 w-2 shrink-0 rounded-full ${checked ? "bg-brand" : "bg-muted-foreground/40"}`}
+      />
       <span className={`text-[13px] ${state === "comingSoon" ? "text-muted-foreground" : "text-foreground"}`}>{label}</span>
       <span className="text-[11px] text-muted-foreground">· {note}</span>
       <span className="ml-auto shrink-0 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">

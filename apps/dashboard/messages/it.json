@@ -644,7 +644,8 @@
       "bookAuto": "Amanda le prenota da sola",
       "bookReview": "Ogni prenotazione ti aspetta",
       "statusAuto": "AUTOMATICO",
-      "askFirstHelp": "Cosa fa Amanda con ciascuno in questo momento, in base al livello di automazione qui sopra."
+      "askFirstHelp": "Cosa fa Amanda con ciascuno in questo momento, in base al livello di automazione qui sopra.",
+      "followupToneNone": "Nessun tono impostato."
     },
     "voice": {
       "title": "Voce e tono",

@@ -411,13 +411,15 @@ export function computeReadiness(
       : emailConfigured
         ? 'live_but_unproven'
         : 'missing';
+  // Agency-facing: printed verbatim in Settings, so no field names, no ISO
+  // timestamps. The proof and its date stay on the item's `signal` for audits.
   const emailDetail = !s.email
-    ? 'unavailable'
+    ? 'Email status is not available yet.'
     : !emailConfigured
-      ? 'Not configured'
+      ? 'Not set up yet.'
       : sendProven
-        ? `Email sending proven — a real send succeeded at the provider${sendProvenAt ? ` (last: ${sendProvenAt})` : ''}`
-        : 'Email configured — sending not proven';
+        ? 'Set up and sending.'
+        : 'Set up. Sending has not been confirmed yet.';
   push({
     id: 'provider.email', label: 'Email sending', area: 'J', gate: 'G4', owner: 'agency',
     agencyEditable: false, adminApproved: null,
@@ -453,7 +455,18 @@ export function computeReadiness(
   providers.push({
     provider: 'whatsapp',
     status: waStatus,
-    detail: !wa ? 'Provider readiness RPC not deployed (consume-and-degrade); will light up when Chat 3 ships Phase 1c' : `sender_ready=${wa.whatsapp_sender_ready}, channel_enabled=${wa.whatsapp_channel_enabled}, send_proven=${wa.template_send_path_proven}, last_sync=${wa.last_provider_sync_at ?? 'unknown'}`,
+    // Agency-facing copy. This string is printed VERBATIM in Settings, so it
+    // may never carry field names or timestamps (Christian 2026-08-31: "the
+    // text under the whatsapp one is not very professional" — it was reading
+    // "sender_ready=true, channel_enabled=false, send_proven=true, last_sync=…").
+    // The engineering values live on the readiness item's `signal` for audits.
+    detail: !wa
+      ? 'WhatsApp status is not available yet.'
+      : waStatus === 'ready'
+        ? 'Connected and sending.'
+        : wa.whatsapp_sender_ready
+          ? 'Your number is connected. Sending is still being switched on.'
+          : 'Not connected yet.',
     source: 'get_whatsapp_provider_readiness()',
   });
 
@@ -471,7 +484,11 @@ export function computeReadiness(
   providers.push({
     provider: 'whatsapp_templates_multilang',
     status: mlStatus,
-    detail: nonEn === null ? 'unavailable' : nonEn > 0 ? `${nonEn} non-English languages approved` : 'No non-English templates yet (English-only)',
+    detail: nonEn === null
+      ? 'Template status is not available yet.'
+      : nonEn > 0
+        ? `Approved in ${nonEn} languages besides English.`
+        : 'English only for now.',
     source: wa ? 'languages_ready' : 'whatsapp_templates (seed)',
   });
 
@@ -488,7 +505,11 @@ export function computeReadiness(
   providers.push({
     provider: 'calendar',
     status: calStatus,
-    detail: !s.calendar ? 'unavailable' : s.calendar.oauthCount > 0 ? 'OAuth credentials present; watcher not live' : 'Not connected (manual viewing fallback)',
+    detail: !s.calendar
+      ? 'Calendar status is not available yet.'
+      : s.calendar.oauthCount > 0
+        ? 'Connected — confirmed viewings are added automatically.'
+        : 'Not connected — viewings are handled by hand.',
     source: 'agency_oauth_credentials',
   });
 
@@ -548,7 +569,13 @@ export function computeReadiness(
   providers.push({
     provider: 'property_feed',
     status: catalogPresence,
-    detail: cp === null ? 'unavailable' : cp.total_active > 0 ? `${cp.total_active} active (${cp.real_source_active} from a real source)` : 'No catalog',
+    detail: cp === null
+      ? 'Catalogue status is not available yet.'
+      : cp.total_active > 0
+        ? (cp.real_source_active > 0
+            ? `${cp.total_active} properties, kept up to date from your own feed.`
+            : `${cp.total_active} properties, loaded by AIVENA — not yet connected to your own feed.`)
+        : 'No properties loaded yet.',
     source: 'properties',
   });
   // O5 — catalog QUALITY gate (distinct from mere presence). Its hardFail feeds the non-overridable

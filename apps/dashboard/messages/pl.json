@@ -644,7 +644,8 @@
       "bookAuto": "Amanda rezerwuje je sama",
       "bookReview": "Każda rezerwacja czeka na Ciebie",
       "statusAuto": "AUTOMATYCZNIE",
-      "askFirstHelp": "Co Amanda robi z każdym z nich w tej chwili — zgodnie z poziomem automatyzacji powyżej."
+      "askFirstHelp": "Co Amanda robi z każdym z nich w tej chwili — zgodnie z poziomem automatyzacji powyżej.",
+      "followupToneNone": "Nie ustawiono jeszcze tonu."
     },
     "voice": {
       "title": "Głos i ton",

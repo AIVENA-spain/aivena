@@ -644,7 +644,8 @@
       "bookAuto": "Amanda books these herself",
       "bookReview": "Every booking waits for you",
       "statusAuto": "AUTOMATIC",
-      "askFirstHelp": "What Amanda does with each of these right now — set by your automation level above."
+      "askFirstHelp": "What Amanda does with each of these right now — set by your automation level above.",
+      "followupToneNone": "No tone set yet."
     },
     "voice": {
       "title": "Voice & tone",
@@ -963,7 +964,7 @@
       "emailPlaceholder": "Email (optional)",
       "officePlaceholder": "Office (optional)",
       "languagesHint": "Languages they can hold a conversation in",
-      "numberHint": "Include the country code — this is how Amanda tells agents from clients.",
+      "numberHint": "Use their full number with the country code, exactly as it appears on their WhatsApp — for example +34 600 111 222. Amanda matches incoming messages against it, so a number that does not match will be treated as a client.",
       "add": "Add agent",
       "saving": "Saving…",
       "remove": "Remove",

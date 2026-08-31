@@ -644,7 +644,8 @@
       "bookAuto": "Amanda booker dem selv",
       "bookReview": "Hver booking venter på deg",
       "statusAuto": "AUTOMATISK",
-      "askFirstHelp": "Hva Amanda gjør med hver av disse akkurat nå — bestemt av automatiseringsnivået ditt over."
+      "askFirstHelp": "Hva Amanda gjør med hver av disse akkurat nå — bestemt av automatiseringsnivået ditt over.",
+      "followupToneNone": "Ingen tone valgt ennå."
     },
     "voice": {
       "title": "Stemme og tone",

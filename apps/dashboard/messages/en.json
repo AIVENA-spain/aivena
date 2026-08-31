@@ -539,7 +539,11 @@
       "urlHint": "Optional. Include the full link (https://…).",
       "invalidUrl": "That doesn't look like a valid link — include the full URL.",
       "signatureRoleHeading": "Signature role",
-      "subIdentity": "Identity"
+      "subIdentity": "Identity",
+      "accentColorLabel": "Accent colour",
+      "paperColorLabel": "Background colour",
+      "inkColorLabel": "Text colour",
+      "brandColorsHint": "These four colours are what your posts are built from. You can still change any of them on an individual post."
     },
     "identity": {
       "title": "Sending identity",

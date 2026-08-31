@@ -39,6 +39,9 @@ function actionError(scope: string, err: unknown): ActionErr {
 export type BrandingPayload = {
   brand_name: string;
   primary_color: string;
+  accent_color: string;
+  background_color: string;
+  text_color: string;
   email_signature_name: string;
   email_signature_role: string;
   // tone + brand_voice are intentionally NOT part of the branding save in the

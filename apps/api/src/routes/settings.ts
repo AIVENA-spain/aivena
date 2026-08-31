@@ -112,17 +112,32 @@ route.get('/', async (c) => {
                   dashboard_display_language
              FROM agency_settings
             WHERE agency_id = current_setting('app.current_agency_id', true)
-         ) a)                                 AS agency_row
+         ) a)                                 AS agency_row,
+        -- background_color / text_color are not in dashboard_settings()'s branding block, and
+        -- changing that function means a migration. They are read alongside instead, so Settings
+        -- can offer all four brand colours without touching prod schema.
+        (SELECT row_to_json(b) FROM (
+           SELECT background_color, text_color
+             FROM agency_branding
+            WHERE agency_id = current_setting('app.current_agency_id', true)
+         ) b)                                 AS branding_extra
     `);
     const rows = result as unknown as Array<{
       settings: Settings | null;
       agency_row: AgencyRow | null;
+      branding_extra: { background_color: string | null; text_color: string | null } | null;
     }>;
     const settings = rows[0]?.settings ?? null;
     if (!settings) {
       return c.json({ error: 'Failed to load settings' }, 500);
     }
     const agencyRow = rows[0]?.agency_row ?? null;
+    const extra = rows[0]?.branding_extra ?? null;
+    if (extra && settings.branding && typeof settings.branding === 'object') {
+      const b = settings.branding as Record<string, unknown>;
+      b.background_color = extra.background_color;
+      b.text_color = extra.text_color;
+    }
 
     const toggles = readDashboardToggles(agencyRow?.reply_rules ?? null);
     const config = (settings.config && typeof settings.config === 'object')
@@ -230,6 +245,26 @@ route.post('/branding', async (c) => {
     return c.json({ error: 'Brand colour must be a hex value like #1FE874.' }, 400);
   }
 
+  // Christian 2026-08-31, on being asked whether Settings should own all four: "3. yes".
+  // agency_branding has carried accent_color / background_color / text_color since the beginning
+  // and mapBranding has always read all four into the Studio engine — but this route only ever
+  // wrote primary_color, so every agency's accent, paper and ink sat on their signup defaults and
+  // could only be overridden per post. That is why the accent looked weak everywhere.
+  //
+  // ABSENT is not the same as EMPTY. A field the form does not send keeps its stored value; only a
+  // present, valid hex is written. Sending '' would wipe a real colour to nothing.
+  const optionalHex = (v: unknown, label: string): string | null | { error: string } => {
+    if (v === undefined || v === null || v === '') return null;      // not sent → leave it alone
+    if (typeof v !== 'string' || !HEX_RE.test(v)) return { error: `${label} must be a hex value like #1FE874.` };
+    return v;
+  };
+  const accent = optionalHex(body.accent_color, 'Accent colour');
+  const background = optionalHex(body.background_color, 'Background colour');
+  const textColor = optionalHex(body.text_color, 'Text colour');
+  for (const v of [accent, background, textColor]) {
+    if (v && typeof v === 'object') return c.json({ error: v.error }, 400);
+  }
+
   const signatureName = trimOrNull(body.email_signature_name) ?? '';
   const signatureRole = trimOrNull(body.email_signature_role) ?? '';
 
@@ -260,6 +295,9 @@ route.post('/branding', async (c) => {
       UPDATE agency_branding
          SET brand_name           = ${brandName},
              primary_color        = ${primaryColor},
+             accent_color         = COALESCE(${accent as string | null}, accent_color),
+             background_color     = COALESCE(${background as string | null}, background_color),
+             text_color           = COALESCE(${textColor as string | null}, text_color),
              email_signature_name = ${signatureName},
              email_signature_role = ${signatureRole},
              phone                = ${phone},

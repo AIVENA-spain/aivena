@@ -31,6 +31,12 @@ export function BrandingSection({ branding }: { branding: SettingsResponse["bran
 
   const [brandName, setBrandName] = useState(branding.brand_name ?? "");
   const [primaryColor, setPrimaryColor] = useState(branding.primary_color || "#1FE874");
+  // Christian 2026-08-31 ("3. yes"): the other three have existed in agency_branding since the
+  // beginning and the Studio engine has always read them — they were simply never settable, so
+  // every agency's accent, background and text sat on their signup defaults.
+  const [accentColor, setAccentColor] = useState(branding.accent_color || "#C9A45C");
+  const [paperColor, setPaperColor] = useState(branding.background_color || "#F8F5EF");
+  const [inkColor, setInkColor] = useState(branding.text_color || "#1F2933");
   const [sigName, setSigName] = useState(branding.email_signature_name ?? "");
   const [sigRole, setSigRole] = useState(branding.email_signature_role ?? "");
   const [logoUrl, setLogoUrl] = useState<string | null>(branding.logo_url);
@@ -72,6 +78,9 @@ export function BrandingSection({ branding }: { branding: SettingsResponse["bran
     const payload: BrandingPayload = {
       brand_name: brandName.trim(),
       primary_color: primaryColor,
+      accent_color: accentColor,
+      background_color: paperColor,
+      text_color: inkColor,
       email_signature_name: sigName.trim(),
       email_signature_role: sigRole.trim(),
       phone: phone.trim(),
@@ -92,7 +101,7 @@ export function BrandingSection({ branding }: { branding: SettingsResponse["bran
       else setError(res.error ?? t("saveFailedBranding"));
     });
   }, [
-    brandName, primaryColor, sigName, sigRole, phone, whatsappNumber, websiteUrl,
+    brandName, primaryColor, accentColor, paperColor, inkColor, sigName, sigRole, phone, whatsappNumber, websiteUrl,
     bookingUrl, officeAddress, city, region, country, instagramUrl, facebookUrl,
     linkedinUrl, t,
   ]);
@@ -160,11 +169,23 @@ export function BrandingSection({ branding }: { branding: SettingsResponse["bran
         </div>
         <div className="flex flex-col gap-2">
           <Label htmlFor={colorId}>{t("brandColorLabel")}</Label>
-          <div className="flex items-center gap-2">
-            <span aria-hidden className="h-9 w-9 rounded-md border border-border" style={{ backgroundColor: HEX_RE.test(primaryColor) ? primaryColor : "transparent" }} />
-            <Input id={colorId} value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value.trim())} className="max-w-[140px] font-mono" spellCheck={false} />
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            {([
+              [t("brandColorLabel"), primaryColor, setPrimaryColor, colorId],
+              [t("accentColorLabel"), accentColor, setAccentColor, `${colorId}-accent`],
+              [t("paperColorLabel"), paperColor, setPaperColor, `${colorId}-paper`],
+              [t("inkColorLabel"), inkColor, setInkColor, `${colorId}-ink`],
+            ] as const).map(([label, val, set, id]) => (
+              <div key={id} className="flex flex-col gap-1">
+                <Label htmlFor={id} className="text-[11px] font-normal text-muted-foreground">{label}</Label>
+                <div className="flex items-center gap-2">
+                  <span aria-hidden className="h-9 w-9 shrink-0 rounded-md border border-border" style={{ backgroundColor: HEX_RE.test(val) ? val : "transparent" }} />
+                  <Input id={id} value={val} onChange={(e) => set(e.target.value.trim())} className="max-w-[120px] font-mono" spellCheck={false} />
+                </div>
+              </div>
+            ))}
           </div>
-          <p className="text-[11px] text-muted-foreground">{t("brandColorHint")}</p>
+          <p className="text-[11px] text-muted-foreground">{t("brandColorsHint")} {t("brandColorHint")}</p>
         </div>
       </div>
 

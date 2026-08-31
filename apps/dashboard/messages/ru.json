@@ -539,7 +539,11 @@
       "urlHint": "Optional. Include the full link (https://…).",
       "invalidUrl": "That doesn't look like a valid link — include the full URL.",
       "signatureRoleHeading": "Signature role",
-      "subIdentity": "Identity"
+      "subIdentity": "Identity",
+      "accentColorLabel": "Акцентный цвет",
+      "paperColorLabel": "Цвет фона",
+      "inkColorLabel": "Цвет текста",
+      "brandColorsHint": "Ваши публикации строятся из этих четырёх цветов. Любой из них можно изменить в отдельной публикации."
     },
     "identity": {
       "title": "Отправитель",

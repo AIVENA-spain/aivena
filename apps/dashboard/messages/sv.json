@@ -539,7 +539,11 @@
       "urlHint": "Optional. Include the full link (https://…).",
       "invalidUrl": "That doesn't look like a valid link — include the full URL.",
       "signatureRoleHeading": "Signature role",
-      "subIdentity": "Identity"
+      "subIdentity": "Identity",
+      "accentColorLabel": "Accentfärg",
+      "paperColorLabel": "Bakgrundsfärg",
+      "inkColorLabel": "Textfärg",
+      "brandColorsHint": "Dina inlägg byggs av dessa fyra färger. Du kan ändra vilken som helst i ett enskilt inlägg."
     },
     "identity": {
       "title": "Avsändaridentitet",

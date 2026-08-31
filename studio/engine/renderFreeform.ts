@@ -115,6 +115,14 @@ export const FreeformElement = z.discriminatedUnion("type", [
 export type FreeformElement = z.infer<typeof FreeformElement>;
 
 export const DesignSpec = z.object({
+  /** Colours the AGENT deliberately chose — from Settings or the per-deck pickers. Christian
+   *  2026-08-31: "if i am deciding to do it from this stage it must be intentional and no one would
+   *  choose a color for text that couldnt be seen. its more for the actual when ai generates so
+   *  text will be visable." RULE 1 exists to stop the MACHINE shipping type nobody can read; it was
+   *  also overruling a person. His own brand blue measured 2.82:1 against his paper and the
+   *  large-text floor is 3, so his cover headline shipped grey — it missed by 0.18. A colour on
+   *  this list is measured and REPORTED exactly as before, but never substituted. */
+  chosen_colours: z.array(Colour).optional(),
   background: Colour,
   elements: z.array(FreeformElement).min(1).max(300),  // seamless wide strips carry a whole deck in one spec
 });
@@ -637,12 +645,15 @@ export async function renderFreeform(
           // slides at 3.25:1 — including their call-to-action — because a terracotta slide
           // contains nothing dark. Staying in-palette is the preference; legibility is the rule.
           // Every candidate is measured and the BEST is kept, not the first that squeaks past.
-          const inPalette = [el.alt_colour, ...specPalette()].filter((c): c is string => !!c);
+          // A colour the agent picked themselves is not the engine's to overrule. Still measured,
+          // still reported below — the studio shows the ratio — but it ships as chosen.
+          const deliberate = (spec.chosen_colours ?? []).some((c) => c.toLowerCase() === el.colour.toLowerCase());
+          const inPalette = deliberate ? [] : [el.alt_colour, ...specPalette()].filter((c): c is string => !!c);
           for (const c of inPalette) {
             const m = measureWith(c);
             if (m && m.worst > bestWorst) { bestWorst = m.worst; bestInk = c; }
           }
-          if (bestWorst < floor) {
+          if (bestWorst < floor && !deliberate) {
             for (const c of NEUTRAL_INKS) {
               const m = measureWith(c);
               if (m && m.worst > bestWorst) { bestWorst = m.worst; bestInk = c; }

@@ -190,7 +190,12 @@ export function topicIsHeadline(topic: string): boolean {
   const t = (topic ?? '').trim();
   if (t.length < 18 || t.length > 90) return false;
   if (/^(how to|what to|tips? (on|for)|guide to|ideas? for|about|write|make|create)\b/i.test(t)) return false;
-  if (/[:;]\s/.test(t)) return false;
+  // A colon does NOT make a line a brief — it is one of the commonest shapes a headline takes.
+  // Christian picked "Retiring here isn't just about the sun: what your week actually looks like",
+  // this rule alone rejected it, the writer treated it as a subject and returned "What your week
+  // actually looks like here" — dropping the retirees the whole post was aimed at. A semicolon
+  // still reads as a note to the writer rather than a line anyone would set in type.
+  if (/;\s/.test(t)) return false;
   return /\s/.test(t);
 }
 

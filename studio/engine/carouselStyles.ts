@@ -2,7 +2,7 @@ import { renderFreeform, DesignSpec } from "./renderFreeform";
 import { textWidth } from "./renderEditable";
 import {
   CarouselPlan, renderPlannedCarousel, buildPlannedSpecs, getPlannedSerif, setPlannedSerif,
-  renderWideSliced, applyGrain, mix, wrap, chrome, visibleTone,
+  renderWideSliced, applyGrain, mix, wrap, chrome, visibleTone, hex6,
 } from "./carouselSlides";
 import { CarouselFacts, CarouselCopy, CarouselBrand, renderCarousel } from "./renderCarousel";
 
@@ -52,11 +52,44 @@ const TERRA_D = TERRA, OLIVE_D = OLIVE, LIME_D = LIME;
  *  could never reach them. When the agent has picked colours (lockPalette), the accents are
  *  rebuilt FROM those colours — the style keeps its structure and rhythm, in their palette.
  *  Set and restored around the synchronous spec build, exactly like the display face. */
+/** Christian 2026-08-31, having picked a brown #ab6d3b and a blue #a1cdce: "the blueish color i
+ *  chose doesnt look like this grey thing." He was right, and the cause was the first version of
+ *  this function. Deriving an accent by MIXING the two chosen colours cancels them whenever their
+ *  hues are far apart: his brown sits at hue 27 and his blue at 181, and mix(gold, navy, 0.72)
+ *  lands at hue 124, saturation 8% — a grey-green belonging to neither of them. Complementary
+ *  hues average to mud; that is arithmetic, not taste.
+ *
+ *  So an accent slot now takes its HUE AND SATURATION from ONE chosen colour and keeps its OWN
+ *  LIGHTNESS. The agent always sees a colour they actually picked, the roles stay as far apart in
+ *  value as the style designed them, and because lightness is preserved every RULE 1 measurement
+ *  lands where the layout expects it. */
+function reskin(source: string, slot: string): string {
+  const rgb = (h: string) => [1, 3, 5].map((i) => parseInt(hex6(h).slice(i, i + 2), 16) / 255);
+  const toHsl = (h: string) => {
+    const [r, g, b] = rgb(h);
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, d = mx - mn;
+    if (!d) return [0, 0, l];
+    const sat = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn);
+    const hue = mx === r ? ((g - b) / d + (g < b ? 6 : 0)) : mx === g ? ((b - r) / d + 2) : ((r - g) / d + 4);
+    return [hue / 6, sat, l];
+  };
+  const [h, sa] = toHsl(source);
+  const [, , li] = toHsl(slot);
+  if (!sa) return slot;                       // a neutral source has no hue to lend
+  const q = li < 0.5 ? li * (1 + sa) : li + sa - li * sa, p = 2 * li - q;
+  const ch = (t: number) => {
+    t = (t + 1) % 1;
+    const v = t < 1 / 6 ? p + (q - p) * 6 * t : t < 1 / 2 ? q : t < 2 / 3 ? p + (q - p) * (2 / 3 - t) * 6 : p;
+    return Math.round(v * 255).toString(16).padStart(2, "0");
+  };
+  return `#${ch(h + 1 / 3)}${ch(h)}${ch(h - 1 / 3)}`;
+}
+
 function useBrandAccents(brand: CarouselBrand): () => void {
   const prev: [string, string, string] = [TERRA, OLIVE, LIME];
-  TERRA = mix(brand.gold, brand.navy, 0.72);      // the warm accent slot
-  OLIVE = mix(brand.navy, brand.gold, 0.78);      // the deep secondary
-  LIME = mix(brand.cream, brand.gold, 0.94);      // the pale ground
+  TERRA = reskin(brand.navy, TERRA_D);       // the warm accent slot wears the MAIN colour
+  OLIVE = reskin(brand.gold, OLIVE_D);       // the deep secondary wears the ACCENT colour
+  LIME = reskin(brand.cream, LIME_D);        // the pale ground stays pale
   return () => { [TERRA, OLIVE, LIME] = prev; };
 }
 

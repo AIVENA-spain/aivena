@@ -10,6 +10,8 @@
 // pings the right one — by language, and only in their working hours." This
 // file is that sentence, executable.
 
+import { normalizeLeadLanguage } from './validators';
+
 export interface PingableAgent {
   id: string;
   full_name: string;
@@ -116,9 +118,15 @@ export function pickAgent(
       return x.full_name.localeCompare(y.full_name);
     });
 
-  const lang = (buyerLanguage ?? '').toLowerCase();
+  // NORMALISE BOTH SIDES. The engine stores Norwegian as 'no' on the question
+  // while the roster stores 'nb' — a raw string compare silently reports "no
+  // agent speaks them" for a Norwegian buyer and a Norwegian-speaking agent.
+  // This is the same 'no' vs 'nb' mismatch that once sent a Norwegian lead
+  // English replies; it must be normalised everywhere the two meet, not just
+  // where it last bit us.
+  const lang = normalizeLeadLanguage(buyerLanguage);
   const speaks = lang
-    ? onShift.filter((a) => a.languages.map((l) => l.toLowerCase()).includes(lang))
+    ? onShift.filter((a) => a.languages.some((l) => normalizeLeadLanguage(l) === lang))
     : [];
   if (speaks.length > 0) return { agent: order(speaks)[0], reason: 'ok', languageCompromise: false };
 

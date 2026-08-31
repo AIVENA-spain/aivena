@@ -102,3 +102,33 @@ describe('pickAgent', () => {
     expect(pickAgent([], 'es', MON_10_MADRID, MADRID).reason).toBe('no_agents');
   });
 });
+
+/**
+ * Caught by running the worker's real query before arming it: the engine stores
+ * Norwegian as 'no' on the question while the roster stores 'nb'. A raw compare
+ * reports "nobody speaks them" for a Norwegian buyer and a Norwegian-speaking
+ * agent — the same 'no' vs 'nb' mismatch that once sent a Norwegian lead
+ * English replies.
+ */
+describe('language codes are normalised on BOTH sides', () => {
+  const nb = agent({ id: 'nb', full_name: 'Bjorn', languages: ['nb'] });
+  const es = agent({ id: 'es', full_name: 'Ana', languages: ['es'] });
+
+  it("a question tagged 'no' matches an agent listed as 'nb'", () => {
+    const r = pickAgent([es, nb], 'no', MON_10_MADRID, MADRID);
+    expect(r.agent?.id).toBe('nb');
+    expect(r.languageCompromise).toBe(false);
+  });
+
+  it('locale forms and case do not break the match', () => {
+    expect(pickAgent([es, nb], 'nb-NO', MON_10_MADRID, MADRID).agent?.id).toBe('nb');
+    expect(pickAgent([es, nb], 'NO', MON_10_MADRID, MADRID).agent?.id).toBe('nb');
+    expect(pickAgent([nb, es], 'ES', MON_10_MADRID, MADRID).agent?.id).toBe('es');
+  });
+
+  it('a genuinely absent language is still reported as a mismatch, not a false match', () => {
+    const r = pickAgent([es], 'fi', MON_10_MADRID, MADRID);
+    expect(r.agent?.id).toBe('es');
+    expect(r.languageCompromise).toBe(true);
+  });
+});

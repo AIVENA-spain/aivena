@@ -179,7 +179,16 @@ export function BrandingSection({ branding }: { branding: SettingsResponse["bran
               <div key={id} className="flex flex-col gap-1">
                 <Label htmlFor={id} className="text-[11px] font-normal text-muted-foreground">{label}</Label>
                 <div className="flex items-center gap-2">
-                  <span aria-hidden className="h-9 w-9 shrink-0 rounded-md border border-border" style={{ backgroundColor: HEX_RE.test(val) ? val : "transparent" }} />
+                  {/* Christian 2026-08-31: "could we also get a color wheel?" The swatch was a dead
+                      square you could only look at — it is now the picker itself, so a colour can be
+                      chosen by eye. The hex field stays for typing an exact brand value. */}
+                  <input
+                    type="color"
+                    aria-label={label}
+                    value={HEX_RE.test(val) ? val : "#000000"}
+                    onChange={(e) => set(e.target.value.toUpperCase())}
+                    className="h-9 w-9 shrink-0 cursor-pointer rounded-md border border-border bg-transparent p-0"
+                  />
                   <Input id={id} value={val} onChange={(e) => set(e.target.value.trim())} className="max-w-[120px] font-mono" spellCheck={false} />
                 </div>
               </div>

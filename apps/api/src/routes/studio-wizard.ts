@@ -797,12 +797,15 @@ route.get('/editable-gallery', async (c) => {
     // Pull a wider candidate set by price, then keep the 4 most expensive that actually have USABLE photos.
     // (Most of the catalog hotlinks the dead montinmo.es host — those listings can never render, so they must
     // never be picked for the showcase, or the grid fills with "preview failed".)
+    // Christian 2026-08-31: "the properties thats being shown... they should rotate between all
+    // their properties." The old LIMIT 60 meant the showcase could never see past the 60 priciest,
+    // and it always drew the same 8 from those. He has 139 listings with enough photos.
     const pRes = await tx.execute(sql`
       SELECT id, title, images
       FROM properties
       WHERE agency_id = ${agencyId} AND price IS NOT NULL
       ORDER BY price DESC
-      LIMIT 60
+      LIMIT 400
     `);
     const pRows = pRes as unknown as Array<{ id: string; title: string | null; images: string[] | null }>;
     const allListings = pRows
@@ -812,7 +815,18 @@ route.get('/editable-gallery', async (c) => {
     // Christian 2026-07-16: ONE house per ROW — the catalogue is 8 rows of 4 (one template per photo-count
     // lane), so we pick the 8 best-looking / most expensive listings that can feed a whole row (every row
     // contains a 4-photo template, so the row's house needs >= 4 usable photos). Row 1 = priciest.
-    const rowListings = allListings.filter((l) => l.photos.length >= 4).slice(0, 8);
+    // ROTATION, ON A DAILY CADENCE — and the cadence is the whole design decision. Every tile's
+    // render cache is keyed by property, so rotating on each load would re-render all 32 tiles every
+    // visit: back to the ~49s gallery, plus ~54MB of new storage each time. Rotating once a day
+    // keeps every load inside a warm cache and still walks the whole catalogue — 139 eligible
+    // listings at 8 a day cycles in about seventeen days. The window is derived from the date alone,
+    // so every load on the same day agrees.
+    const eligible = allListings.filter((l) => l.photos.length >= 4);
+    const day = Math.floor(Date.now() / 86_400_000);
+    const rowListings = eligible.length
+      ? Array.from({ length: Math.min(8, eligible.length) },
+          (_, k) => eligible[((day * 8) + k) % eligible.length])
+      : [];
     const listings = rowListings.length > 0 ? rowListings : allListings.slice(0, 4);
 
     if (listings.length === 0) {

@@ -298,6 +298,7 @@ function AnswerBox({
   onAnswered: () => void;
 }) {
   const [answer, setAnswer] = useState("");
+  const [imageBroken, setImageBroken] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [teachOpen, setTeachOpen] = useState(false);
@@ -346,16 +347,17 @@ function AnswerBox({
           of the question text so it shows even when a question arrives bare. */}
       {property ? (
         <div className="mb-2 flex items-center gap-2.5 rounded-md border border-border bg-card p-2">
-          {property.image ? (
+          {property.image && !imageBroken ? (
             // eslint-disable-next-line @next/next/no-img-element
-            // Most catalogue images are hotlinked from the source site and can
-            // 403. A broken-image icon looks like our bug, so drop to the
-            // placeholder instead.
+            // Catalogue photos are hotlinked from the source site and many are
+            // already dead (this one 404s). Hiding the broken image left a GAP
+            // where the picture should be, which reads as the card having lost
+            // its property; falling back to the icon keeps the card whole.
             <img
               src={property.image}
               alt=""
               loading="lazy"
-              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+              onError={() => setImageBroken(true)}
               className="h-12 w-16 shrink-0 rounded object-cover"
             />
           ) : (

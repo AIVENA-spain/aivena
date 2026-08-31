@@ -432,7 +432,25 @@ export async function signedForKey(key: string): Promise<{ image_url: string; th
   const hit = await signedFor(key);
   if (hit.error || !hit.data?.signedUrl) return null;
   const t = await signedFor(key.replace(/\.png$/, THUMB_SUFFIX));
-  return { image_url: hit.data.signedUrl, ...(!t.error && t.data?.signedUrl ? { thumb_url: t.data.signedUrl } : {}) };
+  if (!t.error && t.data?.signedUrl) return { image_url: hit.data.signedUrl, thumb_url: t.data.signedUrl };
+  // Every tile in an existing gallery is already cached, so none of them would ever pass through a
+  // render again and none would ever gain a thumbnail — the 54 MB download would stay forever for
+  // exactly the agencies who have used Studio most. Backfill it from the stored PNG, in the
+  // background: this response still returns the full-size url, and the next load gets the 18 KB one.
+  void backfillThumb(key);
+  return { image_url: hit.data.signedUrl };
+}
+
+const backfilling = new Set<string>();
+async function backfillThumb(key: string): Promise<void> {
+  if (backfilling.has(key) || backfilling.size > 64) return;   // one attempt at a time, bounded
+  backfilling.add(key);
+  try {
+    const dl = await supabaseAdmin.storage.from(OUT_BUCKET).download(key);
+    if (dl.error || !dl.data) return;
+    await storeThumb(key, Buffer.from(await dl.data.arrayBuffer()));
+  } catch { /* a thumbnail is an optimisation — never let it surface */ }
+  finally { backfilling.delete(key); }
 }
 
 export async function renderAndStore(opts: RenderOpts): Promise<{ image_url: string; storage_path: string; thumb_url?: string }> {

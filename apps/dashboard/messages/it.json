@@ -974,7 +974,10 @@
       "hoursHint": "Orario di turno: Amanda avvisa questo agente solo dentro questo orario. Non è lo stesso dei tuoi orari di visita.",
       "setHours": "Imposta orario",
       "saveHours": "Salva orario",
-      "dayOff": "Riposo"
+      "dayOff": "Riposo",
+      "edit": "Modifica",
+      "saveChanges": "Salva modifiche",
+      "cancelEdit": "Annulla"
     },
     "automation": {
       "title": "Livello di automazione",

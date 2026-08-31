@@ -393,6 +393,12 @@ route.post('/agents', async (c) => {
     }
   }
   const today = new Date().toISOString().slice(0, 10);
+  // Whether the CALLER supplied these at all. Editing a name posts no hours,
+  // and blindly writing the parsed default would erase a shift someone had
+  // already set — a save that silently destroys neighbouring data is worse
+  // than a save that fails.
+  const sentHours = Boolean(body.work_hours && typeof body.work_hours === 'object' && !Array.isArray(body.work_hours));
+  const sentUnavailable = Array.isArray(body.unavailable_dates);
   const unavailable = Array.isArray(body.unavailable_dates)
     ? [...new Set((body.unavailable_dates as unknown[]).filter((d): d is string => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d) && d >= today))].sort().slice(0, 120)
     : [];
@@ -405,8 +411,10 @@ route.post('/agents', async (c) => {
            SET full_name = ${fullName}, whatsapp_e164 = ${whatsapp}, email = ${email},
                languages = string_to_array(${languages.join(',')}, ','),
                office = ${office},
-               work_hours = ${JSON.stringify(hours)}::jsonb,
-               unavailable_dates = string_to_array(${unavailable.join(',')}, ','),
+               work_hours = CASE WHEN ${sentHours} THEN ${JSON.stringify(hours)}::jsonb ELSE work_hours END,
+               unavailable_dates = CASE WHEN ${sentUnavailable}
+                                        THEN string_to_array(${unavailable.join(',')}, ',')
+                                        ELSE unavailable_dates END,
                receives_pings = ${receivesPings}, updated_at = now()
          WHERE id = ${id}::uuid
            AND agency_id = current_setting('app.current_agency_id', true)
@@ -435,8 +443,10 @@ route.post('/agents', async (c) => {
              email = EXCLUDED.email,
              languages = EXCLUDED.languages,
              office = EXCLUDED.office,
-             work_hours = EXCLUDED.work_hours,
-             unavailable_dates = EXCLUDED.unavailable_dates,
+             work_hours = CASE WHEN ${sentHours} THEN EXCLUDED.work_hours ELSE agency_agents.work_hours END,
+             unavailable_dates = CASE WHEN ${sentUnavailable}
+                                      THEN EXCLUDED.unavailable_dates
+                                      ELSE agency_agents.unavailable_dates END,
              receives_pings = EXCLUDED.receives_pings,
              status = 'active',
              updated_at = now()

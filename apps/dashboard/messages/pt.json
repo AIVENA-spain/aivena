@@ -974,7 +974,10 @@
       "hoursHint": "Horário de turno — a Amanda só contacta este agente dentro dele. Não é o mesmo que os seus horários de visita.",
       "setHours": "Definir horário",
       "saveHours": "Guardar horário",
-      "dayOff": "Folga"
+      "dayOff": "Folga",
+      "edit": "Editar",
+      "saveChanges": "Guardar alterações",
+      "cancelEdit": "Cancelar"
     },
     "automation": {
       "title": "Nível de automação",

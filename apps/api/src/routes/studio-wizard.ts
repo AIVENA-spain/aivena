@@ -845,7 +845,29 @@ route.get('/editable-gallery', async (c) => {
       })
       .filter((x): x is NonNullable<typeof x> => x !== null);
 
-    return c.json({ ok: true, has_listings: true, templates: items });
+    // ANSWER THE WARM TILES HERE. Every tile's cache key is a pure function of things this route
+    // already knows, so asking storage 32 times inside ONE request beats 32 separate requests that
+    // each re-open a transaction and re-run set_config (~150ms of pure overhead per call, by the
+    // middleware's own comment). Only the tiles that genuinely need rendering go back to the client
+    // as work to do. The property loads stay sequential — they share one pg connection — while the
+    // signed-url probes are storage HTTP and safely parallel.
+    const byProperty = new Map<string, Awaited<ReturnType<typeof loadPropertyAndBrand>>>();
+    for (const id of [...new Set(items.map((i) => i.property_id))]) {
+      byProperty.set(id, await loadPropertyAndBrand(tx, agencyId, id));
+    }
+    const warmed = await Promise.all(items.map(async (it) => {
+      const L = byProperty.get(it.property_id);
+      if (!L) return it;
+      const key = editableCacheKey({
+        templateId: it.template_id, property: L.property, agency: L.agency, brand: it.brand,
+        colourOverrides: it.colour_overrides, agencyId, propertyId: it.property_id, photoRefs: it.photos,
+      } as never);
+      if (!key) return it;
+      const hit = await signedForKey(key);
+      return hit ? { ...it, image_url: hit.image_url, ...(hit.thumb_url ? { thumb_url: hit.thumb_url } : {}) } : it;
+    }));
+
+    return c.json({ ok: true, has_listings: true, templates: warmed });
   } catch (err) {
     console.error('[studio/editable-gallery] failed:', err);
     return c.json({ ok: false, error: 'gallery_failed', message: GENERIC }, 500);

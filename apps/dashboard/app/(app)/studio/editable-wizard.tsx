@@ -178,13 +178,22 @@ export function EditableWizard({ initialLanguage }: { initialLanguage?: string }
       const items = res.ok && Array.isArray(res.templates) ? (res.templates as GalleryItem[]) : [];
       setHasListings(res.ok ? res.has_listings !== false : true);
       setGallery(items);
-      setGalleryThumbs(Object.fromEntries(items.map((t) => [t.template_id, undefined])));
+      // Tiles the plan already answered paint IMMEDIATELY — no request at all. Only the genuinely
+      // unrendered ones queue for work below.
+      setGalleryThumbs(Object.fromEntries(items.map((t) => [
+        t.template_id,
+        (t as GalleryItem & { thumb_url?: string; image_url?: string }).thumb_url
+          ?? (t as GalleryItem & { image_url?: string }).image_url
+          ?? undefined,
+      ])));
       setGalleryLoading(false);
       // A plain fetch, NOT the server action. editablePreviewAction is a "use server"
       // export, and Next serialises those into one queue — so runLimited(items, 4) has
       // always had an effective concurrency of ONE, which is why the tiles filled in
       // strictly top to bottom. A Route Handler is not queued, so the 4 is real.
-      await runLimited(items, 4, async (item) => {
+      const pending = items.filter((t) => !(t as GalleryItem & { thumb_url?: string; image_url?: string }).thumb_url
+        && !(t as GalleryItem & { image_url?: string }).image_url);
+      await runLimited(pending, 4, async (item) => {
         const r = await fetch(`${BASE_PATH}/api/studio/editable-preview`, {
           method: "POST",
           headers: { "content-type": "application/json" },

@@ -170,6 +170,7 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
   const [resColPaper, setResColPaper] = useState("#f4f1ea");
   const [resColInk, setResColInk] = useState("#333333");
   const [recolouring, setRecolouring] = useState(false);
+  const [colourNotes, setColourNotes] = useState<string[]>([]);
   const deckSlot = (k: keyof SlotCols) =>
     k === "main" ? resColMain : k === "accent" ? resColAccent : k === "paper" ? resColPaper : resColInk;
   // per-slide colour overrides (index → colours); empty means the slide follows the deck
@@ -688,12 +689,18 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
                   if (!r) return;
                   if (!r.ok) { setErr((r.message as string) ?? "Couldn't change the colours — please try again."); return; }
                   setSlides(Array.isArray(r.slides) ? (r.slides as string[]) : slides);
+                  setColourNotes(Array.isArray(r.colour_notes) ? (r.colour_notes as string[]) : []);
                   setSaved(false);
                 }} className="text-sm font-medium text-neutral-700 hover:text-neutral-900 disabled:opacity-50 dark:text-neutral-300 dark:hover:text-neutral-100">
                   {recolouring ? "Recolouring…" : "Apply colours"}
                 </button>
                 <span className="border-l border-neutral-300 pl-2 text-xs text-neutral-400 dark:border-neutral-700">set them under each slide</span>
               </span>
+              {colourNotes.length > 0 && (
+                <ul className="mt-2 w-full space-y-1 rounded-lg border border-amber-200 bg-amber-50/70 px-3 py-2 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
+                  {colourNotes.map((n) => <li key={n}>{n}</li>)}
+                </ul>
+              )}
               {/* labels are English like the rest of the Studio — these read "Otra vuelta · new
                   hook", half Spanish and half English, which looked like a translation bug */}
               {plan.type === "tips" && ([

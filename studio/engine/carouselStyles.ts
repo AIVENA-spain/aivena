@@ -253,7 +253,13 @@ function encaladaPlanned(plan: CarouselPlan, agency: string, contact: string, br
   includeContext = true, includeRecap = true,
 ): unknown[] {
   const NAVY = brand.navy;
-  const inkMuted = mix(NAVY, LIME, 0.55);
+  // Christian 2026-08-31: "i dont think that the color of text is changeable some places here."
+  // He was right — the ink slot reached only the body copy on pale slides and the closing action
+  // line. Everything else that reads as text (bands, folios, the contact line, the attribution)
+  // was mixed from the MAIN colour, so a text colour he picked had almost nowhere to land. The
+  // quiet tier now follows the ink. Headlines stay on the main colour deliberately: that is the
+  // slide's brand statement, and the Main picker is what controls it.
+  const inkMuted = mix(brand.text, LIME, 0.55);
   const tiles = (y: number) => Array.from({ length: 18 }, (_, i) => ({
     type: "rect", bbox: [80 + i * 52, y, 80 + i * 52 + 26, y + 26], fill: i % 2 ? TERRA : OLIVE, opacity: 0.85, radius: 3,
   }));

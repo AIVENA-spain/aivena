@@ -52,44 +52,20 @@ const TERRA_D = TERRA, OLIVE_D = OLIVE, LIME_D = LIME;
  *  could never reach them. When the agent has picked colours (lockPalette), the accents are
  *  rebuilt FROM those colours — the style keeps its structure and rhythm, in their palette.
  *  Set and restored around the synchronous spec build, exactly like the display face. */
-/** Christian 2026-08-31, having picked a brown #ab6d3b and a blue #a1cdce: "the blueish color i
- *  chose doesnt look like this grey thing." He was right, and the cause was the first version of
- *  this function. Deriving an accent by MIXING the two chosen colours cancels them whenever their
- *  hues are far apart: his brown sits at hue 27 and his blue at 181, and mix(gold, navy, 0.72)
- *  lands at hue 124, saturation 8% — a grey-green belonging to neither of them. Complementary
- *  hues average to mud; that is arithmetic, not taste.
+/** Christian 2026-08-31: "i still dont think it has gotten the blue right." He was right twice.
+ *  The first version MIXED his two colours, which cancels them when the hues are opposite. The
+ *  second kept each slot's own LIGHTNESS, which is why his airy #a1cdce (lightness 72%) came back
+ *  as #3f787a at lightness 36% — his hue, but not his colour.
  *
- *  So an accent slot now takes its HUE AND SATURATION from ONE chosen colour and keeps its OWN
- *  LIGHTNESS. The agent always sees a colour they actually picked, the roles stay as far apart in
- *  value as the style designed them, and because lightness is preserved every RULE 1 measurement
- *  lands where the layout expects it. */
-function reskin(source: string, slot: string): string {
-  const rgb = (h: string) => [1, 3, 5].map((i) => parseInt(hex6(h).slice(i, i + 2), 16) / 255);
-  const toHsl = (h: string) => {
-    const [r, g, b] = rgb(h);
-    const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, d = mx - mn;
-    if (!d) return [0, 0, l];
-    const sat = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn);
-    const hue = mx === r ? ((g - b) / d + (g < b ? 6 : 0)) : mx === g ? ((b - r) / d + 2) : ((r - g) / d + 4);
-    return [hue / 6, sat, l];
-  };
-  const [h, sa] = toHsl(source);
-  const [, , li] = toHsl(slot);
-  if (!sa) return slot;                       // a neutral source has no hue to lend
-  const q = li < 0.5 ? li * (1 + sa) : li + sa - li * sa, p = 2 * li - q;
-  const ch = (t: number) => {
-    t = (t + 1) % 1;
-    const v = t < 1 / 6 ? p + (q - p) * 6 * t : t < 1 / 2 ? q : t < 2 / 3 ? p + (q - p) * (2 / 3 - t) * 6 : p;
-    return Math.round(v * 255).toString(16).padStart(2, "0");
-  };
-  return `#${ch(h + 1 / 3)}${ch(h)}${ch(h - 1 / 3)}`;
-}
-
+ *  There is no derivation that survives contact with an arbitrary pair. So there is none: a slot
+ *  now takes the chosen colour verbatim. What he picks is what he sees, and RULE 1 measures the
+ *  type against whatever ground that produces, which is exactly the division of labour the rules
+ *  pass established. A deck with no chosen colours keeps the style's own three tones untouched. */
 function useBrandAccents(brand: CarouselBrand): () => void {
   const prev: [string, string, string] = [TERRA, OLIVE, LIME];
-  TERRA = reskin(brand.navy, TERRA_D);       // the warm accent slot wears the MAIN colour
-  OLIVE = reskin(brand.gold, OLIVE_D);       // the deep secondary wears the ACCENT colour
-  LIME = reskin(brand.cream, LIME_D);        // the pale ground stays pale
+  TERRA = brand.navy;     // the main colour
+  OLIVE = brand.gold;     // the accent
+  LIME = brand.cream;     // the paper
   return () => { [TERRA, OLIVE, LIME] = prev; };
 }
 
@@ -333,7 +309,13 @@ function encaladaPlanned(plan: CarouselPlan, agency: string, contact: string, br
     // value slides: Fraunces numeral + olive rules, limewash/terracotta alternation
     plan.tips.forEach((tip, i) => {
       const dark = i % 2 === 1;
-      const bg = dark ? TERRA : LIME, head = dark ? LIME : NAVY, bodyC = dark ? LIME : "#333333";
+      // Christian 2026-08-31: "its not using the second color (the blue) as much as i would like."
+      // The full-bleed slides alternated with the paper but were ALWAYS the main colour, so the
+      // accent only ever reached the cover's tile band and two hairlines — a few hundred pixels in
+      // a six-slide deck. The full-bleed grounds are the only surface with enough area to show a
+      // colour, so they now alternate between the two chosen ones.
+      const feature = Math.floor(i / 2) % 2 === 0 ? TERRA : OLIVE;
+      const bg = dark ? feature : LIME, head = dark ? LIME : NAVY, bodyC = dark ? LIME : brand.text;
       specs.push(DesignSpec.parse({
         background: bg,
         elements: [
@@ -342,7 +324,7 @@ function encaladaPlanned(plan: CarouselPlan, agency: string, contact: string, br
           { type: "text", bbox: [80, 456, 1000, 660], content: wrap(tip.title, FR, 62, 920), font: FR, size: 62, colour: head, align: "left", line_height: 76 },
           { type: "text", bbox: [80, 700, 1000, 1080], content: wrap(tip.body, "Jost", 35, 920), font: "Jost", size: 35, colour: bodyC, align: "left", line_height: 54, valign: "center" },
           ...(tip.teaser ? [{ type: "text", bbox: [80, 1130, 900, 1178], content: tip.teaser, font: "Jost", size: 25, colour: dark ? TERRA : LIME, align: "left", weight: "500", valign: "center", pill: { fill: dark ? LIME : OLIVE, pad_x: 26, pad_y: 13 } }] : []),
-          ...band(agency, i + 2 + (includeContext ? 1 : 0), total, dark ? mix(LIME, TERRA, 0.75) : inkMuted),
+          ...band(agency, i + 2 + (includeContext ? 1 : 0), total, dark ? mix(LIME, feature, 0.75) : inkMuted),
         ],
       }));
     });
@@ -367,17 +349,19 @@ function encaladaPlanned(plan: CarouselPlan, agency: string, contact: string, br
     }));
   }
 
-  // CTA: terracotta + seal
+  // CTA: the PAPER ground + seal. Christian 2026-08-31: "i think also keep the last slide the
+  // beige color." It closed on the main colour, which put a second full-bleed brown slab directly
+  // after one; on the paper it reads as a colophon and lets the deck land quietly.
   specs.push(DesignSpec.parse({
-    background: TERRA,
+    background: LIME,
     elements: [
-      ...seal(540, 340, 100, LIME, TERRA, initials(agency)),
-      { type: "text", bbox: [110, 520, 970, 730], content: wrap(plan.cta_heading, FR, 72, 860), font: FR, size: 72, colour: LIME, align: "center", line_height: 88, valign: "center" },
-      ...(plan.agency_line ? [{ type: "text", bbox: [120, 745, 960, 835], content: wrap(plan.agency_line, "Jost", 29, 820), font: "Jost", size: 29, colour: LIME, align: "center", line_height: 40 }] : []),
-      { type: "text", bbox: [140, plan.agency_line ? 860 : 780, 940, plan.agency_line ? 920 : 900], content: wrap(plan.cta_action, "Jost", 27, 780), font: "Jost", size: 27, colour: mix(LIME, TERRA, 0.8), align: "center", line_height: 38 },
-      { type: "text", bbox: [290, 960, 790, 1020], content: plan.cta_keyword, font: "Jost", size: 23, colour: TERRA, align: "center", weight: "600", tracking: 3, valign: "center", pill: { fill: LIME, pad_x: 40, pad_y: 20 } },
-      { type: "text", bbox: [110, 1100, 970, 1130], content: contact, font: "Jost", size: 21, colour: mix(LIME, TERRA, 0.8), align: "center", tracking: 2 },
-      ...band(agency, total, total, mix(LIME, TERRA, 0.75)),
+      ...seal(540, 340, 100, TERRA, LIME, initials(agency)),
+      { type: "text", bbox: [110, 520, 970, 730], content: wrap(plan.cta_heading, FR, 72, 860), font: FR, size: 72, colour: NAVY, align: "center", line_height: 88, valign: "center" },
+      ...(plan.agency_line ? [{ type: "text", bbox: [120, 745, 960, 835], content: wrap(plan.agency_line, "Jost", 29, 820), font: "Jost", size: 29, colour: NAVY, align: "center", line_height: 40 }] : []),
+      { type: "text", bbox: [140, plan.agency_line ? 860 : 780, 940, plan.agency_line ? 920 : 900], content: wrap(plan.cta_action, "Jost", 27, 780), font: "Jost", size: 27, colour: brand.text, align: "center", line_height: 38 },
+      { type: "text", bbox: [290, 960, 790, 1020], content: plan.cta_keyword, font: "Jost", size: 23, colour: LIME, align: "center", weight: "600", tracking: 3, valign: "center", pill: { fill: TERRA, pad_x: 40, pad_y: 20 } },
+      { type: "text", bbox: [110, 1100, 970, 1130], content: contact, font: "Jost", size: 21, colour: inkMuted, align: "center", tracking: 2 },
+      ...band(agency, total, total, inkMuted),
     ],
   }));
   return specs;

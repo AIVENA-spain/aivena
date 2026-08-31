@@ -54,11 +54,11 @@
     },
     "divider": {
       "default": "#f3e9df",
-      "locked": true
+      "locked": false
     },
     "icon": {
       "default": "#f3e9df",
-      "locked": true
+      "locked": false
     },
     "stat.label": {
       "default": "#ffffff",

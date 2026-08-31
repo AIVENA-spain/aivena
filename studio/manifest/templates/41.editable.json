@@ -52,11 +52,11 @@
     },
     "divider": {
       "default": "#c8a24b",
-      "locked": true
+      "locked": false
     },
     "icon": {
       "default": "#efe9db",
-      "locked": true
+      "locked": false
     },
     "overlay": {
       "default": "#000000",

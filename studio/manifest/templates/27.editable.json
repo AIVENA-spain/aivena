@@ -38,7 +38,7 @@
     },
     "subtitle/body": {
       "default": "#3a3a3a",
-      "locked": true
+      "locked": false
     },
     "accent": {
       "default": "#c8a24b",
@@ -66,11 +66,11 @@
     },
     "stat.value": {
       "default": "#1f1f1f",
-      "locked": true
+      "locked": false
     },
     "cta": {
       "default": "#1a1a1a",
-      "locked": true
+      "locked": false
     }
   },
   "text_slots": [

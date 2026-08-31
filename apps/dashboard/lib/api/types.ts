@@ -147,6 +147,8 @@ export type SettingsResponse = {
     logo_url: string | null;
     primary_color: string;
     accent_color: string | null;
+    background_color: string | null;
+    text_color: string | null;
     phone: string | null;
     whatsapp_number: string | null;
     website_url: string | null;

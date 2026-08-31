@@ -539,7 +539,11 @@
       "urlHint": "Optional. Include the full link (https://…).",
       "invalidUrl": "That doesn't look like a valid link — include the full URL.",
       "signatureRoleHeading": "Signature role",
-      "subIdentity": "Identity"
+      "subIdentity": "Identity",
+      "accentColorLabel": "Kolor akcentu",
+      "paperColorLabel": "Kolor tła",
+      "inkColorLabel": "Kolor tekstu",
+      "brandColorsHint": "Twoje posty powstają z tych czterech kolorów. Każdy z nich możesz zmienić w pojedynczym poście."
     },
     "identity": {
       "title": "Tożsamość wysyłkowa",

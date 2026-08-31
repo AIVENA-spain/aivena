@@ -119,7 +119,7 @@ export function AgentsSection({ agents: initial }: { agents: AgentRow[] }) {
                   onClick={() => setEditHours(editHours === a.id ? null : a.id)}
                   className="rounded px-1.5 py-0.5 text-[11px] font-medium text-brand hover:bg-brand-soft"
                 >
-                  {summariseHours(a.work_hours) ?? t("setHours")}
+                  {summariseHours(a.work_hours, locale) ?? t("setHours")}
                 </button>
                 {confirmRemove === a.id ? (
                   <>
@@ -199,15 +199,43 @@ export function AgentsSection({ agents: initial }: { agents: AgentRow[] }) {
   );
 }
 
-/** "Mon–Fri 09:00–18:00" style summary, or null when nothing is set yet.
- *  Deliberately shows the RANGE actually stored — never a friendly guess. */
-function summariseHours(wh: Record<string, number[]> | null): string | null {
+/**
+ * "Mon–Fri · 09:00–18:00" — the DAYS, not a count. It used to read "7d ·
+ * 09:00–18:00", which hid the thing worth checking: Christian set Monday to
+ * Friday and it had saved all seven days, and the summary gave him no way to
+ * see that (2026-08-31). Consecutive days collapse to a range; anything else
+ * lists out. Shows what is actually stored, never a friendly guess.
+ */
+function summariseHours(wh: Record<string, number[]> | null, locale: string): string | null {
   if (!wh) return null;
-  const open = Object.entries(wh).filter(([, hs]) => Array.isArray(hs) && hs.length > 0);
-  if (open.length === 0) return null;
-  const all = open.flatMap(([, hs]) => hs);
-  const from = Math.min(...all);
-  const to = Math.max(...all) + 1;
+  const openDays = Object.entries(wh)
+    .filter(([, hs]) => Array.isArray(hs) && hs.length > 0)
+    .map(([d]) => Number(d))
+    .filter((d) => Number.isInteger(d) && d >= 0 && d <= 6);
+  if (openDays.length === 0) return null;
+
+  // Agency week order: Mon..Sat, Sun — the same order the editor shows.
+  const ORDER = [1, 2, 3, 4, 5, 6, 0];
+  const shown = ORDER.filter((d) => openDays.includes(d));
+  const name = (d: number) =>
+    new Intl.DateTimeFormat(locale, { weekday: "short", timeZone: "UTC" })
+      .format(new Date(Date.UTC(2026, 7, 23 + d)));
+
+  // Collapse runs that are consecutive in the agency week order.
+  const parts: string[] = [];
+  let runStart = 0;
+  for (let i = 1; i <= shown.length; i++) {
+    const contiguous =
+      i < shown.length && ORDER.indexOf(shown[i]) === ORDER.indexOf(shown[i - 1]) + 1;
+    if (!contiguous) {
+      const a = shown[runStart];
+      const b = shown[i - 1];
+      parts.push(a === b ? name(a) : `${name(a)}–${name(b)}`);
+      runStart = i;
+    }
+  }
+
+  const all = Object.values(wh).flat();
   const pad = (n: number) => String(n).padStart(2, "0");
-  return `${open.length}d · ${pad(from)}:00–${pad(to)}:00`;
+  return `${parts.join(", ")} · ${pad(Math.min(...all))}:00–${pad(Math.max(...all) + 1)}:00`;
 }

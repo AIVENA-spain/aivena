@@ -415,6 +415,14 @@ route.post('/agents', async (c) => {
       if (rows.length === 0) return c.json({ error: 'That agent could not be found.' }, 404);
       return c.json({ ok: true, id });
     }
+    // UPSERT on the number, not an error (Christian 2026-08-31: "i had to fill
+    // in again, but it doesnt work"). Inside one agency the WhatsApp number IS
+    // the agent's identity — it is what the inbound router matches on — so
+    // re-entering someone who already exists means "here are their correct
+    // details", not "create a second record". Refusing that was pedantic and,
+    // worse, the refusal never reached the screen (see the catch below), so it
+    // surfaced as an unexplained failure. A soft-removed agent re-added this way
+    // comes back active, which is exactly what typing them in again means.
     const rows = (await tx.execute(sql`
       INSERT INTO agency_agents (agency_id, full_name, whatsapp_e164, email, languages, office,
                                  work_hours, unavailable_dates, receives_pings)
@@ -422,12 +430,30 @@ route.post('/agents', async (c) => {
               string_to_array(${languages.join(',')}, ','), ${office},
               ${JSON.stringify(hours)}::jsonb,
               string_to_array(${unavailable.join(',')}, ','), ${receivesPings})
+      ON CONFLICT (agency_id, whatsapp_e164) DO UPDATE
+         SET full_name = EXCLUDED.full_name,
+             email = EXCLUDED.email,
+             languages = EXCLUDED.languages,
+             office = EXCLUDED.office,
+             work_hours = EXCLUDED.work_hours,
+             unavailable_dates = EXCLUDED.unavailable_dates,
+             receives_pings = EXCLUDED.receives_pings,
+             status = 'active',
+             updated_at = now()
       RETURNING id
     `)) as unknown as Array<{ id: string }>;
     return c.json({ ok: true, id: rows[0]?.id });
   } catch (err) {
+    // Postgres puts its SQLSTATE on the driver error, which drizzle wraps: the
+    // code lives on err.cause, NOT in err.message. The old check regexed the
+    // message for the constraint name and so never matched — every duplicate
+    // fell through to the generic 500 "please try again", which is precisely
+    // what Christian saw. Kept as a belt-and-braces net now that the upsert
+    // makes the collision unreachable.
+    const cause = (err as { cause?: { code?: string; constraint?: string } })?.cause;
+    const code = cause?.code ?? (err as { code?: string })?.code;
     const msg = err instanceof Error ? err.message : '';
-    if (/agency_agents_agency_id_whatsapp_e164_key|duplicate key/i.test(msg)) {
+    if (code === '23505' || /agency_agents_agency_id_whatsapp_e164_key|duplicate key/i.test(msg)) {
       return c.json({ error: 'Another agent already uses that WhatsApp number.' }, 409);
     }
     console.error('[amanda-admin] agent save failed:', msg.split('\n')[0].slice(0, 140));

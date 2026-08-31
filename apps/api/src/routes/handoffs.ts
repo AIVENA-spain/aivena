@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { isShapeOnly } from '../amanda-engine/validators';
 import { sql } from 'drizzle-orm';
 
 /**
@@ -40,6 +41,7 @@ route.get('/', async (c) => {
                lead_id,
                raw_payload->>'buyer_asked'   AS buyer_asked,
                raw_payload->>'blocked_draft' AS blocked_draft,
+               raw_payload->>'gate_detail'   AS gate_detail,
                raw_payload->'property_refs'  AS property_refs
           FROM dashboard_tasks
          WHERE agency_id = current_setting('app.current_agency_id', true)
@@ -53,6 +55,15 @@ route.get('/', async (c) => {
         if (!extra) continue;
         r.buyer_asked = extra.buyer_asked ?? null;
         r.blocked_draft = extra.blocked_draft ?? null;
+        // WHY it was blocked decides whether that draft is safe to pre-fill.
+        // A draft stopped for being too long is fine to send as it stands; a
+        // draft stopped by the fact-check is stopped BECAUSE it is wrong, and
+        // pre-filling it invites the agent to send the very thing the gate
+        // caught — tonight it would have told a buyer Wednesday was "tomorrow"
+        // (2026-08-31). Shape-only failures stay pre-fillable; anything else is
+        // shown as a warning and the box starts empty.
+        const detail = String(extra.gate_detail ?? '');
+        r.draft_failed_fact_check = detail.length > 0 && !isShapeOnly(detail.split(/,\s*/));
         r.property_refs = extra.property_refs ?? null;
       }
     } catch (ctxErr) {

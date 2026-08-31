@@ -25,6 +25,10 @@ export type HandoffRow = {
    *  from nothing. */
   buyer_asked?: string | null;
   blocked_draft?: string | null;
+  /** True = the draft was stopped by the FACT check, not for being too long.
+   *  It must never pre-fill the answer box: it is wrong, that is why it was
+   *  stopped, and offering it invites the agent to send it anyway. */
+  draft_failed_fact_check?: boolean | null;
   property_refs?: string[] | null;
 };
 

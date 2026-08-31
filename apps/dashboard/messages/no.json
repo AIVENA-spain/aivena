@@ -1562,7 +1562,9 @@
     "aboutRefs": "Gjelder: {refs}",
     "amandaWanted": "Amanda ville sende",
     "questionNotifTitle": "{name} — kontoret må svare på noe",
-    "questionNotifBody": "Amanda har stilt kontoret et spørsmål. Åpne Oppgaver for å svare."
+    "questionNotifBody": "Amanda har stilt kontoret et spørsmål. Åpne Oppgaver for å svare.",
+    "draftFailedCheck": "Amandas utkast besto ikke faktasjekken",
+    "draftFailedHint": "Ikke send det som det er — sjekk det først."
   },
   "conversationMode": {
     "saving": "Lagrer…",

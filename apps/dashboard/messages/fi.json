@@ -1562,7 +1562,9 @@
     "aboutRefs": "Koskee: {refs}",
     "amandaWanted": "Amanda halusi lähettää",
     "questionNotifTitle": "{name} — toimiston pitää vastata johonkin",
-    "questionNotifBody": "Amanda esitti toimistolle kysymyksen. Avaa Tehtävät vastataksesi."
+    "questionNotifBody": "Amanda esitti toimistolle kysymyksen. Avaa Tehtävät vastataksesi.",
+    "draftFailedCheck": "Amandan luonnos ei läpäissyt faktatarkistusta",
+    "draftFailedHint": "Älä lähetä sellaisenaan — tarkista ensin."
   },
   "conversationMode": {
     "saving": "Tallennetaan…",

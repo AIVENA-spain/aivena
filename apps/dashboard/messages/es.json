@@ -1562,7 +1562,9 @@
     "aboutRefs": "Sobre: {refs}",
     "amandaWanted": "Amanda quería enviar",
     "questionNotifTitle": "{name} — la oficina tiene que responder algo",
-    "questionNotifBody": "Amanda ha hecho una pregunta a la oficina. Abre Tareas para responder."
+    "questionNotifBody": "Amanda ha hecho una pregunta a la oficina. Abre Tareas para responder.",
+    "draftFailedCheck": "Amanda redactó esto pero no pasó la verificación",
+    "draftFailedHint": "No lo envíes tal cual: compruébalo antes de responder."
   },
   "conversationMode": {
     "saving": "Guardando…",

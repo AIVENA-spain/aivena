@@ -56,7 +56,8 @@ const EXAMPLE_COUNTS: Record<string, number> = {
   // all the slides in examples not just 3")
   // sereno = Christian's own reviewed deck (2026-08-30), the first example replaced under the
   // rules pass: 6 slides, hero + 4 tips + closing, in his brand colours
-  acuarela: 8, arcilla: 8, bodegon: 8, bordado: 8, cartel: 7, editorial: 7, encalada: 7,
+  // encalada = Christian's own reviewed deck (2026-08-31), his brand colours, English, 6 slides
+  acuarela: 8, arcilla: 8, bodegon: 8, bordado: 8, cartel: 7, editorial: 7, encalada: 6,
   litoral: 8, mercado: 8, papel: 8, pueblo: 8, salitre: 8, sereno: 6, tinta: 8,
   // listing styles (parked out of the UI): partial sample sets remain
   brisa: 2, cuarteto: 2, horizonte: 3, marea: 2, plano: 3, portada: 3, recorte: 2, riviera: 2, ventana: 2,

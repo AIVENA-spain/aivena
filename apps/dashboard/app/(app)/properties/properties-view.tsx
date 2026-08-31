@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
   Bath,
@@ -51,7 +52,13 @@ import {
 export function PropertiesView({ properties }: { properties: PropertyRow[] }) {
   const t = useTranslations("properties");
   const [importing, setImporting] = useState(false);
-  const [query, setQuery] = useState("");
+  // Deep link from elsewhere in the product — today the "Open" link on an
+  // Amanda question's property card, which sent the agent to an UNFILTERED list
+  // of 141 properties and left them to find IC-81596 by eye (Christian
+  // 2026-08-31: "when i tap on open it just sends me here to the property
+  // section"). Seeds the search box, so the destination is the property.
+  const searchParams = useSearchParams();
+  const [query, setQuery] = useState(() => searchParams.get("q") ?? "");
   const [typeFilter, setTypeFilter] = useState("all");
   const [bedsFilter, setBedsFilter] = useState("any");
   const [statusFilter, setStatusFilter] = useState("all");

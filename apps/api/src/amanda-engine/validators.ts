@@ -157,7 +157,39 @@ const OFFICE_EXEMPT_RE = /\b(office|team|kontoret?|oficina|equipo|b[üu]ro|kanto
 // the 2026-08-27 live bug: leads store 'no' but the prompt table keyed 'nb',
 // so the lookup silently fell back to "Reply in English. Always." Base-code +
 // alias handling; unknown codes must NEVER silently become English.
-const LANG_ALIASES: Record<string, string> = { no: 'nb', nn: 'nb', cz: 'cs', gr: 'el', se: 'sv', dk: 'da' };
+// Aliases may ONLY map to languages AIVENA actually supports. 'cz' → 'cs' and
+// 'gr' → 'el' used to live here and were removed: they produced a code that
+// passed normalisation but had no dead-air line, no template and no locale
+// behind it — a silent fallback to English wearing the costume of a handled
+// language, which is the same shape as the bug this table exists to prevent.
+const LANG_ALIASES: Record<string, string> = { no: 'nb', nn: 'nb', se: 'sv', dk: 'da' };
+
+/**
+ * THE canonical language set for the whole product — the codes AIVENA stores,
+ * keys prompts by, names templates with, and offers in the agent roster.
+ *
+ * Christian 2026-08-31: "we need to make sure that the language codes stay the
+ * same through the whole aivena system and doesnt get names wrong ever."
+ *
+ * The failure this guards is not theoretical. Older tables store Norwegian as
+ * 'no' while everything Amanda touches uses 'nb'; that split once sent a
+ * Norwegian lead English replies, and it resurfaced in agent selection. The
+ * rule is: STORE canonical, and normalise ANY code arriving from a table, a
+ * form or a provider through normalizeLeadLanguage before comparing it.
+ *
+ * A structural test asserts this set matches the dead-air table and the roster
+ * picker, so adding a language to one place and forgetting the others fails in
+ * CI rather than silently in a buyer's chat.
+ */
+export const SUPPORTED_LANGUAGES = [
+  'en', 'es', 'de', 'nl', 'fr', 'it', 'pt', 'pl', 'sv', 'nb', 'da', 'fi', 'ru',
+] as const;
+export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
+
+/** True when a code is already canonical (an alias like 'no' is NOT). */
+export function isCanonicalLanguage(code: string): code is SupportedLanguage {
+  return (SUPPORTED_LANGUAGES as readonly string[]).includes(code);
+}
 
 export function normalizeLeadLanguage(code: string | null | undefined): string | null {
   const base = (code ?? '').trim().toLowerCase().split(/[-_]/)[0];

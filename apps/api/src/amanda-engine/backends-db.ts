@@ -15,6 +15,7 @@ import { candidateSlots, parseAmandaSettings, slotLabel, type AmandaAgencySettin
 export { candidateSlots, parseAmandaSettings, slotLabel, type AmandaAgencySettings } from './availability-lib';
 import { mergeExtraction, type LeadStateData } from './lead-state-lib';
 import { UUID_RE, type ToolBackends, type PropertySummary, type PropertySearchResult, type SlotProposal, type TicketRef } from './tools';
+import { normalizeLeadLanguage } from './validators';
 
 export interface BackendCtx {
   agencyId: string;
@@ -351,7 +352,12 @@ export function makeDbBackends(ctx: BackendCtx): ToolBackends {
             ) c
           )
           INSERT INTO amanda_questions (agency_id, short_code, conversation_id, lead_id, property_id, question_text, question_lang, question_category, next_ping_at)
-          SELECT ${A}, code, ${ctx.conversationId}::uuid, ${ctx.leadId}::uuid, ${propId}::uuid, ${q}, ${ctx.leadLanguage}, ${cat}, now()
+          SELECT ${A}, code, ${ctx.conversationId}::uuid, ${ctx.leadId}::uuid, ${propId}::uuid, ${q},
+                 -- STORE CANONICAL. leads.language still holds legacy 'no' for
+                 -- Norwegian; writing it through unchanged is what spread the
+                 -- split into new tables. Normalising on write means every row
+                 -- created from here on is comparable without a translator.
+                 ${normalizeLeadLanguage(ctx.leadLanguage) ?? ctx.leadLanguage}, ${cat}, now()
             FROM next_code
           RETURNING id, short_code
         `);

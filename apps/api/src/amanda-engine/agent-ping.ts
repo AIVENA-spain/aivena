@@ -137,11 +137,19 @@ export async function pingTick(nowMs: number = Date.now()): Promise<PingOutcome[
       const res = await sendToAgent({ toE164: agent.whatsapp_e164, fromE164: ctx.fromNumber, body });
 
       await withAgency(agencyId, async (tx) => {
+        // A FAILED send must stay retryable. The claim row is what makes a
+        // duplicate ping impossible, but leaving it in place after a failure
+        // meant the next tick hit the conflict, skipped with
+        // "already_pinged_this_agent", and that agent could NEVER be asked this
+        // question again — one Twilio blip and the question silently died.
+        // Nulling the key frees it from the partial unique index while keeping
+        // the row as an audit record of what went wrong.
         await tx.execute(sql`
           UPDATE agent_messages
              SET status = ${res.ok ? 'sent' : 'failed'},
                  provider_message_id = ${res.providerMessageId},
-                 failure_reason = ${res.failure}
+                 failure_reason = ${res.failure},
+                 idempotency_key = CASE WHEN ${res.ok} THEN idempotency_key ELSE NULL END
            WHERE id = ${claimed}::uuid
         `);
         if (res.ok) {

@@ -467,11 +467,43 @@ export function deriveSlots(p: DeriveProperty, agency: DeriveAgency, templateId:
 // contrast-aware agency brand palette (navy on light, cream/gold on dark). Structural roles keep template
 // defaults. brand = the agency's own colours (prod: agency_branding; harness: the fixture). palette_locked
 // templates ignore this entirely (the caller passes {} for those).
+/** Christian 2026-08-31: "for me whats important is that all the templates has editable colors and
+ *  that the colors are actually correct not hardcoded in."
+ *
+ *  Six roles were seeded from the brand and thirteen were not, so a new post started in the
+ *  template's designed colours for everything else. Counted across the manifests: `cta` appears in
+ *  43 templates and is unlocked in 41 of them, `divider` unlocked in 24, `badge.fill` in 22,
+ *  `icon` in 13 — none of them following the agency. And two roles are literally NAMED for the
+ *  brand, `brand.primary` and `brand.accent`, and did not follow it either. That is an omission,
+ *  not a design decision: the precedent that an unlocked role takes the agency's colour was
+ *  already set by the six that did.
+ *
+ *  A LOCKED token still keeps its design default — that is how a template protects a colour it
+ *  genuinely owns — and `background` is deliberately left out here; see the note below. */
+function mixHex(a: string, b: string, aShare: number): string {
+  const c = (h: string) => [1, 3, 5].map((i) => parseInt(h.replace("#", "#").slice(i, i + 2), 16));
+  const [x, y] = [c(a), c(b)];
+  const t = Math.min(1, Math.max(0, aShare));
+  return "#" + x.map((v, i) => Math.round(v * t + y[i] * (1 - t)).toString(16).padStart(2, "0")).join("");
+}
+
 export function agencyPalette(m: EditableManifest, brand: BrandColours): Palette {
   const dark = lumaHex(m.colour_tokens["background"]?.default || "#ffffff") < 128;
+  const onGround = dark ? brand.cream : brand.text;      // type that sits on the page
+  const shared: Palette = {
+    accent: brand.gold,
+    cta: brand.gold,
+    divider: brand.gold,
+    icon: brand.gold,
+    "icon.fill": brand.gold,
+    "brand.primary": brand.navy,
+    "brand.accent": brand.gold,
+    "text.primary": onGround,
+    "text.muted": mixHex(onGround, dark ? brand.navy : brand.cream, 0.7),
+  };
   return dark
-    ? { title: brand.cream, "subtitle/body": brand.cream, accent: brand.gold, "stat.value": brand.gold, "stat.label": brand.cream, "badge.text": brand.gold }
-    : { title: brand.navy, "subtitle/body": brand.text, accent: brand.gold, "badge.text": brand.navy, "stat.label": brand.navy, "stat.value": brand.text };
+    ? { ...shared, title: brand.cream, "subtitle/body": brand.cream, "stat.value": brand.gold, "stat.label": brand.cream, "badge.text": brand.gold, "badge.fill": brand.navy }
+    : { ...shared, title: brand.navy, "subtitle/body": brand.text, "badge.text": brand.navy, "stat.label": brand.navy, "stat.value": brand.text, "badge.fill": brand.cream };
 }
 
 // inject the derived slot text into a copy of the manifest (never mutates the original).

@@ -112,3 +112,43 @@ describe('resolvePreferredDay — a day without a time is still a day', () => {
     expect(resolvePreferredDay('', MON, TZ)).toBeNull();
   });
 });
+
+/**
+ * The resolver spoke English and Spanish while the product promises 13
+ * languages — so "torsdag", "Donnerstag" and "czwartek" were all unreadable and
+ * every non-EN/ES buyer naming a day fell back to generic times. Found the
+ * moment before a Norwegian buyer was about to test it (2026-08-31).
+ */
+describe('weekdays are understood in every supported language', () => {
+  const TZ = 'Europe/Madrid';
+  const MON = Date.parse('2026-08-31T14:00:00Z');   // Monday 31 Aug, 16:00 Madrid
+  const THU = { year: 2026, month: 9, day: 3 };
+
+  it('Thursday, in all thirteen', () => {
+    for (const word of [
+      'thursday', 'jueves', 'donnerstag', 'donderdag', 'jeudi', 'giovedi',
+      'quinta', 'czwartek', 'torsdag', 'torstai', 'четверг',
+    ]) {
+      expect(resolvePreferredDay(word, MON, TZ), `failed for "${word}"`).toEqual(THU);
+    }
+  });
+
+  it('Nordic ø survives normalisation, and the ASCII spelling works too', () => {
+    // ø is its own letter and does NOT decompose, unlike Swedish ö.
+    const SAT = { year: 2026, month: 9, day: 5 };
+    expect(resolvePreferredDay('lørdag', MON, TZ)).toEqual(SAT);
+    expect(resolvePreferredDay('lordag', MON, TZ)).toEqual(SAT);
+    expect(resolvePreferredDay('lördag', MON, TZ)).toEqual(SAT);
+  });
+
+  it('a real sentence, not just the bare word', () => {
+    expect(resolvePreferredDay('Jeg er ledig hele torsdag', MON, TZ)).toEqual(THU);
+    expect(resolvePreferredDay('passt mir am Donnerstag', MON, TZ)).toEqual(THU);
+  });
+
+  it('a full date-and-time still resolves in another language', () => {
+    const r = resolveDatetimePhrase('torsdag kl 17:00', MON, TZ);
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.explicit.weekday).toBe('thursday');
+  });
+});

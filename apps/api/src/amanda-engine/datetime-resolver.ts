@@ -22,6 +22,46 @@ export type ResolveResult = ResolveOk | ResolveFail;
 
 const WEEKDAYS_EN = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 const WEEKDAYS_ES = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
+
+/**
+ * Weekday names in EVERY language AIVENA supports, index 0 = Sunday.
+ *
+ * This resolver understood English and Spanish only — so a Norwegian buyer
+ * saying "torsdag", a German saying "Donnerstag" or a Pole saying "czwartek"
+ * was simply not understood, and the booking fell back to generic times. For a
+ * product whose whole promise is answering people in their own language, the
+ * part that reads WHEN they are free spoke two of thirteen (found 2026-08-31,
+ * about to be tested by a Norwegian buyer).
+ *
+ * Written accent-stripped, because the caller strips first — but note that
+ * strip only removes COMBINING marks: Swedish 'söndag' folds to 'sondag' while
+ * Norwegian 'søndag' keeps its ø, since ø is its own letter and does not
+ * decompose. Both spellings are listed, along with the ASCII forms people
+ * actually type on a phone.
+ */
+const WEEKDAYS_ALL: string[][] = [
+  // Sunday
+  ['sunday', 'domingo', 'sonntag', 'zondag', 'dimanche', 'domenica', 'niedziela',
+   'sondag', 'søndag', 'sunnuntai', 'воскресенье'],
+  // Monday
+  ['monday', 'lunes', 'montag', 'maandag', 'lundi', 'lunedi', 'segunda', 'poniedzialek',
+   'mandag', 'maanantai', 'понедельник'],
+  // Tuesday
+  ['tuesday', 'martes', 'dienstag', 'dinsdag', 'mardi', 'martedi', 'terca', 'wtorek',
+   'tisdag', 'tirsdag', 'tiistai', 'вторник'],
+  // Wednesday
+  ['wednesday', 'miercoles', 'mittwoch', 'woensdag', 'mercredi', 'mercoledi', 'quarta',
+   'sroda', 'onsdag', 'keskiviikko', 'среда'],
+  // Thursday
+  ['thursday', 'jueves', 'donnerstag', 'donderdag', 'jeudi', 'giovedi', 'quinta',
+   'czwartek', 'torsdag', 'torstai', 'четверг'],
+  // Friday
+  ['friday', 'viernes', 'freitag', 'vrijdag', 'vendredi', 'venerdi', 'sexta', 'piatek',
+   'fredag', 'perjantai', 'пятница'],
+  // Saturday
+  ['saturday', 'sabado', 'samstag', 'zaterdag', 'samedi', 'sabato', 'sobota',
+   'lordag', 'lørdag', 'lauantai', 'суббота'],
+];
 const MONTHS_EN = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
 const MONTHS_ES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 
@@ -105,8 +145,12 @@ export function resolveDatetimePhrase(phrase: string, nowUtcMs: number, timeZone
   if (!target) {
     // Weekday name → nearest future occurrence (today allowed only with a
     // still-future time; plain weekday today means NEXT week's, clarified by echo).
-    for (const [idx, names] of WEEKDAYS_EN.map((w, i) => [i, [w, WEEKDAYS_ES[i]]] as const)) {
-      if (names.some((n) => new RegExp(`\\b${n}\\b`).test(p))) {
+    for (const [idx, names] of WEEKDAYS_ALL.map((n, i) => [i, n] as const)) {
+      // Unicode-aware boundary. \b is defined on ASCII word characters only, so
+      // \bчетверг\b never matches — Cyrillic letters are not \w. Every
+      // non-Latin language would have silently failed this lookup while the
+      // Latin ones passed, which is the worst kind of half-working.
+      if (names.some((n) => new RegExp(`(?<![\\p{L}\\p{N}])${n}(?![\\p{L}\\p{N}])`, 'u').test(p))) {
         let delta = (idx - now.weekday + 7) % 7;
         if (delta === 0) {
           const sameDayOk = time && typeof time === 'object' && (time.hour > now.hour || (time.hour === now.hour && time.minute > now.minute));

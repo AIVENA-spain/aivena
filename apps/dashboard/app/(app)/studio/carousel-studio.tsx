@@ -127,7 +127,7 @@ function readSlots(v: SlotCols & { navy?: string; gold?: string }): SlotCols {
   };
 }
 
-export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId }: { initialTopic?: string; initialLanguage?: string; resumeGenId?: string } = {}) {
+export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId, brand }: { initialTopic?: string; initialLanguage?: string; resumeGenId?: string; brand?: { main: string; accent: string; paper: string; ink: string } } = {}) {
   const [phase, setPhase] = useState<Phase>("form");   // tips-only: land straight on the form
   const [ctype] = useState<CarouselType>("tips");
   const [slides, setSlides] = useState<string[]>([]);
@@ -157,10 +157,11 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
   // optional two-colour override (Christian 2026-08-28: "choose from a color wheel two colors
   // for details for all of the templates including the image ones") — off = agency brand
   const [customColours, setCustomColours] = useState(false);
-  const [colMain, setColMain] = useState("#1a2b4a");
-  const [colAccent, setColAccent] = useState("#c8a24b");
-  const [colPaper, setColPaper] = useState("#f4f1ea");
-  const [colInk, setColInk] = useState("#333333");
+  // open on the agency's OWN colours — a picker that starts on stock values quietly ships them
+  const [colMain, setColMain] = useState(brand?.main ?? "#1a2b4a");
+  const [colAccent, setColAccent] = useState(brand?.accent ?? "#c8a24b");
+  const [colPaper, setColPaper] = useState(brand?.paper ?? "#f4f1ea");
+  const [colInk, setColInk] = useState(brand?.ink ?? "#333333");
   // colours are also editable on the FINISHED deck (Christian 2026-08-28: "sometimes you chose
   // wrong just and need to change to see") — re-renders from stored artwork, no regeneration
   const [resColMain, setResColMain] = useState("#1a2b4a");

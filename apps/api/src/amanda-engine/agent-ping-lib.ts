@@ -33,7 +33,9 @@ export type PickReason =
 export interface PickResult {
   agent: PingableAgent | null;
   reason: PickReason;
-  /** True when we had to ignore the language preference to reach anyone. */
+  /** The chosen agent does not share the buyer's language. Informational only:
+   *  the question goes out in the AGENCY's language and Amanda translates the
+   *  answer, so this is never a failure and must never be shown as one. */
   languageCompromise: boolean;
 }
 
@@ -79,11 +81,16 @@ export function windowOpen(agent: PingableAgent, atMs: number): boolean {
  * Pick who to ask.
  *
  * Order of preference: speaks the buyer's language AND on shift → on shift in
- * any language → nobody. Being ON SHIFT is never traded away: texting an agent
- * outside their hours is the thing the roster explicitly promised not to do,
- * whereas answering in a shared language is a preference we can compromise on
- * and flag. Ties break on the fewest pings so far, then on name, so the same
- * inputs always choose the same person.
+ * any language → nobody.
+ *
+ * ON SHIFT is a hard gate — texting an agent outside their hours is the one
+ * thing the roster explicitly promised not to do. LANGUAGE is only a nicety:
+ * the question is written in the agency's own language and Amanda translates
+ * the answer, so any agent can handle any buyer. Matching languages just means
+ * they can read the buyer's exact words.
+ *
+ * Ties break on the fewest pings so far, then on name, so the same inputs
+ * always choose the same person.
  */
 export function pickAgent(
   agents: PingableAgent[],
@@ -115,8 +122,16 @@ export function pickAgent(
     : [];
   if (speaks.length > 0) return { agent: order(speaks)[0], reason: 'ok', languageCompromise: false };
 
-  // On shift but nobody speaks them: still ask someone — an agent who reads the
-  // question in English and answers is far better than a buyer waiting — but
-  // say so, so the caller can note it rather than pretend it was a clean match.
+  // Nobody on shift shares the buyer's language — and that is FINE, not a
+  // degraded outcome (Christian 2026-08-31: "if a agent isnt available that
+  // speaks the language, its no problem, we have designed the system for
+  // anyways asking agent questions in the selected dashboard language and if
+  // its english they will always be able to understand, thats the whole point").
+  //
+  // The agent is never asked to speak to the buyer: they answer AIVENA in the
+  // agency's own language and Amanda translates the reply. So language here is
+  // a nicety — it lets a Norwegian agent read a Norwegian buyer's exact words
+  // — never a requirement. The flag stays so callers can log which happened; it
+  // must not be surfaced to anyone as a problem.
   return { agent: order(onShift)[0], reason: 'ok', languageCompromise: Boolean(lang) };
 }

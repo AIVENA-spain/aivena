@@ -61,12 +61,15 @@ describe('pickAgent', () => {
     expect(r.languageCompromise).toBe(false);
   });
 
-  it('NEVER trades away being on shift — that is the roster\'s actual promise', () => {
+  it('NEVER trades away being on shift; a language mismatch is fine and merely noted', () => {
     const rightLangOffShift = agent({ id: 'nb', languages: ['nb'], work_hours: { '6': [10] } });
     const wrongLangOnShift = agent({ id: 'es', full_name: 'Ana', languages: ['es'] });
     const r = pickAgent([rightLangOffShift, wrongLangOnShift], 'nb', MON_10_MADRID, MADRID);
     expect(r.agent?.id).toBe('es');
-    expect(r.languageCompromise).toBe(true);   // flagged, not hidden
+    // Noted for logs only. The question goes out in the AGENCY's language and
+    // Amanda translates the answer, so this is not a degraded outcome
+    // (Christian 2026-08-31: "its no problem ... thats the whole point").
+    expect(r.languageCompromise).toBe(true);
   });
 
   it('nobody on shift → nobody is texted, with the reason', () => {

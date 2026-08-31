@@ -76,6 +76,14 @@ type RawTask = {
   title: string | null;
   body: string | null;
   created_at: Date | string | null;
+  property_id: string | null;
+  property_ref: string | null;
+  property_title: string | null;
+  property_city: string | null;
+  property_type: string | null;
+  property_bedrooms: number | string | null;
+  property_price: number | string | null;
+  property_image: string | null;
 };
 type RawLife = {
   lead_id: string;
@@ -141,9 +149,28 @@ route.get('/', async (c) => {
                dt.temperature,
                dt.title,
                dt.message_body AS body,
-               dt.created_at
+               dt.created_at,
+               -- WHICH property the question is about (Christian 2026-08-31:
+               -- "it doesnt specify which property its about ... if the amanda
+               -- question could add the relevant property card on the side").
+               -- An agent picking this up was never in the conversation, so
+               -- "this villa" identifies nothing. Joined through the question's
+               -- own property_id, so it is the property Amanda actually had in
+               -- hand — never guessed from the text.
+               p.id            AS property_id,
+               p.external_id   AS property_ref,
+               p.title         AS property_title,
+               p.location_city AS property_city,
+               p.property_type AS property_type,
+               p.bedrooms      AS property_bedrooms,
+               p.price         AS property_price,
+               (COALESCE(p.images, '[]'::jsonb) -> 0 ->> 'url') AS property_image
           FROM public.dashboard_tasks dt
           LEFT JOIN public.leads l ON l.id = dt.lead_id
+          LEFT JOIN public.amanda_questions aq
+                 ON dt.task_type = 'amanda_question'
+                AND aq.id = NULLIF(dt.raw_payload->>'amanda_question_id', '')::uuid
+          LEFT JOIN public.properties p ON p.id = aq.property_id
          WHERE dt.agency_id = ${AGENCY_GUC}
            AND dt.status IN ('pending', 'open')
          ORDER BY dt.created_at DESC
@@ -160,6 +187,18 @@ route.get('/', async (c) => {
         title: x.title,
         body: x.body,
         created_at: toIso(x.created_at),
+        property: x.property_id
+          ? {
+              id: String(x.property_id),
+              ref: x.property_ref ?? null,
+              title: x.property_title ?? null,
+              city: x.property_city ?? null,
+              type: x.property_type ?? null,
+              bedrooms: x.property_bedrooms != null ? Number(x.property_bedrooms) : null,
+              price: x.property_price != null ? Number(x.property_price) : null,
+              image: x.property_image ?? null,
+            }
+          : null,
       }));
     },
     null,

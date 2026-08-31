@@ -644,7 +644,8 @@
       "bookAuto": "Amanda varaa ne itse",
       "bookReview": "Jokainen varaus odottaa sinua",
       "statusAuto": "AUTOMAATTINEN",
-      "askFirstHelp": "Mitä Amanda tekee kullekin juuri nyt — määräytyy yllä olevan automaation tason mukaan."
+      "askFirstHelp": "Mitä Amanda tekee kullekin juuri nyt — määräytyy yllä olevan automaation tason mukaan.",
+      "followupToneNone": "Sävyä ei ole vielä valittu."
     },
     "voice": {
       "title": "Ääni ja sävy",

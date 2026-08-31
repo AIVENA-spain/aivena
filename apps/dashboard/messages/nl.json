@@ -644,7 +644,8 @@
       "bookAuto": "Amanda boekt deze zelf",
       "bookReview": "Elke boeking wacht op jou",
       "statusAuto": "AUTOMATISCH",
-      "askFirstHelp": "Wat Amanda hier nu mee doet — bepaald door je automatiseringsniveau hierboven."
+      "askFirstHelp": "Wat Amanda hier nu mee doet — bepaald door je automatiseringsniveau hierboven.",
+      "followupToneNone": "Nog geen toon ingesteld."
     },
     "voice": {
       "title": "Stem & toon",

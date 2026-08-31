@@ -117,8 +117,12 @@ describe('computeReadiness — demo agency live fixture', () => {
     // demo has real successful Resend sends → send_proven=true (last 2026-06-15)
     expect(items['provider.email'].status).toBe('ready');
     const p = res.providers.find((x) => x.provider === 'email')!;
-    expect(p.detail).toContain('Email sending proven');
+    // Copy is presentation and may be rewritten; what must hold is that it
+    // reads as working and never invents a claim we cannot back.
+    expect(p.detail).toMatch(/sending/i);
     expect(p.detail).not.toMatch(/domain verified/i);
+    // Agency-facing: never engineering output (the reason this copy changed).
+    expect(p.detail).not.toMatch(/send_proven|from_email|=|_/);
   });
 
   it('email with from_email but NO proven send is "configured — sending not proven" (never faked/ready)', () => {
@@ -130,14 +134,18 @@ describe('computeReadiness — demo agency live fixture', () => {
     expect(e.status).toBe('live_but_unproven');
     expect(e.status).not.toBe('ready');
     const p = noSend.providers.find((x) => x.provider === 'email')!;
-    expect(p.detail).toBe('Email configured — sending not proven');
+    // Must NOT read as proven/working when it is not.
+    expect(p.detail).toMatch(/not been confirmed|not proven/i);
+    expect(p.detail).not.toMatch(/send_proven|=|_/);
   });
 
   it('WhatsApp degrades to unavailable when the RPC is not deployed (no fake state)', () => {
     expect(items['provider.whatsapp'].status).toBe('unavailable');
     const wa = res.providers.find((p) => p.provider === 'whatsapp')!;
     expect(wa.status).toBe('unavailable');
-    expect(wa.detail.toLowerCase()).toContain('not deployed');
+    // Status carries the truth; the copy must simply not fake availability.
+    expect(wa.detail.toLowerCase()).toContain('not available');
+    expect(wa.detail).not.toMatch(/sender_ready|channel_enabled|=/);
   });
 
   it('multilingual templates missing (English only)', () => {

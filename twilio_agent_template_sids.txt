@@ -1,2 +1,3 @@
 agent_shift_checkin_v1	en	HX992eb5dc739f85bcc85278e14821f6df	received
 agent_question_ping_v1	en	HXb94a3499e078018fb9ca87500820083e	received
+agent_question_ping_v2	en	HX8b6488cb44b89dc54d3e7b79f98824c6	received

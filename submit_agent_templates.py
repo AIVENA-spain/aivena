@@ -39,9 +39,12 @@ TEMPLATES = {
                  "Reply here and I'll send you client questions as they come in."),
         "variables": {"1": "Anna", "2": "Costa Homes Realty"},
     },
-    "agent_question_ping_v1": {
+    # v2: Meta REJECTED v1 — "Variables can't be at the start or end of the
+    # template", and v1 opened with {{1}}. Christian's approved wording is
+    # otherwise untouched; only a leading "Hi —" was added to satisfy the rule.
+    "agent_question_ping_v2": {
         "category": "UTILITY",
-        "body": ("{{1}} has a question about {{2}}. Reply to this message to answer "
+        "body": ("Hi — {{1}} has a question about {{2}}. Reply to this message to answer "
                  "and I'll pass it straight on."),
         "variables": {"1": "Marte", "2": "the villa in Quesada, ref IC-81596"},
     },

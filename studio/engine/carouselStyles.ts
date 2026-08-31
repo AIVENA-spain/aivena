@@ -2,7 +2,7 @@ import { renderFreeform, DesignSpec } from "./renderFreeform";
 import { textWidth } from "./renderEditable";
 import {
   CarouselPlan, renderPlannedCarousel, buildPlannedSpecs, getPlannedSerif, setPlannedSerif,
-  renderWideSliced, applyGrain, mix, wrap, chrome, visibleTone,
+  renderWideSliced, applyGrain, mix, wrap, chrome, visibleTone, hex6,
 } from "./carouselSlides";
 import { CarouselFacts, CarouselCopy, CarouselBrand, renderCarousel } from "./renderCarousel";
 
@@ -52,11 +52,44 @@ const TERRA_D = TERRA, OLIVE_D = OLIVE, LIME_D = LIME;
  *  could never reach them. When the agent has picked colours (lockPalette), the accents are
  *  rebuilt FROM those colours — the style keeps its structure and rhythm, in their palette.
  *  Set and restored around the synchronous spec build, exactly like the display face. */
+/** Christian 2026-08-31, having picked a brown #ab6d3b and a blue #a1cdce: "the blueish color i
+ *  chose doesnt look like this grey thing." He was right, and the cause was the first version of
+ *  this function. Deriving an accent by MIXING the two chosen colours cancels them whenever their
+ *  hues are far apart: his brown sits at hue 27 and his blue at 181, and mix(gold, navy, 0.72)
+ *  lands at hue 124, saturation 8% — a grey-green belonging to neither of them. Complementary
+ *  hues average to mud; that is arithmetic, not taste.
+ *
+ *  So an accent slot now takes its HUE AND SATURATION from ONE chosen colour and keeps its OWN
+ *  LIGHTNESS. The agent always sees a colour they actually picked, the roles stay as far apart in
+ *  value as the style designed them, and because lightness is preserved every RULE 1 measurement
+ *  lands where the layout expects it. */
+function reskin(source: string, slot: string): string {
+  const rgb = (h: string) => [1, 3, 5].map((i) => parseInt(hex6(h).slice(i, i + 2), 16) / 255);
+  const toHsl = (h: string) => {
+    const [r, g, b] = rgb(h);
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, d = mx - mn;
+    if (!d) return [0, 0, l];
+    const sat = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn);
+    const hue = mx === r ? ((g - b) / d + (g < b ? 6 : 0)) : mx === g ? ((b - r) / d + 2) : ((r - g) / d + 4);
+    return [hue / 6, sat, l];
+  };
+  const [h, sa] = toHsl(source);
+  const [, , li] = toHsl(slot);
+  if (!sa) return slot;                       // a neutral source has no hue to lend
+  const q = li < 0.5 ? li * (1 + sa) : li + sa - li * sa, p = 2 * li - q;
+  const ch = (t: number) => {
+    t = (t + 1) % 1;
+    const v = t < 1 / 6 ? p + (q - p) * 6 * t : t < 1 / 2 ? q : t < 2 / 3 ? p + (q - p) * (2 / 3 - t) * 6 : p;
+    return Math.round(v * 255).toString(16).padStart(2, "0");
+  };
+  return `#${ch(h + 1 / 3)}${ch(h)}${ch(h - 1 / 3)}`;
+}
+
 function useBrandAccents(brand: CarouselBrand): () => void {
   const prev: [string, string, string] = [TERRA, OLIVE, LIME];
-  TERRA = mix(brand.gold, brand.navy, 0.72);      // the warm accent slot
-  OLIVE = mix(brand.navy, brand.gold, 0.78);      // the deep secondary
-  LIME = mix(brand.cream, brand.gold, 0.94);      // the pale ground
+  TERRA = reskin(brand.navy, TERRA_D);       // the warm accent slot wears the MAIN colour
+  OLIVE = reskin(brand.gold, OLIVE_D);       // the deep secondary wears the ACCENT colour
+  LIME = reskin(brand.cream, LIME_D);        // the pale ground stays pale
   return () => { [TERRA, OLIVE, LIME] = prev; };
 }
 
@@ -250,7 +283,11 @@ function encaladaPlanned(plan: CarouselPlan, agency: string, contact: string, br
   }));
   const isQuote = plan.type === "quote";
   const n = isQuote ? plan.quote_parts.length : plan.tips.length;
-  const total = isQuote ? n + 3 : n + 2 + (includeContext ? 1 : 0) + (includeRecap ? 1 : 0);
+  // RULE 3 — the quote branch counted a context slide unconditionally while the builder below
+  // skips it when includeContext is false, so a 3-part quote deck built 5 slides and numbered
+  // them 01-04 then 06 of 06. include_context has no UI and defaults to false, so every quote
+  // deck through the API hit this. Both branches now count what is actually pushed.
+  const total = isQuote ? n + 2 + (includeContext ? 1 : 0) : n + 2 + (includeContext ? 1 : 0) + (includeRecap ? 1 : 0);
   const specs: unknown[] = [];
 
   // cover: pure type on limewash, sun mark, tile band as the single motif
@@ -357,7 +394,11 @@ function serenoPlanned(plan: CarouselPlan, agency: string, contact: string, bran
   const inkMuted = mix(NAVY, warm, 0.55);
   const isQuote = plan.type === "quote";
   const n = isQuote ? plan.quote_parts.length : plan.tips.length;
-  const total = isQuote ? n + 3 : n + 2 + (includeContext ? 1 : 0) + (includeRecap ? 1 : 0);
+  // RULE 3 — the quote branch counted a context slide unconditionally while the builder below
+  // skips it when includeContext is false, so a 3-part quote deck built 5 slides and numbered
+  // them 01-04 then 06 of 06. include_context has no UI and defaults to false, so every quote
+  // deck through the API hit this. Both branches now count what is actually pushed.
+  const total = isQuote ? n + 2 + (includeContext ? 1 : 0) : n + 2 + (includeContext ? 1 : 0) + (includeRecap ? 1 : 0);
   const spine = (i: number) => ({ type: "text", bbox: [980, 400, 1050, 950], content: `${agency.toUpperCase()} · Nº ${String(i).padStart(2, "0")} · MMXXVI`, font: "Glacial Indifference", size: 18, colour: inkMuted, tracking: 5, rotate: 90, align: "center" });
   const folioLine = (i: number, colour: string) => ({ type: "text", bbox: [96, 1240, 940, 1270], content: `Nº ${String(i).padStart(2, "0")} — ${String(total).padStart(2, "0")} · ${agency.toUpperCase()}`, font: "Jost", size: 16, colour, align: "left", tracking: 3 });
   const specs: unknown[] = [];
@@ -527,6 +568,13 @@ export const TYPE_EDITIONS: Record<string, StyleEdition[]> = {
 export async function renderPlannedStyled(
   style: CarouselStyle, plan: CarouselPlan, agency: string, contact: string, brand: CarouselBrand, lang = "es",
   edition = 0, lockPalette = false, includeContext = true, includeRecap = true,
+  // lockPalette was doing two unrelated jobs at once: "keep the edition out of these colours" and
+  // "rebuild the style's signature accents from them". Fused, a per-slide override on an
+  // otherwise-untouched deck had to lock the edition out (or the edition simply overwrote the
+  // agent's colour and the override did nothing) — and in doing so it also repainted that one
+  // slide's paper and accents out of the deck. They are now separate: an override locks the
+  // edition for its slide; only a deck the agent actually chose colours for derives the accents.
+  deriveAccents = lockPalette,
 ): Promise<Buffer[]> {
   const eds = TYPE_EDITIONS[style] ?? [{}];
   const ed = eds[((edition % eds.length) + eds.length) % eds.length] ?? {};
@@ -542,7 +590,7 @@ export async function renderPlannedStyled(
   const prevFR = FR, prevSerif = getPlannedSerif();
   if (ed.display) { FR = ed.display; setPlannedSerif(ed.display); }
   // the agent's chosen colours reach the styles' signature accents too
-  const restoreAccents = lockPalette ? useBrandAccents(b) : () => { [TERRA, OLIVE, LIME] = [TERRA_D, OLIVE_D, LIME_D]; };
+  const restoreAccents = deriveAccents ? useBrandAccents(b) : () => { [TERRA, OLIVE, LIME] = [TERRA_D, OLIVE_D, LIME_D]; };
   let specs: unknown[];
   let grain = 0;
   try {

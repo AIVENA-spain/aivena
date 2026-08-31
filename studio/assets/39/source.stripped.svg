@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1080" height="1350" viewBox="0 0 1080 1350">
+  <!-- Template 39 "La Mesa" — CC-authored 1-photo (2026-07-15), sibling of La Ventana.
+       THE IDEA: a Spanish breakfast table, seen from above — the listing lies on it as a fresh print
+       among café con leche, orange slices, an open abanico fan, an olive sprig... and one cat paw
+       reaching for the photo. Tablecloth is engine-painted (recolourable). All text engine-drawn. -->
+  <defs>
+    <clipPath id="print"><rect x="168" y="188" width="744" height="596"/></clipPath>
+    <pattern id="linen" width="14" height="14" patternUnits="userSpaceOnUse">
+      <path d="M 0 7 L 14 7" stroke="#2c2a26" stroke-opacity="0.035" stroke-width="1"/>
+      <path d="M 7 0 L 7 14" stroke="#2c2a26" stroke-opacity="0.035" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect x="0" y="0" width="1080" height="1350" fill="url(#linen)"/>
+
+  <!-- the photograph, printed and laid on the table -->
+  <g transform="rotate(-2.5 540 486)">
+    <rect x="134" y="158" width="812" height="672" fill="#2c2a26" fill-opacity="0.10" transform="translate(10,14)"/>
+    <rect x="134" y="158" width="812" height="672" fill="#ffffff"/>
+    <g clip-path="url(#print)"><image x="168" y="188" width="744" height="596" xlink:href="@@PHOTO0@@" preserveAspectRatio="xMidYMid slice"/></g>
+  </g>
+
+  <!-- café con leche, top-right -->
+  <g transform="translate(936,120)">
+    <ellipse cx="0" cy="6" rx="94" ry="88" fill="#e9dfc9"/>
+    <ellipse cx="0" cy="6" rx="93" ry="87" fill="none" stroke="#b8a67f" stroke-width="2"/>
+    <circle cx="0" cy="0" r="58" fill="#ffffff"/>
+    <circle cx="0" cy="0" r="57" fill="none" stroke="#b8a67f" stroke-width="2"/>
+    <circle cx="0" cy="0" r="44" fill="#6b4a32"/>
+    <path d="M -18 -8 C -6 -22 10 -20 16 -6 C 22 6 10 18 -2 14 C 8 10 12 2 6 -6 C 0 -14 -12 -12 -18 -8 Z" fill="#e9dfc9"/>
+    <rect x="52" y="44" width="58" height="9" rx="4.5" fill="#b8a67f" transform="rotate(38 52 44)"/>
+  </g>
+
+  <!-- orange slices + leaf, top-left -->
+  <g transform="translate(112,120)">
+    <circle cx="0" cy="0" r="62" fill="#cf7a3a"/>
+    <circle cx="0" cy="0" r="52" fill="#f0b169"/>
+    <g stroke="#cf7a3a" stroke-width="4">
+      <path d="M 0 -48 L 0 48 M -48 0 L 48 0 M -34 -34 L 34 34 M 34 -34 L -34 34"/>
+    </g>
+    <circle cx="0" cy="0" r="7" fill="#cf7a3a"/>
+  </g>
+  <g transform="translate(212,196)">
+    <circle cx="0" cy="0" r="40" fill="#cf7a3a"/>
+    <circle cx="0" cy="0" r="33" fill="#f0b169"/>
+    <g stroke="#cf7a3a" stroke-width="3"><path d="M 0 -30 L 0 30 M -30 0 L 30 0 M -21 -21 L 21 21 M 21 -21 L -21 21"/></g>
+    <circle cx="0" cy="0" r="5" fill="#cf7a3a"/>
+  </g>
+  <path d="M 60 208 C 78 196 100 196 114 208 C 96 218 74 218 60 208 Z" fill="#5c6b4e"/>
+
+  <!-- the abanico: an open fan, bottom-left -->
+  <g transform="translate(150,1210) rotate(-14)">
+    <path d="M 0 0 L -156 -104 A 188 188 0 0 1 156 -104 Z" fill="#bf5b3d"/>
+    <path d="M 0 0 L -128 -86 A 154 154 0 0 1 128 -86 Z" fill="#d99a3d"/>
+    <path d="M 0 0 L -156 -104 M 0 0 L -108 -136 M 0 0 L -38 -168 M 0 0 L 38 -168 M 0 0 L 108 -136 M 0 0 L 156 -104" stroke="#8a4a2e" stroke-width="4" fill="none"/>
+    <path d="M -156 -104 A 188 188 0 0 1 156 -104" fill="none" stroke="#8a4a2e" stroke-width="4"/>
+    <circle cx="0" cy="0" r="11" fill="#8a4a2e"/>
+  </g>
+
+  <!-- olive sprig, mid-right margin -->
+  <g transform="translate(1008,760)">
+    <path d="M 0 -90 C -10 -50 -10 40 0 92" stroke="#5c6b4e" stroke-width="4" fill="none"/>
+    <path d="M -2 -60 c -20 -4 -32 -14 -36 -28 c 16 2 30 12 36 28 z" fill="#5c6b4e"/>
+    <path d="M 0 -6 c 18 -8 26 -20 26 -34 c -15 5 -25 17 -26 34 z" fill="#5c6b4e"/>
+    <path d="M -2 50 c -18 -6 -28 -16 -32 -30 c 15 3 27 14 32 30 z" fill="#5c6b4e"/>
+    <ellipse cx="10" cy="-44" rx="9" ry="12" fill="#3d4a35"/>
+    <ellipse cx="-12" cy="22" rx="9" ry="12" fill="#3d4a35"/>
+  </g>
+
+  <!-- sugar cubes + scattered crumbs near the cup -->
+  <g transform="translate(812,262)">
+    <rect x="0" y="0" width="30" height="30" rx="6" fill="#ffffff" stroke="#c9bda5" stroke-width="2" transform="rotate(12)"/>
+    <rect x="34" y="14" width="30" height="30" rx="6" fill="#ffffff" stroke="#c9bda5" stroke-width="2" transform="rotate(-8 49 29)"/>
+  </g>
+  <g fill="#b8a67f">
+    <circle cx="742" cy="128" r="3.5"/><circle cx="768" cy="150" r="2.6"/><circle cx="800" cy="118" r="3"/>
+    <circle cx="292" cy="102" r="3"/><circle cx="318" cy="84" r="2.4"/>
+  </g>
+
+  <!-- crumbs and a stray leaf across the bottom of the table -->
+  <g fill="#b8a67f">
+    <circle cx="472" cy="1268" r="3.2"/><circle cx="502" cy="1290" r="2.4"/><circle cx="540" cy="1272" r="3"/>
+    <circle cx="590" cy="1302" r="2.6"/><circle cx="628" cy="1280" r="3.2"/>
+  </g>
+  <path d="M 664 1310 C 680 1298 700 1298 712 1310 C 696 1319 676 1319 664 1310 Z" fill="#5c6b4e"/>
+
+  <!-- the cat paw, reaching for the photo from the bottom-right edge -->
+  <g fill="#2c2a26" transform="translate(1010,1330) rotate(-38)">
+    <path d="M 0 0 C -10 -34 -6 -70 8 -96 C 26 -122 62 -122 80 -96 C 94 -70 98 -34 88 0 C 70 14 18 14 0 0 Z"/>
+    <ellipse cx="20" cy="-96" rx="12" ry="16" />
+    <ellipse cx="46" cy="-106" rx="12" ry="16"/>
+    <ellipse cx="70" cy="-94" rx="11" ry="15"/>
+  </g>
+  <g fill="#4a4640" transform="translate(1010,1330) rotate(-38)">
+    <ellipse cx="22" cy="-92" rx="6" ry="9"/>
+    <ellipse cx="46" cy="-101" rx="6" ry="9"/>
+    <ellipse cx="68" cy="-90" rx="5.5" ry="8.5"/>
+    <ellipse cx="44" cy="-58" rx="17" ry="20"/>
+  </g>
+</svg>

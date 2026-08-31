@@ -120,7 +120,14 @@ export async function renderTipsImageStyled(
   ];
   const aiTag = (_colour: string, _onLeft = false) =>
     ({ type: "text", bbox: [0, 0, 8, 8], content: "", font: "Jost", size: 14, colour: "#000000" });  // disclosure tag disabled (Christian 2026-07-17)
-  const noShield = (e: Record<string, unknown>) => ({ ...e, shield: false });
+  // RULE 1 covers all fourteen styles or it covers none. shield:false was being applied to the
+  // COPY on these decks — the hook, the eyebrow, the chrome band, the mid-deck moment line — over
+  // KIE artwork whose luminance is unknown by definition. So on an image deck the headline was
+  // the one element never measured, while the tip body beside it was measured and given its soft
+  // band. The documented rationale for the opt-out ("the ground is known-light") cannot hold on a
+  // generated ground. The opt-out now survives only for elements that draw nothing — the disabled
+  // disclosure stub — and every piece of real copy is measured like copy everywhere else.
+  const noShield = (e: Record<string, unknown>) => (String(e.content ?? "").trim() ? e : { ...e, shield: false });
 
   const specs: unknown[] = [];
 
@@ -307,7 +314,14 @@ export async function renderTipsImageStyledV2(
   ];
   const aiTag = (_colour: string, _onLeft = false) =>
     ({ type: "text", bbox: [0, 0, 8, 8], content: "", font: "Jost", size: 14, colour: "#000000" });  // disclosure tag disabled (Christian 2026-07-17)
-  const noShield = (e: Record<string, unknown>) => ({ ...e, shield: false });
+  // RULE 1 covers all fourteen styles or it covers none. shield:false was being applied to the
+  // COPY on these decks — the hook, the eyebrow, the chrome band, the mid-deck moment line — over
+  // KIE artwork whose luminance is unknown by definition. So on an image deck the headline was
+  // the one element never measured, while the tip body beside it was measured and given its soft
+  // band. The documented rationale for the opt-out ("the ground is known-light") cannot hold on a
+  // generated ground. The opt-out now survives only for elements that draw nothing — the disabled
+  // disclosure stub — and every piece of real copy is measured like copy everywhere else.
+  const noShield = (e: Record<string, unknown>) => (String(e.content ?? "").trim() ? e : { ...e, shield: false });
   const specs: unknown[] = [];
 
   // 1 · COVER — identical grammar to V1

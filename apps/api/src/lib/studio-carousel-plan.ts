@@ -130,13 +130,23 @@ const CLAUSE_STARTERS = [
   'oni', 'ono', 'to', 'my', 'ty',
   'они', 'это', 'мы', 'вы', 'он', 'она', 'оно',
 ];
+// A subordinate opener makes the comma structural, not a splice: "If you want a quick sale, you
+// need a realistic price" is one correct sentence. Without this the wider sweep below would
+// convert it, and a gate that damages good copy is worse than one that misses bad copy.
+const SUBORDINATE_OPENER = /^(if|when|while|because|since|after|before|although|though|unless|until|whenever|wherever|as|si|cuando|mientras|porque|aunque|hasta|wenn|wenn|weil|obwohl|während|bevor|nachdem|falls|quand|lorsque|parce|bien|si|als|omdat|terwijl|hoewel|voordat|quando|mentre|perché|sebbene|quando|porque|embora|när|medan|eftersom|när|fordi|hvis|mens|selv|jos|kun|koska|vaikka|jeśli|kiedy|ponieważ|chociaż|если|когда|потому|хотя)\b/i;
+
 export function oneSentence(text: string): string {
   const t = (text ?? '').trim();
   if (!t) return t;
-  // only the FIRST comma splice matters — a headline is short by construction
-  return t.replace(/,\s+([^\s,]+)/, (m, next: string) => {
-    const w = String(next).toLowerCase().replace(/[^\p{L}]/gu, '');
-    return CLAUSE_STARTERS.includes(w) ? ` — ${next}` : m;
+  // EVERY comma, not only the first. Checking one comma meant the module's own teaching example
+  // of a splice — "In a new place, buyers hesitate, they need a plan" — passed untouched, because
+  // the first comma is not the splice. Subordinate-opener lines are left alone entirely.
+  if (SUBORDINATE_OPENER.test(t)) return t;
+  return t.replace(/,(\s+)([^\s,]+)/g, (m, gap: string, next: string) => {
+    // "you'll" must truncate AT the apostrophe, not concatenate across it — stripping every
+    // non-letter turned it into "youll", so no contracted pronoun was ever recognised.
+    const w = String(next).toLowerCase().split(/['\u2019]/)[0].replace(/[^\p{L}]/gu, '');
+    return CLAUSE_STARTERS.includes(w) ? ` —${gap}${next}` : m;
   });
 }
 
@@ -180,7 +190,12 @@ export function topicIsHeadline(topic: string): boolean {
   const t = (topic ?? '').trim();
   if (t.length < 18 || t.length > 90) return false;
   if (/^(how to|what to|tips? (on|for)|guide to|ideas? for|about|write|make|create)\b/i.test(t)) return false;
-  if (/[:;]\s/.test(t)) return false;
+  // A colon does NOT make a line a brief — it is one of the commonest shapes a headline takes.
+  // Christian picked "Retiring here isn't just about the sun: what your week actually looks like",
+  // this rule alone rejected it, the writer treated it as a subject and returned "What your week
+  // actually looks like here" — dropping the retirees the whole post was aimed at. A semicolon
+  // still reads as a note to the writer rather than a line anyone would set in type.
+  if (/;\s/.test(t)) return false;
   return /\s/.test(t);
 }
 
@@ -243,8 +258,13 @@ function trimToCaps(input: Record<string, unknown>): void {
 
 /** Doctrine + honesty gate on the generated copy (client quotes exempt — they're the client's words). */
 function planIssues(p: CarouselPlan, quoteSource: string): string | null {
+  // Hand-maintained field list, and it had drifted behind the schema: caption, eyebrow and
+  // cta_keyword were all missing. The first two print on the post and the slide; the third
+  // prints in the closing pill. A price or percentage claim in any of them walked straight
+  // past the honesty gate that exists to stop exactly that.
   const advice = [p.hook_title, p.slide2_title, p.slide2_body, p.cta_heading, p.cta_action,
-    p.agency_line, p.recap_title, p.save_line, ...p.tips.flatMap((t) => [t.title, t.body, t.teaser])];
+    p.agency_line, p.recap_title, p.save_line, p.caption, p.eyebrow, p.cta_keyword,
+    ...p.tips.flatMap((t) => [t.title, t.body, t.teaser])];
   const priced = advice.find((t) => t && BANNED.test(t));
   if (priced) return `copy contains a price/percentage claim ("${priced.slice(0, 60)}") — general advice only, no figures`;
   if (p.type === 'tips' && WEAK_HOOK.test(p.hook_title.trim())) {
@@ -395,7 +415,17 @@ export async function editPlan(plan: CarouselPlan, topic: string, language = 'es
   // RULE 4 — the deterministic detector names the exact sentences that assert an absolute about
   // a regulated subject, so the editor verifies or hedges THOSE rather than re-reading blind.
   const flagged = riskyClaims(plan);
-  const prompt = `You are the skeptical EDITOR at a real-estate agency on the Spanish coast. The reader of this Instagram carousel is a potential client — every slide must make sense on first read, teach something useful, and sound like an agent they can trust. Review the plan below and correct ONLY what fails.
+  // Christian's 2026-08-30 English deck came back with recap_title translated INTO Spanish, and
+  // the editor's own note said it had "corrected" it. The prompt casts the editor as working on
+  // the Spanish coast and never once states the deck's language, so with nothing to anchor to it
+  // inferred Spanish and rewrote a field. The deck's language is not the editor's to revisit.
+  const LANGS: Record<string, string> = { es: 'Spanish', en: 'English', de: 'German', fr: 'French', nl: 'Dutch', sv: 'Swedish', no: 'Norwegian', da: 'Danish', fi: 'Finnish', pl: 'Polish', ru: 'Russian', it: 'Italian', pt: 'Portuguese' };
+  const deckLang = LANGS[language] ?? 'Spanish';
+  const prompt = `You are the skeptical EDITOR at a real-estate agency on the Spanish coast.
+
+THIS DECK IS WRITTEN IN ${deckLang.toUpperCase()}. Every field you return must stay in ${deckLang}. The
+language was chosen by the agent, not by you — never translate a field, and never "correct" one that
+looks out of place to you. If a field is already in ${deckLang}, leave its language alone. The reader of this Instagram carousel is a potential client — every slide must make sense on first read, teach something useful, and sound like an agent they can trust. Review the plan below and correct ONLY what fails.
 
 POST TOPIC: "${topic}"${flagged.length ? `
 
@@ -673,7 +703,18 @@ Submit with the submit_remix tool.`;
       hook_title: z.string().min(1).max(90),
       swipe_cue: z.string().min(1).max(18),
     }).safeParse(input);
-    return out.success ? { ...out.data, hook_title: oneSentence(out.data.hook_title) } : null;
+    if (!out.success) return null;
+    const hook = oneSentence(out.data.hook_title);
+    // "Try a new angle" writes a brand-new cover and, until now, nothing checked it. The normal
+    // path puts every hook through planIssues (RULE 4's price/percentage ban and the weak-opener
+    // ban) and through riskyClaims -> the editor's verification block. The remix path has no
+    // editor pass at all, so a remixed cover could assert a price, a percentage, or a flat legal
+    // absolute — "Without a Spanish bank account you cannot sell your home" — with no gate
+    // between the model and the slide. A cover is the most-read line in the deck; the false ones
+    // are rejected here rather than shipped, and the route already tells the agent to try again.
+    if (BANNED.test(hook) || WEAK_HOOK.test(hook.trim())) return null;
+    if (riskyClaims({ ...plan, hook_title: hook } as CarouselPlan).length) return null;
+    return { ...out.data, hook_title: hook };
   } catch {
     return null;
   }

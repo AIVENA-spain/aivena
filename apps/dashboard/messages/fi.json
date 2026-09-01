@@ -999,6 +999,31 @@
       "assistedDesc": "Amanda vastaa kysymyksiin ja lähettää ne vastaukset itse. Kaikki sinua sitova — esittelyn varaaminen, siirto tai peruutus — odottaa tiimisi yhtä napautusta.",
       "fullLabel": "Vastaa ja varaa",
       "fullDesc": "Amanda vastaa ja varaa esittelyt itse, kalenterisi aikojen sisällä."
+    },
+    "markets": {
+      "intro": "Mistä maista ostajasi ja myyjäsi todella tulevat. Sisältö kirjoitetaan heitä koskevien sääntöjen mukaan – norjalaisella on vapaa liikkuvuus eikä 90 päivän rajaa, brittiostajalla ei ole vuoden 2021 jälkeen. Jos jätät tämän tyhjäksi, julkaisut kirjoitetaan yleiselle ”ulkomaiselle ostajalle”, mikä käytännössä tarkoittaa brittiä.",
+      "regime": {
+        "eu": {
+          "label": "Euroopan unioni",
+          "note": "Vapaa liikkuvuus. Ei 90/180-rajaa. Rekisteröintitodistus yli kolmen kuukauden oleskeluun."
+        },
+        "eea": {
+          "label": "ETA, EU:n ulkopuolella",
+          "note": "Norjalla, Islannilla ja Liechtensteinilla on sama vapaa liikkuvuus kuin EU-kansalaisilla, ja ne kuuluvat Schengeniin. Ne eivät ole kolmansia maita eivätkä koskaan 90/180-säännön piirissä."
+        },
+        "ch": {
+          "label": "Sveitsi",
+          "note": "Vapaa liikkuvuus oman kahdenvälisen sopimuksen nojalla – maahanmuutossa samat käytännön oikeudet kuin ETA:lla, mutta verotus korkeamman ulkomailla asuvan verokannan mukaan."
+        },
+        "third": {
+          "label": "EU:n ja ETA:n ulkopuolella",
+          "note": "90/180-lyhytoleskelusääntö pätee, ja pidempään oleskeluun tarvitaan viisumireitti. Huhtikuusta 2026 alkaen maahantulot lasketaan rajalla sähköisesti."
+        }
+      },
+      "save": "Tallenna markkinat",
+      "saving": "Tallennetaan…",
+      "count": "{n} markkinaa tallennettu",
+      "empty": "Markkinoita ei ole vielä valittu"
     }
   },
   "performance": {

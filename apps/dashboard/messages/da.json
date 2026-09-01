@@ -999,6 +999,31 @@
       "assistedDesc": "Amanda besvarer spørgsmål og sender selv de svar. Alt, der forpligter dig — booke, flytte eller aflyse en fremvisning — venter på ét tryk fra dit team.",
       "fullLabel": "Svarer og booker",
       "fullDesc": "Amanda svarer og booker fremvisninger selv, inden for din kalenders tider."
+    },
+    "markets": {
+      "intro": "Hvilke lande dine købere og sælgere reelt kommer fra. Indholdet skrives efter de regler, der gælder for dem – en nordmand har fri bevægelighed og ingen 90-dages grænse, en britisk køber har det ikke efter 2021. Lader du feltet stå tomt, skrives opslagene til en generisk “udenlandsk køber”, hvilket i praksis betyder en britisk.",
+      "regime": {
+        "eu": {
+          "label": "Den Europæiske Union",
+          "note": "Fri bevægelighed. Ingen 90/180-grænse. Registreringsbevis ved ophold over tre måneder."
+        },
+        "eea": {
+          "label": "EØS, uden for EU",
+          "note": "Norge, Island og Liechtenstein har samme frie bevægelighed som EU-borgere og er Schengenlande. De er ikke tredjelande og er aldrig omfattet af 90/180-reglen."
+        },
+        "ch": {
+          "label": "Schweiz",
+          "note": "Fri bevægelighed via sin egen bilaterale aftale – de samme praktiske rettigheder som EØS i opholdssager, men beskattes med den højere sats for ikke-hjemmehørende."
+        },
+        "third": {
+          "label": "Uden for EU og EØS",
+          "note": "90/180-grænsen for korte ophold gælder, og der kræves visum for længere ophold. Siden april 2026 tælles indrejser elektronisk ved grænsen."
+        }
+      },
+      "save": "Gem markeder",
+      "saving": "Gemmer…",
+      "count": "{n} markeder gemt",
+      "empty": "Ingen markeder valgt endnu"
     }
   },
   "performance": {

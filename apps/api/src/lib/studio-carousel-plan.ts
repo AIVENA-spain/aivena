@@ -301,7 +301,7 @@ function planIssues(p: CarouselPlan, quoteSource: string): string | null {
  *  stable and easy to establish; what must never happen is an INVENTED SPECIFIC — a deadline, a
  *  threshold or a requirement nobody checked. Being informed is the point; refusing to write is a
  *  failure, not a safe outcome. */
-async function researchTopic(topic: string, lang: string, region: string): Promise<string> {
+async function researchTopic(topic: string, lang: string, region: string, markets = ''): Promise<string> {
   const call = async (body: Record<string, unknown>, ms: number): Promise<string> => {
     const ctl = new AbortController();
     const timer = setTimeout(() => ctl.abort(), ms);
@@ -333,7 +333,19 @@ async function researchTopic(topic: string, lang: string, region: string): Promi
     messages: [{ role: 'user', content:
       `An estate agency on ${region} is writing an Instagram carousel of practical tips for buyers and owners on this topic:\n\n"${topic}"\n\n` +
       `List the 3-5 questions someone would need answered to write ACCURATE, genuinely useful tips on it — the mechanics that decide whether the advice is right. ` +
-      `Concrete and answerable, not essay questions. If the topic is about how something works in Spain, ask about how it actually works. ` +
+      `Concrete and answerable, not essay questions. If the topic is about how something works in Spain, ask about how it actually works.\n\n` +
+      `FIRST, THOUGH: the topic itself may assert something. "Your neighbour gets 80%, you get 60%", "you only get 90 days", ` +
+      `"nothing happens without an NIE", "from 2026 your neighbours get a vote" — these are claims, not established facts, and ` +
+      `a topic written by someone in a hurry is exactly where a wrong one hides. If this topic asserts a figure, a date, a ` +
+      `deadline, a threshold or an absolute ("always", "never", "you must", "you cannot"), make your FIRST question ask whether ` +
+      `that specific assertion is actually true, and under what conditions it holds. Do not ask questions that take the claim ` +
+      `for granted and merely elaborate around it.\n\n` +
+      `A QUESTION MUST NOT CARRY ITS OWN ANSWER. "Which towns barely change in winter versus which ` +
+      `visibly empty" has already decided that both groups exist and which towns are in each — it asks ` +
+      `for confirmation, not for evidence. Write "What actually closes here between November and March, ` +
+      `and in which towns" instead. No named conclusions, no rate bands, no nationality filed under a ` +
+      `legal category, no asserted cause. Ask what is the case, never whether a thing you already ` +
+      `believe is the case.\n\n` +
       `Reply with the questions only, one per line, no numbering, no preamble.` }],
   }, 25_000);
   if (!questions) return '';
@@ -347,8 +359,30 @@ async function researchTopic(topic: string, lang: string, region: string): Promi
       `Research these questions for an estate agency on ${region} writing practical content for buyers and owners of Spanish coastal property. ` +
       `Search where it helps; today's rules matter more than old ones.\n\n${questions}\n\n` +
       `Write a plain briefing of what is ESTABLISHED — the mechanics, the sequence, what actually happens. Be specific where you are sure. ` +
-      `If something varies by region, municipality or bank, say that it varies rather than picking a number. ` +
+      `If something varies by region, municipality or bank, say that it varies rather than picking a number.\n\n` +
+      // Three category mistakes a confident model makes fluently. Each produced a wrong published
+      // line before this guard existed: a Norwegian filed under "non-EU", a province-wide statistic
+      // repeated as a town's, and a search figure reported as a sale.
+      STATUS_MODEL + `\n\n` + (markets ? markets + `\n\n` : '') +
+      // The questions above are generated, not verified. Auditing them is the step that was missing:
+      // a question can smuggle in the very assumption it was meant to test.
+      `AUDIT THE QUESTIONS BEFORE YOU ANSWER THEM. They were written by another model and NOTHING in ` +
+      `them is established. A question can carry its own answer — naming towns on both sides of a ` +
+      `conclusion ("which barely change in winter versus which visibly empty"), quoting a rate band, ` +
+      `filing a nationality under a legal category, or asserting a cause. Where a question does that, ` +
+      `test the buried assumption FIRST and report what you actually find, even if the question ` +
+      `dissolves. Answering a loaded question accurately still produces a false briefing.\n\n` +
+      `ALSO NEVER COLLAPSE THESE:\n` +
+      `· GEOGRAPHY. Tag every figure with what it actually measures: Spain, the region, the province, ` +
+      `or one municipality. A province-wide number is NOT a fact about a town — say so explicitly ` +
+      `when it cannot be localised.\n` +
+      `· THE METRIC. Asking price is not sale price; a search or a listing view is not an enquiry and ` +
+      `not a purchase; transactions are not value; residents and non-residents are different populations. ` +
+      `Name the metric and the period beside every number.\n\n` +
       `If you could not establish something, write "UNCLEAR:" and the question — do not fill the gap with a plausible answer. ` +
+      `And if the TOPIC ITSELF turns out to rest on something you could not establish, or that the ` +
+      `sources contradict, say so in one line beginning "PREMISE FAILS:" — the post can still be ` +
+      `written, but it must be written about what is true rather than about the claim.\n` +
       `No preamble, no headings, no markdown. Under 400 words.` }],
   }, 60_000);
   return findings;
@@ -366,6 +400,9 @@ export async function planCarousel(opts: {
   /** RULE 9: what this agency actually does — the closing slide is written from it */
   agencyProfile?: string;
   avoidMotifs?: string[];    // hero objects from this agency's recent posts — variety across generations
+  /** Which markets this agency actually sells to, as prose — so a Norwegian buyer is not written
+   *  to as though they were British. Derived from settings; empty when the agency has set none. */
+  marketBrief?: string;
   /** Christian 2026-08-31 ("they could have a little box that informs them yes") — the caller
    *  receives what the research established, so the agent can read what their tips were built on
    *  before publishing under their own name. */
@@ -379,7 +416,7 @@ export async function planCarousel(opts: {
   // just from the model's own knowledge as it always was — a slow search must not cost an agent
   // their post.
   const brief = opts.type === 'tips' && opts.topic
-    ? await researchTopic(opts.topic, lang, region).catch(() => '')
+    ? await researchTopic(opts.topic, lang, region, opts.marketBrief ?? '').catch(() => '')
     : '';
   if (brief) {
     console.log(`[studio/carousel] researched "${String(opts.topic).slice(0, 60)}" — ${brief.length} chars`);
@@ -429,12 +466,25 @@ WHAT RESEARCH ESTABLISHED ABOUT THIS TOPIC — write from THIS, not from memory.
 this post. Where it is specific, be specific: that is what makes a tip worth reading. Where it says
 something varies, say it varies. Anything marked UNCLEAR was NOT established — do not write a tip
 that depends on it, and never invent a deadline, a threshold or a requirement to fill the gap.
+If the briefing contains a line beginning "PREMISE FAILS:", the topic itself was built on something
+the research could not support. Do NOT write the deck the topic asked for. Write the deck the research
+supports instead, on the same subject, and change the cover to match — a true post on a smaller claim
+beats a confident one on a false one. The topic is a suggestion; the research is the evidence.
 
 ${brief}
+` : ''}${brief ? `
+${STATUS_MODEL}
+${opts.marketBrief ? `\n${opts.marketBrief}\n` : ''}
 ` : ''} For anything about the NIE, banks, taxes, residency, mortgages or ownership: state what is USUALLY true and why it helps, never an absolute impossibility you cannot verify. Worked example of the failure: "without a local account you cannot pay utilities, taxes or a mortgage" is FALSE — Eurozone SEPA rules forbid refusing a valid IBAN from another member state. The honest version keeps the value: "a Spanish account makes utilities, taxes and a mortgage far simpler to run".
 
 HARD RULES:
-- NO specific prices, percentages, statistics, interest rates, tax figures, or legal guarantees anywhere in slide copy. General, evergreen advice only — you have no data source, so any figure would be invented. Use place names for specificity instead of numbers.
+${brief ? `- A FIGURE MAY APPEAR ONLY IF THE RESEARCH ABOVE ESTABLISHED IT. Prices, percentages, rates,\n  tax figures, deadlines, dates, thresholds: if the briefing states it, you may state it — that\n  precision is what makes a tip worth reading. If the briefing does NOT state it, you have no\n  source and the number would be invented, so write the mechanism without the number. Never round,\n  stretch or “roughly” a researched figure into a different one. Never promise a legal guarantee.`
+ : `- NO specific prices, percentages, statistics, interest rates, tax figures, or legal guarantees anywhere in slide copy. Nothing was researched for this post, so any figure would be invented. Use place names for specificity instead of numbers.`}
+- BUYING PROPERTY IN SPAIN CONFERS NO RESIDENCE RIGHT. The golden visa / investor route was
+  abolished with effect from 3 April 2025 (Ley Orgánica 1/2025, DF 21ª, emptying arts. 63-67 of
+  Ley 14/2013); permits issued before then remain valid. Never write, imply or hint that a purchase
+  helps with residence, a visa, or days allowed in the country. It is the claim an agency most wants
+  to make and it is now false.
 - NO invented facts about the agency, the market, or any client. The agency name is the only real-world name you may use${opts.type === 'quote' ? ' (plus the client attribution provided)' : ''}.
 - Friendly expert tone: confident, warm, zero clickbait, no emoji in slide copy (caption may use a few).
 - The research is what you KNOW, not what you SAY. Use the sharp, useful part of it and leave the
@@ -865,6 +915,27 @@ const IDEAS_TOOL = {
  *  taxonomy would: people do not follow an estate agency because they want estate-agency content,
  *  they follow because they are asking "could I actually live there?", "am I about to make a massive
  *  mistake?", "what don't I know yet?". So ideas are organised by the NEED behind the question. */
+/**
+ * Five variables a model collapses fluently, and a person can be a different thing in each.
+ * A Norwegian filed under "non-EU, 90/180" reached a published document before this existed —
+ * Norway is EEA and Schengen, so neither half of that was true. Kept as ONE constant used by both
+ * the research and the writing prompts, so the two can never drift apart.
+ */
+const STATUS_MODEL = `PERSON STATUS — FIVE SEPARATE VARIABLES. Never infer one from another:
+1. NATIONALITY — the passport. Decides nothing on its own.
+2. IMMIGRATION CATEGORY — EU · EEA-non-EU (Norway, Iceland, Liechtenstein) · Switzerland (its own
+   bilateral regime) · third country (UK, US, Canada). EEA and Swiss citizens hold free-movement
+   rights and are NOT on the 90/180 short-stay clock; Norway and Iceland are Schengen members.
+   Only third-country nationals need a visa route to stay beyond 90 days.
+3. SPANISH RESIDENCE STATUS — whether they actually hold residence here, and under which regime
+   (EU/EEA registration certificate vs TIE). Having the right to reside is not the same as using it.
+4. SPANISH TAX RESIDENCE — turns on where a person lives and where their interests are, NOT on their
+   passport. A third-country national can be Spanish tax-resident; an EU citizen can be non-resident.
+5. COUNTRY OF TAX RESIDENCE — which country taxes them, and which treaty applies.
+Worked example: a Norwegian national, tax-resident in the UK, who owns a Costa Blanca flat is an
+EEA citizen with free movement (not 90/180), a Spanish non-resident for tax, and taxed under the
+Spain-UK treaty. Every one of the five differs. If a claim depends on one of them, name which.`
+
 const BUYER_NEEDS: Array<[string, string, string]> = [
   ['MONEY', 'what will this really cost?', 'taxes, fees, mortgages, the bills after the keys, what a budget really has to cover'],
   ['FEAR', 'what could go wrong?', 'scams, illegal builds, contracts, deposits, the thing nobody warns you about'],
@@ -918,9 +989,10 @@ WHAT A GOOD ONE SOUNDS LIKE (Christian's own examples — match this register, d
 - decision: "€200k apartment vs €300k villa: which actually costs more to own?"
 - trust:   "Your estate agent says everything is fine. Your lawyer should still check this."
 The test he uses: is this the kind of thing someone SENDS TO THEIR PARTNER? If not, it is not good
-enough. And sending is not a soft metric — Instagram's own confirmed ranking signals are watch
-time, SENDS per reach and likes per reach, with a send worth several times a like for reaching
-people who don't already follow the agency. Write for the send.
+enough. And sending is not a soft metric — Instagram's confirmed ranking signals are watch time,
+SENDS per reach and likes per reach, and sends carry the most weight for reaching people who do NOT
+already follow the agency. (No public ratio of sends to likes exists; do not repeat one.) The two
+people deciding on a house together are the real unit here. Write for the send.
 
 Every good line carries at least ONE of: a specific number, a named consequence, or a literal
 question people actually type. Beyond that:
@@ -932,6 +1004,11 @@ question people actually type. Beyond that:
 - Two topics a reader would experience as the same post ARE the same topic, however differently
   worded. Vary the NEED, not the wording.
 - Never invent a statistic. Use a figure only if it is current and you are sure of it.
+- NEVER an idea that only the agency's own private history could answer: a specific past sale, a
+  deal they talked a client out of, mistakes they made last year, a named client's timeline. We do
+  not have those facts and the writer is forbidden to invent them, so the post comes out either
+  false or hollow. Write the TRANSFERABLE version instead — "what a good agent does when the survey
+  comes back bad", not "the €340,000 sale we walked away from".
 
 VARY THE TONE across the 6 — most practical and direct, one bolder/provocative with a sting ("Some people buy a home in Spain. Others buy a problem with a pool."), one warm dream-selling angle about the life itself, maybe one life-philosophy angle ("Everyone talks about work-life balance. Almost nobody talks about location-life balance.") — but tone is the FLAVOUR; the pain point and instant clarity are the substance. A clear, slightly plain idea beats a clever, unclear one every time. The quoted lines above are register examples only — NEVER output them or close paraphrases of them.
 

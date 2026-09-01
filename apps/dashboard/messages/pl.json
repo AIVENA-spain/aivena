@@ -999,6 +999,31 @@
       "assistedDesc": "Amanda odpowiada na pytania i sama wysyła te odpowiedzi. Wszystko, co Cię wiąże — rezerwacja, przełożenie lub odwołanie oglądania — czeka na jedno kliknięcie zespołu.",
       "fullLabel": "Odpowiada i rezerwuje",
       "fullDesc": "Amanda odpowiada i rezerwuje oglądania sama, w godzinach Twojego kalendarza."
+    },
+    "markets": {
+      "intro": "Z jakich krajów faktycznie pochodzą Twoi kupujący i sprzedający. Treści powstają zgodnie z przepisami, które ich dotyczą — Norweg ma swobodę przemieszczania się i żadnego limitu 90 dni, a kupujący z Wielkiej Brytanii od 2021 roku już nie. Jeśli zostawisz to pole puste, posty będą pisane dla ogólnego „zagranicznego kupującego”, co w praktyce oznacza Brytyjczyka.",
+      "regime": {
+        "eu": {
+          "label": "Unia Europejska",
+          "note": "Swoboda przemieszczania się. Brak limitu 90/180. Zaświadczenie o rejestracji przy pobycie powyżej trzech miesięcy."
+        },
+        "eea": {
+          "label": "EOG, poza UE",
+          "note": "Norwegia, Islandia i Liechtenstein mają taką samą swobodę przemieszczania się jak obywatele UE i należą do strefy Schengen. Nie są państwami trzecimi i nigdy nie podlegają zasadzie 90/180."
+        },
+        "ch": {
+          "label": "Szwajcaria",
+          "note": "Swoboda przemieszczania się na podstawie własnej umowy dwustronnej — w sprawach pobytowych te same prawa co w EOG, ale opodatkowanie wyższą stawką dla nierezydentów."
+        },
+        "third": {
+          "label": "Poza UE i EOG",
+          "note": "Obowiązuje limit krótkiego pobytu 90/180, a dłuższy pobyt wymaga wizy. Od kwietnia 2026 wjazdy są liczone elektronicznie na granicy."
+        }
+      },
+      "save": "Zapisz rynki",
+      "saving": "Zapisywanie…",
+      "count": "Zapisano rynki: {n}",
+      "empty": "Nie wybrano jeszcze żadnych rynków"
     }
   },
   "performance": {

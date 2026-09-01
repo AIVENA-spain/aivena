@@ -427,6 +427,56 @@ route.get('/status/:id', async (c) => {
 // ── Studio taste profile (Christian 2026-08-28: the this-or-that game) ─────────
 // A dozen binary choices stored as {key: value} plus optional likes/dislikes text.
 // Read by the carousel pipeline: style recommendations (UI), edition matching and
+/**
+ * The markets an agency sells to, and what each one legally IS. Stored as codes only — the regime is
+ * derived here on every read, because a country's status changes and a value frozen into an agency's
+ * settings would quietly go stale. The UK moved from `eu` to `third` in 2021; Croatia joined the EU
+ * in 2013. One table, one edit.
+ *
+ * regime drives immigration facts; irnr is the imputed/rental income rate for a person TAX-RESIDENT
+ * there (19% for EU + Iceland/Norway/Liechtenstein, 24% otherwise). Capital gains on a property sale
+ * is a flat 19% for every non-resident and is deliberately NOT in this table.
+ */
+export const MARKETS: Record<string, { name: string; regime: 'eu' | 'eea' | 'ch' | 'third'; irnr: 19 | 24 }> = {
+  GB: { name: 'United Kingdom', regime: 'third', irnr: 24 },
+  IE: { name: 'Ireland',        regime: 'eu',    irnr: 19 },
+  NL: { name: 'Netherlands',    regime: 'eu',    irnr: 19 },
+  BE: { name: 'Belgium',        regime: 'eu',    irnr: 19 },
+  DE: { name: 'Germany',        regime: 'eu',    irnr: 19 },
+  FR: { name: 'France',         regime: 'eu',    irnr: 19 },
+  PL: { name: 'Poland',         regime: 'eu',    irnr: 19 },
+  SE: { name: 'Sweden',         regime: 'eu',    irnr: 19 },
+  DK: { name: 'Denmark',        regime: 'eu',    irnr: 19 },
+  FI: { name: 'Finland',        regime: 'eu',    irnr: 19 },
+  IT: { name: 'Italy',          regime: 'eu',    irnr: 19 },
+  PT: { name: 'Portugal',       regime: 'eu',    irnr: 19 },
+  NO: { name: 'Norway',         regime: 'eea',   irnr: 19 },
+  IS: { name: 'Iceland',        regime: 'eea',   irnr: 19 },
+  LI: { name: 'Liechtenstein',  regime: 'eea',   irnr: 19 },
+  CH: { name: 'Switzerland',    regime: 'ch',    irnr: 24 },
+  US: { name: 'United States',  regime: 'third', irnr: 24 },
+  CA: { name: 'Canada',         regime: 'third', irnr: 24 },
+  RU: { name: 'Russia',         regime: 'third', irnr: 24 },
+  UA: { name: 'Ukraine',        regime: 'third', irnr: 24 },
+};
+
+const REGIME_NOTE: Record<string, string> = {
+  eu:    'EU citizens — free movement, no 90/180 limit, registro certificate to stay past 3 months',
+  eea:   'EEA (not EU) — free movement under RD 240/2007 art. 1.1, NOT third-country, NOT on the 90/180 clock, Schengen members',
+  ch:    'Switzerland — free movement under RD 240/2007 DA 3ª (bilateral agreement), same practical rights as EEA on immigration, but 24% IRNR',
+  third: 'Third country — 90/180 short-stay clock applies, a visa route is needed to stay longer, EES machine-counts entries since April 2026',
+};
+
+/** Prose for the content engine: what regimes this agency's actual buyers fall under. */
+export function marketBrief(codes: string[]): string {
+  const picked = codes.map((c) => MARKETS[c]).filter(Boolean);
+  if (!picked.length) return '';
+  const byRegime = new Map<string, string[]>();
+  for (const m of picked) byRegime.set(m.regime, [...(byRegime.get(m.regime) ?? []), m.name]);
+  const lines = [...byRegime].map(([r, names]) => `· ${names.join(', ')} — ${REGIME_NOTE[r]}`);
+  return `THIS AGENCY'S BUYERS COME FROM THESE MARKETS. Write for them, not for a generic "foreign buyer",\nand never assume the reader is British:\n${lines.join('\n')}`;
+}
+
 // art-direction hints (server). Nullable — nothing changes until the game is played.
 const PREF_KEYS = new Set([
   'font', 'serif', 'scale', 'ground', 'accent', 'intensity', 'artwork', 'illo', 'density', 'numerals', 'mood', 'devices',
@@ -459,13 +509,20 @@ route.post('/preferences', async (c) => {
   }
   if (typeof raw.likes === 'string' && raw.likes.trim()) prefs.likes = raw.likes.trim().slice(0, 300);
   if (typeof raw.dislikes === 'string' && raw.dislikes.trim()) prefs.dislikes = raw.dislikes.trim().slice(0, 300);
+  const payload: Record<string, unknown> = { ...prefs };
+  if (Array.isArray(raw.markets)) {
+    payload.markets = (raw.markets as unknown[])
+      .filter((x): x is string => typeof x === 'string' && x in MARKETS).slice(0, 20);
+  }
   try {
-    const upd = await tx.execute(sql`UPDATE agency_branding SET creative_prefs = ${JSON.stringify(prefs)}::jsonb WHERE agency_id = ${agencyId} RETURNING agency_id`);
+    // MERGE, never replace. This object also carries shown_topics — the list that stops Get Inspired
+    // offering the same idea twice — and rebuilding it from a whitelist silently deleted that history.
+    const upd = await tx.execute(sql`UPDATE agency_branding SET creative_prefs = COALESCE(creative_prefs, '{}'::jsonb) || ${JSON.stringify(payload)}::jsonb WHERE agency_id = ${agencyId} RETURNING agency_id`);
     if ((upd as unknown as unknown[]).length === 0) {
       // agency has no branding row yet — create one carrying just the taste profile
-      await tx.execute(sql`INSERT INTO agency_branding (agency_id, creative_prefs) VALUES (${agencyId}, ${JSON.stringify(prefs)}::jsonb)`);
+      await tx.execute(sql`INSERT INTO agency_branding (agency_id, creative_prefs) VALUES (${agencyId}, ${JSON.stringify(payload)}::jsonb)`);
     }
-    return c.json({ ok: true, prefs });
+    return c.json({ ok: true, prefs: payload });
   } catch (err) {
     console.error('[studio/preferences] save failed:', err);
     return c.json({ ok: false, error: 'prefs_failed', message: GENERIC }, 500);
@@ -1253,6 +1310,7 @@ async function runPlannedCarousel(opts: {
   styleEdition?: number;   // type-only styles: which font/colour edition this deck wears
   lockPalette?: boolean;   // user picked custom colours — edition may not recolour
   agencyTaste?: string;    // one-line taste profile from the this-or-that game (art-director hint)
+  marketBrief?: string;    // which markets this agency sells to, and each one's legal regime
 }): Promise<void> {
   const { genId, agencyId } = opts;
   try {
@@ -1289,6 +1347,7 @@ async function runPlannedCarousel(opts: {
       type: opts.type, topic: opts.topic, quoteText: opts.quoteText, quoteAuthor: opts.quoteAuthor,
       slideCount: opts.slideCount, language: opts.language, agencyName: opts.agency.name,
       agencyProfile: opts.agencyProfile, avoidMotifs,
+      marketBrief: opts.marketBrief,
       onResearch: (b) => { research = b; },
     });
     // EDITOR pass (Christian 2026-08-28): a skeptical second read of the copy — sense, value,
@@ -1505,6 +1564,12 @@ route.post('/carousel', async (c) => {
         .some((k) => (brand[k] ?? '').toLowerCase() !== SEED_BRAND[k]);
       const lockPalette = Object.keys(chosen).length > 0 || agencyChoseColours;
       const agencyTaste = tasteLine(prefs);
+      // Which markets this agency actually sells to. Without it every deck is written for a
+      // generic "foreign buyer", which in practice means written for a British one.
+      const marketCodes = Array.isArray((prefs as Record<string, unknown> | null)?.markets)
+        ? ((prefs as Record<string, unknown>).markets as unknown[]).filter((x): x is string => typeof x === 'string')
+        : [];
+      const brief = marketBrief(marketCodes);
       // The colours this deck will ACTUALLY render with (override ?? edition palette ?? agency
       // brand) — stored so the finished-deck colour pickers open on the truth instead of generic
       // defaults, which silently overwrote real brand/edition colours on "Apply colours".
@@ -1530,7 +1595,7 @@ route.post('/carousel', async (c) => {
       void runPlannedCarousel({
         genId, agencyId, type, topic, quoteText, quoteAuthor, slideCount, language, style, scheme, includeRecap, includeContext,
         agency: { name: agency.name, web: agency.web, phone: agency.phone }, brand,
-        agencyProfile, styleEdition, lockPalette, agencyTaste,
+        agencyProfile, styleEdition, lockPalette, agencyTaste, marketBrief: brief,
       });
       return c.json({ ok: true, generation_id: genId, status: 'processing' });
     }

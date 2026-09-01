@@ -542,3 +542,29 @@ export async function saveAmandaModeAction(
     return actionError("saveAmandaModeAction", err);
   }
 }
+
+// ---------- target markets (drives which legal regime content is written for) ----------
+
+/**
+ * Which countries this agency's buyers actually come from. Stored as codes in
+ * agency_branding.creative_prefs; the API derives each one's immigration regime, so a country
+ * changing status is one edit there rather than a stale value frozen into every agency's settings.
+ *
+ * The content engine needs this because "foreign buyer" is not a legal category. A Norwegian has
+ * free movement and no 90/180 limit; a British buyer since 2021 has neither. Written for a generic
+ * foreigner, a post is in practice written for a British one.
+ */
+export async function saveTargetMarketsAction(
+  markets: string[],
+): Promise<ActionResult<{ markets: string[] }>> {
+  try {
+    const res = await apiFetch<{ ok: true; prefs: { markets?: string[] } }>(
+      "/api/studio/preferences",
+      { method: "POST", body: JSON.stringify({ prefs: { markets } }) },
+    );
+    revalidatePath("/settings");
+    return { ok: true, data: { markets: res.prefs?.markets ?? [] } };
+  } catch (err) {
+    return actionError("saveTargetMarketsAction", err);
+  }
+}

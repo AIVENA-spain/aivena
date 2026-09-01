@@ -999,6 +999,31 @@
       "assistedDesc": "Amanda beantwoordt vragen en verstuurt die antwoorden zelf. Alles wat je vastlegt — een bezichtiging boeken, verzetten of annuleren — wacht op één tik van je team.",
       "fullLabel": "Antwoordt en boekt",
       "fullDesc": "Amanda antwoordt en boekt bezichtigingen zelf, binnen je agendatijden."
+    },
+    "markets": {
+      "intro": "Uit welke landen uw kopers en verkopers werkelijk komen. Content wordt geschreven volgens de regels die voor hén gelden — een Noor heeft vrij verkeer en geen 90-dagengrens, een Britse koper sinds 2021 niet. Laat u dit leeg, dan worden posts geschreven voor een algemene ‘buitenlandse koper’, wat in de praktijk een Britse betekent.",
+      "regime": {
+        "eu": {
+          "label": "Europese Unie",
+          "note": "Vrij verkeer. Geen 90/180-grens. Een inschrijvingsbewijs om langer dan drie maanden te blijven."
+        },
+        "eea": {
+          "label": "EER, buiten de EU",
+          "note": "Noorwegen, IJsland en Liechtenstein hebben hetzelfde vrije verkeer als EU-burgers en zijn Schengenlanden. Zij zijn geen derde landen en vallen nooit onder de 90/180-regel."
+        },
+        "ch": {
+          "label": "Zwitserland",
+          "note": "Vrij verkeer op grond van een eigen bilaterale overeenkomst — voor immigratie dezelfde praktische rechten als de EER, maar belast tegen het hogere niet-ingezetenentarief."
+        },
+        "third": {
+          "label": "Buiten de EU en EER",
+          "note": "De 90/180-grens voor kort verblijf geldt en voor langer verblijf is een visumroute nodig. Sinds april 2026 worden inreizen elektronisch geteld aan de grens."
+        }
+      },
+      "save": "Markten opslaan",
+      "saving": "Opslaan…",
+      "count": "{n} markten opgeslagen",
+      "empty": "Nog geen markten gekozen"
     }
   },
   "performance": {

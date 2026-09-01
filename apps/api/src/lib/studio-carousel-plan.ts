@@ -918,8 +918,20 @@ WHAT A GOOD ONE SOUNDS LIKE (Christian's own examples — match this register, d
 - decision: "€200k apartment vs €300k villa: which actually costs more to own?"
 - trust:   "Your estate agent says everything is fine. Your lawyer should still check this."
 The test he uses: is this the kind of thing someone SENDS TO THEIR PARTNER? If not, it is not good
-enough. A comparison must reach a conclusion — "both are great depending on your preferences" is
-chickening out. Make the dream SPECIFIC. Translate any market fact into "what this means for me".
+enough. And sending is not a soft metric — Instagram's own confirmed ranking signals are watch
+time, SENDS per reach and likes per reach, with a send worth several times a like for reaching
+people who don't already follow the agency. Write for the send.
+
+Every good line carries at least ONE of: a specific number, a named consequence, or a literal
+question people actually type. Beyond that:
+- A comparison must reach a VERDICT. "Both are great depending on your preferences" is banned.
+- Make the dream specific and honest — a November Tuesday, hour by hour, not "imagine the view".
+- Prefer the sharp frame: who should NOT, the one wrong choice, what nobody tells you.
+- Translate any market fact into "what does this mean for me?".
+- Give away real insider knowledge. That is what builds trust; withholding it builds nothing.
+- Two topics a reader would experience as the same post ARE the same topic, however differently
+  worded. Vary the NEED, not the wording.
+- Never invent a statistic. Use a figure only if it is current and you are sure of it.
 
 VARY THE TONE across the 6 — most practical and direct, one bolder/provocative with a sting ("Some people buy a home in Spain. Others buy a problem with a pool."), one warm dream-selling angle about the life itself, maybe one life-philosophy angle ("Everyone talks about work-life balance. Almost nobody talks about location-life balance.") — but tone is the FLAVOUR; the pain point and instant clarity are the substance. A clear, slightly plain idea beats a clever, unclear one every time. The quoted lines above are register examples only — NEVER output them or close paraphrases of them.
 

@@ -134,6 +134,11 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
   const [slides, setSlides] = useState<string[]>([]);
   const [genId, setGenId] = useState<string | null>(null);
   const [caption, setCaption] = useState<string>("");
+  // Christian 2026-08-31: "they could have a little box that informs them yes." The deck is now
+  // written FROM live research rather than from memory, and the agent publishes it under their own
+  // name — so they can read what it was built on. Collapsed by default: available, not in the way.
+  const [research, setResearch] = useState<string>("");
+  const [researchOpen, setResearchOpen] = useState(false);
   const [hashtags, setHashtags] = useState<string[]>([]);
   const [plan, setPlan] = useState<Plan | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -229,6 +234,7 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
   function showResult(s: Record<string, unknown>) {
     setSlides(Array.isArray(s.slides) ? (s.slides as string[]) : s.image_url ? [s.image_url as string] : []);
     setCaption(typeof s.caption === "string" ? s.caption : "");
+    setResearch(typeof s.research === "string" ? s.research : "");
     setHashtags(Array.isArray(s.hashtags) ? (s.hashtags as string[]) : []);
     setPlan(s.plan && typeof s.plan === "object" ? (s.plan as Plan) : null);
     if (typeof s.carousel_style === "string") setResultStyle(s.carousel_style);
@@ -355,6 +361,7 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
     setSlides(Array.isArray(r.slides) ? (r.slides as string[]) : slides);
     setPlan((r.plan as Plan) ?? plan);
     setCaption(typeof r.caption === "string" ? r.caption : caption);
+    if (typeof r.research === "string") setResearch(r.research);
     setHashtags(Array.isArray(r.hashtags) ? (r.hashtags as string[]) : hashtags);
     if (typeof r.carousel_style === "string") setResultStyle(r.carousel_style);
     setResultPerSlideArt(r.per_slide_art === true);
@@ -637,7 +644,7 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
 
       {phase === "result" && (
         <div>
-          <button onClick={() => { setPhase("form"); setSlides([]); setPlan(null); setCaption(""); }}
+          <button onClick={() => { setPhase("form"); setSlides([]); setPlan(null); setCaption(""); setResearch(""); }}
             className="mb-4 flex items-center gap-1.5 text-sm text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100"><ArrowLeft className="h-4 w-4" /> New carousel</button>
           <div className="mb-2 flex items-center gap-2 text-sm font-medium text-emerald-700"><Check className="h-4 w-4" /> {slides.length} slides ready — swipe order left to right</div>
           {resultArtSource === "library" && (
@@ -833,6 +840,26 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
                 <button onClick={() => { setEditing(false); setDraft(null); }} disabled={applying}
                   className="rounded-lg border border-neutral-300 px-4 py-2 text-sm text-neutral-600 dark:border-neutral-700 dark:text-neutral-300">Cancel</button>
               </div>
+            </div>
+          )}
+
+          {research && (
+            <div className="mt-4 max-w-2xl rounded-xl border border-sky-200 bg-sky-50/60 p-4 dark:border-sky-900/50 dark:bg-sky-950/20">
+              <button onClick={() => setResearchOpen((v) => !v)}
+                className="flex w-full items-center justify-between text-left">
+                <span className="text-sm font-medium text-sky-900 dark:text-sky-200">
+                  What this post was built on
+                </span>
+                <span className="text-xs text-sky-700 dark:text-sky-300">{researchOpen ? "Hide" : "Read it"}</span>
+              </button>
+              {!researchOpen && (
+                <p className="mt-1 text-xs text-sky-800/80 dark:text-sky-300/80">
+                  The topic was researched before the text was written. Worth a look before you post it as your own.
+                </p>
+              )}
+              {researchOpen && (
+                <p className="mt-2 whitespace-pre-wrap text-xs leading-relaxed text-sky-900/90 dark:text-sky-200/90">{research}</p>
+              )}
             </div>
           )}
 

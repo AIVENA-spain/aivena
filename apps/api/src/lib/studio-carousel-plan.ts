@@ -366,6 +366,10 @@ export async function planCarousel(opts: {
   /** RULE 9: what this agency actually does — the closing slide is written from it */
   agencyProfile?: string;
   avoidMotifs?: string[];    // hero objects from this agency's recent posts — variety across generations
+  /** Christian 2026-08-31 ("they could have a little box that informs them yes") — the caller
+   *  receives what the research established, so the agent can read what their tips were built on
+   *  before publishing under their own name. */
+  onResearch?: (brief: string) => void;
 }): Promise<CarouselPlan> {
   const langNames: Record<string, string> = { es: 'Spanish', en: 'English', de: 'German', fr: 'French', nl: 'Dutch', sv: 'Swedish', no: 'Norwegian', da: 'Danish', fi: 'Finnish', pl: 'Polish', ru: 'Russian', it: 'Italian', pt: 'Portuguese' };
   const lang = langNames[opts.language] ?? 'Spanish';
@@ -377,7 +381,10 @@ export async function planCarousel(opts: {
   const brief = opts.type === 'tips' && opts.topic
     ? await researchTopic(opts.topic, lang, region).catch(() => '')
     : '';
-  if (brief) console.log(`[studio/carousel] researched "${String(opts.topic).slice(0, 60)}" — ${brief.length} chars`);
+  if (brief) {
+    console.log(`[studio/carousel] researched "${String(opts.topic).slice(0, 60)}" — ${brief.length} chars`);
+    opts.onResearch?.(brief);
+  }
 
   const task = opts.type === 'tips'
     ? `Create an EDUCATIONAL carousel: exactly ${Math.min(7, Math.max(1, opts.slideCount ?? 5))} points about: "${opts.topic}".

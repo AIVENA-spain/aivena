@@ -382,6 +382,7 @@ function shapeStatus(r: GenRow) {
     // per-slide colour overrides, so reopening a deck shows the fine-tuning it was saved with
     slide_colours: (r as any).raw_request?.slide_colours && typeof (r as any).raw_request.slide_colours === 'object'
       ? (r as any).raw_request.slide_colours : undefined,
+    research: typeof (meta as any)?.research === 'string' && (meta as any).research ? (meta as any).research : undefined,
     caption: typeof (meta as any)?.caption === 'string' ? (meta as any).caption : undefined,
     hashtags: Array.isArray((meta as any)?.hashtags) ? (meta as any).hashtags : undefined,
     plan: (meta as any)?.plan && typeof (meta as any).plan === 'object' ? (meta as any).plan : undefined,
@@ -1281,10 +1282,14 @@ async function runPlannedCarousel(opts: {
         avoidMotifs = [...motifs].slice(0, 18);
       } catch { /* variety hint only */ }
     }
+    // what the research established — stored with the deck so the agent can read what their tips
+    // were built on before they publish it under their own name
+    let research = '';
     let plan = await planCarousel({
       type: opts.type, topic: opts.topic, quoteText: opts.quoteText, quoteAuthor: opts.quoteAuthor,
       slideCount: opts.slideCount, language: opts.language, agencyName: opts.agency.name,
       agencyProfile: opts.agencyProfile, avoidMotifs,
+      onResearch: (b) => { research = b; },
     });
     // EDITOR pass (Christian 2026-08-28): a skeptical second read of the copy — sense, value,
     // trust — before anything renders. Quote decks are verbatim client words and skip it.
@@ -1380,7 +1385,7 @@ async function runPlannedCarousel(opts: {
       result_metadata: {
         engine: 'carousel', carousel_type: opts.type, carousel_style: usedStyle, slide_count: stored.length, slides: stored,
         ai_imagery: opts.type === 'tips' && isTipsImageStyle(usedStyle),
-        image_paths: imagePaths, image_scheme: opts.scheme, per_slide_art: perSlideArt, artwork_source: artworkSource, artwork_error: artworkError, artwork_qa: artworkQa, copy_qa: copyQa, include_recap: opts.includeRecap, include_context: opts.includeContext,
+        image_paths: imagePaths, image_scheme: opts.scheme, per_slide_art: perSlideArt, artwork_source: artworkSource, artwork_error: artworkError, artwork_qa: artworkQa, copy_qa: copyQa, research, include_recap: opts.includeRecap, include_context: opts.includeContext,
         plan, caption: plan.caption, hashtags: plan.hashtags,
       },
       completed_at: new Date().toISOString(),

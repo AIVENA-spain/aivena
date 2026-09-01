@@ -333,7 +333,13 @@ async function researchTopic(topic: string, lang: string, region: string): Promi
     messages: [{ role: 'user', content:
       `An estate agency on ${region} is writing an Instagram carousel of practical tips for buyers and owners on this topic:\n\n"${topic}"\n\n` +
       `List the 3-5 questions someone would need answered to write ACCURATE, genuinely useful tips on it — the mechanics that decide whether the advice is right. ` +
-      `Concrete and answerable, not essay questions. If the topic is about how something works in Spain, ask about how it actually works. ` +
+      `Concrete and answerable, not essay questions. If the topic is about how something works in Spain, ask about how it actually works.\n\n` +
+      `FIRST, THOUGH: the topic itself may assert something. "Your neighbour gets 80%, you get 60%", "you only get 90 days", ` +
+      `"nothing happens without an NIE", "from 2026 your neighbours get a vote" — these are claims, not established facts, and ` +
+      `a topic written by someone in a hurry is exactly where a wrong one hides. If this topic asserts a figure, a date, a ` +
+      `deadline, a threshold or an absolute ("always", "never", "you must", "you cannot"), make your FIRST question ask whether ` +
+      `that specific assertion is actually true, and under what conditions it holds. Do not ask questions that take the claim ` +
+      `for granted and merely elaborate around it.\n\n` +
       `Reply with the questions only, one per line, no numbering, no preamble.` }],
   }, 25_000);
   if (!questions) return '';
@@ -434,7 +440,8 @@ ${brief}
 ` : ''} For anything about the NIE, banks, taxes, residency, mortgages or ownership: state what is USUALLY true and why it helps, never an absolute impossibility you cannot verify. Worked example of the failure: "without a local account you cannot pay utilities, taxes or a mortgage" is FALSE — Eurozone SEPA rules forbid refusing a valid IBAN from another member state. The honest version keeps the value: "a Spanish account makes utilities, taxes and a mortgage far simpler to run".
 
 HARD RULES:
-- NO specific prices, percentages, statistics, interest rates, tax figures, or legal guarantees anywhere in slide copy. General, evergreen advice only — you have no data source, so any figure would be invented. Use place names for specificity instead of numbers.
+${brief ? `- A FIGURE MAY APPEAR ONLY IF THE RESEARCH ABOVE ESTABLISHED IT. Prices, percentages, rates,\n  tax figures, deadlines, dates, thresholds: if the briefing states it, you may state it — that\n  precision is what makes a tip worth reading. If the briefing does NOT state it, you have no\n  source and the number would be invented, so write the mechanism without the number. Never round,\n  stretch or “roughly” a researched figure into a different one. Never promise a legal guarantee.`
+ : `- NO specific prices, percentages, statistics, interest rates, tax figures, or legal guarantees anywhere in slide copy. Nothing was researched for this post, so any figure would be invented. Use place names for specificity instead of numbers.`}
 - NO invented facts about the agency, the market, or any client. The agency name is the only real-world name you may use${opts.type === 'quote' ? ' (plus the client attribution provided)' : ''}.
 - Friendly expert tone: confident, warm, zero clickbait, no emoji in slide copy (caption may use a few).
 - The research is what you KNOW, not what you SAY. Use the sharp, useful part of it and leave the
@@ -918,9 +925,10 @@ WHAT A GOOD ONE SOUNDS LIKE (Christian's own examples — match this register, d
 - decision: "€200k apartment vs €300k villa: which actually costs more to own?"
 - trust:   "Your estate agent says everything is fine. Your lawyer should still check this."
 The test he uses: is this the kind of thing someone SENDS TO THEIR PARTNER? If not, it is not good
-enough. And sending is not a soft metric — Instagram's own confirmed ranking signals are watch
-time, SENDS per reach and likes per reach, with a send worth several times a like for reaching
-people who don't already follow the agency. Write for the send.
+enough. And sending is not a soft metric — Instagram's confirmed ranking signals are watch time,
+SENDS per reach and likes per reach, and sends carry the most weight for reaching people who do NOT
+already follow the agency. (No public ratio of sends to likes exists; do not repeat one.) The two
+people deciding on a house together are the real unit here. Write for the send.
 
 Every good line carries at least ONE of: a specific number, a named consequence, or a literal
 question people actually type. Beyond that:
@@ -932,6 +940,11 @@ question people actually type. Beyond that:
 - Two topics a reader would experience as the same post ARE the same topic, however differently
   worded. Vary the NEED, not the wording.
 - Never invent a statistic. Use a figure only if it is current and you are sure of it.
+- NEVER an idea that only the agency's own private history could answer: a specific past sale, a
+  deal they talked a client out of, mistakes they made last year, a named client's timeline. We do
+  not have those facts and the writer is forbidden to invent them, so the post comes out either
+  false or hollow. Write the TRANSFERABLE version instead — "what a good agent does when the survey
+  comes back bad", not "the €340,000 sale we walked away from".
 
 VARY THE TONE across the 6 — most practical and direct, one bolder/provocative with a sting ("Some people buy a home in Spain. Others buy a problem with a pool."), one warm dream-selling angle about the life itself, maybe one life-philosophy angle ("Everyone talks about work-life balance. Almost nobody talks about location-life balance.") — but tone is the FLAVOUR; the pain point and instant clarity are the substance. A clear, slightly plain idea beats a clever, unclear one every time. The quoted lines above are register examples only — NEVER output them or close paraphrases of them.
 

@@ -1,4 +1,12 @@
--- PREPARED, NOT APPLIED. Awaiting Christian's approval.
+-- APPLIED to production 2026-09-01 on Christian's explicit approval.
+--
+-- public._imp was dropped separately (drop_imp_studio_import_scratch), so six
+-- tables remained, carrying 24 client write grants between them.
+--
+-- VERIFIED AFTER APPLYING, by privilege check rather than assumption:
+--   authenticated -> agencies : SELECT true, UPDATE/DELETE/TRUNCATE all false
+--   aivena_app and service_role writes intact (164 and 180 grants)
+--   0 client write grants left anywhere in schema public
 --
 -- Finding F8 of the 2026-08-31 audit. Seven public tables carry real write
 -- privileges (INSERT/UPDATE/DELETE/TRUNCATE) for the browser roles anon and
@@ -25,7 +33,6 @@
 BEGIN;
 
 REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON TABLE
-  public._imp,
   public.agencies,
   public.area_zone_adjacent,
   public.area_zone_alias,

@@ -999,6 +999,31 @@
       "assistedDesc": "Amanda répond aux questions et envoie ces réponses elle-même. Tout ce qui vous engage — réserver, déplacer ou annuler une visite — attend une validation de votre équipe.",
       "fullLabel": "Répond et réserve",
       "fullDesc": "Amanda répond et réserve les visites seule, dans les horaires de votre agenda."
+    },
+    "markets": {
+      "intro": "Les pays d'où viennent réellement vos acheteurs et vendeurs. Le contenu est rédigé selon les règles qui s'appliquent à eux : un Norvégien bénéficie de la libre circulation et d'aucune limite de 90 jours ; un acheteur britannique, depuis 2021, non. Si vous laissez ce champ vide, les publications s'adressent à un « acheteur étranger » générique, c'est-à-dire en pratique à un Britannique.",
+      "regime": {
+        "eu": {
+          "label": "Union européenne",
+          "note": "Libre circulation. Aucune limite de 90/180. Certificat d'enregistrement pour séjourner au-delà de trois mois."
+        },
+        "eea": {
+          "label": "EEE, hors UE",
+          "note": "La Norvège, l'Islande et le Liechtenstein bénéficient de la même libre circulation que les citoyens de l'UE et font partie de Schengen. Ce ne sont pas des pays tiers et la règle des 90/180 ne leur est jamais applicable."
+        },
+        "ch": {
+          "label": "Suisse",
+          "note": "Libre circulation en vertu de son propre accord bilatéral : les mêmes droits pratiques que l'EEE en matière de séjour, mais imposition au taux non-résident supérieur."
+        },
+        "third": {
+          "label": "Hors UE et EEE",
+          "note": "La limite de court séjour de 90/180 s'applique et un visa est nécessaire pour rester plus longtemps. Depuis avril 2026, les entrées sont comptabilisées électroniquement à la frontière."
+        }
+      },
+      "save": "Enregistrer les marchés",
+      "saving": "Enregistrement…",
+      "count": "{n} marchés enregistrés",
+      "empty": "Aucun marché choisi pour l'instant"
     }
   },
   "performance": {

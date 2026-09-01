@@ -999,6 +999,31 @@
       "assistedDesc": "Amanda answers questions and sends those replies herself. Anything that commits you — booking, moving or cancelling a viewing — waits for one tap from your team.",
       "fullLabel": "Replies and books",
       "fullDesc": "Amanda answers and books viewings on her own, inside your calendar hours."
+    },
+    "markets": {
+      "intro": "Which countries your buyers and sellers actually come from. Content is written for the rules that apply to them — a Norwegian has free movement and no 90-day limit, a British buyer since 2021 does not. Leave this empty and posts are written for a generic “foreign buyer”, which in practice means a British one.",
+      "regime": {
+        "eu": {
+          "label": "European Union",
+          "note": "Free movement. No 90/180 limit. A registration certificate to stay beyond three months."
+        },
+        "eea": {
+          "label": "EEA, outside the EU",
+          "note": "Norway, Iceland and Liechtenstein have the same free movement as EU citizens and are Schengen members. They are not third countries and are never on the 90/180 clock."
+        },
+        "ch": {
+          "label": "Switzerland",
+          "note": "Free movement under its own bilateral agreement — the same practical rights as the EEA on immigration, but taxed at the higher non-resident rate."
+        },
+        "third": {
+          "label": "Outside the EU and EEA",
+          "note": "The 90/180 short-stay limit applies and a visa route is needed to stay longer. Since April 2026 entries are counted electronically at the border."
+        }
+      },
+      "save": "Save markets",
+      "saving": "Saving…",
+      "count": "{n} markets saved",
+      "empty": "No markets chosen yet"
     }
   },
   "performance": {

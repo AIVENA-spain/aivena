@@ -301,7 +301,7 @@ function planIssues(p: CarouselPlan, quoteSource: string): string | null {
  *  stable and easy to establish; what must never happen is an INVENTED SPECIFIC — a deadline, a
  *  threshold or a requirement nobody checked. Being informed is the point; refusing to write is a
  *  failure, not a safe outcome. */
-async function researchTopic(topic: string, lang: string, region: string): Promise<string> {
+async function researchTopic(topic: string, lang: string, region: string, markets = ''): Promise<string> {
   const call = async (body: Record<string, unknown>, ms: number): Promise<string> => {
     const ctl = new AbortController();
     const timer = setTimeout(() => ctl.abort(), ms);
@@ -363,7 +363,7 @@ async function researchTopic(topic: string, lang: string, region: string): Promi
       // Three category mistakes a confident model makes fluently. Each produced a wrong published
       // line before this guard existed: a Norwegian filed under "non-EU", a province-wide statistic
       // repeated as a town's, and a search figure reported as a sale.
-      STATUS_MODEL + `\n\n` +
+      STATUS_MODEL + `\n\n` + (markets ? markets + `\n\n` : '') +
       // The questions above are generated, not verified. Auditing them is the step that was missing:
       // a question can smuggle in the very assumption it was meant to test.
       `AUDIT THE QUESTIONS BEFORE YOU ANSWER THEM. They were written by another model and NOTHING in ` +
@@ -400,6 +400,9 @@ export async function planCarousel(opts: {
   /** RULE 9: what this agency actually does — the closing slide is written from it */
   agencyProfile?: string;
   avoidMotifs?: string[];    // hero objects from this agency's recent posts — variety across generations
+  /** Which markets this agency actually sells to, as prose — so a Norwegian buyer is not written
+   *  to as though they were British. Derived from settings; empty when the agency has set none. */
+  marketBrief?: string;
   /** Christian 2026-08-31 ("they could have a little box that informs them yes") — the caller
    *  receives what the research established, so the agent can read what their tips were built on
    *  before publishing under their own name. */
@@ -413,7 +416,7 @@ export async function planCarousel(opts: {
   // just from the model's own knowledge as it always was — a slow search must not cost an agent
   // their post.
   const brief = opts.type === 'tips' && opts.topic
-    ? await researchTopic(opts.topic, lang, region).catch(() => '')
+    ? await researchTopic(opts.topic, lang, region, opts.marketBrief ?? '').catch(() => '')
     : '';
   if (brief) {
     console.log(`[studio/carousel] researched "${String(opts.topic).slice(0, 60)}" — ${brief.length} chars`);
@@ -471,7 +474,7 @@ beats a confident one on a false one. The topic is a suggestion; the research is
 ${brief}
 ` : ''}${brief ? `
 ${STATUS_MODEL}
-
+${opts.marketBrief ? `\n${opts.marketBrief}\n` : ''}
 ` : ''} For anything about the NIE, banks, taxes, residency, mortgages or ownership: state what is USUALLY true and why it helps, never an absolute impossibility you cannot verify. Worked example of the failure: "without a local account you cannot pay utilities, taxes or a mortgage" is FALSE — Eurozone SEPA rules forbid refusing a valid IBAN from another member state. The honest version keeps the value: "a Spanish account makes utilities, taxes and a mortgage far simpler to run".
 
 HARD RULES:

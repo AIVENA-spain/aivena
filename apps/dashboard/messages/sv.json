@@ -999,6 +999,31 @@
       "assistedDesc": "Amanda svarar på frågor och skickar de svaren själv. Allt som binder dig — boka, flytta eller avboka en visning — väntar på en tryckning från ditt team.",
       "fullLabel": "Svarar och bokar",
       "fullDesc": "Amanda svarar och bokar visningar själv, inom din kalenders tider."
+    },
+    "markets": {
+      "intro": "Vilka länder dina köpare och säljare faktiskt kommer från. Innehållet skrivs efter de regler som gäller för dem – en norrman har fri rörlighet och ingen 90-dagarsgräns, en brittisk köpare har det inte sedan 2021. Lämnar du detta tomt skrivs inläggen för en generisk ”utländsk köpare”, vilket i praktiken betyder en brittisk.",
+      "regime": {
+        "eu": {
+          "label": "Europeiska unionen",
+          "note": "Fri rörlighet. Ingen 90/180-gräns. Registreringsbevis för vistelse längre än tre månader."
+        },
+        "eea": {
+          "label": "EES, utanför EU",
+          "note": "Norge, Island och Liechtenstein har samma fria rörlighet som EU-medborgare och är Schengenländer. De är inte tredjeländer och omfattas aldrig av 90/180-regeln."
+        },
+        "ch": {
+          "label": "Schweiz",
+          "note": "Fri rörlighet genom ett eget bilateralt avtal – samma praktiska rättigheter som EES vid invandring, men beskattas med den högre satsen för icke-bosatta."
+        },
+        "third": {
+          "label": "Utanför EU och EES",
+          "note": "90/180-gränsen för kortare vistelser gäller och det krävs visum för längre vistelse. Sedan april 2026 räknas inresor elektroniskt vid gränsen."
+        }
+      },
+      "save": "Spara marknader",
+      "saving": "Sparar…",
+      "count": "{n} marknader sparade",
+      "empty": "Inga marknader valda än"
     }
   },
   "performance": {

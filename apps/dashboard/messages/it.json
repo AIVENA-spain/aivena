@@ -999,6 +999,31 @@
       "assistedDesc": "Amanda risponde alle domande e invia quelle risposte da sola. Tutto ciò che ti impegna — prenotare, spostare o annullare una visita — aspetta un tocco del tuo team.",
       "fullLabel": "Risponde e prenota",
       "fullDesc": "Amanda risponde e prenota le visite da sola, negli orari del tuo calendario."
+    },
+    "markets": {
+      "intro": "Da quali paesi provengono davvero i suoi acquirenti e venditori. I contenuti vengono scritti secondo le regole che si applicano a loro: un norvegese ha libera circolazione e nessun limite di 90 giorni, un acquirente britannico dal 2021 no. Se lascia il campo vuoto, i post vengono scritti per un generico «acquirente straniero», che in pratica significa britannico.",
+      "regime": {
+        "eu": {
+          "label": "Unione europea",
+          "note": "Libera circolazione. Nessun limite 90/180. Certificato di registrazione per soggiorni superiori a tre mesi."
+        },
+        "eea": {
+          "label": "SEE, fuori dall'UE",
+          "note": "Norvegia, Islanda e Liechtenstein hanno la stessa libera circolazione dei cittadini UE e fanno parte di Schengen. Non sono paesi terzi e non rientrano mai nel conteggio 90/180."
+        },
+        "ch": {
+          "label": "Svizzera",
+          "note": "Libera circolazione in virtù di un proprio accordo bilaterale: sul piano del soggiorno gli stessi diritti pratici del SEE, ma tassazione all'aliquota più alta per non residenti."
+        },
+        "third": {
+          "label": "Fuori da UE e SEE",
+          "note": "Si applica il limite di soggiorno breve 90/180 e per restare più a lungo serve un visto. Da aprile 2026 gli ingressi sono conteggiati elettronicamente alla frontiera."
+        }
+      },
+      "save": "Salva i mercati",
+      "saving": "Salvataggio…",
+      "count": "{n} mercati salvati",
+      "empty": "Nessun mercato ancora scelto"
     }
   },
   "performance": {

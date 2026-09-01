@@ -999,6 +999,31 @@
       "assistedDesc": "Amanda responde preguntas y envía esas respuestas ella misma. Todo lo que te compromete —reservar, mover o cancelar una visita— espera un toque de tu equipo.",
       "fullLabel": "Responde y reserva",
       "fullDesc": "Amanda responde y reserva visitas por su cuenta, dentro del horario de tu calendario."
+    },
+    "markets": {
+      "intro": "De qué países proceden realmente sus compradores y vendedores. El contenido se escribe según las normas que les aplican: un noruego tiene libre circulación y ningún límite de 90 días; un británico, desde 2021, no. Si lo deja vacío, las publicaciones se escriben para un «comprador extranjero» genérico, que en la práctica significa británico.",
+      "regime": {
+        "eu": {
+          "label": "Unión Europea",
+          "note": "Libre circulación. Sin límite de 90/180. Certificado de registro para permanecer más de tres meses."
+        },
+        "eea": {
+          "label": "EEE, fuera de la UE",
+          "note": "Noruega, Islandia y Liechtenstein tienen la misma libre circulación que los ciudadanos de la UE y pertenecen a Schengen. No son terceros países y nunca están sujetos al cómputo de 90/180."
+        },
+        "ch": {
+          "label": "Suiza",
+          "note": "Libre circulación por su propio acuerdo bilateral: en inmigración, los mismos derechos prácticos que el EEE, pero tributa al tipo de no residente más alto."
+        },
+        "third": {
+          "label": "Fuera de la UE y del EEE",
+          "note": "Se aplica el límite de estancia de 90/180 y hace falta un visado para permanecer más tiempo. Desde abril de 2026 las entradas se cuentan electrónicamente en frontera."
+        }
+      },
+      "save": "Guardar mercados",
+      "saving": "Guardando…",
+      "count": "{n} mercados guardados",
+      "empty": "Aún no ha elegido mercados"
     }
   },
   "performance": {

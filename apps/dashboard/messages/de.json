@@ -999,6 +999,31 @@
       "assistedDesc": "Amanda beantwortet Fragen und sendet diese Antworten selbst. Alles, was Sie bindet — Besichtigung buchen, verschieben oder absagen — wartet auf einen Tipp Ihres Teams.",
       "fullLabel": "Antwortet und bucht",
       "fullDesc": "Amanda antwortet und bucht Besichtigungen selbst, innerhalb Ihrer Kalenderzeiten."
+    },
+    "markets": {
+      "intro": "Aus welchen Ländern Ihre Käufer und Verkäufer tatsächlich kommen. Inhalte werden nach den Regeln geschrieben, die für sie gelten – ein Norweger hat Freizügigkeit und keine 90-Tage-Grenze, ein britischer Käufer seit 2021 nicht. Bleibt dies leer, entstehen Beiträge für einen allgemeinen „ausländischen Käufer“, was in der Praxis einen britischen meint.",
+      "regime": {
+        "eu": {
+          "label": "Europäische Union",
+          "note": "Freizügigkeit. Keine 90/180-Grenze. Anmeldebescheinigung für Aufenthalte über drei Monate."
+        },
+        "eea": {
+          "label": "EWR, außerhalb der EU",
+          "note": "Norwegen, Island und Liechtenstein haben dieselbe Freizügigkeit wie EU-Bürger und gehören zu Schengen. Sie sind keine Drittstaaten und unterliegen nie der 90/180-Regel."
+        },
+        "ch": {
+          "label": "Schweiz",
+          "note": "Freizügigkeit über ein eigenes bilaterales Abkommen – aufenthaltsrechtlich dieselben praktischen Rechte wie im EWR, steuerlich jedoch der höhere Satz für Nichtansässige."
+        },
+        "third": {
+          "label": "Außerhalb von EU und EWR",
+          "note": "Die 90/180-Grenze für Kurzaufenthalte gilt; für längere Aufenthalte ist ein Visum erforderlich. Seit April 2026 werden Einreisen an der Grenze elektronisch gezählt."
+        }
+      },
+      "save": "Märkte speichern",
+      "saving": "Wird gespeichert…",
+      "count": "{n} Märkte gespeichert",
+      "empty": "Noch keine Märkte gewählt"
     }
   },
   "performance": {

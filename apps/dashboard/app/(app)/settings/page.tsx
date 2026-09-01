@@ -37,6 +37,7 @@ import type { AgentRow } from "./section-actions";
 import { CalendarResultBanner } from "./sections/calendar-section";
 import { ChannelsSection } from "./sections/channels-section";
 import { LanguagesSection } from "./sections/languages-section";
+import { MarketsSection } from "./sections/markets-section";
 import { TeamSection } from "./sections/team-section";
 import { PlanPrefsSection } from "./sections/plan-prefs-section";
 import { CatalogueSection } from "./sections/catalogue-section";
@@ -73,7 +74,7 @@ export default async function SettingsPage({
   // ?calendar=connected|error; the banner scrubs the param client-side.
   const { calendar: calendarResult } = await searchParams;
 
-  const [settingsRes, prefsRes, readinessRes, ctx, feedRes, calendarRes, amandaRes, agentsRes] = await Promise.allSettled([
+  const [settingsRes, prefsRes, readinessRes, ctx, feedRes, calendarRes, amandaRes, agentsRes, studioPrefsRes] = await Promise.allSettled([
     apiFetch<SettingsResponse>("/api/v1/settings"),
     apiFetch<PreferencesResponse>("/api/v1/me/preferences"),
     apiFetch<ReadinessResponse>("/api/v1/readiness"),
@@ -82,6 +83,7 @@ export default async function SettingsPage({
     apiFetch<CalendarStatusResponse>("/api/v1/calendar/status"),
     apiFetch<AmandaSettingsResponse>("/api/v1/amanda/settings"),
     apiFetch<{ ok: true; agents: AgentRow[] }>("/api/v1/amanda/agents"),
+    apiFetch<{ ok: true; prefs: { markets?: string[] } | null }>("/api/studio/preferences"),
   ]);
 
   if (settingsRes.status === "rejected") {
@@ -97,6 +99,14 @@ export default async function SettingsPage({
   // ChecklistSection. Never block the page on it.
   const readiness = readinessRes.status === "fulfilled" ? readinessRes.value : null;
   if (readinessRes.status === "rejected") logFailure("readiness", readinessRes.reason);
+
+  // Target markets are an enhancement too — an agency with no branding row yet simply has none,
+  // and a failed read must not take the whole settings page down with it.
+  const targetMarkets =
+    studioPrefsRes.status === "fulfilled" && Array.isArray(studioPrefsRes.value.prefs?.markets)
+      ? studioPrefsRes.value.prefs.markets
+      : [];
+  if (studioPrefsRes.status === "rejected") logFailure("studio-preferences", studioPrefsRes.reason);
 
   // Feed config (P3-A) is enhancement, not load-critical: a non-owner gets 403 and a pre-deploy build
   // gets 404 — either way the feed form seeds empty. Never block the page on it.
@@ -267,6 +277,9 @@ export default async function SettingsPage({
               initialWorkingHours={settings.config.working_hours}
               initialTimezone={settings.config.timezone}
             />
+          </div>
+          <div className="border-t border-border/60 pt-5">
+            <MarketsSection initial={targetMarkets} />
           </div>
         </div>
       ),

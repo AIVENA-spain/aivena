@@ -1295,7 +1295,7 @@ async function runPlannedCarousel(opts: {
     // trust — before anything renders. Quote decks are verbatim client words and skip it.
     let copyQa: { revised: boolean; notes: string[] } | undefined;
     if (opts.type === 'tips') {
-      const edited = await editPlan(plan, opts.topic ?? '', opts.language);
+      const edited = await editPlan(plan, opts.topic ?? '', opts.language, research);
       if (edited) {
         plan = edited.plan;
         copyQa = { revised: edited.notes.length > 0, notes: edited.notes };
@@ -1768,8 +1768,37 @@ route.post('/carousel/topic-ideas', async (c) => {
       `);
       seen = (hist as unknown as Array<{ topic: string }>).map((r) => r.topic).filter(Boolean);
     } catch { /* history unavailable — the session list still applies */ }
-    const topics = await topicIdeas(language, [...new Set([...exclude, ...seen])].slice(0, 60));
+
+    // ...and everything ever SHOWN, which is the bigger list by far. Christian, 2026-09-01: "i feel
+    // like i am seeing the same topics over and over again just another way of saying it... it
+    // would be good if it would never say the same topic again if it has already been chosen by an
+    // agency." Only GENERATED topics were remembered — 19 of them across the whole product — so an
+    // idea he was offered and did not pick could come back forever. Ideas are now remembered when
+    // they are OFFERED. Kept in agency_branding.creative_prefs, which the removed taste game left
+    // free, so this needs no migration.
+    let shown: string[] = [];
+    let prefs: Record<string, unknown> = {};
+    try {
+      const pr = await tx.execute(sql`SELECT creative_prefs FROM agency_branding WHERE agency_id = ${agencyId} LIMIT 1`);
+      prefs = ((pr as unknown as Array<{ creative_prefs: Record<string, unknown> | null }>)[0]?.creative_prefs) ?? {};
+      shown = Array.isArray(prefs.shown_topics)
+        ? (prefs.shown_topics as unknown[]).filter((x): x is string => typeof x === 'string') : [];
+    } catch { /* no prefs row yet — nothing shown before */ }
+
+    const topics = await topicIdeas(language, [...new Set([...exclude, ...seen, ...shown])].slice(0, 120));
     if (!topics) return c.json({ ok: false, error: 'ideas_failed', message: "Couldn't think of ideas right now — please try again." }, 502);
+
+    // remember what we just offered. Newest first, capped — an agency that has seen 400 ideas does
+    // not need the oldest ones held against it forever, and the cap keeps the prompt sane.
+    try {
+      const merged = [...topics, ...shown].slice(0, 400);
+      await tx.execute(sql`
+        UPDATE agency_branding
+           SET creative_prefs = COALESCE(creative_prefs, '{}'::jsonb) || ${JSON.stringify({ shown_topics: merged })}::jsonb
+         WHERE agency_id = ${agencyId}
+      `);
+    } catch { /* remembering is best-effort — never fail an agent's ideas over it */ }
+
     return c.json({ ok: true, topics });
   } catch (err) {
     console.error('[studio/topic-ideas] failed:', err);

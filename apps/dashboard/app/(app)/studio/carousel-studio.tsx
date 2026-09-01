@@ -57,7 +57,14 @@ const EXAMPLE_COUNTS: Record<string, number> = {
   // sereno = Christian's own reviewed deck (2026-08-30), the first example replaced under the
   // rules pass: 6 slides, hero + 4 tips + closing, in his brand colours
   // encalada = Christian's own reviewed deck (2026-08-31), his brand colours, English, 6 slides
-  acuarela: 8, arcilla: 8, bodegon: 8, bordado: 8, cartel: 7, editorial: 7, encalada: 6,
+  // cartel = Christian's own deck (2026-09-01), his green, 6 slides. One line was corrected before
+  // freezing: an 8-agent fact-check found "both types of debt are capped" legally false — community
+  // fees are capped at the purchase year plus three, IBI has no equivalent cut-off. Everything else
+  // is his as generated. All four type-only styles are now decks he reviewed himself.
+  // editorial = the first RESEARCHED example (2026-08-31): the writer looked the topic up before
+  // writing it, so the tips name the poder especial, the apostille and the certified copy. Espresso
+  // palette, chosen so the four type styles read as four different worlds in the picker.
+  acuarela: 8, arcilla: 8, bodegon: 8, bordado: 8, cartel: 6, editorial: 6, encalada: 6,
   litoral: 8, mercado: 8, papel: 8, pueblo: 8, salitre: 8, sereno: 6, tinta: 8,
   // listing styles (parked out of the UI): partial sample sets remain
   brisa: 2, cuarteto: 2, horizonte: 3, marea: 2, plano: 3, portada: 3, recorte: 2, riviera: 2, ventana: 2,

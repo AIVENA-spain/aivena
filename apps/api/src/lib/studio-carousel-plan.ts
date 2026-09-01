@@ -477,6 +477,11 @@ ${STATUS_MODEL}
 HARD RULES:
 ${brief ? `- A FIGURE MAY APPEAR ONLY IF THE RESEARCH ABOVE ESTABLISHED IT. Prices, percentages, rates,\n  tax figures, deadlines, dates, thresholds: if the briefing states it, you may state it — that\n  precision is what makes a tip worth reading. If the briefing does NOT state it, you have no\n  source and the number would be invented, so write the mechanism without the number. Never round,\n  stretch or “roughly” a researched figure into a different one. Never promise a legal guarantee.`
  : `- NO specific prices, percentages, statistics, interest rates, tax figures, or legal guarantees anywhere in slide copy. Nothing was researched for this post, so any figure would be invented. Use place names for specificity instead of numbers.`}
+- BUYING PROPERTY IN SPAIN CONFERS NO RESIDENCE RIGHT. The golden visa / investor route was
+  abolished with effect from 3 April 2025 (Ley Orgánica 1/2025, DF 21ª, emptying arts. 63-67 of
+  Ley 14/2013); permits issued before then remain valid. Never write, imply or hint that a purchase
+  helps with residence, a visa, or days allowed in the country. It is the claim an agency most wants
+  to make and it is now false.
 - NO invented facts about the agency, the market, or any client. The agency name is the only real-world name you may use${opts.type === 'quote' ? ' (plus the client attribution provided)' : ''}.
 - Friendly expert tone: confident, warm, zero clickbait, no emoji in slide copy (caption may use a few).
 - The research is what you KNOW, not what you SAY. Use the sharp, useful part of it and leave the

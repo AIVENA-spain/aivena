@@ -162,7 +162,10 @@ const OFFICE_EXEMPT_RE = /\b(office|team|kontoret?|oficina|equipo|b[üu]ro|kanto
 // passed normalisation but had no dead-air line, no template and no locale
 // behind it — a silent fallback to English wearing the costume of a handled
 // language, which is the same shape as the bug this table exists to prevent.
-const LANG_ALIASES: Record<string, string> = { no: 'nb', nn: 'nb', se: 'sv', dk: 'da' };
+// MUST stay identical to the DB trigger normalize_lead_language() (migration
+// leads_language_canonical_nb). language-consistency.test.ts asserts they agree —
+// 'nob' was added here after that test caught the DB normalising it and this not.
+const LANG_ALIASES: Record<string, string> = { no: 'nb', nn: 'nb', nob: 'nb', se: 'sv', dk: 'da' };
 
 /**
  * THE canonical language set for the whole product — the codes AIVENA stores,

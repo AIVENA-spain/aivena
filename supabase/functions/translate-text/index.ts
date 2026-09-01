@@ -5,18 +5,26 @@
 // DeepL key and shared secret both come from env).
 // Do NOT deploy this file without diffing against live first — the repo has been stale before.
 //
-// !! LANGUAGE-CODE INCONSISTENCY FOUND DURING CAPTURE (2026-09-01), NOT FIXED HERE !!
-// DETECTED_TO_AIVENA maps DeepL "NB" -> "no". This function WRITES that value into
-// leads.language (the self-healing writeback at the bottom). Our canonical code for
-// Norwegian is "nb" — SUPPORTED_LANGUAGES in apps/api/src/amanda-engine/validators.ts.
-// So every Norwegian lead auto-detected here gets the LEGACY code, and production
-// already contains language='no' because of it.
-// Nothing is broken today: normalizeLeadLanguage() maps no -> nb on read, and the
-// reminder tests pin that. But it violates the standing rule that a language code
-// must be the same everywhere, and it only holds because a normaliser catches it.
-// The one-word fix is "no" -> "nb" on the NB line, plus a backfill of existing rows.
-// Held because changing it is a live write to lead data and needs its own approval.
+// LANGUAGE-CODE NOTE (2026-09-01) — this file is CORRECT AS CAPTURED. Read before
+// "fixing" it. DETECTED_TO_AIVENA maps DeepL "NB" -> "no", and the writeback at
+// the bottom stores that in leads.language. Our canonical Norwegian code is "nb"
+// (SUPPORTED_LANGUAGES in apps/api/src/amanda-engine/validators.ts, and all 24
+// Meta-APPROVED Norwegian templates).
 //
+// My first instinct was a one-word change here, NB: "no" -> "nb". That would
+// have BROKEN production: the leads CHECK constraint accepted 'no' and REJECTED
+// 'nb', so every Norwegian detection would have failed the write outright.
+//
+// Fixed at the storage layer instead (migration leads_language_canonical_nb):
+// a BEFORE INSERT/UPDATE trigger normalises no/nn/nob -> nb, dk -> da, se -> sv,
+// so whatever ANY writer sends — this function, the API, or n8n, which we cannot
+// audit from here — the stored value is canonical. Proven by writing a literal
+// 'no' and reading back 'nb'.
+//
+// So the "no" below is now harmless, and this capture deliberately still says
+// "no" because a capture must match what is DEPLOYED. Change it only as part of
+// a real translate-text deploy, and update this note when you do.
+
 // W18 Translation v0.2 — translate-text Edge Function
 // Stateless DeepL wrapper. Optional row-update for conversation_messages.body_translated_owner
 // and dashboard_tasks.suggested_reply_translated_owner.

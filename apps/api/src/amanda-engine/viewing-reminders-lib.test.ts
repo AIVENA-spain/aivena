@@ -49,6 +49,16 @@ describe('viewing reminder — the template is localised, so the variables must 
     expect(reminderDateParts(MS, TZ, 'zz-not-a-tag').time).toBe('10:30');
   });
 
+  it('handles the EMPTY STRING the picker actually returns, not just null', () => {
+    // pick_and_mark_viewing_reminders selects
+    //   split_part(COALESCE(l.full_name,''), ' ', 1)
+    // which yields '' - never NULL - for a lead with no name. Verified against
+    // production: 1 of 6 leads has no full_name.
+    expect(reminderGreetingName('', 'nb')).toBe('du');
+    expect(reminderGreetingName('   ', 'nb')).toBe('du');
+    expect(reminderPropertyLabel('', 'nb')).toBe('boligen');
+  });
+
   it('uses the real name when we have one', () => {
     expect(reminderGreetingName('Marte', 'nb')).toBe('Marte');
     expect(reminderGreetingName('  Marte  ', 'nb')).toBe('Marte');

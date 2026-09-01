@@ -67,7 +67,18 @@ app.use(
 
 // Public routes — no auth, no RLS context.
 app.get('/health', (c) => {
-  return c.json({ status: 'ok', timestamp: new Date().toISOString() });
+  // The commit is here so a deploy can be VERIFIED from outside, not assumed.
+  // Twice now a deploy has shipped a tree that was not what we thought it was,
+  // and a bare {status:'ok'} cannot tell those two cases apart. Railway sets
+  // RAILWAY_GIT_COMMIT_SHA on every build; 'unknown' means running elsewhere.
+  // Public endpoint, so it exposes the short SHA only — never a branch, message
+  // or anything about the environment.
+  const sha = process.env.RAILWAY_GIT_COMMIT_SHA;
+  return c.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    commit: sha ? sha.slice(0, 7) : 'unknown',
+  });
 });
 
 // Studio template render (Phase 1) — mounted OUTSIDE /api/* on purpose: it is

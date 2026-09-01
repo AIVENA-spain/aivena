@@ -861,8 +861,30 @@ const IDEAS_TOOL = {
   },
 };
 
+/** Christian's own content research, 2026-09-01. He reframed the problem better than any category
+ *  taxonomy would: people do not follow an estate agency because they want estate-agency content,
+ *  they follow because they are asking "could I actually live there?", "am I about to make a massive
+ *  mistake?", "what don't I know yet?". So ideas are organised by the NEED behind the question. */
+const BUYER_NEEDS: Array<[string, string, string]> = [
+  ['MONEY', 'what will this really cost?', 'taxes, fees, mortgages, the bills after the keys, what a budget really has to cover'],
+  ['FEAR', 'what could go wrong?', 'scams, illegal builds, contracts, deposits, the thing nobody warns you about'],
+  ['DIRECTION', 'where should I buy?', 'town against town, neighbourhoods, who a place suits and who it does not'],
+  ['DREAM', 'what would my life actually look like?', 'the ordinary Tuesday, the specific small change, never "imagine waking up to this view"'],
+  ['DECISION', 'which option is better?', 'new vs resale, villa vs apartment, coast vs inland — and it must REACH A CONCLUSION'],
+  ['UNDERSTANDING', 'how does Spain actually work?', 'NIE, notary, lawyer, the sequence of a purchase, what each step is for'],
+  ['OPPORTUNITY', 'am I making a smart move?', 'the market, renting it out, timing, what the numbers mean for a person'],
+  ['TRUST', 'can I trust this agency?', 'transparency, mistakes agencies make, what a good agent does that a bad one does not'],
+];
+
 export async function topicIdeas(language: string, exclude: string[]): Promise<string[] | null> {
   const month = new Date().toLocaleString('en', { month: 'long' });
+  // Six ideas must span SIX DIFFERENT needs. Christian, 2026-09-01: "i feel like i am seeing the
+  // same topics over and over again just another way of saying it." They were — the generator was
+  // free to circle whichever theme it liked, and it liked paperwork and trust. Rotating the needs
+  // forces breadth into the batch instead of hoping for it. The offset moves with the exclusion
+  // list, so consecutive taps start from a different need.
+  const off = exclude.length % BUYER_NEEDS.length;
+  const chosen = Array.from({ length: 6 }, (_, i) => BUYER_NEEDS[(off + i) % BUYER_NEEDS.length]);
   const prompt = `You suggest Instagram tips-carousel topics for a real-estate agency on the Spanish coast (buyers are often foreign, sellers often local; the audience dreams of a home in Spain).
 
 Write 6 topic ideas in language "${language}".
@@ -884,6 +906,20 @@ THE TEST — every idea must pass all three, and this test OUTRANKS everything e
 2. "THAT'S ME": the target person immediately feels it names THEIR worry or THEIR dream.
 3. PAYOFF: it's obvious what they'll learn or feel if they open the post.
 FAILURES to never produce (real rejected examples): "The August terraces that empty out right when the light gets best" (atmospheric, means nothing on first read) · "Why agents go quiet when you ask about the neighbour's terrace extension" (too niche — not a real person's real worry).
+
+ONE IDEA PER NEED — the six ideas cover these six, in this order, one each. This is not optional:
+${chosen.map(([n, q, w], i) => `${i + 1}. ${n} — the reader is asking "${q}". Territory: ${w}`).join('\n')}
+
+WHAT A GOOD ONE SOUNDS LIKE (Christian's own examples — match this register, do not copy them):
+- money:   "You found a home for €250,000. Here's why €250,000 isn't your real budget."
+- fear:    "The beautiful villa we'd tell our own client NOT to buy."
+- direction: "Who should NOT live in Torrevieja?" — never "Discover beautiful Torrevieja".
+- dream:   "What Tuesday morning looks like when you don't have to scrape ice off your car."
+- decision: "€200k apartment vs €300k villa: which actually costs more to own?"
+- trust:   "Your estate agent says everything is fine. Your lawyer should still check this."
+The test he uses: is this the kind of thing someone SENDS TO THEIR PARTNER? If not, it is not good
+enough. A comparison must reach a conclusion — "both are great depending on your preferences" is
+chickening out. Make the dream SPECIFIC. Translate any market fact into "what this means for me".
 
 VARY THE TONE across the 6 — most practical and direct, one bolder/provocative with a sting ("Some people buy a home in Spain. Others buy a problem with a pool."), one warm dream-selling angle about the life itself, maybe one life-philosophy angle ("Everyone talks about work-life balance. Almost nobody talks about location-life balance.") — but tone is the FLAVOUR; the pain point and instant clarity are the substance. A clear, slightly plain idea beats a clever, unclear one every time. The quoted lines above are register examples only — NEVER output them or close paraphrases of them.
 

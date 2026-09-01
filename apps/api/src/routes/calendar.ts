@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { db, withAgency } from '../../../../packages/db/client';
 import { signState, verifyState, buildConsentUrl, buildTokenExchangeRequest } from './calendar-oauth-lib';
 import { parseGoogleTokenResponse } from './calendar-lib';
+import { safeErr } from '../lib/safe-error';
 
 /**
  * Google Calendar OAuth (Packet 2 · L1). Two mounts:
@@ -138,7 +139,7 @@ publicCalendarRoute.get('/google/callback', async (c) => {
         `);
       });
     } catch (err) {
-      console.error('[calendar/callback] reset-on-connect re-queue failed', err instanceof Error ? err.message : 'error');
+      console.error('[calendar/callback] reset-on-connect re-queue failed', safeErr(err));
     }
     return done('connected');
   } catch (err) {

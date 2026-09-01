@@ -81,7 +81,8 @@ export async function pollCalendarSyncs(limit = 10): Promise<{ processed: number
     try {
       context = await fetchBookingContext(agencyId, rows.map((r) => r.booking_id));
     } catch (err) {
-      console.error('[calendar/worker] context lookup failed — re-queueing agency batch as transient', agencyId, err instanceof Error ? err.message : 'error');
+      console.error('[calendar/worker] context lookup failed — re-queueing agency batch as transient', agencyId,
+        err instanceof Error ? err.message.split('\n')[0].slice(0, 200) : 'error');
       for (const row of rows) await safeMarkTransient(agencyId, row.booking_id, 'context_lookup_failed');
       continue;
     }
@@ -121,7 +122,15 @@ export async function pollCalendarSyncs(limit = 10): Promise<{ processed: number
         // A thrown row (network blip mid-refresh, DB hiccup) must not abort the
         // rest of the batch NOR strand this booking in 'syncing' — best-effort
         // transient mark keeps it on the retry path.
-        console.error('[calendar/worker] booking sync threw', row.booking_id, err instanceof Error ? err.message : 'error');
+        // FIRST LINE ONLY. Drizzle's DrizzleQueryError message is
+        // `Failed query: <sql>\nparams: <bind values>` — and this catch wraps
+        // syncOneBooking, whose FIRST statement is deps.getAccessToken →
+        // store_agency_oauth_credential(agencyId, provider, ACCESS_TOKEN,
+        // REFRESH_TOKEN, …). syncOneBooking has no try/catch of its own, so a
+        // DB failure there put live Google tokens into the logs. The sibling
+        // delete path (line ~203) and calendar.ts already do it this way.
+        console.error('[calendar/worker] booking sync threw', row.booking_id,
+          err instanceof Error ? err.message.split('\n')[0].slice(0, 200) : 'error');
         await safeMarkTransient(agencyId, row.booking_id, 'worker_exception');
       }
     }
@@ -249,7 +258,31 @@ async function getFreshAccessToken(agencyId: string, clientId: string, clientSec
 
   const req = buildRefreshRequest({ refreshToken: cred.refresh_token, clientId, clientSecret });
   const resp = await fetch(req.url, { method: req.method, headers: req.headers, body: req.body });
-  if (!resp.ok) return cred.access_token;
+  if (!resp.ok) {
+    // Google answers a REVOKED or dead refresh token with 400 invalid_grant.
+    // That is permanent: every later sweep fails identically. The old line
+    // returned the expired token and recorded nothing, so a disconnected
+    // calendar degraded silently forever and nobody at the agency was told.
+    // Mark it so the dashboard can ask them to reconnect. Transient failures
+    // (5xx, network) keep the old behaviour and simply retry next sweep.
+    let code = '';
+    try {
+      const body = (await resp.json()) as { error?: unknown };
+      code = typeof body.error === 'string' ? body.error : '';
+    } catch { /* not JSON — status alone decides */ }
+    if (resp.status === 400 || resp.status === 401 || code === 'invalid_grant') {
+      await db.execute(sql`
+        SELECT * FROM public.revoke_agency_oauth_credential(
+          ${agencyId}, ${PROVIDER}, ${`google_refresh_failed:${code || resp.status}`}
+        )
+      `);
+      // Never log the body: only the error CODE and status, never a token.
+      console.warn('[calendar/worker] calendar disconnected, reconnect needed', agencyId, code || resp.status);
+      return null;
+    }
+    console.warn('[calendar/worker] token refresh failed transiently', agencyId, resp.status);
+    return cred.access_token;
+  }
   const parsed = parseGoogleTokenResponse((await resp.json()) as Record<string, unknown>, Date.now());
   await db.execute(sql`
     SELECT * FROM public.store_agency_oauth_credential(

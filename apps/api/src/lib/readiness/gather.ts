@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm';
 import type { Tx } from '../../../../../packages/db/client';
 import { WhatsAppReadinessSchema } from '../../routes/whatsapp';
 import type { ReadinessSignals, WhatsAppSignal, PilotStatus } from './compute';
+import { safeErr } from '../safe-error';
 
 /**
  * Live readiness signal-gathering for the agency in the transaction's RLS GUC
@@ -18,7 +19,7 @@ async function safe<T>(tx: Tx, fn: (sp: Tx) => Promise<T>, fallback: T): Promise
   try {
     return await tx.transaction(async (sp) => fn(sp as unknown as Tx));
   } catch (err) {
-    console.error('[readiness] signal degraded:', err instanceof Error ? err.message : err);
+    console.error('[readiness] signal degraded:', safeErr(err));
     return fallback;
   }
 }

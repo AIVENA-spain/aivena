@@ -40,6 +40,7 @@ import { drainAmandaInbound, drainBusy, engineEnabled, requestDrainStop } from '
 import { processTurnDb } from './amanda-engine/process-turn-db';
 import { sweepViewingReminders } from './amanda-engine/viewing-reminders';
 import { pingTick } from './amanda-engine/agent-ping';
+import { safeErr } from './lib/safe-error';
 
 Sentry.init({
   dsn: env.SENTRY_DSN,
@@ -201,7 +202,7 @@ if (googleConfig() !== null) {
     try {
       await pollCalendarSyncs();
     } catch (err) {
-      console.error('[calendar/worker] tick failed', err instanceof Error ? err.message : 'error');
+      console.error('[calendar/worker] tick failed', safeErr(err));
     }
   };
   setTimeout(() => {

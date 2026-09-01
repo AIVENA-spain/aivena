@@ -162,8 +162,14 @@ export async function pingTick(nowMs: number = Date.now()): Promise<PingOutcome[
           await tx.execute(sql`
             INSERT INTO amanda_question_events (agency_id, question_id, event_type, detail)
             VALUES (${agencyId}, ${questionId}::uuid, 'pinged',
+                    -- ::boolean is REQUIRED. jsonb_build_object is VARIADIC
+                    -- "any", so Postgres cannot infer an untyped parameter and
+                    -- throws "could not determine data type of parameter $n".
+                    -- This line only runs after a ping SUCCEEDS, so it was
+                    -- never reached — the message would have gone out and then
+                    -- this transaction would roll the bookkeeping back.
                     jsonb_build_object('agent', ${agent.full_name}::text,
-                                       'language_match', ${!pick.languageCompromise}))
+                                       'language_match', ${!pick.languageCompromise}::boolean))
           `);
         }
       });

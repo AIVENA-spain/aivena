@@ -11,9 +11,9 @@
 
 import { sql } from 'drizzle-orm';
 import { db, withAgency } from '../../../../packages/db/client';
-import { reminderDateParts, type ReminderRow } from './viewing-reminders-lib';
+import { reminderDateParts, reminderGreetingName, reminderPropertyLabel, type ReminderRow } from './viewing-reminders-lib';
 
-export { reminderDateParts, type ReminderRow } from './viewing-reminders-lib';
+export { reminderDateParts, reminderGreetingName, reminderPropertyLabel, type ReminderRow } from './viewing-reminders-lib';
 
 export async function sweepViewingReminders(limit = 25): Promise<{ enqueued: number }> {
   const rows = (await db.execute(
@@ -23,7 +23,9 @@ export async function sweepViewingReminders(limit = 25): Promise<{ enqueued: num
   let enqueued = 0;
   for (const r of rows) {
     try {
-      const { date, time } = reminderDateParts(Date.parse(r.scheduled_at), r.tz);
+      const { date, time } = reminderDateParts(Date.parse(r.scheduled_at), r.tz, r.lead_language);
+      const greeting = reminderGreetingName(r.lead_first_name, r.lead_language);
+      const propertyLabel = reminderPropertyLabel(r.property_title, r.lead_language);
       await withAgency(r.agency_id, async (tx) => {
         await tx.execute(sql`
           INSERT INTO send_queue (idempotency_key, agency_id, lead_id, channel, hub, template_key, template_variables, priority, requested_by, requested_at, expiry_at)
@@ -31,8 +33,8 @@ export async function sweepViewingReminders(limit = 25): Promise<{ enqueued: num
             ${'viewing-reminder:' + r.booking_id}, ${r.agency_id}, ${r.lead_id}::uuid, 'whatsapp', 'twilio',
             'viewing_reminder_v1',
             jsonb_build_object(
-              '1', ${r.lead_first_name || 'there'}::text, '2', ${r.agency_name}::text,
-              '3', ${date}::text, '4', ${time}::text, '5', ${r.property_title ?? 'the property'}::text,
+              '1', ${greeting}::text, '2', ${r.agency_name}::text,
+              '3', ${date}::text, '4', ${time}::text, '5', ${propertyLabel}::text,
               'lead_phone', ${r.lead_phone}::text, 'first_name', ${r.lead_first_name || null}::text, 'agency_name', ${r.agency_name}::text
             ),
             'high', 'amanda_viewing_reminder', now(), now() + interval '4 hours'

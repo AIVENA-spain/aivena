@@ -1,5 +1,9 @@
 -- PREPARED, NOT APPLIED. Awaiting Christian's approval.
 --
+-- 2026-09-01: public._imp was dropped outright (migration
+-- drop_imp_studio_import_scratch), so it is no longer listed below. Six tables
+-- remain, carrying 24 client write grants between them.
+--
 -- Finding F8 of the 2026-08-31 audit. Seven public tables carry real write
 -- privileges (INSERT/UPDATE/DELETE/TRUNCATE) for the browser roles anon and
 -- authenticated. They came from the DEFAULT ACL of the supabase_admin role,
@@ -25,7 +29,6 @@
 BEGIN;
 
 REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON TABLE
-  public._imp,
   public.agencies,
   public.area_zone_adjacent,
   public.area_zone_alias,

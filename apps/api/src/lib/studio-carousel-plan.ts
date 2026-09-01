@@ -279,6 +279,81 @@ function planIssues(p: CarouselPlan, quoteSource: string): string | null {
   return null;
 }
 
+
+/** RESEARCH BEFORE WRITING — Christian 2026-08-31.
+ *
+ *  "it shouldnt ask if something is correct, it should ask first the questions needed to make sure
+ *  that the content is correct before writing it."
+ *
+ *  He is right, and it is a better design than checking afterwards. A writer working from
+ *  researched material writes true things naturally; a writer checked afterwards is edited around
+ *  holes, which reads stilted. It also generalises: an agent can type ANY topic and the engine
+ *  finds out about that one, rather than us maintaining a list of subjects we prepared for.
+ *
+ *  Two steps, because a SPECIFIC question gets a specific answer and a vague "research this" does
+ *  not — which is exactly his point about asking a chatbot a real question and getting a real
+ *  answer. First work out what needs to be known; then answer those questions with live search.
+ *  This is the pattern Amanda already runs in production (amanda-llm.ts) — she researches the area
+ *  before she answers a buyer. The carousel writer had no tools at all and wrote from memory.
+ *
+ *  CALIBRATION, in his words: "it cant be too strict either... this is for content and its not
+ *  soooooo strict." The goal is a well-informed writer, not a legal opinion. General mechanics are
+ *  stable and easy to establish; what must never happen is an INVENTED SPECIFIC — a deadline, a
+ *  threshold or a requirement nobody checked. Being informed is the point; refusing to write is a
+ *  failure, not a safe outcome. */
+async function researchTopic(topic: string, lang: string, region: string): Promise<string> {
+  const call = async (body: Record<string, unknown>, ms: number): Promise<string> => {
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), ms);
+    try {
+      let messages = body.messages as Array<{ role: string; content: unknown }>;
+      for (let i = 0; i < 3; i++) {
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST', signal: ctl.signal,
+          headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...body, messages }),
+        });
+        if (!res.ok) return '';
+        const data = await res.json() as { stop_reason?: string; content?: Array<{ type: string; text?: string }> };
+        // the model paused mid-search — echo its turn back so the tool loop continues
+        if (data.stop_reason === 'pause_turn' && data.content) {
+          messages = [messages[0], { role: 'assistant', content: data.content }];
+          continue;
+        }
+        return (data.content ?? []).filter((c) => c.type === 'text').map((c) => c.text ?? '').join('\n').trim();
+      }
+      return '';
+    } catch { return ''; }
+    finally { clearTimeout(timer); }
+  };
+
+  // 1 — what do we need to know to write this truthfully?
+  const questions = await call({
+    model: 'claude-sonnet-5', max_tokens: 500,
+    messages: [{ role: 'user', content:
+      `An estate agency on ${region} is writing an Instagram carousel of practical tips for buyers and owners on this topic:\n\n"${topic}"\n\n` +
+      `List the 3-5 questions someone would need answered to write ACCURATE, genuinely useful tips on it — the mechanics that decide whether the advice is right. ` +
+      `Concrete and answerable, not essay questions. If the topic is about how something works in Spain, ask about how it actually works. ` +
+      `Reply with the questions only, one per line, no numbering, no preamble.` }],
+  }, 25_000);
+  if (!questions) return '';
+
+  // 2 — answer them, with live search, and say plainly what could not be established
+  const findings = await call({
+    model: 'claude-sonnet-5', max_tokens: 1600,
+    output_config: { effort: 'low' },
+    tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 5 }],
+    messages: [{ role: 'user', content:
+      `Research these questions for an estate agency on ${region} writing practical content for buyers and owners of Spanish coastal property. ` +
+      `Search where it helps; today's rules matter more than old ones.\n\n${questions}\n\n` +
+      `Write a plain briefing of what is ESTABLISHED — the mechanics, the sequence, what actually happens. Be specific where you are sure. ` +
+      `If something varies by region, municipality or bank, say that it varies rather than picking a number. ` +
+      `If you could not establish something, write "UNCLEAR:" and the question — do not fill the gap with a plausible answer. ` +
+      `No preamble, no headings, no markdown. Under 400 words.` }],
+  }, 60_000);
+  return findings;
+}
+
 export async function planCarousel(opts: {
   type: 'tips' | 'quote';
   topic?: string;            // tips: what the carousel teaches
@@ -295,6 +370,14 @@ export async function planCarousel(opts: {
   const langNames: Record<string, string> = { es: 'Spanish', en: 'English', de: 'German', fr: 'French', nl: 'Dutch', sv: 'Swedish', no: 'Norwegian', da: 'Danish', fi: 'Finnish', pl: 'Polish', ru: 'Russian', it: 'Italian', pt: 'Portuguese' };
   const lang = langNames[opts.language] ?? 'Spanish';
   const region = opts.region || 'the Costa Blanca';
+
+  // Find out BEFORE writing. Never fatal: if research fails or times out the deck is still written,
+  // just from the model's own knowledge as it always was — a slow search must not cost an agent
+  // their post.
+  const brief = opts.type === 'tips' && opts.topic
+    ? await researchTopic(opts.topic, lang, region).catch(() => '')
+    : '';
+  if (brief) console.log(`[studio/carousel] researched "${String(opts.topic).slice(0, 60)}" — ${brief.length} chars`);
 
   const task = opts.type === 'tips'
     ? `Create an EDUCATIONAL carousel: exactly ${Math.min(7, Math.max(1, opts.slideCount ?? 5))} points about: "${opts.topic}".
@@ -333,7 +416,15 @@ CAROUSEL DOCTRINE (how these posts win — follow it):
 - EVERY tip also gets its own "scene": a LITERAL visual translation of THAT tip — the props act out the advice, so a viewer who sees only the image could guess the tip. HERO OBJECT LAW: each scene names ONE hero object in its first five words, and no two scenes in the deck (cover included) may share a hero object or lean on the same motif — different objects, different compositions, same world. Repetition across slides is a failure. NEVER default to the stock clichés — keys, suitcases, luggage, generic doors — unless the tip is literally about them; pick the tip's OWN objects instead (bills → tied envelopes; maintenance → a dripping tap; paperwork → a stamped folder; viewings → a pocket torch on a windowsill at dusk).${opts.avoidMotifs?.length ? `
 - RECENTLY USED in this agency's previous posts — do NOT use any of these as a hero object again, find fresh ones: ${opts.avoidMotifs.join('; ')}.` : ''}
 
-- EVERY FACTUAL CLAIM MUST BE TRUE. Claims are wanted — vague advice is worthless — but a wrong one destroys trust. For anything about the NIE, banks, taxes, residency, mortgages or ownership: state what is USUALLY true and why it helps, never an absolute impossibility you cannot verify. Worked example of the failure: "without a local account you cannot pay utilities, taxes or a mortgage" is FALSE — Eurozone SEPA rules forbid refusing a valid IBAN from another member state. The honest version keeps the value: "a Spanish account makes utilities, taxes and a mortgage far simpler to run".
+- EVERY FACTUAL CLAIM MUST BE TRUE. Claims are wanted — vague advice is worthless — but a wrong one destroys trust.
+${brief ? `
+WHAT RESEARCH ESTABLISHED ABOUT THIS TOPIC — write from THIS, not from memory. It was looked up for
+this post. Where it is specific, be specific: that is what makes a tip worth reading. Where it says
+something varies, say it varies. Anything marked UNCLEAR was NOT established — do not write a tip
+that depends on it, and never invent a deadline, a threshold or a requirement to fill the gap.
+
+${brief}
+` : ''} For anything about the NIE, banks, taxes, residency, mortgages or ownership: state what is USUALLY true and why it helps, never an absolute impossibility you cannot verify. Worked example of the failure: "without a local account you cannot pay utilities, taxes or a mortgage" is FALSE — Eurozone SEPA rules forbid refusing a valid IBAN from another member state. The honest version keeps the value: "a Spanish account makes utilities, taxes and a mortgage far simpler to run".
 
 HARD RULES:
 - NO specific prices, percentages, statistics, interest rates, tax figures, or legal guarantees anywhere in slide copy. General, evergreen advice only — you have no data source, so any figure would be invented. Use place names for specificity instead of numbers.

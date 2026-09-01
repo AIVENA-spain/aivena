@@ -437,6 +437,10 @@ HARD RULES:
 - NO specific prices, percentages, statistics, interest rates, tax figures, or legal guarantees anywhere in slide copy. General, evergreen advice only — you have no data source, so any figure would be invented. Use place names for specificity instead of numbers.
 - NO invented facts about the agency, the market, or any client. The agency name is the only real-world name you may use${opts.type === 'quote' ? ' (plus the client attribution provided)' : ''}.
 - Friendly expert tone: confident, warm, zero clickbait, no emoji in slide copy (caption may use a few).
+- The research is what you KNOW, not what you SAY. Use the sharp, useful part of it and leave the
+  rest out. A slide that recites everything established is a briefing, not a post — nobody reads to
+  the end of it. Short sentences. One idea per slide. If a body needs forty words and one breath,
+  the sentence underneath it is better: find that one instead.
 - Every sentence must parse cleanly on FIRST read: no clipped elliptical constructions ("has needs a full-time home doesn't"), no dropped relative pronouns that read like typos — write the complete clause ("has needs that a full-time home doesn't").
 
 Submit with the submit_carousel tool.`;
@@ -509,7 +513,7 @@ const EDIT_TOOL = {
   },
 } as const;
 
-export async function editPlan(plan: CarouselPlan, topic: string, language = 'es'): Promise<{ plan: CarouselPlan; notes: string[] } | null> {
+export async function editPlan(plan: CarouselPlan, topic: string, language = 'es', brief = ''): Promise<{ plan: CarouselPlan; notes: string[] } | null> {
   // RULE 4 — the deterministic detector names the exact sentences that assert an absolute about
   // a regulated subject, so the editor verifies or hedges THOSE rather than re-reading blind.
   const flagged = riskyClaims(plan);
@@ -545,6 +549,30 @@ CHECK EVERY TEXT FIELD:
 RULES FOR CORRECTIONS:
 - Rewrite in the SAME LANGUAGE as the existing copy, within the same length limits, same warm expert tone.
 - NEVER change hook_title. The agent either wrote it or approved it; it is not yours to improve.
+${brief ? `
+CHECK EVERY FACTUAL CLAIM AGAINST THE RESEARCH BELOW. This was looked up for this post, before the
+copy was written. Where a slide contradicts it, the slide is wrong — fix the slide. Where the
+research says something VARIES, the slide must not state a single figure. Where the research marks
+something UNCLEAR, no slide may depend on it.
+
+A real example of what this catches, from Christian's own deck: a slide said "both types of debt
+are capped" when the research established that only ONE of them is. Accurate on its face, false in
+substance, and it took an eight-agent legal check to find. That is the job.
+
+${brief}
+` : ''}
+HOW A CORRECTION MUST BE WRITTEN — this matters as much as the correction. Christian, 2026-09-01:
+"i just want to make sure that it still is content, not just an information bomb. it needs to be as
+entertaining as informative to read in a way while still staying professional and trustworthy."
+
+A fixed line must still be a LINE, not a legal notice. The research is what the deck KNOWS; the
+slide is what it SAYS, and those are never the same length. The best thing that fact-check produced
+was three words — "Never waive it." When you correct something:
+- say the useful half, not everything that is true
+- short sentences a person could read aloud without running out of breath
+- no clause-stacking, no "and, moreover, it should also be noted"
+- if the honest version needs forty words, it is the wrong sentence — find the sharp one underneath
+Never make a slide longer to make it more correct. Make it shorter and truer.
 - Change as little as possible — this is an edit, not a rewrite.
 - Artwork is handled by a separate art director: do NOT create, review or mention image_scenes or tip scenes.
 - Return the FULL plan (all fields, corrected where needed) with review_notes listing each fix in one short English sentence. If everything passes, return the plan unchanged with an empty review_notes array.

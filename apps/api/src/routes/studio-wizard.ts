@@ -1295,7 +1295,7 @@ async function runPlannedCarousel(opts: {
     // trust — before anything renders. Quote decks are verbatim client words and skip it.
     let copyQa: { revised: boolean; notes: string[] } | undefined;
     if (opts.type === 'tips') {
-      const edited = await editPlan(plan, opts.topic ?? '', opts.language);
+      const edited = await editPlan(plan, opts.topic ?? '', opts.language, research);
       if (edited) {
         plan = edited.plan;
         copyQa = { revised: edited.notes.length > 0, notes: edited.notes };

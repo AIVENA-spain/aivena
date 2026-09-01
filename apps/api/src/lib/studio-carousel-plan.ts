@@ -340,6 +340,12 @@ async function researchTopic(topic: string, lang: string, region: string): Promi
       `deadline, a threshold or an absolute ("always", "never", "you must", "you cannot"), make your FIRST question ask whether ` +
       `that specific assertion is actually true, and under what conditions it holds. Do not ask questions that take the claim ` +
       `for granted and merely elaborate around it.\n\n` +
+      `A QUESTION MUST NOT CARRY ITS OWN ANSWER. "Which towns barely change in winter versus which ` +
+      `visibly empty" has already decided that both groups exist and which towns are in each — it asks ` +
+      `for confirmation, not for evidence. Write "What actually closes here between November and March, ` +
+      `and in which towns" instead. No named conclusions, no rate bands, no nationality filed under a ` +
+      `legal category, no asserted cause. Ask what is the case, never whether a thing you already ` +
+      `believe is the case.\n\n` +
       `Reply with the questions only, one per line, no numbering, no preamble.` }],
   }, 25_000);
   if (!questions) return '';
@@ -353,8 +359,30 @@ async function researchTopic(topic: string, lang: string, region: string): Promi
       `Research these questions for an estate agency on ${region} writing practical content for buyers and owners of Spanish coastal property. ` +
       `Search where it helps; today's rules matter more than old ones.\n\n${questions}\n\n` +
       `Write a plain briefing of what is ESTABLISHED — the mechanics, the sequence, what actually happens. Be specific where you are sure. ` +
-      `If something varies by region, municipality or bank, say that it varies rather than picking a number. ` +
+      `If something varies by region, municipality or bank, say that it varies rather than picking a number.\n\n` +
+      // Three category mistakes a confident model makes fluently. Each produced a wrong published
+      // line before this guard existed: a Norwegian filed under "non-EU", a province-wide statistic
+      // repeated as a town's, and a search figure reported as a sale.
+      STATUS_MODEL + `\n\n` +
+      // The questions above are generated, not verified. Auditing them is the step that was missing:
+      // a question can smuggle in the very assumption it was meant to test.
+      `AUDIT THE QUESTIONS BEFORE YOU ANSWER THEM. They were written by another model and NOTHING in ` +
+      `them is established. A question can carry its own answer — naming towns on both sides of a ` +
+      `conclusion ("which barely change in winter versus which visibly empty"), quoting a rate band, ` +
+      `filing a nationality under a legal category, or asserting a cause. Where a question does that, ` +
+      `test the buried assumption FIRST and report what you actually find, even if the question ` +
+      `dissolves. Answering a loaded question accurately still produces a false briefing.\n\n` +
+      `ALSO NEVER COLLAPSE THESE:\n` +
+      `· GEOGRAPHY. Tag every figure with what it actually measures: Spain, the region, the province, ` +
+      `or one municipality. A province-wide number is NOT a fact about a town — say so explicitly ` +
+      `when it cannot be localised.\n` +
+      `· THE METRIC. Asking price is not sale price; a search or a listing view is not an enquiry and ` +
+      `not a purchase; transactions are not value; residents and non-residents are different populations. ` +
+      `Name the metric and the period beside every number.\n\n` +
       `If you could not establish something, write "UNCLEAR:" and the question — do not fill the gap with a plausible answer. ` +
+      `And if the TOPIC ITSELF turns out to rest on something you could not establish, or that the ` +
+      `sources contradict, say so in one line beginning "PREMISE FAILS:" — the post can still be ` +
+      `written, but it must be written about what is true rather than about the claim.\n` +
       `No preamble, no headings, no markdown. Under 400 words.` }],
   }, 60_000);
   return findings;
@@ -435,8 +463,15 @@ WHAT RESEARCH ESTABLISHED ABOUT THIS TOPIC — write from THIS, not from memory.
 this post. Where it is specific, be specific: that is what makes a tip worth reading. Where it says
 something varies, say it varies. Anything marked UNCLEAR was NOT established — do not write a tip
 that depends on it, and never invent a deadline, a threshold or a requirement to fill the gap.
+If the briefing contains a line beginning "PREMISE FAILS:", the topic itself was built on something
+the research could not support. Do NOT write the deck the topic asked for. Write the deck the research
+supports instead, on the same subject, and change the cover to match — a true post on a smaller claim
+beats a confident one on a false one. The topic is a suggestion; the research is the evidence.
 
 ${brief}
+` : ''}${brief ? `
+${STATUS_MODEL}
+
 ` : ''} For anything about the NIE, banks, taxes, residency, mortgages or ownership: state what is USUALLY true and why it helps, never an absolute impossibility you cannot verify. Worked example of the failure: "without a local account you cannot pay utilities, taxes or a mortgage" is FALSE — Eurozone SEPA rules forbid refusing a valid IBAN from another member state. The honest version keeps the value: "a Spanish account makes utilities, taxes and a mortgage far simpler to run".
 
 HARD RULES:
@@ -872,6 +907,27 @@ const IDEAS_TOOL = {
  *  taxonomy would: people do not follow an estate agency because they want estate-agency content,
  *  they follow because they are asking "could I actually live there?", "am I about to make a massive
  *  mistake?", "what don't I know yet?". So ideas are organised by the NEED behind the question. */
+/**
+ * Five variables a model collapses fluently, and a person can be a different thing in each.
+ * A Norwegian filed under "non-EU, 90/180" reached a published document before this existed —
+ * Norway is EEA and Schengen, so neither half of that was true. Kept as ONE constant used by both
+ * the research and the writing prompts, so the two can never drift apart.
+ */
+const STATUS_MODEL = `PERSON STATUS — FIVE SEPARATE VARIABLES. Never infer one from another:
+1. NATIONALITY — the passport. Decides nothing on its own.
+2. IMMIGRATION CATEGORY — EU · EEA-non-EU (Norway, Iceland, Liechtenstein) · Switzerland (its own
+   bilateral regime) · third country (UK, US, Canada). EEA and Swiss citizens hold free-movement
+   rights and are NOT on the 90/180 short-stay clock; Norway and Iceland are Schengen members.
+   Only third-country nationals need a visa route to stay beyond 90 days.
+3. SPANISH RESIDENCE STATUS — whether they actually hold residence here, and under which regime
+   (EU/EEA registration certificate vs TIE). Having the right to reside is not the same as using it.
+4. SPANISH TAX RESIDENCE — turns on where a person lives and where their interests are, NOT on their
+   passport. A third-country national can be Spanish tax-resident; an EU citizen can be non-resident.
+5. COUNTRY OF TAX RESIDENCE — which country taxes them, and which treaty applies.
+Worked example: a Norwegian national, tax-resident in the UK, who owns a Costa Blanca flat is an
+EEA citizen with free movement (not 90/180), a Spanish non-resident for tax, and taxed under the
+Spain-UK treaty. Every one of the five differs. If a claim depends on one of them, name which.`
+
 const BUYER_NEEDS: Array<[string, string, string]> = [
   ['MONEY', 'what will this really cost?', 'taxes, fees, mortgages, the bills after the keys, what a budget really has to cover'],
   ['FEAR', 'what could go wrong?', 'scams, illegal builds, contracts, deposits, the thing nobody warns you about'],

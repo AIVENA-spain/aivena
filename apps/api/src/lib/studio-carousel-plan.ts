@@ -462,7 +462,12 @@ CAROUSEL DOCTRINE (how these posts win — follow it):
 
 - EVERY FACTUAL CLAIM MUST BE TRUE. Claims are wanted — vague advice is worthless — but a wrong one destroys trust.
 ${brief ? `
-WHAT RESEARCH ESTABLISHED ABOUT THIS TOPIC — write from THIS, not from memory. It was looked up for
+${/^\s*PREMISE FAILS/m.test(brief) ? `THE STARTING IDEA WAS REJECTED. The research below contradicts the claim the topic was built on.
+Treat the topic ONLY as a pointer to the subject area — never as the angle, never as the headline to
+aim at, and never as something to soften into a half-truth. Write the deck the findings support and
+give it a cover that matches them. A true post on a smaller claim beats a confident one on a false one.
+
+` : ''}WHAT RESEARCH ESTABLISHED ABOUT THIS TOPIC — write from THIS, not from memory. It was looked up for
 this post. Where it is specific, be specific: that is what makes a tip worth reading. Where it says
 something varies, say it varies. Anything marked UNCLEAR was NOT established — do not write a tip
 that depends on it, and never invent a deadline, a threshold or a requirement to fill the gap.
@@ -478,7 +483,7 @@ ${opts.marketBrief ? `\n${opts.marketBrief}\n` : ''}
 ` : ''} For anything about the NIE, banks, taxes, residency, mortgages or ownership: state what is USUALLY true and why it helps, never an absolute impossibility you cannot verify. Worked example of the failure: "without a local account you cannot pay utilities, taxes or a mortgage" is FALSE — Eurozone SEPA rules forbid refusing a valid IBAN from another member state. The honest version keeps the value: "a Spanish account makes utilities, taxes and a mortgage far simpler to run".
 
 HARD RULES:
-${brief ? `- A FIGURE MAY APPEAR ONLY IF THE RESEARCH ABOVE ESTABLISHED IT. Prices, percentages, rates,\n  tax figures, deadlines, dates, thresholds: if the briefing states it, you may state it — that\n  precision is what makes a tip worth reading. If the briefing does NOT state it, you have no\n  source and the number would be invented, so write the mechanism without the number. Never round,\n  stretch or “roughly” a researched figure into a different one. Never promise a legal guarantee.`
+${brief ? `- A FIGURE MAY APPEAR ONLY IF THE RESEARCH ABOVE ESTABLISHED IT. Prices, percentages, rates,\n  tax figures, deadlines, dates, thresholds: if the briefing states it, you may state it — that\n  precision is what makes a tip worth reading. If the briefing does NOT state it, you have no\n  source and the number would be invented, so write the mechanism without the number. Never round,\n  stretch or “roughly” a researched figure into a different one. Never promise a legal guarantee.\n  A NAME IS A FIGURE TOO: form numbers (EX-18, Modelo 210, Modelo 211), article numbers, decree and\n  law references, office names and portal names are all facts with a source or they are inventions.\n  A smoke test caught the writer printing \\'EX-20\\' where the research said EX-18 — close enough to\n  look right, wrong enough to send someone to the wrong desk. If the briefing did not name it, describe\n  the document instead of numbering it.`
  : `- NO specific prices, percentages, statistics, interest rates, tax figures, or legal guarantees anywhere in slide copy. Nothing was researched for this post, so any figure would be invented. Use place names for specificity instead of numbers.`}
 - BUYING PROPERTY IN SPAIN CONFERS NO RESIDENCE RIGHT. The golden visa / investor route was
   abolished with effect from 3 April 2025 (Ley Orgánica 1/2025, DF 21ª, emptying arts. 63-67 of
@@ -579,7 +584,7 @@ THIS DECK IS WRITTEN IN ${deckLang.toUpperCase()}. Every field you return must s
 language was chosen by the agent, not by you — never translate a field, and never "correct" one that
 looks out of place to you. If a field is already in ${deckLang}, leave its language alone. The reader of this Instagram carousel is a potential client — every slide must make sense on first read, teach something useful, and sound like an agent they can trust. Review the plan below and correct ONLY what fails.
 
-POST TOPIC: "${topic}"${flagged.length ? `
+POST TOPIC: "${topic}"${/^\s*PREMISE FAILS/m.test(brief) ? ' — REJECTED BY RESEARCH. The deck deliberately does not answer this topic as written; do not steer it back.' : ''}${flagged.length ? `
 
 CLAIMS FLAGGED FOR VERIFICATION — each of these asserts an absolute about the NIE, banks, taxes, residency, mortgages or ownership. Verify each one. If it is not true as written, rewrite it so it stays USEFUL but true (keep the claim, lose the falsehood). Do not simply delete the advice:
 ${flagged.map((f) => `- "${f}"`).join('\n')}` : ''}

@@ -1,0 +1,196 @@
+[
+ {
+  "id": "art-art",
+  "n": 9001,
+  "must_research": [
+   "Establish for the 2026 tax year: art. Art. 85 LIRPF sets the imputation at 2% of cadastral value"
+  ]
+ },
+ {
+  "id": "dup-255",
+  "n": 9002,
+  "must_research": [
+   "The Comunidad Valenciana rules on how long the town hall retains power to order demolition, and The Comunidad Valenciana rules on how long the town hall retains power to order restoration"
+  ]
+ },
+ {
+  "id": "dup-renvoi",
+  "n": 9003,
+  "must_research": [
+   "The renvoi problem for English nationals specifically: English law scission and The renvoi problem for English nationals, correctly located: renvoi arises"
+  ]
+ },
+ {
+  "id": "truncated",
+  "n": 9004,
+  "never_assume": [
+   "Never assume the agreed price is what the seller banks: commission carries VAT on top, and Agenc"
+  ]
+ },
+ {
+  "id": "refund-false",
+  "n": 9005,
+  "never_assume": [
+   "Never present the 3% as automatically refundable; on a genuine gain there is nothing to return."
+  ]
+ },
+ {
+  "id": "accepted-offer",
+  "n": 9006,
+  "hook": [
+   "An accepted offer is not a sale — nothing binds until the paperwork is signed."
+  ]
+ },
+ {
+  "id": "obsolete-registry",
+  "n": 9007,
+  "must_research": [
+   "The national single rental registry / ventanilla única digital requirement for advertising short lets, and what an unregistered listing risks."
+  ]
+ },
+ {
+  "id": "stale-padron",
+  "n": 9008,
+  "must_research": [
+   "INE's municipality-by-nationality padrón series ends at 1 January 2022. No 2023 foreign-national percentage for Xabia can be quoted."
+  ]
+ },
+ {
+  "id": "double-period",
+  "n": 9009,
+  "must_research": [
+   "Establish what the nota simple shows under art. 175 RN.."
+  ]
+ },
+ {
+  "id": "unbalanced-paren",
+  "n": 9010,
+  "must_research": [
+   "Andalusia's AFO does not apply (and a Declaracion de Interes Comunitario covers non-residential uses))"
+  ]
+ },
+ {
+  "id": "editorial-leak",
+  "n": 9011,
+  "hook": [
+   "Stop fixing the count and the gate in advance. Something like: several reliefs can wipe out the tax"
+  ]
+ },
+ {
+  "id": "agency-first-person",
+  "n": 9012,
+  "hook": [
+   "Ask any agent for that list in writing before you sign the mandate — here is ours."
+  ]
+ },
+ {
+  "id": "fifteen-day",
+  "n": 9013,
+  "must_research": [
+   "hearing and eviction targeted within roughly 15 days under the fast-track route"
+  ]
+ },
+ {
+  "id": "golden-visa",
+  "n": 9014,
+  "must_research": [
+   "Whether the golden visa route still helps a buyer at this price point"
+  ]
+ },
+ {
+  "id": "sends-ratio",
+  "n": 9015,
+  "never_assume": [
+   "Remember a send is worth 3 times a like when choosing the angle"
+  ]
+ },
+ {
+  "id": "art9-three-tests",
+  "n": 9016,
+  "must_research": [
+   "The three independent tests in Art. 9 LIRPF that make someone Spanish tax resident"
+  ]
+ },
+ {
+  "id": "ees-not-live",
+  "n": 9017,
+  "never_assume": [
+   "Do not assume EES is uniformly live across Schengen external borders"
+  ]
+ },
+ {
+  "id": "two-routes",
+  "n": 9018,
+  "hook": [
+   "The closed terrace the register never heard of: the two routes back onto paper"
+  ]
+ },
+ {
+  "id": "mivau-as-transaction",
+  "n": 9019,
+  "must_research": [
+   "the notarial deed price and transaction count (Consejo General del Notariado / MIVAU) for the province"
+  ]
+ },
+ {
+  "id": "taking-the-difference",
+  "n": 9020,
+  "question": "Why does the same villa appear at three prices on three websites, and who is taking the difference?"
+ },
+ {
+  "id": "ine-ipv-as-area-average",
+  "n": 9021,
+  "must_research": [
+   "official transaction-price statistics built from what buyers actually paid (INE's Indice de Precios de Vivienda, Registradores, Notariado), published as Alicante area averages"
+  ]
+ },
+ {
+  "id": "replacement-overlap",
+  "n": 9022,
+  "must_research": [
+   "The notarial series is deed price, not an official statistic.2 of notarised sales by province"
+  ]
+ },
+ {
+  "id": "tax-residence-shorthand",
+  "n": 9024,
+  "never_assume": [
+   "Tax residence is where a person lives, not what passport they hold."
+  ]
+ },
+ {
+  "id": "exactly-one",
+  "n": 9025,
+  "hook": [
+   "Buyer found, price agreed — and exactly one of them has that power by law."
+  ]
+ },
+ {
+  "id": "template-placeholder",
+  "n": 9026,
+  "must_research": [
+   "Name the metric [NAME THE FIGURE EXPLICITLY — e.g. median days on market] and establish whether a series exists"
+  ]
+ },
+ {
+  "id": "only-one-lever",
+  "n": 9027,
+  "must_research": [
+   "Only one of these levers can currently be priced from an official source"
+  ]
+ },
+ {
+  "id": "count-as-probability",
+  "n": 9028,
+  "must_research": [
+   "Convert the provincial occupation count into the probability that this buyer's home will be occupied"
+  ]
+ },
+ {
+  "id": "escaped-ecli",
+  "n": 9029,
+  "must_research": [
+   "annulled by TSJCV, ECLI\\:ES\\:TSJCV:2024:5929"
+  ]
+ }
+]

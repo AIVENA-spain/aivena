@@ -1,0 +1,1769 @@
+{
+ "seller": [
+  {
+   "topic_id": "S1",
+   "original_hook": "Your Costa Blanca home can be described by several different price instruments: portal asking prices; the Catastro's valor de referencia; actual transaction and deed evidence from the Notariado and the Registradores; INE's price index at autonomous-community level; and MIVAU appraisal values. They measure different things and must never be treated as versions of one number.",
+   "hook_status": "REWRITTEN",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    0,
+    1,
+    2,
+    3,
+    443,
+    623,
+    765
+   ]
+  },
+  {
+   "topic_id": "S2",
+   "original_hook": "The pool, the glazed terrace, the extra bedroom: if the register has never heard of them, find out what they do to your price before the buyer's valuer does",
+   "hook_status": "RETAINED",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    4,
+    5,
+    6,
+    7,
+    8,
+    624,
+    625
+   ]
+  },
+  {
+   "topic_id": "S3",
+   "original_hook": "An administrative value may already be attached to your property — one you never commissioned and will not find on your deed. Find out whether yours has one, what it governs, and what it does not.",
+   "hook_status": "REWRITTEN",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    9,
+    10,
+    444
+   ]
+  },
+  {
+   "topic_id": "S4",
+   "original_hook": "Price indicators and transaction volumes can move in opposite directions. What are Alicante province's latest readings right now, and what does each actually measure?",
+   "hook_status": "REWRITTEN",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    11,
+    12,
+    13,
+    14,
+    626
+   ]
+  },
+  {
+   "topic_id": "S5",
+   "original_hook": "Several sources and producers publish a price per square metre covering Alicante province — a ministry, the registrars, the notaries and the private portals — and they do not agree. Before you accept any valuation of your home, ask which one it was built on.",
+   "hook_status": "REWRITTEN",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    15,
+    16,
+    17,
+    18,
+    19,
+    446,
+    742
+   ]
+  },
+  {
+   "topic_id": "S6",
+   "original_hook": "Someone will tell you homes here sell in X days. Before you price to that number, ask what it counted — and whether anyone measures it for your town at all.",
+   "hook_status": "RETAINED",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    20,
+    21
+   ]
+  },
+  {
+   "topic_id": "S7",
+   "original_hook": "Fewer homes changed hands in Alicante province in the first half of 2026 than a year earlier, while national prices were being reported at record highs. Both things are true, and only one of them is about your buyer.",
+   "hook_status": "TIME_SENSITIVE",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    447,
+    627,
+    628
+   ]
+  },
+  {
+   "topic_id": "S8",
+   "original_hook": "A price cut is never just a smaller number. It restarts things, it is visible, and on the Costa Blanca your home may have more than one clock running at once. Here is what actually happens when a listing is reduced.",
+   "hook_status": "AGENCY_REQUIRED",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    30,
+    448
+   ]
+  },
+  {
+   "topic_id": "S9",
+   "original_hook": "Selling your Costa Blanca home while non-resident for Spanish tax purposes? The buyer must hand 3% of the price straight to Hacienda instead of to you — but it is a payment on account of your capital-gains tax, not the tax itself: once you file your modelo 210 you may get all of it back, some of it, or none, and you may still owe more. Here is who takes it, why, and how you settle it afterwards — whether any of it comes back depends on the gain.",
+   "hook_status": "RETAINED",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    31,
+    32,
+    33,
+    34,
+    35,
+    449
+   ]
+  },
+  {
+   "topic_id": "S10",
+   "original_hook": "Two sellers can face different capital-gains rate structures on identical sales because one is Spanish tax-resident and the other is not. Nationality alone does not decide it.",
+   "hook_status": "REWRITTEN",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    36,
+    37,
+    38,
+    39,
+    40,
+    41
+   ]
+  },
+  {
+   "topic_id": "S11",
+   "original_hook": "The town-hall tax on your sale can be worked out two ways, and if the real increase in the land's value is lower than the objective calculation you can ask for that lower figure to be used instead — plus one twist that only applies when the seller is an individual who is not resident in Spain.",
+   "hook_status": "REWRITTEN",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    42,
+    43,
+    44,
+    45,
+    46,
+    47,
+    450,
+    451
+   ]
+  },
+  {
+   "topic_id": "S12",
+   "original_hook": "Which ones you can reach turns on where you are tax-resident, how old you are, and whether the property was ever your main home.",
+   "hook_status": "REWRITTEN",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    48,
+    49,
+    50,
+    452
+   ]
+  },
+  {
+   "topic_id": "S13",
+   "original_hook": "The agency contract you signed at your own kitchen table may not bind you the same way as one signed in their office — check which one you have before you sign anything.",
+   "hook_status": "RETAINED",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    51,
+    52,
+    453
+   ]
+  },
+  {
+   "topic_id": "S14",
+   "original_hook": "Some of the bills for selling arrive before a buyer does. The energy certificate, the occupancy paperwork, the community's debt letter — who pays each one, and which of them can actually stop the signing.",
+   "hook_status": "RETAINED",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    53,
+    54,
+    55,
+    56,
+    454,
+    455,
+    456,
+    457,
+    631
+   ]
+  },
+  {
+   "topic_id": "S15",
+   "original_hook": "'Three to seven percent' is a national range, not our price. Here is exactly what we charge to sell your home, whether the tax sits on top of that number, and what the fee actually buys.",
+   "hook_status": "AGENCY_REQUIRED",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    458,
+    459
+   ]
+  },
+  {
+   "topic_id": "S16",
+   "original_hook": "The price on the listing is not the money that reaches your account. Some of what comes off is gone for good, some of it lowers the figure you are taxed on, and some of it — depending on where you are tax-resident — is only being held.",
+   "hook_status": "REWRITTEN",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    57,
+    58,
+    59,
+    460,
+    461
+   ]
+  },
+  {
+   "topic_id": "S17",
+   "original_hook": "Sell as a Spanish non-resident and the buyer withholds 3% of the agreed price at completion. It is a payment on account, not the final tax: after Modelo 210, you may receive an excess refund, receive nothing back, or still owe more.",
+   "hook_status": "REWRITTEN",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    60,
+    61,
+    62,
+    63,
+    64,
+    65
+   ]
+  },
+  {
+   "topic_id": "S18",
+   "original_hook": "Spanish capital-gains tax is based on the taxable gain, not simply the sale price. Acquisition value, qualifying costs and improvements determine that gain.",
+   "hook_status": "REWRITTEN",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    66,
+    462
+   ]
+  },
+  {
+   "topic_id": "S19",
+   "original_hook": "A Spanish property sale can involve two separate tax systems: income tax on the capital gain and municipal plusvalía on the land-value increase. Either may be zero depending on the facts.",
+   "hook_status": "REWRITTEN",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    67,
+    68,
+    69
+   ]
+  },
+  {
+   "topic_id": "S20",
+   "original_hook": "Between the price on the sign and the transfer into your account sits a list of line items. Ask any agent for that list in writing before you sign the mandate.",
+   "hook_status": "RETAINED",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    70,
+    464,
+    465,
+    632,
+    633
+   ]
+  },
+  {
+   "topic_id": "S21",
+   "original_hook": "You can sell your Costa Blanca home without flying over — but a Spanish notary will refuse the wrong kind of power. Here is what yours has to say.",
+   "hook_status": "RETAINED",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    71,
+    467,
+    468,
+    469
+   ]
+  },
+  {
+   "topic_id": "S22",
+   "original_hook": "Which amounts are permanent costs, which are payments on account, and which may be recoverable depending on the final liability?",
+   "hook_status": "REWRITTEN",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    72,
+    73,
+    74,
+    75,
+    76
+   ]
+  },
+  {
+   "topic_id": "S23",
+   "original_hook": "You inherited a place on the coast and now want to sell it. One clock started on the day of the death — and the request for more time has its own, earlier, deadline.",
+   "hook_status": "RETAINED",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    77,
+    470
+   ]
+  },
+  {
+   "topic_id": "S24",
+   "original_hook": "\"How long does it take if I never fly over?\" There is no national average that answers that. There are only the sales this office actually completed for owners who stayed abroad.",
+   "hook_status": "AGENCY_REQUIRED",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    78,
+    634
+   ]
+  },
+  {
+   "topic_id": "S25",
+   "original_hook": "Six months from the date of death — and if you need longer, the extension has to be requested inside the first five. The inheritance calendar nobody hands a family living abroad.",
+   "hook_status": "REWRITTEN",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    79,
+    80,
+    471
+   ]
+  },
+  {
+   "topic_id": "S26",
+   "original_hook": "A sale can be agreed while an inherited property is still registered in the deceased owner's name, but who can validly bind the estate depends on the succession position. Before partition, do not say an individual heir owns the specific house: where the property remains in the hereditary community, all participants whose consent is required must act. The succession and registry chain must then be completed in the correct order before the buyer can register title.",
+   "hook_status": "REWRITTEN",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    473,
+    474,
+    766
+   ]
+  },
+  {
+   "topic_id": "S27",
+   "original_hook": "The price your parents paid is probably not the number your gain is measured from — and the town hall may be owed on the same land twice: once when you inherited, once when you sell.",
+   "hook_status": "RETAINED",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    81,
+    82,
+    475
+   ]
+  },
+  {
+   "topic_id": "S28",
+   "original_hook": "If three heirs become co-owners of the property, selling the whole property requires all co-owners to participate or the co-ownership to be resolved another way.",
+   "hook_status": "REWRITTEN",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    83,
+    476,
+    477
+   ]
+  },
+  {
+   "topic_id": "S29",
+   "original_hook": "The loan was paid off years ago. The Land Registry may still show the mortgage — find out what it takes to actually get it off, and who has to sign.",
+   "hook_status": "RETAINED",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    478,
+    479,
+    480
+   ]
+  },
+  {
+   "topic_id": "S30",
+   "original_hook": "Your buyer's money does not reach you in one piece. Here is what comes off the price on the day you sign — which amounts are gone for good, which are payments on account, and which you may get back later, if at all.",
+   "hook_status": "REWRITTEN",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    84,
+    85,
+    86,
+    87,
+    88,
+    89,
+    481,
+    482
+   ]
+  },
+  {
+   "topic_id": "S31",
+   "original_hook": "Nobody can honestly tell you how many weeks your bank will take. But some of this paperwork has a legal clock on it, and some has none at all — know which is which before you set a completion date.",
+   "hook_status": "RETAINED",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    90,
+    91,
+    484,
+    637,
+    743,
+    744
+   ]
+  },
+  {
+   "topic_id": "S32",
+   "original_hook": "You paid the bank fifteen years of interest on this place. Find out whether Spain's gain calculation counts a single cent of it — and what it does count instead.",
+   "hook_status": "RETAINED",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    92,
+    93,
+    94,
+    95,
+    485,
+    638
+   ]
+  },
+  {
+   "topic_id": "S33",
+   "original_hook": "Sell a home with a residential LAU tenant in place and the buyer normally steps into the landlord's position for the applicable statutory period. Seasonal and tourist lets follow different rules.",
+   "hook_status": "REWRITTEN",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    96,
+    486,
+    487
+   ]
+  },
+  {
+   "topic_id": "S34",
+   "original_hook": "Winter let, holiday let, long let — same flat, three different sales. What your buyer takes on turns on the real legal category of the letting, not the label on the contract.",
+   "hook_status": "REWRITTEN",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    97,
+    98,
+    99,
+    100,
+    488
+   ]
+  },
+  {
+   "topic_id": "S35",
+   "original_hook": "Before you sign with a buyer, your tenant may have the right to take the deal at the same price — and the line you sign at the notary about whether the flat is let is the one that bites.",
+   "hook_status": "RETAINED",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    101,
+    489,
+    490,
+    491,
+    492,
+    493
+   ]
+  },
+  {
+   "topic_id": "S36",
+   "original_hook": "\"Should I get them out first?\" — what a sitting tenant really changes about who can buy, what they pay, and how long it takes. Including the parts nobody has actually measured.",
+   "hook_status": "AGENCY_REQUIRED",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    102,
+    103,
+    104,
+    105,
+    106,
+    494,
+    639
+   ]
+  },
+  {
+   "topic_id": "S37",
+   "original_hook": "Seven months \"on the market\" — but nobody measures that clock the way you think. What the published figures actually count, and what evidence would genuinely tell you something about your own street.",
+   "hook_status": "REWRITTEN",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    107,
+    108,
+    109,
+    110,
+    640
+   ]
+  },
+  {
+   "topic_id": "S38",
+   "original_hook": "The €/m² figures you can look up for Alicante do not measure the same thing. The Ministry of Housing's valor tasado is an appraisal, averaged from valuers' reports. The Notariado's comes from the signed deed. The Registradores' from the registered sale. The Catastro's mapa de valores assigns an average €/m² module to each homogeneous valuation area, drawn from the prices notaries report. And none of them is the asking price on a portal — that is where a seller starts, not a record of what happened. Which one describes your house?",
+   "hook_status": "REWRITTEN",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    111,
+    112,
+    113,
+    114,
+    115,
+    497,
+    738,
+    745,
+    746
+   ]
+  },
+  {
+   "topic_id": "S39",
+   "original_hook": "The viewings went fine. The buyer said yes. The sale died at the notary's desk. Which pieces of paper can legally stop a signing on the Costa Blanca — and which ones only cost you money.",
+   "hook_status": "RETAINED",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    116,
+    498
+   ]
+  },
+  {
+   "topic_id": "S40",
+   "original_hook": "The same home can appear with several agents and several prices. Your mandate matters — but so do Spanish consumer rules and the Valencian agent regime. Here is what the contract controls and what the law controls.",
+   "hook_status": "REWRITTEN",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    117
+   ]
+  },
+  {
+   "topic_id": "S41",
+   "original_hook": "Transaction volume and price indicators can move in opposite directions. What are Alicante province's latest readings, and what does each measure?",
+   "hook_status": "REWRITTEN",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    118,
+    119,
+    120,
+    121,
+    122,
+    123,
+    124,
+    643,
+    739
+   ]
+  },
+  {
+   "topic_id": "S42",
+   "original_hook": "The price is one line of the offer. Notary costs, signing date, statutory withholdings and any additional agreed retention are separate lines — and only some are fixed by law.",
+   "hook_status": "REWRITTEN",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    125,
+    126,
+    127,
+    128,
+    129
+   ]
+  },
+  {
+   "topic_id": "S43",
+   "original_hook": "A buyer can become legally bound before the notary and before keys change hands. What matters is exactly what the parties agreed — offer, reservation, arras or sale contract — and whether that document contains the essential elements and an intention to bind.",
+   "hook_status": "REWRITTEN",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    130,
+    131,
+    621
+   ]
+  },
+  {
+   "topic_id": "S44",
+   "original_hook": "The offer is accepted — then the buyer's side finds the closed terrace, the pool or the extra bedroom was never registered. Here is what that legitimately changes about the price, and what it doesn't.",
+   "hook_status": "RETAINED",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    500,
+    501
+   ]
+  },
+  {
+   "topic_id": "S45",
+   "original_hook": "If your home sits in a community of owners, the notary is told not to authorise your sale without a certificate that comes from your building, not from you — and only the buyer can waive it.",
+   "hook_status": "REWRITTEN",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    132,
+    133,
+    502
+   ]
+  },
+  {
+   "topic_id": "S46",
+   "original_hook": "The closed terrace, pool or extra bedroom the register has never heard of: what routes may exist to bring the paperwork into line, what each requires, and when land or planning status blocks the usual route.",
+   "hook_status": "REWRITTEN",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    503
+   ]
+  },
+  {
+   "topic_id": "S47",
+   "original_hook": "You do not have to fly to Spain to sign — but a power of attorney with the wrong wording, the wrong legalisation or the wrong translation can fail at the notary's desk, on the day there is no time left to fix it.",
+   "hook_status": "REWRITTEN",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    134,
+    135,
+    504,
+    505,
+    645,
+    647,
+    747
+   ]
+  },
+  {
+   "topic_id": "S48",
+   "original_hook": "The register still names someone who died. Here is the chain that has to close before a buyer can register anything — and which steps carry a legal deadline and which do not",
+   "hook_status": "REWRITTEN",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    136,
+    507,
+    508,
+    509
+   ]
+  },
+  {
+   "topic_id": "S49",
+   "original_hook": "There is one number a Costa Blanca agent should be able to give you before you sign anything — and a public list you can check it against yourself.",
+   "hook_status": "RETAINED",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    137,
+    511,
+    725
+   ]
+  },
+  {
+   "topic_id": "S50",
+   "original_hook": "Where you signed the agency contract may decide whether you can walk away from it — the kitchen table and the agency office are not the same thing in Spanish law.",
+   "hook_status": "RETAINED",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": []
+  },
+  {
+   "topic_id": "S51",
+   "original_hook": "One house, five agencies, five separate adverts. Before you sign a second instruction, know what a buyer sees — and who is owed the fee when two agents claim the same buyer.",
+   "hook_status": "RETAINED",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    138,
+    139
+   ]
+  },
+  {
+   "topic_id": "S52",
+   "original_hook": "Any agent can quote you a big number to win the instruction. Ask two things: which price that number is measuring, and what their own listings actually completed at.",
+   "hook_status": "RETAINED",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    140,
+    141,
+    142,
+    649
+   ]
+  },
+  {
+   "topic_id": "S53",
+   "original_hook": "No Spanish statute defines an exclusive estate-agency mandate — it is an atypical contract, filled in by the Civil Code and by the courts. The rules about what has to appear on the listing page are state, not regional: the energy-efficiency rating must be included in any publication of a sale or rental, including portals, agency windows and the press (RD 390/2021, art. 17.3), and the advertisement must not mislead or stay silent on fundamental data (RD 515/1989, art. 3.1). The Comunitat Valenciana's Decreto 98/2022 is a different thing — it governs the agent's entry in the regional register and the distintivo showing the registry number, not the advertisement, and parts of it were annulled by the TSJCV in December 2024. Here is what to read before you sign.",
+   "hook_status": "REWRITTEN",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    143,
+    144,
+    145,
+    650
+   ]
+  },
+  {
+   "topic_id": "S54",
+   "original_hook": "When two agencies claim the same buyer, commission turns on the causal link between each agent's work and the completed sale, together with the terms of the seller's mandate. It is not decided by one magic question.",
+   "hook_status": "REWRITTEN",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    146,
+    147,
+    514,
+    515
+   ]
+  },
+  {
+   "topic_id": "S55",
+   "original_hook": "Advertise with four agencies and a buyer can meet your house four times — four sets of photos, four descriptions, possibly four prices. Here is what that changes, and what no published Spanish source actually measures about it.",
+   "hook_status": "REWRITTEN",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    148,
+    149,
+    150,
+    651,
+    652
+   ]
+  },
+  {
+   "topic_id": "S56",
+   "original_hook": "Ask three agents whether exclusive sells better and you will get three answers. Here is the evidence that could actually settle it for your house — and exactly how to ask for it.",
+   "hook_status": "REWRITTEN",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    151,
+    152,
+    748,
+    749
+   ]
+  },
+  {
+   "topic_id": "S57",
+   "original_hook": "Spanish tax law lets you add the cost of \"investments and improvements\" to what you originally paid for the place. So before you spend, say, €12,000 on that bathroom, find out what counts as one — and what paperwork has to exist for it to count.",
+   "hook_status": "RETAINED",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    153,
+    154,
+    155,
+    156,
+    157,
+    158,
+    517,
+    519,
+    653
+   ]
+  },
+  {
+   "topic_id": "S58",
+   "original_hook": "The pool, the glazed-in terrace, the extra bedroom that used to be a naya. They are on your property — but they may not be on your deeds. Here is how to find out what your paperwork actually says, and what Spanish law offers when the building and the register disagree.",
+   "hook_status": "RETAINED",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    159,
+    520,
+    521,
+    522
+   ]
+  },
+  {
+   "topic_id": "S59",
+   "original_hook": "If your home sits in a comunidad de propietarios, the notary cannot authorise the deed without a certificate of what you owe the community — unless your buyer expressly exonerates you (art. 9.1.e LPH), and you cannot count on that.",
+   "hook_status": "REWRITTEN",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    160,
+    161,
+    162,
+    163,
+    164,
+    523,
+    524,
+    525,
+    654
+   ]
+  },
+  {
+   "topic_id": "S60",
+   "original_hook": "No published, primary-sourced measurement of what a new kitchen adds to a Costa Blanca sale price could be found — the percentages that circulate come from kitchen-fitting and estate-agency marketing pages, not from any registry, notarial or statistical series. What we can tell you is what was actually done to the homes we sold this year, what the owners spent, and what happened to the price and the timeline afterwards.",
+   "hook_status": "AGENCY_REQUIRED",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    165,
+    166,
+    167,
+    168
+   ]
+  },
+  {
+   "topic_id": "S61",
+   "original_hook": "The price you agree is not the money that reaches your account. Here is what sits in between — which amounts are a final cost, which are payments on account settled later, and what changes if you are not tax-resident in Spain.",
+   "hook_status": "REWRITTEN",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    169,
+    170,
+    171,
+    172,
+    173,
+    174,
+    175,
+    176,
+    177,
+    750,
+    751,
+    752,
+    753
+   ]
+  },
+  {
+   "topic_id": "S62",
+   "original_hook": "Buyer found, price agreed — and the community-debt certificate has an express statutory no-authorisation rule unless the buyer waives it. Other documents and title facts have different legal effects and must be checked separately. Here is what genuinely blocks, delays or merely costs money at completion.",
+   "hook_status": "REWRITTEN",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    178,
+    179,
+    180,
+    181,
+    754,
+    755,
+    767
+   ]
+  },
+  {
+   "topic_id": "S63",
+   "original_hook": "You inherited a place on the Costa Blanca and now want to sell it. One of the clocks started on the day of the death — not the day you decided.",
+   "hook_status": "RETAINED",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    182,
+    183,
+    184,
+    185,
+    528,
+    529,
+    656
+   ]
+  },
+  {
+   "topic_id": "S64",
+   "original_hook": "\"How long will it take?\" — the number your neighbour quotes is almost certainly measuring something else. Here is what the timeline is really made of, and which parts of it anyone can actually measure.",
+   "hook_status": "REWRITTEN",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    186,
+    187,
+    756
+   ]
+  },
+  {
+   "topic_id": "S65",
+   "original_hook": "A foreign passport does not tell you whether your buyer lives here, pays tax here, or needs a mortgage — here is what the purchase records actually record about who buys on this coast",
+   "hook_status": "RETAINED",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    188,
+    189,
+    190,
+    191,
+    192
+   ]
+  },
+  {
+   "topic_id": "S66",
+   "original_hook": "Transaction counts and price indicators can move in opposite directions in the same province. Before you set an asking price, look up Alicante's latest readings — and know what each of those numbers is actually counting.",
+   "hook_status": "REWRITTEN",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    193,
+    194,
+    195,
+    196,
+    197,
+    198,
+    658
+   ]
+  },
+  {
+   "topic_id": "S67",
+   "original_hook": "Moraira is part of the municipality of Teulada, so municipality-only statistics cannot isolate Moraira as a separate municipality. The Notariado portal can go finer, including postcode and custom-drawn areas.",
+   "hook_status": "REWRITTEN",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    199,
+    200,
+    201,
+    202,
+    203,
+    530
+   ]
+  },
+  {
+   "topic_id": "S68",
+   "original_hook": "Your competition is not only other resales — the buyer viewing your house is weighing up new builds too. Here is what the registered sales say about how the two are actually moving in this province.",
+   "hook_status": "REWRITTEN",
+   "audit_finding": null,
+   "risk_class": null,
+   "ledger_claim_ids": [
+    204,
+    205,
+    206,
+    207,
+    208,
+    209,
+    659
+   ]
+  }
+ ],
+ "buyer": [
+  {
+   "topic_id": "B1",
+   "original_hook": "Here's why the cash you need before you get the keys is meaningfully more than the price — and here is the assumption set that produces the number.",
+   "hook_status": "SUPERSEDED",
+   "audit_finding": "It bakes a single ~12% uplift as universal when the real figure swings with resale vs new build and with the Comunitat Valenciana ITP rate, which fell from 10% to 9% for sales formalised from 1 June 2026 — so a topic written last year now teaches an out-of-date number.",
+   "risk_class": "over-absolute",
+   "ledger_claim_ids": [
+    210,
+    211,
+    212,
+    213,
+    214,
+    215,
+    216,
+    217,
+    218,
+    219,
+    220,
+    221,
+    222,
+    531,
+    532,
+    660,
+    661,
+    662
+   ]
+  },
+  {
+   "topic_id": "B2",
+   "original_hook": "Spain taxes you on rent you never collected. The bill that lands every year even if the house sat empty.",
+   "hook_status": "SUPERSEDED",
+   "audit_finding": "No bill lands — imputed income tax is entirely self-assessed on Modelo 210 and nothing is ever sent to the owner, so the topic teaches the exact misunderstanding that causes people to miss it; it also implies a foreigner-only penalty when Spanish residents pay the same on second homes.",
+   "risk_class": "over-absolute",
+   "ledger_claim_ids": [
+    223,
+    224,
+    225,
+    226,
+    227,
+    228,
+    229,
+    230,
+    533,
+    534,
+    535
+   ]
+  },
+  {
+   "topic_id": "B3",
+   "original_hook": "A Spanish resident buying their main home can normally borrow up to 80% of the valuation — Banco de España says lenders do not usually go above that. It is a ceiling, not an entitlement: the bank lends on the lower of price and valuation, and only if your income supports it. Non-residents are financed at a lower percentage than residents, but there is no single number. The one Costa Blanca-facing lender that publishes a figure is CaixaBank's HolaBank, at up to 70% of the property value, excluding taxes and costs; Santander publishes none. Assume you must fund 30%+ of the price plus roughly 11-14% in taxes and costs on a purchase under one million euros — more above it, where Valencian ITP rises to 11% — and get the figure from your own lender. What that does to the price you can actually afford.",
+   "hook_status": "SUPERSEDED",
+   "audit_finding": "It states 60% as the non-resident rule when no lender publishes a nationality-based band at all — the variable is second-home status, not passport, and advertised maxima range 60–70% across lenders, and it presents 80% as the resident norm when that figure is for a primary residence — so the headline gap is right in direction but wrong as a universal.",
+   "risk_class": "over-absolute",
+   "ledger_claim_ids": [
+    231,
+    232,
+    233,
+    234,
+    235,
+    236,
+    237,
+    238,
+    239,
+    537,
+    663
+   ]
+  },
+  {
+   "topic_id": "B4",
+   "original_hook": "Your community fee is €90 a month. Then a letter arrives asking for €8,000. What a derrama is — and when your vote saves you and when it doesn't. Vote against a non-essential improvement costing more than three months' ordinary fees and art. 17.4 LPH means you don't pay. Vote against essential conservation, safety, habitability or accessibility work and you pay anyway.",
+   "hook_status": "REJECTED",
+   "audit_finding": "\"Your vote doesn't save you\" is legally wrong — Ley de Propiedad Horizontal art. 17.4 exempts an owner who voted against a non-essential improvement approved by three-fifths where the cost exceeds three months of ordinary fees; the €90 and €8,000 figures are also invented specifics.",
+   "risk_class": "false-premise",
+   "ledger_claim_ids": [
+    240,
+    241,
+    242,
+    243,
+    244,
+    245,
+    246,
+    538,
+    539,
+    664
+   ]
+  },
+  {
+   "topic_id": "B5",
+   "original_hook": "Before you spend one euro on yourself: the real yearly cost of owning a €250,000 coastal flat in [named town], line by line.",
+   "hook_status": "SUPERSEDED",
+   "audit_finding": "The framing carries no false premise, but \"line by line\" invites the engine to invent a confident table of IBI, basura and community fees for a property that does not exist — and IBI in particular varies by municipality and cadastral value, so a generic figure is a fabrication dressed as arithmetic.",
+   "risk_class": "fabrication-risk",
+   "ledger_claim_ids": [
+    247,
+    248,
+    249,
+    250,
+    251,
+    252,
+    665,
+    666
+   ]
+  },
+  {
+   "topic_id": "B6",
+   "original_hook": "Your €250,000 flat cost about £217,100 in January and about £215,900 in June — same flat. Over the past twelve months the sterling price of that €250,000 has swung between roughly £212,200 and £221,200 on the ECB's daily reference rate: a spread of about £9,000. The budget that moves while you sleep.",
+   "hook_status": "REJECTED",
+   "audit_finding": "The figures imply GBP/EUR of roughly 1.174 in January and 1.116 in June, and 1.116 did not occur in 2026 — the 2026 low was about 1.1402 on 1 March and the high about 1.1807 on 15 July, so both the numbers and the direction are wrong; the pound strengthened into mid-2026, which made the flat cheaper in sterling, not dearer.",
+   "risk_class": "false-premise",
+   "ledger_claim_ids": [
+    253,
+    254,
+    255,
+    256,
+    257,
+    543
+   ]
+  },
+  {
+   "topic_id": "B7",
+   "original_hook": "When you sell as a non-resident, the law makes the BUYER — not the buyer's lawyer — withhold 3% of the agreed price and pay it to the Agencia Tributaria within one month of completion. It is a payment on account of your own Spanish non-resident tax, not money anyone keeps. How a non-resident settles up afterwards — and reclaims any excess.",
+   "hook_status": "SUPERSEDED",
+   "audit_finding": "Two errors: the buyer, not the buyer's lawyer, is legally obliged to withhold and pay it via Modelo 211, and \"how a non-resident gets it back\" presumes recoverability when the 3% is a payment on account of capital gains tax — on a real gain it is absorbed entirely, and often more is owed.",
+   "risk_class": "over-absolute",
+   "ledger_claim_ids": [
+    258,
+    259,
+    260,
+    261,
+    262,
+    263,
+    264,
+    265,
+    266,
+    267,
+    268,
+    269,
+    270,
+    545,
+    547,
+    667,
+    668,
+    669
+   ]
+  },
+  {
+   "topic_id": "B8",
+   "original_hook": "You leave the Spanish house to your children. Here's the tax bill they get before they can touch it — and how much of it is avoidable.",
+   "hook_status": "REJECTED",
+   "audit_finding": "For a Costa Blanca property left to children the headline bill is largely wrong: the Comunitat Valenciana applies a 99% bonificación to Groups I and II, and non-resident heirs can apply the regional rules following Ley 26/2014, CJEU C-127/12 and Tribunal Supremo 242/2018 — so the frightening ISD figure the topic promises usually does not exist, while the real costs sit elsewhere.",
+   "risk_class": "false-premise",
+   "ledger_claim_ids": [
+    271,
+    272,
+    273,
+    274,
+    275,
+    276,
+    277,
+    670,
+    671
+   ]
+  },
+  {
+   "topic_id": "B9",
+   "original_hook": "If the previous owner left community debts, the flat itself answers for them — but only up to the amounts falling due in the elapsed part of the year you buy in plus the three preceding calendar years. Anything older stays the seller's problem, and the seller must hand over a certificate of debts before the notary unless you expressly waive it. The three certificates that must be in your file before you sign.",
+   "hook_status": "SUPERSEDED",
+   "audit_finding": "Art. 9.1.e LPH caps the buyer's exposure at the part of the current year plus the three preceding natural years and makes it a real charge on the flat rather than an unlimited personal debt, so \"you pay it\" is only true inside a window the topic never mentions — and \"three certificates\" is an invented count.",
+   "risk_class": "over-absolute",
+   "ledger_claim_ids": [
+    278,
+    279,
+    280,
+    549,
+    672
+   ]
+  },
+  {
+   "topic_id": "B10",
+   "original_hook": "The pool isn't on the deeds. Why that villa could be unsellable in ten years — and the three documents that tell you in five minutes.",
+   "hook_status": "SUPERSEDED",
+   "audit_finding": "An undeclared pool is usually a regularisation job (declaración de obra nueva por antigüedad), not a death sentence — \"unsellable in ten years\" is asserted, the prescription period is regional and land-class dependent rather than national, and both \"three documents\" and \"five minutes\" are invented specifics.",
+   "risk_class": "over-absolute",
+   "ledger_claim_ids": [
+    281,
+    282,
+    283,
+    284,
+    550,
+    551,
+    673
+   ]
+  },
+  {
+   "topic_id": "B11",
+   "original_hook": "You paid €6,000 to reserve it and now you want out. Can you get it back? And what the seller owes you if they walk away.",
+   "hook_status": "REJECTED",
+   "audit_finding": "The topic treats a reservation deposit as arras penitenciales, but Art. 1454 CC's \"seller returns double\" applies only where the parties expressly agreed a right to withdraw — a Costa Blanca reserva is usually a separate agency-held pre-contract, and confirmatory arras carry entirely different remedies.",
+   "risk_class": "false-premise",
+   "ledger_claim_ids": [
+    285,
+    286,
+    287,
+    288,
+    289,
+    290,
+    291,
+    552,
+    674,
+    675
+   ]
+  },
+  {
+   "topic_id": "B12",
+   "original_hook": "Will squatters take your holiday home while you're back in Manchester? Before answering, open the Ministerio del Interior crime statistics for 'ocupaciones ilegales de inmuebles' in Alicante province, quote the count, the reference period and the publication date, and compare it against the provinces where occupation is actually concentrated. Do not state a risk level — high or low — without that figure in hand.",
+   "hook_status": "RETAINED",
+   "audit_finding": "none — the headline is already a question and invites the honest answer; the only weakness is the pre-committed count of four, handled in never_assume.",
+   "risk_class": "safe",
+   "ledger_claim_ids": [
+    292,
+    293,
+    294,
+    295,
+    296,
+    297,
+    298,
+    299,
+    300,
+    677,
+    678,
+    679,
+    680,
+    757,
+    758,
+    759,
+    760,
+    761,
+    762,
+    763
+   ]
+  },
+  {
+   "topic_id": "B13",
+   "original_hook": "The developer went bust before finishing your off-plan flat. Whether you get your money back off-plan turns on two things the law requires from day one — an individual bank guarantee or caución insurance policy in your name, and payment into the developer's separate special account (LOE, disposición adicional primera). And note the timing trap: since 1 January 2016 the guarantee obligation runs only 'desde la obtención de la licencia de edificación', so anything you hand over before the building licence is issued sits outside it. (€80,000 is illustrative only.)",
+   "hook_status": "SUPERSEDED",
+   "audit_finding": "The guarantee certificate is the main protection but not the only one — the mandatory separate account, the bank's own liability under Supreme Court doctrine and the insolvency ranking all matter, and the duty to guarantee only bites from the building licence, so money paid before it may sit outside the \"one piece of paper\" entirely.",
+   "risk_class": "over-absolute",
+   "ledger_claim_ids": [
+    301,
+    302,
+    303,
+    304,
+    305,
+    558,
+    559
+   ]
+  },
+  {
+   "topic_id": "B14",
+   "original_hook": "The closer to the sea, the bigger the question nobody asks: can the Spanish state claim your beachfront? What the Ley de Costas really means.",
+   "hook_status": "REJECTED",
+   "audit_finding": "\"The state claims your beachfront\" misdescribes the mechanism — the dominio público marítimo-terrestre is public by operation of law and a deslinde declares an existing boundary rather than seizing land, with affected owners receiving an automatic 75-year concession; and the regulation most sources quote (RD 668/2022) was annulled by the Tribunal Supremo, so the applicable text is a live dating trap.",
+   "risk_class": "false-premise",
+   "ledger_claim_ids": [
+    306,
+    307,
+    308,
+    309,
+    310,
+    311,
+    561,
+    682
+   ]
+  },
+  {
+   "topic_id": "B15",
+   "original_hook": "Before you fall in love, one cheap document from the land registry tells you if the house is mortgaged, seized, or lying about its size.",
+   "hook_status": "SUPERSEDED",
+   "audit_finding": "Mortgages and embargoes are correct, but a nota simple shows the registered surface, not the real one, so it reveals a discrepancy rather than proving the house is \"lying\" — and it is a snapshot of registered charges only, silent on community debts, occupiers, planning infringements and anything unregistered.",
+   "risk_class": "over-absolute",
+   "ledger_claim_ids": [
+    312,
+    563,
+    564,
+    683
+   ]
+  },
+  {
+   "topic_id": "B16",
+   "original_hook": "Never wire your deposit to a bank account that arrived by email. The costa scam that's taking six-figure sums from careful people.",
+   "hook_status": "RETAINED",
+   "audit_finding": "none — the advice is sound and generally applicable; the only exposure is the unsourced \"six-figure sums\" characterisation and the temptation to illustrate it with a client story.",
+   "risk_class": "safe",
+   "ledger_claim_ids": [
+    313,
+    566,
+    684,
+    685
+   ]
+  },
+  {
+   "topic_id": "B17",
+   "original_hook": "Who should NOT buy in Torrevieja — five kinds of buyer who'd be happier twenty minutes away, and where they end up.",
+   "hook_status": "SUPERSEDED",
+   "audit_finding": "\"Where they end up\" invites invented client outcomes, the fixed count of five forces padding with made-up archetypes, and \"twenty minutes away\" is an unchecked drive time.",
+   "risk_class": "fabrication-risk",
+   "ledger_claim_ids": [
+    314,
+    315,
+    316,
+    727
+   ]
+  },
+  {
+   "topic_id": "B18",
+   "original_hook": "You saw it in August. Here's the same street in February — same photo, same angle — and a list of what's actually open.",
+   "hook_status": "SUPERSEDED",
+   "audit_finding": "The AI cannot know which specific businesses on a specific street open in February, and it cannot supply the February photograph the entire concept depends on; it also bakes in the premise that the town empties, which is false for several Costa Blanca towns.",
+   "risk_class": "fabrication-risk",
+   "ledger_claim_ids": [
+    688
+   ]
+  },
+  {
+   "topic_id": "B19",
+   "original_hook": "Name the coastal town and the specific inland town, then state what each costs per m² from a dated source, and let the multiple fall out of the figures. Do not assert a ratio — 'almost twice the house' — before the two towns and their two figures exist.",
+   "hook_status": "SUPERSEDED",
+   "audit_finding": "\"Almost twice the house\" is stated as a universal when the coastal premium varies enormously by corridor — the province-wide gap is roughly 17% (coastal municipalities ~€2,201/m2 versus a provincial average of ~€1,877/m2, Tinsa Q1 2026), and doubling only occurs in specific north-coast pairings.",
+   "risk_class": "over-absolute",
+   "ledger_claim_ids": [
+    317,
+    318,
+    319,
+    568,
+    689
+   ]
+  },
+  {
+   "topic_id": "B20",
+   "original_hook": "Jávea or Dénia? Fifteen minutes apart, two different lives. We'll actually tell you which — and for whom.",
+   "hook_status": "RETAINED",
+   "audit_finding": "None — the two towns are genuinely close and genuinely different; the only exposure is that 'we'll tell you which' invites a verdict delivered as fact rather than as a reasoned recommendation.",
+   "risk_class": "safe",
+   "ledger_claim_ids": [
+    320,
+    569,
+    571,
+    690
+   ]
+  },
+  {
+   "topic_id": "B21",
+   "original_hook": "Where the Dutch, the British and the Germans actually cluster on the Costa Blanca — and whether that's a reason to join them or steer clear.",
+   "hook_status": "RETAINED",
+   "audit_finding": "No baked claim — the topic is already near-question shape. The live danger is that the answer gets filled in from repeated hearsay rather than from the register.",
+   "risk_class": "safe",
+   "ledger_claim_ids": [
+    321,
+    322,
+    572,
+    740
+   ]
+  },
+  {
+   "topic_id": "B22",
+   "original_hook": "Golf-course urbanisation or an old-town Spanish street? Same price, completely different life. Which one is actually you.",
+   "hook_status": "SUPERSEDED",
+   "audit_finding": "\"Same price\" is asserted as a given when price parity between resort urbanisations and old-town housing is town-specific and frequently untrue — in Altea, Villajoyosa and Dénia old-town stock often carries a premium.",
+   "risk_class": "over-absolute",
+   "ledger_claim_ids": [
+    323
+   ]
+  },
+  {
+   "topic_id": "B23",
+   "original_hook": "A Tuesday in November, hour by hour: what the day actually looks like once the tourists have gone home.",
+   "hook_status": "SUPERSEDED",
+   "audit_finding": "An hour-by-hour account requires named places, times and scenes the AI cannot know, and the framing premise is wrong for several towns — Benidorm, l'Alfàs del Pi and Torrevieja fill with northern-European winter residents and IMSERSO visitors in November.",
+   "risk_class": "fabrication-risk",
+   "ledger_claim_ids": [
+    324,
+    325,
+    574
+   ]
+  },
+  {
+   "topic_id": "B24",
+   "original_hook": "[Market day], [time], the market: tomatoes that taste like tomatoes, and fish from the [town] fleet. What your kitchen table looks like here. — Take the weekly market day and hour from the ayuntamiento's own market listing rather than defaulting to Saturday, and drop 'landed this morning' unless that town's lonja actually lands and auctions in the morning: on this stretch of the Alicante coast the fleet works Monday to Friday and the auction is late afternoon (El Campello, around 18:00).",
+   "hook_status": "SUPERSEDED",
+   "audit_finding": "Market day, time and location are town-specific and often midweek rather than Saturday, and 'fish landed this morning' is usually false at weekends — the trawler fleet does not typically fish Saturdays, so weekend fish is Friday's catch or frozen.",
+   "risk_class": "fabrication-risk",
+   "ledger_claim_ids": [
+    326,
+    576
+   ]
+  },
+  {
+   "topic_id": "B25",
+   "original_hook": "January, 08:00. Your friends back home are scraping ice off the windscreen in the dark — and here the sun is not up yet either. Here's what the next hour looks like. — Or move the clock past sunrise: in Alicante the sun rises between 08:19 (1 January) and 08:08 (31 January), so 08:00 cannot be written as a bright Spanish morning.",
+   "hook_status": "REJECTED",
+   "audit_finding": "At 08:00 on a January morning in Alicante it is still dark — sunrise is around 08:15–08:20 because Spain runs on CET despite its western longitude — so the sunlit-versus-dark contrast at that exact hour is factually inverted against London, where the sun rises earlier by the clock.",
+   "risk_class": "false-premise",
+   "ledger_claim_ids": [
+    327,
+    578,
+    579,
+    580
+   ]
+  },
+  {
+   "topic_id": "B26",
+   "original_hook": "A week in the life of a 74-year-old on the coast: the morning walk, the menú del día with friends, the doctor who found the time.",
+   "hook_status": "SUPERSEDED",
+   "audit_finding": "This invents a named-age protagonist, their friendships and their week; €13 is a made-up price against a 2026 Alicante range running roughly €12–18 and rising; and 'the doctor who found the time' implies healthcare access and unhurried care that depend entirely on registration status and on regional waiting lists.",
+   "risk_class": "fabrication-risk",
+   "ledger_claim_ids": [
+    328,
+    329,
+    330,
+    582,
+    583,
+    692,
+    693
+   ]
+  },
+  {
+   "topic_id": "B27",
+   "original_hook": "The honest truth about making friends abroad after 50 — and where people actually meet in [town].",
+   "hook_status": "SUPERSEDED",
+   "audit_finding": "\"The three places people actually meet\" asserts observed local social behaviour and specific venues that the AI would simply invent, and the count of three is arbitrary rather than evidenced.",
+   "risk_class": "fabrication-risk",
+   "ledger_claim_ids": [
+    331,
+    586,
+    694
+   ]
+  },
+  {
+   "topic_id": "B28",
+   "original_hook": "The two-hour flight paradox: why your mum may see the grandchildren more now than when you lived forty minutes away.",
+   "hook_status": "SUPERSEDED",
+   "audit_finding": "Alicante is not a two-hour flight from the core markets (London ~2h20–2h40, Manchester ~2h50, Amsterdam ~2h45, northern Germany over 3h), and the claim that visits increase after a move is an unevidenced behavioural assertion dressed as a paradox.",
+   "risk_class": "over-absolute",
+   "ledger_claim_ids": []
+  },
+  {
+   "topic_id": "B29",
+   "original_hook": "New build or resale? Our actual answer for each type of buyer — and the one situation where off-plan is simply the wrong choice.",
+   "hook_status": "SUPERSEDED",
+   "audit_finding": "\"The ONE situation where off-plan is simply the wrong choice\" promises a single universal disqualifier when the real disqualifiers are several and conditional — and the topic silently treats \"new build\" and \"off-plan\" as the same thing, when key-ready new build is a large, distinct Costa Blanca category with completely different risk (no completion risk, no staged payments, no bank guarantee question).",
+   "risk_class": "over-absolute",
+   "ledger_claim_ids": [
+    332,
+    333,
+    334,
+    729
+   ]
+  },
+  {
+   "topic_id": "B30",
+   "original_hook": "Should you rent for a year before you buy? We say yes for three of these five buyers — and here's which two shouldn't.",
+   "hook_status": "SUPERSEDED",
+   "audit_finding": "\"We say yes for three of these five buyers\" is an agency verdict with an invented count — the AI cannot know the agency's advice policy, and the 3-of-5 split pre-commits the answer before any research is done, which is exactly the confirmation bias this audit exists to stop.",
+   "risk_class": "fabrication-risk",
+   "ledger_claim_ids": [
+    335,
+    336,
+    337,
+    338,
+    339,
+    340,
+    587,
+    588,
+    696
+   ]
+  },
+  {
+   "topic_id": "B31",
+   "original_hook": "Villa or apartment? The romantic answer is villa. For most second-home buyers it's the wrong one — here's who should ignore us.",
+   "hook_status": "SUPERSEDED",
+   "audit_finding": "\"For most second-home buyers it's the wrong one\" is a majority claim with no evidence behind it, and it also presumes every reader's romantic default is a villa.",
+   "risk_class": "over-absolute",
+   "ledger_claim_ids": [
+    341,
+    342,
+    343,
+    344,
+    345,
+    346,
+    589
+   ]
+  },
+  {
+   "topic_id": "B32",
+   "original_hook": "Buy it in your own name, jointly, or through a company? The choice quietly decides your tax and your heirs — and one of them is almost always a mistake.",
+   "hook_status": "SUPERSEDED",
+   "audit_finding": "\"One of them is almost always a mistake\" states a conditional truth as a near-universal — a company can be the correct vehicle for genuine business activity or a multi-property portfolio — and the topic risks skating past the single most valuable fact here, that Spanish joint ownership carries no right of survivorship.",
+   "risk_class": "over-absolute",
+   "ledger_claim_ids": [
+    347,
+    348,
+    349,
+    350,
+    590,
+    591,
+    697
+   ]
+  },
+  {
+   "topic_id": "B33",
+   "original_hook": "Should you take a Spanish mortgage anyway? What a non-resident borrower needs to weigh — with any loan-to-value, rate or eligibility figure attributed to a named lender's own published terms or to Banco de España data, and an explicit statement that this is general information, not personal financial advice.",
+   "hook_status": "RETAINED",
+   "audit_finding": "none — it is already posed as a question, and its only premise (that a case exists where a cash-capable non-resident should still borrow) is genuinely true; the exposure is in the writing, not the seed.",
+   "risk_class": "safe",
+   "ledger_claim_ids": [
+    351,
+    352,
+    353,
+    354,
+    355,
+    356,
+    357,
+    358,
+    359,
+    360,
+    699,
+    700
+   ]
+  },
+  {
+   "topic_id": "B34",
+   "original_hook": "Buying to retire here one day, or buying to rent it out? You probably can't do both well — pick one, and watch how the property changes.",
+   "hook_status": "SUPERSEDED",
+   "audit_finding": "\"You probably can't do both well\" is stated as a near-rule when the dual path — let it for some years, then move into it — is common and workable; the real story is a set of specific conflicts and a licensing regime, not an impossibility.",
+   "risk_class": "over-absolute",
+   "ledger_claim_ids": [
+    361,
+    362,
+    363,
+    592,
+    593,
+    594,
+    595,
+    596,
+    701,
+    702
+   ]
+  },
+  {
+   "topic_id": "B35",
+   "original_hook": "The notary is not your lawyer. What each one actually checks — and the checks neither of them does.",
+   "hook_status": "RETAINED",
+   "audit_finding": "none — the notary is a public official who serves the transaction impartially, not the buyer, and that is solidly true and generally applicable; the only exposure is the writer inventing the specific checklists.",
+   "risk_class": "safe",
+   "ledger_claim_ids": [
+    364,
+    365,
+    703
+   ]
+  },
+  {
+   "topic_id": "B36",
+   "original_hook": "You bought the house. You still only get 90 days in any 180-day period. The Schengen maths every British owner gets wrong.",
+   "hook_status": "RETAINED",
+   "audit_finding": "none — property ownership confers no residence or stay rights for a non-EU national, and that is generally true; the risk is the writer stating unverified EES/ETIAS dates or implying nothing can be done about it.",
+   "risk_class": "safe",
+   "ledger_claim_ids": [
+    366,
+    367,
+    368,
+    369,
+    370,
+    371,
+    372,
+    598,
+    599
+   ]
+  },
+  {
+   "topic_id": "B37",
+   "original_hook": "Almost nothing in a Spanish purchase happens without a Spanish tax number. The escritura and the Land Registry inscription both require a NIF — which for a foreign buyer is normally the NIE. But a bank account can legally be opened before the number is produced, and an accredited non-resident's account is exempt from the requirement altogether. The number to get before you fall in love.",
+   "hook_status": "SUPERSEDED",
+   "audit_finding": "\"Nothing happens without an NIE\" is stated as a universal, but the bank-account leg is the weak one — Spanish banks routinely open non-resident accounts on a passport plus a certificado de no residencia, and a company buyer uses a CIF rather than an NIE.",
+   "risk_class": "over-absolute",
+   "ledger_claim_ids": [
+    373,
+    374,
+    375,
+    376,
+    377,
+    378,
+    379,
+    380,
+    381
+   ]
+  },
+  {
+   "topic_id": "B38",
+   "original_hook": "From \"I like it\" to the keys: the six stages of buying in Spain, who does what at each one, and exactly where your money goes.",
+   "hook_status": "SUPERSEDED",
+   "audit_finding": "\"The six stages\" presents one fixed universal path, but a resale and an off-plan new build differ materially in contracts, payment structure, guarantees and tax — a single six-step spine will be wrong for roughly half of Costa Blanca buyers.",
+   "risk_class": "over-absolute",
+   "ledger_claim_ids": [
+    382,
+    383,
+    384,
+    385,
+    386,
+    387,
+    388,
+    704
+   ]
+  },
+  {
+   "topic_id": "B39",
+   "original_hook": "Your English will leaves the house to your wife. Spanish law might give a third of it to your children. The one clause that settles it.",
+   "hook_status": "REJECTED",
+   "audit_finding": "The fraction is wrong: under the Spanish Civil Code the legítima reserved for descendants is two-thirds (one-third strict legítima plus one-third mejora), not a third — and \"the one clause\" oversells a choice-of-law election, though not for the reason first given here: renvoi is expressly excluded for an Article 22 choice, and the Comunitat Valenciana has no foral succession law in force.",
+   "risk_class": "false-premise",
+   "ledger_claim_ids": [
+    389,
+    390,
+    391,
+    392,
+    393,
+    394,
+    395,
+    396
+   ]
+  },
+  {
+   "topic_id": "B40",
+   "original_hook": "Spend one winter day too many and Spain taxes your worldwide income. The 183-day calendar every snowbird should keep.",
+   "hook_status": "SUPERSEDED",
+   "audit_finding": "183 days is presented as the single switch, but Spanish tax residency has three independent triggers — days, centre of economic interests, and the family presumption — so a snowbird can become resident below 183 days, and staying below 183 is not by itself proof of safety.",
+   "risk_class": "over-absolute",
+   "ledger_claim_ids": [
+    397,
+    398,
+    399,
+    400,
+    401,
+    402,
+    403,
+    404,
+    601,
+    602,
+    705,
+    706,
+    707
+   ]
+  },
+  {
+   "topic_id": "B41",
+   "original_hook": "Planning to rent it out to cover the costs? Since 3 April 2025 your neighbours get a vote — and in some places new licences are frozen.",
+   "hook_status": "REJECTED",
+   "audit_finding": "The date is wrong: the community's 3/5 veto over new tourist rentals came from Ley Orgánica 1/2025 and took effect on 3 April 2025, not 2026 — and existing activity predating it is grandfathered, which the topic does not acknowledge.",
+   "risk_class": "false-premise",
+   "ledger_claim_ids": [
+    405,
+    406,
+    407,
+    408,
+    409,
+    410,
+    411,
+    412,
+    413,
+    604,
+    605,
+    708
+   ]
+  },
+  {
+   "topic_id": "B42",
+   "original_hook": "Nearly half the homes sold in Alicante this year went to foreign buyers. What that actually does to prices, competition and your resale.",
+   "hook_status": "SUPERSEDED",
+   "audit_finding": "The headline figure is broadly right for the province right now (mid-40s%), but it is presented as a stable fact when it is a dated, province-level quarterly statistic, and the second half bakes in an unproven causal claim that foreign demand drives prices, competition and resale.",
+   "risk_class": "over-absolute",
+   "ledger_claim_ids": [
+    414,
+    415,
+    416,
+    606,
+    607
+   ]
+  },
+  {
+   "topic_id": "B43",
+   "original_hook": "The Dutch have drawn level with the British as the Costa Blanca's biggest foreign buyers. Why that changes what you should buy — and who you'll sell to next.",
+   "hook_status": "REJECTED",
+   "audit_finding": "It fuses two different datasets: Dutch buyers lead on average spend per purchase, while the British remain the larger nationality by number of purchases nationally — 'biggest buyers' silently swaps money spent for homes bought, and the headline is also true at municipal level in only some towns.",
+   "risk_class": "false-premise",
+   "ledger_claim_ids": [
+    417,
+    418,
+    608
+   ]
+  },
+  {
+   "topic_id": "B44",
+   "original_hook": "Remove the figure, or replace it with the agency's own documented weekly August rate for a named property type in a named municipality, with the year stated (e.g. 'this two-bed in [town] let for €X a week last August — our own booking records').",
+   "hook_status": "SUPERSEDED",
+   "audit_finding": "The €1,200 headline rate is invented, and the tax leg cannot be assumed either — the long-standing 24%-on-gross-with-no-deductions rule for non-EU owners is being eroded by court rulings, so a confidently stated tax figure risks being wrong in both directions.",
+   "risk_class": "fabrication-risk",
+   "ledger_claim_ids": [
+    419,
+    420,
+    421,
+    422,
+    423,
+    609,
+    611,
+    709
+   ]
+  },
+  {
+   "topic_id": "B45",
+   "original_hook": "Buy now or wait for prices to drop? Our honest read on the Costa Blanca — and the one thing that would make us tell you to wait.",
+   "hook_status": "SUPERSEDED",
+   "audit_finding": "\"Our honest read\" and \"the one thing that would make us tell you to wait\" are the agency's own market position and advisory threshold — an AI writing them is inventing an opinion and a commitment the agency never made, and dressing a price forecast as house judgement.",
+   "risk_class": "fabrication-risk",
+   "ledger_claim_ids": [
+    424,
+    425,
+    613,
+    710
+   ]
+  },
+  {
+   "topic_id": "B46",
+   "original_hook": "How to spot the town that's about to get more expensive — before it does. The three signals we actually watch.",
+   "hook_status": "SUPERSEDED",
+   "audit_finding": "\"The three signals we actually watch\" claims a proprietary method belonging to that specific agency — an AI writing it fabricates a house methodology, and 'about to get more expensive' invites invented local detail and unfounded predictions about named towns.",
+   "risk_class": "fabrication-risk",
+   "ledger_claim_ids": [
+    426,
+    614,
+    741
+   ]
+  },
+  {
+   "topic_id": "B47",
+   "original_hook": "You saw the same villa at three prices on three websites. Here's why, what we're actually paid, and what happens if you ask us to put it in writing.",
+   "hook_status": "SUPERSEDED",
+   "audit_finding": "\"What we're actually paid\" is a number only this agency knows — the AI will invent a commission percentage and publish it as a disclosure; the topic also bakes in a single cause (agents stacking their own margin) when price divergence has several causes, and \"put it in writing\" hints at a buyer legal right that does not clearly exist.",
+   "risk_class": "fabrication-risk",
+   "ledger_claim_ids": [
+    427,
+    615,
+    712
+   ]
+  },
+  {
+   "topic_id": "B48",
+   "original_hook": "Use only a real case from the agency's own files, with the figure, town, property type and defect taken from that file — or write the piece generically about the categories of deal-killer without any anecdote. Do not generate the number, the location, the property type, the client's nationality or the defect.",
+   "hook_status": "SUPERSEDED",
+   "audit_finding": "This is a specific past deal of one agency — the price, the buyer, the defect found and the decision are all things only that agency knows, and an AI writing it will manufacture a case study that reads as a true account of real people.",
+   "risk_class": "fabrication-risk",
+   "ledger_claim_ids": [
+    428,
+    429,
+    430,
+    431,
+    432
+   ]
+  },
+  {
+   "topic_id": "B49",
+   "original_hook": "Three things we got wrong last year, and exactly what we changed so they don't happen again.",
+   "hook_status": "SUPERSEDED",
+   "audit_finding": "An agency's own past mistakes cannot be synthesised — an AI will invent plausible failures and publish a false confession, which is both dishonest and a live liability if an invented \"mistake\" resembles a real client's transaction.",
+   "risk_class": "fabrication-risk",
+   "ledger_claim_ids": [
+    617,
+    713
+   ]
+  },
+  {
+   "topic_id": "B50",
+   "original_hook": "How to check any Costa Blanca agent in ten minutes — the register to search, the reviews that matter, and the three questions that make a bad one uncomfortable.",
+   "hook_status": "SUPERSEDED",
+   "audit_finding": "The register is real and the premise largely holds, but \"any agent\" and \"ten minutes\" overreach: the mandatory register is a Comunitat Valenciana instrument, so it does not cover agents operating over the Murcia border, and absence from it proves a compliance failure rather than a scam while presence in it proves very little.",
+   "risk_class": "over-absolute",
+   "ledger_claim_ids": [
+    433,
+    434,
+    435,
+    436,
+    437,
+    619,
+    714,
+    716,
+    731
+   ]
+  },
+  {
+   "topic_id": "B51",
+   "original_hook": "A Dutch couple, fourteen months, three false starts: the real timeline of a purchase, not the highlight reel.",
+   "hook_status": "SUPERSEDED",
+   "audit_finding": "The couple, the fourteen months and the three false starts are a specific client history an AI cannot know and will invent wholesale, presenting a fabricated case study as a real client's experience; fourteen months is also asserted as \"the real timeline\" when it may be far from typical.",
+   "risk_class": "fabrication-risk",
+   "ledger_claim_ids": [
+    438,
+    439,
+    717,
+    718
+   ]
+  },
+  {
+   "topic_id": "B52",
+   "original_hook": "Sometimes we'll tell you your budget doesn't fit what you want. Here's what we say instead of just sending you more houses.",
+   "hook_status": "RETAINED",
+   "audit_finding": "None — it states a service posture rather than a factual claim; the only exposure is that the writer will illustrate it with invented price bands (\"€250,000 gets you a sea-view villa in Jávea\") that are wrong within a month.",
+   "risk_class": "safe",
+   "ledger_claim_ids": [
+    440,
+    441,
+    737,
+    764
+   ]
+  }
+ ]
+}

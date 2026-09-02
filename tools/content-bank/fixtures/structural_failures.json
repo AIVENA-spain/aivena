@@ -1,0 +1,194 @@
+{
+ "note": "Structural defects a text lint cannot see. Each must make its named CI rule fail.",
+ "cases": [
+  {
+   "id": "non-green-hook",
+   "rule": "non-green-hook",
+   "bank": [
+    {
+     "topic_id": "X1",
+     "state": "review",
+     "hook_verified": false,
+     "hook_status": "SUPERSEDED",
+     "production_hook": "A live factual hook on a card that is not green",
+     "current_research_question": "q",
+     "must_establish": [],
+     "never_assume": [],
+     "claim_ids": [
+      1
+     ],
+     "coverage": {},
+     "agency_evidence_required": false
+    }
+   ],
+   "ledger": []
+  },
+  {
+   "id": "green-card-on-corrected-claim",
+   "rule": "ineligible-claim",
+   "bank": [
+    {
+     "topic_id": "X2",
+     "state": "verified",
+     "hook_verified": true,
+     "hook_status": "RETAINED",
+     "production_hook": "h",
+     "current_research_question": "q",
+     "must_establish": [
+      "a factual line"
+     ],
+     "never_assume": [],
+     "claim_ids": [
+      901
+     ],
+     "coverage": {
+      "must_establish[0]": {
+       "claim_ids": [
+        901
+       ],
+       "non_factual_instruction": false
+      }
+     },
+     "agency_evidence_required": false
+    }
+   ],
+   "ledger": [
+    {
+     "id": 901,
+     "verdict": "CORRECTED",
+     "claim_type": "legislation",
+     "active": true,
+     "assertion": "a",
+     "final_wording": "b",
+     "bank": "buyer",
+     "topic": 2,
+     "field": "must_research",
+     "production_field_id": "B2.must_establish[0]",
+     "sources": [],
+     "freshness": {}
+    }
+   ]
+  },
+  {
+   "id": "superseded-claim-still-active",
+   "rule": "inactive-claim",
+   "bank": [
+    {
+     "topic_id": "X3",
+     "state": "review",
+     "hook_verified": false,
+     "hook_status": "SUPERSEDED",
+     "production_hook": null,
+     "current_research_question": "q",
+     "must_establish": [
+      "a line"
+     ],
+     "never_assume": [],
+     "claim_ids": [
+      902
+     ],
+     "coverage": {
+      "must_establish[0]": {
+       "claim_ids": [
+        902
+       ],
+       "non_factual_instruction": false
+      }
+     },
+     "agency_evidence_required": false
+    }
+   ],
+   "ledger": [
+    {
+     "id": 902,
+     "verdict": "VERIFIED_FACT",
+     "claim_type": "other",
+     "active": false,
+     "superseded_by": 903,
+     "assertion": "a",
+     "final_wording": "a",
+     "bank": "buyer",
+     "topic": 3,
+     "field": "must_research",
+     "production_field_id": "B3.must_establish[0]",
+     "sources": [],
+     "freshness": {}
+    }
+   ]
+  },
+  {
+   "id": "blank-ledger-mapping",
+   "rule": "ledger-mapping",
+   "bank": [],
+   "ledger": [
+    {
+     "id": 904,
+     "verdict": "VERIFIED_FACT",
+     "claim_type": "other",
+     "active": true,
+     "assertion": "a",
+     "final_wording": "a",
+     "bank": "",
+     "topic": "",
+     "field": "",
+     "production_field_id": "",
+     "sources": [],
+     "freshness": {}
+    }
+   ]
+  },
+  {
+   "id": "pooled-source-class",
+   "rule": "source-class",
+   "bank": [],
+   "ledger": [
+    {
+     "id": 905,
+     "verdict": "VERIFIED_FACT",
+     "claim_type": "legislation",
+     "active": true,
+     "assertion": "a statutory claim",
+     "final_wording": "a statutory claim",
+     "bank": "buyer",
+     "topic": 9,
+     "field": "must_research",
+     "production_field_id": "B9.must_establish[0]",
+     "sources": [
+      {
+       "url": "https://example-blog.test/post",
+       "publisher": "a legal blog",
+       "source_class": "SECONDARY",
+       "locator": "n/a",
+       "accessed_at": "2026-09-02"
+      }
+     ],
+     "freshness": {}
+    }
+   ]
+  },
+  {
+   "id": "green-card-requires-agency-data",
+   "rule": "green-needs-agency-data",
+   "bank": [
+    {
+     "topic_id": "X6",
+     "state": "verified",
+     "hook_verified": true,
+     "hook_status": "RETAINED",
+     "production_hook": "h",
+     "current_research_question": "q",
+     "must_establish": [
+      "Pull the agency's own completed sales and establish the real elapsed times"
+     ],
+     "never_assume": [],
+     "claim_ids": [
+      1
+     ],
+     "coverage": {},
+     "agency_evidence_required": false
+    }
+   ],
+   "ledger": []
+  }
+ ]
+}

@@ -931,7 +931,11 @@ const STATUS_MODEL = `PERSON STATUS — FIVE SEPARATE VARIABLES. Never infer one
 2. IMMIGRATION CATEGORY — EU · EEA-non-EU (Norway, Iceland, Liechtenstein) · Switzerland (its own
    bilateral regime) · third country (UK, US, Canada). EEA and Swiss citizens hold free-movement
    rights and are NOT on the 90/180 short-stay clock; Norway and Iceland are Schengen members.
-   Only third-country nationals need a visa route to stay beyond 90 days.
+   Careful with the converse: it is a third-country VISITOR WITHOUT a qualifying status who is subject
+   to the Schengen short-stay rules — not every third-country national. A British national with
+   Withdrawal Agreement rights, anyone already holding Spanish residence, and an EU citizen's
+   third-country family member are all outside it. Never write "only third-country nationals face
+   90/180" as though nationality settled it; variables 3 and 4 below decide the real answer.
 3. SPANISH RESIDENCE STATUS — whether they actually hold residence here, and under which regime
    (EU/EEA registration certificate vs TIE). Having the right to reside is not the same as using it.
 4. SPANISH TAX RESIDENCE — turns on where a person lives and where their interests are, NOT on their

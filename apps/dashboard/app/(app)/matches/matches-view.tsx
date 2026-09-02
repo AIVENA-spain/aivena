@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useLocale } from "next-intl";
 import Link from "next/link";
 import { Users, Gauge, Trophy } from "lucide-react";
 
@@ -284,11 +285,14 @@ function MatchCard({
   best: boolean;
   bestLabel: string;
 }) {
+  // Grouping follows the agent's language: a Spanish reader must not see
+  // "\u20ac285,000" (which reads as \u20ac285 with a decimal comma).
+  const locale = useLocale();
   const pct = Math.min(100, Math.max(0, Math.round(m.similarity * 100)));
   const specs = [
     m.bedrooms != null && m.bedrooms > 0 ? `${m.bedrooms} ${labels.bed}` : null,
     m.bathrooms != null && m.bathrooms > 0 ? `${m.bathrooms} ${labels.bath}` : null,
-    m.area_sqm != null && m.area_sqm > 0 ? formatArea(m.area_sqm) : null,
+    m.area_sqm != null && m.area_sqm > 0 ? formatArea(m.area_sqm, { locale }) : null,
   ].filter(Boolean);
   const place = [m.location_city, m.location_region].filter(Boolean).join(", ");
 
@@ -315,7 +319,7 @@ function MatchCard({
           {m.title}
         </span>
         <span className="text-[12.5px] font-bold text-foreground tabular-nums">
-          {formatPrice(m.price, m.price_currency, { fallback: labels.priceOnRequest })}
+          {formatPrice(m.price, m.price_currency, { fallback: labels.priceOnRequest, locale })}
         </span>
         {specs.length > 0 ? (
           <span className="truncate text-[10.5px] text-muted-foreground tabular-nums">

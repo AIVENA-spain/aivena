@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getLocale } from "next-intl/server";
 
 import { apiFetch } from "@/lib/api/client";
-import { LOCALE_COOKIE, catalogLocaleFor, isLocale } from "@/lib/i18n/config";
+import { LOCALE_COOKIE, catalogLocaleFor, catalogLocaleOrNull } from "@/lib/i18n/config";
 import { intlLocaleFor } from "@/lib/i18n/date-locale";
 import type { SettingsResponse, TasksResponse } from "@/lib/api/types";
 import { getCurrentUserContext } from "@/lib/auth/context";
@@ -65,7 +65,11 @@ function pickBrowserLocale(accept: string | null): string | null {
     })
     .sort((a, b) => b.q - a.q);
   for (const { code } of ordered) {
-    if (isLocale(code)) return code;
+    // catalogLocaleOrNull, NOT isLocale: a Norwegian browser sends "nb-NO", and
+    // a bare isLocale("nb") is FALSE because the catalogue file is no.json — so
+    // Norwegian users were never detected and silently got English.
+    const resolved = catalogLocaleOrNull(code);
+    if (resolved) return resolved;
   }
   return null;
 }

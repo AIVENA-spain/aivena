@@ -2,9 +2,8 @@ import { cookies } from "next/headers";
 import { getRequestConfig } from "next-intl/server";
 
 import {
-  DEFAULT_LOCALE,
   LOCALE_COOKIE,
-  isLocale,
+  catalogLocaleFor,
   type Locale,
 } from "@/lib/i18n/config";
 
@@ -17,7 +16,10 @@ import {
 export default getRequestConfig(async () => {
   const cookieStore = await cookies();
   const value = cookieStore.get(LOCALE_COOKIE)?.value;
-  const locale: Locale = isLocale(value) ? value : DEFAULT_LOCALE;
+  // catalogLocaleFor, NOT isLocale: the cookie can legitimately hold 'nb'
+  // (canonical Norwegian in storage) while the catalogue file is no.json.
+  // A bare isLocale() check rendered those users in English.
+  const locale: Locale = catalogLocaleFor(value);
 
   const messages = (await import(`../messages/${locale}.json`)).default;
 

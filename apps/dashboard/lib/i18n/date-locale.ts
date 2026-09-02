@@ -1,4 +1,4 @@
-import { SUPPORTED_LOCALES, type Locale } from "./config";
+import { SUPPORTED_LOCALES, catalogLocaleOrNull, type Locale } from "./config";
 
 /**
  * Single source of truth for converting an AIVENA app locale (the 2-letter
@@ -53,5 +53,10 @@ function isLocale(value: string): value is Locale {
  */
 export function intlLocaleFor(appLocale: string): string {
   if (isLocale(appLocale)) return BCP47[appLocale];
+  // Storage canonicalises Norwegian as 'nb' while the catalogue file is 'no'.
+  // Without this, a user stored as 'nb' fell through to en-US and read AMERICAN
+  // dates (September 3) inside an otherwise Norwegian UI.
+  const aliased = catalogLocaleOrNull(appLocale);
+  if (aliased) return BCP47[aliased];
   return BCP47.en;
 }

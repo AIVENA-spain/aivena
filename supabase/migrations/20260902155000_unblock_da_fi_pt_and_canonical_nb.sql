@@ -1,0 +1,17 @@
+-- APPLIED to production 2026-09-02 (migration unblock_da_fi_pt_and_canonical_nb).
+-- Version-controlled copy; see the commit message for the full reasoning.
+--
+-- D1: user_preferences carried TWO overlapping CHECK constraints on ui_language
+-- and both applied, so the effective set was their INTERSECTION (10 codes) —
+-- silently excluding Danish, Finnish and Portuguese even though those catalogues
+-- ship complete. Collapsed to ONE constraint over the canonical 13.
+--
+-- Also converged Norwegian: agency_settings and supported_languages still said
+-- 'no' while templates, leads and the API say 'nb'.
+--
+-- ORDER MATTERS. A first attempt added the constraints BEFORE normalising the
+-- rows and Postgres correctly rejected it ("violated by some row"); the whole
+-- transaction rolled back and all 8 original constraints were verified intact.
+-- Constraints therefore come last, after the data is already canonical.
+-- The dashboard readers were made tolerant of 'nb' FIRST (catalogLocaleOrNull),
+-- otherwise storing 'nb' would have rendered Norwegian users in English.

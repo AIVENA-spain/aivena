@@ -2,7 +2,7 @@
  "seller": [
   {
    "topic_id": "S1",
-   "original_hook": "Your Costa Blanca home carries more than one price, and they are different instruments rather than versions of one number: the asking price the agency publishes (private, not official); the Catastro's valor de referencia (official — set by the Dirección General del Catastro and consultable for a specific property); and official transaction-price statistics built from what buyers actually paid (INE, Colegio de Registradores, Notariado, MIVAU), which are published only as area averages and never as a figure attached to your address. Two of the three are official, and none of them is a published record of what a buyer paid for your particular home.",
+   "original_hook": "Your Costa Blanca home carries more than one price, and they are different instruments rather than versions of one number: the asking price the agency publishes (private, not official); the Catastro's valor de referencia (official — set by the Dirección General del Catastro and consultable for a specific property); and official transaction-price statistics built from what buyers actually paid (INE's Índice de Precios de Vivienda, Colegio de Registradores, Notariado), which are published only as area averages and never as a figure attached to your address. MIVAU's valor tasado series is not one of these — it is an appraisal average built from the tasadoras' own valuation reports, not from what anyone paid. Two of the three are official, and none of them is a published record of what a buyer paid for your particular home.",
    "hook_status": "REWRITTEN",
    "audit_finding": null,
    "risk_class": null,
@@ -10,7 +10,10 @@
     0,
     1,
     2,
-    3
+    3,
+    443,
+    623,
+    721
    ]
   },
   {
@@ -24,7 +27,9 @@
     5,
     6,
     7,
-    8
+    8,
+    624,
+    625
    ]
   },
   {
@@ -35,7 +40,8 @@
    "risk_class": null,
    "ledger_claim_ids": [
     9,
-    10
+    10,
+    444
    ]
   },
   {
@@ -48,7 +54,8 @@
     11,
     12,
     13,
-    14
+    14,
+    626
    ]
   },
   {
@@ -62,7 +69,8 @@
     16,
     17,
     18,
-    19
+    19,
+    446
    ]
   },
   {
@@ -90,7 +98,10 @@
     26,
     27,
     28,
-    29
+    29,
+    447,
+    627,
+    628
    ]
   },
   {
@@ -100,7 +111,8 @@
    "audit_finding": null,
    "risk_class": null,
    "ledger_claim_ids": [
-    30
+    30,
+    448
    ]
   },
   {
@@ -114,7 +126,8 @@
     32,
     33,
     34,
-    35
+    35,
+    449
    ]
   },
   {
@@ -144,7 +157,9 @@
     44,
     45,
     46,
-    47
+    47,
+    450,
+    451
    ]
   },
   {
@@ -156,7 +171,9 @@
    "ledger_claim_ids": [
     48,
     49,
-    50
+    50,
+    452,
+    629
    ]
   },
   {
@@ -167,7 +184,8 @@
    "risk_class": null,
    "ledger_claim_ids": [
     51,
-    52
+    52,
+    453
    ]
   },
   {
@@ -180,7 +198,12 @@
     53,
     54,
     55,
-    56
+    56,
+    454,
+    455,
+    456,
+    457,
+    631
    ]
   },
   {
@@ -189,7 +212,10 @@
    "hook_status": "AGENCY_REQUIRED",
    "audit_finding": null,
    "risk_class": null,
-   "ledger_claim_ids": []
+   "ledger_claim_ids": [
+    458,
+    459
+   ]
   },
   {
    "topic_id": "S16",
@@ -200,7 +226,9 @@
    "ledger_claim_ids": [
     57,
     58,
-    59
+    59,
+    460,
+    461
    ]
   },
   {
@@ -225,7 +253,8 @@
    "audit_finding": null,
    "risk_class": null,
    "ledger_claim_ids": [
-    66
+    66,
+    462
    ]
   },
   {
@@ -247,7 +276,11 @@
    "audit_finding": null,
    "risk_class": null,
    "ledger_claim_ids": [
-    70
+    70,
+    464,
+    465,
+    632,
+    633
    ]
   },
   {
@@ -257,7 +290,10 @@
    "audit_finding": null,
    "risk_class": null,
    "ledger_claim_ids": [
-    71
+    71,
+    467,
+    468,
+    469
    ]
   },
   {
@@ -281,7 +317,8 @@
    "audit_finding": null,
    "risk_class": null,
    "ledger_claim_ids": [
-    77
+    77,
+    470
    ]
   },
   {
@@ -291,7 +328,8 @@
    "audit_finding": null,
    "risk_class": null,
    "ledger_claim_ids": [
-    78
+    78,
+    634
    ]
   },
   {
@@ -302,16 +340,21 @@
    "risk_class": null,
    "ledger_claim_ids": [
     79,
-    80
+    80,
+    471
    ]
   },
   {
    "topic_id": "S26",
-   "original_hook": "You can accept an offer on a house that is still in your mother's name — the heirs own it, and the contract is valid. What you cannot do is let the buyer register it: Ley Hipotecaria art. 20 requires the seller's own right to be inscribed first, and says registrars shall refuse where the registered owner is someone else. In practice the two deeds are usually signed and lodged on the same day, the inheritance first and the sale second, because the registry despatches titles in order of presentation — that is standard practice built on the priority rule, not a right to same-day treatment.",
+   "original_hook": "You can accept an offer on a house that is still in your mother's name — the heirs own it, and the contract is valid. What you cannot do is let the buyer register it: Ley Hipotecaria art. 20 requires the seller's own right to be inscribed first, and says registrars shall refuse where the registered owner is someone else. The way round it is to sign and lodge both deeds in sequence, the inheritance first and the sale second: under Ley Hipotecaria arts. 24 and 25 a title takes its date and its rank from its asiento de presentación, so the inheritance is inscribed ahead of the sale. That follows from the priority rule — it is not a right to same-day treatment.",
    "hook_status": "RETAINED",
    "audit_finding": null,
    "risk_class": null,
-   "ledger_claim_ids": []
+   "ledger_claim_ids": [
+    473,
+    474,
+    722
+   ]
   },
   {
    "topic_id": "S27",
@@ -321,7 +364,8 @@
    "risk_class": null,
    "ledger_claim_ids": [
     81,
-    82
+    82,
+    475
    ]
   },
   {
@@ -331,7 +375,9 @@
    "audit_finding": null,
    "risk_class": null,
    "ledger_claim_ids": [
-    83
+    83,
+    476,
+    477
    ]
   },
   {
@@ -340,7 +386,11 @@
    "hook_status": "RETAINED",
    "audit_finding": null,
    "risk_class": null,
-   "ledger_claim_ids": []
+   "ledger_claim_ids": [
+    478,
+    479,
+    480
+   ]
   },
   {
    "topic_id": "S30",
@@ -354,7 +404,9 @@
     86,
     87,
     88,
-    89
+    89,
+    481,
+    482
    ]
   },
   {
@@ -365,7 +417,10 @@
    "risk_class": null,
    "ledger_claim_ids": [
     90,
-    91
+    91,
+    484,
+    636,
+    637
    ]
   },
   {
@@ -378,7 +433,9 @@
     92,
     93,
     94,
-    95
+    95,
+    485,
+    638
    ]
   },
   {
@@ -388,7 +445,9 @@
    "audit_finding": null,
    "risk_class": null,
    "ledger_claim_ids": [
-    96
+    96,
+    486,
+    487
    ]
   },
   {
@@ -401,7 +460,8 @@
     97,
     98,
     99,
-    100
+    100,
+    488
    ]
   },
   {
@@ -411,7 +471,12 @@
    "audit_finding": null,
    "risk_class": null,
    "ledger_claim_ids": [
-    101
+    101,
+    489,
+    490,
+    491,
+    492,
+    493
    ]
   },
   {
@@ -425,7 +490,9 @@
     103,
     104,
     105,
-    106
+    106,
+    494,
+    639
    ]
   },
   {
@@ -438,12 +505,13 @@
     107,
     108,
     109,
-    110
+    110,
+    640
    ]
   },
   {
    "topic_id": "S38",
-   "original_hook": "Two official instruments publish a price per square metre that reaches Alicante, and they record different moments: the Ministry of Housing's Valor tasado series is an appraisal, the Notariado's is the price on the signed deed. Neither is the asking price you see on a portal — no official body publishes that. Which one describes your house?",
+   "original_hook": "The €/m² figures you can look up for Alicante do not measure the same thing. The Ministry of Housing's valor tasado is an appraisal, averaged from valuers' reports. The Notariado's comes from the signed deed. The Registradores' from the registered sale. The Catastro's mapa de valores assigns an average €/m² module to each homogeneous valuation area, drawn from the prices notaries report. And none of them is the asking price on a portal — that is where a seller starts, not a record of what happened. Which one describes your house?",
    "hook_status": "REWRITTEN",
    "audit_finding": null,
    "risk_class": null,
@@ -452,7 +520,10 @@
     112,
     113,
     114,
-    115
+    115,
+    497,
+    642,
+    738
    ]
   },
   {
@@ -462,7 +533,8 @@
    "audit_finding": null,
    "risk_class": null,
    "ledger_claim_ids": [
-    116
+    116,
+    498
    ]
   },
   {
@@ -488,7 +560,9 @@
     121,
     122,
     123,
-    124
+    124,
+    643,
+    739
    ]
   },
   {
@@ -513,7 +587,8 @@
    "risk_class": null,
    "ledger_claim_ids": [
     130,
-    131
+    131,
+    621
    ]
   },
   {
@@ -522,7 +597,10 @@
    "hook_status": "RETAINED",
    "audit_finding": null,
    "risk_class": null,
-   "ledger_claim_ids": []
+   "ledger_claim_ids": [
+    500,
+    501
+   ]
   },
   {
    "topic_id": "S45",
@@ -532,16 +610,19 @@
    "risk_class": null,
    "ledger_claim_ids": [
     132,
-    133
+    133,
+    502
    ]
   },
   {
    "topic_id": "S46",
-   "original_hook": "The closed terrace, the pool, the extra bedroom the register has never heard of: what an undeclared build costs you at the deed, and the two routes back onto paper — one for work you can still legalise, one for work too old to be ordered down.",
+   "original_hook": "The closed terrace, pool or extra bedroom the register has never heard of: what routes may exist to bring the paperwork into line, what each requires, and when land or planning status blocks the usual route.",
    "hook_status": "REWRITTEN",
    "audit_finding": null,
    "risk_class": null,
-   "ledger_claim_ids": []
+   "ledger_claim_ids": [
+    503
+   ]
   },
   {
    "topic_id": "S47",
@@ -551,7 +632,11 @@
    "risk_class": null,
    "ledger_claim_ids": [
     134,
-    135
+    135,
+    504,
+    505,
+    645,
+    647
    ]
   },
   {
@@ -561,7 +646,10 @@
    "audit_finding": null,
    "risk_class": null,
    "ledger_claim_ids": [
-    136
+    136,
+    507,
+    508,
+    509
    ]
   },
   {
@@ -571,7 +659,9 @@
    "audit_finding": null,
    "risk_class": null,
    "ledger_claim_ids": [
-    137
+    137,
+    511,
+    725
    ]
   },
   {
@@ -602,7 +692,8 @@
    "ledger_claim_ids": [
     140,
     141,
-    142
+    142,
+    649
    ]
   },
   {
@@ -614,7 +705,8 @@
    "ledger_claim_ids": [
     143,
     144,
-    145
+    145,
+    650
    ]
   },
   {
@@ -625,7 +717,9 @@
    "risk_class": null,
    "ledger_claim_ids": [
     146,
-    147
+    147,
+    514,
+    515
    ]
   },
   {
@@ -637,7 +731,9 @@
    "ledger_claim_ids": [
     148,
     149,
-    150
+    150,
+    651,
+    652
    ]
   },
   {
@@ -663,7 +759,10 @@
     155,
     156,
     157,
-    158
+    158,
+    517,
+    519,
+    653
    ]
   },
   {
@@ -673,7 +772,10 @@
    "audit_finding": null,
    "risk_class": null,
    "ledger_claim_ids": [
-    159
+    159,
+    520,
+    521,
+    522
    ]
   },
   {
@@ -687,7 +789,11 @@
     161,
     162,
     163,
-    164
+    164,
+    523,
+    524,
+    525,
+    654
    ]
   },
   {
@@ -731,7 +837,9 @@
     178,
     179,
     180,
-    181
+    181,
+    527,
+    655
    ]
   },
   {
@@ -744,7 +852,10 @@
     182,
     183,
     184,
-    185
+    185,
+    528,
+    529,
+    656
    ]
   },
   {
@@ -755,7 +866,8 @@
    "risk_class": null,
    "ledger_claim_ids": [
     186,
-    187
+    187,
+    657
    ]
   },
   {
@@ -784,7 +896,8 @@
     195,
     196,
     197,
-    198
+    198,
+    658
    ]
   },
   {
@@ -798,7 +911,8 @@
     200,
     201,
     202,
-    203
+    203,
+    530
    ]
   },
   {
@@ -813,7 +927,8 @@
     206,
     207,
     208,
-    209
+    209,
+    659
    ]
   }
  ],
@@ -837,7 +952,12 @@
     219,
     220,
     221,
-    222
+    222,
+    531,
+    532,
+    660,
+    661,
+    662
    ]
   },
   {
@@ -854,7 +974,10 @@
     227,
     228,
     229,
-    230
+    230,
+    533,
+    534,
+    535
    ]
   },
   {
@@ -872,7 +995,9 @@
     236,
     237,
     238,
-    239
+    239,
+    537,
+    663
    ]
   },
   {
@@ -888,7 +1013,10 @@
     243,
     244,
     245,
-    246
+    246,
+    538,
+    539,
+    664
    ]
   },
   {
@@ -903,7 +1031,9 @@
     249,
     250,
     251,
-    252
+    252,
+    665,
+    666
    ]
   },
   {
@@ -917,7 +1047,8 @@
     254,
     255,
     256,
-    257
+    257,
+    543
    ]
   },
   {
@@ -939,7 +1070,12 @@
     267,
     268,
     269,
-    270
+    270,
+    545,
+    547,
+    667,
+    668,
+    669
    ]
   },
   {
@@ -955,7 +1091,9 @@
     274,
     275,
     276,
-    277
+    277,
+    670,
+    671
    ]
   },
   {
@@ -967,7 +1105,9 @@
    "ledger_claim_ids": [
     278,
     279,
-    280
+    280,
+    549,
+    672
    ]
   },
   {
@@ -980,7 +1120,10 @@
     281,
     282,
     283,
-    284
+    284,
+    550,
+    551,
+    673
    ]
   },
   {
@@ -996,7 +1139,10 @@
     288,
     289,
     290,
-    291
+    291,
+    552,
+    674,
+    675
    ]
   },
   {
@@ -1014,7 +1160,15 @@
     297,
     298,
     299,
-    300
+    300,
+    555,
+    556,
+    676,
+    677,
+    678,
+    679,
+    680,
+    681
    ]
   },
   {
@@ -1028,7 +1182,9 @@
     302,
     303,
     304,
-    305
+    305,
+    558,
+    559
    ]
   },
   {
@@ -1043,7 +1199,9 @@
     308,
     309,
     310,
-    311
+    311,
+    561,
+    682
    ]
   },
   {
@@ -1053,7 +1211,10 @@
    "audit_finding": "Mortgages and embargoes are correct, but a nota simple shows the registered surface, not the real one, so it reveals a discrepancy rather than proving the house is \"lying\" — and it is a snapshot of registered charges only, silent on community debts, occupiers, planning infringements and anything unregistered.",
    "risk_class": "over-absolute",
    "ledger_claim_ids": [
-    312
+    312,
+    563,
+    564,
+    683
    ]
   },
   {
@@ -1063,7 +1224,10 @@
    "audit_finding": "none — the advice is sound and generally applicable; the only exposure is the unsourced \"six-figure sums\" characterisation and the temptation to illustrate it with a client story.",
    "risk_class": "safe",
    "ledger_claim_ids": [
-    313
+    313,
+    566,
+    684,
+    685
    ]
   },
   {
@@ -1075,7 +1239,8 @@
    "ledger_claim_ids": [
     314,
     315,
-    316
+    316,
+    727
    ]
   },
   {
@@ -1084,7 +1249,9 @@
    "hook_status": "SUPERSEDED",
    "audit_finding": "The AI cannot know which specific businesses on a specific street open in February, and it cannot supply the February photograph the entire concept depends on; it also bakes in the premise that the town empties, which is false for several Costa Blanca towns.",
    "risk_class": "fabrication-risk",
-   "ledger_claim_ids": []
+   "ledger_claim_ids": [
+    688
+   ]
   },
   {
    "topic_id": "B19",
@@ -1095,7 +1262,9 @@
    "ledger_claim_ids": [
     317,
     318,
-    319
+    319,
+    568,
+    689
    ]
   },
   {
@@ -1105,7 +1274,10 @@
    "audit_finding": "None — the two towns are genuinely close and genuinely different; the only exposure is that 'we'll tell you which' invites a verdict delivered as fact rather than as a reasoned recommendation.",
    "risk_class": "safe",
    "ledger_claim_ids": [
-    320
+    320,
+    569,
+    571,
+    690
    ]
   },
   {
@@ -1116,7 +1288,9 @@
    "risk_class": "safe",
    "ledger_claim_ids": [
     321,
-    322
+    322,
+    572,
+    740
    ]
   },
   {
@@ -1137,7 +1311,8 @@
    "risk_class": "fabrication-risk",
    "ledger_claim_ids": [
     324,
-    325
+    325,
+    574
    ]
   },
   {
@@ -1147,7 +1322,8 @@
    "audit_finding": "Market day, time and location are town-specific and often midweek rather than Saturday, and 'fish landed this morning' is usually false at weekends — the trawler fleet does not typically fish Saturdays, so weekend fish is Friday's catch or frozen.",
    "risk_class": "fabrication-risk",
    "ledger_claim_ids": [
-    326
+    326,
+    576
    ]
   },
   {
@@ -1157,7 +1333,10 @@
    "audit_finding": "At 08:00 on a January morning in Alicante it is still dark — sunrise is around 08:15–08:20 because Spain runs on CET despite its western longitude — so the sunlit-versus-dark contrast at that exact hour is factually inverted against London, where the sun rises earlier by the clock.",
    "risk_class": "false-premise",
    "ledger_claim_ids": [
-    327
+    327,
+    578,
+    579,
+    580
    ]
   },
   {
@@ -1169,7 +1348,11 @@
    "ledger_claim_ids": [
     328,
     329,
-    330
+    330,
+    582,
+    583,
+    692,
+    693
    ]
   },
   {
@@ -1179,7 +1362,9 @@
    "audit_finding": "\"The three places people actually meet\" asserts observed local social behaviour and specific venues that the AI would simply invent, and the count of three is arbitrary rather than evidenced.",
    "risk_class": "fabrication-risk",
    "ledger_claim_ids": [
-    331
+    331,
+    586,
+    694
    ]
   },
   {
@@ -1199,7 +1384,8 @@
    "ledger_claim_ids": [
     332,
     333,
-    334
+    334,
+    729
    ]
   },
   {
@@ -1214,7 +1400,10 @@
     337,
     338,
     339,
-    340
+    340,
+    587,
+    588,
+    696
    ]
   },
   {
@@ -1229,7 +1418,8 @@
     343,
     344,
     345,
-    346
+    346,
+    589
    ]
   },
   {
@@ -1242,7 +1432,10 @@
     347,
     348,
     349,
-    350
+    350,
+    590,
+    591,
+    697
    ]
   },
   {
@@ -1261,7 +1454,10 @@
     357,
     358,
     359,
-    360
+    360,
+    698,
+    699,
+    700
    ]
   },
   {
@@ -1273,7 +1469,14 @@
    "ledger_claim_ids": [
     361,
     362,
-    363
+    363,
+    592,
+    593,
+    594,
+    595,
+    596,
+    701,
+    702
    ]
   },
   {
@@ -1284,7 +1487,8 @@
    "risk_class": "safe",
    "ledger_claim_ids": [
     364,
-    365
+    365,
+    703
    ]
   },
   {
@@ -1300,7 +1504,9 @@
     369,
     370,
     371,
-    372
+    372,
+    598,
+    599
    ]
   },
   {
@@ -1334,7 +1540,8 @@
     385,
     386,
     387,
-    388
+    388,
+    704
    ]
   },
   {
@@ -1368,7 +1575,12 @@
     401,
     402,
     403,
-    404
+    404,
+    601,
+    602,
+    705,
+    706,
+    707
    ]
   },
   {
@@ -1386,7 +1598,10 @@
     410,
     411,
     412,
-    413
+    413,
+    604,
+    605,
+    708
    ]
   },
   {
@@ -1398,7 +1613,9 @@
    "ledger_claim_ids": [
     414,
     415,
-    416
+    416,
+    606,
+    607
    ]
   },
   {
@@ -1409,7 +1626,8 @@
    "risk_class": "false-premise",
    "ledger_claim_ids": [
     417,
-    418
+    418,
+    608
    ]
   },
   {
@@ -1423,7 +1641,10 @@
     420,
     421,
     422,
-    423
+    423,
+    609,
+    611,
+    709
    ]
   },
   {
@@ -1434,7 +1655,9 @@
    "risk_class": "fabrication-risk",
    "ledger_claim_ids": [
     424,
-    425
+    425,
+    613,
+    710
    ]
   },
   {
@@ -1444,7 +1667,9 @@
    "audit_finding": "\"The three signals we actually watch\" claims a proprietary method belonging to that specific agency — an AI writing it fabricates a house methodology, and 'about to get more expensive' invites invented local detail and unfounded predictions about named towns.",
    "risk_class": "fabrication-risk",
    "ledger_claim_ids": [
-    426
+    426,
+    614,
+    741
    ]
   },
   {
@@ -1454,7 +1679,9 @@
    "audit_finding": "\"What we're actually paid\" is a number only this agency knows — the AI will invent a commission percentage and publish it as a disclosure; the topic also bakes in a single cause (agents stacking their own margin) when price divergence has several causes, and \"put it in writing\" hints at a buyer legal right that does not clearly exist.",
    "risk_class": "fabrication-risk",
    "ledger_claim_ids": [
-    427
+    427,
+    615,
+    712
    ]
   },
   {
@@ -1477,7 +1704,10 @@
    "hook_status": "SUPERSEDED",
    "audit_finding": "An agency's own past mistakes cannot be synthesised — an AI will invent plausible failures and publish a false confession, which is both dishonest and a live liability if an invented \"mistake\" resembles a real client's transaction.",
    "risk_class": "fabrication-risk",
-   "ledger_claim_ids": []
+   "ledger_claim_ids": [
+    617,
+    713
+   ]
   },
   {
    "topic_id": "B50",
@@ -1490,7 +1720,11 @@
     434,
     435,
     436,
-    437
+    437,
+    619,
+    714,
+    716,
+    731
    ]
   },
   {
@@ -1501,7 +1735,9 @@
    "risk_class": "fabrication-risk",
    "ledger_claim_ids": [
     438,
-    439
+    439,
+    717,
+    718
    ]
   },
   {
@@ -1512,7 +1748,9 @@
    "risk_class": "safe",
    "ledger_claim_ids": [
     440,
-    441
+    441,
+    719,
+    737
    ]
   }
  ]

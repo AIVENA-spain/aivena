@@ -43,23 +43,41 @@ def build(rows, key, hook_field, question_field, must_field, never_field, ledger
             "research_status": r.get("research_status", "UNRESOLVED"),
             "hook_status": r.get("hook_status", "UNCHECKED"),
             "freshness_status": r.get("freshness_status", "CURRENT"),
-            "claim_ids": [c["id"] for c in claims],
+            # Every claim that touches this card, from its coverage map as well as the topic index —
+            # nine cards rendered without a provenance line because the index missed claims the
+            # coverage map already knew about.
+            "claim_ids": sorted({c["id"] for c in claims} | {
+                cid for cov in (r.get("coverage") or {}).values()
+                for cid in cov.get("claim_ids", []) if isinstance(cid, int)
+            }),
             # Coverage was keyed by the source field names; the production bank renames them, and a
             # lookup against the old keys silently reports every field as uncovered.
             "coverage": {
                 FIELD_MAP.get(k.split("[")[0], k.split("[")[0]) + "[" + k.split("[")[1]: v
                 for k, v in (r.get("coverage") or {}).items()
             },
-            "agency_evidence_required": bool(r.get("agency") or r.get("state") == "blocked"),
+            "agency_evidence_required": bool(r.get("agency") or r.get("agency_blocked")),
             "state": r.get("state", "review"),
             "verified_as_of": r.get("verified_as_of"),
         }
-        # The production hook exists only when the hook itself survived checking. Anything else is
-        # audit material — the writer receives the question, never a line we have rejected.
-        if prod["hook_status"] in ("RETAINED", "REWRITTEN"):
-            prod["production_hook"] = r.get(hook_field)
-        else:
-            prod["production_hook"] = None
+        prod["hook_verified"] = bool(r.get("hook_verified"))
+        # A hook is stored only when EVERY condition holds. Non-green means null, without exception:
+        # relying on a grey or violet badge to make a live factual hook safe was the error this
+        # replaces, and the writer reads text rather than badges.
+        green = (prod["state"] == "verified"
+                 and prod["hook_verified"]
+                 and prod["hook_status"] in ("RETAINED", "REWRITTEN"))
+        prod["production_hook"] = r.get(hook_field) if green else None
+        # Provenance renders on every card. Where a card carries no factual claim at all, that is
+        # itself the provenance and must be stated — an empty line reads as an omission, and two
+        # cards were reported as missing provenance when they simply had nothing to source.
+        cov = prod["coverage"]
+        prod["provenance"] = {
+            "claim_count": len(prod["claim_ids"]),
+            "all_non_factual": bool(cov) and all(c.get("non_factual_instruction")
+                                                 for c in cov.values() if not c.get("claim_ids")),
+            "has_provenance": bool(prod["claim_ids"]) or bool(cov),
+        }
         production.append(prod)
 
         audit.append({
@@ -97,11 +115,12 @@ def main():
               open(os.path.join(HERE, "audit_record.json"), "w", encoding="utf-8"),
               ensure_ascii=False, indent=1)
 
-    leaked = [p["topic_id"] for p in sp + bp
-              if p["production_hook"] is None and p["state"] == "verified"]
+    bad = [p["topic_id"] for p in sp + bp if p["production_hook"] and p["state"] != "verified"]
     print(f"seller_bank.json {len(sp)} topics · buyer_bank.json {len(bp)} topics")
     print(f"audit_record.json {len(sa) + len(ba)} entries (original hooks + findings, writer never sees these)")
-    print(f"green cards with no production hook: {len(leaked)} {leaked if leaked else ''}")
+    print(f"seller hooks stored {sum(1 for p in sp if p['production_hook'])}/{len(sp)} · "
+          f"buyer hooks stored {sum(1 for p in bp if p['production_hook'])}/{len(bp)}")
+    print(f"non-green cards with a production hook: {len(bad)} {bad if bad else ''}")
     return 0
 
 

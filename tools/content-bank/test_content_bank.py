@@ -22,8 +22,21 @@ LEDGER = os.path.join(HERE, "ledger.json")
 FIXTURES = os.path.join(HERE, "fixtures", "known_failures.json")
 LINT = os.path.join(HERE, "lint_banks.py")
 
-# A verdict that may never appear in a production field.
+# A verdict that may never support a live production field. CORRECTED is historical audit state:
+# applying a correction does not verify it, so the replacement becomes a NEW claim that is checked
+# on its own and production points only at that.
 UNPUBLISHABLE = {"CORRECTED", "UNRESOLVED", "NO_PUBLIC_EVIDENCE", "AGENCY_EVIDENCE_REQUIRED"}
+ELIGIBLE = {"VERIFIED_FACT", "VERIFIED_GUARDRAIL", "TIME_SENSITIVE", "NOT_APPLICABLE_NONFACTUAL"}
+# Which source classes can carry which claim.
+CLAIM_SOURCE_OK = {
+    "legislation": {"LAW_PRIMARY"},
+    "article_number": {"LAW_PRIMARY"},
+    "procedure": {"LAW_PRIMARY", "TAX_PRIMARY", "FIRST_PARTY_ORGANISATION"},
+    "tax_rate": {"LAW_PRIMARY", "TAX_PRIMARY"},
+    "deadline": {"LAW_PRIMARY", "TAX_PRIMARY"},
+    "form_number": {"LAW_PRIMARY", "TAX_PRIMARY"},
+    "statistic": {"OFFICIAL_STATISTICS", "FIRST_PARTY_ORGANISATION", "FIRST_PARTY_COMMERCIAL"},
+}
 # Claim types where a secondary source can never make a fact green.
 NEEDS_PRIMARY = {"legislation", "tax_rate", "article_number", "procedure", "deadline", "form_number"}
 PRIMARY_CLASSES = {"LAW_PRIMARY", "TAX_PRIMARY", "OFFICIAL_STATISTICS"}
@@ -70,66 +83,82 @@ def rule_1_coverage(banks):
                              "neither claim_ids nor non_factual_instruction=true")
 
 
-def rule_2_green_hooks(banks):
-    """A fully green card cannot carry an unchecked, superseded or rejected hook."""
+def rule_2_hook_nullity(banks):
+    """Non-green means no production hook. No exceptions.
+
+    A grey or violet badge does not make a live factual hook safe: the writer reads text, not badges.
+    A hook may exist only on a card that is verified, whose hook was itself checked, and whose text
+    is the text that was checked.
+    """
     for path in banks:
         for t in load(path):
-            if t.get("state") != "verified":
-                continue
-            if t.get("hook_status") not in GREEN_HOOKS:
-                fail("green-hook", f"{os.path.basename(path)} [{t.get('i') or t.get('n')}]",
-                     f"state=verified but hook_status={t.get('hook_status')}")
+            green = (t.get("state") == "verified"
+                     and t.get("hook_verified") is True
+                     and t.get("hook_status") in GREEN_HOOKS)
+            if t.get("production_hook") and not green:
+                fail("non-green-hook", f"{os.path.basename(path)} [{t.get('topic_id')}]",
+                     f"state={t.get('state')} hook_verified={t.get('hook_verified')} but a hook is stored")
 
 
-def rule_3_source_class(ledger):
-    """A statutory or tax fact cannot be green on a secondary source."""
-    for e in ledger:
-        if e["verdict"] == "VERIFIED_FACT" and e["claim_type"] in NEEDS_PRIMARY \
-                and e.get("source_class") not in PRIMARY_CLASSES:
-            fail("source-class", f"ledger #{e['id']}",
-                 f"{e['claim_type']} VERIFIED_FACT on {e.get('source_class')}")
+def rule_3_active_claims(banks, ledger):
+    """Production may only point at claims that are eligible and active.
 
-
-def rule_4_unpublishable(banks, ledger):
-    """No corrected, unresolved or agency-only claim survives as a production assertion.
-
-    "Survives" means the production text is still the defective wording. A CORRECTED claim whose fix
-    was applied is not a survivor — the corrected sentence is what ships. An UNRESOLVED or
-    AGENCY_EVIDENCE_REQUIRED claim is likewise fine when the production field is the instruction to
-    research or to gate it; the violation is stating it as settled fact.
+    CORRECTED rows stay in the ledger as history and are superseded by a new, independently checked
+    row. "The correction was applied, therefore green" is the shortcut that put new errors into two
+    earlier repairs.
     """
-    import re
     by_id = {e["id"]: e for e in ledger}
-
-    def norm(s):
-        return re.sub(r"\s+", " ", str(s or "")).strip()
-
     for path in banks:
         for t in load(path):
             for key, cov in (t.get("coverage") or {}).items():
+                # A claim cannot survive in a field that no longer has text. Rule 1 nulls the hook on
+                # every non-green card, and its coverage entry outlives it.
                 field, _, idx = key.rstrip("]").partition("[")
                 val = t.get(field)
-                if val is None:
-                    continue
                 seq = val if isinstance(val, list) else [val]
                 try:
-                    text = norm(seq[int(idx)])
+                    if not str(seq[int(idx)] or "").strip():
+                        continue
                 except (ValueError, IndexError):
                     continue
                 for cid in cov.get("claim_ids", []):
-                    e = by_id.get(cid)
-                    if not e or e["verdict"] not in UNPUBLISHABLE:
+                    e = by_id.get(cid) if isinstance(cid, int) else None
+                    if not e:
                         continue
-                    # A claim later corrections replaced is not a surviving assertion. Without this,
-                    # a field corrected twice can never pass: each correction reports the other as
-                    # unapplied, and applying either re-breaks the first.
-                    if e.get("superseded_by"):
-                        continue
-                    final = norm(e.get("final_wording"))
-                    if final and final not in text and text not in final:
-                        fail("unpublishable",
-                             f"{os.path.basename(path)} [{t.get('topic_id')}] {key}",
-                             f"claim #{cid} is {e['verdict']} and its replacement wording was not applied")
+                    if not e.get("active"):
+                        fail("inactive-claim", f"{os.path.basename(path)} [{t.get('topic_id')}] {key}",
+                             f"claim #{cid} is superseded by #{e.get('superseded_by')}")
+                    elif e["verdict"] not in ELIGIBLE:
+                        fail("ineligible-claim", f"{os.path.basename(path)} [{t.get('topic_id')}] {key}",
+                             f"claim #{cid} is {e['verdict']}")
+
+
+def rule_4_ledger_mapping(ledger):
+    """Every ledger row is traceable on its own, without reconstructing the link from elsewhere."""
+    for e in ledger:
+        for field in ("bank", "topic", "field", "production_field_id"):
+            if e.get(field) in ("", None):
+                fail("ledger-mapping", f"ledger #{e['id']}", f"blank {field}")
+        if "active" not in e:
+            fail("ledger-mapping", f"ledger #{e['id']}", "no active flag")
+
+
+def rule_4b_source_class(ledger):
+    """Sources are classed individually, and the class must be able to carry the claim."""
+    for e in ledger:
+        srcs = e.get("sources")
+        if srcs is None:
+            fail("source-shape", f"ledger #{e['id']}", "no sources[] array")
+            continue
+        for s in srcs:
+            if not s.get("source_class"):
+                fail("source-shape", f"ledger #{e['id']}", "a source has no class")
+        if e["verdict"] != "VERIFIED_FACT":
+            continue
+        allowed = CLAIM_SOURCE_OK.get(e["claim_type"])
+        if allowed and not any(s.get("source_class") in allowed for s in srcs):
+            fail("source-class", f"ledger #{e['id']}",
+                 f"{e['claim_type']} VERIFIED_FACT with no source in {sorted(allowed)}")
 
 
 def rule_5_freshness(ledger, today):
@@ -165,11 +194,56 @@ def rule_7_agency_provenance(banks):
                              "first-person agency claim without agency_evidence_required")
 
 
+def rule_10_provenance(banks):
+    """Every card renders provenance. Nine did not, and the claim that all did was simply untrue."""
+    total = 0
+    for path in banks:
+        for t in load(path):
+            total += 1
+            prov = t.get("provenance") or {}
+            if not prov.get("has_provenance"):
+                fail("provenance", f"{os.path.basename(path)} [{t.get('topic_id')}]",
+                     "renders no provenance line — neither claims nor a non-factual declaration")
+    if total != 120:
+        fail("provenance", "banks", f"expected 120 cards, found {total}")
+
+
 def rule_8_lint(banks):
     """The text-integrity lint must pass on the banks."""
     r = subprocess.run([sys.executable, LINT] + banks, capture_output=True, text=True)
     if r.returncode != 0:
         fail("lint", "banks", r.stdout.strip().splitlines()[-1] if r.stdout else "lint failed")
+
+
+def rule_11_structural_fixtures():
+    """Each structural defect must still make its rule fail.
+
+    The text lint cannot see a hook on a non-green card, or production pointing at a corrected claim.
+    Those rules need their own deliberately broken inputs, or "CI passes" only means the text was tidy.
+    """
+    import tempfile
+    path = os.path.join(HERE, "fixtures", "structural_failures.json")
+    if not os.path.exists(path):
+        fail("structural-fixture", "fixtures", "structural_failures.json missing")
+        return
+    with open(path, encoding="utf-8") as f:
+        cases = json.load(f)["cases"]
+    for c in cases:
+        before = len(failures)
+        with tempfile.TemporaryDirectory() as d:
+            bp = os.path.join(d, "bank.json")
+            lp = os.path.join(d, "ledger.json")
+            json.dump(c["bank"], open(bp, "w", encoding="utf-8"))
+            json.dump({"entries": c["ledger"]}, open(lp, "w", encoding="utf-8"))
+            led = c["ledger"]
+            rule_2_hook_nullity([bp])
+            rule_3_active_claims([bp], led)
+            rule_4_ledger_mapping(led)
+            rule_4b_source_class(led)
+        caught = [f for f in failures[before:] if f[0] == c["rule"]]
+        del failures[before:]
+        if not caught:
+            fail("structural-fixture", c["id"], f"did not trigger rule '{c['rule']}'")
 
 
 def rule_9_lint_can_fail():
@@ -196,14 +270,17 @@ def main():
     ledger = load(LEDGER)
 
     rule_1_coverage(banks)
-    rule_2_green_hooks(banks)
-    rule_3_source_class(ledger)
-    rule_4_unpublishable(banks, ledger)
+    rule_2_hook_nullity(banks)
+    rule_3_active_claims(banks, ledger)
+    rule_4_ledger_mapping(ledger)
+    rule_4b_source_class(ledger)
+    rule_10_provenance(banks)
     rule_5_freshness(ledger, today)
     rule_6_hook_coverage(banks)
     rule_7_agency_provenance(banks)
     rule_8_lint(banks)
     rule_9_lint_can_fail()
+    rule_11_structural_fixtures()
 
     if not quiet:
         for rule, where, detail in failures:

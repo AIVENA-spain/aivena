@@ -3,7 +3,7 @@
   "topic_id": "S1",
   "current_research_question": "For a residential property in a named Costa Blanca town, what does each published price series actually measure (asking, registered sale, appraisal), at what geography and reference period is each published, and which of them — if any — is evidence of what a buyer would pay for that specific home?",
   "must_establish": [
-   "Establish, for each instrument used (portal asking-price series, Colegio de Registradores registered-sale series, MIVAU valor tasado), what unit it measures, its finest published geography, its reference period and its publication lag — and cite the instrument by name next to every figure quoted.",
+   "Separate four instruments and never merge them: (1) portal asking-price data, which is private and advertised, not paid; (2) the Catastro's valor de referencia, an administrative value; (3) transaction and deed evidence from the Colegio de Registradores and the Consejo General del Notariado, which is what buyers actually paid; and (4) MIVAU valor tasado, which is an APPRAISAL series and is never a record of what anyone paid.",
    "Establish, for the specific town the piece names, whether any of these instruments publishes a figure at municipal level at all, and if not, name the smallest geography for which a figure exists and say so in the copy.",
    "Determine, for each figure taken from a press release, whether 'Alicante' in that release means the city or the province, and confirm it against the publisher's own page rather than a search summary or aggregator.",
    "Establish whether figures from different instruments may legitimately be compared or subtracted from one another, and if they may not, state the reason in the piece."
@@ -14,19 +14,22 @@
    "That asking price, registered sale price and appraisal value are versions of one number, or that the difference between two of them measures anything.",
    "That municipal-level official data exists for smaller Costa Blanca towns — some publishers only disaggregate above a population threshold, so check before naming a town."
   ],
-  "research_status": "UNRESOLVED",
+  "research_status": "VERIFIED",
   "hook_status": "REWRITTEN",
   "freshness_status": "CURRENT",
   "claim_ids": [
    0,
    1,
    2,
-   3
+   3,
+   443,
+   623,
+   721
   ],
   "coverage": {
    "production_hook[0]": {
     "claim_ids": [
-     442
+     721
     ],
     "non_factual_instruction": false
    },
@@ -56,7 +59,7 @@
    },
    "never_assume[0]": {
     "claim_ids": [
-     2
+     623
     ],
     "non_factual_instruction": false
    },
@@ -78,9 +81,15 @@
    }
   },
   "agency_evidence_required": false,
-  "state": "review",
+  "state": "verified",
   "verified_as_of": "2026-09-02",
-  "production_hook": "Your Costa Blanca home carries more than one price, and they are different instruments rather than versions of one number: the asking price the agency publishes (private, not official); the Catastro's valor de referencia (official — set by the Dirección General del Catastro and consultable for a specific property); and official transaction-price statistics built from what buyers actually paid (INE, Colegio de Registradores, Notariado, MIVAU), which are published only as area averages and never as a figure attached to your address. Two of the three are official, and none of them is a published record of what a buyer paid for your particular home."
+  "hook_verified": true,
+  "production_hook": "Your Costa Blanca home carries more than one price, and they are different instruments rather than versions of one number: the asking price the agency publishes (private, not official); the Catastro's valor de referencia (official — set by the Dirección General del Catastro and consultable for a specific property); and official transaction-price statistics built from what buyers actually paid (INE's Índice de Precios de Vivienda, Colegio de Registradores, Notariado), which are published only as area averages and never as a figure attached to your address. MIVAU's valor tasado series is not one of these — it is an appraisal average built from the tasadoras' own valuation reports, not from what anyone paid. Two of the three are official, and none of them is a published record of what a buyer paid for your particular home.",
+  "provenance": {
+   "claim_count": 7,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S2",
@@ -97,7 +106,7 @@
    "That Catastro area matching the deed means the works were lawfully authorised, or that a Catastro entry regularises anything.",
    "That there is a known percentage a buyer knocks off for unregistered metres — no measured figure for the Costa Blanca has been established, so do not publish one."
   ],
-  "research_status": "UNRESOLVED",
+  "research_status": "VERIFIED",
   "hook_status": "RETAINED",
   "freshness_status": "CURRENT",
   "claim_ids": [
@@ -105,7 +114,9 @@
    5,
    6,
    7,
-   8
+   8,
+   624,
+   625
   ],
   "coverage": {
    "production_hook[0]": {
@@ -122,7 +133,7 @@
    },
    "must_establish[0]": {
     "claim_ids": [
-     5
+     624
     ],
     "non_factual_instruction": false
    },
@@ -138,7 +149,7 @@
    },
    "must_establish[3]": {
     "claim_ids": [
-     7
+     625
     ],
     "non_factual_instruction": false
    },
@@ -162,9 +173,15 @@
    }
   },
   "agency_evidence_required": false,
-  "state": "review",
-  "verified_as_of": null,
-  "production_hook": "The pool, the glazed terrace, the extra bedroom: if the register has never heard of them, find out what they do to your price before the buyer's valuer does"
+  "state": "verified",
+  "verified_as_of": "2026-09-02",
+  "hook_verified": true,
+  "production_hook": "The pool, the glazed terrace, the extra bedroom: if the register has never heard of them, find out what they do to your price before the buyer's valuer does",
+  "provenance": {
+   "claim_count": 7,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S3",
@@ -186,7 +203,8 @@
   "freshness_status": "CURRENT",
   "claim_ids": [
    9,
-   10
+   10,
+   444
   ],
   "coverage": {
    "production_hook[0]": {
@@ -239,7 +257,13 @@
   "agency_evidence_required": false,
   "state": "verified",
   "verified_as_of": "2026-09-02",
-  "production_hook": "An administrative value may already be attached to your property — one you never commissioned and will not find on your deed. Find out whether yours has one, what it governs, and what it does not."
+  "hook_verified": true,
+  "production_hook": "An administrative value may already be attached to your property — one you never commissioned and will not find on your deed. Find out whether yours has one, what it governs, and what it does not.",
+  "provenance": {
+   "claim_count": 3,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S4",
@@ -256,14 +280,15 @@
    "That the widely repeated 'average 80-90 days' has a source; traced, it ends at agency blogs, not at the release it is attributed to. Where a publisher gives only a share distribution, treat it as a distribution - a skewed distribution does not disprove a long mean, and neither may be turned into the other.",
    "That rising prices and a higher chance of selling move together, or that transaction counts and price levels measure the same thing."
   ],
-  "research_status": "UNRESOLVED",
+  "research_status": "VERIFIED",
   "hook_status": "REWRITTEN",
   "freshness_status": "CURRENT",
   "claim_ids": [
    11,
    12,
    13,
-   14
+   14,
+   626
   ],
   "coverage": {
    "production_hook[0]": {
@@ -294,7 +319,7 @@
    },
    "must_establish[3]": {
     "claim_ids": [
-     445
+     626
     ],
     "non_factual_instruction": false
    },
@@ -320,9 +345,15 @@
    }
   },
   "agency_evidence_required": false,
-  "state": "review",
+  "state": "verified",
   "verified_as_of": "2026-09-02",
-  "production_hook": "Price indicators and transaction volumes can move in opposite directions. What are Alicante province's latest readings right now, and what does each actually measure?"
+  "hook_verified": true,
+  "production_hook": "Price indicators and transaction volumes can move in opposite directions. What are Alicante province's latest readings right now, and what does each actually measure?",
+  "provenance": {
+   "claim_count": 5,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S5",
@@ -347,7 +378,8 @@
    16,
    17,
    18,
-   19
+   19,
+   446
   ],
   "coverage": {
    "production_hook[0]": {
@@ -406,7 +438,13 @@
   "agency_evidence_required": false,
   "state": "verified",
   "verified_as_of": "2026-09-02",
-  "production_hook": "At least four bodies publish a price per square metre covering Alicante province — a ministry, the registrars, the notaries and the private portals — and they do not agree. Before you accept any valuation of your home, ask which one it was built on."
+  "hook_verified": true,
+  "production_hook": "At least four bodies publish a price per square metre covering Alicante province — a ministry, the registrars, the notaries and the private portals — and they do not agree. Before you accept any valuation of your home, ask which one it was built on.",
+  "provenance": {
+   "claim_count": 6,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S6",
@@ -481,7 +519,13 @@
   "agency_evidence_required": false,
   "state": "verified",
   "verified_as_of": "2026-09-02",
-  "production_hook": "Someone will tell you homes here sell in X days. Before you price to that number, ask what it counted — and whether anyone measures it for your town at all."
+  "hook_verified": true,
+  "production_hook": "Someone will tell you homes here sell in X days. Before you price to that number, ask what it counted — and whether anyone measures it for your town at all.",
+  "provenance": {
+   "claim_count": 2,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S7",
@@ -498,7 +542,7 @@
    "Never assume a provincial volume move applies to a municipality, a price band, or a property type without a figure that is actually published at that level",
    "Never turn a two-period move into a prediction about what prices or demand will do next"
   ],
-  "research_status": "UNRESOLVED",
+  "research_status": "VERIFIED",
   "hook_status": "TIME_SENSITIVE",
   "freshness_status": "CURRENT",
   "claim_ids": [
@@ -509,18 +553,19 @@
    26,
    27,
    28,
-   29
+   29,
+   447,
+   627,
+   628
   ],
   "coverage": {
    "production_hook[0]": {
-    "claim_ids": [
-     22
-    ],
-    "non_factual_instruction": false
+    "claim_ids": [],
+    "non_factual_instruction": true
    },
    "current_research_question[0]": {
     "claim_ids": [
-     23
+     627
     ],
     "non_factual_instruction": false
    },
@@ -560,7 +605,7 @@
    },
    "never_assume[2]": {
     "claim_ids": [
-     29
+     628
     ],
     "non_factual_instruction": false
    },
@@ -570,9 +615,15 @@
    }
   },
   "agency_evidence_required": false,
-  "state": "review",
-  "verified_as_of": null,
-  "production_hook": null
+  "state": "research-verified",
+  "verified_as_of": "2026-09-02",
+  "hook_verified": true,
+  "production_hook": null,
+  "provenance": {
+   "claim_count": 11,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S8",
@@ -593,14 +644,13 @@
   "hook_status": "AGENCY_REQUIRED",
   "freshness_status": "CURRENT",
   "claim_ids": [
-   30
+   30,
+   448
   ],
   "coverage": {
    "production_hook[0]": {
-    "claim_ids": [
-     "hook:8"
-    ],
-    "non_factual_instruction": false
+    "claim_ids": [],
+    "non_factual_instruction": true
    },
    "current_research_question[0]": {
     "claim_ids": [],
@@ -646,7 +696,13 @@
   "agency_evidence_required": true,
   "state": "blocked",
   "verified_as_of": "2026-09-02",
-  "production_hook": null
+  "hook_verified": true,
+  "production_hook": null,
+  "provenance": {
+   "claim_count": 2,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S9",
@@ -671,7 +727,8 @@
    32,
    33,
    34,
-   35
+   35,
+   449
   ],
   "coverage": {
    "production_hook[0]": {
@@ -727,8 +784,14 @@
   },
   "agency_evidence_required": false,
   "state": "verified",
-  "verified_as_of": null,
-  "production_hook": "Selling your Costa Blanca home while non-resident for Spanish tax purposes? The buyer must hand 3% of the price straight to Hacienda instead of to you — but it is a payment on account of your capital-gains tax, not the tax itself: once you file your modelo 210 you may get all of it back, some of it, or none, and you may still owe more. Here is who takes it, why, and how you settle it afterwards — whether any of it comes back depends on the gain."
+  "verified_as_of": "2026-09-02",
+  "hook_verified": true,
+  "production_hook": "Selling your Costa Blanca home while non-resident for Spanish tax purposes? The buyer must hand 3% of the price straight to Hacienda instead of to you — but it is a payment on account of your capital-gains tax, not the tax itself: once you file your modelo 210 you may get all of it back, some of it, or none, and you may still owe more. Here is who takes it, why, and how you settle it afterwards — whether any of it comes back depends on the gain.",
+  "provenance": {
+   "claim_count": 6,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S10",
@@ -815,7 +878,13 @@
   "agency_evidence_required": false,
   "state": "verified",
   "verified_as_of": "2026-09-02",
-  "production_hook": "Two sellers can face different capital-gains rate structures on identical sales because one is Spanish tax-resident and the other is not. Nationality alone does not decide it."
+  "hook_verified": true,
+  "production_hook": "Two sellers can face different capital-gains rate structures on identical sales because one is Spanish tax-resident and the other is not. Nationality alone does not decide it.",
+  "provenance": {
+   "claim_count": 6,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S11",
@@ -841,7 +910,9 @@
    44,
    45,
    46,
-   47
+   47,
+   450,
+   451
   ],
   "coverage": {
    "production_hook[0]": {
@@ -901,8 +972,14 @@
   },
   "agency_evidence_required": false,
   "state": "verified",
-  "verified_as_of": null,
-  "production_hook": "The town-hall tax on your sale can be worked out two ways, and if the real increase in the land's value is lower than the objective calculation you can ask for that lower figure to be used instead — plus one twist that only applies when the seller is an individual who is not resident in Spain."
+  "verified_as_of": "2026-09-02",
+  "hook_verified": true,
+  "production_hook": "The town-hall tax on your sale can be worked out two ways, and if the real increase in the land's value is lower than the objective calculation you can ask for that lower figure to be used instead — plus one twist that only applies when the seller is an individual who is not resident in Spain.",
+  "provenance": {
+   "claim_count": 8,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S12",
@@ -925,12 +1002,14 @@
   "claim_ids": [
    48,
    49,
-   50
+   50,
+   452,
+   629
   ],
   "coverage": {
    "production_hook[0]": {
     "claim_ids": [
-     48
+     629
     ],
     "non_factual_instruction": false
    },
@@ -980,7 +1059,13 @@
   "agency_evidence_required": false,
   "state": "review",
   "verified_as_of": null,
-  "production_hook": "Which ones you can reach turns on where you are tax-resident, how old you are, and whether the property was ever your main home."
+  "hook_verified": true,
+  "production_hook": null,
+  "provenance": {
+   "claim_count": 5,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S13",
@@ -1002,7 +1087,8 @@
   "freshness_status": "CURRENT",
   "claim_ids": [
    51,
-   52
+   52,
+   453
   ],
   "coverage": {
    "production_hook[0]": {
@@ -1057,7 +1143,13 @@
   "agency_evidence_required": false,
   "state": "verified",
   "verified_as_of": "2026-09-02",
-  "production_hook": "The agency contract you signed at your own kitchen table may not bind you the same way as one signed in their office — check which one you have before you sign anything."
+  "hook_verified": true,
+  "production_hook": "The agency contract you signed at your own kitchen table may not bind you the same way as one signed in their office — check which one you have before you sign anything.",
+  "provenance": {
+   "claim_count": 3,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S14",
@@ -1074,14 +1166,19 @@
    "Do not assume any validity period, penalty amount or issuing deadline — several differ by rating, by severity and by region.",
    "Do not assume the building-evaluation regime applies to the property in question; establish the age threshold and whether the rule is state, regional or municipal before applying it to anything."
   ],
-  "research_status": "UNRESOLVED",
+  "research_status": "VERIFIED",
   "hook_status": "RETAINED",
   "freshness_status": "CURRENT",
   "claim_ids": [
    53,
    54,
    55,
-   56
+   56,
+   454,
+   455,
+   456,
+   457,
+   631
   ],
   "coverage": {
    "production_hook[0]": {
@@ -1110,8 +1207,7 @@
    },
    "must_establish[2]": {
     "claim_ids": [
-     54,
-     55
+     631
     ],
     "non_factual_instruction": false
    },
@@ -1141,9 +1237,15 @@
    }
   },
   "agency_evidence_required": false,
-  "state": "review",
-  "verified_as_of": null,
-  "production_hook": "Some of the bills for selling arrive before a buyer does. The energy certificate, the occupancy paperwork, the community's debt letter — who pays each one, and which of them can actually stop the signing."
+  "state": "verified",
+  "verified_as_of": "2026-09-02",
+  "hook_verified": true,
+  "production_hook": "Some of the bills for selling arrive before a buyer does. The energy certificate, the occupancy paperwork, the community's debt letter — who pays each one, and which of them can actually stop the signing.",
+  "provenance": {
+   "claim_count": 9,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S15",
@@ -1163,13 +1265,14 @@
   "research_status": "VERIFIED",
   "hook_status": "AGENCY_REQUIRED",
   "freshness_status": "CURRENT",
-  "claim_ids": [],
+  "claim_ids": [
+   458,
+   459
+  ],
   "coverage": {
    "production_hook[0]": {
-    "claim_ids": [
-     "hook:15"
-    ],
-    "non_factual_instruction": false
+    "claim_ids": [],
+    "non_factual_instruction": true
    },
    "current_research_question[0]": {
     "claim_ids": [],
@@ -1214,8 +1317,14 @@
   },
   "agency_evidence_required": true,
   "state": "blocked",
-  "verified_as_of": null,
-  "production_hook": null
+  "verified_as_of": "2026-09-02",
+  "hook_verified": true,
+  "production_hook": null,
+  "provenance": {
+   "claim_count": 2,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S16",
@@ -1238,7 +1347,9 @@
   "claim_ids": [
    57,
    58,
-   59
+   59,
+   460,
+   461
   ],
   "coverage": {
    "production_hook[0]": {
@@ -1297,7 +1408,13 @@
   "agency_evidence_required": false,
   "state": "verified",
   "verified_as_of": "2026-09-02",
-  "production_hook": "The price on the listing is not the money that reaches your account. Some of what comes off is gone for good, some of it lowers the figure you are taxed on, and some of it — depending on where you are tax-resident — is only being held."
+  "hook_verified": true,
+  "production_hook": "The price on the listing is not the money that reaches your account. Some of what comes off is gone for good, some of it lowers the figure you are taxed on, and some of it — depending on where you are tax-resident — is only being held.",
+  "provenance": {
+   "claim_count": 5,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S17",
@@ -1381,7 +1498,13 @@
   "agency_evidence_required": false,
   "state": "verified",
   "verified_as_of": "2026-09-02",
-  "production_hook": "Sell as a Spanish non-resident and the buyer withholds 3% of the agreed price at completion. It is a payment on account, not the final tax: after Modelo 210, you may receive an excess refund, receive nothing back, or still owe more."
+  "hook_verified": true,
+  "production_hook": "Sell as a Spanish non-resident and the buyer withholds 3% of the agreed price at completion. It is a payment on account, not the final tax: after Modelo 210, you may receive an excess refund, receive nothing back, or still owe more.",
+  "provenance": {
+   "claim_count": 6,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S18",
@@ -1402,7 +1525,8 @@
   "hook_status": "REWRITTEN",
   "freshness_status": "CURRENT",
   "claim_ids": [
-   66
+   66,
+   462
   ],
   "coverage": {
    "production_hook[0]": {
@@ -1455,7 +1579,13 @@
   "agency_evidence_required": false,
   "state": "verified",
   "verified_as_of": "2026-09-02",
-  "production_hook": "Spanish capital-gains tax is based on the taxable gain, not simply the sale price. Acquisition value, qualifying costs and improvements determine that gain."
+  "hook_verified": true,
+  "production_hook": "Spanish capital-gains tax is based on the taxable gain, not simply the sale price. Acquisition value, qualifying costs and improvements determine that gain.",
+  "provenance": {
+   "claim_count": 2,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S19",
@@ -1533,7 +1663,13 @@
   "agency_evidence_required": false,
   "state": "verified",
   "verified_as_of": "2026-09-02",
-  "production_hook": "A Spanish property sale can involve two separate tax systems: income tax on the capital gain and municipal plusvalía on the land-value increase. Either may be zero depending on the facts."
+  "hook_verified": true,
+  "production_hook": "A Spanish property sale can involve two separate tax systems: income tax on the capital gain and municipal plusvalía on the land-value increase. Either may be zero depending on the facts.",
+  "provenance": {
+   "claim_count": 3,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S20",
@@ -1550,11 +1686,15 @@
    "That 'the buyer pays everything' is the law rather than a customary term that must appear in the contract to bind anyone",
    "Never assume the Valencian occupancy and energy-certificate requirements are as they were a year ago — the energy-certificate regime changed on 23 July 2026, when RD 659/2025 replaced the rules on who may issue a certificate. And never assume a missing certificate stops a signing: neither the energy certificate nor the Valencian second-occupancy declaración responsable bars the notary. The only certificate that does is the community-of-owners debt certificate under LPH art. 9.1.e, and even that yields where the buyer expressly waives it."
   ],
-  "research_status": "UNRESOLVED",
+  "research_status": "VERIFIED",
   "hook_status": "RETAINED",
   "freshness_status": "CURRENT",
   "claim_ids": [
-   70
+   70,
+   464,
+   465,
+   632,
+   633
   ],
   "coverage": {
    "production_hook[0]": {
@@ -1565,7 +1705,7 @@
    },
    "current_research_question[0]": {
     "claim_ids": [
-     463
+     632
     ],
     "non_factual_instruction": false
    },
@@ -1605,15 +1745,21 @@
    },
    "never_assume[3]": {
     "claim_ids": [
-     466
+     633
     ],
     "non_factual_instruction": false
    }
   },
   "agency_evidence_required": false,
-  "state": "review",
+  "state": "verified",
   "verified_as_of": "2026-09-02",
-  "production_hook": "Between the price on the sign and the transfer into your account sits a list of line items. Ask any agent for that list in writing before you sign the mandate."
+  "hook_verified": true,
+  "production_hook": "Between the price on the sign and the transfer into your account sits a list of line items. Ask any agent for that list in writing before you sign the mandate.",
+  "provenance": {
+   "claim_count": 5,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S21",
@@ -1634,7 +1780,10 @@
   "hook_status": "RETAINED",
   "freshness_status": "CURRENT",
   "claim_ids": [
-   71
+   71,
+   467,
+   468,
+   469
   ],
   "coverage": {
    "production_hook[0]": {
@@ -1688,8 +1837,14 @@
   },
   "agency_evidence_required": false,
   "state": "verified",
-  "verified_as_of": null,
-  "production_hook": "You can sell your Costa Blanca home without flying over — but a Spanish notary will refuse the wrong kind of power. Here is what yours has to say."
+  "verified_as_of": "2026-09-02",
+  "hook_verified": true,
+  "production_hook": "You can sell your Costa Blanca home without flying over — but a Spanish notary will refuse the wrong kind of power. Here is what yours has to say.",
+  "provenance": {
+   "claim_count": 4,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S22",
@@ -1773,7 +1928,13 @@
   "agency_evidence_required": false,
   "state": "verified",
   "verified_as_of": "2026-09-02",
-  "production_hook": "Which amounts are permanent costs, which are payments on account, and which may be recoverable depending on the final liability?"
+  "hook_verified": true,
+  "production_hook": "Which amounts are permanent costs, which are payments on account, and which may be recoverable depending on the final liability?",
+  "provenance": {
+   "claim_count": 5,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S23",
@@ -1794,7 +1955,8 @@
   "hook_status": "RETAINED",
   "freshness_status": "CURRENT",
   "claim_ids": [
-   77
+   77,
+   470
   ],
   "coverage": {
    "production_hook[0]": {
@@ -1847,7 +2009,13 @@
   "agency_evidence_required": false,
   "state": "verified",
   "verified_as_of": "2026-09-02",
-  "production_hook": "You inherited a place on the coast and now want to sell it. One clock started on the day of the death — and the request for more time has its own, earlier, deadline."
+  "hook_verified": true,
+  "production_hook": "You inherited a place on the coast and now want to sell it. One clock started on the day of the death — and the request for more time has its own, earlier, deadline.",
+  "provenance": {
+   "claim_count": 2,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S24",
@@ -1864,18 +2032,17 @@
    "Never let a city figure stand in for a province, or a province figure for a coastal town",
    "Never assume consular or legalisation turnaround is the same for every country, post or year"
   ],
-  "research_status": "UNRESOLVED",
+  "research_status": "VERIFIED",
   "hook_status": "AGENCY_REQUIRED",
   "freshness_status": "CURRENT",
   "claim_ids": [
-   78
+   78,
+   634
   ],
   "coverage": {
    "production_hook[0]": {
-    "claim_ids": [
-     "hook:24"
-    ],
-    "non_factual_instruction": false
+    "claim_ids": [],
+    "non_factual_instruction": true
    },
    "current_research_question[0]": {
     "claim_ids": [],
@@ -1907,7 +2074,7 @@
    },
    "never_assume[2]": {
     "claim_ids": [
-     78
+     634
     ],
     "non_factual_instruction": false
    },
@@ -1919,7 +2086,13 @@
   "agency_evidence_required": true,
   "state": "blocked",
   "verified_as_of": "2026-09-02",
-  "production_hook": null
+  "hook_verified": true,
+  "production_hook": null,
+  "provenance": {
+   "claim_count": 2,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S25",
@@ -1941,7 +2114,8 @@
   "freshness_status": "CURRENT",
   "claim_ids": [
    79,
-   80
+   80,
+   471
   ],
   "coverage": {
    "production_hook[0]": {
@@ -1996,7 +2170,13 @@
   "agency_evidence_required": false,
   "state": "verified",
   "verified_as_of": "2026-09-02",
-  "production_hook": "Six months from the date of death — and if you need longer, the extension has to be requested inside the first five. The inheritance calendar nobody hands a family living abroad."
+  "hook_verified": true,
+  "production_hook": "Six months from the date of death — and if you need longer, the extension has to be requested inside the first five. The inheritance calendar nobody hands a family living abroad.",
+  "provenance": {
+   "claim_count": 3,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S26",
@@ -2013,14 +2193,18 @@
    "Do not assume a foreign grant of probate or executor's document is registrable in Spain as it stands",
    "Do not assume the estate is the only gap in the chain: a predeceased co-owner never removed, or a divorce settlement never registered, breaks the same rule"
   ],
-  "research_status": "UNRESOLVED",
+  "research_status": "VERIFIED",
   "hook_status": "RETAINED",
   "freshness_status": "CURRENT",
-  "claim_ids": [],
+  "claim_ids": [
+   473,
+   474,
+   722
+  ],
   "coverage": {
    "production_hook[0]": {
     "claim_ids": [
-     472
+     722
     ],
     "non_factual_instruction": false
    },
@@ -2066,9 +2250,15 @@
    }
   },
   "agency_evidence_required": false,
-  "state": "review",
-  "verified_as_of": null,
-  "production_hook": "You can accept an offer on a house that is still in your mother's name — the heirs own it, and the contract is valid. What you cannot do is let the buyer register it: Ley Hipotecaria art. 20 requires the seller's own right to be inscribed first, and says registrars shall refuse where the registered owner is someone else. In practice the two deeds are usually signed and lodged on the same day, the inheritance first and the sale second, because the registry despatches titles in order of presentation — that is standard practice built on the priority rule, not a right to same-day treatment."
+  "state": "verified",
+  "verified_as_of": "2026-09-02",
+  "hook_verified": true,
+  "production_hook": "You can accept an offer on a house that is still in your mother's name — the heirs own it, and the contract is valid. What you cannot do is let the buyer register it: Ley Hipotecaria art. 20 requires the seller's own right to be inscribed first, and says registrars shall refuse where the registered owner is someone else. The way round it is to sign and lodge both deeds in sequence, the inheritance first and the sale second: under Ley Hipotecaria arts. 24 and 25 a title takes its date and its rank from its asiento de presentación, so the inheritance is inscribed ahead of the sale. That follows from the priority rule — it is not a right to same-day treatment.",
+  "provenance": {
+   "claim_count": 3,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S27",
@@ -2090,7 +2280,8 @@
   "freshness_status": "CURRENT",
   "claim_ids": [
    81,
-   82
+   82,
+   475
   ],
   "coverage": {
    "production_hook[0]": {
@@ -2142,8 +2333,14 @@
   },
   "agency_evidence_required": false,
   "state": "verified",
-  "verified_as_of": null,
-  "production_hook": "The price your parents paid is probably not the number your gain is measured from — and the town hall may be owed on the same land twice: once when you inherited, once when you sell."
+  "verified_as_of": "2026-09-02",
+  "hook_verified": true,
+  "production_hook": "The price your parents paid is probably not the number your gain is measured from — and the town hall may be owed on the same land twice: once when you inherited, once when you sell.",
+  "provenance": {
+   "claim_count": 3,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S28",
@@ -2164,7 +2361,9 @@
   "hook_status": "REWRITTEN",
   "freshness_status": "CURRENT",
   "claim_ids": [
-   83
+   83,
+   476,
+   477
   ],
   "coverage": {
    "production_hook[0]": {
@@ -2217,7 +2416,13 @@
   "agency_evidence_required": false,
   "state": "verified",
   "verified_as_of": "2026-09-02",
-  "production_hook": "If three heirs become co-owners of the property, selling the whole property requires all co-owners to participate or the co-ownership to be resolved another way."
+  "hook_verified": true,
+  "production_hook": "If three heirs become co-owners of the property, selling the whole property requires all co-owners to participate or the co-ownership to be resolved another way.",
+  "provenance": {
+   "claim_count": 3,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S29",
@@ -2237,7 +2442,11 @@
   "research_status": "VERIFIED",
   "hook_status": "RETAINED",
   "freshness_status": "CURRENT",
-  "claim_ids": [],
+  "claim_ids": [
+   478,
+   479,
+   480
+  ],
   "coverage": {
    "production_hook[0]": {
     "claim_ids": [
@@ -2290,8 +2499,14 @@
   },
   "agency_evidence_required": false,
   "state": "verified",
-  "verified_as_of": null,
-  "production_hook": "The loan was paid off years ago. The Land Registry may still show the mortgage — find out what it takes to actually get it off, and who has to sign."
+  "verified_as_of": "2026-09-02",
+  "hook_verified": true,
+  "production_hook": "The loan was paid off years ago. The Land Registry may still show the mortgage — find out what it takes to actually get it off, and who has to sign.",
+  "provenance": {
+   "claim_count": 3,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S30",
@@ -2317,7 +2532,9 @@
    86,
    87,
    88,
-   89
+   89,
+   481,
+   482
   ],
   "coverage": {
    "production_hook[0]": {
@@ -2382,7 +2599,13 @@
   "agency_evidence_required": false,
   "state": "verified",
   "verified_as_of": "2026-09-02",
-  "production_hook": "Your buyer's money does not reach you in one piece. Here is what comes off the price on the day you sign — which amounts are gone for good, which are payments on account, and which you may get back later, if at all."
+  "hook_verified": true,
+  "production_hook": "Your buyer's money does not reach you in one piece. Here is what comes off the price on the day you sign — which amounts are gone for good, which are payments on account, and which you may get back later, if at all.",
+  "provenance": {
+   "claim_count": 8,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S31",
@@ -2391,7 +2614,8 @@
    "Establish which document is a hard statutory precondition to authorising the sale deed under art. 9.1.e LPH, what deadline the issuer has, and whether anyone may waive it and at whose risk",
    "Establish where the widely repeated seven-day rule for a lender's outstanding-balance certificate actually comes from and what transaction it governs — the groundwork traces it to a subrogation statute, not to sales; verify before repeating or rebutting it",
    "Establish what the seller must hold on a Comunitat Valenciana sale in the way of an energy certificate and a second-occupancy declaración responsable — not a 'licence', which survives only in those municipalities that have retained an express licence regime by ordenanza — and confirm the current instrument. The framework changed in 2025: Decreto 80/2023 (DC-23) was repealed by Ley 5/2025 and the Orden de 7 de diciembre de 2009 (DC-09) is again the habitability standard, while Decreto 12/2021 continues to govern the occupancy declaration. The at-signing requirement remains unverified: RD 390/2021 art. 17.2 does require the registered energy certificate and label to be annexed to the sale contract, but no equivalent provision requiring the occupancy declaration at the moment of signing was found.",
-   "Pull the agency's own completed mortgaged sales and establish the real elapsed times, the number of cases behind the figure, and where the delays actually sat"
+   "Pull the agency's own completed mortgaged sales and establish the real elapsed times, the number of cases behind the figure, and where the delays actually sat",
+   "OPTIONAL AGENCY ADDENDUM — only if the agency supplies it: this agency's actual mortgage-sale timing. The public post stands on the legal and document clocks alone."
   ],
   "never_assume": [
    "Do not publish any timeline figure that is not the agency's own counted casework — no published time-on-market or lender-response series exists for this, and the circulating averages are traced to citation laundering",
@@ -2399,12 +2623,15 @@
    "Do not assume a missing energy certificate blocks the notary from authorising the deed — the groundwork explicitly declines to resolve this either way",
    "Do not describe a handful of the agency's own cases as a market average, or a town's experience as a province-wide fact"
   ],
-  "research_status": "UNRESOLVED",
+  "research_status": "VERIFIED",
   "hook_status": "RETAINED",
   "freshness_status": "CURRENT",
   "claim_ids": [
    90,
-   91
+   91,
+   484,
+   636,
+   637
   ],
   "coverage": {
    "production_hook[0]": {
@@ -2415,7 +2642,7 @@
    },
    "current_research_question[0]": {
     "claim_ids": [
-     483
+     636
     ],
     "non_factual_instruction": false
    },
@@ -2431,7 +2658,7 @@
    },
    "must_establish[2]": {
     "claim_ids": [
-     90
+     637
     ],
     "non_factual_instruction": false
    },
@@ -2456,12 +2683,22 @@
      91
     ],
     "non_factual_instruction": false
+   },
+   "must_establish[4]": {
+    "claim_ids": [],
+    "non_factual_instruction": true
    }
   },
-  "agency_evidence_required": true,
-  "state": "blocked",
-  "verified_as_of": null,
-  "production_hook": "Nobody can honestly tell you how many weeks your bank will take. But some of this paperwork has a legal clock on it, and some has none at all — know which is which before you set a completion date."
+  "agency_evidence_required": false,
+  "state": "verified",
+  "verified_as_of": "2026-09-02",
+  "hook_verified": true,
+  "production_hook": "Nobody can honestly tell you how many weeks your bank will take. But some of this paperwork has a legal clock on it, and some has none at all — know which is which before you set a completion date.",
+  "provenance": {
+   "claim_count": 5,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S32",
@@ -2478,14 +2715,16 @@
    "Do not carry over any bracket, rate or threshold from earlier drafts: the savings-base scale was amended with effect from 2025 and every figure must be re-checked against the current consolidated text",
    "Do not call the non-resident property-gain rate contested: AEAT applies a flat 19% to a capital gain on a transfer for every non-resident taxpayer acting without a permanent establishment in Spain — the rate in TRLIRNR art. 25.1.f.3.º carries no EU/EEA/third-country distinction. Keep the two live distinctions separate — that flat rate, and the 19%/24% split that belongs to imputed and rental income and must not be carried across. Re-check at generation time, but do not hedge it as disputed."
   ],
-  "research_status": "UNRESOLVED",
+  "research_status": "VERIFIED",
   "hook_status": "RETAINED",
   "freshness_status": "CURRENT",
   "claim_ids": [
    92,
    93,
    94,
-   95
+   95,
+   485,
+   638
   ],
   "coverage": {
    "production_hook[0]": {
@@ -2534,16 +2773,21 @@
    },
    "never_assume[3]": {
     "claim_ids": [
-     94,
-     95
+     638
     ],
     "non_factual_instruction": false
    }
   },
   "agency_evidence_required": false,
-  "state": "review",
-  "verified_as_of": null,
-  "production_hook": "You paid the bank fifteen years of interest on this place. Find out whether Spain's gain calculation counts a single cent of it — and what it does count instead."
+  "state": "verified",
+  "verified_as_of": "2026-09-02",
+  "hook_verified": true,
+  "production_hook": "You paid the bank fifteen years of interest on this place. Find out whether Spain's gain calculation counts a single cent of it — and what it does count instead.",
+  "provenance": {
+   "claim_count": 6,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S33",
@@ -2564,7 +2808,9 @@
   "hook_status": "REWRITTEN",
   "freshness_status": "CURRENT",
   "claim_ids": [
-   96
+   96,
+   486,
+   487
   ],
   "coverage": {
    "production_hook[0]": {
@@ -2619,7 +2865,13 @@
   "agency_evidence_required": false,
   "state": "verified",
   "verified_as_of": "2026-09-02",
-  "production_hook": "Sell a home with a residential LAU tenant in place and the buyer normally steps into the landlord's position for the applicable statutory period. Seasonal and tourist lets follow different rules."
+  "hook_verified": true,
+  "production_hook": "Sell a home with a residential LAU tenant in place and the buyer normally steps into the landlord's position for the applicable statutory period. Seasonal and tourist lets follow different rules.",
+  "provenance": {
+   "claim_count": 3,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S34",
@@ -2643,7 +2895,8 @@
    97,
    98,
    99,
-   100
+   100,
+   488
   ],
   "coverage": {
    "production_hook[0]": {
@@ -2702,7 +2955,13 @@
   "agency_evidence_required": false,
   "state": "verified",
   "verified_as_of": "2026-09-02",
-  "production_hook": "Winter let, holiday let, long let — same flat, three different sales. What your buyer takes on turns on the real legal category of the letting, not the label on the contract."
+  "hook_verified": true,
+  "production_hook": "Winter let, holiday let, long let — same flat, three different sales. What your buyer takes on turns on the real legal category of the letting, not the label on the contract.",
+  "provenance": {
+   "claim_count": 5,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S35",
@@ -2723,7 +2982,12 @@
   "hook_status": "RETAINED",
   "freshness_status": "CURRENT",
   "claim_ids": [
-   101
+   101,
+   489,
+   490,
+   491,
+   492,
+   493
   ],
   "coverage": {
    "production_hook[0]": {
@@ -2784,7 +3048,13 @@
   "agency_evidence_required": false,
   "state": "verified",
   "verified_as_of": "2026-09-02",
-  "production_hook": "Before you sign with a buyer, your tenant may have the right to take the deal at the same price — and the line you sign at the notary about whether the flat is let is the one that bites."
+  "hook_verified": true,
+  "production_hook": "Before you sign with a buyer, your tenant may have the right to take the deal at the same price — and the line you sign at the notary about whether the flat is let is the one that bites.",
+  "provenance": {
+   "claim_count": 6,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S36",
@@ -2793,7 +3063,8 @@
    "Establish which kinds of buyer can purchase an occupied dwelling at all, including whether any residence-linked, mortgage-linked or lender-side constraint applies, rather than assuming the pool is investors only.",
    "Establish whether any published statistic separates tenanted from vacant sales in Alicante province or in any of its municipalities; if no such series exists, state that plainly instead of substituting a national, provincial or portal figure.",
    "Establish what published time-on-market figures actually measure, over what geography and by what instrument, and whether any of them can legitimately be used to describe a Costa Blanca town.",
-   "Establish which documents a buyer of a tenanted property and their lawyer will require — the contract, the rent and payment record, the deposit's lodgement with the competent body, the licence or registration status — and which of them the seller is obliged to produce."
+   "Establish which documents a buyer of a tenanted property and their lawyer will require — the contract, the rent and payment record, the deposit's lodgement with the competent body, the licence or registration status — and which of them the seller is obliged to produce.",
+   "OPTIONAL AGENCY ADDENDUM — only if the agency supplies it: this agency's own outcomes selling tenanted versus vacant. The public post stands on what law and published data can and cannot establish."
   ],
   "never_assume": [
    "Do not assume asking price is achieved price, or that a listing disappearing from a portal was a completed sale — withdrawals, expiries and re-listings all end an advert without a transaction.",
@@ -2801,7 +3072,7 @@
    "Do not assume the widely repeated 'average days to sell' numbers are sourced — several circulating figures trace back to no published dataset and contradict the release they cite.",
    "Do not assume that ending the tenancy in order to sell empty is available, quick or free; whether and how a landlord may end a live contract is a separate legal question that must be answered before the option is offered."
   ],
-  "research_status": "UNRESOLVED",
+  "research_status": "VERIFIED",
   "hook_status": "AGENCY_REQUIRED",
   "freshness_status": "CURRENT",
   "claim_ids": [
@@ -2809,14 +3080,14 @@
    103,
    104,
    105,
-   106
+   106,
+   494,
+   639
   ],
   "coverage": {
    "production_hook[0]": {
-    "claim_ids": [
-     "hook:36"
-    ],
-    "non_factual_instruction": false
+    "claim_ids": [],
+    "non_factual_instruction": true
    },
    "current_research_question[0]": {
     "claim_ids": [],
@@ -2849,8 +3120,7 @@
    },
    "never_assume[1]": {
     "claim_ids": [
-     105,
-     106
+     639
     ],
     "non_factual_instruction": false
    },
@@ -2863,12 +3133,22 @@
      494
     ],
     "non_factual_instruction": false
+   },
+   "must_establish[4]": {
+    "claim_ids": [],
+    "non_factual_instruction": true
    }
   },
-  "agency_evidence_required": true,
-  "state": "blocked",
-  "verified_as_of": null,
-  "production_hook": null
+  "agency_evidence_required": false,
+  "state": "research-verified",
+  "verified_as_of": "2026-09-02",
+  "hook_verified": false,
+  "production_hook": null,
+  "provenance": {
+   "claim_count": 7,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S37",
@@ -2885,14 +3165,15 @@
    "That a Spain-wide distribution describes a coastal Alicante town, or that a figure labelled 'Alicante' in a press release means the province rather than the city.",
    "That the clock the seller feels (first agent, first photograph, first viewing) is the clock any published figure starts on."
   ],
-  "research_status": "UNRESOLVED",
+  "research_status": "VERIFIED",
   "hook_status": "REWRITTEN",
   "freshness_status": "CURRENT",
   "claim_ids": [
    107,
    108,
    109,
-   110
+   110,
+   640
   ],
   "coverage": {
    "production_hook[0]": {
@@ -2903,7 +3184,7 @@
    },
    "current_research_question[0]": {
     "claim_ids": [
-     107
+     640
     ],
     "non_factual_instruction": false
    },
@@ -2947,9 +3228,15 @@
    }
   },
   "agency_evidence_required": false,
-  "state": "review",
+  "state": "verified",
   "verified_as_of": "2026-09-02",
-  "production_hook": "Seven months \"on the market\" — but nobody measures that clock the way you think. What the published figures actually count, and what evidence would genuinely tell you something about your own street."
+  "hook_verified": true,
+  "production_hook": "Seven months \"on the market\" — but nobody measures that clock the way you think. What the published figures actually count, and what evidence would genuinely tell you something about your own street.",
+  "provenance": {
+   "claim_count": 5,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S38",
@@ -2958,7 +3245,8 @@
    "Establish all three published euro-per-m² series and name the publisher type for each, since only one of the three is official statistics: (1) the ministry — MIVAU's 'Valor tasado de la vivienda', a quarterly appraisal-based €/m² series covering provinces and municipalities over 25,000 inhabitants, and the only official statistic of the three; (2) a professional corporation — the Consejo General del Notariado's Portal Estadístico del Notariado, live since 23 October 2025, publishing average price per m² from notarised deeds down to postcode level (the Colegio de Registradores publishes a comparable deed-based series); and (3) a private listings portal — idealista or Fotocasa, publishing asking prices from their own advertisements. The notarial series is deed price, not an official statistic.2 of notarised sales by province, municipality and postal code — and reclassify INE: it belongs in the piece as a price INDEX at comunidad-autónoma level and as the source of registered transaction COUNTS by province (ETDP), not as a euro-per-m2 instrument covering Alicante. Keep the portal explicitly labelled as commercial asking data, not an official body.",
    "Establish whether any of these publishes a figure for the specific town being written about, and what coverage or population threshold decides which municipalities appear at all.",
    "Establish the direction and magnitude of registered transaction counts for Alicante province over the most recent published periods, from the statistical office's own series, and set that beside each price series before drawing any conclusion about either.",
-   "Establish whether any source supports a causal link between asking-price level and how long a home stays listed; if none does, the piece may describe the gap between series but must not assert the cause."
+   "Establish whether any source supports a causal link between asking-price level and how long a home stays listed; if none does, the piece may describe the gap between series but must not assert the cause.",
+   "Name the instrument beside every figure and keep the categories apart: MIVAU valor tasado is appraisal; the Consejo General del Notariado and the Colegio de Registradores publish completed transaction and registration evidence; private portals publish asking prices. Do not describe these as two official instruments when several institutional series exist."
   ],
   "never_assume": [
    "That two price series can be subtracted to yield a 'negotiation margin' or 'discount' — they are different instruments, not versions of one number.",
@@ -2966,7 +3254,7 @@
    "That rising prices and rising sales move together, or that a record price level is evidence that homes are selling.",
    "That an index of percentage change can be used to state a level in euros, or that a provincial average describes a coastal resort town."
   ],
-  "research_status": "UNRESOLVED",
+  "research_status": "VERIFIED",
   "hook_status": "REWRITTEN",
   "freshness_status": "CURRENT",
   "claim_ids": [
@@ -2974,18 +3262,21 @@
    112,
    113,
    114,
-   115
+   115,
+   497,
+   642,
+   738
   ],
   "coverage": {
    "production_hook[0]": {
     "claim_ids": [
-     495
+     738
     ],
     "non_factual_instruction": false
    },
    "current_research_question[0]": {
     "claim_ids": [
-     496
+     642
     ],
     "non_factual_instruction": false
    },
@@ -3030,12 +3321,22 @@
      115
     ],
     "non_factual_instruction": false
+   },
+   "must_establish[4]": {
+    "claim_ids": [],
+    "non_factual_instruction": true
    }
   },
   "agency_evidence_required": false,
-  "state": "review",
-  "verified_as_of": null,
-  "production_hook": "Two official instruments publish a price per square metre that reaches Alicante, and they record different moments: the Ministry of Housing's Valor tasado series is an appraisal, the Notariado's is the price on the signed deed. Neither is the asking price you see on a portal — no official body publishes that. Which one describes your house?"
+  "state": "verified",
+  "verified_as_of": "2026-09-02",
+  "hook_verified": true,
+  "production_hook": "The €/m² figures you can look up for Alicante do not measure the same thing. The Ministry of Housing's valor tasado is an appraisal, averaged from valuers' reports. The Notariado's comes from the signed deed. The Registradores' from the registered sale. The Catastro's mapa de valores assigns an average €/m² module to each homogeneous valuation area, drawn from the prices notaries report. And none of them is the asking price on a portal — that is where a seller starts, not a record of what happened. Which one describes your house?",
+  "provenance": {
+   "claim_count": 8,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S39",
@@ -3056,7 +3357,8 @@
   "hook_status": "RETAINED",
   "freshness_status": "CURRENT",
   "claim_ids": [
-   116
+   116,
+   498
   ],
   "coverage": {
    "production_hook[0]": {
@@ -3109,7 +3411,13 @@
   "agency_evidence_required": false,
   "state": "verified",
   "verified_as_of": "2026-09-02",
-  "production_hook": "The viewings went fine. The buyer said yes. The sale died at the notary's desk. Which pieces of paper can legally stop a signing on the Costa Blanca — and which ones only cost you money."
+  "hook_verified": true,
+  "production_hook": "The viewings went fine. The buyer said yes. The sale died at the notary's desk. Which pieces of paper can legally stop a signing on the Costa Blanca — and which ones only cost you money.",
+  "provenance": {
+   "claim_count": 2,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S40",
@@ -3181,7 +3489,13 @@
   "agency_evidence_required": false,
   "state": "verified",
   "verified_as_of": "2026-09-02",
-  "production_hook": "The same home can appear with several agents and several prices. Your mandate matters — but so do Spanish consumer rules and the Valencian agent regime. Here is what the contract controls and what the law controls."
+  "hook_verified": true,
+  "production_hook": "The same home can appear with several agents and several prices. Your mandate matters — but so do Spanish consumer rules and the Valencian agent regime. Here is what the contract controls and what the law controls.",
+  "provenance": {
+   "claim_count": 1,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S41",
@@ -3194,11 +3508,11 @@
   ],
   "never_assume": [
    "That record prices and falling volume point the same way for one seller — they are separate measurements of separate things, and neither is a prediction.",
-   "That a province-wide figure describes a coastal town; \"Alicante\" in portal releases routinely means the city, which is not a resort market, and official town-level data exists only for larger municipalities.",
+   "That a province-wide figure describes a coastal town. \"Alicante\" is published as both a province and a municipality, by official producers and portals alike, so establish which one a figure means before using it — and check the territorial detail of the particular series rather than assuming. The ministry's appraisal series both stratifies and tabulates at municipalities of more than 25,000 inhabitants; INE's transmissions statistic (ETDP) is disseminated only by province and comunidad autónoma, with no municipal tier at all; the Notariado's own housing portal goes far below municipality, but by letting you draw the area rather than by any fixed administrative tier; and the Catastro publishes average €/m² value modules by homogeneous valuation area.",
    "That a listing leaving a portal means a house sold — withdrawals, expiries, agent switches and re-listings all end an advert without a sale, and multi-agency listings run several clocks on one property.",
    "That any \"average days to sell\" number is real; a distribution has no mean you can read off it, and figures repeated verbatim across agency websites are not a source."
   ],
-  "research_status": "UNRESOLVED",
+  "research_status": "VERIFIED",
   "hook_status": "REWRITTEN",
   "freshness_status": "CURRENT",
   "claim_ids": [
@@ -3208,7 +3522,9 @@
    121,
    122,
    123,
-   124
+   124,
+   643,
+   739
   ],
   "coverage": {
    "production_hook[0]": {
@@ -3219,7 +3535,7 @@
    },
    "current_research_question[0]": {
     "claim_ids": [
-     119
+     643
     ],
     "non_factual_instruction": false
    },
@@ -3253,7 +3569,7 @@
    },
    "never_assume[1]": {
     "claim_ids": [
-     124
+     739
     ],
     "non_factual_instruction": false
    },
@@ -3267,9 +3583,15 @@
    }
   },
   "agency_evidence_required": false,
-  "state": "review",
+  "state": "verified",
   "verified_as_of": "2026-09-02",
-  "production_hook": "Transaction volume and price indicators can move in opposite directions. What are Alicante province's latest readings, and what does each measure?"
+  "hook_verified": true,
+  "production_hook": "Transaction volume and price indicators can move in opposite directions. What are Alicante province's latest readings, and what does each measure?",
+  "provenance": {
+   "claim_count": 9,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S42",
@@ -3353,7 +3675,13 @@
   "agency_evidence_required": false,
   "state": "verified",
   "verified_as_of": "2026-09-02",
-  "production_hook": "The price is one line of the offer. Notary costs, signing date, statutory withholdings and any additional agreed retention are separate lines — and only some are fixed by law."
+  "hook_verified": true,
+  "production_hook": "The price is one line of the offer. Notary costs, signing date, statutory withholdings and any additional agreed retention are separate lines — and only some are fixed by law.",
+  "provenance": {
+   "claim_count": 5,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S43",
@@ -3367,12 +3695,13 @@
    "Never imply that only the later piece of paper creates the binding obligation.",
    "Never state a single consequence of walking away without establishing which document, and which form of arras, actually governs."
   ],
-  "research_status": "UNRESOLVED",
+  "research_status": "VERIFIED",
   "hook_status": "REWRITTEN",
   "freshness_status": "CURRENT",
   "claim_ids": [
    130,
-   131
+   131,
+   621
   ],
   "coverage": {
    "production_hook[0]": {
@@ -3409,9 +3738,15 @@
    }
   },
   "agency_evidence_required": false,
-  "state": "review",
+  "state": "verified",
   "verified_as_of": "2026-09-02",
-  "production_hook": "A buyer can become legally bound before the notary and before keys change hands. What matters is exactly what the parties agreed — offer, reservation, arras or sale contract — and whether that document contains the essential elements and an intention to bind."
+  "hook_verified": true,
+  "production_hook": "A buyer can become legally bound before the notary and before keys change hands. What matters is exactly what the parties agreed — offer, reservation, arras or sale contract — and whether that document contains the essential elements and an intention to bind.",
+  "provenance": {
+   "claim_count": 3,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S44",
@@ -3431,7 +3766,10 @@
   "research_status": "VERIFIED",
   "hook_status": "RETAINED",
   "freshness_status": "CURRENT",
-  "claim_ids": [],
+  "claim_ids": [
+   500,
+   501
+  ],
   "coverage": {
    "production_hook[0]": {
     "claim_ids": [
@@ -3482,8 +3820,14 @@
   },
   "agency_evidence_required": false,
   "state": "verified",
-  "verified_as_of": null,
-  "production_hook": "The offer is accepted — then the buyer's side finds the closed terrace, the pool or the extra bedroom was never registered. Here is what that legitimately changes about the price, and what it doesn't."
+  "verified_as_of": "2026-09-02",
+  "hook_verified": true,
+  "production_hook": "The offer is accepted — then the buyer's side finds the closed terrace, the pool or the extra bedroom was never registered. Here is what that legitimately changes about the price, and what it doesn't.",
+  "provenance": {
+   "claim_count": 2,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S45",
@@ -3505,7 +3849,8 @@
   "freshness_status": "CURRENT",
   "claim_ids": [
    132,
-   133
+   133,
+   502
   ],
   "coverage": {
    "production_hook[0]": {
@@ -3559,7 +3904,13 @@
   "agency_evidence_required": false,
   "state": "verified",
   "verified_as_of": "2026-09-02",
-  "production_hook": "If your home sits in a community of owners, the notary is told not to authorise your sale without a certificate that comes from your building, not from you — and only the buyer can waive it."
+  "hook_verified": true,
+  "production_hook": "If your home sits in a community of owners, the notary is told not to authorise your sale without a certificate that comes from your building, not from you — and only the buyer can waive it.",
+  "provenance": {
+   "claim_count": 3,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S46",
@@ -3579,13 +3930,13 @@
   "research_status": "VERIFIED",
   "hook_status": "REWRITTEN",
   "freshness_status": "CURRENT",
-  "claim_ids": [],
+  "claim_ids": [
+   503
+  ],
   "coverage": {
    "production_hook[0]": {
-    "claim_ids": [
-     "hook:46"
-    ],
-    "non_factual_instruction": false
+    "claim_ids": [],
+    "non_factual_instruction": true
    },
    "current_research_question[0]": {
     "claim_ids": [],
@@ -3627,9 +3978,15 @@
    }
   },
   "agency_evidence_required": false,
-  "state": "verified",
-  "verified_as_of": null,
-  "production_hook": "The closed terrace, the pool, the extra bedroom the register has never heard of: what an undeclared build costs you at the deed, and the two routes back onto paper — one for work you can still legalise, one for work too old to be ordered down."
+  "state": "research-verified",
+  "verified_as_of": "2026-09-02",
+  "hook_verified": false,
+  "production_hook": null,
+  "provenance": {
+   "claim_count": 1,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S47",
@@ -3646,12 +4003,16 @@
    "Any waiting time for a consular appointment, an apostille or a sworn translation — none is systematically published and it varies by country and by post",
    "That a translation prepared before legalisation is accepted, or that a consulate's own public FAQ is authority on the legalisation point"
   ],
-  "research_status": "UNRESOLVED",
+  "research_status": "VERIFIED",
   "hook_status": "REWRITTEN",
   "freshness_status": "CURRENT",
   "claim_ids": [
    134,
-   135
+   135,
+   504,
+   505,
+   645,
+   647
   ],
   "coverage": {
    "production_hook[0]": {
@@ -3674,7 +4035,7 @@
    },
    "must_establish[1]": {
     "claim_ids": [
-     506
+     645
     ],
     "non_factual_instruction": false
    },
@@ -3688,8 +4049,7 @@
    },
    "never_assume[0]": {
     "claim_ids": [
-     134,
-     135
+     647
     ],
     "non_factual_instruction": false
    },
@@ -3707,9 +4067,15 @@
    }
   },
   "agency_evidence_required": false,
-  "state": "review",
-  "verified_as_of": null,
-  "production_hook": "You do not have to fly to Spain to sign — but a power of attorney with the wrong wording, the wrong legalisation or the wrong translation can fail at the notary's desk, on the day there is no time left to fix it."
+  "state": "verified",
+  "verified_as_of": "2026-09-02",
+  "hook_verified": true,
+  "production_hook": "You do not have to fly to Spain to sign — but a power of attorney with the wrong wording, the wrong legalisation or the wrong translation can fail at the notary's desk, on the day there is no time left to fix it.",
+  "provenance": {
+   "claim_count": 6,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S48",
@@ -3730,7 +4096,10 @@
   "hook_status": "REWRITTEN",
   "freshness_status": "CURRENT",
   "claim_ids": [
-   136
+   136,
+   507,
+   508,
+   509
   ],
   "coverage": {
    "production_hook[0]": {
@@ -3787,11 +4156,17 @@
   "agency_evidence_required": false,
   "state": "verified",
   "verified_as_of": "2026-09-02",
-  "production_hook": "The register still names someone who died. Here is the chain that has to close before a buyer can register anything — and which steps carry a legal deadline and which do not"
+  "hook_verified": true,
+  "production_hook": "The register still names someone who died. Here is the chain that has to close before a buyer can register anything — and which steps carry a legal deadline and which do not",
+  "provenance": {
+   "claim_count": 4,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S49",
-  "current_research_question": "Which of Decreto 98/2022's requirements for acting as an estate agent in the Comunitat Valenciana survive after STSJ CV 706/2024 of 13 December 2024 (rec. 22/2023, ECLI:ES:TSJCV:2024:5929, announced 17 January 2025), which annulled not whole articles but specific incisos — the professional-qualification requirement in art. 3 b in full, the territorial inciso in art. 3 a for online-only agents, the fixed aval and seguro de caución amounts in art. 3 d, parts of art. 2.2, and art. 6 a, d and e — while leaving the duty to register, the solvency requirement itself and the distintivo intact? The CNMC records the judgment as firm on its case file LA/03/2022. Then: how can a homeowner verify what remains, and what does that verification fail to tell them?",
+  "current_research_question": "Which of Decreto 98/2022's requirements for acting as an estate agent in the Comunitat Valenciana survive after STSJ CV 706/2024 of 13 December 2024 (rec. 22/2023, ECLI:ES:TSJCV:2024:5929, announced 17 January 2025), which annulled not whole articles but specific incisos — the professional-qualification requirement in art. 3 b in full, the territorial inciso in art. 3 a for online-only agents, the fixed aval and seguro de caución amounts in the solvency requirement, which the decree publishes as art. 3 c although the judgment's fundamento undécimo calls it 'apartado d', parts of art. 2.2, and art. 6 a, d and e — while leaving the duty to register, the solvency requirement itself and the distintivo intact? The CNMC records the judgment as firm on its case file LA/03/2022. Then: how can a homeowner verify what remains, and what does that verification fail to tell them?",
   "must_establish": [
    "Establish from the governing Valencian instrument itself whether entry on the register is obligatory, from what date it bit, and which categories of agent fall outside its scope — including an agent trading here from an establishment in another territory.",
    "Establish exactly how a member of the public can query the register today by running the query, not by describing it: which fields can be searched, which cannot, what a result row shows, and how a reader would find one specific agency in the output.",
@@ -3804,11 +4179,13 @@
    "Do not assume the Valencian position applies in Andalucía, Murcia or the Balearics, and do not assume a Spain-wide register exists.",
    "Do not assume any guarantee or insurance figure is current — it is set by a decree that can be amended, so re-read the text rather than repeating a figure seen elsewhere."
   ],
-  "research_status": "UNRESOLVED",
+  "research_status": "VERIFIED",
   "hook_status": "RETAINED",
   "freshness_status": "CURRENT",
   "claim_ids": [
-   137
+   137,
+   511,
+   725
   ],
   "coverage": {
    "production_hook[0]": {
@@ -3819,7 +4196,7 @@
    },
    "current_research_question[0]": {
     "claim_ids": [
-     510
+     725
     ],
     "non_factual_instruction": false
    },
@@ -3859,9 +4236,15 @@
    }
   },
   "agency_evidence_required": false,
-  "state": "review",
-  "verified_as_of": null,
-  "production_hook": "There is one number a Costa Blanca agent should be able to give you before you sign anything — and a public list you can check it against yourself."
+  "state": "verified",
+  "verified_as_of": "2026-09-02",
+  "hook_verified": true,
+  "production_hook": "There is one number a Costa Blanca agent should be able to give you before you sign anything — and a public list you can check it against yourself.",
+  "provenance": {
+   "claim_count": 3,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S50",
@@ -3878,7 +4261,7 @@
    "Do not assume every private seller is a consumer for these purposes, or that a foreign owner selling a second home is treated the same as a resident selling their home.",
    "Do not assume the withdrawal period is a single fixed number of days; establish what varies it before naming any figure."
   ],
-  "research_status": "UNRESOLVED",
+  "research_status": "VERIFIED",
   "hook_status": "RETAINED",
   "freshness_status": "CURRENT",
   "claim_ids": [],
@@ -3927,9 +4310,15 @@
    }
   },
   "agency_evidence_required": false,
-  "state": "review",
-  "verified_as_of": null,
-  "production_hook": "Where you signed the agency contract may decide whether you can walk away from it — the kitchen table and the agency office are not the same thing in Spanish law."
+  "state": "verified",
+  "verified_as_of": "2026-09-02",
+  "hook_verified": true,
+  "production_hook": "Where you signed the agency contract may decide whether you can walk away from it — the kitchen table and the agency office are not the same thing in Spanish law.",
+  "provenance": {
+   "claim_count": 0,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S51",
@@ -4004,7 +4393,13 @@
   "agency_evidence_required": false,
   "state": "verified",
   "verified_as_of": "2026-09-02",
-  "production_hook": "One house, five agencies, five separate adverts. Before you sign a second instruction, know what a buyer sees — and who is owed the fee when two agents claim the same buyer."
+  "hook_verified": true,
+  "production_hook": "One house, five agencies, five separate adverts. Before you sign a second instruction, know what a buyer sees — and who is owed the fee when two agents claim the same buyer.",
+  "provenance": {
+   "claim_count": 2,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S52",
@@ -4021,13 +4416,14 @@
    "Do not assume an overpriced listing simply corrects later, and do not assume price reductions are recorded in any public series.",
    "Do not assume the agency's own numbers are representative or independently verifiable — publish the sample size and the period alongside them, and describe them as the agency's own record."
   ],
-  "research_status": "UNRESOLVED",
+  "research_status": "VERIFIED",
   "hook_status": "RETAINED",
   "freshness_status": "CURRENT",
   "claim_ids": [
    140,
    141,
-   142
+   142,
+   649
   ],
   "coverage": {
    "production_hook[0]": {
@@ -4058,7 +4454,7 @@
    },
    "must_establish[3]": {
     "claim_ids": [
-     512
+     649
     ],
     "non_factual_instruction": false
    },
@@ -4082,9 +4478,15 @@
    }
   },
   "agency_evidence_required": false,
-  "state": "review",
+  "state": "verified",
   "verified_as_of": "2026-09-02",
-  "production_hook": "Any agent can quote you a big number to win the instruction. Ask two things: which price that number is measuring, and what their own listings actually completed at."
+  "hook_verified": true,
+  "production_hook": "Any agent can quote you a big number to win the instruction. Ask two things: which price that number is measuring, and what their own listings actually completed at.",
+  "provenance": {
+   "claim_count": 4,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S53",
@@ -4101,18 +4503,19 @@
    "that a penalty clause or a post-termination commission clause is automatically valid, or automatically void — either conclusion requires the specific wording and the specific seller",
    "that an office, a shopfront plaque or long local presence evidences registration, the required guarantee or professional indemnity insurance"
   ],
-  "research_status": "UNRESOLVED",
+  "research_status": "VERIFIED",
   "hook_status": "REWRITTEN",
   "freshness_status": "CURRENT",
   "claim_ids": [
    143,
    144,
-   145
+   145,
+   650
   ],
   "coverage": {
    "production_hook[0]": {
     "claim_ids": [
-     513
+     650
     ],
     "non_factual_instruction": false
    },
@@ -4158,9 +4561,15 @@
    }
   },
   "agency_evidence_required": false,
-  "state": "review",
-  "verified_as_of": null,
-  "production_hook": "No Spanish statute defines an exclusive estate-agency mandate — it is an atypical contract, filled in by the Civil Code and by the courts. The rules about what has to appear on the listing page are state, not regional: the energy-efficiency rating must be included in any publication of a sale or rental, including portals, agency windows and the press (RD 390/2021, art. 17.3), and the advertisement must not mislead or stay silent on fundamental data (RD 515/1989, art. 3.1). The Comunitat Valenciana's Decreto 98/2022 is a different thing — it governs the agent's entry in the regional register and the distintivo showing the registry number, not the advertisement, and parts of it were annulled by the TSJCV in December 2024. Here is what to read before you sign."
+  "state": "verified",
+  "verified_as_of": "2026-09-02",
+  "hook_verified": true,
+  "production_hook": "No Spanish statute defines an exclusive estate-agency mandate — it is an atypical contract, filled in by the Civil Code and by the courts. The rules about what has to appear on the listing page are state, not regional: the energy-efficiency rating must be included in any publication of a sale or rental, including portals, agency windows and the press (RD 390/2021, art. 17.3), and the advertisement must not mislead or stay silent on fundamental data (RD 515/1989, art. 3.1). The Comunitat Valenciana's Decreto 98/2022 is a different thing — it governs the agent's entry in the regional register and the distintivo showing the registry number, not the advertisement, and parts of it were annulled by the TSJCV in December 2024. Here is what to read before you sign.",
+  "provenance": {
+   "claim_count": 4,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S54",
@@ -4182,7 +4591,9 @@
   "freshness_status": "CURRENT",
   "claim_ids": [
    146,
-   147
+   147,
+   514,
+   515
   ],
   "coverage": {
    "production_hook[0]": {
@@ -4239,16 +4650,23 @@
   "agency_evidence_required": false,
   "state": "verified",
   "verified_as_of": "2026-09-02",
-  "production_hook": "When two agencies claim the same buyer, commission turns on the causal link between each agent's work and the completed sale, together with the terms of the seller's mandate. It is not decided by one magic question."
+  "hook_verified": true,
+  "production_hook": "When two agencies claim the same buyer, commission turns on the causal link between each agent's work and the completed sale, together with the terms of the seller's mandate. It is not decided by one magic question.",
+  "provenance": {
+   "claim_count": 4,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S55",
-  "current_research_question": "When one Costa Blanca property is advertised simultaneously by several agencies, no official register, statistic or published instrument records how that affects the way it reaches buyers — and none publishes time on market either. INE's transmissions statistic counts sales, not days; the Registradores and the Notariado publish prices, volumes and surfaces, not listing durations. Any 'homes here sell in X days' figure comes from a portal's own listings or an agency's own book, and must be attributed that way or left out.",
+  "current_research_question": "When one Costa Blanca property is advertised simultaneously by several agencies, does any official or institutional source measure the effect on buyer reach or time to sale, and if not, which private portal or agency datasets are the only available evidence?",
   "must_establish": [
    "Establish how the major Spanish portals treat several advertisements of the same property, and whether any dated, named source measures the effect of duplicate advertising on enquiries or on the completed sale.",
    "Establish exactly what published time-on-market figures measure, which instrument produces them, at what geography, and whether anything exists below province level for this coast.",
    "Establish which circulating 'average days to sell' figures can be traced to a named instrument and which are repeated without one.",
-   "Establish, for every price figure used, whether it is an asking price, a registered sale price or an appraisal value, and keep instruments unmixed within any single comparison."
+   "Establish, for every price figure used, whether it is an asking price, a registered sale price or an appraisal value, and keep instruments unmixed within any single comparison.",
+   "Does any official or institutional source measure how simultaneous multi-agency advertising affects buyer reach or time to sale, and if not, which private portal or agency datasets are the only available evidence?"
   ],
   "never_assume": [
    "any 'average days to sell' number — treat every mean as unsourced until traced to a named instrument, and note where the source publishes a distribution rather than an average",
@@ -4256,13 +4674,15 @@
    "Never take a release label on trust: read the geography off the table itself, remembering that idealista publishes provincial as well as municipal series and that a headline naming 'Alicante' may mean either the province or the city.",
    "that a listing view is an enquiry, or that an enquiry is a buyer"
   ],
-  "research_status": "UNRESOLVED",
+  "research_status": "VERIFIED",
   "hook_status": "REWRITTEN",
   "freshness_status": "CURRENT",
   "claim_ids": [
    148,
    149,
-   150
+   150,
+   651,
+   652
   ],
   "coverage": {
    "production_hook[0]": {
@@ -4273,7 +4693,7 @@
    },
    "current_research_question[0]": {
     "claim_ids": [
-     516
+     651
     ],
     "non_factual_instruction": false
    },
@@ -4305,20 +4725,29 @@
    },
    "never_assume[2]": {
     "claim_ids": [
-     149,
-     150
+     652
     ],
     "non_factual_instruction": false
    },
    "never_assume[3]": {
     "claim_ids": [],
     "non_factual_instruction": true
+   },
+   "must_establish[4]": {
+    "claim_ids": [],
+    "non_factual_instruction": true
    }
   },
   "agency_evidence_required": false,
-  "state": "review",
-  "verified_as_of": null,
-  "production_hook": "Advertise with four agencies and a buyer can meet your house four times — four sets of photos, four descriptions, possibly four prices. Here is what that changes, and what no published Spanish source actually measures about it."
+  "state": "verified",
+  "verified_as_of": "2026-09-02",
+  "hook_verified": true,
+  "production_hook": "Advertise with four agencies and a buyer can meet your house four times — four sets of photos, four descriptions, possibly four prices. Here is what that changes, and what no published Spanish source actually measures about it.",
+  "provenance": {
+   "claim_count": 5,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S56",
@@ -4327,7 +4756,8 @@
    "Establish whether any dated study, registry series or portal dataset compares sale outcomes by listing type in Spain or in Alicante province, and say plainly if none is found rather than substituting a national or foreign study.",
    "Establish, where a study from another market is the only evidence available, which market and which period it covers and why it may not transfer to this one.",
    "Establish from the agency's own completed sales which figures can be stated exactly: number of sales in a named period, mandate type, achieved price against first asking price, days from mandate signature to deed, and how many went to a buyer the agency itself introduced.",
-   "Establish what the agency may publish about identifiable clients and properties before any past sale or client story is used."
+   "Establish what the agency may publish about identifiable clients and properties before any past sale or client story is used.",
+   "OPTIONAL AGENCY ADDENDUM — only if the agency supplies it: this agency's own completed-sale comparison of exclusive versus open mandates. The public post stands on whether any published evidence compares the two."
   ],
   "never_assume": [
    "that a study from another country, or a national average, describes this agency's own book",
@@ -4388,12 +4818,22 @@
    "never_assume[3]": {
     "claim_ids": [],
     "non_factual_instruction": true
+   },
+   "must_establish[4]": {
+    "claim_ids": [],
+    "non_factual_instruction": true
    }
   },
-  "agency_evidence_required": true,
-  "state": "blocked",
+  "agency_evidence_required": false,
+  "state": "verified",
   "verified_as_of": "2026-09-02",
-  "production_hook": "Ask three agents whether exclusive sells better and you will get three answers. Here is the evidence that could actually settle it for your house — and exactly how to ask for it."
+  "hook_verified": true,
+  "production_hook": "Ask three agents whether exclusive sells better and you will get three answers. Here is the evidence that could actually settle it for your house — and exactly how to ask for it.",
+  "provenance": {
+   "claim_count": 2,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S57",
@@ -4410,7 +4850,7 @@
    "Do not assume a foreign owner is a non-resident. Tax residence turns on where the person actually lives, not on the passport, and nationality does not decide it.",
    "Do not assume works done before the current owner acquired the property, or before an inheritance was accepted, are available to the seller now."
   ],
-  "research_status": "UNRESOLVED",
+  "research_status": "VERIFIED",
   "hook_status": "RETAINED",
   "freshness_status": "CURRENT",
   "claim_ids": [
@@ -4419,7 +4859,10 @@
    155,
    156,
    157,
-   158
+   158,
+   517,
+   519,
+   653
   ],
   "coverage": {
    "production_hook[0]": {
@@ -4442,7 +4885,7 @@
    },
    "must_establish[1]": {
     "claim_ids": [
-     518
+     653
     ],
     "non_factual_instruction": false
    },
@@ -4480,9 +4923,15 @@
    }
   },
   "agency_evidence_required": false,
-  "state": "review",
-  "verified_as_of": null,
-  "production_hook": "Spanish tax law lets you add the cost of \"investments and improvements\" to what you originally paid for the place. So before you spend, say, €12,000 on that bathroom, find out what counts as one — and what paperwork has to exist for it to count."
+  "state": "verified",
+  "verified_as_of": "2026-09-02",
+  "hook_verified": true,
+  "production_hook": "Spanish tax law lets you add the cost of \"investments and improvements\" to what you originally paid for the place. So before you spend, say, €12,000 on that bathroom, find out what counts as one — and what paperwork has to exist for it to count.",
+  "provenance": {
+   "claim_count": 9,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S58",
@@ -4503,7 +4952,10 @@
   "hook_status": "RETAINED",
   "freshness_status": "CURRENT",
   "claim_ids": [
-   159
+   159,
+   520,
+   521,
+   522
   ],
   "coverage": {
    "production_hook[0]": {
@@ -4560,7 +5012,13 @@
   "agency_evidence_required": false,
   "state": "verified",
   "verified_as_of": "2026-09-02",
-  "production_hook": "The pool, the glazed-in terrace, the extra bedroom that used to be a naya. They are on your property — but they may not be on your deeds. Here is how to find out what your paperwork actually says, and what Spanish law offers when the building and the register disagree."
+  "hook_verified": true,
+  "production_hook": "The pool, the glazed-in terrace, the extra bedroom that used to be a naya. They are on your property — but they may not be on your deeds. Here is how to find out what your paperwork actually says, and what Spanish law offers when the building and the register disagree.",
+  "provenance": {
+   "claim_count": 4,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S59",
@@ -4577,7 +5035,7 @@
    "Do not carry a deadline from one document to another. Several seven-day and one-month rules exist in this area, they belong to different statutes, and they are routinely swapped in circulating content.",
    "Do not assume practice is uniform across Alicante province. Where a requirement at the deed depends on the town hall, say that it is municipal and name the check the owner has to make."
   ],
-  "research_status": "UNRESOLVED",
+  "research_status": "VERIFIED",
   "hook_status": "REWRITTEN",
   "freshness_status": "CURRENT",
   "claim_ids": [
@@ -4585,7 +5043,11 @@
    161,
    162,
    163,
-   164
+   164,
+   523,
+   524,
+   525,
+   654
   ],
   "coverage": {
    "production_hook[0]": {
@@ -4608,7 +5070,7 @@
    },
    "must_establish[1]": {
     "claim_ids": [
-     163
+     654
     ],
     "non_factual_instruction": false
    },
@@ -4646,9 +5108,15 @@
    }
   },
   "agency_evidence_required": false,
-  "state": "review",
-  "verified_as_of": null,
-  "production_hook": "If your home sits in a comunidad de propietarios, the notary cannot authorise the deed without a certificate of what you owe the community — unless your buyer expressly exonerates you (art. 9.1.e LPH), and you cannot count on that."
+  "state": "verified",
+  "verified_as_of": "2026-09-02",
+  "hook_verified": true,
+  "production_hook": "If your home sits in a comunidad de propietarios, the notary cannot authorise the deed without a certificate of what you owe the community — unless your buyer expressly exonerates you (art. 9.1.e LPH), and you cannot count on that.",
+  "provenance": {
+   "claim_count": 9,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S60",
@@ -4676,10 +5144,8 @@
   ],
   "coverage": {
    "production_hook[0]": {
-    "claim_ids": [
-     "hook:60"
-    ],
-    "non_factual_instruction": false
+    "claim_ids": [],
+    "non_factual_instruction": true
    },
    "current_research_question[0]": {
     "claim_ids": [],
@@ -4726,8 +5192,14 @@
   },
   "agency_evidence_required": true,
   "state": "blocked",
-  "verified_as_of": null,
-  "production_hook": null
+  "verified_as_of": "2026-09-02",
+  "hook_verified": true,
+  "production_hook": null,
+  "provenance": {
+   "claim_count": 4,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S61",
@@ -4820,8 +5292,14 @@
   },
   "agency_evidence_required": false,
   "state": "verified",
-  "verified_as_of": null,
-  "production_hook": "The price you agree is not the money that reaches your account. Here is what sits in between — which amounts are a final cost, which are payments on account settled later, and what changes if you are not tax-resident in Spain."
+  "verified_as_of": "2026-09-02",
+  "hook_verified": true,
+  "production_hook": "The price you agree is not the money that reaches your account. Here is what sits in between — which amounts are a final cost, which are payments on account settled later, and what changes if you are not tax-resident in Spain.",
+  "provenance": {
+   "claim_count": 9,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S62",
@@ -4838,19 +5316,21 @@
    "Never assume the Valencian second-occupancy paperwork is what an older article says it is, and never present one town hall's practice at the deed as the regional rule. Check the Generalitat's own instrument.",
    "Never present a national default as what will apply — the Código Civil's default allocation of notary costs is expressly overridable, and local Costa Blanca practice commonly overrides it. What governs is the contract."
   ],
-  "research_status": "UNRESOLVED",
+  "research_status": "VERIFIED",
   "hook_status": "RETAINED",
   "freshness_status": "CURRENT",
   "claim_ids": [
    178,
    179,
    180,
-   181
+   181,
+   527,
+   655
   ],
   "coverage": {
    "production_hook[0]": {
     "claim_ids": [
-     526
+     655
     ],
     "non_factual_instruction": false
    },
@@ -4900,9 +5380,15 @@
    }
   },
   "agency_evidence_required": false,
-  "state": "review",
-  "verified_as_of": null,
-  "production_hook": "Buyer found, price agreed — and one missing paper can still stop the notary. Exactly one of them has that power by law, and your buyer can sign it away. Here is what actually gets checked at the notary, and what only costs you money."
+  "state": "verified",
+  "verified_as_of": "2026-09-02",
+  "hook_verified": true,
+  "production_hook": "Buyer found, price agreed — and one missing paper can still stop the notary. Exactly one of them has that power by law, and your buyer can sign it away. Here is what actually gets checked at the notary, and what only costs you money.",
+  "provenance": {
+   "claim_count": 6,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S63",
@@ -4919,14 +5405,17 @@
    "Never carry the tax treatment of inheriting into the tax treatment of selling. The later sale is its own taxable event, governed by the seller's own tax residence — not the deceased's, and not the heir's nationality.",
    "Never assume heirs living abroad are in the same position as heirs living in Spain. But do not carry the EEA/non-EEA split into the inheritance tax itself: since Ley 11/2021 (in force 11 July 2021) amended DA 2ª of Ley 29/1987, non-resident heirs are entitled to the autonomous community's own rules regardless of whether they live in the EU, the EEA or a third country. The EEA line does still bite at the later SALE — the reinvestment exemption in DA 7ª TRLIRNR reaches EU and EEA residents only — so keep the two stages apart. Establish each."
   ],
-  "research_status": "UNRESOLVED",
+  "research_status": "VERIFIED",
   "hook_status": "RETAINED",
   "freshness_status": "CURRENT",
   "claim_ids": [
    182,
    183,
    184,
-   185
+   185,
+   528,
+   529,
+   656
   ],
   "coverage": {
    "production_hook[0]": {
@@ -4978,24 +5467,31 @@
    },
    "never_assume[3]": {
     "claim_ids": [
-     185
+     656
     ],
     "non_factual_instruction": false
    }
   },
   "agency_evidence_required": false,
-  "state": "review",
-  "verified_as_of": null,
-  "production_hook": "You inherited a place on the Costa Blanca and now want to sell it. One of the clocks started on the day of the death — not the day you decided."
+  "state": "verified",
+  "verified_as_of": "2026-09-02",
+  "hook_verified": true,
+  "production_hook": "You inherited a place on the Costa Blanca and now want to sell it. One of the clocks started on the day of the death — not the day you decided.",
+  "provenance": {
+   "claim_count": 7,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S64",
-  "current_research_question": "For a Costa Blanca residential sale, what published evidence exists on how long each stage takes — listing to accepted offer, and accepted offer to signing — at what geography, and measuring which start and end events; and where no such evidence exists for this market, what do this agency's own completed sales show?",
+  "current_research_question": "What public evidence exists on the duration of each stage of a Costa Blanca sale, what exactly does each source time, and where does no public duration series exist?",
   "must_establish": [
    "Establish whether [NAME THE FIGURE EXPLICITLY — e.g. median days on market / average discount to asking price / price per m²] exists for Alicante province, or for any Costa Blanca town, at all.",
    "Establish whether a quoted 'average days to sell' traces to a named instrument and a publisher's own release. A cluster of near-identical figures circulating verbatim across agency sites has already been found to misstate the source it cites — trace every number, or drop it.",
    "Establish which steps between offer and signing have a stateable legal or administrative duration (a tenant's pre-emption notice period, a certificate issuer's statutory deadline, an inheritance step) and which have no published duration whatsoever, including any route requiring a power of attorney granted outside Spain.",
-   "Establish the agency's own record: how many sales it completed in a stated period, and the actual span for each, with the two dates defined explicitly (mandate signed to deed signed, or offer accepted to deed signed — chosen once and stated)."
+   "Establish the agency's own record: how many sales it completed in a stated period, and the actual span for each, with the two dates defined explicitly (mandate signed to deed signed, or offer accepted to deed signed — chosen once and stated).",
+   "OPTIONAL AGENCY ADDENDUM — only if the agency supplies it: their own completed-sale timelines, with the sale count and period stated. The post must stand up without it."
   ],
   "never_assume": [
    "Never convert a distribution into an average. A published breakdown of how many sales fell into each time band does not yield a mean, and any 'average' derived from one is invented.",
@@ -5003,19 +5499,18 @@
    "Never let a figure for the city of Alicante stand in for the province or for a coastal town. In portal releases 'Alicante' usually means the city, which is not a resort market — say which geography every number belongs to.",
    "Never publish a waiting time for a consular appointment, an apostille, or a sworn translation. No source establishes a typical duration, and it varies by country and post."
   ],
-  "research_status": "UNRESOLVED",
+  "research_status": "VERIFIED",
   "hook_status": "REWRITTEN",
   "freshness_status": "CURRENT",
   "claim_ids": [
    186,
-   187
+   187,
+   657
   ],
   "coverage": {
    "production_hook[0]": {
-    "claim_ids": [
-     "hook:64"
-    ],
-    "non_factual_instruction": false
+    "claim_ids": [],
+    "non_factual_instruction": true
    },
    "current_research_question[0]": {
     "claim_ids": [],
@@ -5023,7 +5518,7 @@
    },
    "must_establish[0]": {
     "claim_ids": [
-     186
+     657
     ],
     "non_factual_instruction": false
    },
@@ -5056,12 +5551,22 @@
    "never_assume[3]": {
     "claim_ids": [],
     "non_factual_instruction": true
+   },
+   "must_establish[4]": {
+    "claim_ids": [],
+    "non_factual_instruction": true
    }
   },
   "agency_evidence_required": false,
-  "state": "review",
-  "verified_as_of": null,
-  "production_hook": "\"How long will it take?\" — the number your neighbour quotes is almost certainly measuring something else. Here is what the timeline is really made of, and which parts of it anyone can actually measure."
+  "state": "research-verified",
+  "verified_as_of": "2026-09-02",
+  "hook_verified": false,
+  "production_hook": null,
+  "provenance": {
+   "claim_count": 3,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S65",
@@ -5142,12 +5647,18 @@
   },
   "agency_evidence_required": false,
   "state": "verified",
-  "verified_as_of": null,
-  "production_hook": "A foreign passport does not tell you whether your buyer lives here, pays tax here, or needs a mortgage — here is what the purchase records actually record about who buys on this coast"
+  "verified_as_of": "2026-09-02",
+  "hook_verified": true,
+  "production_hook": "A foreign passport does not tell you whether your buyer lives here, pays tax here, or needs a mortgage — here is what the purchase records actually record about who buys on this coast",
+  "provenance": {
+   "claim_count": 5,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S66",
-  "current_research_question": "For Alicante province, what does each available series measure — the notarial deed price and transaction count (Consejo General del Notariado / MIVAU), the registrars' registered sale price index (Colegio de Registradores), the ministry's appraisal value (MIVAU, valor tasado), the portal asking price (idealista, Fotocasa — private companies, not official statistics), and the registry-inscription transaction count (INE ETDP) — over which latest published periods, from which publisher, and what does each one leave unanswered about the price a specific seller can realistically achieve?",
+  "current_research_question": "For Alicante province, compare each series separately: Consejo General del Notariado notarised deed prices and transactions; Colegio de Registradores registered transaction and price series; MIVAU valor tasado appraisal values; INE transfer counts where applicable; and private portal asking prices. State the publisher, the event measured, the geography and the reference period beside every figure.",
   "must_establish": [
    "Pull the transaction-count series for Alicante province from the primary statistics source for the latest published month; record the extraction date and whether the figures are provisional and subject to revision.",
    "Record separately, for each price instrument, its geography, metric, reference period and publisher; establish whether a province-level asking-price figure exists on a primary page rather than in a press summary, and do not carry forward any figure that cannot be traced to one.",
@@ -5160,7 +5671,7 @@
    "that a province-wide count describes the seller's own town, property type or price band",
    "that a falling transaction count means homes are not selling — establish what the count is a count of"
   ],
-  "research_status": "UNRESOLVED",
+  "research_status": "VERIFIED",
   "hook_status": "REWRITTEN",
   "freshness_status": "CURRENT",
   "claim_ids": [
@@ -5169,7 +5680,8 @@
    195,
    196,
    197,
-   198
+   198,
+   658
   ],
   "coverage": {
    "production_hook[0]": {
@@ -5180,7 +5692,7 @@
    },
    "current_research_question[0]": {
     "claim_ids": [
-     194
+     658
     ],
     "non_factual_instruction": false
    },
@@ -5226,9 +5738,15 @@
    }
   },
   "agency_evidence_required": false,
-  "state": "review",
-  "verified_as_of": null,
-  "production_hook": "Transaction counts and price indicators can move in opposite directions in the same province. Before you set an asking price, look up Alicante's latest readings — and know what each of those numbers is actually counting."
+  "state": "verified",
+  "verified_as_of": "2026-09-02",
+  "hook_verified": true,
+  "production_hook": "Transaction counts and price indicators can move in opposite directions in the same province. Before you set an asking price, look up Alicante's latest readings — and know what each of those numbers is actually counting.",
+  "provenance": {
+   "claim_count": 7,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S67",
@@ -5253,7 +5771,8 @@
    200,
    201,
    202,
-   203
+   203,
+   530
   ],
   "coverage": {
    "production_hook[0]": {
@@ -5310,7 +5829,13 @@
   "agency_evidence_required": false,
   "state": "verified",
   "verified_as_of": "2026-09-02",
-  "production_hook": "Moraira is part of the municipality of Teulada, so municipality-only statistics cannot isolate Moraira as a separate municipality. The Notariado portal can go finer, including postcode and custom-drawn areas."
+  "hook_verified": true,
+  "production_hook": "Moraira is part of the municipality of Teulada, so municipality-only statistics cannot isolate Moraira as a separate municipality. The Notariado portal can go finer, including postcode and custom-drawn areas.",
+  "provenance": {
+   "claim_count": 6,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  },
  {
   "topic_id": "S68",
@@ -5327,7 +5852,7 @@
    "that permits, starts and completions are interchangeable measures of supply",
    "that province-wide new-build activity is spread evenly across the coastal towns"
   ],
-  "research_status": "UNRESOLVED",
+  "research_status": "VERIFIED",
   "hook_status": "REWRITTEN",
   "freshness_status": "CURRENT",
   "claim_ids": [
@@ -5336,7 +5861,8 @@
    206,
    207,
    208,
-   209
+   209,
+   659
   ],
   "coverage": {
    "production_hook[0]": {
@@ -5347,7 +5873,7 @@
    },
    "current_research_question[0]": {
     "claim_ids": [
-     205
+     659
     ],
     "non_factual_instruction": false
    },
@@ -5393,8 +5919,14 @@
    }
   },
   "agency_evidence_required": false,
-  "state": "review",
-  "verified_as_of": null,
-  "production_hook": "Your competition is not only other resales — the buyer viewing your house is weighing up new builds too. Here is what the registered sales say about how the two are actually moving in this province."
+  "state": "verified",
+  "verified_as_of": "2026-09-02",
+  "hook_verified": true,
+  "production_hook": "Your competition is not only other resales — the buyer viewing your house is weighing up new builds too. Here is what the registered sales say about how the two are actually moving in this province.",
+  "provenance": {
+   "claim_count": 7,
+   "all_non_factual": true,
+   "has_provenance": true
+  }
  }
 ]

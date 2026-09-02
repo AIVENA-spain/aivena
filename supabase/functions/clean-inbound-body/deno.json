@@ -1,0 +1,5 @@
+{
+  "imports": {
+    "email-reply-parser": "npm:email-reply-parser@1.0.5"
+  }
+}

@@ -69,3 +69,43 @@ describe('language codes are one vocabulary across the system', () => {
     expect([...new Set(normalised)].sort()).toEqual([...SUPPORTED_LANGUAGES].sort());
   });
 });
+
+/**
+ * The Edge Functions are the OTHER half of the vocabulary, and until 2026-09-01
+ * their source lived only in production so nothing could check them. Now that
+ * they are captured in the repo, these read the captured source the same way the
+ * test above reads the dashboard's picker.
+ */
+describe('edge functions speak the same language vocabulary', () => {
+  const efPath = join(__dirname, '../../../../supabase/functions/translate-text/index.ts');
+
+  /** Legacy codes the DB trigger (migration leads_language_canonical_nb)
+   *  rewrites on write. A writer may emit these; storage still ends canonical. */
+  const NORMALISED_BY_DB: Record<string, string> = {
+    no: 'nb', nn: 'nb', nob: 'nb', dk: 'da', se: 'sv',
+  };
+
+  it('every code translate-text can WRITE to leads.language ends up canonical', () => {
+    const src = readFileSync(efPath, 'utf8');
+    // Anchor on the declaration: the file's header comment also names the map.
+    const block = src.slice(src.indexOf('const DETECTED_TO_AIVENA'));
+    const body = block.slice(block.indexOf('{'), block.indexOf('}') + 1);
+    const written = [...body.matchAll(/:\s*"([a-z]{2,3})"/g)].map((m) => m[1]);
+    expect(written.length, 'no codes parsed — did the map shape change?').toBeGreaterThan(10);
+
+    for (const code of written) {
+      const settled = NORMALISED_BY_DB[code] ?? code;
+      expect(
+        isCanonicalLanguage(settled),
+        `translate-text writes "${code}" which settles as "${settled}" — not canonical`,
+      ).toBe(true);
+    }
+  });
+
+  it('the DB normaliser and LANG_ALIASES agree, so storage and code cannot drift', () => {
+    for (const [legacy, canonical] of Object.entries(NORMALISED_BY_DB)) {
+      expect(normalizeLeadLanguage(legacy), `LANG_ALIASES disagrees on ${legacy}`).toBe(canonical);
+    }
+  });
+});
+

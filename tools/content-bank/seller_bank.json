@@ -24,12 +24,12 @@
    3,
    443,
    623,
-   721
+   765
   ],
   "coverage": {
    "production_hook[0]": {
     "claim_ids": [
-     721
+     765
     ],
     "non_factual_instruction": false
    },
@@ -84,7 +84,7 @@
   "state": "verified",
   "verified_as_of": "2026-09-02",
   "hook_verified": true,
-  "production_hook": "Your Costa Blanca home carries more than one price, and they are different instruments rather than versions of one number: the asking price the agency publishes (private, not official); the Catastro's valor de referencia (official — set by the Dirección General del Catastro and consultable for a specific property); and official transaction-price statistics built from what buyers actually paid (INE's Índice de Precios de Vivienda, Colegio de Registradores, Notariado), which are published only as area averages and never as a figure attached to your address. MIVAU's valor tasado series is not one of these — it is an appraisal average built from the tasadoras' own valuation reports, not from what anyone paid. Two of the three are official, and none of them is a published record of what a buyer paid for your particular home.",
+  "production_hook": "Your Costa Blanca home can be described by several different price instruments: portal asking prices; the Catastro's valor de referencia; actual transaction and deed evidence from the Notariado and the Registradores; INE's price index at autonomous-community level; and MIVAU appraisal values. They measure different things and must never be treated as versions of one number.",
   "provenance": {
    "claim_count": 7,
    "all_non_factual": true,
@@ -379,12 +379,13 @@
    17,
    18,
    19,
-   446
+   446,
+   742
   ],
   "coverage": {
    "production_hook[0]": {
     "claim_ids": [
-     "hook:5"
+     742
     ],
     "non_factual_instruction": false
    },
@@ -439,9 +440,9 @@
   "state": "verified",
   "verified_as_of": "2026-09-02",
   "hook_verified": true,
-  "production_hook": "At least four bodies publish a price per square metre covering Alicante province — a ministry, the registrars, the notaries and the private portals — and they do not agree. Before you accept any valuation of your home, ask which one it was built on.",
+  "production_hook": "Several sources and producers publish a price per square metre covering Alicante province — a ministry, the registrars, the notaries and the private portals — and they do not agree. Before you accept any valuation of your home, ask which one it was built on.",
   "provenance": {
-   "claim_count": 6,
+   "claim_count": 7,
    "all_non_factual": true,
    "has_provenance": true
   }
@@ -1003,15 +1004,12 @@
    48,
    49,
    50,
-   452,
-   629
+   452
   ],
   "coverage": {
    "production_hook[0]": {
-    "claim_ids": [
-     629
-    ],
-    "non_factual_instruction": false
+    "claim_ids": [],
+    "non_factual_instruction": true
    },
    "current_research_question[0]": {
     "claim_ids": [],
@@ -1062,7 +1060,7 @@
   "hook_verified": true,
   "production_hook": null,
   "provenance": {
-   "claim_count": 5,
+   "claim_count": 4,
    "all_non_factual": true,
    "has_provenance": true
   }
@@ -2194,17 +2192,17 @@
    "Do not assume the estate is the only gap in the chain: a predeceased co-owner never removed, or a divorce settlement never registered, breaks the same rule"
   ],
   "research_status": "VERIFIED",
-  "hook_status": "RETAINED",
+  "hook_status": "REWRITTEN",
   "freshness_status": "CURRENT",
   "claim_ids": [
    473,
    474,
-   722
+   766
   ],
   "coverage": {
    "production_hook[0]": {
     "claim_ids": [
-     722
+     766
     ],
     "non_factual_instruction": false
    },
@@ -2253,7 +2251,7 @@
   "state": "verified",
   "verified_as_of": "2026-09-02",
   "hook_verified": true,
-  "production_hook": "You can accept an offer on a house that is still in your mother's name — the heirs own it, and the contract is valid. What you cannot do is let the buyer register it: Ley Hipotecaria art. 20 requires the seller's own right to be inscribed first, and says registrars shall refuse where the registered owner is someone else. The way round it is to sign and lodge both deeds in sequence, the inheritance first and the sale second: under Ley Hipotecaria arts. 24 and 25 a title takes its date and its rank from its asiento de presentación, so the inheritance is inscribed ahead of the sale. That follows from the priority rule — it is not a right to same-day treatment.",
+  "production_hook": "A sale can be agreed while an inherited property is still registered in the deceased owner's name, but who can validly bind the estate depends on the succession position. Before partition, do not say an individual heir owns the specific house: where the property remains in the hereditary community, all participants whose consent is required must act. The succession and registry chain must then be completed in the correct order before the buyer can register title.",
   "provenance": {
    "claim_count": 3,
    "all_non_factual": true,
@@ -2609,12 +2607,12 @@
  },
  {
   "topic_id": "S31",
-  "current_research_question": "For a mortgaged Costa Blanca sale, which documents must be in hand before a notary may authorise the deed, which of those carry a statutory issuing deadline, which depend entirely on a third party's own pace with no legal time limit, and how long has this agency's own recent mortgaged completions actually taken from offer to signature?",
+  "current_research_question": "For a mortgaged Costa Blanca sale, which documents must be in hand before a notary may authorise the deed, which carry a statutory issuing deadline, and which depend on third-party processing for which no statutory completion time exists?",
   "must_establish": [
    "Establish which document is a hard statutory precondition to authorising the sale deed under art. 9.1.e LPH, what deadline the issuer has, and whether anyone may waive it and at whose risk",
    "Establish where the widely repeated seven-day rule for a lender's outstanding-balance certificate actually comes from and what transaction it governs — the groundwork traces it to a subrogation statute, not to sales; verify before repeating or rebutting it",
    "Establish what the seller must hold on a Comunitat Valenciana sale in the way of an energy certificate and a second-occupancy declaración responsable — not a 'licence', which survives only in those municipalities that have retained an express licence regime by ordenanza — and confirm the current instrument. The framework changed in 2025: Decreto 80/2023 (DC-23) was repealed by Ley 5/2025 and the Orden de 7 de diciembre de 2009 (DC-09) is again the habitability standard, while Decreto 12/2021 continues to govern the occupancy declaration. The at-signing requirement remains unverified: RD 390/2021 art. 17.2 does require the registered energy certificate and label to be annexed to the sale contract, but no equivalent provision requiring the occupancy declaration at the moment of signing was found.",
-   "Pull the agency's own completed mortgaged sales and establish the real elapsed times, the number of cases behind the figure, and where the delays actually sat",
+   "OPTIONAL AGENCY ADDENDUM — if sufficient agency case data exists, add this agency's measured offer-to-signature duration for mortgaged completions, stating period and sample size. The public post must stand without it.",
    "OPTIONAL AGENCY ADDENDUM — only if the agency supplies it: this agency's actual mortgage-sale timing. The public post stands on the legal and document clocks alone."
   ],
   "never_assume": [
@@ -2623,15 +2621,16 @@
    "Do not assume a missing energy certificate blocks the notary from authorising the deed — the groundwork explicitly declines to resolve this either way",
    "Do not describe a handful of the agency's own cases as a market average, or a town's experience as a province-wide fact"
   ],
-  "research_status": "VERIFIED",
+  "research_status": "UNRESOLVED",
   "hook_status": "RETAINED",
   "freshness_status": "CURRENT",
   "claim_ids": [
    90,
    91,
    484,
-   636,
-   637
+   637,
+   743,
+   744
   ],
   "coverage": {
    "production_hook[0]": {
@@ -2642,7 +2641,7 @@
    },
    "current_research_question[0]": {
     "claim_ids": [
-     636
+     743
     ],
     "non_factual_instruction": false
    },
@@ -2663,8 +2662,10 @@
     "non_factual_instruction": false
    },
    "must_establish[3]": {
-    "claim_ids": [],
-    "non_factual_instruction": true
+    "claim_ids": [
+     744
+    ],
+    "non_factual_instruction": false
    },
    "never_assume[0]": {
     "claim_ids": [],
@@ -2690,12 +2691,12 @@
    }
   },
   "agency_evidence_required": false,
-  "state": "verified",
-  "verified_as_of": "2026-09-02",
+  "state": "review",
+  "verified_as_of": null,
   "hook_verified": true,
-  "production_hook": "Nobody can honestly tell you how many weeks your bank will take. But some of this paperwork has a legal clock on it, and some has none at all — know which is which before you set a completion date.",
+  "production_hook": null,
   "provenance": {
-   "claim_count": 5,
+   "claim_count": 6,
    "all_non_factual": true,
    "has_provenance": true
   }
@@ -3240,9 +3241,9 @@
  },
  {
   "topic_id": "S38",
-  "current_research_question": "Which official instruments publish a price per square metre covering Alicante, what does each one record — an appraisal, a notarised sale, or a registered sale — and at what geography is each published? And separately: which price types, above all the advertised asking price, are published only by private portals and valuers and by no official body at all?",
+  "current_research_question": "Which published institutional and commercial instruments provide housing-price information covering this market, what does each measure, and at what geography?",
   "must_establish": [
-   "Establish all three published euro-per-m² series and name the publisher type for each, since only one of the three is official statistics: (1) the ministry — MIVAU's 'Valor tasado de la vivienda', a quarterly appraisal-based €/m² series covering provinces and municipalities over 25,000 inhabitants, and the only official statistic of the three; (2) a professional corporation — the Consejo General del Notariado's Portal Estadístico del Notariado, live since 23 October 2025, publishing average price per m² from notarised deeds down to postcode level (the Colegio de Registradores publishes a comparable deed-based series); and (3) a private listings portal — idealista or Fotocasa, publishing asking prices from their own advertisements. The notarial series is deed price, not an official statistic.2 of notarised sales by province, municipality and postal code — and reclassify INE: it belongs in the piece as a price INDEX at comunidad-autónoma level and as the source of registered transaction COUNTS by province (ETDP), not as a euro-per-m2 instrument covering Alicante. Keep the portal explicitly labelled as commercial asking data, not an official body.",
+   "Establish each producer separately and state what it measures and at what geography: MIVAU valor tasado = appraisal evidence; Notariado = notarised deed-price evidence; Registradores = registered-sale evidence; Catastro = administrative reference-value evidence; INE IPV = a price index published at Spain and autonomous-community level; private portals = advertised asking-price data. Do not force these producers into a single official/not-official count.",
    "Establish whether any of these publishes a figure for the specific town being written about, and what coverage or population threshold decides which municipalities appear at all.",
    "Establish the direction and magnitude of registered transaction counts for Alicante province over the most recent published periods, from the statistical office's own series, and set that beside each price series before drawing any conclusion about either.",
    "Establish whether any source supports a causal link between asking-price level and how long a home stays listed; if none does, the piece may describe the gap between series but must not assert the cause.",
@@ -3254,7 +3255,7 @@
    "That rising prices and rising sales move together, or that a record price level is evidence that homes are selling.",
    "That an index of percentage change can be used to state a level in euros, or that a provincial average describes a coastal resort town."
   ],
-  "research_status": "VERIFIED",
+  "research_status": "UNRESOLVED",
   "hook_status": "REWRITTEN",
   "freshness_status": "CURRENT",
   "claim_ids": [
@@ -3264,8 +3265,9 @@
    114,
    115,
    497,
-   642,
-   738
+   738,
+   745,
+   746
   ],
   "coverage": {
    "production_hook[0]": {
@@ -3276,13 +3278,13 @@
    },
    "current_research_question[0]": {
     "claim_ids": [
-     642
+     745
     ],
     "non_factual_instruction": false
    },
    "must_establish[0]": {
     "claim_ids": [
-     112
+     746
     ],
     "non_factual_instruction": false
    },
@@ -3328,12 +3330,12 @@
    }
   },
   "agency_evidence_required": false,
-  "state": "verified",
-  "verified_as_of": "2026-09-02",
+  "state": "review",
+  "verified_as_of": null,
   "hook_verified": true,
-  "production_hook": "The €/m² figures you can look up for Alicante do not measure the same thing. The Ministry of Housing's valor tasado is an appraisal, averaged from valuers' reports. The Notariado's comes from the signed deed. The Registradores' from the registered sale. The Catastro's mapa de valores assigns an average €/m² module to each homogeneous valuation area, drawn from the prices notaries report. And none of them is the asking price on a portal — that is where a seller starts, not a record of what happened. Which one describes your house?",
+  "production_hook": null,
   "provenance": {
-   "claim_count": 8,
+   "claim_count": 9,
    "all_non_factual": true,
    "has_provenance": true
   }
@@ -3995,7 +3997,8 @@
    "Establish which routes exist for granting a POA outside Spain, and for each route what further formalities (legalisation, translation, and the order they must be done in) a Spanish notary requires before acting on it — distinguishing statute from professional practice and labelling which is which",
    "Establish what a mandate must expressly empower for a disposal as opposed to mere administration, quoting the source: Código Civil art. 1713 — a mandate framed in general terms covers only acts of administration, and selling, mortgaging or any other act of riguroso dominio requires an express mandate. Do not assert that the power of attorney must name the specific property: no statute requires it. Identifying the finca by its registry details is standard drafting for a poder especial and must be labelled as practice, not law.",
    "Establish which international or EU instruments do and do not remove legalisation requirements for notarial powers of attorney, checking the instrument's own scope rather than a summary of it",
-   "Establish whether any reliable source publishes typical durations for either route; if none does, state that no timing can be published and use only the agency's own experience"
+   "Establish whether any reliable source publishes typical durations for either route; if none does, say plainly that no timing can be published. OPTIONAL AGENCY ADDENDUM — the agency's own observed durations may be added with period and sample size, but the public post must stand without them.",
+   "OPTIONAL AGENCY ADDENDUM — the agency's own observed durations may be added with period and sample size, but the public post must stand without them."
   ],
   "never_assume": [
    "Never assume a document issued inside the EU needs no legalisation. Regulation (EU) 2016/1191 lists its scope exhaustively in Article 2(1), and its Annexes are multilingual standard forms, not a scope list, so check Article 2(1) and confirm that notarial powers of attorney fall outside it before saying anything about legalisation, and establish that the 1961 Hague Apostille Convention is the instrument that actually applies.",
@@ -4012,7 +4015,8 @@
    504,
    505,
    645,
-   647
+   647,
+   747
   ],
   "coverage": {
    "production_hook[0]": {
@@ -4044,8 +4048,10 @@
     "non_factual_instruction": true
    },
    "must_establish[3]": {
-    "claim_ids": [],
-    "non_factual_instruction": true
+    "claim_ids": [
+     747
+    ],
+    "non_factual_instruction": false
    },
    "never_assume[0]": {
     "claim_ids": [
@@ -4064,6 +4070,10 @@
    "never_assume[3]": {
     "claim_ids": [],
     "non_factual_instruction": true
+   },
+   "must_establish[4]": {
+    "claim_ids": [],
+    "non_factual_instruction": true
    }
   },
   "agency_evidence_required": false,
@@ -4072,7 +4082,7 @@
   "hook_verified": true,
   "production_hook": "You do not have to fly to Spain to sign — but a power of attorney with the wrong wording, the wrong legalisation or the wrong translation can fail at the notary's desk, on the day there is no time left to fix it.",
   "provenance": {
-   "claim_count": 6,
+   "claim_count": 7,
    "all_non_factual": true,
    "has_provenance": true
   }
@@ -4751,11 +4761,11 @@
  },
  {
   "topic_id": "S56",
-  "current_research_question": "Does any published, named source measure sale outcomes by listing type in Alicante province — and if not, which figures from an agency's own completed sales would honestly answer this seller's question?",
+  "current_research_question": "Does any published, named source measure sale outcomes by exclusive versus open or multi-agency mandate in Spain or Alicante province, and what can honestly be concluded if no local comparative dataset exists?",
   "must_establish": [
    "Establish whether any dated study, registry series or portal dataset compares sale outcomes by listing type in Spain or in Alicante province, and say plainly if none is found rather than substituting a national or foreign study.",
    "Establish, where a study from another market is the only evidence available, which market and which period it covers and why it may not transfer to this one.",
-   "Establish from the agency's own completed sales which figures can be stated exactly: number of sales in a named period, mandate type, achieved price against first asking price, days from mandate signature to deed, and how many went to a buyer the agency itself introduced.",
+   "OPTIONAL AGENCY ADDENDUM — if sufficient agency data exists, compare this agency's own completed outcomes by mandate type, with sample size, period and metric definitions. The public post must stand without it.",
    "Establish what the agency may publish about identifiable clients and properties before any past sale or client story is used.",
    "OPTIONAL AGENCY ADDENDUM — only if the agency supplies it: this agency's own completed-sale comparison of exclusive versus open mandates. The public post stands on whether any published evidence compares the two."
   ],
@@ -4770,7 +4780,9 @@
   "freshness_status": "CURRENT",
   "claim_ids": [
    151,
-   152
+   152,
+   748,
+   749
   ],
   "coverage": {
    "production_hook[0]": {
@@ -4781,7 +4793,7 @@
    },
    "current_research_question[0]": {
     "claim_ids": [
-     151
+     748
     ],
     "non_factual_instruction": false
    },
@@ -4796,8 +4808,10 @@
     "non_factual_instruction": true
    },
    "must_establish[2]": {
-    "claim_ids": [],
-    "non_factual_instruction": true
+    "claim_ids": [
+     749
+    ],
+    "non_factual_instruction": false
    },
    "must_establish[3]": {
     "claim_ids": [],
@@ -4830,7 +4844,7 @@
   "hook_verified": true,
   "production_hook": "Ask three agents whether exclusive sells better and you will get three answers. Here is the evidence that could actually settle it for your house — and exactly how to ask for it.",
   "provenance": {
-   "claim_count": 2,
+   "claim_count": 4,
    "all_non_factual": true,
    "has_provenance": true
   }
@@ -5208,12 +5222,13 @@
    "Establish from Agencia Tributaria's own pages how a property gain is computed, and which rate regime applies to a seller taxed as a resident versus one taxed under IRNR — including whether the rate turns on the seller's passport, their EU/EEA status, or where they are tax resident. Settled at source: a non-resident's gain on the sale of Spanish property is taxed at a flat 19% under art. 25.1.f.3º TRLIRNR, whatever the seller's nationality and whether or not they are resident in the EU/EEA. The 24%/19% split in art. 25.1.a is a different rule and applies to imputed and rental income, not to the gain. Resolve that against the primary text before any rate is written; if it cannot be resolved, the piece must not carry a rate at all.",
    "Establish which of the seller's selling costs reduce the taxable transmission value and which do not.",
    "Establish who is legally liable for plusvalía municipal on a sale, whether that liability sits differently where the seller is a non-resident individual, and whether the amount is set municipality by municipality — so whether any province-wide figure can exist.",
-   "Establish the mechanism by which a percentage of the price is retained from a non-resident seller: who pays it to whom, on what form, and by what route the seller recovers any excess. Confirm both filing deadlines against a primary source — they currently rest on secondary sources only."
+   "Establish the mechanism by which a percentage of the price is retained from a non-resident seller: who pays it to whom, on what form, and by what route the seller recovers any excess. Confirm both filing deadlines against a primary source — they currently rest on secondary sources only.",
+   "Do not import an IRPF habitual-residence exemption into IRNR by analogy. Establish each relief separately from current AEAT and TRLIRNR authority for this seller. The non-resident reinvestment relief has its own statutory conditions for qualifying EU/EEA residents; any over-65 relief for a non-resident must be independently established from current primary authority before it is mentioned."
   ],
   "never_assume": [
-   "Never let nationality decide the tax. Tax residence is where a person lives, not what passport they hold; EEA (Norway, Iceland, Liechtenstein) is a different question from EU membership, and Switzerland is its own regime again. A Norwegian owner is not a British owner.",
-   "Never publish an agency commission percentage as typical or standard: no rate is regulated in Spain and no verified Costa-Blanca-measured median exists. If commission appears at all, it is the rate in that agency's own mandate. Agency services do carry VAT, but never state whether a quoted percentage is VAT-inclusive or VAT-exclusive — that is a fact of the individual mandate, and both are common. Say it must be checked; do not supply a default either way.",
-   "Recast as habitual-residence reliefs, not resident-only ones: 'Never assume the habitual-residence reliefs help the reader — most foreign-owned Costa Blanca property is a second home, and neither relief reaches a second home. Establish separately, from the primary text, who each one reaches: the reinvestment exemption is extended to non-residents of the EU/EEA with effective exchange of information by DA 7ª TRLIRNR, while the over-65 relief has been read narrowly against non-residents. Establish the property's status and the seller's tax residence before mentioning either.'",
+   "Never let nationality decide the tax. Establish the seller's tax residence under the applicable statutory criteria and, where relevant, the tax treaty. Tax residence is a legal status; it must not be reduced to nationality, immigration status or ordinary-language 'where the person lives'.",
+   "Never publish an agency commission percentage as typical or standard: no rate is regulated in Spain and no verified Costa-Blanca-measured median exists. If commission appears at all, it is the rate in that agency's own mandate. Agency services do carry VAT, but never state whether a quoted percentage is VAT-inclusive or VAT-exclusive — that is a fact of the individual mandate. Say it must be checked; do not supply a default either way.",
+   "Establish separately, from the primary text, who each one reaches: the reinvestment exemption is extended to non-residents of the EU/EEA with effective exchange of information by DA 7ª TRLIRNR, while the over-65 relief has been read narrowly against non-residents. Establish the property's status and the seller's tax residence before mentioning either.",
    "Never state the current rate scale from memory: the top savings-base bracket changed with effect from 2025, and rates must be read from the amended article, not recalled."
   ],
   "research_status": "VERIFIED",
@@ -5228,7 +5243,11 @@
    174,
    175,
    176,
-   177
+   177,
+   750,
+   751,
+   752,
+   753
   ],
   "coverage": {
    "production_hook[0]": {
@@ -5267,25 +5286,31 @@
    },
    "never_assume[0]": {
     "claim_ids": [
-     174
+     751
     ],
     "non_factual_instruction": false
    },
    "never_assume[1]": {
     "claim_ids": [
-     175
+     752
     ],
     "non_factual_instruction": false
    },
    "never_assume[2]": {
     "claim_ids": [
-     176
+     753
     ],
     "non_factual_instruction": false
    },
    "never_assume[3]": {
     "claim_ids": [
      177
+    ],
+    "non_factual_instruction": false
+   },
+   "must_establish[4]": {
+    "claim_ids": [
+     750
     ],
     "non_factual_instruction": false
    }
@@ -5296,7 +5321,7 @@
   "hook_verified": true,
   "production_hook": "The price you agree is not the money that reaches your account. Here is what sits in between — which amounts are a final cost, which are payments on account settled later, and what changes if you are not tax-resident in Spain.",
   "provenance": {
-   "claim_count": 9,
+   "claim_count": 13,
    "all_non_factual": true,
    "has_provenance": true
   }
@@ -5307,30 +5332,31 @@
   "must_establish": [
    "Establish, from the governing statute rather than commentary, which document a notary is expressly prohibited from authorising a deed without: who issues it, on what deadline, and whether any party is able to waive it — and if so, at what risk to whom.",
    "Establish what the registry requires as to who is shown as owner, and what happens when the person selling is not the registered owner — an inheritance never inscribed, a divorce settlement never registered, a deceased co-owner never removed.",
-   "Establish the current position on the energy certificate and on the Valencian second-occupancy licence separately: whether each is a seller obligation, whether it must be lodged with the regional body to be valid, and — as a distinct question — whether its absence blocks the deed. The Valencian second-occupancy framework was NOT repealed in 2025 — Decreto 12/2021, de 22 de enero, del Consell remains in force (the Generalitat lists it as current and under review). What Ley 5/2025 repealed (DD única, g) was Decreto 80/2023 on design and quality of dwellings, a different instrument; the Orden of 7 December 2009 on design and quality applies in its place. the notary-blocking question is unresolved.",
+   "Do not state that absence of the energy certificate or Valencian occupancy paperwork prevents notarial authorisation unless current primary authority expressly establishes that consequence.",
    "Establish how an undeclared extension, pool or enclosed terrace is treated: whether a regularisation route exists, what conditions it carries, and what the works actually affect — registrable title, a lender's valuation, the achievable price — rather than whether they 'stop the sale'."
   ],
   "never_assume": [
    "Never carry a deadline across regimes. A seven-day issuing deadline that is real for one certificate does not exist for the bank's outstanding-debt certificate on a sale — that specific error is already circulating widely.",
-   "Never assert that a missing energy certificate stops the notary. That point is unresolved; state the obligation, which is established, and stop there.",
+   "Do not state that absence of the energy certificate or Valencian occupancy paperwork prevents notarial authorisation unless current primary authority expressly establishes that consequence.",
    "Never assume the Valencian second-occupancy paperwork is what an older article says it is, and never present one town hall's practice at the deed as the regional rule. Check the Generalitat's own instrument.",
    "Never present a national default as what will apply — the Código Civil's default allocation of notary costs is expressly overridable, and local Costa Blanca practice commonly overrides it. What governs is the contract."
   ],
   "research_status": "VERIFIED",
-  "hook_status": "RETAINED",
+  "hook_status": "REWRITTEN",
   "freshness_status": "CURRENT",
   "claim_ids": [
    178,
    179,
    180,
    181,
-   527,
-   655
+   754,
+   755,
+   767
   ],
   "coverage": {
    "production_hook[0]": {
     "claim_ids": [
-     655
+     767
     ],
     "non_factual_instruction": false
    },
@@ -5350,7 +5376,7 @@
    },
    "must_establish[2]": {
     "claim_ids": [
-     527
+     754
     ],
     "non_factual_instruction": false
    },
@@ -5365,8 +5391,10 @@
     "non_factual_instruction": false
    },
    "never_assume[1]": {
-    "claim_ids": [],
-    "non_factual_instruction": true
+    "claim_ids": [
+     755
+    ],
+    "non_factual_instruction": false
    },
    "never_assume[2]": {
     "claim_ids": [
@@ -5383,9 +5411,9 @@
   "state": "verified",
   "verified_as_of": "2026-09-02",
   "hook_verified": true,
-  "production_hook": "Buyer found, price agreed — and one missing paper can still stop the notary. Exactly one of them has that power by law, and your buyer can sign it away. Here is what actually gets checked at the notary, and what only costs you money.",
+  "production_hook": "Buyer found, price agreed — and the community-debt certificate has an express statutory no-authorisation rule unless the buyer waives it. Other documents and title facts have different legal effects and must be checked separately. Here is what genuinely blocks, delays or merely costs money at completion.",
   "provenance": {
-   "claim_count": 6,
+   "claim_count": 7,
    "all_non_factual": true,
    "has_provenance": true
   }
@@ -5487,7 +5515,7 @@
   "topic_id": "S64",
   "current_research_question": "What public evidence exists on the duration of each stage of a Costa Blanca sale, what exactly does each source time, and where does no public duration series exist?",
   "must_establish": [
-   "Establish whether [NAME THE FIGURE EXPLICITLY — e.g. median days on market / average discount to asking price / price per m²] exists for Alicante province, or for any Costa Blanca town, at all.",
+   "For every metric researched — for example median days on market, discount to asking price or price per m² — name the metric explicitly, then establish whether a published series exists for Alicante province or the named town.",
    "Establish whether a quoted 'average days to sell' traces to a named instrument and a publisher's own release. A cluster of near-identical figures circulating verbatim across agency sites has already been found to misstate the source it cites — trace every number, or drop it.",
    "Establish which steps between offer and signing have a stateable legal or administrative duration (a tenant's pre-emption notice period, a certificate issuer's statutory deadline, an inheritance step) and which have no published duration whatsoever, including any route requiring a power of attorney granted outside Spain.",
    "Establish the agency's own record: how many sales it completed in a stated period, and the actual span for each, with the two dates defined explicitly (mandate signed to deed signed, or offer accepted to deed signed — chosen once and stated).",
@@ -5499,13 +5527,13 @@
    "Never let a figure for the city of Alicante stand in for the province or for a coastal town. In portal releases 'Alicante' usually means the city, which is not a resort market — say which geography every number belongs to.",
    "Never publish a waiting time for a consular appointment, an apostille, or a sworn translation. No source establishes a typical duration, and it varies by country and post."
   ],
-  "research_status": "VERIFIED",
+  "research_status": "UNRESOLVED",
   "hook_status": "REWRITTEN",
   "freshness_status": "CURRENT",
   "claim_ids": [
    186,
    187,
-   657
+   756
   ],
   "coverage": {
    "production_hook[0]": {
@@ -5518,7 +5546,7 @@
    },
    "must_establish[0]": {
     "claim_ids": [
-     657
+     756
     ],
     "non_factual_instruction": false
    },
@@ -5558,8 +5586,8 @@
    }
   },
   "agency_evidence_required": false,
-  "state": "research-verified",
-  "verified_as_of": "2026-09-02",
+  "state": "review",
+  "verified_as_of": null,
   "hook_verified": false,
   "production_hook": null,
   "provenance": {

@@ -13,6 +13,7 @@ Exit 0 = all rules hold. Exit 1 = at least one violation, printed with its locat
 """
 import json
 import os
+import re
 import subprocess
 import sys
 
@@ -21,6 +22,16 @@ BANKS = [os.path.join(HERE, "seller_bank.json"), os.path.join(HERE, "buyer_bank.
 LEDGER = os.path.join(HERE, "ledger.json")
 FIXTURES = os.path.join(HERE, "fixtures", "known_failures.json")
 LINT = os.path.join(HERE, "lint_banks.py")
+STRUCT_FIXTURES = os.path.join(HERE, "fixtures", "structural_failures.json")
+RENDERED = [os.path.join(HERE, "seller-bank.html"), os.path.join(HERE, "buyer-bank.html")]
+# Text that must never appear in a production field, whatever the source JSON says.
+PLACEHOLDER = re.compile(r"\[(NAME|TOWN|FIGURE|INSERT|TODO|XX)\b[^\]]*\]", re.I)
+# A replacement pasted over its own target leaves the join visible.
+# The real signature is a word running straight into a stray digit from a replacement that was
+# pasted over its own target: "official statistic.2 of notarised sales". Spanish thousands
+# separators (25.000) and article citations (Art. 4.1) are not that, and a looser pattern flagged
+# dozens of them.
+OVERLAP = re.compile(r"[a-z]{4,}\.\d{1,2}\s+[a-z]{2,}")
 
 # A verdict that may never support a live production field. CORRECTED is historical audit state:
 # applying a correction does not verify it, so the replacement becomes a NEW claim that is checked
@@ -194,6 +205,59 @@ def rule_7_agency_provenance(banks):
                              "first-person agency claim without agency_evidence_required")
 
 
+def rule_12_rendered_artifact(rendered):
+    """CI must test the page, not only the JSON behind it.
+
+    Every defect this rule catches was present in a frozen, published bank while the source-JSON suite
+    reported zero violations: two status summaries on one header line, a stale fixture count in the
+    footer, a template placeholder, and a replacement pasted over its own target. A gate that never
+    looks at the artifact is not a gate on the artifact.
+    """
+    text_fx = len(json.load(open(FIXTURES, encoding="utf-8")))
+    struct_fx = len(json.load(open(STRUCT_FIXTURES, encoding="utf-8"))["cases"])
+    for path in rendered:
+        if not os.path.exists(path):
+            fail("rendered", os.path.basename(path), "not rendered")
+            continue
+        page = open(path, encoding="utf-8").read()
+        name = os.path.basename(path)
+
+        # exactly one status summary
+        summaries = re.findall(r"<span>((?:Verified|Research verified|Needs review|Blocked) \d+[^<]*)</span>", page)
+        if len(summaries) != 1:
+            fail("duplicate-status-summary", name,
+                 f"{len(summaries)} status summaries on the page: {summaries}")
+
+        # the footer count must come from the registry
+        shown = re.search(r"(\d+) text and (\d+) structural known-failure fixtures", page)
+        if not shown:
+            fail("fixture-count", name, "no fixture count rendered")
+        elif (int(shown.group(1)), int(shown.group(2))) != (text_fx, struct_fx):
+            fail("fixture-count", name,
+                 f"page says {shown.group(1)}+{shown.group(2)}, registry has {text_fx}+{struct_fx}")
+
+        for m in PLACEHOLDER.finditer(page):
+            fail("template-placeholder", name, m.group(0))
+        for m in OVERLAP.finditer(page):
+            fail("replacement-overlap", name, page[max(0, m.start() - 40):m.end() + 30])
+        if re.search(r"ECLI\\+:", page):
+            fail("malformed-citation", name, "backslash-escaped ECLI")
+
+
+def rule_13_green_needs_no_agency_data(banks):
+    """A public card cannot be green while its mandatory research requires the agency's own figures."""
+    needs = re.compile(r"(this|the) agency'?s own|this office actually|pull the agency'?s own", re.I)
+    for path in banks:
+        for t in load(path):
+            if t.get("state") != "verified" or t.get("agency_evidence_required"):
+                continue
+            fields = [t.get("current_research_question") or ""] + list(t.get("must_establish") or [])
+            for f in fields:
+                if needs.search(str(f)) and "OPTIONAL AGENCY ADDENDUM" not in str(f).upper():
+                    fail("green-needs-agency-data", f"{os.path.basename(path)} [{t.get('topic_id')}]",
+                         str(f)[:110])
+
+
 def rule_10_provenance(banks):
     """Every card renders provenance. Nine did not, and the claim that all did was simply untrue."""
     total = 0
@@ -240,6 +304,7 @@ def rule_11_structural_fixtures():
             rule_3_active_claims([bp], led)
             rule_4_ledger_mapping(led)
             rule_4b_source_class(led)
+            rule_13_green_needs_no_agency_data([bp])
         caught = [f for f in failures[before:] if f[0] == c["rule"]]
         del failures[before:]
         if not caught:
@@ -275,6 +340,8 @@ def main():
     rule_4_ledger_mapping(ledger)
     rule_4b_source_class(ledger)
     rule_10_provenance(banks)
+    rule_12_rendered_artifact(RENDERED)
+    rule_13_green_needs_no_agency_data(banks)
     rule_5_freshness(ledger, today)
     rule_6_hook_coverage(banks)
     rule_7_agency_provenance(banks)

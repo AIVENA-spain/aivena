@@ -18,7 +18,7 @@
    "Do not assume the buyer pays the mortgage stamp duty; the lender has been the AJD taxpayer since 10 November 2018 (RDL 17/2018)",
    "Do not assume the Valencian rate applies to Murcia-side Costa Blanca-adjacent purchases — the region determines the rate"
   ],
-  "research_status": "UNRESOLVED",
+  "research_status": "VERIFIED",
   "hook_status": "SUPERSEDED",
   "freshness_status": "CURRENT",
   "claim_ids": [
@@ -124,8 +124,8 @@
    }
   },
   "agency_evidence_required": false,
-  "state": "review",
-  "verified_as_of": null,
+  "state": "research-verified",
+  "verified_as_of": "2026-09-02",
   "hook_verified": false,
   "production_hook": null,
   "provenance": {
@@ -266,7 +266,7 @@
    "Never assume the LTV applies to the agreed price rather than the bank valuation",
    "Never invent a named bank's current LTV or rate"
   ],
-  "research_status": "UNRESOLVED",
+  "research_status": "VERIFIED",
   "hook_status": "SUPERSEDED",
   "freshness_status": "CURRENT",
   "claim_ids": [
@@ -343,8 +343,8 @@
    }
   },
   "agency_evidence_required": false,
-  "state": "review",
-  "verified_as_of": null,
+  "state": "research-verified",
+  "verified_as_of": "2026-09-02",
   "hook_verified": false,
   "production_hook": null,
   "provenance": {
@@ -475,7 +475,7 @@
    "Never assume the community fee includes lift, pool, security or water without the block's actual budget",
    "Agency input required if real numbers are used: actual IBI receipts and community budgets from the agency's own listings, labelled as coming from named real listings. IBI depends on the municipality's ordenanza fiscal and the individual valor catastral, and community budgets are set by each comunidad, so no public source can supply either. Without that input the piece must run as sourced ranges that say the real figure is property-specific — never as a specimen invoice."
   ],
-  "research_status": "UNRESOLVED",
+  "research_status": "VERIFIED",
   "hook_status": "SUPERSEDED",
   "freshness_status": "CURRENT",
   "claim_ids": [
@@ -551,8 +551,8 @@
    }
   },
   "agency_evidence_required": false,
-  "state": "review",
-  "verified_as_of": null,
+  "state": "research-verified",
+  "verified_as_of": "2026-09-02",
   "hook_verified": false,
   "production_hook": null,
   "provenance": {
@@ -1196,16 +1196,18 @@
    "Occupation figures for Alicante province or the Comunidad Valenciana from an official source — Ministerio del Interior crime statistics, 'ocupaciones ilegales de inmuebles' — quoting the reference period, the publication date and whether the data are provisional, and comparing them with the provinces where occupation is actually concentrated. Do not publish any occupation figure that was not read off that series.",
    "The factors that genuinely move risk: whether anyone visits or key-holds, whether the property looks lived in, utilities left connected or cut, alarm with verified response, and the separate problem of a non-paying tenant (inquiokupa), which is a civil matter and behaves differently.",
    "What Spanish home insurance anti-occupation cover actually pays for, versus what buyers assume it does.",
-   "Which official Interior crime or offence statistics actually capture unlawful occupation affecting homes — allanamiento and usurpación where published — at what geography, and what can and cannot be inferred from those figures about the risk to a second home?"
+   "Which official Interior crime or offence statistics actually capture unlawful occupation affecting homes — allanamiento and usurpación where published — at what geography, and what can and cannot be inferred from those figures about the risk to a second home?",
+   "Use the exact category label the current Interior or Secretaría de Estado de Seguridad publication uses; do not assume an umbrella category name that the statistics do not publish."
   ],
   "never_assume": [
+   "Never convert a raw provincial count of occupation incidents into a probability that a buyer's home will be occupied. A high or low risk statement requires a defensible denominator matched to the same geography, period and legal category. If no compatible rate can be constructed, report the incident count and its context without turning it into a personal probability.",
    "Never state that Spain now evicts squatters in 15 days. Keep two things apart. First, since 3 April 2025 Ley Orgánica 1/2025 has added allanamiento de morada (CP art. 202) and usurpación (CP art. 245) to the juicio rápido catalogue in LECrim art. 795.1.2ª, letters i and j — so those offences are on the fast-track list. Second, that is not a 15-day eviction deadline: non-violent usurpación under CP art. 245.2 carries multa de tres a seis meses, which under CP arts. 33.4.g and 13.4 makes it a delito leve tried by the delito-leve procedure, and the fifteen days in LECrim art. 802.2 is only the outer limit for re-setting a juicio oral that could not be held on its scheduled day.",
    "That there are exactly four factors — the count is invented; report as many as the research supports.",
    "That eviction takes years (pre-2025 framing) or that it now always takes 15 days (the reform's target, not a guarantee).",
    "Statistics published by alarm or security companies — use official crime data or say the data is unavailable.",
    "A local incident, a client's experience, or a named urbanisation; if the agency wants a real case in this post it must supply it, with the owner's consent and identifying detail removed."
   ],
-  "research_status": "VERIFIED",
+  "research_status": "UNRESOLVED",
   "hook_status": "RETAINED",
   "freshness_status": "CURRENT",
   "claim_ids": [
@@ -1218,21 +1220,22 @@
    298,
    299,
    300,
-   555,
-   556,
-   676,
    677,
    678,
    679,
    680,
-   681
+   757,
+   758,
+   759,
+   760,
+   761,
+   762,
+   763
   ],
   "coverage": {
    "production_hook[0]": {
-    "claim_ids": [
-     676
-    ],
-    "non_factual_instruction": false
+    "claim_ids": [],
+    "non_factual_instruction": true
    },
    "current_research_question[0]": {
     "claim_ids": [
@@ -1268,44 +1271,58 @@
    },
    "never_assume[0]": {
     "claim_ids": [
-     681
+     758
     ],
     "non_factual_instruction": false
    },
    "never_assume[1]": {
-    "claim_ids": [],
-    "non_factual_instruction": true
+    "claim_ids": [
+     759
+    ],
+    "non_factual_instruction": false
    },
    "never_assume[2]": {
     "claim_ids": [
-     300
+     760
     ],
     "non_factual_instruction": false
    },
    "never_assume[3]": {
     "claim_ids": [
-     555
+     761
     ],
     "non_factual_instruction": false
    },
    "never_assume[4]": {
     "claim_ids": [
-     556
+     762
     ],
     "non_factual_instruction": false
    },
    "must_establish[5]": {
     "claim_ids": [],
     "non_factual_instruction": true
+   },
+   "must_establish[6]": {
+    "claim_ids": [
+     757
+    ],
+    "non_factual_instruction": false
+   },
+   "never_assume[5]": {
+    "claim_ids": [
+     763
+    ],
+    "non_factual_instruction": false
    }
   },
   "agency_evidence_required": false,
-  "state": "research-verified",
-  "verified_as_of": "2026-09-02",
+  "state": "review",
+  "verified_as_of": null,
   "hook_verified": false,
   "production_hook": null,
   "provenance": {
-   "claim_count": 17,
+   "claim_count": 20,
    "all_non_factual": true,
    "has_provenance": true
   }
@@ -1853,7 +1870,7 @@
    "That 'fifteen minutes inland' means the same thing in Moraira as in Torrevieja",
    "That inland is always cheaper, or that the discount is mostly about distance rather than property type"
   ],
-  "research_status": "UNRESOLVED",
+  "research_status": "VERIFIED",
   "hook_status": "SUPERSEDED",
   "freshness_status": "CURRENT",
   "claim_ids": [
@@ -1912,8 +1929,8 @@
    }
   },
   "agency_evidence_required": false,
-  "state": "review",
-  "verified_as_of": null,
+  "state": "research-verified",
+  "verified_as_of": "2026-09-02",
   "hook_verified": false,
   "production_hook": null,
   "provenance": {
@@ -2257,7 +2274,7 @@
    "Prices of any item on any stall",
    "Named stallholders, or that the produce market sells fish"
   ],
-  "research_status": "UNRESOLVED",
+  "research_status": "VERIFIED",
   "hook_status": "SUPERSEDED",
   "freshness_status": "CURRENT",
   "claim_ids": [
@@ -2309,8 +2326,8 @@
    }
   },
   "agency_evidence_required": false,
-  "state": "review",
-  "verified_as_of": null,
+  "state": "research-verified",
+  "verified_as_of": "2026-09-02",
   "hook_verified": false,
   "production_hook": null,
   "provenance": {
@@ -2334,7 +2351,7 @@
    "That the buyer's home city is icy in January — check it",
    "That January is dry; move the contrast to midday sunshine hours if the morning does not support it"
   ],
-  "research_status": "UNRESOLVED",
+  "research_status": "VERIFIED",
   "hook_status": "REJECTED",
   "freshness_status": "CURRENT",
   "claim_ids": [
@@ -2392,8 +2409,8 @@
    }
   },
   "agency_evidence_required": false,
-  "state": "review",
-  "verified_as_of": null,
+  "state": "research-verified",
+  "verified_as_of": "2026-09-02",
   "hook_verified": false,
   "production_hook": null,
   "provenance": {
@@ -2419,7 +2436,7 @@
    "That a retiree automatically joins the public system on arrival",
    "AGENCY INPUT REQUIRED: a real client willing to be featured with their actual routine and written consent — otherwise run it as a costed week with no protagonist"
   ],
-  "research_status": "UNRESOLVED",
+  "research_status": "VERIFIED",
   "hook_status": "SUPERSEDED",
   "freshness_status": "CURRENT",
   "claim_ids": [
@@ -2492,8 +2509,8 @@
    }
   },
   "agency_evidence_required": false,
-  "state": "review",
-  "verified_as_of": null,
+  "state": "research-verified",
+  "verified_as_of": "2026-09-02",
   "hook_verified": false,
   "production_hook": null,
   "provenance": {
@@ -2517,7 +2534,7 @@
    "That language is not a barrier — the towns where you can live comfortably in English are a specific, listable set",
    "That a club still exists — verify it is active now, not a page last updated in 2019"
   ],
-  "research_status": "UNRESOLVED",
+  "research_status": "VERIFIED",
   "hook_status": "SUPERSEDED",
   "freshness_status": "CURRENT",
   "claim_ids": [
@@ -2574,8 +2591,8 @@
    }
   },
   "agency_evidence_required": false,
-  "state": "review",
-  "verified_as_of": null,
+  "state": "research-verified",
+  "verified_as_of": "2026-09-02",
   "hook_verified": false,
   "production_hook": null,
   "provenance": {
@@ -3072,7 +3089,7 @@
    "Never import UK or US mortgage-interest-deduction logic; it does not apply to a Spanish second home.",
    "Never present the structure as a tax scheme or imply Hacienda will not look at it — deductions require the debt to be genuinely linked to the Spanish asset and properly documented."
   ],
-  "research_status": "VERIFIED",
+  "research_status": "UNRESOLVED",
   "hook_status": "RETAINED",
   "freshness_status": "CURRENT",
   "claim_ids": [
@@ -3086,16 +3103,13 @@
    358,
    359,
    360,
-   698,
    699,
    700
   ],
   "coverage": {
    "production_hook[0]": {
-    "claim_ids": [
-     698
-    ],
-    "non_factual_instruction": false
+    "claim_ids": [],
+    "non_factual_instruction": true
    },
    "current_research_question[0]": {
     "claim_ids": [],
@@ -3156,12 +3170,12 @@
    }
   },
   "agency_evidence_required": false,
-  "state": "research-verified",
-  "verified_as_of": "2026-09-02",
+  "state": "review",
+  "verified_as_of": null,
   "hook_verified": false,
   "production_hook": null,
   "provenance": {
-   "claim_count": 13,
+   "claim_count": 12,
    "all_non_factual": true,
    "has_provenance": true
   }
@@ -4214,7 +4228,7 @@
    "Do not imply that two clients face the same rate without checking the right variable: art. 25.1.a TRLIRNR turns on the owner's COUNTRY OF TAX RESIDENCE, not nationality. An owner tax-resident in the Netherlands, Belgium or Germany gets 19% on net; an owner tax-resident in the UK gets 24% on gross — but a British national tax-resident in Germany gets 19%, and a Dutch national tax-resident in the UK gets 24%.",
    "Do not model the income as if letting is automatically permitted"
   ],
-  "research_status": "UNRESOLVED",
+  "research_status": "VERIFIED",
   "hook_status": "SUPERSEDED",
   "freshness_status": "CURRENT",
   "claim_ids": [
@@ -4294,8 +4308,8 @@
    }
   },
   "agency_evidence_required": false,
-  "state": "review",
-  "verified_as_of": null,
+  "state": "research-verified",
+  "verified_as_of": "2026-09-02",
   "hook_verified": false,
   "production_hook": null,
   "provenance": {
@@ -4577,7 +4591,7 @@
    "Any client quote, reaction or outcome",
    "That walking away was the only option, or that the property was later proven unsellable"
   ],
-  "research_status": "UNRESOLVED",
+  "research_status": "VERIFIED",
   "hook_status": "SUPERSEDED",
   "freshness_status": "CURRENT",
   "claim_ids": [
@@ -4634,8 +4648,8 @@
    }
   },
   "agency_evidence_required": false,
-  "state": "review",
-  "verified_as_of": null,
+  "state": "research-verified",
+  "verified_as_of": "2026-09-02",
   "hook_verified": false,
   "production_hook": null,
   "provenance": {
@@ -4911,7 +4925,7 @@
   "current_research_question": "When your budget doesn't buy what you're picturing on the Costa Blanca, which trade-offs can actually be quantified for the named locations, using the finest defensible data available?",
   "must_establish": [
    "Current, sourced price levels across the Costa Blanca for the property types foreign buyers ask about, with the date of the data stated: coastal versus inland towns, apartment versus townhouse versus detached, and the real premium for a sea view and for walking distance to the beach",
-   "Only one of these levers can currently be priced from an official source: resale versus new build in Alicante province, where Registradores' Q2 2026 average was 2.153 €/m² used against 2.780 €/m² new-build. The other four — moving a few kilometres inland, an older property needing renovation, a smaller plot, a different municipality with the same climate — have no official price series behind them at that granularity. Either derive them from the agency's own completed-sale data and label them as such, or describe the direction of the trade-off without attaching euro figures.",
+   "Quantify a trade-off whenever a source actually observes the relevant dimension. For geographic comparisons, first test the Portal Estadístico del Notariado at municipality, postcode or custom-area level and use its notarised deed-price data where coverage permits. Use its property and construction filters where they match the comparison. Asking-price portals may be used only as clearly labelled asking data. Do not fabricate a premium for attributes the available datasets do not identify directly — sea view, renovation condition, exact plot-size effect or walking distance to the beach — unless a defensible dataset or real quoted evidence supports it.",
    "Purchase costs a buyer must hold back are law-verifiable and must be given by named component. On a resale: ITP at the Comunitat Valenciana rate in force — 9% general for hechos imponibles from 1 June 2026 (10% before that), but 11% where the value of the immovable transmitted, or of the right constituted or ceded over it, exceeds one million euros, and that 11% applies to the whole value, not just the excess (art. 13.Uno, Ley 13/1997, as amended by art. 33 Ley 5/2025); reduced rates exist for defined buyer categories, so the band must be read off the actual value rather than assumed. A resale purchase deed pays no gradual AJD on top — art. 31.2 TRLITPAJD excludes acts already subject to TPO — so never add both. On a new build: 10% IVA (art. 91.Uno.1.7º LIVA) plus AJD, at 1.4% from 1 June 2026 (1.5% before) under art. 14.Cuatro of Ley 13/1997, but 0.1% under art. 14.Uno.a where the first copy documents the acquisition of the buyer's vivienda habitual as defined in the state IRPF rules — so the AJD rate must likewise be chosen from the buyer's actual use of the property and never quoted flat. Plus notary and land-registry fees and legal fees. These rates are set by autonomic law and move: check the consolidated text of Ley 13/1997, or the ATV's own rate page, on the day of writing. Renovation and reform costs are a different kind of claim and must not be handled the same way: no official statistic publishes 'realistic reform costs on the Costa Blanca'. The nearest Generalitat-linked reference is the IVE's Base de Datos de Construcción (unit construction prices and a €/m² execution-cost module; free viewer, full base by purchase or subscription), which is a construction-price reference, not a record of what buyers actually pay. Any reform figure must come from real quotes supplied by the agency or a named contractor, must be labelled as such, and must never be presented as an official statistic.",
    "Whether recent Alicante province price movement means a stated figure will date fast, so the copy can flag its own shelf life"
   ],
@@ -4921,14 +4935,14 @@
    "Invented buyer examples, invented budgets, or an invented \"what we said\" conversation",
    "That the agency has properties matching whatever alternative the piece recommends"
   ],
-  "research_status": "VERIFIED",
+  "research_status": "UNRESOLVED",
   "hook_status": "RETAINED",
   "freshness_status": "CURRENT",
   "claim_ids": [
    440,
    441,
-   719,
-   737
+   737,
+   764
   ],
   "coverage": {
    "production_hook[0]": {
@@ -4945,7 +4959,7 @@
    },
    "must_establish[1]": {
     "claim_ids": [
-     719
+     764
     ],
     "non_factual_instruction": false
    },
@@ -4979,8 +4993,8 @@
    }
   },
   "agency_evidence_required": false,
-  "state": "research-verified",
-  "verified_as_of": "2026-09-02",
+  "state": "review",
+  "verified_as_of": null,
   "hook_verified": false,
   "production_hook": null,
   "provenance": {

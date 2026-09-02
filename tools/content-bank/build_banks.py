@@ -30,6 +30,17 @@ FIELD_MAP = {
 }
 
 
+def _coverage(r):
+    out = {}
+    for k, v in (r.get("coverage") or {}).items():
+        field, _, idx = k.partition("[")
+        mapped = FIELD_MAP.get(field)
+        key = f"{mapped or field}[{idx}"
+        if mapped or key not in out:
+            out[key] = v
+    return out
+
+
 def build(rows, key, hook_field, question_field, must_field, never_field, ledger_by_topic, bank_name):
     production, audit = [], []
     for r in rows:
@@ -52,10 +63,10 @@ def build(rows, key, hook_field, question_field, must_field, never_field, ledger
             }),
             # Coverage was keyed by the source field names; the production bank renames them, and a
             # lookup against the old keys silently reports every field as uncovered.
-            "coverage": {
-                FIELD_MAP.get(k.split("[")[0], k.split("[")[0]) + "[" + k.split("[")[1]: v
-                for k, v in (r.get("coverage") or {}).items()
-            },
+            # Mapping source keys onto production names can collide when the source dict also holds
+            # a production-name key from an earlier script. Build it explicitly and let the mapped
+            # source key win, so a stale duplicate cannot silently take precedence.
+            "coverage": _coverage(r),
             "agency_evidence_required": bool(r.get("agency") or r.get("agency_blocked")),
             "state": r.get("state", "review"),
             "verified_as_of": r.get("verified_as_of"),

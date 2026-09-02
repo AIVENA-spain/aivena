@@ -2,7 +2,7 @@
  "seller": [
   {
    "topic_id": "S1",
-   "original_hook": "Your Costa Blanca home carries more than one price, and they are different instruments rather than versions of one number: the asking price the agency publishes (private, not official); the Catastro's valor de referencia (official — set by the Dirección General del Catastro and consultable for a specific property); and official transaction-price statistics built from what buyers actually paid (INE's Índice de Precios de Vivienda, Colegio de Registradores, Notariado), which are published only as area averages and never as a figure attached to your address. MIVAU's valor tasado series is not one of these — it is an appraisal average built from the tasadoras' own valuation reports, not from what anyone paid. Two of the three are official, and none of them is a published record of what a buyer paid for your particular home.",
+   "original_hook": "Your Costa Blanca home can be described by several different price instruments: portal asking prices; the Catastro's valor de referencia; actual transaction and deed evidence from the Notariado and the Registradores; INE's price index at autonomous-community level; and MIVAU appraisal values. They measure different things and must never be treated as versions of one number.",
    "hook_status": "REWRITTEN",
    "audit_finding": null,
    "risk_class": null,
@@ -13,7 +13,7 @@
     3,
     443,
     623,
-    721
+    765
    ]
   },
   {
@@ -60,7 +60,7 @@
   },
   {
    "topic_id": "S5",
-   "original_hook": "At least four bodies publish a price per square metre covering Alicante province — a ministry, the registrars, the notaries and the private portals — and they do not agree. Before you accept any valuation of your home, ask which one it was built on.",
+   "original_hook": "Several sources and producers publish a price per square metre covering Alicante province — a ministry, the registrars, the notaries and the private portals — and they do not agree. Before you accept any valuation of your home, ask which one it was built on.",
    "hook_status": "REWRITTEN",
    "audit_finding": null,
    "risk_class": null,
@@ -70,7 +70,8 @@
     17,
     18,
     19,
-    446
+    446,
+    742
    ]
   },
   {
@@ -172,8 +173,7 @@
     48,
     49,
     50,
-    452,
-    629
+    452
    ]
   },
   {
@@ -346,14 +346,14 @@
   },
   {
    "topic_id": "S26",
-   "original_hook": "You can accept an offer on a house that is still in your mother's name — the heirs own it, and the contract is valid. What you cannot do is let the buyer register it: Ley Hipotecaria art. 20 requires the seller's own right to be inscribed first, and says registrars shall refuse where the registered owner is someone else. The way round it is to sign and lodge both deeds in sequence, the inheritance first and the sale second: under Ley Hipotecaria arts. 24 and 25 a title takes its date and its rank from its asiento de presentación, so the inheritance is inscribed ahead of the sale. That follows from the priority rule — it is not a right to same-day treatment.",
-   "hook_status": "RETAINED",
+   "original_hook": "A sale can be agreed while an inherited property is still registered in the deceased owner's name, but who can validly bind the estate depends on the succession position. Before partition, do not say an individual heir owns the specific house: where the property remains in the hereditary community, all participants whose consent is required must act. The succession and registry chain must then be completed in the correct order before the buyer can register title.",
+   "hook_status": "REWRITTEN",
    "audit_finding": null,
    "risk_class": null,
    "ledger_claim_ids": [
     473,
     474,
-    722
+    766
    ]
   },
   {
@@ -419,8 +419,9 @@
     90,
     91,
     484,
-    636,
-    637
+    637,
+    743,
+    744
    ]
   },
   {
@@ -522,8 +523,9 @@
     114,
     115,
     497,
-    642,
-    738
+    738,
+    745,
+    746
    ]
   },
   {
@@ -636,7 +638,8 @@
     504,
     505,
     645,
-    647
+    647,
+    747
    ]
   },
   {
@@ -744,7 +747,9 @@
    "risk_class": null,
    "ledger_claim_ids": [
     151,
-    152
+    152,
+    748,
+    749
    ]
   },
   {
@@ -824,13 +829,17 @@
     174,
     175,
     176,
-    177
+    177,
+    750,
+    751,
+    752,
+    753
    ]
   },
   {
    "topic_id": "S62",
-   "original_hook": "Buyer found, price agreed — and one missing paper can still stop the notary. Exactly one of them has that power by law, and your buyer can sign it away. Here is what actually gets checked at the notary, and what only costs you money.",
-   "hook_status": "RETAINED",
+   "original_hook": "Buyer found, price agreed — and the community-debt certificate has an express statutory no-authorisation rule unless the buyer waives it. Other documents and title facts have different legal effects and must be checked separately. Here is what genuinely blocks, delays or merely costs money at completion.",
+   "hook_status": "REWRITTEN",
    "audit_finding": null,
    "risk_class": null,
    "ledger_claim_ids": [
@@ -838,8 +847,9 @@
     179,
     180,
     181,
-    527,
-    655
+    754,
+    755,
+    767
    ]
   },
   {
@@ -867,7 +877,7 @@
    "ledger_claim_ids": [
     186,
     187,
-    657
+    756
    ]
   },
   {
@@ -1161,14 +1171,17 @@
     298,
     299,
     300,
-    555,
-    556,
-    676,
     677,
     678,
     679,
     680,
-    681
+    757,
+    758,
+    759,
+    760,
+    761,
+    762,
+    763
    ]
   },
   {
@@ -1455,7 +1468,6 @@
     358,
     359,
     360,
-    698,
     699,
     700
    ]
@@ -1749,8 +1761,8 @@
    "ledger_claim_ids": [
     440,
     441,
-    719,
-    737
+    737,
+    764
    ]
   }
  ]

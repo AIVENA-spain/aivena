@@ -143,6 +143,47 @@ def render(bank, ledger, groups, title, kicker, lede, head_css):
     return "\n".join(out)
 
 
+def markdown(bank, ledger, groups, title, lede):
+    """The same page as Markdown. Counts come from the same functions as the HTML, so the two
+    artifacts cannot disagree about the bank they describe."""
+    text_fx, struct_fx = fixture_counts()
+    hooks = sum(1 for t in bank if t["production_hook"])
+    out = [f"# {title}", "", lede, "",
+           f"**{summary(bank)}** · stored hooks {hooks} of {len(bank)} · rendered 2 September 2026", "",
+           f"Full record in the [verification ledger]({LEDGER_URL}).", ""]
+    by_id = {t["topic_id"]: t for t in bank}
+    for name, sub, ids in groups:
+        rows = [by_id[i] for i in ids if i in by_id]
+        if not rows:
+            continue
+        out.append(f"## {name}" + (f" — {sub}" if sub else ""))
+        out.append("")
+        for t in rows:
+            label = STATE[t["state"]][1]
+            out.append(f"### {t['topic_id']} · {label}")
+            hook = t.get("production_hook")
+            out.append(f"> {hook}" if hook else
+                       "> _No stored hook — the cover is written from fresh research at generation time._")
+            if t["agency_evidence_required"]:
+                out.append("")
+                out.append("**Requires this agency's own commission, completed sales or timelines. "
+                           "Never synthesised.**")
+            out.append("")
+            out.append(f"**Researches as:** {t['current_research_question'] or ''}")
+            if t["must_establish"]:
+                out.append("")
+                out.append("*Must establish*")
+                out += [f"- {x}" for x in t["must_establish"][:3]]
+            if t["never_assume"]:
+                out.append("")
+                out.append("*Never assume*")
+                out += [f"- {x}" for x in t["never_assume"][:3]]
+            out.append("")
+    out.append(f"---\n\ntools/content-bank · {text_fx} text and {struct_fx} structural "
+               f"known-failure fixtures ({text_fx + struct_fx} total) · rendered from the production JSON")
+    return "\n".join(out)
+
+
 def main():
     seller = json.load(open(os.path.join(HERE, "seller_bank.json"), encoding="utf-8"))
     buyer = json.load(open(os.path.join(HERE, "buyer_bank.json"), encoding="utf-8"))
@@ -174,6 +215,12 @@ def main():
         "Fifty-two buyer topics, rebuilt as research questions. Where no hook is stored, the cover is "
         "written from what the research returns rather than from a line the audit rejected.",
         head_css.replace("<title>X</title>", "<title>Costa Blanca Buyer Bank</title>")))
+    open(os.path.join(HERE, "seller-bank.md"), "w", encoding="utf-8").write(markdown(
+        seller, ledger, sgroups, "What owners need before they sell",
+        "Sixty-eight seller topics, every factual claim checked against an appropriate source."))
+    open(os.path.join(HERE, "buyer-bank.md"), "w", encoding="utf-8").write(markdown(
+        buyer, ledger, bgroups, "What buyers actually want to read",
+        "Fifty-two buyer topics, rebuilt as research questions."))
     print(f"seller: {summary(seller)}")
     print(f"buyer:  {summary(buyer)}")
     print(f"fixtures on page: {sum(fixture_counts())}")

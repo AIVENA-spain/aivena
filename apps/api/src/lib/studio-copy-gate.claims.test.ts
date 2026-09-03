@@ -263,6 +263,8 @@ describe('every rule in the table can actually fire', () => {
     'Without a registered energy certificate you cannot sell.',
     "Fewer sales, not less demand. That's tight supply, not cooling interest.",
     'Jávea needs a car for the school run; Dénia you can do on foot.',
+    "The exact multiplier isn't something either town publishes reliably.",
+    'Idealista listed Dénia around 3,404 €/m² in mid-2026, according to its index.',
   ];
   it('is exercised by at least one string each', () => {
     const seen = new Set(CORPUS.flatMap((c) => gateField('t', c, '')).map((h) => h.rule.id));
@@ -309,5 +311,34 @@ describe('two defects the second live run exposed', () => {
     expect(fired('Evicted in 15 days?')).toHaveLength(0);
     // But a question that answers itself is judged on the answer.
     expect(fired('Evicted in 15 days? Yes, since the reform.')).toContain('squatter-15-days');
+  });
+});
+
+/**
+ * "Research and validation stay invisible. The customer sees confident marketing, not our
+ * compliance machinery." — Christian, 2026-09-03.
+ *
+ * A gate that only checks whether claims are TRUE will happily publish a true sentence that reads
+ * like a footnote. Both strings below are real generated copy from a live proof run.
+ */
+describe('the machinery never shows through', () => {
+  it('kills a slide that narrates the research', () => {
+    expect(fired("Both towns' populations swell hard in summer, though the exact multiplier isn't "
+      + 'something either town publishes reliably.')).toContain('research-narrated');
+    expect(fired('Different metrics, so treat them as a direction, not a single verdict.'))
+      .toContain('research-narrated');
+    expect(fired('No official figure exists for how long this takes.')).toContain('research-narrated');
+    // The point survives without the apology for the data.
+    expect(fired('Both towns empty out between November and March. Judge a property by its quiet '
+      + 'season, not its busiest week.')).toHaveLength(0);
+  });
+
+  it('kills a citation used as a slide', () => {
+    expect(fired('Idealista listed Dénia around 3,404 €/m² in mid-2026, while Engel & Völkers '
+      + 'reported its own managed sales averaging 2,675 €/m².')).toContain('source-attributed');
+    // Naming a portal for what it IS, rather than as a citation, is ordinary copy.
+    expect(fired('The same home turns up on Idealista under three agencies at three prices.'))
+      .toHaveLength(0);
+    expect(fired('Your listing goes out on Idealista and Fotocasa the same day.')).toHaveLength(0);
   });
 });

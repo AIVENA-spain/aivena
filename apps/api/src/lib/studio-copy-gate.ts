@@ -224,6 +224,29 @@ export const GATE_RULES: readonly GateRule[] = [
     all: [/\bgolden visa\b/i, /\b(?:buy|purchase|invest\w*|property|residen\w*|obtain|get|apply)\b/i],
   },
   {
+    id: 'research-narrated',
+    severity: 'block',
+    problem: 'Narrates the research instead of using it. The reader must never feel they are '
+      + 'reading the output of a fact-checking system. Say the thing you CAN say, plainly, and drop '
+      + 'the part about what the data does or does not show.',
+    authority: 'Christian, 2026-09-03: "Research and validation stay invisible. The customer sees '
+      + 'confident marketing, not our compliance machinery."',
+    negationImmune: true,
+    all: [/\b(?:different metrics|not a single verdict|treat (?:them|it|these) as a direction|isn'?t published|does ?n[o']t publish|publishes? reliably|no official figure|no reliable data|no public data|no dataset|data is unclear|evidence is unclear|sources? disagree|studies show|research shows|figures vary by method|depending on the method|not something (?:either|any)\w*[\w\s]{0,20}publish)/i,
+      /./],
+  },
+  {
+    id: 'source-attributed',
+    severity: 'block',
+    problem: 'Attributes a figure to a named data provider inside the post. That is a footnote, not '
+      + 'a slide. State the point without the citation, or drop the figure.',
+    authority: 'Same rule: the research is internal support, never subject matter. Naming a portal '
+      + 'for what it IS ("your listing appears on Idealista") is fine — this is about attribution.',
+    negationImmune: true,
+    all: [/\b(?:Idealista|Fotocasa|Engel\s*(?:&|and)\s*V[öo]lkers|Tinsa|Registradores|Notariado|INE\b|Eurostat|Colegio de Registradores|MIVAU|CGPJ)\b/i,
+      /\b(?:listed|reported|reports|according to|says|said|data|figures?|index|averag\w*|recorded|published)\b/i],
+  },
+  {
     id: 'legal-timeline-approximate',
     severity: 'challenge',
     problem: 'Attaches an approximate duration to a legal or court step. A timeline this specific has '

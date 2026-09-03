@@ -482,16 +482,18 @@ ${STATUS_MODEL}
 ${opts.marketBrief ? `\n${opts.marketBrief}\n` : ''}
 ` : ''} For anything about the NIE, banks, taxes, residency, mortgages or ownership: state what is USUALLY true and why it helps, never an absolute impossibility you cannot verify. Worked example of the failure: "without a local account you cannot pay utilities, taxes or a mortgage" is FALSE — Eurozone SEPA rules forbid refusing a valid IBAN from another member state. The honest version keeps the value: "a Spanish account makes utilities, taxes and a mortgage far simpler to run".
 
+${CLAIM_TYPES}
+
 HARD RULES:
-${brief ? `- A FIGURE MAY APPEAR ONLY IF THE RESEARCH ABOVE ESTABLISHED IT. Prices, percentages, rates,\n  tax figures, deadlines, dates, thresholds: if the briefing states it, you may state it — that\n  precision is what makes a tip worth reading. If the briefing does NOT state it, you have no\n  source and the number would be invented, so write the mechanism without the number. Never round,\n  stretch or “roughly” a researched figure into a different one. Never promise a legal guarantee.\n  A NAME IS A FIGURE TOO: form numbers (EX-18, Modelo 210, Modelo 211), article numbers, decree and\n  law references, office names and portal names are all facts with a source or they are inventions.\n  A smoke test caught the writer printing \\'EX-20\\' where the research said EX-18 — close enough to\n  look right, wrong enough to send someone to the wrong desk. If the briefing did not name it, describe\n  the document instead of numbering it.`
- : `- NO specific prices, percentages, statistics, interest rates, tax figures, or legal guarantees anywhere in slide copy. Nothing was researched for this post, so any figure would be invented. Use place names for specificity instead of numbers.`}
+${brief ? `- A FIGURE MAY APPEAR ONLY IF THE RESEARCH ABOVE ESTABLISHED IT. This rule governs types 1-3\n  only. It is not a licence to hedge a hook, soften an opinion or drain the marketing language. Prices, percentages, rates,\n  tax figures, deadlines, dates, thresholds: if the briefing states it, you may state it — that\n  precision is what makes a tip worth reading. If the briefing does NOT state it, you have no\n  source and the number would be invented, so write the mechanism without the number. Never round,\n  stretch or “roughly” a researched figure into a different one. Never promise a legal guarantee.\n  A NAME IS A FIGURE TOO: form numbers (EX-18, Modelo 210, Modelo 211), article numbers, decree and\n  law references, office names and portal names are all facts with a source or they are inventions.\n  A smoke test caught the writer printing \\'EX-20\\' where the research said EX-18 — close enough to\n  look right, wrong enough to send someone to the wrong desk. If the briefing did not name it, describe\n  the document instead of numbering it.`
+ : `- NO specific prices, percentages, statistics, interest rates, tax figures, or legal guarantees anywhere in slide copy. Nothing was researched for this post, so any figure would be invented. Use place names for specificity instead of numbers.\n  This limits FIGURES, not force. Write the boldest version of the claim that carries no invented number.`}
 - BUYING PROPERTY IN SPAIN CONFERS NO RESIDENCE RIGHT. The golden visa / investor route was
   abolished with effect from 3 April 2025 (Ley Orgánica 1/2025, DF 21ª, emptying arts. 63-67 of
   Ley 14/2013); permits issued before then remain valid. Never write, imply or hint that a purchase
   helps with residence, a visa, or days allowed in the country. It is the claim an agency most wants
   to make and it is now false.
-- NO invented facts about the agency, the market, or any client. The agency name is the only real-world name you may use${opts.type === 'quote' ? ' (plus the client attribution provided)' : ''}.
-- Friendly expert tone: confident, warm, zero clickbait, no emoji in slide copy (caption may use a few).
+- NEVER INVENT AGENCY PERFORMANCE. A measurable claim about what this agency charged, achieved,\n  sold or how fast it sold needs evidence the agency supplied. \"Our exclusive listings sell\n  faster\" is forbidden without it — not for being bold, but for sounding measured; a seller\n  could pick a mandate on the strength of it. Say the same thing as a position instead:\n  \"why we prefer exclusive when a seller wants one accountable team.\" That sells just as hard.\n  The agency MAY hold strong opinions, take contrarian positions and describe how it works —\n  none of that needs evidence. No invented client, no invented case study, no invented market\n  figure. The agency name is the only real-world name you may use${opts.type === 'quote' ? ' (plus the client attribution provided)' : ''}.
+- WRITE LIKE IT MATTERS. Tension, nerve, a point of view. Curiosity and fear are legitimate tools\n  when the thing being pointed at is real. Sell the dream where the dream is honest. A contrarian\n  take beats a balanced one. What is banned is the fake: a number nobody measured, a law nobody\n  passed, a client who never existed. Everything else — framing, opinion, drama, aspiration —\n  should be pushed, not trimmed. A post nobody stops for protects nobody. No emoji in slide copy\n  (the caption may use a few).
 - The research is what you KNOW, not what you SAY. Use the sharp, useful part of it and leave the
   rest out. A slide that recites everything established is a briefing, not a post — nobody reads to
   the end of it. Short sentences. One idea per slide. If a body needs forty words and one breath,
@@ -594,7 +596,7 @@ ${JSON.stringify({ ...plan, image_scenes: undefined, tips: plan.tips.map((t) => 
 CHECK EVERY TEXT FIELD:
 1. SENSE — every sentence must parse and be TRUE on first read. Cause and effect must be genuinely connected: never staple two unrelated mechanisms into one sentence (real failure caught this week: "sea air corrodes pipes and railings, especially with guests running showers daily" — salt air and shower usage are different problems; pick one mechanism per sentence, or split them cleanly).
 2. VALUE — the reader must finish each tip knowing something specific they can DO: a question to ask, a check to schedule, a decision rule. Vague filler ("be careful", "keep an eye on it") fails.
-3. TRUST — no invented facts, figures or statistics; nothing a seasoned local agent wouldn't stand behind; no scaremongering, no overpromising.
+3. TRUST — no invented facts, figures or statistics, and no measurable claim about this agency's own\n   performance that the agency did not supply. That is the whole of this rule. It does NOT extend to\n   tone: a bold hook, a contrarian opinion, a warning that names a real risk, an aspirational line about\n   the life a home buys — all legitimate, none to be softened. Fear is fair when the danger is real;\n   a dream is fair when the dream is honest. Do not trade force for caution. If a sentence is vivid and\n   TRUE, leave it alone.
 4. DELIVERY — each tip title's promise must be delivered by its body; the cover hook's promise must be delivered by the deck as a whole. This includes REGISTER: a dreamy or philosophical topic answered with a warnings-and-mistakes listicle is a failure — the deck's tone must match the topic's tone.
 5. NO REPEATED PROMISE — the cover and the first advice slide must not say the same thing twice. If slide 2 only restates the cover's promise ("the order that saves you weeks" under a cover about the order nobody explains), rewrite it as the FIRST piece of real advice.
 6. TRUE CLAIMS — any statement about the NIE, banks, taxes, residency, mortgages or ownership must be true as written. Prefer "usually / makes it far simpler" to an absolute impossibility you cannot verify. Keep the claim's usefulness; lose the falsehood.
@@ -863,7 +865,7 @@ CURRENT COVER (language: ${language}):
 Topic: ${topic || '(same as the hook implies)'}
 The tips inside stay EXACTLY the same — you only reframe the cover.
 
-Write a NEW cover in ${language} with a DIFFERENT persuasion angle: if the current hook is loss-framed, go curiosity or contrarian; if it asks a question, make a bold claim; if it is generic, make it specific. Same topic, same honesty (no prices, no statistics, no invented facts, no place names unless the current cover names one). No emoji, no clickbait words.
+Write a NEW cover in ${language} with a DIFFERENT persuasion angle: if the current hook is loss-framed, go curiosity or contrarian; if it asks a question, make a bold claim; if it is generic, make it specific. Same topic, same honesty: no invented figure, no invented law, no claim about this agency's own\nresults, no place names unless the current cover names one. Everything else is open — be bolder than\nthe line you are replacing, not safer. A remix that is merely a politer version of the same cover has\nfailed. No emoji.
 
 Submit with the submit_remix tool.`;
   try {
@@ -926,6 +928,59 @@ const IDEAS_TOOL = {
  * Norway is EEA and Schengen, so neither half of that was true. Kept as ONE constant used by both
  * the research and the writing prompts, so the two can never drift apart.
  */
+/**
+ * What kind of statement is this? The engine spent a long pass learning not to invent facts, and
+ * over-learned it: every sentence started being treated as a legal assertion needing a BOE citation,
+ * which produces copy that is defensible and unreadable. Marketing needs tension, opinion and nerve.
+ *
+ * The rule is: exaggerate the emotion, never the evidence. Verification polices the first three
+ * types. The other four are where the writing actually lives, and must not be sterilised.
+ */
+const CLAIM_TYPES = `WHAT KIND OF SENTENCE ARE YOU WRITING? Seven kinds, and only three are checked.
+
+MUST BE TRUE — these are the ones that can cost a reader money or land them in trouble:
+1. FACTUAL_MATERIAL — a law, a tax rate, a deadline, a percentage, a legal or immigration
+   consequence, a mortgage term, a published statistic. Anything that could change someone's
+   financial or legal decision. Say only what the research established. Invent nothing.
+2. FACTUAL_AGENCY_PERFORMANCE — a measurable claim about THIS agency's own history: what it charges,
+   how fast its listings sold, what its sellers achieved, how many deals it did. This needs evidence
+   the agency actually supplied. "Our exclusive listings sell 22% faster" is this type even without
+   the number: it sounds like comparative sales data a seller could act on. Never write one of these
+   from imagination — turn it into positioning instead (type 5).
+3. TIME_SENSITIVE_FACT — true today, resting on a rate or provision that moves. Only from fresh
+   research, and never carried forward from memory.
+
+WRITE THESE BOLDLY — no research required, no citation, no hedging:
+4. MARKETING_PUFFERY — advertising language and rhetoric. "Most property marketing is painfully
+   forgettable." "Buyers don't fall in love with spreadsheets." "Your home deserves better than
+   another lazy listing." These are not propositions to be proved. Let them breathe.
+5. OPINION_POSITIONING — the agency's point of view, stated with conviction. "Exclusive beats open
+   mandate when what you want is accountability." "Sellers obsess over the commission percentage and
+   ignore what actually reaches their bank account." A strong position is allowed and wanted; what
+   is forbidden is attaching an invented statistic to it.
+6. CREATIVE_HOOK — a cover line that simplifies, dramatises and provokes. "Your €300,000 home might
+   not actually be worth €300,000." "Your buyer can love the house and still walk away because of one
+   piece of paper." The hook may compress; the body supplies the nuance. The one limit: it must not
+   REVERSE the researched truth.
+7. HYPOTHETICAL — a worked example, clearly an example. "Say you agree €250,000…" Fine when the
+   reader can see it is illustrative.
+
+WHEN THE RESEARCH WILL NOT SUPPORT THE AGENCY'S POSITION, YOU DO NOT SWITCH SIDES. A topic like
+"why we prefer exclusive mandates" is the agency's position (type 5), not a hypothesis to test. If the
+research shows nobody has measured the thing the industry usually claims, that kills the STATISTIC —
+it does not kill the argument. Make the case on the grounds that are actually true: accountability,
+one message, one price, contract leverage, who carries the risk. A deck that opens by debunking the
+agency's own view is factually safe and commercially useless; it is not what was asked for.
+Caught in testing: asked to argue for exclusive mandates, the engine led with "no dataset backs that
+up" and spent two slides undermining the client before making their case.
+
+THE LINE, in one sentence: exaggerate the emotion, not the evidence.
+  Allowed:     "Everyone talks about Jávea. Smart buyers also look five minutes beyond the obvious."
+  Forbidden:   "82% of smart buyers now choose the next town."  (invented statistic)
+  Allowed:     "Why we prefer exclusive listings when a seller wants one accountable team."
+  Forbidden:   "Our exclusive listings sell faster."  (invented performance)
+The two forbidden lines are not banned for being bold. They are banned for sounding measured.`
+
 const STATUS_MODEL = `PERSON STATUS — FIVE SEPARATE VARIABLES. Never infer one from another:
 1. NATIONALITY — the passport. Decides nothing on its own.
 2. IMMIGRATION CATEGORY — EU · EEA-non-EU (Norway, Iceland, Liechtenstein) · Switzerland (its own

@@ -570,16 +570,33 @@ export async function gatePlan<T extends PlanLike>(
     if (!failures.length) break;
 
     if (round === maxRepairs) {
-      // Out of repair attempts. Delete the offending sentences rather than publish them or lose the
-      // whole post; a shorter true card beats a complete false one.
+      // Out of repair attempts. Delete the offending sentence rather than publish it — but ONLY
+      // from prose. A title is one phrase: deleting its sentence empties it, and a live run shipped
+      // a card reading "2. (blank)" over an orphan body. A headline that cannot be supported takes
+      // its whole slide with it; it never becomes a hole in the deck.
       for (const f of failures) {
         const before = readField(current, f.field);
-        const after = dropSentence(before, f.text);
-        if (after !== before) { current = writeField(current, f.field, after); report.dropped++; }
-        report.blocked.push({
-          field: f.field, text: f.text, verdict: f.verdict, problem: f.problem ?? '',
-          outcome: after !== before ? 'sentence removed' : 'left — could not be isolated',
-        });
+        const isProse = /(?:\.body|slide2_body|caption)$/.test(f.field);
+        const after = isProse ? dropSentence(before, f.text) : before;
+        const tip = /^tips\[(\d+)\]\./.exec(f.field);
+        if (isProse && after !== before) {
+          current = writeField(current, f.field, after);
+          report.dropped++;
+          report.blocked.push({ field: f.field, text: f.text, verdict: f.verdict,
+            problem: f.problem ?? '', outcome: 'sentence removed' });
+        } else if (tip) {
+          // Not prose, or not isolable: mark the whole slide for removal below.
+          const tips = [...(current.tips ?? [])];
+          if (tips[Number(tip[1])]) {
+            tips[Number(tip[1])] = { ...tips[Number(tip[1])], body: '' };
+            current = { ...current, tips };
+          }
+          report.blocked.push({ field: f.field, text: f.text, verdict: f.verdict,
+            problem: f.problem ?? '', outcome: 'slide removed — the claim was its headline' });
+        } else {
+          report.blocked.push({ field: f.field, text: f.text, verdict: f.verdict,
+            problem: f.problem ?? '', outcome: 'left — not isolable and not a slide' });
+        }
       }
       break;
     }
@@ -603,7 +620,9 @@ export async function gatePlan<T extends PlanLike>(
   // complete false one, and beats a deck that cannot be reopened.
   const tips = current.tips ?? [];
   if (tips.length) {
-    const kept = tips.filter((t) => (t?.body ?? '').trim().length >= 20);
+    // A slide needs BOTH halves. An empty title over a body is as broken as an empty body, and the
+    // first version of this guard only looked at bodies.
+    const kept = tips.filter((t) => (t?.body ?? '').trim().length >= 20 && (t?.title ?? '').trim().length >= 3);
     if (kept.length !== tips.length && kept.length >= 1) {
       report.dropped += tips.length - kept.length;
       current = { ...current, tips: kept };

@@ -248,7 +248,10 @@ export const GATE_RULES: readonly GateRule[] = [
       + 'a delito leve under CP arts. 33.4.g and 13.4, tramitado under LECrim arts. 964 ff — NOT the '
       + 'juicio rápido. LO 1/2025 added arts. 202 and 245 to the art. 795.1.2ª catalogue, but the '
       + 'delito-leve classification governs. Bank card B12.',
-    all: [/\b(?:245\.?2|usurpaci\w*|non-?violent occupation|empty (?:second )?home)\b/i,
+    // The subject half has to recognise the offence DESCRIBED, not only the offence NAMED. A live
+    // post said "non-violent break-ins into a lived-in home" and matched none of 245.2, usurpación
+    // or "empty home", so the rule never got the chance to fire at all.
+    all: [/\b(?:245\.?2|usurpaci\w*|non-?violent\s+(?:occupation|entry|break-?ins?|squatting|usurpation)|minor occupation|less serious offence|empty (?:second )?home)\b/i,
           /\b(?:juicios? r[áa]pidos?|fast[- ]track\w*|expedited|express trial)\b/i],
     // "allanamiento and VIOLENT usurpación can enter the fast track" is precise and true, and the
     // first version of this rule deleted it. Only the unqualified or explicitly non-violent claim
@@ -263,7 +266,10 @@ export const GATE_RULES: readonly GateRule[] = [
     // sentence because this list only knew "violent" and "245.1". Match the shape, not one
     // phrasing. Deliberately absent: "only" and "less serious", which appear in false sentences
     // that restrict the fast track to the WRONG branch.
-    unless: [/\b(?<!non-)(?<!no )(?:violent|violenta|violencia|intimidaci[óo]n|intimidation|245\.?1|aggravated|agravad\w*|more serious|m[áa]s grave|break-?ins?|breaking in|forced entry|con violencia)\b/i],
+    // The lookbehind has to guard EVERY alternative, not just "violent". A live post published
+    // "non-violent break-ins into a lived-in home can move through the fast track" because
+    // "break-ins" was its own unguarded alternative and exempted the whole sentence.
+    unless: [/(?<!non-)(?<!no )(?<!non-violent )\b(?:violent|violenta|violencia|intimidaci[óo]n|intimidation|245\.?1|aggravated|agravad\w*|more serious|m[áa]s grave|break-?ins?|breaking in|forced entry|con violencia)\b/i],
   },
   {
     id: 'golden-visa',

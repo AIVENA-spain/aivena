@@ -1455,8 +1455,27 @@ async function runPlannedCarousel(opts: {
         copyQa = { revised: edited.notes.length > 0, notes: edited.notes };
       }
 
-      // FINAL PUBLICATION GATE. The editor rewrites copy too, so it can reintroduce exactly what the
-      // gate just removed. The deterministic table is free, so run it once more on what will
+      // THE EDITOR IS A WRITER TOO. It rewrites whole fields, so everything it produces is copy the
+      // claim gate never saw — an acceptance run had unsupported claims reaching final copy for
+      // exactly this reason. Validate the edited plan once more, with a single repair round.
+      if (edited) {
+        const regated = await gatePlan(plan, {
+          language: opts.language, topic: opts.topic ?? '', research,
+          cardRules: card ? cardRules(card) : '',
+          agencyEvidence: opts.agencyEvidence ?? '',
+        }, 1).catch(() => null);
+        if (regated) {
+          plan = regated.plan;
+          if (claimQa) {
+            claimQa.repairs += regated.report.repairs;
+            claimQa.dropped += regated.report.dropped;
+            claimQa.blocked.push(...regated.report.blocked);
+            claimQa.degraded = claimQa.degraded ?? regated.report.degraded;
+          } else { claimQa = regated.report; }
+        }
+      }
+
+      // FINAL PUBLICATION GATE. The deterministic table is free, so run it once more on what will
       // actually publish and delete anything a primary source contradicts.
       const late = planFields(plan).flatMap((f) => gateField(f.field, f.text, research))
         .filter((h) => h.rule.severity === 'block');

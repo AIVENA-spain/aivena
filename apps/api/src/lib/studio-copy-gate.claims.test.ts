@@ -210,6 +210,10 @@ describe('a correct, precise legal statement is not a violation', () => {
       + 'fast-track process.')).toHaveLength(0);
     expect(fired('Break-ins into a lived-in home can move through the fast-track court process.'))
       .toHaveLength(0);
+    // Real generated text that survived an acceptance run: "break-ins" was an unguarded alternative
+    // in the exemption, so prefixing it with "non-violent" exempted the very claim that is false.
+    expect(fired('Since April 2025, non-violent break-ins into a lived-in home can move through the '
+      + 'fast-track process.')).toContain('usurpacion-fast-track');
     // But "less serious" and "only" must NOT exempt — they appear in sentences that restrict the
     // fast track to exactly the branch that does not take it.
     expect(fired('Only the less serious usurpación of an empty property enters the juicio rápido.'))

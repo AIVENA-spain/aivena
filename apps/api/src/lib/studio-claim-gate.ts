@@ -126,11 +126,34 @@ async function callTool(
  * out of six. The planner in studio-carousel-plan.ts already self-heals shape quirks rather than
  * burning a generation on them; this does the same.
  */
+/**
+ * Recover a JSON payload the model ran out of tokens mid-way through.
+ *
+ * The verdict list arrives as a JSON STRING, so a truncated response is not a truncated tool call —
+ * it is a string that will not parse, and losing it threw away every verdict for the post. Two of
+ * six posts in an acceptance run degraded to the deterministic table alone because of this. Cutting
+ * back to the last complete object and closing the brackets keeps the verdicts the model did finish.
+ */
+function salvage(text: string): unknown {
+  const start = text.indexOf('[');
+  const lastObj = text.lastIndexOf('}');
+  if (start < 0 || lastObj < start) return null;
+  // Rebuild just the array, cut back to the last object that finished.
+  try { return JSON.parse(`${text.slice(start, lastObj + 1)}]`); } catch { /* fall through */ }
+  // That last object may itself be the truncated one; drop it and try again.
+  const prev = text.lastIndexOf('},', lastObj);
+  if (prev > start) {
+    try { return JSON.parse(`${text.slice(start, prev + 1)}]`); } catch { /* give up */ }
+  }
+  return null;
+}
+
 function coerceList(raw: unknown, key: string): Record<string, unknown>[] | null {
   let v: unknown = raw;
   for (let i = 0; i < 4; i++) {
     if (typeof v === 'string') {
-      try { v = JSON.parse(v); } catch { return null; }
+      const str: string = v;
+      try { v = JSON.parse(str); } catch { v = salvage(str); if (v === null) return null; }
       continue;
     }
     if (v && typeof v === 'object' && !Array.isArray(v) && key in (v as Record<string, unknown>)) {
@@ -257,8 +280,8 @@ const VALIDATE_TOOL = {
               enum: ['SUPPORTED', 'SUPPORTED_WITH_NUANCE', 'UNSUPPORTED', 'CONTRADICTS_GUARDRAIL',
                 'REQUIRES_FRESH_RESEARCH', 'REQUIRES_AGENCY_EVIDENCE'],
             },
-            problem: { type: 'string', description: 'what is wrong, in one sentence a rewriter can act on. Empty when SUPPORTED.' },
-            rewrite: { type: 'string', description: 'SUPPORTED_WITH_NUANCE only: the true version, same length, same confidence, no hedging words added.' },
+            problem: { type: 'string', description: 'OMIT ENTIRELY when the verdict is SUPPORTED. Otherwise one sentence a rewriter can act on.' },
+            rewrite: { type: 'string', description: 'SUPPORTED_WITH_NUANCE only, omit otherwise: the true version, same length, same confidence, no hedging words added.' },
           },
         },
       },
@@ -290,6 +313,16 @@ THE VERDICTS
 · REQUIRES_AGENCY_EVIDENCE — true only of a particular agency, and this agency did not tell us. Its
   commission, its timescales, its results, its contract terms.
 
+A SERVICE PROMISE IS NOT A PERFORMANCE CLAIM, AND THIS DISTINCTION MATTERS IN BOTH DIRECTIONS.
+"We give every home its own angles, its own wording, its own story" and "Comment COAST and we'll
+send you the breakdown" are things the agency is offering to DO. If the agency could plausibly do
+it, that is positioning and it is SUPPORTED — do not demand evidence for an offer.
+But the category is not a hiding place. These are performance claims and they need the agency's own
+evidence: what it has ACHIEVED ("we've seen how this plays out", "our sellers get", "we sold 40 last
+year"), its client history, anything measured, any award or accreditation, and any service it does
+not actually offer. "We've seen how the accountable-team approach plays out on this coast" is client
+history wearing a positioning coat: REQUIRES_AGENCY_EVIDENCE.
+
 CAUSAL_INFERENCE HAS ITS OWN TEST. Two observations do not license a cause. "Transactions fell" plus
 "supply is tight" does not permit "fewer sales, not less demand — that's tight supply, not cooling
 interest". Unless the research establishes the MECHANISM — not just both facts — the verdict is
@@ -299,6 +332,9 @@ A DEBUNK IS NOT A VIOLATION. "There is no 48-hour rule", "no number of days give
 15-day deadline people fear is not real" are TRUE statements that happen to name a myth. If a
 guardrail says never to assert X, a claim that denies X is SUPPORTED, not CONTRADICTS_GUARDRAIL.
 Read the polarity before you judge.
+
+KEEP IT SHORT. Give "problem" ONLY when the claim did not pass, and "rewrite" ONLY for
+SUPPORTED_WITH_NUANCE. A verdict on its own is the whole answer for anything that is fine.
 
 BE PROPORTIONATE. General mechanics that any Spanish conveyancer would state without looking up are
 SUPPORTED even if the brief did not spell them out. What must never pass is an invented SPECIFIC — a
@@ -327,7 +363,9 @@ export async function validateClaims(
     `THE CLAIMS (${claims.length}):`,
     numbered,
   ].join('\n');
-  const out = await callTool('claim validation', VALIDATE_SYSTEM, user, VALIDATE_TOOL, 150_000);
+  // A verdict list is short; the prose around it is not. Leaving out problem/rewrite for everything
+  // that passed is what keeps the payload inside the budget on a 20-claim post.
+  const out = await callTool('claim validation', VALIDATE_SYSTEM, user, VALIDATE_TOOL, 150_000, 16_000);
   const list = out && coerceList(out.verdicts, 'verdicts');
   if (!list) {
     if (out) console.warn('[studio/gate] claim validation returned an unreadable shape');

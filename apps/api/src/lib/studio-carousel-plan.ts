@@ -385,11 +385,24 @@ async function researchTopic(topic: string, lang: string, region: string, market
       (cardMust ? `\nTHIS TOPIC HAS BEEN RESEARCHED BEFORE AND THE FINDINGS WERE VERIFIED AGAINST PRIMARY ` +
         `SOURCES. Your questions MUST cover the points below — they are what previous verification found ` +
         `decides whether the advice is right. Add your own questions after them.\n${cardMust}\n` : '') +
-      `Reply with the questions only, one per line, no numbering, no preamble.` }],
+      `\nFIRST DECIDE WHETHER THERE IS ANYTHING TO RESEARCH AT ALL. Some topics are pure craft or ` +
+      `persuasion — how to write a better listing, why the first photo matters, what makes a home ` +
+      `memorable. They assert nothing about the outside world: no law, no tax, no place, no market, ` +
+      `no number, no institution. Researching those does not make them truer, it drags the post ` +
+      `toward paperwork and away from the thing the agent actually wanted to say. If that is this ` +
+      `topic, reply with exactly NO_RESEARCH_NEEDED and nothing else.\n` +
+      `A topic that names a REAL PLACE, or turns on a rule, a cost, a date or a market, always needs ` +
+      `research — including a lifestyle or dream topic, whose feeling may be invented but whose ` +
+      `concrete local premises may not.\n\n` +
+      `Otherwise reply with the questions only, one per line, no numbering, no preamble.` }],
   }, 45_000);
   if (q.failure) fail('stage 1 (questions)', q);
   const questions = q.text;
   if (!questions) return '';
+  if (/^\s*NO_RESEARCH_NEEDED/i.test(questions)) {
+    console.log(`[studio/carousel] no external facts in "${topic.slice(0, 50)}" — writing it straight`);
+    return '';
+  }
 
   // 2 — answer them, with live search, and say plainly what could not be established
   const f = await call('findings', {

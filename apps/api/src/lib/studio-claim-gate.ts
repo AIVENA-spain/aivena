@@ -466,13 +466,16 @@ export async function gatePlan<T extends PlanLike>(
         field: h.field, rule: h.rule.id, severity: h.rule.severity, sentence: h.sentence,
       }));
     }
-    // Each round REPLACES the tally rather than adding to it: the report describes the draft that
-    // will actually publish, not the sum of every draft along the way. Accumulating made a post
-    // read "16 policed claims, 45 verdicts", which is not a thing that can be true.
-    report.claims = claims?.length ?? 0;
-    report.policed = policed.length;
-    report.verdicts = {};
-    for (const v of verdicts ?? []) report.verdicts[v.verdict] = (report.verdicts[v.verdict] ?? 0) + 1;
+    // The tally describes the FIRST draft — what the writer actually produced and what the gate
+    // found in it. Accumulating across rounds produced "16 policed claims, 45 verdicts", which
+    // cannot be true; reporting only the last round produced "0 sentences, 0 policed" on a post
+    // that had been repaired twice, which hid the entire point. What happened next is in
+    // repairs / dropped / blocked.
+    if (round === 0) {
+      report.claims = claims?.length ?? 0;
+      report.policed = policed.length;
+      for (const v of verdicts ?? []) report.verdicts[v.verdict] = (report.verdicts[v.verdict] ?? 0) + 1;
+    }
 
     // Merge: a deterministic hit becomes a failure in its own right, so a model that shrugs at the
     // 15-day myth cannot wave it through.

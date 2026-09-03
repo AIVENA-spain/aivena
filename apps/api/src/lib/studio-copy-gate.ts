@@ -232,7 +232,7 @@ export const GATE_RULES: readonly GateRule[] = [
     authority: 'Christian, 2026-09-03: "Research and validation stay invisible. The customer sees '
       + 'confident marketing, not our compliance machinery."',
     negationImmune: true,
-    all: [/\b(?:different metrics|not a single verdict|treat (?:them|it|these) as a direction|isn'?t published|does ?n[o']t publish|publishes? reliably|no official figure|no reliable data|no public data|no dataset|data is unclear|evidence is unclear|sources? disagree|studies show|research shows|figures vary by method|depending on the method|not something (?:either|any)\w*[\w\s]{0,20}publish)/i,
+    all: [/\b(?:different metrics|not a single verdict|treat (?:them|it|these) as a direction|isn'?t published|does ?n[o']t publish|publishes? reliably|no official figure|no reliable data|no public data|no dataset|nobody publishes|no one publishes|isn'?t published anywhere|not published anywhere|the exact formula|data is unclear|evidence is unclear|sources? disagree|studies show|research shows|figures vary by method|depending on the method|not something (?:either|any)\w*[\w\s]{0,20}publish)/i,
       /./],
   },
   {

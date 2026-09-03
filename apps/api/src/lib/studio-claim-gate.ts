@@ -71,30 +71,49 @@ export interface GateReport {
   degraded: string | null;
 }
 
+// A gate step that fails silently is the bug this whole layer exists to fix. Every failure path
+// says which one it was, so a degraded run is never mistaken for a clean one.
 async function callTool(
-  system: string, user: string, tool: Record<string, unknown>, ms: number,
+  label: string, system: string, user: string, tool: Record<string, unknown>,
+  ms: number, maxTokens = 8000,
 ): Promise<Record<string, unknown> | null> {
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), ms);
+  const why = (reason: string) => {
+    console.warn(`[studio/gate] ${label} unavailable — ${reason}`);
+    return null;
+  };
   try {
-    for (let attempt = 0; attempt < 2; attempt++) {
+    let last = 'no attempt completed';
+    for (let attempt = 0; attempt < 3; attempt++) {
       const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST', signal: ctl.signal,
         headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'claude-sonnet-5', max_tokens: 4000, system,
+          model: 'claude-sonnet-5', max_tokens: maxTokens, system,
           tools: [tool], tool_choice: { type: 'tool', name: tool.name },
           messages: [{ role: 'user', content: user }],
         }),
       });
-      if (!res.ok) { if (res.status >= 500 || res.status === 429) continue; return null; }
-      const data = await res.json() as { content?: { type: string; input?: unknown }[] };
+      if (!res.ok) {
+        last = `http_${res.status}: ${(await res.text()).slice(0, 200)}`;
+        if (res.status >= 500 || res.status === 429) continue;
+        return why(last);
+      }
+      const data = await res.json() as {
+        stop_reason?: string; content?: { type: string; input?: unknown }[];
+      };
       const found = data.content?.find((c) => c.type === 'tool_use')?.input;
       if (found && typeof found === 'object') return found as Record<string, unknown>;
+      last = `no tool_use in response (stop_reason=${data.stop_reason ?? 'unknown'})`;
+      // A truncated tool call means the output did not fit. Retrying identically cannot help.
+      if (data.stop_reason === 'max_tokens') return why(`${last} — raise max_tokens`);
     }
-    return null;
-  } catch { return null; }
-  finally { clearTimeout(timer); }
+    return why(last);
+  } catch (err) {
+    const aborted = (err as { name?: string })?.name === 'AbortError';
+    return why(aborted ? `timed out after ${ms}ms` : `network error: ${(err as Error)?.message}`);
+  } finally { clearTimeout(timer); }
 }
 
 /* ── 1. EXTRACT ──────────────────────────────────────────────────────────────────────────── */
@@ -162,8 +181,8 @@ export async function extractClaims(plan: PlanLike, language: string): Promise<E
   const fields = planFields(plan);
   if (!fields.length) return [];
   const body = fields.map((f) => `[${f.field}] ${f.text}`).join('\n');
-  const out = await callTool(EXTRACT_SYSTEM,
-    `The post is written in ${language}. Classify every sentence.\n\n${body}`, EXTRACT_TOOL, 90_000);
+  const out = await callTool('claim extraction', EXTRACT_SYSTEM,
+    `The post is written in ${language}. Classify every sentence.\n\n${body}`, EXTRACT_TOOL, 120_000);
   if (!out || !Array.isArray(out.claims)) return null;
   const known = new Set(fields.map((f) => f.field));
   const types = new Set<string>([...POLICED_TYPES, ...ALLOWED_TYPES]);
@@ -263,7 +282,7 @@ export async function validateClaims(
     `THE CLAIMS (${claims.length}):`,
     numbered,
   ].join('\n');
-  const out = await callTool(VALIDATE_SYSTEM, user, VALIDATE_TOOL, 120_000);
+  const out = await callTool('claim validation', VALIDATE_SYSTEM, user, VALIDATE_TOOL, 150_000);
   if (!out || !Array.isArray(out.verdicts)) return null;
   const byIndex = new Map<number, Record<string, unknown>>();
   for (const v of out.verdicts as Record<string, unknown>[]) {
@@ -343,12 +362,12 @@ async function repairFields(
       + (f.rewrite ? `\n     A true version: "${f.rewrite}"` : '')).join('\n');
     return `[${field}] currently reads:\n"${current}"\nProblems:\n${problems}`;
   }).join('\n\n');
-  const out = await callTool(REPAIR_SYSTEM,
+  const out = await callTool('claim repair', REPAIR_SYSTEM,
     [`The post is in ${ctx.language}. Topic: ${ctx.topic}`,
       ctx.research ? `\nWhat the research established (use it — do not quote it):\n${ctx.research}` : '',
       ctx.agencyEvidence ? `\n${ctx.agencyEvidence}` : '',
       `\nRewrite these fields:\n\n${asks}`].join('\n'),
-    REPAIR_TOOL, 120_000);
+    REPAIR_TOOL, 150_000);
   if (!out || !Array.isArray(out.fields)) return plan;
   let next = plan;
   for (const f of out.fields as Record<string, unknown>[]) {

@@ -76,7 +76,30 @@ export interface GateRule {
   supportedBy?: RegExp[];
 }
 
-const NEG = /\b(?:no|not|never|isn'?t|aren'?t|wasn'?t|doesn'?t|don'?t|cannot|can'?t|nothing|none|nor|myth|mistaken|untrue|false|neither|ningun[oa]?|ningún|nunca|jamás|mito|falso|tampoco|sin)\b/i;
+/**
+ * REFUTATION, NOT "IS THERE A NEGATION SOMEWHERE".
+ *
+ * The first version tested for any negation cue in the clause, and it was wrong in both directions.
+ * It MISSED "Squatters are evicted in 15 days, not months" — the "not" negates the months, not the
+ * claim — and "An exclusive mandate runs three to six months and no other agency can market the
+ * property", where a negation in a later clause cleared an assertion in an earlier one. Worse, it
+ * could never fire on "Without a registered energy certificate you cannot sell", because "cannot"
+ * is BOTH the rule's own trigger and a negation cue: the rule silently cleared itself. That is the
+ * same dead-matcher family as the word boundary after "Art." in the bank linter.
+ *
+ * So: mask the spans the rule itself matched — a trigger word can never double as its own alibi —
+ * then judge scope.
+ *   STRONG   an explicit debunk framing. Clears the sentence from either side.
+ *   VERB_NEG a negated verb, which governs its whole clause.
+ *   WEAK     a bare "no"/"not", which only governs what follows it closely — at most four words
+ *            before the claim, and never across a comma.
+ * Plus a question answered in the next sentence, which is how a debunk post is usually written.
+ */
+const STRONG = /\b(?:myth|mito|bulo|urban legend|misconception|untrue|not real|isn'?t real|no such|mistaken|falso|forget what you (?:read|heard|were told)|contrary to (?:what|popular)|despite what|people fear|you may have heard|widely believed)\b/i;
+const VERB_NEG = /\b(?:does ?n[o']t|do ?n[o']t|did ?n[o']t|can ?n[o']t|cannot|is ?n[o']t|is not|are ?n[o']t|are not|was ?n[o']t|were ?n[o']t|will ?n[o']t|won'?t|never|there(?:'s| is| are)? no|no rule|no such|nunca|no existe|no hay|jam[áa]s)\b/i;
+const WEAK = /\b(?:no|not|ni|sin)\b/i;
+/** A next sentence that answers a rhetorical question in the negative. */
+const ANSWERS_NO = /^\s*(?:no\b|not\b|nope\b|never\b|it\s+is\s+not\b|that'?s\s+not\b|myth\b|wrong\b)/i;
 
 /** Strong clause boundaries only. Subordinators ("that", "which") deliberately do not split. */
 function clauses(sentence: string): string[] {
@@ -85,6 +108,43 @@ function clauses(sentence: string): string[] {
 
 function sentences(text: string): string[] {
   return text.split(/(?<=[.!?])\s+|\n+/).filter((s) => s.trim().length > 0);
+}
+
+/** Blank out every span the rule matched, preserving offsets. */
+function maskMatches(sentence: string, patterns: readonly RegExp[]): { masked: string; anchor: number } {
+  const chars = [...sentence];
+  for (const p of patterns) {
+    const re = new RegExp(p.source, p.flags.includes('g') ? p.flags : `${p.flags}g`);
+    for (let m = re.exec(sentence); m; m = re.exec(sentence)) {
+      for (let i = m.index; i < m.index + m[0].length; i++) chars[i] = '·';
+      if (m[0].length === 0) re.lastIndex++;   // a zero-width match would loop forever
+    }
+  }
+  // The claim sits where the rule's primary pattern matched.
+  const anchor = new RegExp(patterns[0].source, patterns[0].flags).exec(sentence)?.index ?? 0;
+  return { masked: chars.join(''), anchor };
+}
+
+/** Is this rule's match refuted rather than asserted? */
+function refuted(sentence: string, next: string, patterns: readonly RegExp[]): boolean {
+  const { masked, anchor } = maskMatches(sentence, patterns);
+  if (STRONG.test(masked)) return true;
+  if (/\?\s*$/.test(sentence.trim()) && ANSWERS_NO.test(next)) return true;
+
+  // the clause the claim sits in, located by offset in the masked copy
+  let at = 0;
+  let clause = masked;
+  for (const c of clauses(masked)) {
+    if (anchor >= at && anchor <= at + c.length) { clause = c; break; }
+    at += c.length;
+  }
+  if (VERB_NEG.test(clause)) return true;
+
+  // A bare "no"/"not" only reaches forward, and not across a comma.
+  const before = masked.slice(0, anchor);
+  const lastComma = before.lastIndexOf(',');
+  const window = before.slice(lastComma + 1).trim().split(/\s+/).slice(-4).join(' ');
+  return WEAK.test(window);
 }
 
 export const GATE_RULES: readonly GateRule[] = [
@@ -198,14 +258,6 @@ export interface GateHit {
   sentence: string;
 }
 
-/** Does a negation cue govern this match inside its own clause? */
-function negated(sentence: string, pattern: RegExp): boolean {
-  for (const clause of clauses(sentence)) {
-    if (pattern.test(clause)) return NEG.test(clause);
-  }
-  return NEG.test(sentence);
-}
-
 /**
  * Run the deterministic table over one field's text.
  *
@@ -216,10 +268,12 @@ function negated(sentence: string, pattern: RegExp): boolean {
 export function gateField(field: string, text: string, research = ''): GateHit[] {
   const hits: GateHit[] = [];
   if (!text?.trim()) return hits;
-  for (const sentence of sentences(text)) {
+  const parts = sentences(text);
+  for (let i = 0; i < parts.length; i++) {
+    const sentence = parts[i];
     for (const rule of GATE_RULES) {
       if (!rule.all.every((re) => re.test(sentence))) continue;
-      if (!rule.negationImmune && negated(sentence, rule.all[0])) continue;
+      if (!rule.negationImmune && refuted(sentence, parts[i + 1] ?? '', rule.all)) continue;
       if (rule.severity === 'challenge' && rule.supportedBy?.some((re) => re.test(research))) continue;
       hits.push({ rule, field, sentence: sentence.trim() });
     }

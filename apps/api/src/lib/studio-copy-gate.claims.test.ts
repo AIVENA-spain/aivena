@@ -119,3 +119,64 @@ describe('the table itself', () => {
     }
   });
 });
+
+/**
+ * Adversarial pairs found by re-running the shipped table against 29 hand-written strings.
+ *
+ * Every one of these was a real defect in the first version: four myths it let through, three
+ * correct debunks it blocked, and one rule that could never fire at all because the phrase it
+ * hunted for — "cannot" — was also on its own list of negation cues.
+ */
+describe('refutation scope — the eight defects the adversarial pass found', () => {
+  it('a trailing "not" that negates something else does not clear the claim', () => {
+    expect(fired('Squatters are evicted in 15 days, not months.')).toContain('squatter-15-days');
+    expect(fired('The 15-day okupa eviction is a myth, not a rule.')).not.toContain('squatter-15-days');
+  });
+
+  it('a negation far away in the sentence does not reach the claim', () => {
+    expect(fired('What no agent will tell you: squatters can be evicted in 15 days.'))
+      .toContain('squatter-15-days');
+    expect(fired('Forget what you read about okupas being out in 48 hours.'))
+      .not.toContain('squatter-fixed-hours');
+  });
+
+  it('a negation in a later clause does not clear an assertion in an earlier one', () => {
+    expect(fired('An exclusive mandate runs three to six months and no other agency can market the property.'))
+      .toContain('mandate-mechanics');
+    expect(fired('One point of contact. One coordinated strategy. One person accountable.'))
+      .toHaveLength(0);
+  });
+
+  it("a rule's own trigger word cannot serve as its alibi", () => {
+    // "cannot" is both the hard-stop phrasing this rule hunts and a negation cue. Before masking,
+    // the rule cleared itself every single time and could never fire.
+    expect(fired('Without a registered energy certificate you cannot sell.'))
+      .toContain('obligation-upgraded');
+    expect(fired('The energy certificate the seller is required to provide.')).toHaveLength(0);
+  });
+
+  it('reads the answer to a rhetorical question', () => {
+    expect(fired('Evicted in 15 days? No. Here is what actually happens.'))
+      .not.toContain('squatter-15-days');
+    expect(fired('Evicted in 15 days? Yes, since the reform.')).toContain('squatter-15-days');
+  });
+
+  it('leaves a plain observation alone but catches the cause bolted onto it', () => {
+    expect(fired('Fewer homes changed hands in Alicante province than a year earlier, while prices '
+      + 'were reported at record highs.')).toHaveLength(0);
+    expect(fired("Fewer sales, not less demand. That's tight supply, not cooling interest."))
+      .toContain('causal-inference');
+  });
+
+  it('catches an invented hearing date and leaves honest advice alone', () => {
+    expect(fired('Expect a first hearing about a month after filing the denuncia.'))
+      .toContain('legal-timeline-approximate');
+    expect(fired('Ask your lawyer for a realistic date, in writing.')).toHaveLength(0);
+  });
+
+  it('catches a commission regularity and leaves a plain offer alone', () => {
+    expect(fired('An exclusive mandate usually carries a lower commission than splitting the job '
+      + 'between three agencies.')).toContain('commission-pattern');
+    expect(fired('We will walk you through what our commission covers.')).toHaveLength(0);
+  });
+});

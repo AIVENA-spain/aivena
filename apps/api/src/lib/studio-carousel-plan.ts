@@ -352,8 +352,10 @@ async function researchTopic(topic: string, lang: string, region: string, market
   };
 
   // 1 — what do we need to know to write this truthfully?
+  // 900 was not enough: the model can spend the whole budget reasoning and return no text at all,
+  // which reads as "nothing to research" and silently costs the post its facts.
   const q = await call('questions', {
-    model: 'claude-sonnet-5', max_tokens: 900,
+    model: 'claude-sonnet-5', max_tokens: 2500,
     messages: [{ role: 'user', content:
       `An estate agency on ${region} is writing an Instagram carousel of practical tips for buyers and owners on this topic:\n\n"${topic}"\n\n` +
       `List the 3-5 questions someone would need answered to write ACCURATE, genuinely useful tips on it — the mechanics that decide whether the advice is right. ` +
@@ -557,8 +559,7 @@ beats a confident one on a false one. The topic is a suggestion; the research is
 ${brief}
 ` : ''}${brief ? `
 ${STATUS_MODEL}
-${opts.marketBrief ? `\n${opts.marketBrief}\n` : ''}${opts.agencyEvidence ? `\n${opts.agencyEvidence}\n` : ''}
-` : ''} For anything about the NIE, banks, taxes, residency, mortgages or ownership: state what is USUALLY true and why it helps, never an absolute impossibility you cannot verify. Worked example of the failure: "without a local account you cannot pay utilities, taxes or a mortgage" is FALSE — Eurozone SEPA rules forbid refusing a valid IBAN from another member state. The honest version keeps the value: "a Spanish account makes utilities, taxes and a mortgage far simpler to run".
+` : ''}${opts.marketBrief ? `\n${opts.marketBrief}\n` : ''}${opts.agencyEvidence ? `\n${opts.agencyEvidence}\n` : ''} For anything about the NIE, banks, taxes, residency, mortgages or ownership: state what is USUALLY true and why it helps, never an absolute impossibility you cannot verify. Worked example of the failure: "without a local account you cannot pay utilities, taxes or a mortgage" is FALSE — Eurozone SEPA rules forbid refusing a valid IBAN from another member state. The honest version keeps the value: "a Spanish account makes utilities, taxes and a mortgage far simpler to run".
 
 ${CLAIM_TYPES}
 ${opts.cardRules ? `\n${opts.cardRules}\n` : ''}

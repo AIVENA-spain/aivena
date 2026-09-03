@@ -31,7 +31,10 @@ import {
   renderPlannedStyled, renderListingStyled, vibraListing, PLANNED_STYLES, LISTING_STYLES, TYPE_EDITIONS, type CarouselStyle,
 } from '../../../../studio/engine/carouselStyles';
 import type { CarouselBrand } from '../../../../studio/engine/renderCarousel';
-import { planCarousel, editPlan, remixHook, topicIdeas, listingCopy, listingStory, PlanSchema, normalisePlan } from '../lib/studio-carousel-plan';
+import { planCarousel, editPlan, remixHook, topicIdeas, listingCopy, listingStory, pickBankCard, PlanSchema, normalisePlan } from '../lib/studio-carousel-plan';
+import { gatePlan, type GateReport } from '../lib/studio-claim-gate';
+import { cardRules } from '../lib/studio-bank-match';
+import { dropSentence, gateField, planFields, readField, writeField } from '../lib/studio-copy-gate';
 import { directScenes } from '../lib/studio-carousel-art';
 import { renderTipsImageStyled, renderTipsImageStyledV2, isTipsImageStyle } from '../../../../studio/engine/carouselTipsImage';
 import { renderFreeform, type DesignSpec } from '../../../../studio/engine/renderFreeform';
@@ -1414,22 +1417,62 @@ async function runPlannedCarousel(opts: {
     // what the research established — stored with the deck so the agent can read what their tips
     // were built on before they publish it under their own name
     let research = '';
+    // THE VERIFIED BANK GOVERNS THE TOPIC BEFORE ANYTHING IS WRITTEN. Matching nothing is normal —
+    // most typed topics are not in the bank — and a wrong card would be worse than none.
+    const card = opts.type === 'tips' ? await pickBankCard(opts.topic ?? '').catch(() => null) : null;
+    if (card) console.log(`[studio/carousel] topic governed by bank card ${card.id} (${card.state})`);
     let plan = await planCarousel({
       type: opts.type, topic: opts.topic, quoteText: opts.quoteText, quoteAuthor: opts.quoteAuthor,
       slideCount: opts.slideCount, language: opts.language, agencyName: opts.agency.name,
       agencyProfile: opts.agencyProfile, avoidMotifs,
       marketBrief: opts.marketBrief,
       agencyEvidence: opts.agencyEvidence,
+      cardRules: card ? cardRules(card) : '',
+      cardMust: card ? card.must.map((m) => `· ${m}`).join('\n') : '',
       onResearch: (b) => { research = b; },
     });
     // EDITOR pass (Christian 2026-08-28): a skeptical second read of the copy — sense, value,
     // trust — before anything renders. Quote decks are verbatim client words and skip it.
     let copyQa: { revised: boolean; notes: string[] } | undefined;
+    let claimQa: GateReport | undefined;
     if (opts.type === 'tips') {
+      // THE FACTUAL GATE, on the finished draft and BEFORE the editor. Guardrails in the prompt are
+      // necessary and not sufficient: the writer can invent a factual sentence no guardrail
+      // anticipated, which is exactly how a post shipped a legal claim its own bank card forbids.
+      const gated = await gatePlan(plan, {
+        language: opts.language, topic: opts.topic ?? '', research,
+        cardRules: card ? cardRules(card) : '',
+        agencyEvidence: opts.agencyEvidence ?? '',
+      }).catch((err: unknown) => {
+        console.warn(`[studio/carousel] claim gate failed: ${(err as Error)?.message}`);
+        return null;
+      });
+      if (gated) { plan = gated.plan; claimQa = gated.report; }
+
       const edited = await editPlan(plan, opts.topic ?? '', opts.language, research);
       if (edited) {
         plan = edited.plan;
         copyQa = { revised: edited.notes.length > 0, notes: edited.notes };
+      }
+
+      // FINAL PUBLICATION GATE. The editor rewrites copy too, so it can reintroduce exactly what the
+      // gate just removed. The deterministic table is free, so run it once more on what will
+      // actually publish and delete anything a primary source contradicts.
+      const late = planFields(plan).flatMap((f) => gateField(f.field, f.text, research))
+        .filter((h) => h.rule.severity === 'block');
+      if (late.length) {
+        claimQa = claimQa ?? { claims: 0, policed: 0, verdicts: {}, blocked: [], deterministic: [], repairs: 0, dropped: 0, degraded: null };
+        for (const h of late) {
+          const before = readField(plan, h.field);
+          const after = dropSentence(before, h.sentence);
+          if (after !== before) { plan = writeField(plan, h.field, after); claimQa.dropped++; }
+          claimQa.blocked.push({
+            field: h.field, text: h.sentence, verdict: 'CONTRADICTS_GUARDRAIL',
+            problem: h.rule.problem,
+            outcome: after !== before ? 'removed after the editor reintroduced it' : 'left — could not be isolated',
+          });
+        }
+        console.warn(`[studio/carousel] final gate removed ${claimQa.dropped} sentence(s) the editor reintroduced`);
       }
     }
     const contact = contactLine(opts.agency);
@@ -1516,7 +1559,7 @@ async function runPlannedCarousel(opts: {
       result_metadata: {
         engine: 'carousel', carousel_type: opts.type, carousel_style: usedStyle, slide_count: stored.length, slides: stored,
         ai_imagery: opts.type === 'tips' && isTipsImageStyle(usedStyle),
-        image_paths: imagePaths, image_scheme: opts.scheme, per_slide_art: perSlideArt, artwork_source: artworkSource, artwork_error: artworkError, artwork_qa: artworkQa, copy_qa: copyQa, research, include_recap: opts.includeRecap, include_context: opts.includeContext,
+        image_paths: imagePaths, image_scheme: opts.scheme, per_slide_art: perSlideArt, artwork_source: artworkSource, artwork_error: artworkError, artwork_qa: artworkQa, copy_qa: copyQa, claim_qa: claimQa, research, include_recap: opts.includeRecap, include_context: opts.includeContext,
         plan, caption: plan.caption, hashtags: plan.hashtags,
       },
       completed_at: new Date().toISOString(),

@@ -2,6 +2,8 @@ import { z } from 'zod';
 import { env } from '../../../../packages/config/env';
 import type { CarouselPlan } from '../../../../studio/engine/carouselSlides';
 import { trimWords } from './studio-copy-gate';
+import { bankIndex, cardRules, getCard, keywordCandidates, parseCardPick } from './studio-bank-match';
+import type { BankCard } from './studio-bank.generated';
 
 // CAROUSEL PLANNER v2 (research-rebuilt 2026-07-16): the AI writes the WORDS of a tips/quote carousel
 // as a validated plan; the deterministic slide library draws every pixel. The prompt encodes the
@@ -298,7 +300,7 @@ function planIssues(p: CarouselPlan, quoteSource: string): string | null {
  *  failure, not a safe outcome. */
 interface ResearchCall { text: string; failure: string | null; ms: number }
 
-async function researchTopic(topic: string, lang: string, region: string, markets = ''): Promise<string> {
+async function researchTopic(topic: string, lang: string, region: string, markets = '', cardMust = ''): Promise<string> {
   // RESEARCH THAT FAILS MUST SAY SO. This returned a bare '' on every failure path — timeout,
   // HTTP error, pause-loop exhaustion, an empty completion — and the caller could not tell "nothing
   // to research" from "the research died". Two posts in a six-post proof run were written entirely
@@ -368,6 +370,9 @@ async function researchTopic(topic: string, lang: string, region: string, market
       `and in which towns" instead. No named conclusions, no rate bands, no nationality filed under a ` +
       `legal category, no asserted cause. Ask what is the case, never whether a thing you already ` +
       `believe is the case.\n\n` +
+      (cardMust ? `\nTHIS TOPIC HAS BEEN RESEARCHED BEFORE AND THE FINDINGS WERE VERIFIED AGAINST PRIMARY ` +
+        `SOURCES. Your questions MUST cover the points below — they are what previous verification found ` +
+        `decides whether the advice is right. Add your own questions after them.\n${cardMust}\n` : '') +
       `Reply with the questions only, one per line, no numbering, no preamble.` }],
   }, 45_000);
   if (q.failure) fail('stage 1 (questions)', q);
@@ -413,6 +418,48 @@ async function researchTopic(topic: string, lang: string, region: string, market
   return f.text;
 }
 
+/**
+ * Which verified bank card, if any, governs this topic.
+ *
+ * A model picks, not a keyword score: an agent types in any of thirteen languages while every bank
+ * question is written in English, so token overlap between "¿Pueden los okupas quedarse con tu
+ * casa?" and "Will squatters take your holiday home" is zero. The whole index is 120 short lines,
+ * cheap enough to hand over whole. The keyword scorer is the fallback when the call fails.
+ *
+ * Matching NOTHING is a normal, correct outcome. Most typed topics are not in the bank, and the
+ * wrong card would hand the writer the wrong guardrails — worse than none.
+ */
+export async function pickBankCard(topic: string): Promise<BankCard | null> {
+  if (!topic?.trim()) return null;
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 30_000);
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST', signal: ctl.signal,
+      headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-5', max_tokens: 24,
+        system: 'You match a writer\'s topic to a catalogue of researched questions. The topic may be '
+          + 'in any language; the catalogue is in English. Reply with the single best id (e.g. "B12") '
+          + 'when the catalogue genuinely covers the same ground, or exactly NONE when it does not. '
+          + 'A loose thematic overlap is NOT a match — half the catalogue is about Spanish property, '
+          + 'so requiring the same actual subject is the point. Reply with the id or NONE, nothing else.',
+        messages: [{ role: 'user', content: `TOPIC: ${topic}\n\nCATALOGUE:\n${bankIndex()}` }],
+      }),
+    });
+    if (res.ok) {
+      const data = await res.json() as { content?: { type: string; text?: string }[] };
+      const reply = (data.content ?? []).filter((c) => c.type === 'text').map((c) => c.text ?? '').join(' ');
+      if (/\bNONE\b/i.test(reply)) return null;
+      const card = getCard(parseCardPick(reply));
+      if (card) return card;
+    }
+  } catch { /* fall through to the keyword scorer */ }
+  finally { clearTimeout(timer); }
+  const top = keywordCandidates(topic, 1);
+  return top.length ? getCard(top[0].id) ?? null : null;
+}
+
 export async function planCarousel(opts: {
   type: 'tips' | 'quote';
   topic?: string;            // tips: what the carousel teaches
@@ -430,6 +477,10 @@ export async function planCarousel(opts: {
   marketBrief?: string;
   /** Facts the agency itself supplied. Absent means absent — never estimated, never inferred. */
   agencyEvidence?: string;
+  /** The verified bank card governing this topic, already rendered. Empty when none governs it. */
+  cardRules?: string;
+  /** must_establish from that card, so the research questions cover what verification found matters. */
+  cardMust?: string;
   /** Christian 2026-08-31 ("they could have a little box that informs them yes") — the caller
    *  receives what the research established, so the agent can read what their tips were built on
    *  before publishing under their own name. */
@@ -443,7 +494,7 @@ export async function planCarousel(opts: {
   // just from the model's own knowledge as it always was — a slow search must not cost an agent
   // their post.
   const brief = opts.type === 'tips' && opts.topic
-    ? await researchTopic(opts.topic, lang, region, opts.marketBrief ?? '').catch(() => '')
+    ? await researchTopic(opts.topic, lang, region, opts.marketBrief ?? '', opts.cardMust ?? '').catch(() => '')
     : '';
   if (brief) {
     console.log(`[studio/carousel] researched "${String(opts.topic).slice(0, 60)}" — ${brief.length} chars`);
@@ -510,7 +561,7 @@ ${opts.marketBrief ? `\n${opts.marketBrief}\n` : ''}${opts.agencyEvidence ? `\n$
 ` : ''} For anything about the NIE, banks, taxes, residency, mortgages or ownership: state what is USUALLY true and why it helps, never an absolute impossibility you cannot verify. Worked example of the failure: "without a local account you cannot pay utilities, taxes or a mortgage" is FALSE — Eurozone SEPA rules forbid refusing a valid IBAN from another member state. The honest version keeps the value: "a Spanish account makes utilities, taxes and a mortgage far simpler to run".
 
 ${CLAIM_TYPES}
-
+${opts.cardRules ? `\n${opts.cardRules}\n` : ''}
 HARD RULES:
 ${brief ? `- A FIGURE MAY APPEAR ONLY IF THE RESEARCH ABOVE ESTABLISHED IT. This rule governs types 1-3\n  only. It is not a licence to hedge a hook, soften an opinion or drain the marketing language. Prices, percentages, rates,\n  tax figures, deadlines, dates, thresholds: if the briefing states it, you may state it — that\n  precision is what makes a tip worth reading. If the briefing does NOT state it, you have no\n  source and the number would be invented, so write the mechanism without the number. Never round,\n  stretch or “roughly” a researched figure into a different one. Never promise a legal guarantee.\n  A NAME IS A FIGURE TOO: form numbers (EX-18, Modelo 210, Modelo 211), article numbers, decree and\n  law references, office names and portal names are all facts with a source or they are inventions.\n  A smoke test caught the writer printing \\'EX-20\\' where the research said EX-18 — close enough to\n  look right, wrong enough to send someone to the wrong desk. If the briefing did not name it, describe\n  the document instead of numbering it.`
  : `- NO specific prices, percentages, statistics, interest rates, tax figures, or legal guarantees anywhere in slide copy. Nothing was researched for this post, so any figure would be invented. Use place names for specificity instead of numbers.\n  This limits FIGURES, not force. Write the boldest version of the claim that carries no invented number.`}

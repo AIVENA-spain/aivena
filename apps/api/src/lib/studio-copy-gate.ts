@@ -231,3 +231,71 @@ export function gateField(field: string, text: string, research = ''): GateHit[]
 export function endsMidThought(text: string): boolean {
   return typeof text === 'string' && DANGLING.test(text.replace(/[.!?"'”’)]+$/, ''));
 }
+
+/* ────────────────────────────────────────────────────────────────────────────────────────────
+ * ADDRESSING THE COPY
+ *
+ * A failed claim has to be traceable to the exact field that produced it, so a repair can rewrite
+ * that field and nothing else. Kept pure and here rather than in the engine so it can be tested.
+ * ──────────────────────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * Structural shape of a plan. Deliberately no index signature: CarouselPlan is a closed type and
+ * requiring one would force a cast at every call site. The named fields are read through a local
+ * cast instead, which is contained to this module.
+ */
+export interface PlanLike {
+  tips?: Array<{ title?: string; body?: string; teaser?: string } | undefined>;
+}
+const asRecord = (p: PlanLike): Record<string, unknown> => p as unknown as Record<string, unknown>;
+
+/** Every piece of a plan a reader will actually see, addressed. */
+export function planFields(plan: PlanLike): { field: string; text: string }[] {
+  const out: { field: string; text: string }[] = [];
+  const push = (field: string, v: unknown) => {
+    if (typeof v === 'string' && v.trim()) out.push({ field, text: v });
+  };
+  for (const k of ['eyebrow', 'hook_title', 'slide2_title', 'slide2_body', 'recap_title',
+    'save_line', 'cta_heading', 'cta_action', 'cta_keyword', 'agency_line', 'caption'] as const) {
+    push(k, asRecord(plan)[k]);
+  }
+  (plan.tips ?? []).forEach((t, i) => {
+    push(`tips[${i}].title`, t?.title);
+    push(`tips[${i}].body`, t?.body);
+    push(`tips[${i}].teaser`, t?.teaser);
+  });
+  return out;
+}
+
+/** Read one addressed field. */
+export function readField(plan: PlanLike, field: string): string {
+  const m = /^tips\[(\d+)\]\.(title|body|teaser)$/.exec(field);
+  if (m) return String(plan.tips?.[Number(m[1])]?.[m[2] as 'title'] ?? '');
+  return String(asRecord(plan)[field] ?? '');
+}
+
+/** Write one addressed field, returning a new plan. Unknown addresses are ignored, never thrown. */
+export function writeField<T extends PlanLike>(plan: T, field: string, value: string): T {
+  const m = /^tips\[(\d+)\]\.(title|body|teaser)$/.exec(field);
+  if (m) {
+    const i = Number(m[1]);
+    const tips = [...(plan.tips ?? [])];
+    if (!tips[i]) return plan;
+    tips[i] = { ...tips[i], [m[2]]: value };
+    return { ...plan, tips };
+  }
+  if (!(field in asRecord(plan))) return plan;
+  return { ...plan, [field]: value };
+}
+
+/**
+ * Remove one sentence from a field — the last-resort repair when the writer could not replace a
+ * failed claim. Deleting a false sentence is always better than publishing it, and better than
+ * failing the whole post over one line.
+ */
+export function dropSentence(text: string, sentence: string): string {
+  const target = sentence.trim();
+  if (!target) return text;
+  const kept = sentences(text).filter((s) => s.trim() !== target);
+  return kept.join(' ').replace(/\s+/g, ' ').trim();
+}

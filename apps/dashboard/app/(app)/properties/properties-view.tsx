@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import {
   Bath,
   BedDouble,
@@ -320,6 +320,8 @@ function PropertyCard({
   p: PropertyRow;
   t: ReturnType<typeof useTranslations<"properties">>;
 }) {
+  // Grouping follows the agent's language - see lib/format.ts.
+  const locale = useLocale();
   const thumb = Array.isArray(p.images) && p.images.length > 0 ? p.images[0] : null;
   const location = [p.location_city, p.location_region].filter(Boolean).join(", ");
   // Icon spec pairs (mock layout) — zero/null specs hidden entirely.
@@ -329,7 +331,7 @@ function PropertyCard({
   if (p.bathrooms != null && p.bathrooms > 0)
     specs.push({ icon: Bath, text: `${p.bathrooms} ${t("bathsShort")}` });
   if (p.area_sqm != null && p.area_sqm > 0)
-    specs.push({ icon: Ruler, text: formatArea(p.area_sqm) });
+    specs.push({ icon: Ruler, text: formatArea(p.area_sqm, { locale }) });
 
   // Card layout per the approved mockups: image (status pill top-left) →
   // title → location with pin → icon specs → bottom row price (bold) + REF.
@@ -366,7 +368,7 @@ function PropertyCard({
         ) : null}
         <div className="mt-auto flex items-end justify-between gap-2 pt-2">
           <span className="text-[17px] font-bold tracking-[-0.01em] text-foreground tabular-nums">
-            {formatPrice(p.price, p.price_currency)}
+            {formatPrice(p.price, p.price_currency, { locale })}
           </span>
           <span className="pb-0.5 font-mono text-[10px] uppercase tracking-[0.04em] text-muted-foreground/70">
             {t("colRef")} {p.external_id}

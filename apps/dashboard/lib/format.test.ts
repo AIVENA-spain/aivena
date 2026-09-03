@@ -67,3 +67,39 @@ describe("tone mappers", () => {
     expect(readinessTone("unknown-thing")).toBe("neutral");
   });
 });
+
+/**
+ * Grouping must follow the reader, not en-GB. In Spanish, German and Norwegian
+ * a comma is the DECIMAL separator, so the old hardcoded "€285,000" read as
+ * €285 to most of the agents this product is sold to.
+ */
+describe("price and area grouping follow the agent's language", () => {
+  it("groups with a DOT for languages that use a decimal comma", () => {
+    expect(formatPrice(285000, "EUR", { locale: "es" })).toBe("€285.000");
+    expect(formatPrice(285000, "EUR", { locale: "de" })).toBe("€285.000");
+    expect(formatPrice(285000, "EUR", { locale: "it" })).toBe("€285.000");
+  });
+
+  it("still groups with a comma for English", () => {
+    expect(formatPrice(285000, "EUR", { locale: "en" })).toBe("€285,000");
+  });
+
+  it("resolves Norwegian through the catalogue alias, not to English", () => {
+    // 'no' is the catalogue code, 'nb' is canonical in storage — both must work,
+    // and nb-NO groups with a non-breaking space, never a comma.
+    const asNo = formatPrice(285000, "EUR", { locale: "no" });
+    const asNb = formatPrice(285000, "EUR", { locale: "nb" });
+    expect(asNb).toBe(asNo);
+    expect(asNo).not.toBe("€285,000");
+  });
+
+  it("falls back to the OLD behaviour when no locale is passed", () => {
+    // Every existing call site keeps working exactly as before.
+    expect(formatPrice(285000, "EUR")).toBe("€285,000");
+    expect(formatArea(120)).toBe("120 m²");
+  });
+
+  it("an unknown locale never throws and never changes the number", () => {
+    expect(formatPrice(285000, "EUR", { locale: "zz-not-real" })).toBe("€285,000");
+  });
+});

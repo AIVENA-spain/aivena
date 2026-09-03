@@ -1024,6 +1024,38 @@
       "saving": "Enregistrement…",
       "count": "{n} marchés enregistrés",
       "empty": "Aucun marché choisi pour l'instant"
+    },
+    "agencyProfile": {
+      "intro": "Cinq champs, deux minutes. Tout le reste — vos ventes réalisées, vos délais, vos cas concrets — sera demandé plus tard, et seulement lorsqu'une publication précise en tirera vraiment profit. Rien ici ne bloque quoi que ce soit : laissez tout vide et Aivena écrit quand même.",
+      "areas": {
+        "label": "Les communes où vous travaillez réellement",
+        "placeholder": "Jávea, Moraira, Dénia, Teulada",
+        "help": "Permet de limiter les affirmations locales aux zones que vous couvrez vraiment."
+      },
+      "mandate": {
+        "label": "Types de mandat proposés",
+        "exclusive": "Exclusif",
+        "open": "Simple",
+        "both": "Les deux"
+      },
+      "commission": {
+        "label": "Votre commission",
+        "why": "Utile uniquement si vous voulez des publications sur ce que coûte une vente au vendeur. Sinon, passez.",
+        "placeholder": "par ex. 5 % du prix de vente"
+      },
+      "vat": {
+        "label": "Est-elle annoncée TVA comprise ou hors TVA ?",
+        "help": "Les deux se pratiquent en Espagne, donc Aivena ne devine jamais. Sans cette précision, il ne dira simplement pas laquelle.",
+        "exclusive": "Hors TVA",
+        "inclusive": "TVA comprise"
+      },
+      "permission": {
+        "label": "Vous pouvez utiliser ce que je vous indique dans les publications",
+        "help": "Uniquement des informations que vous nous avez réellement fournies. Aivena n'invente jamais vos chiffres, vos ventes ni vos clients."
+      },
+      "save": "Enregistrer",
+      "saving": "Enregistrement…",
+      "later": "Le reste peut attendre qu'une publication en ait besoin."
     }
   },
   "performance": {

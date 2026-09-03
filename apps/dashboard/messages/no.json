@@ -1024,6 +1024,38 @@
       "saving": "Lagrer…",
       "count": "{n} markeder lagret",
       "empty": "Ingen markeder valgt ennå"
+    },
+    "agencyProfile": {
+      "intro": "Fem felt, to minutter. Alt tyngre – fullførte salg, tidsbruk, kundehistorier – spør vi om senere, og bare når et konkret innlegg faktisk blir bedre av det. Ingenting her blokkerer noe: la alt stå tomt, og Aivena skriver likevel.",
+      "areas": {
+        "label": "Stedene dere faktisk jobber",
+        "placeholder": "Jávea, Moraira, Dénia, Teulada",
+        "help": "Brukes for å holde lokale påstander til områder dere virkelig dekker."
+      },
+      "mandate": {
+        "label": "Oppdragstyper dere tilbyr",
+        "exclusive": "Eksklusiv",
+        "open": "Åpen",
+        "both": "Begge"
+      },
+      "commission": {
+        "label": "Provisjonen deres",
+        "why": "Trengs bare hvis dere vil ha innlegg om hva et salg koster selgeren. Hopp over ellers.",
+        "placeholder": "f.eks. 5 % av salgssummen"
+      },
+      "vat": {
+        "label": "Er den oppgitt med eller uten MVA?",
+        "help": "Begge deler er vanlig i Spania, så Aivena gjetter aldri. Uten dette sier den rett og slett ikke hvilken.",
+        "exclusive": "Pluss MVA",
+        "inclusive": "MVA inkludert"
+      },
+      "permission": {
+        "label": "Dere kan bruke det jeg forteller dere i publiserte innlegg",
+        "help": "Bare opplysninger dere faktisk har gitt oss. Aivena finner aldri på tall, salg eller kunder for dere."
+      },
+      "save": "Lagre",
+      "saving": "Lagrer…",
+      "later": "Resten kan vente til et innlegg trenger det."
     }
   },
   "performance": {

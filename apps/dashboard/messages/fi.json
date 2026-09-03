@@ -1024,6 +1024,38 @@
       "saving": "Tallennetaan…",
       "count": "{n} markkinaa tallennettu",
       "empty": "Markkinoita ei ole vielä valittu"
+    },
+    "agencyProfile": {
+      "intro": "Viisi kenttää, kaksi minuuttia. Kaikki raskaampi – toteutuneet kaupat, aikataulut, oikeat esimerkit – kysytään myöhemmin ja vain silloin, kun jokin tietty julkaisu siitä oikeasti paranee. Mikään tässä ei estä mitään: jätä tyhjäksi, ja Aivena kirjoittaa silti.",
+      "areas": {
+        "label": "Paikkakunnat, joilla todella toimitte",
+        "placeholder": "Jávea, Moraira, Dénia, Teulada",
+        "help": "Pitää paikalliset väitteet alueilla, jotka todella katatte."
+      },
+      "mandate": {
+        "label": "Tarjoamanne toimeksiantotyypit",
+        "exclusive": "Yksinoikeus",
+        "open": "Avoin",
+        "both": "Molemmat"
+      },
+      "commission": {
+        "label": "Palkkionne",
+        "why": "Tarvitaan vain, jos haluatte julkaisuja siitä, mitä myynti maksaa myyjälle. Muuten ohita.",
+        "placeholder": "esim. 5 % kauppahinnasta"
+      },
+      "vat": {
+        "label": "Ilmoitetaanko se arvonlisäveroineen vai ilman?",
+        "help": "Espanjassa käytetään molempia, joten Aivena ei koskaan arvaa. Ilman tätä se ei yksinkertaisesti kerro kumpaa.",
+        "exclusive": "+ alv",
+        "inclusive": "Sis. alv"
+      },
+      "permission": {
+        "label": "Saatte käyttää kertomaani julkaistuissa julkaisuissa",
+        "help": "Vain tiedot, jotka olette meille todella antaneet. Aivena ei koskaan keksi lukujanne, kauppojanne tai asiakkaitanne."
+      },
+      "save": "Tallenna",
+      "saving": "Tallennetaan…",
+      "later": "Muu voi odottaa, kunnes julkaisu sitä tarvitsee."
     }
   },
   "performance": {

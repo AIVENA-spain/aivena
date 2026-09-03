@@ -403,6 +403,8 @@ export async function planCarousel(opts: {
   /** Which markets this agency actually sells to, as prose — so a Norwegian buyer is not written
    *  to as though they were British. Derived from settings; empty when the agency has set none. */
   marketBrief?: string;
+  /** Facts the agency itself supplied. Absent means absent — never estimated, never inferred. */
+  agencyEvidence?: string;
   /** Christian 2026-08-31 ("they could have a little box that informs them yes") — the caller
    *  receives what the research established, so the agent can read what their tips were built on
    *  before publishing under their own name. */
@@ -479,7 +481,7 @@ beats a confident one on a false one. The topic is a suggestion; the research is
 ${brief}
 ` : ''}${brief ? `
 ${STATUS_MODEL}
-${opts.marketBrief ? `\n${opts.marketBrief}\n` : ''}
+${opts.marketBrief ? `\n${opts.marketBrief}\n` : ''}${opts.agencyEvidence ? `\n${opts.agencyEvidence}\n` : ''}
 ` : ''} For anything about the NIE, banks, taxes, residency, mortgages or ownership: state what is USUALLY true and why it helps, never an absolute impossibility you cannot verify. Worked example of the failure: "without a local account you cannot pay utilities, taxes or a mortgage" is FALSE — Eurozone SEPA rules forbid refusing a valid IBAN from another member state. The honest version keeps the value: "a Spanish account makes utilities, taxes and a mortgage far simpler to run".
 
 ${CLAIM_TYPES}

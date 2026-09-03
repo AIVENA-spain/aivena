@@ -568,3 +568,29 @@ export async function saveTargetMarketsAction(
     return actionError("saveTargetMarketsAction", err);
   }
 }
+
+// ---------- agency evidence profile (the small required core) ----------
+
+/**
+ * Save the five-field profile. Everything heavier is collected later, in context, one question at a
+ * time — asking an agency for completed-sale datasets before they have seen a single post turns the
+ * product into homework, and most of that evidence is never needed.
+ */
+export async function saveAgencyProfileAction(
+  profile: Record<string, string | undefined>,
+): Promise<ActionResult<{ profile: Record<string, string> }>> {
+  try {
+    const clean: Record<string, string> = {};
+    for (const [k, v] of Object.entries(profile)) {
+      if (typeof v === "string" && v.trim()) clean[k] = v.trim();
+    }
+    const res = await apiFetch<{ ok: true; prefs: Record<string, string> }>(
+      "/api/studio/preferences",
+      { method: "POST", body: JSON.stringify({ prefs: clean }) },
+    );
+    revalidatePath("/settings");
+    return { ok: true, data: { profile: res.prefs ?? {} } };
+  } catch (err) {
+    return actionError("saveAgencyProfileAction", err);
+  }
+}

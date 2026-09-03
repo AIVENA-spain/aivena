@@ -1024,6 +1024,38 @@
       "saving": "Zapisywanie…",
       "count": "Zapisano rynki: {n}",
       "empty": "Nie wybrano jeszcze żadnych rynków"
+    },
+    "agencyProfile": {
+      "intro": "Pięć pól, dwie minuty. Wszystko cięższe — zamknięte transakcje, wasze terminy, prawdziwe przykłady — pytamy później i tylko wtedy, gdy konkretny post faktycznie na tym zyska. Nic tu niczego nie blokuje: zostawcie puste, a Aivena i tak pisze.",
+      "areas": {
+        "label": "Miejscowości, w których naprawdę pracujecie",
+        "placeholder": "Jávea, Moraira, Dénia, Teulada",
+        "help": "Dzięki temu twierdzenia lokalne dotyczą wyłącznie obszarów, które faktycznie obsługujecie."
+      },
+      "mandate": {
+        "label": "Oferowane rodzaje umów",
+        "exclusive": "Na wyłączność",
+        "open": "Otwarta",
+        "both": "Obie"
+      },
+      "commission": {
+        "label": "Wasza prowizja",
+        "why": "Potrzebne tylko, jeśli chcecie postów o kosztach sprzedaży dla sprzedającego. W innym razie pomińcie.",
+        "placeholder": "np. 5% ceny sprzedaży"
+      },
+      "vat": {
+        "label": "Podawana z VAT czy bez?",
+        "help": "W Hiszpanii spotyka się obie formy, więc Aivena nigdy nie zgaduje. Bez tego po prostu nie powie która.",
+        "exclusive": "Plus VAT",
+        "inclusive": "Z VAT"
+      },
+      "permission": {
+        "label": "Możecie wykorzystywać to, co wam przekażę, w publikowanych postach",
+        "help": "Tylko dane, które faktycznie nam przekazaliście. Aivena nigdy nie zmyśla waszych liczb, transakcji ani klientów."
+      },
+      "save": "Zapisz",
+      "saving": "Zapisywanie…",
+      "later": "Reszta może poczekać, aż post będzie tego potrzebował."
     }
   },
   "performance": {

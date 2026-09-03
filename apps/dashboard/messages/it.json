@@ -1024,6 +1024,38 @@
       "saving": "Salvataggio…",
       "count": "{n} mercati salvati",
       "empty": "Nessun mercato ancora scelto"
+    },
+    "agencyProfile": {
+      "intro": "Cinque campi, due minuti. Tutto il resto — le vendite concluse, i vostri tempi, i casi reali — lo chiediamo più avanti e solo quando un contenuto specifico ne trae davvero vantaggio. Niente qui blocca nulla: lasciate tutto vuoto e Aivena scrive comunque.",
+      "areas": {
+        "label": "Comuni in cui lavorate davvero",
+        "placeholder": "Jávea, Moraira, Dénia, Teulada",
+        "help": "Serve a limitare le affermazioni locali alle zone che coprite realmente."
+      },
+      "mandate": {
+        "label": "Tipi di incarico offerti",
+        "exclusive": "In esclusiva",
+        "open": "Aperto",
+        "both": "Entrambi"
+      },
+      "commission": {
+        "label": "La vostra provvigione",
+        "why": "Serve solo se volete contenuti su quanto costa vendere. Altrimenti saltate.",
+        "placeholder": "es. 5% del prezzo di vendita"
+      },
+      "vat": {
+        "label": "È indicata con o senza IVA?",
+        "help": "In Spagna si usano entrambe, quindi Aivena non tira mai a indovinare. Senza questo dato semplicemente non lo dirà.",
+        "exclusive": "Più IVA",
+        "inclusive": "IVA inclusa"
+      },
+      "permission": {
+        "label": "Potete usare ciò che vi dico nei contenuti pubblicati",
+        "help": "Solo dati che ci avete effettivamente fornito. Aivena non inventa mai i vostri numeri, le vostre vendite o i vostri clienti."
+      },
+      "save": "Salva",
+      "saving": "Salvataggio…",
+      "later": "Il resto può attendere che un contenuto ne abbia bisogno."
     }
   },
   "performance": {

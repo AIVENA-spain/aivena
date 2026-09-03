@@ -1024,6 +1024,38 @@
       "saving": "Guardando…",
       "count": "{n} mercados guardados",
       "empty": "Aún no ha elegido mercados"
+    },
+    "agencyProfile": {
+      "intro": "Cinco campos, dos minutos. Todo lo demás —sus ventas cerradas, sus plazos, sus casos reales— se pide más tarde y solo cuando una publicación concreta lo mejore de verdad. Nada de esto bloquea nada: déjelo vacío y AIVENA sigue escribiendo.",
+      "areas": {
+        "label": "Municipios en los que trabaja realmente",
+        "placeholder": "Jávea, Moraira, Dénia, Teulada",
+        "help": "Sirve para no hacer afirmaciones locales sobre zonas que no cubre."
+      },
+      "mandate": {
+        "label": "Tipos de encargo que ofrece",
+        "exclusive": "Exclusiva",
+        "open": "Abierto",
+        "both": "Ambos"
+      },
+      "commission": {
+        "label": "Su comisión",
+        "why": "Solo hace falta si quiere publicaciones sobre lo que cuesta vender. Si no, sáltelo.",
+        "placeholder": "p. ej. 5% del precio de venta"
+      },
+      "vat": {
+        "label": "¿Se indica con o sin IVA?",
+        "help": "En España se usan ambas formas, así que AIVENA nunca lo dará por supuesto. Sin este dato, no dirá cuál es.",
+        "exclusive": "Más IVA",
+        "inclusive": "IVA incluido"
+      },
+      "permission": {
+        "label": "Pueden usar lo que les cuente en las publicaciones",
+        "help": "Solo datos que usted nos haya dado. AIVENA nunca inventa sus cifras, sus ventas ni sus clientes."
+      },
+      "save": "Guardar",
+      "saving": "Guardando…",
+      "later": "Lo demás puede esperar a que una publicación lo necesite."
     }
   },
   "performance": {

@@ -1024,6 +1024,38 @@
       "saving": "Wird gespeichert…",
       "count": "{n} Märkte gespeichert",
       "empty": "Noch keine Märkte gewählt"
+    },
+    "agencyProfile": {
+      "intro": "Fünf Felder, zwei Minuten. Alles Aufwendigere – abgeschlossene Verkäufe, Ihre Zeiträume, echte Fallbeispiele – fragen wir später und nur dann, wenn ein konkreter Beitrag dadurch wirklich besser wird. Nichts davon blockiert etwas: Lassen Sie alles leer, und Aivena schreibt trotzdem.",
+      "areas": {
+        "label": "Orte, in denen Sie tatsächlich arbeiten",
+        "placeholder": "Jávea, Moraira, Dénia, Teulada",
+        "help": "Damit lokale Aussagen auf Gebiete beschränkt bleiben, die Sie wirklich abdecken."
+      },
+      "mandate": {
+        "label": "Angebotene Auftragsarten",
+        "exclusive": "Exklusiv",
+        "open": "Offen",
+        "both": "Beide"
+      },
+      "commission": {
+        "label": "Ihre Provision",
+        "why": "Nur nötig, wenn Sie Beiträge über die Verkaufskosten wünschen. Sonst überspringen.",
+        "placeholder": "z. B. 5 % des Verkaufspreises"
+      },
+      "vat": {
+        "label": "Wird sie mit oder ohne MwSt. genannt?",
+        "help": "In Spanien ist beides üblich, deshalb rät Aivena nie. Ohne diese Angabe nennt es schlicht keine.",
+        "exclusive": "Zzgl. MwSt.",
+        "inclusive": "Inkl. MwSt."
+      },
+      "permission": {
+        "label": "Sie dürfen verwenden, was ich Ihnen sage, in veröffentlichten Beiträgen",
+        "help": "Nur Angaben, die Sie uns tatsächlich gemacht haben. Aivena erfindet niemals Ihre Zahlen, Verkäufe oder Kunden."
+      },
+      "save": "Speichern",
+      "saving": "Wird gespeichert…",
+      "later": "Alles Weitere kann warten, bis ein Beitrag es braucht."
     }
   },
   "performance": {

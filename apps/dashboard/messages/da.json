@@ -1024,6 +1024,38 @@
       "saving": "Gemmer…",
       "count": "{n} markeder gemt",
       "empty": "Ingen markeder valgt endnu"
+    },
+    "agencyProfile": {
+      "intro": "Fem felter, to minutter. Alt tungere – gennemførte salg, jeres tidsforløb, rigtige eksempler – spørger vi om senere, og kun når et konkret opslag faktisk bliver bedre af det. Intet her blokerer noget: lad det stå tomt, og Aivena skriver alligevel.",
+      "areas": {
+        "label": "Byer I reelt arbejder i",
+        "placeholder": "Jávea, Moraira, Dénia, Teulada",
+        "help": "Holder lokale udsagn til områder, I faktisk dækker."
+      },
+      "mandate": {
+        "label": "Opdragstyper I tilbyder",
+        "exclusive": "Eksklusiv",
+        "open": "Åben",
+        "both": "Begge"
+      },
+      "commission": {
+        "label": "Jeres salær",
+        "why": "Kun nødvendigt, hvis I vil have opslag om, hvad et salg koster sælger. Ellers spring over.",
+        "placeholder": "f.eks. 5 % af salgsprisen"
+      },
+      "vat": {
+        "label": "Er det oplyst med eller uden moms?",
+        "help": "Begge dele er almindeligt i Spanien, så Aivena gætter aldrig. Uden dette siger den simpelthen ikke hvilket.",
+        "exclusive": "Plus moms",
+        "inclusive": "Moms inkluderet"
+      },
+      "permission": {
+        "label": "I må bruge det, jeg fortæller jer, i offentliggjorte opslag",
+        "help": "Kun oplysninger, I faktisk har givet os. Aivena opfinder aldrig jeres tal, salg eller kunder."
+      },
+      "save": "Gem",
+      "saving": "Gemmer…",
+      "later": "Resten kan vente, til et opslag har brug for det."
     }
   },
   "performance": {

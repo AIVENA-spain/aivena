@@ -1024,6 +1024,38 @@
       "saving": "Saving…",
       "count": "{n} markets saved",
       "empty": "No markets chosen yet"
+    },
+    "agencyProfile": {
+      "intro": "Five fields, two minutes. Everything heavier — your completed sales, your timings, your case studies — is asked later and only when a specific post would actually be better for it. Nothing here blocks anything: leave it all empty and Aivena still writes.",
+      "areas": {
+        "label": "Towns you actually work",
+        "placeholder": "Jávea, Moraira, Dénia, Teulada",
+        "help": "Used to keep local claims to places you really cover."
+      },
+      "mandate": {
+        "label": "Mandate types you offer",
+        "exclusive": "Exclusive",
+        "open": "Open",
+        "both": "Both"
+      },
+      "commission": {
+        "label": "Your commission",
+        "why": "Only needed if you want posts about what a sale costs a seller. Skip it otherwise.",
+        "placeholder": "e.g. 5% of the sale price"
+      },
+      "vat": {
+        "label": "Is that quoted with or without VAT?",
+        "help": "Both are common in Spain, so Aivena will never guess. Without this it simply won't state which.",
+        "exclusive": "Plus VAT",
+        "inclusive": "VAT included"
+      },
+      "permission": {
+        "label": "You may use what I tell you in published posts",
+        "help": "Only facts you have actually given us. Aivena never invents your figures, your sales or your clients."
+      },
+      "save": "Save",
+      "saving": "Saving…",
+      "later": "Anything else can wait until a post needs it."
     }
   },
   "performance": {

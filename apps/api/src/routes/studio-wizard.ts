@@ -437,6 +437,63 @@ route.get('/status/:id', async (c) => {
  * there (19% for EU + Iceland/Norway/Liechtenstein, 24% otherwise). Capital gains on a property sale
  * is a flat 19% for every non-resident and is deliberately NOT in this table.
  */
+/**
+ * The Agency Evidence Profile — deliberately small.
+ *
+ * An agency should be able to finish this in two or three minutes and start generating. Asking for
+ * completed-sale datasets, historical asking-vs-sold prices or timeline spreadsheets before anyone
+ * has seen a single post turns the product into homework, and most of it is never needed: private
+ * evidence is required only when a post makes a measurable claim about THIS agency's own history,
+ * which is rare.
+ *
+ * Three tiers, and only the first is asked up front:
+ *   core     — required, tiny, and every field is something the agency can answer from memory.
+ *   optional — supplied later, when a post would actually be better for it.
+ *   learned  — facts the agency gave during normal use and approved for reuse, with provenance.
+ *
+ * Nothing here is ever inferred. An absent fact means the post is written without it, not that the
+ * post is blocked: the public version of a topic always exists, and the agency-specific version is
+ * an upgrade the agency unlocks by answering one question at the moment it matters.
+ */
+const PROFILE_CORE = new Set([
+  'service_areas',      // towns they actually work
+  'commission',         // only needed for seller-cost content
+  'commission_vat',     // 'inclusive' | 'exclusive' — never assumed either way
+  'mandate_types',      // exclusive / open / both
+  'content_permission', // may we use what you tell us, in published posts
+]);
+/** Optional evidence, only ever collected in context and never at onboarding. */
+const PROFILE_OPTIONAL = new Set([
+  'completed_sales', 'asking_vs_agreed', 'time_to_sell', 'remote_sales',
+  'exclusive_vs_open', 'renovation_outcomes', 'case_studies', 'house_positions',
+]);
+
+/** Prose for the writer: what this agency has actually told us, and nothing more. */
+export function agencyEvidence(prefs: Record<string, unknown> | null): string {
+  if (!prefs) return '';
+  const lines: string[] = [];
+  const get = (k: string) => (typeof prefs[k] === 'string' ? (prefs[k] as string).trim() : '');
+  if (get('service_areas')) lines.push(`· Works in: ${get('service_areas')}`);
+  if (get('mandate_types')) lines.push(`· Mandate types offered: ${get('mandate_types')}`);
+  if (get('commission')) {
+    const vat = get('commission_vat');
+    lines.push(`· Commission: ${get('commission')}`
+      + (vat ? ` (quoted ${vat} of VAT — say which, never assume)` : ''));
+  }
+  for (const k of PROFILE_OPTIONAL) {
+    const v = get(k);
+    if (v) lines.push(`· ${k.replace(/_/g, ' ')}: ${v}`);
+  }
+  if (!lines.length) return '';
+  const consented = get('content_permission') === 'yes';
+  return `WHAT THIS AGENCY HAS ACTUALLY TOLD US — the only agency facts you may state:\n${lines.join('\n')}\n`
+    + (consented
+        ? 'The agency has agreed these may appear in published posts.'
+        : 'The agency has NOT yet agreed to these appearing in posts — use them to steer the angle, never quote them.')
+    + '\nAnything about this agency that is not on this list does not exist. Do not estimate it, do not'
+    + ' infer it from the market, and do not write around it with a vaguer version of the same claim.';
+}
+
 export const MARKETS: Record<string, { name: string; regime: 'eu' | 'eea' | 'ch' | 'third'; irnr: 19 | 24 }> = {
   GB: { name: 'United Kingdom', regime: 'third', irnr: 24 },
   IE: { name: 'Ireland',        regime: 'eu',    irnr: 19 },
@@ -485,6 +542,10 @@ const PREF_KEYS = new Set([
   // the ten-palette bracket: the champion world + its hexes (the earlier three keys stay
   // whitelisted so a profile saved before this still reads back)
   'palette', 'palette_main', 'palette_accent', 'palette_base',
+  // Agency Evidence Profile — the small required core plus optional evidence added later
+  'service_areas', 'commission', 'commission_vat', 'mandate_types', 'content_permission',
+  'completed_sales', 'asking_vs_agreed', 'time_to_sell', 'remote_sales',
+  'exclusive_vs_open', 'renovation_outcomes', 'case_studies', 'house_positions',
 ]);
 route.get('/preferences', async (c) => {
   const tx = c.get('tx');
@@ -505,7 +566,10 @@ route.post('/preferences', async (c) => {
   const raw = (b.prefs && typeof b.prefs === 'object' ? b.prefs : {}) as Record<string, unknown>;
   const prefs: Record<string, string> = {};
   for (const [k, v] of Object.entries(raw)) {
-    if (PREF_KEYS.has(k) && typeof v === 'string' && v.length <= 40) prefs[k] = v;
+    if (!PREF_KEYS.has(k) || typeof v !== 'string') continue;
+    // profile answers are sentences; the taste-game keys are short tokens
+    const cap = PROFILE_CORE.has(k) || PROFILE_OPTIONAL.has(k) ? 1200 : 40;
+    if (v.length <= cap) prefs[k] = v;
   }
   if (typeof raw.likes === 'string' && raw.likes.trim()) prefs.likes = raw.likes.trim().slice(0, 300);
   if (typeof raw.dislikes === 'string' && raw.dislikes.trim()) prefs.dislikes = raw.dislikes.trim().slice(0, 300);
@@ -1311,6 +1375,7 @@ async function runPlannedCarousel(opts: {
   lockPalette?: boolean;   // user picked custom colours — edition may not recolour
   agencyTaste?: string;    // one-line taste profile from the this-or-that game (art-director hint)
   marketBrief?: string;    // which markets this agency sells to, and each one's legal regime
+  agencyEvidence?: string; // the facts this agency has supplied — the only agency facts that exist
 }): Promise<void> {
   const { genId, agencyId } = opts;
   try {
@@ -1348,6 +1413,7 @@ async function runPlannedCarousel(opts: {
       slideCount: opts.slideCount, language: opts.language, agencyName: opts.agency.name,
       agencyProfile: opts.agencyProfile, avoidMotifs,
       marketBrief: opts.marketBrief,
+      agencyEvidence: opts.agencyEvidence,
       onResearch: (b) => { research = b; },
     });
     // EDITOR pass (Christian 2026-08-28): a skeptical second read of the copy — sense, value,
@@ -1570,6 +1636,9 @@ route.post('/carousel', async (c) => {
         ? ((prefs as Record<string, unknown>).markets as unknown[]).filter((x): x is string => typeof x === 'string')
         : [];
       const brief = marketBrief(marketCodes);
+      // What the agency has actually told us. Absent facts stay absent — the public version of a
+      // topic always exists, and the agency-specific version is an upgrade, not a precondition.
+      const evidence = agencyEvidence(prefs as Record<string, unknown> | null);
       // The colours this deck will ACTUALLY render with (override ?? edition palette ?? agency
       // brand) — stored so the finished-deck colour pickers open on the truth instead of generic
       // defaults, which silently overwrote real brand/edition colours on "Apply colours".
@@ -1595,7 +1664,7 @@ route.post('/carousel', async (c) => {
       void runPlannedCarousel({
         genId, agencyId, type, topic, quoteText, quoteAuthor, slideCount, language, style, scheme, includeRecap, includeContext,
         agency: { name: agency.name, web: agency.web, phone: agency.phone }, brand,
-        agencyProfile, styleEdition, lockPalette, agencyTaste, marketBrief: brief,
+        agencyProfile, styleEdition, lockPalette, agencyTaste, marketBrief: brief, agencyEvidence: evidence,
       });
       return c.json({ ok: true, generation_id: genId, status: 'processing' });
     }

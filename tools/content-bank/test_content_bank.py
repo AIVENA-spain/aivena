@@ -23,7 +23,8 @@ LEDGER = os.path.join(HERE, "ledger.json")
 FIXTURES = os.path.join(HERE, "fixtures", "known_failures.json")
 LINT = os.path.join(HERE, "lint_banks.py")
 STRUCT_FIXTURES = os.path.join(HERE, "fixtures", "structural_failures.json")
-RENDERED = [os.path.join(HERE, "seller-bank.html"), os.path.join(HERE, "buyer-bank.html")]
+RENDERED = [os.path.join(HERE, "seller-bank.html"), os.path.join(HERE, "buyer-bank.html"),
+            os.path.join(HERE, "seller-bank.md"), os.path.join(HERE, "buyer-bank.md")]
 # Text that must never appear in a production field, whatever the source JSON says.
 PLACEHOLDER = re.compile(r"\[(NAME|TOWN|FIGURE|INSERT|TODO|XX)\b[^\]]*\]", re.I)
 # A replacement pasted over its own target leaves the join visible.
@@ -222,8 +223,11 @@ def rule_12_rendered_artifact(rendered):
         page = open(path, encoding="utf-8").read()
         name = os.path.basename(path)
 
-        # exactly one status summary
-        summaries = re.findall(r"<span>((?:Verified|Research verified|Needs review|Blocked) \d+[^<]*)</span>", page)
+        # exactly one status summary, in whichever wrapper the format uses
+        pattern = (r"\*\*((?:Verified|Research verified|Needs review|Blocked) \d+[^*]*)\*\*"
+                   if path.endswith(".md") else
+                   r"<span>((?:Verified|Research verified|Needs review|Blocked) \d+[^<]*)</span>")
+        summaries = re.findall(pattern, page)
         if len(summaries) != 1:
             fail("duplicate-status-summary", name,
                  f"{len(summaries)} status summaries on the page: {summaries}")
@@ -311,6 +315,29 @@ def rule_11_structural_fixtures():
             fail("structural-fixture", c["id"], f"did not trigger rule '{c['rule']}'")
 
 
+def rule_14_rendered_fixtures():
+    """The rendered-artifact rule must be able to fail on a rendered artifact.
+
+    rule_12 was written after a frozen page shipped with two status summaries and a stale fixture
+    count. A rule with no deliberately broken page behind it proves only that the current page is
+    fine today.
+    """
+    d = os.path.join(HERE, "fixtures", "rendered")
+    expect = {"duplicate_status_summary.html": "duplicate-status-summary",
+              "stale_fixture_count.html": "fixture-count"}
+    for name, rule in expect.items():
+        path = os.path.join(d, name)
+        if not os.path.exists(path):
+            fail("rendered-fixture", name, "missing")
+            continue
+        before = len(failures)
+        rule_12_rendered_artifact([path])
+        caught = [f for f in failures[before:] if f[0] == rule]
+        del failures[before:]
+        if not caught:
+            fail("rendered-fixture", name, f"did not trigger rule '{rule}'")
+
+
 def rule_9_lint_can_fail():
     """The lint must catch every known failure. A lint that cannot fail proves nothing.
 
@@ -348,6 +375,7 @@ def main():
     rule_8_lint(banks)
     rule_9_lint_can_fail()
     rule_11_structural_fixtures()
+    rule_14_rendered_fixtures()
 
     if not quiet:
         for rule, where, detail in failures:

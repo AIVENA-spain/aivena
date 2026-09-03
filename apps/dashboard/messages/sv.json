@@ -1024,6 +1024,38 @@
       "saving": "Sparar…",
       "count": "{n} marknader sparade",
       "empty": "Inga marknader valda än"
+    },
+    "agencyProfile": {
+      "intro": "Fem fält, två minuter. Allt tyngre – avslutade affärer, era tider, riktiga kundexempel – frågar vi om senare, och bara när ett konkret inlägg faktiskt blir bättre av det. Inget här blockerar något: lämna allt tomt så skriver Aivena ändå.",
+      "areas": {
+        "label": "Orter ni faktiskt arbetar i",
+        "placeholder": "Jávea, Moraira, Dénia, Teulada",
+        "help": "Håller lokala påståenden till områden ni verkligen täcker."
+      },
+      "mandate": {
+        "label": "Uppdragsformer ni erbjuder",
+        "exclusive": "Exklusivt",
+        "open": "Öppet",
+        "both": "Båda"
+      },
+      "commission": {
+        "label": "Er provision",
+        "why": "Behövs bara om ni vill ha inlägg om vad en försäljning kostar säljaren. Hoppa annars över.",
+        "placeholder": "t.ex. 5 % av försäljningspriset"
+      },
+      "vat": {
+        "label": "Anges den med eller utan moms?",
+        "help": "Båda förekommer i Spanien, så Aivena gissar aldrig. Utan detta säger den helt enkelt inte vilket.",
+        "exclusive": "Plus moms",
+        "inclusive": "Moms ingår"
+      },
+      "permission": {
+        "label": "Ni får använda det jag berättar i publicerade inlägg",
+        "help": "Bara uppgifter ni faktiskt gett oss. Aivena hittar aldrig på era siffror, affärer eller kunder."
+      },
+      "save": "Spara",
+      "saving": "Sparar…",
+      "later": "Resten kan vänta tills ett inlägg behöver det."
     }
   },
   "performance": {

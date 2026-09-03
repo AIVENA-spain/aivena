@@ -38,6 +38,7 @@ import { CalendarResultBanner } from "./sections/calendar-section";
 import { ChannelsSection } from "./sections/channels-section";
 import { LanguagesSection } from "./sections/languages-section";
 import { MarketsSection } from "./sections/markets-section";
+import { AgencyProfileSection } from "./sections/agency-profile-section";
 import { TeamSection } from "./sections/team-section";
 import { PlanPrefsSection } from "./sections/plan-prefs-section";
 import { CatalogueSection } from "./sections/catalogue-section";
@@ -83,7 +84,7 @@ export default async function SettingsPage({
     apiFetch<CalendarStatusResponse>("/api/v1/calendar/status"),
     apiFetch<AmandaSettingsResponse>("/api/v1/amanda/settings"),
     apiFetch<{ ok: true; agents: AgentRow[] }>("/api/v1/amanda/agents"),
-    apiFetch<{ ok: true; prefs: { markets?: string[] } | null }>("/api/studio/preferences"),
+    apiFetch<{ ok: true; prefs: Record<string, any> | null }>("/api/studio/preferences"),
   ]);
 
   if (settingsRes.status === "rejected") {
@@ -107,6 +108,14 @@ export default async function SettingsPage({
       ? studioPrefsRes.value.prefs.markets
       : [];
   if (studioPrefsRes.status === "rejected") logFailure("studio-preferences", studioPrefsRes.reason);
+
+  // The five-field profile lives in the same prefs blob; an agency with none simply has none.
+  const sp = studioPrefsRes.status === "fulfilled" ? (studioPrefsRes.value.prefs ?? {}) : {};
+  const agencyProfile = {
+    service_areas: sp.service_areas, commission: sp.commission,
+    commission_vat: sp.commission_vat, mandate_types: sp.mandate_types,
+    content_permission: sp.content_permission,
+  };
 
   // Feed config (P3-A) is enhancement, not load-critical: a non-owner gets 403 and a pre-deploy build
   // gets 404 — either way the feed form seeds empty. Never block the page on it.
@@ -280,6 +289,9 @@ export default async function SettingsPage({
           </div>
           <div className="border-t border-border/60 pt-5">
             <MarketsSection initial={targetMarkets} />
+          </div>
+          <div className="border-t border-border/60 pt-5">
+            <AgencyProfileSection initial={agencyProfile} />
           </div>
         </div>
       ),

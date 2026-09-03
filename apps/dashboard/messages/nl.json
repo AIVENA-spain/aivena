@@ -1024,6 +1024,38 @@
       "saving": "Opslaan…",
       "count": "{n} markten opgeslagen",
       "empty": "Nog geen markten gekozen"
+    },
+    "agencyProfile": {
+      "intro": "Vijf velden, twee minuten. Al het zwaardere — uw afgeronde verkopen, uw doorlooptijden, uw praktijkvoorbeelden — vragen we later, en alleen wanneer een concrete post er echt beter van wordt. Niets hiervan blokkeert iets: laat het leeg en Aivena schrijft gewoon door.",
+      "areas": {
+        "label": "Plaatsen waar u echt werkt",
+        "placeholder": "Jávea, Moraira, Dénia, Teulada",
+        "help": "Zo blijven lokale uitspraken beperkt tot gebieden die u werkelijk bedient."
+      },
+      "mandate": {
+        "label": "Opdrachtvormen die u aanbiedt",
+        "exclusive": "Exclusief",
+        "open": "Open",
+        "both": "Beide"
+      },
+      "commission": {
+        "label": "Uw courtage",
+        "why": "Alleen nodig als u posts wilt over wat een verkoop de verkoper kost. Anders overslaan.",
+        "placeholder": "bijv. 5% van de verkoopprijs"
+      },
+      "vat": {
+        "label": "Is dat inclusief of exclusief btw?",
+        "help": "In Spanje komen beide voor, dus Aivena gokt nooit. Zonder dit zegt het simpelweg niet welke.",
+        "exclusive": "Plus btw",
+        "inclusive": "Btw inbegrepen"
+      },
+      "permission": {
+        "label": "U mag gebruiken wat ik u vertel in gepubliceerde posts",
+        "help": "Alleen gegevens die u ons daadwerkelijk hebt gegeven. Aivena verzint nooit uw cijfers, verkopen of klanten."
+      },
+      "save": "Opslaan",
+      "saving": "Opslaan…",
+      "later": "De rest kan wachten tot een post het nodig heeft."
     }
   },
   "performance": {

@@ -21,8 +21,9 @@
 import { env } from '../../../../packages/config/env';
 
 import {
-  dropSentence, endsMidThought, gateField, incompleteBody, planFields, readField, writeField,
-  type GateHit, type PlanLike,
+  adjudicate, dropSentence, endsMidThought, gateField, incompleteBody, planFields, readField,
+  writeField, RESOLVED_HARD_FAIL, RESOLVED_OK,
+  type GateHit, type PlanLike, type Resolution,
 } from './studio-copy-gate';
 
 /** Policed: an external assertion a reader could act on and find false. */
@@ -71,6 +72,12 @@ export interface GateReport {
   dropped: number;
   /** set when a step failed and the gate ran degraded rather than blocking the post */
   degraded: string | null;
+  /** every flagged claim and how it was resolved — no residual is left unexplained */
+  adjudications: Array<{ field: string; text: string; verdict: string; resolution: Resolution }>;
+  /** flags the second-opinion validator raised, before adjudication */
+  rawFlags: number;
+  /** flags that survived adjudication as genuine failures */
+  materialFailures: number;
 }
 
 // A gate step that fails silently is the bug this whole layer exists to fix. Every failure path
@@ -498,7 +505,7 @@ export async function gatePlan<T extends PlanLike>(
 ): Promise<{ plan: T; report: GateReport }> {
   const report: GateReport = {
     claims: 0, policed: 0, verdicts: {}, blocked: [], deterministic: [],
-    repairs: 0, dropped: 0, degraded: null,
+    repairs: 0, dropped: 0, degraded: null, adjudications: [], rawFlags: 0, materialFailures: 0,
   };
   let current = plan;
 
@@ -548,10 +555,31 @@ export async function gatePlan<T extends PlanLike>(
           + 'the last clause — make the whole point fit.',
       }));
 
-    // Merge: a deterministic hit becomes a failure in its own right, so a model that shrugs at the
-    // 15-day myth cannot wave it through.
+    // ADJUDICATION. The validator's opinion is evidence, not a verdict: a flagged claim is resolved
+    // against the research, the agency's own evidence and its own claim type before anything is
+    // repaired, and only a deterministic contradiction or a missing required research point can
+    // force removal. Without this, chasing a stochastic flag to zero deletes true copy.
+    const hitFields = new Set(hits.map((h) => `${h.field}::${h.sentence}`));
+    const flagged = (verdicts ?? []).filter((v) => !PUBLISHABLE.has(v.verdict));
+    const needRepair: ClaimVerdict[] = [];
+    for (const v of flagged) {
+      const resolution = adjudicate({
+        text: v.text, type: v.type, research: ctx.research,
+        agencyEvidence: ctx.agencyEvidence, uncovered: ctx.uncovered ?? [],
+        deterministic: hitFields.has(`${v.field}::${v.text}`),
+      });
+      if (round === 0) {
+        report.rawFlags++;
+        report.adjudications.push({ field: v.field, text: v.text, verdict: v.verdict, resolution });
+      }
+      if (RESOLVED_OK.has(resolution)) continue;           // stands on evidence — leave it alone
+      needRepair.push(v);
+    }
+
     const failures: ClaimVerdict[] = [
-      ...(verdicts ?? []).filter((v) => !PUBLISHABLE.has(v.verdict)),
+      ...needRepair,
+      // A deterministic hit is a failure in its own right, so a model that shrugs at the 15-day
+      // myth cannot wave it through.
       ...hits.map((h) => ({
         field: h.field, text: h.sentence, type: 'FACTUAL_MATERIAL' as ClaimType,
         verdict: (h.rule.severity === 'block' ? 'CONTRADICTS_GUARDRAIL' : 'UNSUPPORTED') as Verdict,
@@ -559,6 +587,7 @@ export async function gatePlan<T extends PlanLike>(
       })),
       ...cutShort,
     ];
+    if (round === 0) report.materialFailures = failures.length;
     // SUPPORTED_WITH_NUANCE is not a failure — the corrected wording is simply applied.
     for (const v of verdicts ?? []) {
       if (v.verdict === 'SUPPORTED_WITH_NUANCE' && v.rewrite) {

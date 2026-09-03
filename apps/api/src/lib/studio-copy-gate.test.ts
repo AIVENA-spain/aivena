@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { incompleteBody, trimWords, uncoveredRequirements } from './studio-copy-gate';
+import { adjudicate, incompleteBody, trimWords, uncoveredRequirements, RESOLVED_HARD_FAIL, RESOLVED_OK } from './studio-copy-gate';
 
 /**
  * REGRESSION: a generated card shipped ending "timelines still vary by court and".
@@ -130,5 +130,75 @@ describe('the bank asks, the research answers — or the writer is told it did n
     expect(uncoveredRequirements(MUST_B20, '')).toHaveLength(3);
     // Too few distinctive words to judge — silence beats a false alarm the writer must route around.
     expect(uncoveredRequirements(['Check the price'], 'Nothing relevant here at all.')).toHaveLength(0);
+  });
+});
+
+describe('adjudication — the second opinion is evidence, not a judge', () => {
+  const RESEARCH = 'Non-resident sellers have 3% of the price withheld by the buyer and paid to the '
+    + 'Treasury. Plusvalía municipal is charged by the town hall on the rise in land value.';
+  const EVIDENCE = 'WHAT THIS AGENCY HAS ACTUALLY TOLD US:\n· Works in: Jávea, Moraira, Dénia, '
+    + 'Teulada\n· Mandate types offered: both\n· Staff actually speak: es, en, nl, de\n'
+    + 'Sales and listings on the northern Costa Blanca.';
+  const base = { type: 'FACTUAL_MATERIAL', research: RESEARCH, agencyEvidence: EVIDENCE, uncovered: [] as string[] };
+
+  it('rescues the exact false positive that motivated this', () => {
+    // A stochastic verifier called this UNSUPPORTED. Every town and the service are the agency's own.
+    expect(adjudicate({ ...base, type: 'AGENCY_FACT',
+      text: 'Mediterráneo Costa Homes handles sales and listings in Jávea, Moraira, Dénia and Teulada.' }))
+      .toBe('SUPPORTED_BY_AGENCY_PROFILE');
+  });
+
+  it('keeps what the research actually established', () => {
+    expect(adjudicate({ ...base,
+      text: 'The buyer withholds 3% of the price and pays it to the Treasury.' }))
+      .toBe('SUPPORTED_BY_RESEARCH');
+  });
+
+  it('never lets past performance hide behind a service promise', () => {
+    // Christian's loophole. An offer is fine; a record of results is not.
+    expect(adjudicate({ ...base, type: 'AGENCY_FACT',
+      text: "We've seen how the accountable-team approach plays out on this coast." }))
+      .toBe('NEEDS_REPAIR');
+    expect(adjudicate({ ...base, type: 'AGENCY_FACT', text: 'Our sellers achieve more on average.' }))
+      .toBe('NEEDS_REPAIR');
+    expect(adjudicate({ ...base, type: 'AGENCY_FACT', text: 'We are the leading agency on the coast.' }))
+      .toBe('NEEDS_REPAIR');
+    // But a deliverable offer stands.
+    expect(adjudicate({ ...base, type: 'AGENCY_FACT',
+      text: "Comment COAST and we'll send you the full breakdown." }))
+      .toBe('SERVICE_PROMISE_ALLOWED');
+  });
+
+  it('a claim leaning on an unestablished requirement cannot be rescued by sounding reasonable', () => {
+    expect(adjudicate({ ...base, type: 'LOCAL_FACT',
+      uncovered: ['Year-round versus seasonal population for each'],
+      text: 'Both towns are known to have a busier summer season and a quieter off-season population.' }))
+      .toBe('USES_UNESTABLISHED_REQUIREMENT');
+  });
+
+  it('a deterministic contradiction outranks everything', () => {
+    expect(adjudicate({ ...base, deterministic: true,
+      text: 'Squatters are evicted in 15 days under the reform.' }))
+      .toBe('DETERMINISTIC_CONTRADICTION');
+  });
+
+  it('leaves marketing and positioning alone', () => {
+    expect(adjudicate({ ...base, type: 'MARKETING_PUFFERY',
+      text: 'Buyers scroll fast and judge in seconds.' })).toBe('MARKETING_PUFFERY');
+    expect(adjudicate({ ...base, type: 'OPINION_POSITIONING',
+      text: 'We would rather have one accountable agent than five.' })).toBe('OPINION_POSITIONING');
+  });
+
+  it('still sends a genuinely unsupported factual claim for repair', () => {
+    expect(adjudicate({ ...base,
+      text: 'Exclusive mandates typically carry a commission two points lower than open ones.' }))
+      .toBe('NEEDS_REPAIR');
+  });
+
+  it('classifies every hard fail and every pass into the right bucket', () => {
+    expect(RESOLVED_HARD_FAIL.has('DETERMINISTIC_CONTRADICTION')).toBe(true);
+    expect(RESOLVED_HARD_FAIL.has('USES_UNESTABLISHED_REQUIREMENT')).toBe(true);
+    expect(RESOLVED_OK.has('SUPPORTED_BY_AGENCY_PROFILE')).toBe(true);
+    expect(RESOLVED_OK.has('NEEDS_REPAIR' as never)).toBe(false);
   });
 });

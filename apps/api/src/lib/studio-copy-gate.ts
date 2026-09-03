@@ -546,3 +546,113 @@ export function uncoveredRequirements(must: readonly string[], research: string)
     return hits / terms.length < 0.34;
   });
 }
+
+/* ────────────────────────────────────────────────────────────────────────────────────────────
+ * ADJUDICATION — the second opinion is evidence, not a judge.
+ *
+ * Christian, 2026-09-03: a stochastic verifier called "Mediterráneo Costa Homes handles sales and
+ * listings in Jávea, Moraira, Dénia and Teulada" UNSUPPORTED when all four towns and the service
+ * were supplied by the agency. Chasing that raw number to zero is what removed twelve sentences in
+ * one run and left a card with a blank title. So a flag no longer deletes anything by itself.
+ *
+ * Every flagged claim is resolved against the evidence that already exists, in this order:
+ *   1. does a deterministic rule contradict it?            → hard fail
+ *   2. does it lean on a required point research missed?    → hard fail
+ *   3. is it supported by THIS generation's research?       → keep
+ *   4. is it supported by the agency's own evidence?        → keep
+ *   5. is it puffery, positioning, or a deliverable offer?  → keep
+ *   6. otherwise                                            → repair
+ *
+ * Only 1 and 2 can force removal. Everything else either stands on evidence or gets rewritten.
+ * ──────────────────────────────────────────────────────────────────────────────────────────── */
+
+export type Resolution =
+  | 'DETERMINISTIC_CONTRADICTION'
+  | 'USES_UNESTABLISHED_REQUIREMENT'
+  | 'SUPPORTED_BY_RESEARCH'
+  | 'SUPPORTED_BY_AGENCY_PROFILE'
+  | 'OPINION_POSITIONING'
+  | 'MARKETING_PUFFERY'
+  | 'SERVICE_PROMISE_ALLOWED'
+  | 'FALSE_POSITIVE_VERIFIER'
+  | 'NEEDS_REPAIR';
+
+/** Resolutions that publish as they stand. */
+export const RESOLVED_OK: ReadonlySet<Resolution> = new Set<Resolution>([
+  'SUPPORTED_BY_RESEARCH', 'SUPPORTED_BY_AGENCY_PROFILE', 'OPINION_POSITIONING',
+  'MARKETING_PUFFERY', 'SERVICE_PROMISE_ALLOWED', 'FALSE_POSITIVE_VERIFIER',
+]);
+/** Resolutions that may never publish. */
+export const RESOLVED_HARD_FAIL: ReadonlySet<Resolution> = new Set<Resolution>([
+  'DETERMINISTIC_CONTRADICTION', 'USES_UNESTABLISHED_REQUIREMENT',
+]);
+
+const CLAIM_STOP = new Set(`the a an and or of for to in on at by with from that which is are was
+were be been it its their there any all this these those you your our we us not no can may will
+what how who when where than then so if but as into onto about after before over under more most
+less least only just also even still both such per each every other same own`.split(/\s+/));
+
+const distinctive = (s: string) => [...new Set(
+  s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+    .split(/[^a-z0-9€%]+/).filter((w) => w.length > 3 && !CLAIM_STOP.has(w)))];
+
+/**
+ * Share of a claim's distinctive words that appear in a source text.
+ *
+ * Matched on a five-character prefix, because "seasonal" and "season" are the same fact and exact
+ * matching missed exactly that: a claim about off-season population failed to connect to the
+ * requirement "year-round versus seasonal population", which is the failure this whole check exists
+ * to catch.
+ */
+export function evidenceOverlap(claim: string, source: string): number {
+  if (!source?.trim()) return 0;
+  const terms = distinctive(claim);
+  if (!terms.length) return 0;
+  const hay = source.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  return terms.filter((t) => hay.includes(t.length > 5 ? t.slice(0, 5) : t)).length / terms.length;
+}
+
+/** A claim that is an OFFER rather than a record of what the agency has achieved. */
+const SERVICE_PROMISE = /\b(?:we(?:'| a)?(?:ll| will| can| do| work|'re)|comment|send you|dm|message us|get in touch|book|ask us|talk (?:to|through)|walk you|we handle|we offer|available)\b/i;
+/** A claim about what the agency HAS DONE. Never a service promise, always needs evidence. */
+const PAST_PERFORMANCE = /\b(?:we(?:'| ha)?ve (?:seen|sold|helped|achieved|closed|delivered)|our (?:sellers|clients|listings|sales|buyers|properties|track record|average)|sold \d|in our experience|over the (?:years|past)|award|accredited|certified|rated|ranked|no\.? ?1|leading|largest|fastest)\b/i;
+
+export interface AdjudicationInput {
+  text: string;
+  /** the extraction's claim type */
+  type: string;
+  /** true when a deterministic rule fired on this sentence */
+  deterministic?: boolean;
+  research: string;
+  agencyEvidence: string;
+  uncovered: readonly string[];
+}
+
+export function adjudicate(input: AdjudicationInput): Resolution {
+  if (input.deterministic) return 'DETERMINISTIC_CONTRADICTION';
+
+  // A claim resting on something the bank required and the research did not establish cannot be
+  // rescued by sounding reasonable. This is the B20 seasonality failure, encoded.
+  // A requirement is terse and a claim is prose, so the bar is lower here than for support: sharing
+  // a third of a requirement's distinctive words means the claim is talking about that requirement.
+  for (const req of input.uncovered) {
+    if (evidenceOverlap(req, input.text) >= 0.35 || evidenceOverlap(input.text, req) >= 0.5) {
+      return 'USES_UNESTABLISHED_REQUIREMENT';
+    }
+  }
+
+  // Past performance is never a service promise, and it always needs the agency's own evidence.
+  if (PAST_PERFORMANCE.test(input.text)) {
+    return evidenceOverlap(input.text, input.agencyEvidence) >= 0.7
+      ? 'SUPPORTED_BY_AGENCY_PROFILE' : 'NEEDS_REPAIR';
+  }
+
+  if (evidenceOverlap(input.text, input.agencyEvidence) >= 0.6) return 'SUPPORTED_BY_AGENCY_PROFILE';
+  if (evidenceOverlap(input.text, input.research) >= 0.55) return 'SUPPORTED_BY_RESEARCH';
+
+  if (input.type === 'MARKETING_PUFFERY') return 'MARKETING_PUFFERY';
+  if (input.type === 'OPINION_POSITIONING' || input.type === 'CREATIVE_HOOK') return 'OPINION_POSITIONING';
+  if (SERVICE_PROMISE.test(input.text) && !/\d/.test(input.text)) return 'SERVICE_PROMISE_ALLOWED';
+
+  return 'NEEDS_REPAIR';
+}

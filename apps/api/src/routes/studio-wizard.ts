@@ -1485,18 +1485,20 @@ async function runPlannedCarousel(opts: {
       const late = planFields(plan).flatMap((f) => gateField(f.field, f.text, research))
         .filter((h) => h.rule.severity === 'block');
       if (late.length) {
-        claimQa = claimQa ?? { claims: 0, policed: 0, verdicts: {}, blocked: [], deterministic: [], repairs: 0, dropped: 0, degraded: null };
+        claimQa = claimQa ?? { claims: 0, policed: 0, verdicts: {}, blocked: [], deterministic: [],
+          repairs: 0, dropped: 0, degraded: null, adjudications: [], rawFlags: 0, materialFailures: 0 };
+        const qa = claimQa;
         for (const h of late) {
           const before = readField(plan, h.field);
           const after = dropSentence(before, h.sentence);
-          if (after !== before) { plan = writeField(plan, h.field, after); claimQa.dropped++; }
-          claimQa.blocked.push({
+          if (after !== before) { plan = writeField(plan, h.field, after); qa.dropped++; }
+          qa.blocked.push({
             field: h.field, text: h.sentence, verdict: 'CONTRADICTS_GUARDRAIL',
             problem: h.rule.problem,
             outcome: after !== before ? 'removed after the editor reintroduced it' : 'left — could not be isolated',
           });
         }
-        console.warn(`[studio/carousel] final gate removed ${claimQa.dropped} sentence(s) the editor reintroduced`);
+        console.warn(`[studio/carousel] final gate removed ${qa.dropped} sentence(s) the editor reintroduced`);
       }
     }
     const contact = contactLine(opts.agency);

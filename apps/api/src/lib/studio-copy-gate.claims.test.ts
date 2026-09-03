@@ -73,6 +73,11 @@ describe('deterministic claim gate — the ten regression cases', () => {
       .toContain('causal-inference');
     expect(fired('Fewer transactions do not automatically mean weaker demand.'))
       .not.toContain('causal-inference');
+    // Real generated text. An ordinary "X, not Y" contrast about one property's price is not an
+    // attribution, and it cost a live post a repair round.
+    expect(fired("It's calculated on price, not on your actual profit.")).toHaveLength(0);
+    expect(fired("The withholding is a payment on account, not your final tax bill."))
+      .toHaveLength(0);
   });
 
   it('9. a legal obligation upgraded to a hard stop', () => {

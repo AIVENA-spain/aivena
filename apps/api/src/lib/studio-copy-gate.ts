@@ -294,7 +294,11 @@ export const GATE_RULES: readonly GateRule[] = [
     authority: 'Two co-occurring observations do not establish which caused which. The research has '
       + 'to establish the mechanism separately before a post may assert it.',
     negationImmune: true,
-    all: [/\b(?:transactions?|sales|ventas|operaciones|prices?|precios?|demand|demanda|supply|oferta|stock|inventory)\b/i,
+    // "X, not Y" is an ordinary contrast, not an attribution — "it's calculated on price, not on
+    // your actual profit" cost a live post a repair round for saying something perfectly plain. The
+    // subject has to be a MARKET AGGREGATE for a causal reading to be possible at all, so a bare
+    // singular "price" is out; "prices" as a series stays in.
+    all: [/\b(?:transactions?|sales|ventas|operaciones|prices|precios|demand|demanda|supply|oferta|stock|inventory|market|mercado)\b/i,
           /(?:\bnot\s+[\w\s]{1,30}?,?\s*(?:that'?s|that is|it'?s)|(?:that'?s|that is|it'?s)\s+[\w\s]{1,30}?,\s*not\b|\b(?:because of|due to|driven by|means that|proves|therefore|so it'?s|se debe a)\b)/i],
     supportedBy: [/\b(?:because|driven by|caused by|due to|attributabl\w*|explains?)\b/i],
   },

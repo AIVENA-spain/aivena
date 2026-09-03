@@ -460,12 +460,17 @@ export async function gatePlan<T extends PlanLike>(
     }
 
     if (round === 0) {
-      report.claims = claims?.length ?? 0;
-      report.policed = policed.length;
+      // What the writer originally produced, kept so the agent can see what the gate found.
       report.deterministic = hits.map((h) => ({
         field: h.field, rule: h.rule.id, severity: h.rule.severity, sentence: h.sentence,
       }));
     }
+    // Each round REPLACES the tally rather than adding to it: the report describes the draft that
+    // will actually publish, not the sum of every draft along the way. Accumulating made a post
+    // read "16 policed claims, 45 verdicts", which is not a thing that can be true.
+    report.claims = claims?.length ?? 0;
+    report.policed = policed.length;
+    report.verdicts = {};
     for (const v of verdicts ?? []) report.verdicts[v.verdict] = (report.verdicts[v.verdict] ?? 0) + 1;
 
     // Merge: a deterministic hit becomes a failure in its own right, so a model that shrugs at the

@@ -33,7 +33,8 @@ export function trimWords(v: unknown, max: number): unknown {
   if (end > max * 0.5) return cut.slice(0, end + 1);
   const sp = cut.lastIndexOf(' ');
   let out = (sp > max * 0.6 ? cut.slice(0, sp) : cut).replace(/[\s,;:—–-]+$/, '');
-  while (DANGLING.test(out)) out = out.replace(DANGLING, '');
+  // Bounded: stripping until nothing dangles can eat a real clause a word at a time.
+  for (let i = 0; i < 2 && DANGLING.test(out); i++) out = out.replace(DANGLING, '');
   return out.replace(/[\s,;:—–-]+$/, '');
 }
 
@@ -338,9 +339,23 @@ export function gateField(field: string, text: string, research = ''): GateHit[]
   return hits;
 }
 
-/** A field that was cut mid-thought. Defence in depth behind trimWords. */
+/**
+ * A field that was CUT, as opposed to one that simply ends on a short word.
+ *
+ * The first version stripped the terminal punctuation and then looked for a dangling word, which
+ * threw away the only reliable signal there is. Run over 156 real generated lines it flagged five
+ * correct sentences — "what a buyer actually decides on.", "which of the three you want to live
+ * in.", "set your asking price, not after." — because a phrasal verb or an adverb ends plenty of
+ * good sentences. What it never does is end one WITHOUT punctuation.
+ *
+ * So the test is both together: no terminal punctuation AND a word that cannot end a thought. A
+ * deliberate fragment ("One agency. One price. One story") ends on a noun and passes.
+ */
 export function endsMidThought(text: string): boolean {
-  return typeof text === 'string' && DANGLING.test(text.replace(/[.!?"'”’)]+$/, ''));
+  if (typeof text !== 'string' || !text.trim()) return false;
+  const t = text.trim();
+  if (/[.!?…:]["'”’)]?$/.test(t)) return false;
+  return DANGLING.test(t);
 }
 
 /* ────────────────────────────────────────────────────────────────────────────────────────────

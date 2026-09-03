@@ -262,6 +262,20 @@ describe('every rule in the table can actually fire', () => {
 });
 
 describe('two defects the second live run exposed', () => {
+  it('does not flag a sentence that simply ends on a short word', () => {
+    // Run over 156 real generated lines, the first version of this check flagged five CORRECT
+    // sentences. A phrasal verb or an adverb ends plenty of good sentences; what a good sentence
+    // never does is end without punctuation. Every line below is real generated copy.
+    for (const ok of [
+      'They scan for the thing that matters to them first, and skip the rest. Structure the listing around what a buyer actually decides on.',
+      'Choosing Jávea means choosing which of the three you actually want to live in.',
+      'Save this before you set your asking price, not after.',
+      'Buyers can read that as a seller who is desperate, and offer less.',
+      'Locking in terms now means one less unknown to worry about.',
+      'One agency. One price. One story',
+    ]) expect(endsMidThought(ok), ok.slice(-40)).toBe(false);
+  });
+
   it('a card may not end on a bare negator', () => {
     // Real generated text. The first dangling list knew connectives but not "not", so a card
     // shipped reading "...are hearing timelines, not".

@@ -116,6 +116,34 @@ async function callTool(
   } finally { clearTimeout(timer); }
 }
 
+
+/**
+ * Read a list out of a tool result, tolerating the model's favourite quirk.
+ *
+ * It frequently returns the array as a JSON STRING — sometimes wrapping the whole payload again, so
+ * `claims` arrives as "{\"claims\": [...]}". Every extraction call in the first live run came back
+ * this way, which made `Array.isArray` false and the whole gate report "unavailable" on six posts
+ * out of six. The planner in studio-carousel-plan.ts already self-heals shape quirks rather than
+ * burning a generation on them; this does the same.
+ */
+function coerceList(raw: unknown, key: string): Record<string, unknown>[] | null {
+  let v: unknown = raw;
+  for (let i = 0; i < 4; i++) {
+    if (typeof v === 'string') {
+      try { v = JSON.parse(v); } catch { return null; }
+      continue;
+    }
+    if (v && typeof v === 'object' && !Array.isArray(v) && key in (v as Record<string, unknown>)) {
+      v = (v as Record<string, unknown>)[key];
+      continue;
+    }
+    break;
+  }
+  return Array.isArray(v)
+    ? v.filter((x): x is Record<string, unknown> => !!x && typeof x === 'object')
+    : null;
+}
+
 /* ── 1. EXTRACT ──────────────────────────────────────────────────────────────────────────── */
 
 const EXTRACT_TOOL = {
@@ -183,10 +211,14 @@ export async function extractClaims(plan: PlanLike, language: string): Promise<E
   const body = fields.map((f) => `[${f.field}] ${f.text}`).join('\n');
   const out = await callTool('claim extraction', EXTRACT_SYSTEM,
     `The post is written in ${language}. Classify every sentence.\n\n${body}`, EXTRACT_TOOL, 120_000);
-  if (!out || !Array.isArray(out.claims)) return null;
+  const list = out && coerceList(out.claims, 'claims');
+  if (!list) {
+    if (out) console.warn('[studio/gate] claim extraction returned an unreadable shape');
+    return null;
+  }
   const known = new Set(fields.map((f) => f.field));
   const types = new Set<string>([...POLICED_TYPES, ...ALLOWED_TYPES]);
-  return (out.claims as Record<string, unknown>[])
+  return list
     .filter((c) => typeof c?.text === 'string' && typeof c?.field === 'string'
       && known.has(c.field as string) && types.has(String(c.type)))
     .map((c) => ({ field: String(c.field), text: String(c.text), type: String(c.type) as ClaimType }));
@@ -283,9 +315,13 @@ export async function validateClaims(
     numbered,
   ].join('\n');
   const out = await callTool('claim validation', VALIDATE_SYSTEM, user, VALIDATE_TOOL, 150_000);
-  if (!out || !Array.isArray(out.verdicts)) return null;
+  const list = out && coerceList(out.verdicts, 'verdicts');
+  if (!list) {
+    if (out) console.warn('[studio/gate] claim validation returned an unreadable shape');
+    return null;
+  }
   const byIndex = new Map<number, Record<string, unknown>>();
-  for (const v of out.verdicts as Record<string, unknown>[]) {
+  for (const v of list) {
     if (typeof v?.index === 'number') byIndex.set(v.index, v);
   }
   return claims.map((c, i) => {
@@ -368,9 +404,10 @@ async function repairFields(
       ctx.agencyEvidence ? `\n${ctx.agencyEvidence}` : '',
       `\nRewrite these fields:\n\n${asks}`].join('\n'),
     REPAIR_TOOL, 150_000);
-  if (!out || !Array.isArray(out.fields)) return plan;
+  const list = out && coerceList(out.fields, 'fields');
+  if (!list) return plan;
   let next = plan;
-  for (const f of out.fields as Record<string, unknown>[]) {
+  for (const f of list) {
     if (typeof f?.field === 'string' && typeof f?.text === 'string' && f.text.trim()) {
       next = writeField(next, f.field, f.text.trim());
     }

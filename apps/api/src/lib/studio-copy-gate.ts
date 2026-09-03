@@ -72,6 +72,8 @@ export interface GateRule {
   all: RegExp[];
   /** when true, no negation cue can clear it — the assertion is wrong in either polarity */
   negationImmune?: boolean;
+  /** the rule does not fire when the sentence qualifies itself correctly */
+  unless?: RegExp[];
   /** challenge rules pass when the research brief contains any of these */
   supportedBy?: RegExp[];
 }
@@ -179,6 +181,12 @@ export const GATE_RULES: readonly GateRule[] = [
       + 'delito-leve classification governs. Bank card B12.',
     all: [/\b(?:245\.?2|usurpaci\w*|non-?violent occupation|empty (?:second )?home)\b/i,
           /\b(?:juicios? r[áa]pidos?|fast[- ]track\w*|expedited|express trial)\b/i],
+    // "allanamiento and VIOLENT usurpación can enter the fast track" is precise and true, and the
+    // first version of this rule deleted it. Only the unqualified or explicitly non-violent claim
+    // is wrong, so a sentence that names the violent branch is left alone.
+    // The lookbehind matters: "violent" sits inside "non-violent", so without it the exception
+    // swallowed the very sentence the rule exists to catch.
+    unless: [/\b(?<!non-)(?<!no )(?:violent|violenta|violencia|intimidaci[óo]n|intimidation|245\.?1|allanamiento de morada)\b/i],
   },
   {
     id: 'golden-visa',
@@ -273,6 +281,7 @@ export function gateField(field: string, text: string, research = ''): GateHit[]
     const sentence = parts[i];
     for (const rule of GATE_RULES) {
       if (!rule.all.every((re) => re.test(sentence))) continue;
+      if (rule.unless?.some((re) => re.test(sentence))) continue;
       if (!rule.negationImmune && refuted(sentence, parts[i + 1] ?? '', rule.all)) continue;
       if (rule.severity === 'challenge' && rule.supportedBy?.some((re) => re.test(research))) continue;
       hits.push({ rule, field, sentence: sentence.trim() });

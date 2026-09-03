@@ -180,3 +180,17 @@ describe('refutation scope — the eight defects the adversarial pass found', ()
     expect(fired('We will walk you through what our commission covers.')).toHaveLength(0);
   });
 });
+
+describe('a correct, precise legal statement is not a violation', () => {
+  it('leaves the violent branch alone and still catches the unqualified claim', () => {
+    // The first version of the fast-track rule deleted this sentence from a live post. It is true:
+    // allanamiento and violent usurpación DO enter the fast track. Only the unqualified claim, and
+    // the explicitly non-violent one, are wrong.
+    expect(fired('Since April 2025, allanamiento and violent usurpación can enter the fast-track '
+      + 'criminal route.')).toHaveLength(0);
+    expect(fired('Ley Orgánica 1/2025 moved usurpación into juicios rápidos.'))
+      .toContain('usurpacion-fast-track');
+    expect(fired('A non-violent occupation of an empty home goes straight to a juicio rápido.'))
+      .toContain('usurpacion-fast-track');
+  });
+});

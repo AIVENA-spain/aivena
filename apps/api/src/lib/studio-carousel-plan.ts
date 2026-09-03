@@ -254,7 +254,7 @@ function trimToCaps(input: Record<string, unknown>): void {
 }
 
 /** Doctrine + honesty gate on the generated copy (client quotes exempt — they're the client's words). */
-function planIssues(p: CarouselPlan, quoteSource: string): string | null {
+function planIssues(p: CarouselPlan, quoteSource: string, hasResearch = false): string | null {
   // Hand-maintained field list, and it had drifted behind the schema: caption, eyebrow and
   // cta_keyword were all missing. The first two print on the post and the slide; the third
   // prints in the closing pill. A price or percentage claim in any of them walked straight
@@ -262,8 +262,18 @@ function planIssues(p: CarouselPlan, quoteSource: string): string | null {
   const advice = [p.hook_title, p.slide2_title, p.slide2_body, p.cta_heading, p.cta_action,
     p.agency_line, p.recap_title, p.save_line, p.caption, p.eyebrow, p.cta_keyword,
     ...p.tips.flatMap((t) => [t.title, t.body, t.teaser])];
-  const priced = advice.find((t) => t && BANNED.test(t));
-  if (priced) return `copy contains a price/percentage claim ("${priced.slice(0, 60)}") — general advice only, no figures`;
+  // A blanket ban on figures made sense while nothing was ever researched and every number was
+  // therefore invented. It stopped making sense the moment the prompt started inviting the writer to
+  // use figures the research established: a live run had the writer quote a researched Alicante
+  // price figure, get rejected for it three times, and lose the whole post. The writer was invited
+  // to do the thing that killed it.
+  //
+  // With research in hand the right judge is the claim gate, which checks each QUANTIFIED_CLAIM
+  // against the brief that produced it. Without research there is no judge, so the hard ban stands.
+  if (!hasResearch) {
+    const priced = advice.find((t) => t && BANNED.test(t));
+    if (priced) return `copy contains a price/percentage claim ("${priced.slice(0, 60)}") — nothing was researched for this post, so any figure would be invented`;
+  }
   if (p.type === 'tips' && WEAK_HOOK.test(p.hook_title.trim())) {
     return `hook_title "${p.hook_title}" is a banned generic opener — rewrite it loss/gap-framed and specific`;
   }
@@ -624,7 +634,7 @@ Submit with the submit_carousel tool.`;
     const dequote = (s: string) => s.replace(/^["“”«»'\s]+/, '').replace(/["“”«»'\s]+$/, '');
     plan.quote_hook = dequote(plan.quote_hook);
     plan.quote_parts = plan.quote_parts.map(dequote);
-    const issue = planIssues(plan, opts.quoteText ?? '');
+    const issue = planIssues(plan, opts.quoteText ?? '', !!brief);
     if (issue) { lastErr = issue; continue; }
     return normalisePlan(plan, opts.language);
   }

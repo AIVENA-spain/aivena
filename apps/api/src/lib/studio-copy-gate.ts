@@ -244,8 +244,13 @@ export const GATE_RULES: readonly GateRule[] = [
     authority: 'Nota de encargo terms vary by contract; the agency profile is the only source for '
       + 'this agency\'s. Spanish Supreme Court case law requires an exclusivity clause to be clearly '
       + 'worded to bind the owner at all.',
+    // The duration half was written as one literal string and a live post walked straight past it
+    // with "three, six or twelve months". Match the shape, not the phrasing.
     all: [/\b(?:exclusive|exclusiva|non-?exclusive|open|multi-?agen\w*|mandate|nota de encargo|listing agreement)\b/i,
-          /\b(?:only the agent|gets paid|no other agent|cannot market|may not market|three to six months|tres a seis meses|set period|for a set)\b/i],
+          /(?:\b(?:only the agent|gets paid|no other agent\w*|cannot market|may not market|set period|for a set|auto-?renew\w*|penalty|penalizaci[óo]n)\b|\b(?:one|two|three|six|nine|twelve|\d{1,2})\b[\w\s,]{0,24}\bmonths?\b|\b(?:uno|dos|tres|seis|doce|\d{1,2})\b[\w\s,]{0,24}\bmeses\b)/i],
+    // "Should not be universalised WITHOUT support" — research that actually establishes how these
+    // contracts work on this coast is support. The agency profile is the other source.
+    supportedBy: [/\b(?:exclusiva|nota de encargo|mandate|encargo|listing agreement)\b[^.]{0,160}\b(?:month|mes|term|plazo|duration|commission|comisi[óo]n|penalt|renew)/i],
   },
   {
     id: 'obligation-upgraded',

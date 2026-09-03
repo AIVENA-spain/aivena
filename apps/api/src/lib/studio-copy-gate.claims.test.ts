@@ -54,6 +54,13 @@ describe('deterministic claim gate — the ten regression cases', () => {
       .toContain('mandate-mechanics');
     expect(fired('An exclusive mandate hands the sale to a single agency for a set period, usually '
       + 'three to six months.')).toContain('mandate-mechanics');
+    // Written as a list of durations rather than a range, this walked past the first version.
+    expect(fired('Exclusive terms are commonly three, six or twelve months, often auto-renewing '
+      + 'unless cancelled in writing.')).toContain('mandate-mechanics');
+    // Not universalised WITHOUT support: research that establishes the terms clears it.
+    expect(fired('Exclusive terms are commonly three, six or twelve months, often auto-renewing.',
+      'A nota de encargo on this coast typically runs a fixed term of three to twelve months, '
+      + 'with auto-renewal unless cancelled in writing.')).not.toContain('mandate-mechanics');
     // The commercial argument the owner wants KEPT must sail through untouched.
     expect(fired('One agency, one line of communication, means someone actually answers for the campaign.'))
       .toHaveLength(0);

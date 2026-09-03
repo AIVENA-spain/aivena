@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { BANK_SOURCE_DIGEST, BANK_CARDS } from './studio-bank.generated';
+import { dropSentence } from './studio-copy-gate';
 
 /**
  * The engine's copy of the bank must never drift behind the bank.
@@ -32,5 +33,16 @@ describe('the generated bank is in sync with its sources', () => {
     const withRules = BANK_CARDS.filter((c) => c.never.length > 0);
     expect(withRules.length).toBeGreaterThan(100);
     expect(BANK_CARDS.every((c) => typeof c.question === 'string')).toBe(true);
+  });
+});
+
+describe('removal never leaves an unshippable plan', () => {
+  it('drops a slide whose body was emptied rather than storing an empty one', () => {
+    // PlanSchema requires body.min(1), and /carousel/update re-parses the stored plan on every
+    // later edit — an empty body would break the deck long after the gate ran.
+    const single = 'Squatters are evicted in 15 days.';
+    expect(dropSentence(single, single)).toBe('');
+    const multi = 'Report it fast. Squatters are evicted in 15 days.';
+    expect(dropSentence(multi, 'Squatters are evicted in 15 days.')).toBe('Report it fast.');
   });
 });

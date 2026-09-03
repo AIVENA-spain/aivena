@@ -522,6 +522,19 @@ export async function gatePlan<T extends PlanLike>(
     report.repairs++;
   }
 
+  // A tip whose body was emptied by sentence removal cannot ship: PlanSchema requires a non-empty
+  // body, and /carousel/update re-parses the stored plan on every later edit, so an empty one would
+  // break the deck long after this ran. Drop the slide instead — a shorter true deck beats a
+  // complete false one, and beats a deck that cannot be reopened.
+  const tips = current.tips ?? [];
+  if (tips.length) {
+    const kept = tips.filter((t) => (t?.body ?? '').trim().length >= 20);
+    if (kept.length !== tips.length && kept.length >= 1) {
+      report.dropped += tips.length - kept.length;
+      current = { ...current, tips: kept };
+    }
+  }
+
   // Defence in depth behind trimWords: nothing leaves cut mid-thought.
   for (const f of planFields(current)) {
     if (endsMidThought(f.text)) {

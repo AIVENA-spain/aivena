@@ -25,10 +25,14 @@ type Profile = {
   commission?: string;
   commission_vat?: string;
   mandate_types?: string;
+  agency_languages?: string;
   content_permission?: string;
 };
 
 const MANDATES = ["exclusive", "open", "both"] as const;
+// What the STAFF speak. Not the same as the languages Aivena can write in: a German post says
+// nothing about whether anyone in the office speaks German, and the writer is told so explicitly.
+const LANGS = ["es", "en", "de", "nl", "no", "sv", "da", "fr", "ru", "pl", "fi", "it", "pt"] as const;
 const VAT = ["exclusive", "inclusive"] as const;
 
 export function AgencyProfileSection({ initial }: { initial: Profile }) {
@@ -90,6 +94,36 @@ export function AgencyProfileSection({ initial }: { initial: Profile }) {
                 ].join(" ")}
               >
                 {t(`mandate.${m}`)}
+              </button>
+            );
+          })}
+        </div>
+      </fieldset>
+
+      <fieldset className="space-y-2 border-t border-border/60 pt-5">
+        <legend className="text-sm font-medium">{t("languages.label")}</legend>
+        <p className="text-xs text-muted-foreground max-w-prose">{t("languages.help")}</p>
+        <div className="flex flex-wrap gap-2 pt-1">
+          {LANGS.map((code) => {
+            const picked = (form.agency_languages ?? "").split(",").map((x) => x.trim()).filter(Boolean);
+            const on = picked.includes(code);
+            return (
+              <button
+                key={code}
+                type="button"
+                aria-pressed={on}
+                disabled={pending}
+                onClick={() =>
+                  set("agency_languages",
+                      (on ? picked.filter((c) => c !== code) : [...picked, code]).join(", "))}
+                className={[
+                  "rounded-full border px-3 py-1 text-sm transition-colors",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  on ? "border-primary bg-primary text-primary-foreground"
+                     : "border-input bg-background hover:bg-accent",
+                ].join(" ")}
+              >
+                {t(`languages.${code}`)}
               </button>
             );
           })}

@@ -1038,6 +1038,23 @@
         "open": "Offen",
         "both": "Beide"
       },
+      "languages": {
+        "label": "Sprachen, die Ihr Team tatsächlich spricht",
+        "help": "Etwas anderes als die Sprachen, in denen Aivena schreibt. Ein deutscher Beitrag behauptet nie, dass hier jemand Deutsch spricht, sofern Sie es nicht angeben.",
+        "es": "Español",
+        "en": "English",
+        "de": "Deutsch",
+        "nl": "Nederlands",
+        "no": "Norsk",
+        "sv": "Svenska",
+        "da": "Dansk",
+        "fr": "Français",
+        "ru": "Русский",
+        "pl": "Polski",
+        "fi": "Suomi",
+        "it": "Italiano",
+        "pt": "Português"
+      },
       "commission": {
         "label": "Ihre Provision",
         "why": "Nur nötig, wenn Sie Beiträge über die Verkaufskosten wünschen. Sonst überspringen.",

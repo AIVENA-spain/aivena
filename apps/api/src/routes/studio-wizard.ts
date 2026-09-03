@@ -460,6 +460,7 @@ const PROFILE_CORE = new Set([
   'commission',         // only needed for seller-cost content
   'commission_vat',     // 'inclusive' | 'exclusive' — never assumed either way
   'mandate_types',      // exclusive / open / both
+  'agency_languages',   // what the STAFF actually speak — not Aivena's output locales
   'content_permission', // may we use what you tell us, in published posts
 ]);
 /** Optional evidence, only ever collected in context and never at onboarding. */
@@ -475,6 +476,7 @@ export function agencyEvidence(prefs: Record<string, unknown> | null): string {
   const get = (k: string) => (typeof prefs[k] === 'string' ? (prefs[k] as string).trim() : '');
   if (get('service_areas')) lines.push(`· Works in: ${get('service_areas')}`);
   if (get('mandate_types')) lines.push(`· Mandate types offered: ${get('mandate_types')}`);
+  if (get('agency_languages')) lines.push(`· Staff actually speak: ${get('agency_languages')}`);
   if (get('commission')) {
     const vat = get('commission_vat');
     lines.push(`· Commission: ${get('commission')}`
@@ -491,7 +493,10 @@ export function agencyEvidence(prefs: Record<string, unknown> | null): string {
         ? 'The agency has agreed these may appear in published posts.'
         : 'The agency has NOT yet agreed to these appearing in posts — use them to steer the angle, never quote them.')
     + '\nAnything about this agency that is not on this list does not exist. Do not estimate it, do not'
-    + ' infer it from the market, and do not write around it with a vaguer version of the same claim.';
+    + ' infer it from the market, and do not write around it with a vaguer version of the same claim.'
+    + '\nLANGUAGE IS NOT A SERVICE CLAIM. This post being written in German says nothing about whether'
+    + ' anyone at this agency speaks German. Never write \'we speak your language\', \'hablamos español\''
+    + ' or any equivalent unless the staff languages above actually say so.';
 }
 
 export const MARKETS: Record<string, { name: string; regime: 'eu' | 'eea' | 'ch' | 'third'; irnr: 19 | 24 }> = {
@@ -543,7 +548,8 @@ const PREF_KEYS = new Set([
   // whitelisted so a profile saved before this still reads back)
   'palette', 'palette_main', 'palette_accent', 'palette_base',
   // Agency Evidence Profile — the small required core plus optional evidence added later
-  'service_areas', 'commission', 'commission_vat', 'mandate_types', 'content_permission',
+  'service_areas', 'commission', 'commission_vat', 'mandate_types', 'agency_languages',
+  'content_permission',
   'completed_sales', 'asking_vs_agreed', 'time_to_sell', 'remote_sales',
   'exclusive_vs_open', 'renovation_outcomes', 'case_studies', 'house_positions',
 ]);

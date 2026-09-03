@@ -1038,6 +1038,23 @@
         "open": "Aperto",
         "both": "Entrambi"
       },
+      "languages": {
+        "label": "Le lingue che il vostro team parla davvero",
+        "help": "Diverso dalle lingue in cui scrive Aivena. Un contenuto in tedesco non dirà mai che qui qualcuno parla tedesco, a meno che non lo indichiate.",
+        "es": "Español",
+        "en": "English",
+        "de": "Deutsch",
+        "nl": "Nederlands",
+        "no": "Norsk",
+        "sv": "Svenska",
+        "da": "Dansk",
+        "fr": "Français",
+        "ru": "Русский",
+        "pl": "Polski",
+        "fi": "Suomi",
+        "it": "Italiano",
+        "pt": "Português"
+      },
       "commission": {
         "label": "La vostra provvigione",
         "why": "Serve solo se volete contenuti su quanto costa vendere. Altrimenti saltate.",

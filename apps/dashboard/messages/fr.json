@@ -1038,6 +1038,23 @@
         "open": "Simple",
         "both": "Les deux"
       },
+      "languages": {
+        "label": "Les langues que votre équipe parle réellement",
+        "help": "Différent des langues dans lesquelles Aivena écrit. Une publication en allemand n'affirmera jamais que quelqu'un ici parle allemand, sauf si vous l'indiquez.",
+        "es": "Español",
+        "en": "English",
+        "de": "Deutsch",
+        "nl": "Nederlands",
+        "no": "Norsk",
+        "sv": "Svenska",
+        "da": "Dansk",
+        "fr": "Français",
+        "ru": "Русский",
+        "pl": "Polski",
+        "fi": "Suomi",
+        "it": "Italiano",
+        "pt": "Português"
+      },
       "commission": {
         "label": "Votre commission",
         "why": "Utile uniquement si vous voulez des publications sur ce que coûte une vente au vendeur. Sinon, passez.",

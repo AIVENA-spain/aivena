@@ -1038,6 +1038,23 @@
         "open": "Otwarta",
         "both": "Obie"
       },
+      "languages": {
+        "label": "Języki, którymi wasz zespół naprawdę mówi",
+        "help": "To co innego niż języki, w których pisze Aivena. Post po niemiecku nigdy nie twierdzi, że ktoś tu mówi po niemiecku, chyba że to zaznaczycie.",
+        "es": "Español",
+        "en": "English",
+        "de": "Deutsch",
+        "nl": "Nederlands",
+        "no": "Norsk",
+        "sv": "Svenska",
+        "da": "Dansk",
+        "fr": "Français",
+        "ru": "Русский",
+        "pl": "Polski",
+        "fi": "Suomi",
+        "it": "Italiano",
+        "pt": "Português"
+      },
       "commission": {
         "label": "Wasza prowizja",
         "why": "Potrzebne tylko, jeśli chcecie postów o kosztach sprzedaży dla sprzedającego. W innym razie pomińcie.",

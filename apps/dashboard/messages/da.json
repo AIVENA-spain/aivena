@@ -1038,6 +1038,23 @@
         "open": "Åben",
         "both": "Begge"
       },
+      "languages": {
+        "label": "Sprog jeres team faktisk taler",
+        "help": "Ikke det samme som de sprog, Aivena skriver på. Et tysk opslag påstår aldrig, at nogen her taler tysk, medmindre I siger det.",
+        "es": "Español",
+        "en": "English",
+        "de": "Deutsch",
+        "nl": "Nederlands",
+        "no": "Norsk",
+        "sv": "Svenska",
+        "da": "Dansk",
+        "fr": "Français",
+        "ru": "Русский",
+        "pl": "Polski",
+        "fi": "Suomi",
+        "it": "Italiano",
+        "pt": "Português"
+      },
       "commission": {
         "label": "Jeres salær",
         "why": "Kun nødvendigt, hvis I vil have opslag om, hvad et salg koster sælger. Ellers spring over.",

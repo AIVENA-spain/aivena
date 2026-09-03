@@ -1038,6 +1038,23 @@
         "open": "Öppet",
         "both": "Båda"
       },
+      "languages": {
+        "label": "Språk ert team faktiskt talar",
+        "help": "Skiljer sig från språken Aivena skriver på. Ett tyskt inlägg påstår aldrig att någon här talar tyska om ni inte säger det.",
+        "es": "Español",
+        "en": "English",
+        "de": "Deutsch",
+        "nl": "Nederlands",
+        "no": "Norsk",
+        "sv": "Svenska",
+        "da": "Dansk",
+        "fr": "Français",
+        "ru": "Русский",
+        "pl": "Polski",
+        "fi": "Suomi",
+        "it": "Italiano",
+        "pt": "Português"
+      },
       "commission": {
         "label": "Er provision",
         "why": "Behövs bara om ni vill ha inlägg om vad en försäljning kostar säljaren. Hoppa annars över.",

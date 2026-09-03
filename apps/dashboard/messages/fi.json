@@ -1038,6 +1038,23 @@
         "open": "Avoin",
         "both": "Molemmat"
       },
+      "languages": {
+        "label": "Kielet, joita tiiminne oikeasti puhuu",
+        "help": "Eri asia kuin kielet, joilla Aivena kirjoittaa. Saksankielinen julkaisu ei koskaan väitä, että täällä puhutaan saksaa, ellette niin kerro.",
+        "es": "Español",
+        "en": "English",
+        "de": "Deutsch",
+        "nl": "Nederlands",
+        "no": "Norsk",
+        "sv": "Svenska",
+        "da": "Dansk",
+        "fr": "Français",
+        "ru": "Русский",
+        "pl": "Polski",
+        "fi": "Suomi",
+        "it": "Italiano",
+        "pt": "Português"
+      },
       "commission": {
         "label": "Palkkionne",
         "why": "Tarvitaan vain, jos haluatte julkaisuja siitä, mitä myynti maksaa myyjälle. Muuten ohita.",

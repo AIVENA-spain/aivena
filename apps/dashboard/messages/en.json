@@ -1038,6 +1038,23 @@
         "open": "Open",
         "both": "Both"
       },
+      "languages": {
+        "label": "Languages your team actually speaks",
+        "help": "Different from the languages Aivena writes in. A German post never claims anyone here speaks German unless you say so.",
+        "es": "Español",
+        "en": "English",
+        "de": "Deutsch",
+        "nl": "Nederlands",
+        "no": "Norsk",
+        "sv": "Svenska",
+        "da": "Dansk",
+        "fr": "Français",
+        "ru": "Русский",
+        "pl": "Polski",
+        "fi": "Suomi",
+        "it": "Italiano",
+        "pt": "Português"
+      },
       "commission": {
         "label": "Your commission",
         "why": "Only needed if you want posts about what a sale costs a seller. Skip it otherwise.",

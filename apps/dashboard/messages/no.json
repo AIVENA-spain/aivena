@@ -1038,6 +1038,23 @@
         "open": "Åpen",
         "both": "Begge"
       },
+      "languages": {
+        "label": "Språk teamet deres faktisk snakker",
+        "help": "Ikke det samme som språkene Aivena skriver på. Et tysk innlegg påstår aldri at noen her snakker tysk med mindre dere sier det.",
+        "es": "Español",
+        "en": "English",
+        "de": "Deutsch",
+        "nl": "Nederlands",
+        "no": "Norsk",
+        "sv": "Svenska",
+        "da": "Dansk",
+        "fr": "Français",
+        "ru": "Русский",
+        "pl": "Polski",
+        "fi": "Suomi",
+        "it": "Italiano",
+        "pt": "Português"
+      },
       "commission": {
         "label": "Provisjonen deres",
         "why": "Trengs bare hvis dere vil ha innlegg om hva et salg koster selgeren. Hopp over ellers.",

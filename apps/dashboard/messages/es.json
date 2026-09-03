@@ -1038,6 +1038,23 @@
         "open": "Abierto",
         "both": "Ambos"
       },
+      "languages": {
+        "label": "Idiomas que su equipo habla realmente",
+        "help": "Distinto de los idiomas en que escribe AIVENA. Una publicación en alemán nunca dirá que alguien aquí habla alemán salvo que usted lo indique.",
+        "es": "Español",
+        "en": "English",
+        "de": "Deutsch",
+        "nl": "Nederlands",
+        "no": "Norsk",
+        "sv": "Svenska",
+        "da": "Dansk",
+        "fr": "Français",
+        "ru": "Русский",
+        "pl": "Polski",
+        "fi": "Suomi",
+        "it": "Italiano",
+        "pt": "Português"
+      },
       "commission": {
         "label": "Su comisión",
         "why": "Solo hace falta si quiere publicaciones sobre lo que cuesta vender. Si no, sáltelo.",

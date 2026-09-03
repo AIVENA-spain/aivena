@@ -114,6 +114,7 @@ export default async function SettingsPage({
   const agencyProfile = {
     service_areas: sp.service_areas, commission: sp.commission,
     commission_vat: sp.commission_vat, mandate_types: sp.mandate_types,
+    agency_languages: sp.agency_languages,
     content_permission: sp.content_permission,
   };
 

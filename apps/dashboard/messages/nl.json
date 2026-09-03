@@ -1038,6 +1038,23 @@
         "open": "Open",
         "both": "Beide"
       },
+      "languages": {
+        "label": "Talen die uw team echt spreekt",
+        "help": "Iets anders dan de talen waarin Aivena schrijft. Een Duitse post beweert nooit dat hier iemand Duits spreekt, tenzij u dat aangeeft.",
+        "es": "Español",
+        "en": "English",
+        "de": "Deutsch",
+        "nl": "Nederlands",
+        "no": "Norsk",
+        "sv": "Svenska",
+        "da": "Dansk",
+        "fr": "Français",
+        "ru": "Русский",
+        "pl": "Polski",
+        "fi": "Suomi",
+        "it": "Italiano",
+        "pt": "Português"
+      },
       "commission": {
         "label": "Uw courtage",
         "why": "Alleen nodig als u posts wilt over wat een verkoop de verkoper kost. Anders overslaan.",

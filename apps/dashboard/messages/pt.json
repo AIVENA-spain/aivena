@@ -1038,6 +1038,23 @@
         "open": "Aberto",
         "both": "Ambos"
       },
+      "languages": {
+        "label": "Idiomas que a vossa equipa fala mesmo",
+        "help": "Diferente dos idiomas em que a Aivena escreve. Uma publicação em alemão nunca dirá que alguém aqui fala alemão, a não ser que o indiquem.",
+        "es": "Español",
+        "en": "English",
+        "de": "Deutsch",
+        "nl": "Nederlands",
+        "no": "Norsk",
+        "sv": "Svenska",
+        "da": "Dansk",
+        "fr": "Français",
+        "ru": "Русский",
+        "pl": "Polski",
+        "fi": "Suomi",
+        "it": "Italiano",
+        "pt": "Português"
+      },
       "commission": {
         "label": "A vossa comissão",
         "why": "Só é necessário se quiserem publicações sobre o que custa vender. Caso contrário, ignorem.",

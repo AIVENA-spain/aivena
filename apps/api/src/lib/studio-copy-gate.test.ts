@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { trimWords } from './studio-copy-gate';
+import { incompleteBody, trimWords } from './studio-copy-gate';
 
 /**
  * REGRESSION: a generated card shipped ending "timelines still vary by court and".
@@ -39,13 +39,19 @@ describe('trimWords', () => {
       .toBe('The bank is paid off from the proceeds at completion, before you ever see a cent.');
   });
 
-  it('takes the word cut when the only sentence end is too early to be worth it', () => {
-    // Cutting back to a very short first sentence throws away most of the budget. A clean word cut
-    // that does not dangle is the better trade — the reader sees a finished phrase either way.
+  it('takes a shorter complete sentence over a longer incomplete one', () => {
+    // Policy change, Christian 2026-09-03: a complete shorter card beats an incomplete longer one.
+    // The old rule kept more text by word-cutting, and that is how a card shipped without a full stop.
     const text = 'The bank is paid off at completion. A cancellation cost applies on top of that, and it varies by lender.';
-    const out = trimWords(text, 80) as string;
-    expect(out.length).toBeGreaterThan(40);
-    expect(out).not.toMatch(/\s(?:and|of|by|on|to)$/i);
+    expect(trimWords(text, 80)).toBe('The bank is paid off at completion.');
+  });
+
+  it('only falls back to a word cut when no sentence ends inside the budget at all', () => {
+    const text = 'An exclusive mandate hands the sale to a single agency for a set period of months';
+    const out = trimWords(text, 50) as string;
+    expect(out.length).toBeLessThanOrEqual(50);
+    expect(out).not.toMatch(/\s(?:and|of|by|on|to|for|a)$/i);
+    expect(text.startsWith(out)).toBe(true);
   });
 
   it('falls back to a word cut when no sentence fits inside the budget', () => {
@@ -54,5 +60,44 @@ describe('trimWords', () => {
     expect(out.length).toBeLessThanOrEqual(40);
     expect(out.split(' ').length).toBeGreaterThan(3);
     expect(text.startsWith(out)).toBe(true);
+  });
+});
+
+describe('a prose card ends where a sentence ends', () => {
+  it('prefers a complete sentence wherever it falls, not only past half the budget', () => {
+    // THE REAL CASE. This shipped as "...each with its own tourist office" with no full stop,
+    // because the only sentence end sat below the old half-budget floor and the word cut took over.
+    const d2 = 'Dénia has carried UNESCO Creative City of Gastronomy status since 2015 — its identity '
+      + 'runs through the port and its kitchens. Jávea instead spreads across three distinct centres: '
+      + 'Centro Histórico, Puerto and Arenal, each with its own tourist office and its own character.';
+    const out = trimWords(d2, 250) as string;
+    expect(out.length).toBeLessThanOrEqual(250);
+    expect(out.endsWith('.')).toBe(true);
+    expect(incompleteBody('tips[1].body', out)).toBe(false);
+  });
+
+  it('does not cut at an abbreviation or a decimal', () => {
+    // "art. 245.2" and "3.404 €/m²" both contain full stops that end nothing.
+    const legal = 'Occupation of an empty home falls under art. 245.2 of the criminal code, which is '
+      + 'tried as a minor offence rather than on the fast track, and the distinction changes the '
+      + 'timeline completely for an owner who is trying to act quickly.';
+    const out = trimWords(legal, 120) as string;
+    expect(out).not.toMatch(/\bart\.$/);
+    const price = 'Dénia averages around €3.404/m² town-wide as of May 2026 and the figure has been '
+      + 'climbing steadily through the year across most of the coastal towns nearby.';
+    expect(trimWords(price, 60) as string).not.toMatch(/€3\.$/);
+  });
+
+  it('flags a cut body but never a styled fragment', () => {
+    expect(incompleteBody('tips[1].body', 'Jávea instead spreads across three centres, each with its own tourist office')).toBe(true);
+    expect(incompleteBody('tips[1].body', 'Jávea spreads across three centres.')).toBe(false);
+    // Titles, hooks and recap lines are allowed to be fragments — this is the check that must NOT
+    // grow into the dangling-word logic that flagged five correct sentences.
+    expect(incompleteBody('hook_title', 'One agency. One price. One story')).toBe(false);
+    expect(incompleteBody('recap_title', 'In 30 seconds')).toBe(false);
+    expect(incompleteBody('tips[0].title', 'Nobody actually owns the sale')).toBe(false);
+    // And a body ending on a short word is fine when the sentence is finished.
+    expect(incompleteBody('tips[0].body', 'Structure the listing around what a buyer decides on.')).toBe(false);
+    expect(incompleteBody('caption', 'Which one matches how you actually want to spend a Tuesday?')).toBe(false);
   });
 });

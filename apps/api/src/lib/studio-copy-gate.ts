@@ -26,16 +26,68 @@ const DANGLING = /\s+(?:and|or|but|so|because|since|while|when|if|although|thoug
  * Cosmetic failures trim and send — they never fail a generation. Only truth and safety failures
  * escalate, so this has to always return something publishable.
  */
+/** Abbreviations whose full stop is not the end of a sentence. */
+const ABBREV = /\b(?:art|arts|no|núm|num|aprox|etc|ej|p|pp|pág|pag|vs|sr|sra|dr|dra|av|ctra|km|máx|min|ref|cf|ud|uds|s)$/i;
+
+/**
+ * The last position inside `s` where a sentence genuinely ends.
+ *
+ * Terminal punctuation is not enough on its own: "art. 245.2" and "3.404 €/m²" both contain full
+ * stops, and cutting at one of those produces nonsense. A real ending is followed by whitespace or
+ * the end of the string, and is not preceded by a known abbreviation.
+ */
+function lastSentenceEnd(s: string): number {
+  let best = -1;
+  const re = /[.!?…]["'”’)]?(?=\s|$)/g;
+  for (let m = re.exec(s); m; m = re.exec(s)) {
+    const before = s.slice(0, m.index).split(/[\s(—–-]+/).pop() ?? '';
+    if (ABBREV.test(before)) continue;
+    best = m.index + m[0].length;
+  }
+  return best;
+}
+
+/**
+ * Trim a generated field to its cap.
+ *
+ * Christian's hierarchy, 2026-09-03: prefer the last complete sentence within the limit; if none is
+ * viable the card should be shortened by rewriting, not butchered; and never cut valid prose just
+ * because its last word happens to be "on", "in" or "after".
+ *
+ * So the sentence boundary is now preferred wherever it falls, not only past half the budget — a
+ * complete shorter card beats an incomplete longer one. A live card ended "...each with its own
+ * tourist office" with no full stop because the only sentence end sat below that old floor. When no
+ * viable boundary exists at all, the word cut still runs so nothing breaks, and `incompleteBody`
+ * hands the card to the repair pass to be rewritten short and whole.
+ */
 export function trimWords(v: unknown, max: number): unknown {
   if (typeof v !== 'string' || v.length <= max) return v;
   const cut = v.slice(0, max);
-  const end = Math.max(cut.lastIndexOf('. '), cut.lastIndexOf('! '), cut.lastIndexOf('? '));
-  if (end > max * 0.5) return cut.slice(0, end + 1);
+  const end = lastSentenceEnd(cut);
+  // A quarter of the budget is enough to be a real card; below that it is a stub, and rewriting
+  // beats truncating.
+  if (end > max * 0.25) return cut.slice(0, end).trim();
   const sp = cut.lastIndexOf(' ');
   let out = (sp > max * 0.6 ? cut.slice(0, sp) : cut).replace(/[\s,;:—–-]+$/, '');
   // Bounded: stripping until nothing dangles can eat a real clause a word at a time.
   for (let i = 0; i < 2 && DANGLING.test(out); i++) out = out.replace(DANGLING, '');
   return out.replace(/[\s,;:—–-]+$/, '');
+}
+
+/** Fields that carry prose, where a missing full stop means the text was cut rather than styled. */
+const PROSE_FIELD = /^(?:tips\[\d+\]\.body|slide2_body|caption)$/;
+
+/**
+ * A prose card that does not end on terminal punctuation was cut, whatever its last word is.
+ *
+ * This is deliberately NOT the dangling-word check. That one asks whether the last word can end a
+ * thought and got it wrong on five correct sentences; this asks only whether the sentence was
+ * finished. It applies to bodies and captions, never to titles, hooks or recap lines, where a
+ * fragment like "One agency. One price. One story" is a style, not a defect.
+ */
+export function incompleteBody(field: string, text: string): boolean {
+  if (!PROSE_FIELD.test(field) || !text?.trim()) return false;
+  return !/[.!?…]["'”’)]?$/.test(text.trim());
 }
 
 /* ────────────────────────────────────────────────────────────────────────────────────────────

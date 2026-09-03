@@ -21,7 +21,7 @@
 import { env } from '../../../../packages/config/env';
 
 import {
-  dropSentence, endsMidThought, gateField, planFields, readField, writeField,
+  dropSentence, endsMidThought, gateField, incompleteBody, planFields, readField, writeField,
   type GateHit, type PlanLike,
 } from './studio-copy-gate';
 
@@ -489,6 +489,19 @@ export async function gatePlan<T extends PlanLike>(
       for (const v of verdicts ?? []) report.verdicts[v.verdict] = (report.verdicts[v.verdict] ?? 0) + 1;
     }
 
+    // A prose card cut at the character limit goes back to be rewritten short and whole. Christian's
+    // rule: prefer the last complete sentence; if none is viable, shorten the card by rewriting it —
+    // never ship prose that stops mid-sentence, and never butcher good prose to avoid it.
+    const cutShort = planFields(current)
+      .filter((f) => incompleteBody(f.field, f.text))
+      .map((f) => ({
+        field: f.field, text: f.text, type: 'FACTUAL_MATERIAL' as ClaimType,
+        verdict: 'UNSUPPORTED' as Verdict,
+        problem: 'This card was cut at the character limit and stops mid-sentence. Rewrite it so it '
+          + 'says the same thing in fewer words and ends as a complete sentence. Do not simply drop '
+          + 'the last clause — make the whole point fit.',
+      }));
+
     // Merge: a deterministic hit becomes a failure in its own right, so a model that shrugs at the
     // 15-day myth cannot wave it through.
     const failures: ClaimVerdict[] = [
@@ -498,6 +511,7 @@ export async function gatePlan<T extends PlanLike>(
         verdict: (h.rule.severity === 'block' ? 'CONTRADICTS_GUARDRAIL' : 'UNSUPPORTED') as Verdict,
         problem: h.rule.problem,
       })),
+      ...cutShort,
     ];
     // SUPPORTED_WITH_NUANCE is not a failure — the corrected wording is simply applied.
     for (const v of verdicts ?? []) {
@@ -550,6 +564,15 @@ export async function gatePlan<T extends PlanLike>(
     }
   }
 
+  // Last resort, after every repair attempt: a prose card still stopping mid-sentence is cut back to
+  // its last complete sentence. Losing a clause beats publishing a fragment, and this only ever runs
+  // when the rewrite could not fit the point into the limit.
+  for (const f of planFields(current)) {
+    if (incompleteBody(f.field, f.text)) {
+      const whole = f.text.replace(/\s*[^.!?…]*$/, '').trim();
+      if (whole.length >= 40) { current = writeField(current, f.field, whole); report.dropped++; }
+    }
+  }
   // Defence in depth behind trimWords: nothing leaves cut mid-thought.
   for (const f of planFields(current)) {
     if (endsMidThought(f.text)) {

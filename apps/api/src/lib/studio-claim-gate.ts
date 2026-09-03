@@ -218,10 +218,22 @@ export async function extractClaims(plan: PlanLike, language: string): Promise<E
   }
   const known = new Set(fields.map((f) => f.field));
   const types = new Set<string>([...POLICED_TYPES, ...ALLOWED_TYPES]);
-  return list
-    .filter((c) => typeof c?.text === 'string' && typeof c?.field === 'string'
-      && known.has(c.field as string) && types.has(String(c.type)))
-    .map((c) => ({ field: String(c.field), text: String(c.text), type: String(c.type) as ClaimType }));
+  // The model sometimes echoes the address with the brackets it was shown it in.
+  const address = (v: unknown) => String(v ?? '').trim().replace(/^\[|\]$/g, '').trim();
+  const kept = list
+    .filter((c) => typeof c?.text === 'string' && known.has(address(c.field)) && types.has(String(c.type)))
+    .map((c) => ({ field: address(c.field), text: String(c.text), type: String(c.type) as ClaimType }));
+  // A silent zero reads exactly like a clean post, which is the trap this whole layer exists to
+  // close. Say which of the two happened.
+  if (!kept.length) {
+    console.warn(list.length
+      ? `[studio/gate] claim extraction returned ${list.length} rows and none survived filtering — `
+        + `first row: ${JSON.stringify(list[0]).slice(0, 200)}`
+      : '[studio/gate] claim extraction found no sentences at all in a plan of '
+        + `${fields.length} fields — treating as a failure, not a clean post`);
+    return null;
+  }
+  return kept;
 }
 
 /* ── 2. VALIDATE ─────────────────────────────────────────────────────────────────────────── */

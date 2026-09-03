@@ -260,3 +260,25 @@ describe('every rule in the table can actually fire', () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 });
+
+describe('two defects the second live run exposed', () => {
+  it('a card may not end on a bare negator', () => {
+    // Real generated text. The first dangling list knew connectives but not "not", so a card
+    // shipped reading "...are hearing timelines, not".
+    const body = 'Since April 2025, break-ins into a lived-in home can move through the fast-track '
+      + 'court process. Minor occupation of an empty property without violence still goes through '
+      + 'the slower track - the 15-day figures people quote are hearing timelines, not';
+    expect(endsMidThought(body)).toBe(true);
+    expect(endsMidThought('the 15-day figures people quote are hearing timelines')).toBe(false);
+    expect(endsMidThought('One agency. One price. One story')).toBe(false);
+  });
+
+  it('an unanswered question asserts nothing and survives', () => {
+    // The teaser is the open loop that sets up the debunk on the next slide. Deleting it is an
+    // over-block, and over-blocking is the failure mode that quietly ruins the writing.
+    expect(fired("Does the '48-hour rule' people mention actually exist?")).toHaveLength(0);
+    expect(fired('Evicted in 15 days?')).toHaveLength(0);
+    // But a question that answers itself is judged on the answer.
+    expect(fired('Evicted in 15 days? Yes, since the reform.')).toContain('squatter-15-days');
+  });
+});

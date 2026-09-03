@@ -11,7 +11,10 @@
  * Trailing connectives and prepositions in the post languages we ship. A body that ends on one of
  * these was cut, and a reader who cannot see the character cap just sees a broken product.
  */
-const DANGLING = /\s+(?:and|or|but|so|because|since|while|when|if|although|though|with|without|for|from|to|of|in|on|at|by|as|that|which|than|per|into|onto|about|after|before|y|e|o|u|pero|porque|mientras|cuando|si|aunque|con|sin|para|de|del|en|por|como|que|a|al|sobre|entre|hasta|desde)$/i;
+// Connectives, prepositions, determiners and bare negators. A live post ended a card on "not" —
+// "the 15-day figures people quote are hearing timelines, not" — because the first version of this
+// list only knew connectives. Anything that cannot legitimately end a sentence belongs here.
+const DANGLING = /\s+(?:and|or|but|so|because|since|while|when|if|although|though|with|without|for|from|to|of|in|on|at|by|as|that|which|than|per|into|onto|about|after|before|not|no|nor|the|an|its|their|our|your|my|his|her|these|those|very|more|most|less|only|just|also|even|still|both|such|y|e|o|u|pero|porque|mientras|cuando|si|aunque|con|sin|para|de|del|en|por|como|que|a|al|sobre|entre|hasta|desde|el|la|los|las|un|una|su|sus|muy|m[áa]s|menos|s[óo]lo|tambi[ée]n)$/i;
 
 /**
  * Trim a generated field to its cap without ending mid-thought.
@@ -314,6 +317,11 @@ export function gateField(field: string, text: string, research = ''): GateHit[]
     for (const rule of GATE_RULES) {
       if (!rule.all.every((re) => re.test(sentence))) continue;
       if (rule.unless?.some((re) => re.test(sentence))) continue;
+      // A QUESTION WITH NO ANSWER BEHIND IT ASSERTS NOTHING. A teaser reading "Does the '48-hour
+      // rule' people mention actually exist?" is the open loop that sets up the debunk on the next
+      // slide, and the first version of this table deleted it. Where a question IS followed by its
+      // own answer, judge normally — "Evicted in 15 days? Yes, since the reform." still fails.
+      if (/\?\s*$/.test(sentence.trim()) && i === parts.length - 1) continue;
       if (!rule.negationImmune && refuted(sentence, parts[i + 1] ?? '', rule.all)) continue;
       if (rule.severity === 'challenge' && rule.supportedBy?.some((re) => re.test(research))) continue;
       if (rule.placesMustBeResearched) {

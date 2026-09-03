@@ -199,6 +199,16 @@ describe('a correct, precise legal statement is not a violation', () => {
       .toContain('usurpacion-fast-track');
     expect(fired('A non-violent occupation of an empty home goes straight to a juicio rápido.'))
       .toContain('usurpacion-fast-track');
+    // Real generated text. A live post lost this TRUE sentence because the exception only knew
+    // "violent" and "245.1" — a writer says "the more serious usurpación", not the article number.
+    expect(fired('Since April 2025, allanamiento and the more serious usurpación can go through a '
+      + 'fast-track process.')).toHaveLength(0);
+    expect(fired('Break-ins into a lived-in home can move through the fast-track court process.'))
+      .toHaveLength(0);
+    // But "less serious" and "only" must NOT exempt — they appear in sentences that restrict the
+    // fast track to exactly the branch that does not take it.
+    expect(fired('Only the less serious usurpación of an empty property enters the juicio rápido.'))
+      .toContain('usurpacion-fast-track');
   });
 });
 

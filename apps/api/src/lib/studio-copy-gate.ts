@@ -206,7 +206,12 @@ export const GATE_RULES: readonly GateRule[] = [
     // Only a qualifier that attaches to usurpación itself exempts the claim. Naming allanamiento
     // alongside does NOT — the original false sentence did exactly that ("moved usurpación AND
     // allanamiento de morada into juicios rápidos") and an earlier version of this list let it pass.
-    unless: [/\b(?<!non-)(?<!no )(?:violent|violenta|violencia|intimidaci[óo]n|intimidation|245\.?1)\b/i],
+    // A writer describes the violent branch in plain English far more often than by article
+    // number — "the more serious usurpación", "aggravated", "a break-in". A live post lost a TRUE
+    // sentence because this list only knew "violent" and "245.1". Match the shape, not one
+    // phrasing. Deliberately absent: "only" and "less serious", which appear in false sentences
+    // that restrict the fast track to the WRONG branch.
+    unless: [/\b(?<!non-)(?<!no )(?:violent|violenta|violencia|intimidaci[óo]n|intimidation|245\.?1|aggravated|agravad\w*|more serious|m[áa]s grave|break-?ins?|breaking in|forced entry|con violencia)\b/i],
   },
   {
     id: 'golden-visa',

@@ -296,35 +296,62 @@ function planIssues(p: CarouselPlan, quoteSource: string): string | null {
  *  stable and easy to establish; what must never happen is an INVENTED SPECIFIC — a deadline, a
  *  threshold or a requirement nobody checked. Being informed is the point; refusing to write is a
  *  failure, not a safe outcome. */
+interface ResearchCall { text: string; failure: string | null; ms: number }
+
 async function researchTopic(topic: string, lang: string, region: string, markets = ''): Promise<string> {
-  const call = async (body: Record<string, unknown>, ms: number): Promise<string> => {
+  // RESEARCH THAT FAILS MUST SAY SO. This returned a bare '' on every failure path — timeout,
+  // HTTP error, pause-loop exhaustion, an empty completion — and the caller could not tell "nothing
+  // to research" from "the research died". Two posts in a six-post proof run were written entirely
+  // from the model's memory and nobody knew, because a silent '' looks exactly like a topic that
+  // needed no facts. The reason is now returned and logged, and the downstream claim gate treats
+  // research_failed as grounds to refuse factual claims rather than to trust them.
+  const call = async (label: string, body: Record<string, unknown>, ms: number): Promise<ResearchCall> => {
     const ctl = new AbortController();
     const timer = setTimeout(() => ctl.abort(), ms);
+    const started = Date.now();
     try {
       let messages = body.messages as Array<{ role: string; content: unknown }>;
-      for (let i = 0; i < 3; i++) {
+      let best = '';
+      // Web search legitimately needs several turns for a topic that spans two towns or two
+      // regimes. Three was too few, and worse, exhausting the loop threw away everything the model
+      // had already established. Keep the best text seen and hand it back either way.
+      for (let i = 0; i < 8; i++) {
         const res = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST', signal: ctl.signal,
           headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
           body: JSON.stringify({ ...body, messages }),
         });
-        if (!res.ok) return '';
+        if (!res.ok) {
+          return { text: best, failure: `http_${res.status}`, ms: Date.now() - started };
+        }
         const data = await res.json() as { stop_reason?: string; content?: Array<{ type: string; text?: string }> };
+        const text = (data.content ?? []).filter((c) => c.type === 'text').map((c) => c.text ?? '').join('\n').trim();
+        if (text.length > best.length) best = text;
         // the model paused mid-search — echo its turn back so the tool loop continues
         if (data.stop_reason === 'pause_turn' && data.content) {
           messages = [messages[0], { role: 'assistant', content: data.content }];
           continue;
         }
-        return (data.content ?? []).filter((c) => c.type === 'text').map((c) => c.text ?? '').join('\n').trim();
+        return {
+          text: best,
+          failure: best ? null : `empty_completion_${data.stop_reason ?? 'unknown'}`,
+          ms: Date.now() - started,
+        };
       }
-      return '';
-    } catch { return ''; }
-    finally { clearTimeout(timer); }
+      return { text: best, failure: best ? null : 'pause_loop_exhausted', ms: Date.now() - started };
+    } catch (err) {
+      const aborted = (err as { name?: string })?.name === 'AbortError';
+      return { text: '', failure: aborted ? `timeout_${ms}ms` : 'network_error', ms: Date.now() - started };
+    } finally { clearTimeout(timer); }
+  };
+  const fail = (stage: string, r: ResearchCall) => {
+    console.warn(`[studio/carousel] research ${stage} failed for "${topic.slice(0, 50)}" — ` +
+      `${r.failure} after ${r.ms}ms; the post will be written without established facts`);
   };
 
   // 1 — what do we need to know to write this truthfully?
-  const questions = await call({
-    model: 'claude-sonnet-5', max_tokens: 500,
+  const q = await call('questions', {
+    model: 'claude-sonnet-5', max_tokens: 900,
     messages: [{ role: 'user', content:
       `An estate agency on ${region} is writing an Instagram carousel of practical tips for buyers and owners on this topic:\n\n"${topic}"\n\n` +
       `List the 3-5 questions someone would need answered to write ACCURATE, genuinely useful tips on it — the mechanics that decide whether the advice is right. ` +
@@ -342,12 +369,14 @@ async function researchTopic(topic: string, lang: string, region: string, market
       `legal category, no asserted cause. Ask what is the case, never whether a thing you already ` +
       `believe is the case.\n\n` +
       `Reply with the questions only, one per line, no numbering, no preamble.` }],
-  }, 25_000);
+  }, 45_000);
+  if (q.failure) fail('stage 1 (questions)', q);
+  const questions = q.text;
   if (!questions) return '';
 
   // 2 — answer them, with live search, and say plainly what could not be established
-  const findings = await call({
-    model: 'claude-sonnet-5', max_tokens: 1600,
+  const f = await call('findings', {
+    model: 'claude-sonnet-5', max_tokens: 2400,
     output_config: { effort: 'low' },
     tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 5 }],
     messages: [{ role: 'user', content:
@@ -379,8 +408,9 @@ async function researchTopic(topic: string, lang: string, region: string, market
       `sources contradict, say so in one line beginning "PREMISE FAILS:" — the post can still be ` +
       `written, but it must be written about what is true rather than about the claim.\n` +
       `No preamble, no headings, no markdown. Under 400 words.` }],
-  }, 60_000);
-  return findings;
+  }, 150_000);
+  if (f.failure) fail('stage 2 (findings)', f);
+  return f.text;
 }
 
 export async function planCarousel(opts: {

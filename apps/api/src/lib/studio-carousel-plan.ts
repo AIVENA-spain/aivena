@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { env } from '../../../../packages/config/env';
 import type { CarouselPlan } from '../../../../studio/engine/carouselSlides';
+import { trimWords } from './studio-copy-gate';
 
 // CAROUSEL PLANNER v2 (research-rebuilt 2026-07-16): the AI writes the WORDS of a tips/quote carousel
 // as a validated plan; the deterministic slide library draws every pixel. The prompt encodes the
@@ -241,12 +242,6 @@ const SOFT_CAPS: Record<string, number> = {
   recap_title: 60, save_line: 70, cta_heading: 78, agency_line: 170,
   cta_action: 140, cta_keyword: 90, swipe_cue: 18,
 };
-function trimWords(v: unknown, max: number): unknown {
-  if (typeof v !== 'string' || v.length <= max) return v;
-  const cut = v.slice(0, max);
-  const sp = cut.lastIndexOf(' ');
-  return (sp > max * 0.6 ? cut.slice(0, sp) : cut).replace(/[\s,;:—–-]+$/, '');
-}
 function trimToCaps(input: Record<string, unknown>): void {
   for (const [k, max] of Object.entries(SOFT_CAPS)) input[k] = trimWords(input[k], max);
   if (Array.isArray(input.tips)) {

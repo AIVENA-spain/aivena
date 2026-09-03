@@ -74,6 +74,12 @@ export interface GateRule {
   negationImmune?: boolean;
   /** the rule does not fire when the sentence qualifies itself correctly */
   unless?: RegExp[];
+  /**
+   * Place names captured by this pattern must ALSO appear in the research, or the local premise
+   * was written from memory. "Dream content may be creative. Its concrete local premises may not
+   * be invented."
+   */
+  placesMustBeResearched?: RegExp;
   /** challenge rules pass when the research brief contains any of these */
   supportedBy?: RegExp[];
 }
@@ -148,6 +154,13 @@ function refuted(sentence: string, next: string, patterns: readonly RegExp[]): b
   const window = before.slice(lastComma + 1).trim().split(/\s+/).slice(-4).join(' ');
   return WEAK.test(window);
 }
+
+/**
+ * Real municipalities only. Deliberately no generic quarter names — Arenal, Puerto, Centro
+ * Histórico, La Marina all appear in ordinary sentences that assert nothing about a place, and a
+ * rule that fires on those would start policing marketing copy.
+ */
+const TOWNS = /\b(J[áa]vea|X[àa]bia|D[ée]nia|Moraira|Teulada|Benissa|Calpe|Calp|Altea|Alfaz|Albir|Benidorm|Villajoyosa|Finestrat|Polop|Callosa|Guadalest|Pego|Ondara|Gata|Pedreguer|Benitachell|Poble Nou|Orba|Murla|Parcent|Jalon|Xal[óo]|Lliber|Senija|Alicante|Torrevieja|Orihuela|Guardamar|Santa Pola|Elche|Elx|Mutxamel|San Juan|Campello|Mor[óo]n)\b/gi;
 
 export const GATE_RULES: readonly GateRule[] = [
   {
@@ -246,6 +259,17 @@ export const GATE_RULES: readonly GateRule[] = [
     supportedBy: [/\b(?:cannot|may not|prohibit\w*|void|null)\b[^.]{0,60}\b(?:sell|sale|complet\w*|escritura)/i],
   },
   {
+    id: 'local-premise-unresearched',
+    severity: 'challenge',
+    problem: 'Makes a concrete claim about what daily life in a named town is actually like, and '
+      + 'nothing was researched about that town. Write the feeling, not the premise, or research it.',
+    authority: 'A lifestyle post may be creative about the feeling and never about the premise. '
+      + 'Whether a town needs a car, what sits in its centre, and how busy it is are checkable facts.',
+    all: [TOWNS,
+      /\b(?:car|drive|driving|walk\w*|foot|cycle|bus|train|tram|ferry|centre|center|centro|quiet\w*|busy|busier|bus[ie]|crowd\w*|nightlife|market|school|supermarket|amenit\w*|population|residents?|expat\w*|foreigners?|locals?|commut\w*|traffic|parking)\b/i],
+    placesMustBeResearched: TOWNS,
+  },
+  {
     id: 'causal-inference',
     severity: 'challenge',
     problem: 'Draws a cause from two observations. Falling transactions do not by themselves prove '
@@ -284,6 +308,14 @@ export function gateField(field: string, text: string, research = ''): GateHit[]
       if (rule.unless?.some((re) => re.test(sentence))) continue;
       if (!rule.negationImmune && refuted(sentence, parts[i + 1] ?? '', rule.all)) continue;
       if (rule.severity === 'challenge' && rule.supportedBy?.some((re) => re.test(research))) continue;
+      if (rule.placesMustBeResearched) {
+        const named = sentence.match(new RegExp(rule.placesMustBeResearched.source, 'gi')) ?? [];
+        // Fold accents so "Jávea" in the copy is recognised by "Javea" in the brief and vice versa.
+        const brief = research.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        const missing = named.filter((t) =>
+          !brief.includes(t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()));
+        if (!missing.length) continue;
+      }
       hits.push({ rule, field, sentence: sentence.trim() });
     }
   }

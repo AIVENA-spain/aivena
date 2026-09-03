@@ -194,3 +194,30 @@ describe('a correct, precise legal statement is not a violation', () => {
       .toContain('usurpacion-fast-track');
   });
 });
+
+describe('7. a local premise written with no research', () => {
+  const CLAIM = 'Jávea needs a car for the school run; Dénia you can do on foot.';
+
+  it('fires when nothing was researched about the towns it names', () => {
+    expect(fired(CLAIM, '')).toContain('local-premise-unresearched');
+  });
+
+  it('clears once the research actually covers those towns', () => {
+    const brief = 'Javea is split across the Old Town, the Port and the Arenal, so daily errands '
+      + 'usually mean driving. Denia concentrates its market, port and old town within walking distance.';
+    expect(fired(CLAIM, brief)).not.toContain('local-premise-unresearched');
+  });
+
+  it('matches across accents in either direction', () => {
+    expect(fired('Denia you can do on foot.', 'Dénia concentrates everything in walking distance.'))
+      .not.toContain('local-premise-unresearched');
+  });
+
+  it('leaves the feeling alone — only the premise is policed', () => {
+    // The register the owner wants kept. No checkable premise, so nothing fires.
+    expect(fired('Jávea trades convenience for calm.', '')).toHaveLength(0);
+    expect(fired('Pick the life first. The house comes after.', '')).toHaveLength(0);
+    // And a pure-marketing post names no town at all.
+    expect(fired('Buyers scroll fast and judge in seconds.', '')).toHaveLength(0);
+  });
+});

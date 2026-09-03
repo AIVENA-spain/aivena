@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { incompleteBody, trimWords } from './studio-copy-gate';
+import { incompleteBody, trimWords, uncoveredRequirements } from './studio-copy-gate';
 
 /**
  * REGRESSION: a generated card shipped ending "timelines still vary by court and".
@@ -99,5 +99,36 @@ describe('a prose card ends where a sentence ends', () => {
     // And a body ending on a short word is fine when the sentence is finished.
     expect(incompleteBody('tips[0].body', 'Structure the listing around what a buyer decides on.')).toBe(false);
     expect(incompleteBody('caption', 'Which one matches how you actually want to spend a Tuesday?')).toBe(false);
+  });
+});
+
+describe('the bank asks, the research answers — or the writer is told it did not', () => {
+  const MUST_B20 = [
+    'Verified distance and drive time between the two town centres',
+    'Use the current INE Censo Anual de Población municipality tables for nationality and cite the exact table and reference year',
+    'Year-round versus seasonal population for each',
+  ];
+
+  it('flags the requirement a live post asserted anyway', () => {
+    // Real defect: bank card B20 requires year-round versus seasonal population, the brief came
+    // back without it, and the post asserted which town is busier in summer regardless.
+    const brief = 'Javea and Denia are 11km apart, about 20 minutes by car. Denia has held UNESCO '
+      + 'Creative City of Gastronomy status since 2015. Javea spreads across three centres.';
+    expect(uncoveredRequirements(MUST_B20, brief))
+      .toContain('Year-round versus seasonal population for each');
+  });
+
+  it('clears once the brief actually covers it', () => {
+    const brief = 'Javea and Denia sit 11km apart, roughly 20 minutes by car between the two town '
+      + 'centres. Year-round population versus seasonal population differs sharply in each: both '
+      + 'record large seasonal swings, with Denia the larger year-round.';
+    expect(uncoveredRequirements(MUST_B20, brief))
+      .not.toContain('Year-round versus seasonal population for each');
+  });
+
+  it('treats an empty brief as covering nothing, and vague requirements as unjudgeable', () => {
+    expect(uncoveredRequirements(MUST_B20, '')).toHaveLength(3);
+    // Too few distinctive words to judge — silence beats a false alarm the writer must route around.
+    expect(uncoveredRequirements(['Check the price'], 'Nothing relevant here at all.')).toHaveLength(0);
   });
 });

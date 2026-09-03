@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { env } from '../../../../packages/config/env';
 import type { CarouselPlan } from '../../../../studio/engine/carouselSlides';
-import { trimWords } from './studio-copy-gate';
+import { trimWords, uncoveredRequirements } from './studio-copy-gate';
 import { bankIndex, cardRules, getCard, keywordCandidates, parseCardPick } from './studio-bank-match';
 import type { BankCard } from './studio-bank.generated';
 
@@ -526,6 +526,19 @@ export async function planCarousel(opts: {
     opts.onResearch?.(brief);
   }
 
+  // WHAT THE BANK ASKED FOR AND THE RESEARCH DID NOT DELIVER. A live post asserted which town is
+  // busier in summer; the card requires "year-round versus seasonal population for each" and the
+  // brief came back without it. The writer has to be told, or it fills the gap from memory.
+  const mustList = (opts.cardMust ?? '').split('\n').map((l) => l.replace(/^·\s*/, '').trim()).filter(Boolean);
+  const missing = mustList.length ? uncoveredRequirements(mustList, brief) : [];
+  const missingBlock = missing.length ? `
+THE RESEARCH DID NOT ESTABLISH THESE, AND THEY WERE REQUIRED:
+${missing.map((m) => `· ${m}`).join('\n')}
+You may NOT assert anything that depends on them — not as a figure, not as a comparison, not as a
+soft "generally" or "known to be". Write the post from what the research DID establish. There is
+always another true thing to say, and saying it is better than dressing up the gap.
+` : '';
+
   const task = opts.type === 'tips'
     ? `Create an EDUCATIONAL carousel: exactly ${Math.min(7, Math.max(1, opts.slideCount ?? 5))} points about: "${opts.topic}".
 TONE LAW — read the topic's REGISTER first and match the whole deck to it:
@@ -585,7 +598,7 @@ ${STATUS_MODEL}
 ` : ''}${opts.marketBrief ? `\n${opts.marketBrief}\n` : ''}${opts.agencyEvidence ? `\n${opts.agencyEvidence}\n` : ''} For anything about the NIE, banks, taxes, residency, mortgages or ownership: state what is USUALLY true and why it helps, never an absolute impossibility you cannot verify. Worked example of the failure: "without a local account you cannot pay utilities, taxes or a mortgage" is FALSE — Eurozone SEPA rules forbid refusing a valid IBAN from another member state. The honest version keeps the value: "a Spanish account makes utilities, taxes and a mortgage far simpler to run".
 
 ${CLAIM_TYPES}
-${opts.cardRules ? `\n${opts.cardRules}\n` : ''}
+${opts.cardRules ? `\n${opts.cardRules}\n` : ''}${missingBlock}
 HARD RULES:
 ${brief ? `- A FIGURE MAY APPEAR ONLY IF THE RESEARCH ABOVE ESTABLISHED IT. This rule governs types 1-3\n  only. It is not a licence to hedge a hook, soften an opinion or drain the marketing language. Prices, percentages, rates,\n  tax figures, deadlines, dates, thresholds: if the briefing states it, you may state it — that\n  precision is what makes a tip worth reading. If the briefing does NOT state it, you have no\n  source and the number would be invented, so write the mechanism without the number. Never round,\n  stretch or “roughly” a researched figure into a different one. Never promise a legal guarantee.\n  A NAME IS A FIGURE TOO: form numbers (EX-18, Modelo 210, Modelo 211), article numbers, decree and\n  law references, office names and portal names are all facts with a source or they are inventions.\n  A smoke test caught the writer printing \\'EX-20\\' where the research said EX-18 — close enough to\n  look right, wrong enough to send someone to the wrong desk. If the briefing did not name it, describe\n  the document instead of numbering it.`
  : `- NO specific prices, percentages, statistics, interest rates, tax figures, or legal guarantees anywhere in slide copy. Nothing was researched for this post, so any figure would be invented. Use place names for specificity instead of numbers.\n  This limits FIGURES, not force. Write the boldest version of the claim that carries no invented number.`}

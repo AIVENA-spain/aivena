@@ -515,3 +515,34 @@ export function dropSentence(text: string, sentence: string): string {
   const kept = sentences(text).filter((s) => s.trim() !== target);
   return kept.join(' ').replace(/\s+/g, ' ').trim();
 }
+
+/* ────────────────────────────────────────────────────────────────────────────────────────────
+ * DID THE RESEARCH ANSWER WHAT THE BANK ASKED?
+ *
+ * The bank card names what must be established before a topic can be written truthfully. A live
+ * post asserted which town is busier in summer — bank card B20 requires "year-round versus seasonal
+ * population for each" and forbids asserting it "without checking" — and the research for that run
+ * came back without it. The writer said it anyway, the gate flagged it twice, and it still shipped.
+ *
+ * Requirements are prose, so this is a coverage heuristic, not a proof: it asks whether the
+ * distinctive words of a requirement appear in the brief at all. Being wrong in the cautious
+ * direction only adds a "do not assert this" line, which the writer can always route around.
+ * ──────────────────────────────────────────────────────────────────────────────────────────── */
+
+const REQ_STOP = new Set(`the a an and or of for to in on at by with from that which what who how
+this these those must may can not do does is are was were be been being it its their there any all
+each per use used using state stated establish established confirm confirmed check checked exact
+current do not never always without figures figure number numbers source sources cite`.split(/\s+/));
+
+/** Which of the card's requirements the brief does not appear to answer. */
+export function uncoveredRequirements(must: readonly string[], research: string): string[] {
+  if (!research.trim()) return [...must];
+  const brief = research.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  return must.filter((m) => {
+    const terms = [...new Set(m.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+      .split(/[^a-z0-9]+/).filter((w) => w.length > 3 && !REQ_STOP.has(w)))];
+    if (terms.length < 3) return false;          // too vague to judge — do not cry wolf
+    const hits = terms.filter((t) => brief.includes(t)).length;
+    return hits / terms.length < 0.34;
+  });
+}

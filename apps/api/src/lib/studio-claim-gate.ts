@@ -54,6 +54,8 @@ export interface GateContext {
   research: string;
   /** the matched bank card's rules, already rendered; empty when no card governs the topic */
   cardRules: string;
+  /** requirements the card set that this generation's research did not answer */
+  uncovered?: string[];
   /** the facts the agency itself supplied */
   agencyEvidence: string;
 }
@@ -359,6 +361,12 @@ export async function validateClaims(
     '',
     ctx.agencyEvidence || 'The agency has supplied no facts about itself. Any claim about this '
       + 'agency is REQUIRES_AGENCY_EVIDENCE.',
+    ctx.uncovered?.length
+      ? `\nTHE BANK REQUIRED THESE AND THE RESEARCH DID NOT ESTABLISH THEM. Any claim that depends `
+        + `on one of them is REQUIRES_FRESH_RESEARCH, however mild it sounds and however obvious it `
+        + `seems — "known to be", "generally", "both towns" do not make an unchecked claim checked:\n`
+        + ctx.uncovered.map((m) => `· ${m}`).join('\n')
+      : '',
     '',
     `THE CLAIMS (${claims.length}):`,
     numbered,

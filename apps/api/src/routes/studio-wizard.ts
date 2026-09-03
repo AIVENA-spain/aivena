@@ -34,7 +34,7 @@ import type { CarouselBrand } from '../../../../studio/engine/renderCarousel';
 import { planCarousel, editPlan, remixHook, topicIdeas, listingCopy, listingStory, pickBankCard, PlanSchema, normalisePlan } from '../lib/studio-carousel-plan';
 import { gatePlan, type GateReport } from '../lib/studio-claim-gate';
 import { cardRules } from '../lib/studio-bank-match';
-import { dropSentence, gateField, planFields, readField, writeField } from '../lib/studio-copy-gate';
+import { dropSentence, gateField, planFields, readField, uncoveredRequirements, writeField } from '../lib/studio-copy-gate';
 import { directScenes } from '../lib/studio-carousel-art';
 import { renderTipsImageStyled, renderTipsImageStyledV2, isTipsImageStyle } from '../../../../studio/engine/carouselTipsImage';
 import { renderFreeform, type DesignSpec } from '../../../../studio/engine/renderFreeform';
@@ -1439,10 +1439,15 @@ async function runPlannedCarousel(opts: {
       // THE FACTUAL GATE, on the finished draft and BEFORE the editor. Guardrails in the prompt are
       // necessary and not sufficient: the writer can invent a factual sentence no guardrail
       // anticipated, which is exactly how a post shipped a legal claim its own bank card forbids.
+      const uncovered = card ? uncoveredRequirements(card.must, research) : [];
+      if (uncovered.length) {
+        console.warn(`[studio/carousel] research did not establish ${uncovered.length} of `
+          + `${card?.must.length} required points for card ${card?.id}`);
+      }
       const gated = await gatePlan(plan, {
         language: opts.language, topic: opts.topic ?? '', research,
         cardRules: card ? cardRules(card) : '',
-        agencyEvidence: opts.agencyEvidence ?? '',
+        agencyEvidence: opts.agencyEvidence ?? '', uncovered,
       }).catch((err: unknown) => {
         console.warn(`[studio/carousel] claim gate failed: ${(err as Error)?.message}`);
         return null;
@@ -1462,7 +1467,7 @@ async function runPlannedCarousel(opts: {
         const regated = await gatePlan(plan, {
           language: opts.language, topic: opts.topic ?? '', research,
           cardRules: card ? cardRules(card) : '',
-          agencyEvidence: opts.agencyEvidence ?? '',
+          agencyEvidence: opts.agencyEvidence ?? '', uncovered,
         }, 1).catch(() => null);
         if (regated) {
           plan = regated.plan;

@@ -199,7 +199,10 @@ export const GATE_RULES: readonly GateRule[] = [
     // is wrong, so a sentence that names the violent branch is left alone.
     // The lookbehind matters: "violent" sits inside "non-violent", so without it the exception
     // swallowed the very sentence the rule exists to catch.
-    unless: [/\b(?<!non-)(?<!no )(?:violent|violenta|violencia|intimidaci[óo]n|intimidation|245\.?1|allanamiento de morada)\b/i],
+    // Only a qualifier that attaches to usurpación itself exempts the claim. Naming allanamiento
+    // alongside does NOT — the original false sentence did exactly that ("moved usurpación AND
+    // allanamiento de morada into juicios rápidos") and an earlier version of this list let it pass.
+    unless: [/\b(?<!non-)(?<!no )(?:violent|violenta|violencia|intimidaci[óo]n|intimidation|245\.?1)\b/i],
   },
   {
     id: 'golden-visa',

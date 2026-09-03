@@ -221,3 +221,35 @@ describe('7. a local premise written with no research', () => {
     expect(fired('Buyers scroll fast and judge in seconds.', '')).toHaveLength(0);
   });
 });
+
+/**
+ * The structural guard against this project's most-repeated bug: a matcher that CANNOT FIRE looks
+ * exactly like a matcher that found nothing wrong. Four have shipped now — a word boundary after
+ * "Art.", a non-overlapping finditer, "okupa" followed by \b, and a rule whose trigger word was
+ * also on its own negation-cue list. If a rule is added without a string that makes it fire, this
+ * fails, and nobody has to notice.
+ */
+describe('every rule in the table can actually fire', () => {
+  const CORPUS = [
+    'Since 3 April 2025, Ley Orgánica 1/2025 moved usurpación and allanamiento de morada into '
+      + 'juicios rápidos, aiming to resolve these cases in about 15 days.',
+    'You have 48 hours to report it before the okupas gain rights.',
+    'Buy a property at the right level and the golden visa gives you residence.',
+    'Expect a first hearing about a month after filing the denuncia.',
+    'Exclusive terms often carry a slightly lower commission than a multi-agency listing.',
+    'Under a non-exclusive mandate, only the agent who lands the buyer gets paid.',
+    'Without a registered energy certificate you cannot sell.',
+    "Fewer sales, not less demand. That's tight supply, not cooling interest.",
+    'Jávea needs a car for the school run; Dénia you can do on foot.',
+  ];
+  it('is exercised by at least one string each', () => {
+    const seen = new Set(CORPUS.flatMap((c) => gateField('t', c, '')).map((h) => h.rule.id));
+    const dead = GATE_RULES.filter((r) => !seen.has(r.id)).map((r) => r.id);
+    expect(dead, `these rules never fired — they may be unable to`).toEqual([]);
+  });
+
+  it('has no duplicate rule ids', () => {
+    const ids = GATE_RULES.map((r) => r.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+});

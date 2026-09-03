@@ -266,8 +266,9 @@ THE VERDICTS
   "generally" as a way of avoiding the correction — find the wording that is simply true.
     "the energy certificate you need to sell at all" -> "the energy certificate the seller has to
     provide" (the source establishes a duty and a sanction, not a blocked sale)
-    "Residents owe tax on the gain later" -> "Residents settle any taxable gain under the resident
-    rules" (not every sale produces a gain)
+    "Residents owe tax on the gain later" -> "Spanish tax residents may owe tax on a taxable gain
+    under the resident rules" (not every sale produces a gain, so the qualifier is the correction —
+    it is not a hedge bolted on to avoid one)
 · UNSUPPORTED — nothing in front of you establishes it, and no further research would, because it is
   the kind of pattern nobody publishes. An invented market regularity belongs here.
 · CONTRADICTS_GUARDRAIL — a verified guardrail says this is false. This outranks the research and it

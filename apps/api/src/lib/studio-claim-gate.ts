@@ -653,9 +653,10 @@ export async function gatePlan<T extends PlanLike>(
   // complete false one, and beats a deck that cannot be reopened.
   const tips = current.tips ?? [];
   if (tips.length) {
-    // A slide needs BOTH halves. An empty title over a body is as broken as an empty body, and the
-    // first version of this guard only looked at bodies.
-    const kept = tips.filter((t) => (t?.body ?? '').trim().length >= 20 && (t?.title ?? '').trim().length >= 3);
+    // A slide needs BOTH halves, and the body has to carry its headline. A live card shipped a
+    // 49-character body under a title promising more — the sentence removal had taken the half that
+    // made the point. Twenty characters was never enough to be a card.
+    const kept = tips.filter((t) => (t?.body ?? '').trim().length >= 60 && (t?.title ?? '').trim().length >= 3);
     if (kept.length !== tips.length && kept.length >= 1) {
       report.dropped += tips.length - kept.length;
       current = { ...current, tips: kept };

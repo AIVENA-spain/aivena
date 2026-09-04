@@ -280,3 +280,16 @@ describe('the writer never narrates its own checking', () => {
     expect(fired('No institution tracking the market is forecasting a fall.')).toHaveLength(0);
   });
 });
+
+describe('a chopped headline is the wrong headline', () => {
+  it('a word-cut title ends on a content word the dangling list cannot see', () => {
+    // Real generated title, cut at the 62-char cap. "reach" is a verb, not a function word, so no
+    // dangling-word list will ever catch it — which is why the writer is asked to rewrite instead.
+    const cut = 'Through a collaboration network, one mandate can still reach';
+    expect(cut.length).toBeLessThanOrEqual(62);
+    expect(endsMidThought(cut)).toBe(false);
+    // The full version exceeds the cap, which is the signal to ask for a shorter one.
+    expect('Through a collaboration network, one mandate can still reach more buyers'.length)
+      .toBeGreaterThan(62);
+  });
+});

@@ -647,6 +647,19 @@ Submit with the submit_carousel tool.`;
         .map((h) => h.replace(/["'\u201c\u201d\u2018\u2019#]/g, '').trim().slice(0, 40))
         .filter((h) => h.length >= 2).slice(0, 5);
     }
+    // A HEADLINE THAT HAS TO BE CHOPPED IS THE WRONG HEADLINE. A body can lose its last sentence and
+    // still read; a title is one phrase, so a word cut leaves it hanging — a live post shipped
+    // "Through a collaboration network, one mandate can still reach". Ask for a shorter one instead,
+    // but only while retries remain: a chopped title still beats losing the whole post.
+    const longTitles = Array.isArray(input.tips)
+      ? (input.tips as { title?: unknown }[])
+          .filter((t) => typeof t?.title === 'string' && (t.title as string).length > 62).length
+      : 0;
+    if (longTitles && attempt < 2) {
+      lastErr = `${longTitles} slide title(s) exceed 62 characters. Rewrite those titles shorter — `
+        + 'a title is one phrase and cutting it mid-sentence leaves it hanging. Keep every other field.';
+      continue;
+    }
     trimToCaps(input);
     const parsed = PlanSchema.safeParse(input);
     if (!parsed.success) {

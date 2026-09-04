@@ -542,34 +542,48 @@ export function dropSentence(text: string, sentence: string): string {
 }
 
 /* ────────────────────────────────────────────────────────────────────────────────────────────
- * DID THE RESEARCH ANSWER WHAT THE BANK ASKED?
+ * REQUIREMENT IDENTITY
  *
- * The bank card names what must be established before a topic can be written truthfully. A live
- * post asserted which town is busier in summer — bank card B20 requires "year-round versus seasonal
- * population for each" and forbids asserting it "without checking" — and the research for that run
- * came back without it. The writer said it anyway, the gate flagged it twice, and it still shipped.
+ * Coverage used to be decided by lexical overlap, and it only worked at all once words were
+ * compared on a five-character prefix — so "seasonal" matched "season" and, by the same rule,
+ * anything else that happened to share five characters. Christian rejected that: the whole point of
+ * must_establish is to stop plausible-but-unresearched claims, and it cannot rest on two words
+ * looking alike.
  *
- * Requirements are prose, so this is a coverage heuristic, not a proof: it asks whether the
- * distinctive words of a requirement appear in the brief at all. Being wrong in the cautious
- * direction only adds a "do not assert this" line, which the writer can always route around.
+ * Each requirement now has a stable id, and coverage is a judgement about THAT requirement, made
+ * once against the brief and carried as an object through the writer and the validator.
  * ──────────────────────────────────────────────────────────────────────────────────────────── */
 
-const REQ_STOP = new Set(`the a an and or of for to in on at by with from that which what who how
-this these those must may can not do does is are was were be been being it its their there any all
-each per use used using state stated establish established confirm confirmed check checked exact
-current do not never always without figures figure number numbers source sources cite`.split(/\s+/));
+export interface Requirement { id: string; text: string }
+export type CoverageStatus = 'established' | 'partial' | 'not_established';
+export interface RequirementCoverage {
+  id: string;
+  status: CoverageStatus;
+  /** the sentence of the brief that establishes it, empty when nothing does */
+  evidence: string;
+}
 
-/** Which of the card's requirements the brief does not appear to answer. */
-export function uncoveredRequirements(must: readonly string[], research: string): string[] {
-  if (!research.trim()) return [...must];
-  const brief = research.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-  return must.filter((m) => {
-    const terms = [...new Set(m.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
-      .split(/[^a-z0-9]+/).filter((w) => w.length > 3 && !REQ_STOP.has(w)))];
-    if (terms.length < 3) return false;          // too vague to judge — do not cry wolf
-    const hits = terms.filter((t) => brief.includes(t)).length;
-    return hits / terms.length < 0.34;
-  });
+/** Stable ids for a card's requirements: the card id and the requirement's position on it. */
+export function requirementsFor(cardId: string, must: readonly string[]): Requirement[] {
+  return must.map((text, i) => ({ id: `${cardId}#${i + 1}`, text }));
+}
+
+/** The requirements a coverage assessment did not find established. Anything unassessed counts. */
+export function coverageGaps(
+  requirements: readonly Requirement[], coverage: readonly RequirementCoverage[],
+): Requirement[] {
+  const byId = new Map(coverage.map((c) => [c.id, c]));
+  return requirements.filter((r) => (byId.get(r.id)?.status ?? 'not_established') !== 'established');
+}
+
+/** Does a claim depend on a named requirement? Decided per requirement, not by word overlap. */
+export function claimTouchesRequirement(claim: string, requirement: string): boolean {
+  // Kept deliberately narrow: this is the last-resort deterministic guard behind the model's own
+  // per-requirement judgement, not the primary mechanism.
+  const terms = distinctive(requirement).filter((w) => w.length > 4);
+  if (terms.length < 2) return false;
+  const hay = claim.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  return terms.filter((t) => hay.includes(t)).length >= 2;
 }
 
 /* ────────────────────────────────────────────────────────────────────────────────────────────
@@ -637,8 +651,18 @@ export function evidenceOverlap(claim: string, source: string): number {
   return terms.filter((t) => hay.includes(t.length > 5 ? t.slice(0, 5) : t)).length / terms.length;
 }
 
-/** A claim that is an OFFER rather than a record of what the agency has achieved. */
-const SERVICE_PROMISE = /\b(?:we(?:'| a)?(?:ll| will| can| do| work|'re)|comment|send you|dm|message us|get in touch|book|ask us|talk (?:to|through)|walk you|we handle|we offer|available)\b/i;
+/**
+ * A GENERIC invitation to make contact — the agency offering to talk, nothing more.
+ *
+ * Deliberately narrow. "An offer the agency could plausibly deliver" was too loose: it would wave
+ * through "we'll send you our 20-page seller guide", "we provide drone photography", "we'll arrange
+ * your mortgage" — capabilities Aivena has no business inventing on an agency's behalf. A generic
+ * "message us and let's talk" needs no evidence; a specific promised deliverable does.
+ */
+const GENERIC_CONTACT = /\b(?:message us|write to us|get in touch|talk to us|let'?s talk|ask us|contact us|send (?:us )?a (?:message|dm)|drop us|comment below|dm us|we'?re here|happy to (?:talk|help|chat))\b/i;
+
+/** A specific thing being promised: a deliverable, a service, a turnaround. */
+const PROMISED_DELIVERABLE = /\b(?:we(?:'ll| will| can| do| provide| offer| arrange| handle| manage| organise| organize| prepare| produce| send)|you'?ll (?:get|receive)|send you|we'?ll send)\b/i;
 /** A claim about what the agency HAS DONE. Never a service promise, always needs evidence. */
 const PAST_PERFORMANCE = /\b(?:we(?:'| ha)?ve (?:seen|sold|helped|achieved|closed|delivered)|our (?:sellers|clients|listings|sales|buyers|properties|track record|average)|sold \d|in our experience|over the (?:years|past)|award|accredited|certified|rated|ranked|no\.? ?1|leading|largest|fastest)\b/i;
 
@@ -653,17 +677,72 @@ export interface AdjudicationInput {
   uncovered: readonly string[];
 }
 
-/**
- * Terms that give a sentence something an outsider could check: a quantity, a named thing, a rule,
- * a procedure, a market series. Absent all of them, the sentence is an argument.
- */
-const CHECKABLE = /\b(?:law|legal|court|judge|tribunal|notary|notari\w*|deed|escritura|registry|registro|tax|taxed|taxable|rate|rates|percent|per cent|deadline|withhold\w*|licen[cs]e|permit|planning|contract|mandate|mandato|commission|clause|evict\w*|prosecut\w*|fine[sd]?|oblig\w*|entitl\w*|guarantee\w*|required|requires|must|cannot|forbid\w*|allowed|statute|article|reform|census|padr[óo]n|population|statistic\w*|average|median|typically|usually|always|never|forecast\w*|index|survey|study|ferry|airport|school|hospital|market data|transactions?)\b/i;
+/* ────────────────────────────────────────────────────────────────────────────────────────────
+ * IS THIS A CLAIM ABOUT THE WORLD, OR A POSITION?
+ *
+ * The previous version asked whether a sentence contained a figure or a proper noun. Christian
+ * rejected that, and he is right: "Exclusive listings sell faster", "Sea-view homes hold their
+ * value better" and "Buyers prefer south-facing terraces" have neither, and every one of them is a
+ * factual proposition an agency could be wrong about. Judging a sentence by how it LOOKS is the
+ * exact mistake this whole layer exists to correct.
+ *
+ * The test is what the sentence CLAIMS. Does it assert how the world, the market, buyers, the law
+ * or outcomes actually are? Then it is factual and it needs evidence, numbers or not. Does it
+ * express a preference, a value, an exhortation or a framing? Then it is the agency's position and
+ * it is theirs to hold.
+ *
+ * Anything genuinely ambiguous is treated as FACTUAL, because the cost of demanding evidence for an
+ * opinion is a rewrite, and the cost of publishing an unevidenced claim is being wrong in public.
+ * ──────────────────────────────────────────────────────────────────────────────────────────── */
 
-/** Does anything in this sentence have an external truth to be wrong about? */
-export function hasCheckableAnchor(text: string): boolean {
-  if (/\d/.test(text)) return true;                                    // any figure or year
-  if (/(?!^)\b[A-ZÀ-Ý][a-zà-ÿ]{2,}/.test(text.replace(/^[^A-Za-zÀ-ÿ]*/, '').slice(1))) return true; // a proper noun
-  return CHECKABLE.test(text);
+/** First person taking a stance: the agency saying what it thinks, prefers or stands for. */
+const STANCE = /\b(?:we|i)(?:'d|'ve| would| have| do)?\s+(?:think|believe|prefer|reckon|rather|feel|say|stand|back|like|love|want|choose|see it|would rather)\b|\bin our (?:view|opinion|experience of doing)\b|\bwe'?re the kind of\b/i;
+
+/** Telling the reader what to do or what something deserves — exhortation, not description. */
+const EXHORTATION = /\b(?:deserves?|should feel|worth doing|worth having|don'?t settle|stop\s+\w+ing|start\s+\w+ing|forget\s+\w+ing|ask yourself|choose|pick|decide)\b|^\s*(?:stop|start|forget|remember|think|imagine|picture|consider|save|send|book|ask)\b/i;
+
+/** A framing move: recasting one thing as another rather than reporting how things are. */
+const FRAMING = /\b(?:isn'?t (?:really )?about|is really about|means choosing|comes down to a choice|is a choice|is not a\b[^.]{0,40}\bit'?s a\b|call it what it is)\b/i;
+
+/** Classes of thing whose behaviour is an empirical matter. */
+const CLASS_SUBJECT = /\b(?:buyers?|sellers?|owners?|agents?|agencies|clients?|viewers?|homes?|houses?|villas?|properties|property|listings?|adverts?|mandates?|contracts?|terraces?|views?|prices?|markets?|photos?|photographs?|descriptions?|portals?|renovations?|kitchens?|gardens?|apartments?)\b/i;
+
+/** Predicates that report behaviour or outcome — the things a class of thing empirically DOES. */
+const OUTCOME = /\b(?:sells?|sold|selling|holds?|held|keeps?|kept|attracts?|draws?|prefers?|prefer|respond\w*|reacts?|pays?|paid|produces?|creates?|generates?|causes?|leads? to|results? in|takes? longer|lasts?|launch\w*|performs?|rises?|falls?|climbs?|drops?|gains?|loses?|earns?|achieves?|converts?|scrolls?|skips?|remembers?|forgets?|notices?|ignores?|values?|reads? as|comes? back|returns?)\b/i;
+
+/** Comparative or frequency framing. Strengthens a claim; never makes one on its own. */
+const GENERALISING = /\b(?:faster|slower|quicker|better|worse|more|less|higher|lower|stronger|weaker|longer|shorter|cheaper|dearer|usually|typically|often|generally|normally|commonly|always|never|most|tend to|tends to|on average|as a rule)\b/i;
+
+export type Assertion = 'FACTUAL' | 'POSITIONING';
+
+/**
+ * What does this sentence claim?
+ *
+ * Positioning is recognised by the speaker taking a stance, telling the reader what to do, or
+ * reframing — never by the absence of a number. A generalisation about how a class of thing behaves
+ * is factual whether or not it carries a figure.
+ */
+export function classifyAssertion(text: string): Assertion {
+  const t = text.trim();
+  if (!t) return 'POSITIONING';
+
+  // An empirical generalisation stays factual even when wrapped in first-person framing:
+  // "we think exclusive listings sell faster" still asserts that they sell faster.
+  //
+  // It needs a predicate that REPORTS BEHAVIOUR, not merely a comparative. "Your home deserves
+  // better marketing" has a class subject and a comparative, and it asserts nothing about the
+  // world — "deserves" is a value, not an outcome.
+  const empirical = CLASS_SUBJECT.test(t) && OUTCOME.test(t);
+
+  if (!empirical && (STANCE.test(t) || EXHORTATION.test(t) || FRAMING.test(t))) return 'POSITIONING';
+  if (empirical) return 'FACTUAL';
+
+  // A bare stance, exhortation or framing with no empirical content is the agency's position.
+  if (STANCE.test(t) || EXHORTATION.test(t) || FRAMING.test(t)) return 'POSITIONING';
+
+  // Ambiguous: demanding evidence for an opinion costs a rewrite; publishing an unevidenced claim
+  // costs being wrong in public. Treat it as factual.
+  return 'FACTUAL';
 }
 
 export function adjudicate(input: AdjudicationInput): Resolution {
@@ -690,14 +769,20 @@ export function adjudicate(input: AdjudicationInput): Resolution {
 
   if (input.type === 'MARKETING_PUFFERY') return 'MARKETING_PUFFERY';
   if (input.type === 'OPINION_POSITIONING' || input.type === 'CREATIVE_HOOK') return 'OPINION_POSITIONING';
-  if (SERVICE_PROMISE.test(input.text) && !/\d/.test(input.text)) return 'SERVICE_PROMISE_ALLOWED';
+  // A generic invitation to talk needs nothing. A specific promised service or deliverable needs a
+  // capability source — the agency's own profile — because Aivena does not get to invent what an
+  // agency offers just because an estate agency could plausibly offer it.
+  if (GENERIC_CONTACT.test(input.text) && !PROMISED_DELIVERABLE.test(input.text)) {
+    return 'SERVICE_PROMISE_ALLOWED';
+  }
+  if (PROMISED_DELIVERABLE.test(input.text)) {
+    return evidenceOverlap(input.text, input.agencyEvidence) >= 0.5
+      ? 'SUPPORTED_BY_AGENCY_PROFILE' : 'NEEDS_REPAIR';
+  }
 
-  // A sentence with nothing checkable in it cannot be factually wrong about the world, whatever the
-  // extractor labelled it. "Buying now locks in today's cost instead of tomorrow's guess" was sent
-  // for repair as a policed claim; it names no number, no institution and no rule — it is the
-  // argument. Deciding this here rather than trusting the label is the difference between resolving
-  // a mislabelled opinion and deleting the sales case.
-  if (!hasCheckableAnchor(input.text)) return 'OPINION_POSITIONING';
+  // What does the sentence CLAIM? Not what does it look like. A mislabelled opinion should not be
+  // repaired away, and a claim about how the market behaves needs evidence with or without a figure.
+  if (classifyAssertion(input.text) === 'POSITIONING') return 'OPINION_POSITIONING';
 
   return 'NEEDS_REPAIR';
 }

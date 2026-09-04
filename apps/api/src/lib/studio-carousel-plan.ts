@@ -1,8 +1,10 @@
 import { z } from 'zod';
 import { env } from '../../../../packages/config/env';
 import type { CarouselPlan } from '../../../../studio/engine/carouselSlides';
-import { trimWords, uncoveredRequirements } from './studio-copy-gate';
+import { trimWords } from './studio-copy-gate';
 import { bankIndex, cardRules, getCard, keywordCandidates, parseCardPick } from './studio-bank-match';
+import { assessCoverage } from './studio-claim-gate';
+import { coverageGaps, requirementsFor } from './studio-copy-gate';
 import type { BankCard } from './studio-bank.generated';
 
 // CAROUSEL PLANNER v2 (research-rebuilt 2026-07-16): the AI writes the WORDS of a tips/quote carousel
@@ -506,6 +508,12 @@ export async function planCarousel(opts: {
   cardRules?: string;
   /** must_establish from that card, so the research questions cover what verification found matters. */
   cardMust?: string;
+  /** the bank card's id, so its requirements can be identified and their coverage assessed */
+  cardId?: string;
+  /** the card's must_establish list, for the same purpose */
+  cardMustList?: string[];
+  /** reports back which requirements the research did NOT establish, for the validator */
+  onCoverage?: (uncovered: string[], degraded: string | null) => void;
   /** Christian 2026-08-31 ("they could have a little box that informs them yes") — the caller
    *  receives what the research established, so the agent can read what their tips were built on
    *  before publishing under their own name. */
@@ -529,8 +537,23 @@ export async function planCarousel(opts: {
   // WHAT THE BANK ASKED FOR AND THE RESEARCH DID NOT DELIVER. A live post asserted which town is
   // busier in summer; the card requires "year-round versus seasonal population for each" and the
   // brief came back without it. The writer has to be told, or it fills the gap from memory.
-  const mustList = (opts.cardMust ?? '').split('\n').map((l) => l.replace(/^·\s*/, '').trim()).filter(Boolean);
-  const missing = mustList.length ? uncoveredRequirements(mustList, brief) : [];
+  //
+  // The list is assessed per requirement by the caller and passed in — it is no longer guessed from
+  // word overlap, which only ever worked by comparing five-character prefixes.
+  // Coverage is judged between research and writing, per requirement id — the writer cannot be told
+  // what went unanswered until the research has come back, and must be told before it writes.
+  let missing: string[] = [];
+  if (opts.cardId && opts.cardMustList?.length) {
+    const requirements = requirementsFor(opts.cardId, opts.cardMustList);
+    const assessed = await assessCoverage(requirements, brief)
+      .catch(() => ({ coverage: [], degraded: 'coverage assessment threw' }));
+    missing = coverageGaps(requirements, assessed.coverage).map((g) => g.text);
+    if (assessed.degraded) {
+      console.warn(`[studio/carousel] ${assessed.degraded} — treating all `
+        + `${requirements.length} required points as unestablished`);
+    }
+    opts.onCoverage?.(missing, assessed.degraded);
+  }
   const missingBlock = missing.length ? `
 THE RESEARCH DID NOT ESTABLISH THESE, AND THEY WERE REQUIRED:
 ${missing.map((m) => `· ${m}`).join('\n')}

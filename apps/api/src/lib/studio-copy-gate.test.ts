@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { adjudicate, capFor, gateField, hasCheckableAnchor, incompleteBody, trimWords, uncoveredRequirements, endsMidThought, RESOLVED_HARD_FAIL, RESOLVED_OK } from './studio-copy-gate';
+import { adjudicate, capFor, classifyAssertion, coverageGaps, gateField, requirementsFor, incompleteBody, trimWords, endsMidThought, RESOLVED_HARD_FAIL, RESOLVED_OK } from './studio-copy-gate';
 
 /**
  * REGRESSION: a generated card shipped ending "timelines still vary by court and".
@@ -102,37 +102,6 @@ describe('a prose card ends where a sentence ends', () => {
   });
 });
 
-describe('the bank asks, the research answers — or the writer is told it did not', () => {
-  const MUST_B20 = [
-    'Verified distance and drive time between the two town centres',
-    'Use the current INE Censo Anual de Población municipality tables for nationality and cite the exact table and reference year',
-    'Year-round versus seasonal population for each',
-  ];
-
-  it('flags the requirement a live post asserted anyway', () => {
-    // Real defect: bank card B20 requires year-round versus seasonal population, the brief came
-    // back without it, and the post asserted which town is busier in summer regardless.
-    const brief = 'Javea and Denia are 11km apart, about 20 minutes by car. Denia has held UNESCO '
-      + 'Creative City of Gastronomy status since 2015. Javea spreads across three centres.';
-    expect(uncoveredRequirements(MUST_B20, brief))
-      .toContain('Year-round versus seasonal population for each');
-  });
-
-  it('clears once the brief actually covers it', () => {
-    const brief = 'Javea and Denia sit 11km apart, roughly 20 minutes by car between the two town '
-      + 'centres. Year-round population versus seasonal population differs sharply in each: both '
-      + 'record large seasonal swings, with Denia the larger year-round.';
-    expect(uncoveredRequirements(MUST_B20, brief))
-      .not.toContain('Year-round versus seasonal population for each');
-  });
-
-  it('treats an empty brief as covering nothing, and vague requirements as unjudgeable', () => {
-    expect(uncoveredRequirements(MUST_B20, '')).toHaveLength(3);
-    // Too few distinctive words to judge — silence beats a false alarm the writer must route around.
-    expect(uncoveredRequirements(['Check the price'], 'Nothing relevant here at all.')).toHaveLength(0);
-  });
-});
-
 describe('adjudication — the second opinion is evidence, not a judge', () => {
   const RESEARCH = 'Non-resident sellers have 3% of the price withheld by the buyer and paid to the '
     + 'Treasury. Plusvalía municipal is charged by the town hall on the rise in land value.';
@@ -163,9 +132,14 @@ describe('adjudication — the second opinion is evidence, not a judge', () => {
       .toBe('NEEDS_REPAIR');
     expect(adjudicate({ ...base, type: 'AGENCY_FACT', text: 'We are the leading agency on the coast.' }))
       .toBe('NEEDS_REPAIR');
-    // But a deliverable offer stands.
+    // POLICY TIGHTENED 2026-09-04: a specific promised deliverable needs a capability source. The
+    // carousel does not produce a "full breakdown", so this is a service Aivena would be inventing.
     expect(adjudicate({ ...base, type: 'AGENCY_FACT',
       text: "Comment COAST and we'll send you the full breakdown." }))
+      .toBe('NEEDS_REPAIR');
+    // A generic invitation to talk still stands on its own.
+    expect(adjudicate({ ...base, type: 'AGENCY_FACT',
+      text: 'Message us if you want to talk it through.' }))
       .toBe('SERVICE_PROMISE_ALLOWED');
   });
 
@@ -235,34 +209,6 @@ describe('three defects the c631b64 run shipped', () => {
   });
 });
 
-describe('a sentence with nothing checkable in it is an argument', () => {
-  const base = { type: 'FACTUAL_MATERIAL', research: 'Alicante prices rose 1.5% this quarter.',
-    agencyEvidence: 'Works in: Jávea, Moraira', uncovered: [] as string[] };
-
-  it('resolves the real case the extractor mislabelled', () => {
-    // Sent for repair as a policed claim. It names no number, no institution and no rule.
-    expect(adjudicate({ ...base,
-      text: "Buying now locks in today's cost instead of tomorrow's guess." }))
-      .toBe('OPINION_POSITIONING');
-    expect(adjudicate({ ...base, text: 'One agent means one message and one price.' }))
-      .toBe('OPINION_POSITIONING');
-  });
-
-  it('still polices anything with an external truth to be wrong about', () => {
-    expect(hasCheckableAnchor('Squatters can be evicted quickly.')).toBe(true);       // procedure
-    expect(hasCheckableAnchor('The buyer withholds 3% of the price.')).toBe(true);    // figure
-    expect(hasCheckableAnchor('Dénia runs ferries to Ibiza.')).toBe(true);            // proper noun
-    expect(hasCheckableAnchor('Exclusive mandates usually carry a lower commission.')).toBe(true);
-    expect(hasCheckableAnchor('A listing is remembered or it is skipped.')).toBe(false);
-  });
-
-  it('does not become a hiding place for agency performance', () => {
-    // No digits, no proper nouns — but past performance is caught earlier in the chain.
-    expect(adjudicate({ ...base, type: 'AGENCY_FACT',
-      text: "We've seen how that plays out." })).toBe('NEEDS_REPAIR');
-  });
-});
-
 describe('the writer never narrates its own checking', () => {
   const fired = (t: string) => gateField('tips[0].body', t, '').map(h => h.rule.id);
 
@@ -291,5 +237,107 @@ describe('a chopped headline is the wrong headline', () => {
     // The full version exceeds the cap, which is the signal to ask for a shorter one.
     expect('Through a collaboration network, one mandate can still reach more buyers'.length)
       .toBeGreaterThan(62);
+  });
+});
+
+/**
+ * Christian, 2026-09-04: "Do not identify factuality from how a sentence looks. Identify it from
+ * what the sentence claims."
+ *
+ * Every FACTUAL case below contains zero figures and zero proper nouns, and every one of them is a
+ * proposition an agency could be wrong about in public. The previous surface-feature test called
+ * all of them positioning.
+ */
+describe('factual or positioning — decided by the claim, not the surface', () => {
+  it('calls a market or behaviour generalisation factual, with no numbers and no names', () => {
+    for (const t of [
+      'Exclusive listings sell faster.',
+      'Sea-view homes hold their value better.',
+      'Buyers prefer south-facing terraces.',
+      'Open mandates attract less serious buyers.',
+      'Renovated homes sell quicker.',
+      'Foreign buyers usually pay more.',
+      'Buyers respond better to exclusive listings.',
+      'Five agents produce conflicting prices.',
+      'Properties launch strongest in their first weeks.',
+    ]) expect(classifyAssertion(t), t).toBe('FACTUAL');
+  });
+
+  it('calls a stance, an exhortation or a reframing positioning', () => {
+    for (const t of [
+      'We think one accountable strategy beats five conflicting ones.',
+      'Your home deserves better marketing.',
+      'Stop selling square metres. Sell the life.',
+      'Buying now means choosing certainty over trying to time the market.',
+      "We'd rather be the one team you can hold to a result.",
+      'Save this before you sign with a second agency.',
+    ]) expect(classifyAssertion(t), t).toBe('POSITIONING');
+  });
+
+  it('does not let first-person framing launder an empirical claim', () => {
+    // "we think X sells faster" still asserts that X sells faster.
+    expect(classifyAssertion('We think exclusive listings sell faster.')).toBe('FACTUAL');
+    expect(classifyAssertion('In our view, renovated homes attract more buyers.')).toBe('FACTUAL');
+  });
+
+  it('treats the genuinely ambiguous as factual', () => {
+    // Cheaper to rewrite an opinion than to publish an unevidenced claim.
+    expect(classifyAssertion('The paperwork starts the day you sign.')).toBe('FACTUAL');
+  });
+
+  it('feeds through adjudication the same way', () => {
+    const base = { type: 'FACTUAL_MATERIAL', research: '', agencyEvidence: '', uncovered: [] as string[] };
+    expect(adjudicate({ ...base, text: 'Exclusive listings sell faster.' })).toBe('NEEDS_REPAIR');
+    expect(adjudicate({ ...base, text: 'Your home deserves better marketing.' }))
+      .toBe('OPINION_POSITIONING');
+  });
+});
+
+describe('a promised service needs a capability source', () => {
+  const base = { type: 'AGENCY_FACT', research: '',
+    agencyEvidence: 'Works in: Jávea, Moraira, Dénia, Teulada. Sales and listings. '
+      + 'Staff speak es, en, nl, de. Mandate types: both.', uncovered: [] as string[] };
+
+  it('lets a generic invitation to talk through', () => {
+    for (const t of ['Message us and let\'s talk about your property.',
+                     'Get in touch if you want to go through it.',
+                     'Ask us about your street.'])
+      expect(adjudicate({ ...base, text: t }), t).toBe('SERVICE_PROMISE_ALLOWED');
+  });
+
+  it('will not invent a capability the agency never claimed', () => {
+    // Christian's list. Aivena does not get to offer these on an agency's behalf.
+    for (const t of ["We'll send you our 20-page seller guide.",
+                     'We provide professional drone photography.',
+                     "We'll arrange your mortgage.",
+                     "We'll manage your renovation.",
+                     "We'll send you a valuation within 30 minutes."])
+      expect(adjudicate({ ...base, text: t }), t).toBe('NEEDS_REPAIR');
+  });
+
+  it('allows a promise the profile actually supports', () => {
+    expect(adjudicate({ ...base,
+      text: 'We handle sales and listings in Jávea, Moraira, Dénia and Teulada.' }))
+      .toBe('SUPPORTED_BY_AGENCY_PROFILE');
+  });
+});
+
+describe('requirement identity replaces lexical overlap', () => {
+  it('gives every requirement a stable id', () => {
+    const reqs = requirementsFor('B12', ['Year-round versus seasonal population', 'Distance between centres']);
+    expect(reqs).toEqual([
+      { id: 'B12#1', text: 'Year-round versus seasonal population' },
+      { id: 'B12#2', text: 'Distance between centres' },
+    ]);
+  });
+
+  it('counts anything not explicitly established as a gap', () => {
+    const reqs = requirementsFor('B12', ['A', 'B', 'C']);
+    const gaps = coverageGaps(reqs, [
+      { id: 'B12#1', status: 'established', evidence: 'x' },
+      { id: 'B12#2', status: 'partial', evidence: '' },
+      // B12#3 unassessed entirely
+    ]);
+    expect(gaps.map(g => g.id)).toEqual(['B12#2', 'B12#3']);
   });
 });

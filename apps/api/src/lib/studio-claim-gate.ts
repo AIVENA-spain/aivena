@@ -21,9 +21,10 @@
 import { env } from '../../../../packages/config/env';
 
 import {
-  adjudicate, capFor, dropSentence, endsMidThought, gateField, incompleteBody, planFields,
-  readField, trimWords, writeField, RESOLVED_HARD_FAIL, RESOLVED_OK,
-  type GateHit, type PlanLike, type Resolution,
+  adjudicate, capFor, coverageGaps, dropSentence, endsMidThought, gateField, incompleteBody,
+  planFields, readField, trimWords, writeField, RESOLVED_HARD_FAIL, RESOLVED_OK,
+  type CoverageStatus, type GateHit, type PlanLike, type Requirement, type RequirementCoverage,
+  type Resolution,
 } from './studio-copy-gate';
 
 /** Policed: an external assertion a reader could act on and find false. */
@@ -174,6 +175,83 @@ function coerceList(raw: unknown, key: string): Record<string, unknown>[] | null
   return Array.isArray(v)
     ? v.filter((x): x is Record<string, unknown> => !!x && typeof x === 'object')
     : null;
+}
+
+/* ── 0. REQUIREMENT COVERAGE ────────────────────────────────────────────────────────────── */
+
+const COVERAGE_TOOL = {
+  name: 'submit_coverage',
+  description: 'One status per requirement id, in the order given.',
+  input_schema: {
+    type: 'object',
+    required: ['coverage'],
+    properties: {
+      coverage: {
+        type: 'array',
+        items: {
+          type: 'object',
+          required: ['id', 'status'],
+          properties: {
+            id: { type: 'string', description: 'the requirement id exactly as given' },
+            status: { type: 'string', enum: ['established', 'partial', 'not_established'] },
+            evidence: { type: 'string', description: 'the sentence of the briefing that establishes it; omit when nothing does' },
+          },
+        },
+      },
+    },
+  },
+};
+
+const COVERAGE_SYSTEM = `You decide, for each numbered requirement, whether a research briefing
+actually establishes it.
+
+"established" means the briefing states the thing the requirement asks for, specifically enough to
+write from. Quote the sentence in "evidence".
+"partial" means the briefing touches the subject but leaves the specific point open — a figure named
+without its period, a rule described without its condition, one half of a comparison.
+"not_established" means the briefing does not answer it. A briefing that discusses the general area
+without answering the question is NOT established.
+
+Be strict. The purpose of these requirements is to stop a writer asserting something plausible that
+nobody checked, so "the briefing probably implies it" is not established. Judge each requirement on
+its own; do not let a rich briefing carry a requirement it never addressed.`;
+
+/**
+ * Which of the card's requirements this generation's research actually established.
+ *
+ * FAILS CLOSED. If the assessment cannot run, every requirement is reported unestablished, because
+ * the alternative is letting a writer assert whatever sounds right about points nobody verified —
+ * which is the exact failure this step exists to prevent.
+ */
+export async function assessCoverage(
+  requirements: readonly Requirement[], brief: string,
+): Promise<{ coverage: RequirementCoverage[]; degraded: string | null }> {
+  const allUnestablished = (why: string) => ({
+    coverage: requirements.map((r) => ({ id: r.id, status: 'not_established' as CoverageStatus, evidence: '' })),
+    degraded: why,
+  });
+  if (!requirements.length) return { coverage: [], degraded: null };
+  if (!brief.trim()) return allUnestablished('no research brief');
+
+  const out = await callTool('requirement coverage', COVERAGE_SYSTEM,
+    `THE BRIEFING:\n${brief}\n\nTHE REQUIREMENTS:\n`
+    + requirements.map((r) => `${r.id}: ${r.text}`).join('\n'),
+    COVERAGE_TOOL, 120_000, 8000);
+  const list = out && coerceList(out.coverage, 'coverage');
+  if (!list) return allUnestablished('coverage assessment unavailable');
+
+  const byId = new Map<string, RequirementCoverage>();
+  for (const c of list) {
+    const id = String(c?.id ?? '').trim();
+    const status = String(c?.status ?? '');
+    if (!id || !['established', 'partial', 'not_established'].includes(status)) continue;
+    byId.set(id, { id, status: status as CoverageStatus, evidence: String(c?.evidence ?? '') });
+  }
+  return {
+    coverage: requirements.map((r) => byId.get(r.id)
+      ?? { id: r.id, status: 'not_established' as CoverageStatus, evidence: '' }),
+    degraded: null,
+  };
 }
 
 /* ── 1. EXTRACT ──────────────────────────────────────────────────────────────────────────── */

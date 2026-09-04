@@ -34,7 +34,7 @@ import type { CarouselBrand } from '../../../../studio/engine/renderCarousel';
 import { planCarousel, editPlan, remixHook, topicIdeas, listingCopy, listingStory, pickBankCard, PlanSchema, normalisePlan } from '../lib/studio-carousel-plan';
 import { finishCopy, gatePlan, type GateReport } from '../lib/studio-claim-gate';
 import { cardRules } from '../lib/studio-bank-match';
-import { dropSentence, gateField, planFields, readField, uncoveredRequirements, writeField } from '../lib/studio-copy-gate';
+import { dropSentence, gateField, planFields, readField, writeField } from '../lib/studio-copy-gate';
 import { directScenes } from '../lib/studio-carousel-art';
 import { renderTipsImageStyled, renderTipsImageStyledV2, isTipsImageStyle } from '../../../../studio/engine/carouselTipsImage';
 import { renderFreeform, type DesignSpec } from '../../../../studio/engine/renderFreeform';
@@ -1417,6 +1417,8 @@ async function runPlannedCarousel(opts: {
     // what the research established — stored with the deck so the agent can read what their tips
     // were built on before they publish it under their own name
     let research = '';
+    let uncovered: string[] = [];
+    let coverageDegraded: string | null = null;
     // THE VERIFIED BANK GOVERNS THE TOPIC BEFORE ANYTHING IS WRITTEN. Matching nothing is normal —
     // most typed topics are not in the bank — and a wrong card would be worse than none.
     const card = opts.type === 'tips' ? await pickBankCard(opts.topic ?? '').catch(() => null) : null;
@@ -1429,7 +1431,9 @@ async function runPlannedCarousel(opts: {
       agencyEvidence: opts.agencyEvidence,
       cardRules: card ? cardRules(card) : '',
       cardMust: card ? card.must.map((m) => `· ${m}`).join('\n') : '',
+      cardId: card?.id, cardMustList: card ? [...card.must] : undefined,
       onResearch: (b) => { research = b; },
+      onCoverage: (u, degraded) => { uncovered = u; coverageDegraded = degraded; },
     });
     // EDITOR pass (Christian 2026-08-28): a skeptical second read of the copy — sense, value,
     // trust — before anything renders. Quote decks are verbatim client words and skip it.
@@ -1439,10 +1443,12 @@ async function runPlannedCarousel(opts: {
       // THE FACTUAL GATE, on the finished draft and BEFORE the editor. Guardrails in the prompt are
       // necessary and not sufficient: the writer can invent a factual sentence no guardrail
       // anticipated, which is exactly how a post shipped a legal claim its own bank card forbids.
-      const uncovered = card ? uncoveredRequirements(card.must, research) : [];
+      // uncovered was assessed inside planCarousel, between research and writing — the writer needs
+      // it before it writes, and the validator needs the same list.
       if (uncovered.length) {
         console.warn(`[studio/carousel] research did not establish ${uncovered.length} of `
-          + `${card?.must.length} required points for card ${card?.id}`);
+          + `${card?.must.length ?? 0} required points for card ${card?.id}`
+          + (coverageDegraded ? ` (${coverageDegraded})` : ''));
       }
       const gated = await gatePlan(plan, {
         language: opts.language, topic: opts.topic ?? '', research,

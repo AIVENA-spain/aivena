@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { adjudicate, incompleteBody, trimWords, uncoveredRequirements, RESOLVED_HARD_FAIL, RESOLVED_OK } from './studio-copy-gate';
+import { adjudicate, capFor, gateField, incompleteBody, trimWords, uncoveredRequirements, endsMidThought, RESOLVED_HARD_FAIL, RESOLVED_OK } from './studio-copy-gate';
 
 /**
  * REGRESSION: a generated card shipped ending "timelines still vary by court and".
@@ -200,5 +200,37 @@ describe('adjudication — the second opinion is evidence, not a judge', () => {
     expect(RESOLVED_HARD_FAIL.has('USES_UNESTABLISHED_REQUIREMENT')).toBe(true);
     expect(RESOLVED_OK.has('SUPPORTED_BY_AGENCY_PROFILE')).toBe(true);
     expect(RESOLVED_OK.has('NEEDS_REPAIR' as never)).toBe(false);
+  });
+});
+
+describe('three defects the c631b64 run shipped', () => {
+  it('1. a cap holds after a rewrite, not just at first parse', () => {
+    // Real generated title: 161 chars against a 62-char cap, because the repair pass wrote whatever
+    // the model returned and the caps had been applied once, back when the plan was first parsed.
+    const title = "Xàbia's seasonal population grew 331% and Dénia's grew 431% over registered residents, "
+      + 'per a 2019 Observatori Marina Alta study — not a simple tripling for both.';
+    expect(title.length).toBeGreaterThan(62);
+    expect(capFor('tips[1].title')).toBe(62);
+    expect((trimWords(title, capFor('tips[1].title')!) as string).length).toBeLessThanOrEqual(62);
+    expect(capFor('caption')).toBe(320);
+    expect(capFor('tips[0].body')).toBe(250);
+    expect(capFor('not_a_field')).toBeNull();
+  });
+
+  it('2. a citation is a shape, not a list of company names', () => {
+    // "Observatori Marina Alta" was never going to be on a hand-written list of data providers.
+    const fired = (t: string) => gateField('tips[1].body', t, '').map(h => h.rule.id);
+    expect(fired("Xàbia's population grew 331% in the 2019 Observatori Marina Alta study."))
+      .toContain('source-attributed');
+    expect(fired('According to a Banco de España report, rates rose.')).toContain('source-attributed');
+    // Ordinary copy that merely mentions a portal for what it is stays untouched.
+    expect(fired('The same home turns up on Idealista under three agencies.')).toHaveLength(0);
+    expect(fired('Buyers scroll fast and judge in seconds.')).toHaveLength(0);
+  });
+
+  it('3. the mid-thought check has to be the last thing that runs', () => {
+    // Real generated title. The check that catches it had already run before the editor rewrote it.
+    expect(endsMidThought('Borrowing is getting more expensive, not')).toBe(true);
+    expect(endsMidThought('Borrowing is getting more expensive, not cheaper')).toBe(false);
   });
 });

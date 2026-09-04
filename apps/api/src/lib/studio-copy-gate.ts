@@ -74,6 +74,28 @@ export function trimWords(v: unknown, max: number): unknown {
   return out.replace(/[\s,;:—–-]+$/, '');
 }
 
+/**
+ * The generated field length limits, and the re-application of them.
+ *
+ * These lived in the writer, applied once when the plan was first parsed. Every later rewrite — the
+ * gate's repair pass and the editor — wrote whatever the model returned, so a repaired title shipped
+ * at 161 characters against a 62-character cap, complete with a citation. A cap enforced once is a
+ * cap that holds until the first rewrite.
+ */
+export const FIELD_CAPS: Readonly<Record<string, number>> = {
+  eyebrow: 44, hook_title: 90, slide2_title: 80, slide2_body: 220, recap_title: 60,
+  save_line: 70, cta_heading: 78, agency_line: 170, cta_action: 140, cta_keyword: 90,
+  swipe_cue: 18, caption: 320,
+};
+const TIP_CAPS: Readonly<Record<string, number>> = { title: 62, body: 250, teaser: 70 };
+
+/** The cap for an addressed field, or null when the field is uncapped. */
+export function capFor(field: string): number | null {
+  const tip = /^tips\[\d+\]\.(title|body|teaser)$/.exec(field);
+  if (tip) return TIP_CAPS[tip[1]] ?? null;
+  return FIELD_CAPS[field] ?? null;
+}
+
 /** Fields that carry prose, where a missing full stop means the text was cut rather than styled. */
 const PROSE_FIELD = /^(?:tips\[\d+\]\.body|slide2_body|caption)$/;
 
@@ -301,8 +323,11 @@ export const GATE_RULES: readonly GateRule[] = [
     authority: 'Same rule: the research is internal support, never subject matter. Naming a portal '
       + 'for what it IS ("your listing appears on Idealista") is fine — this is about attribution.',
     negationImmune: true,
-    all: [/\b(?:Idealista|Fotocasa|Engel\s*(?:&|and)\s*V[öo]lkers|Tinsa|Registradores|Notariado|INE\b|Eurostat|Colegio de Registradores|MIVAU|CGPJ)\b/i,
-      /\b(?:listed|reported|reports|according to|says|said|data|figures?|index|averag\w*|recorded|published)\b/i],
+    // Two shapes. A named data provider used as attribution, OR any "per a 2019 Somebody study"
+    // construction — a live post cited "the 2019 Observatori Marina Alta study" and the fixed list
+    // of provider names could never have caught it. A citation is a shape, not a vocabulary.
+    all: [/(?:\b(?:Idealista|Fotocasa|Engel\s*(?:&|and)\s*V[öo]lkers|Tinsa|Registradores|Notariado|INE\b|Eurostat|Colegio de Registradores|MIVAU|CGPJ)\b|\b(?:per|according to|based on|cited (?:by|in)|from|in)\s+(?:a|the)?\s*\d{4}\s+[A-ZÀ-Ý][^,.;]{2,60}?\s+(?:study|report|index|survey|analysis)\b|\b(?:per|according to)\s+(?:a|the)\s+[A-ZÀ-Ý][^,.;]{2,60}?\s+(?:study|report|index|survey|analysis)\b)/i,
+      /\b(?:listed|reported|reports|according to|says|said|data|figures?|index|averag\w*|recorded|published|study|grew|rose|fell|per)\b/i],
   },
   {
     id: 'legal-timeline-approximate',

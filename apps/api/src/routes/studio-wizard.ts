@@ -32,7 +32,7 @@ import {
 } from '../../../../studio/engine/carouselStyles';
 import type { CarouselBrand } from '../../../../studio/engine/renderCarousel';
 import { planCarousel, editPlan, remixHook, topicIdeas, listingCopy, listingStory, pickBankCard, PlanSchema, normalisePlan } from '../lib/studio-carousel-plan';
-import { gatePlan, type GateReport } from '../lib/studio-claim-gate';
+import { finishCopy, gatePlan, type GateReport } from '../lib/studio-claim-gate';
 import { cardRules } from '../lib/studio-bank-match';
 import { dropSentence, gateField, planFields, readField, uncoveredRequirements, writeField } from '../lib/studio-copy-gate';
 import { directScenes } from '../lib/studio-carousel-art';
@@ -1500,6 +1500,9 @@ async function runPlannedCarousel(opts: {
         }
         console.warn(`[studio/carousel] final gate removed ${qa.dropped} sentence(s) the editor reintroduced`);
       }
+      // Absolutely last: caps, complete sentences, nothing dangling. Everything above can rewrite
+      // copy, so this has to come after all of it or it cleans a draft that no longer exists.
+      plan = finishCopy(plan, claimQa);
     }
     const contact = contactLine(opts.agency);
     // AI-imagery styles compose the pre-seeded generated family; a library miss falls back to the

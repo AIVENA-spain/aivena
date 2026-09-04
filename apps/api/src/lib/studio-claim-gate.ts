@@ -21,8 +21,8 @@
 import { env } from '../../../../packages/config/env';
 
 import {
-  adjudicate, dropSentence, endsMidThought, gateField, incompleteBody, planFields, readField,
-  writeField, RESOLVED_HARD_FAIL, RESOLVED_OK,
+  adjudicate, capFor, dropSentence, endsMidThought, gateField, incompleteBody, planFields,
+  readField, trimWords, writeField, RESOLVED_HARD_FAIL, RESOLVED_OK,
   type GateHit, type PlanLike, type Resolution,
 } from './studio-copy-gate';
 
@@ -475,7 +475,11 @@ async function repairFields(
   let next = plan;
   for (const f of list) {
     if (typeof f?.field === 'string' && typeof f?.text === 'string' && f.text.trim()) {
-      next = writeField(next, f.field, f.text.trim());
+      // A repair writes whatever the model returned; the caps were applied once, when the plan was
+      // first parsed. A repaired title shipped at 161 characters against a 62-character cap.
+      const cap = capFor(f.field);
+      const text = cap ? String(trimWords(f.text.trim(), cap)) : f.text.trim();
+      next = writeField(next, f.field, text);
     }
   }
   return next;
@@ -658,20 +662,39 @@ export async function gatePlan<T extends PlanLike>(
     }
   }
 
-  // Last resort, after every repair attempt: a prose card still stopping mid-sentence is cut back to
-  // its last complete sentence. Losing a clause beats publishing a fragment, and this only ever runs
-  // when the rewrite could not fit the point into the limit.
+  return { plan: finishCopy(current, report), report };
+}
+
+/**
+ * The very last thing that touches the copy — caps, complete sentences, no dangling word.
+ *
+ * This used to live at the end of gatePlan, which meant the editor (and the final deterministic
+ * pass) ran AFTER it and could reintroduce exactly what it had cleaned. A live post shipped a card
+ * titled "Borrowing is getting more expensive, not" for precisely that reason: the check that
+ * catches it had already run. Exported so the orchestrator can call it after everything else.
+ */
+export function finishCopy<T extends PlanLike>(plan: T, report?: GateReport): T {
+  let current = plan;
+  for (const f of planFields(current)) {
+    const cap = capFor(f.field);
+    if (cap && f.text.length > cap) current = writeField(current, f.field, String(trimWords(f.text, cap)));
+  }
+  // A prose card still stopping mid-sentence is cut back to its last complete sentence. Losing a
+  // clause beats publishing a fragment; this only runs when a rewrite could not fit the point.
   for (const f of planFields(current)) {
     if (incompleteBody(f.field, f.text)) {
       const whole = f.text.replace(/\s*[^.!?…]*$/, '').trim();
-      if (whole.length >= 40) { current = writeField(current, f.field, whole); report.dropped++; }
+      if (whole.length >= 40) {
+        current = writeField(current, f.field, whole);
+        if (report) report.dropped++;
+      }
     }
   }
-  // Defence in depth behind trimWords: nothing leaves cut mid-thought.
   for (const f of planFields(current)) {
     if (endsMidThought(f.text)) {
-      current = writeField(current, f.field, f.text.replace(/\s+\S+$/, '').replace(/[\s,;:—–-]+$/, ''));
+      current = writeField(current, f.field,
+        f.text.replace(/\s+\S+$/, '').replace(/[\s,;:—–-]+$/, ''));
     }
   }
-  return { plan: current, report };
+  return current;
 }

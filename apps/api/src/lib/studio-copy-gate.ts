@@ -653,6 +653,19 @@ export interface AdjudicationInput {
   uncovered: readonly string[];
 }
 
+/**
+ * Terms that give a sentence something an outsider could check: a quantity, a named thing, a rule,
+ * a procedure, a market series. Absent all of them, the sentence is an argument.
+ */
+const CHECKABLE = /\b(?:law|legal|court|judge|tribunal|notary|notari\w*|deed|escritura|registry|registro|tax|taxed|taxable|rate|rates|percent|per cent|deadline|withhold\w*|licen[cs]e|permit|planning|contract|mandate|mandato|commission|clause|evict\w*|prosecut\w*|fine[sd]?|oblig\w*|entitl\w*|guarantee\w*|required|requires|must|cannot|forbid\w*|allowed|statute|article|reform|census|padr[óo]n|population|statistic\w*|average|median|typically|usually|always|never|forecast\w*|index|survey|study|ferry|airport|school|hospital|market data|transactions?)\b/i;
+
+/** Does anything in this sentence have an external truth to be wrong about? */
+export function hasCheckableAnchor(text: string): boolean {
+  if (/\d/.test(text)) return true;                                    // any figure or year
+  if (/(?!^)\b[A-ZÀ-Ý][a-zà-ÿ]{2,}/.test(text.replace(/^[^A-Za-zÀ-ÿ]*/, '').slice(1))) return true; // a proper noun
+  return CHECKABLE.test(text);
+}
+
 export function adjudicate(input: AdjudicationInput): Resolution {
   if (input.deterministic) return 'DETERMINISTIC_CONTRADICTION';
 
@@ -678,6 +691,13 @@ export function adjudicate(input: AdjudicationInput): Resolution {
   if (input.type === 'MARKETING_PUFFERY') return 'MARKETING_PUFFERY';
   if (input.type === 'OPINION_POSITIONING' || input.type === 'CREATIVE_HOOK') return 'OPINION_POSITIONING';
   if (SERVICE_PROMISE.test(input.text) && !/\d/.test(input.text)) return 'SERVICE_PROMISE_ALLOWED';
+
+  // A sentence with nothing checkable in it cannot be factually wrong about the world, whatever the
+  // extractor labelled it. "Buying now locks in today's cost instead of tomorrow's guess" was sent
+  // for repair as a policed claim; it names no number, no institution and no rule — it is the
+  // argument. Deciding this here rather than trusting the label is the difference between resolving
+  // a mislabelled opinion and deleting the sales case.
+  if (!hasCheckableAnchor(input.text)) return 'OPINION_POSITIONING';
 
   return 'NEEDS_REPAIR';
 }

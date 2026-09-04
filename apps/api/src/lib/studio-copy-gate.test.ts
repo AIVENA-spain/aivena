@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { adjudicate, capFor, gateField, incompleteBody, trimWords, uncoveredRequirements, endsMidThought, RESOLVED_HARD_FAIL, RESOLVED_OK } from './studio-copy-gate';
+import { adjudicate, capFor, gateField, hasCheckableAnchor, incompleteBody, trimWords, uncoveredRequirements, endsMidThought, RESOLVED_HARD_FAIL, RESOLVED_OK } from './studio-copy-gate';
 
 /**
  * REGRESSION: a generated card shipped ending "timelines still vary by court and".
@@ -232,5 +232,33 @@ describe('three defects the c631b64 run shipped', () => {
     // Real generated title. The check that catches it had already run before the editor rewrote it.
     expect(endsMidThought('Borrowing is getting more expensive, not')).toBe(true);
     expect(endsMidThought('Borrowing is getting more expensive, not cheaper')).toBe(false);
+  });
+});
+
+describe('a sentence with nothing checkable in it is an argument', () => {
+  const base = { type: 'FACTUAL_MATERIAL', research: 'Alicante prices rose 1.5% this quarter.',
+    agencyEvidence: 'Works in: Jávea, Moraira', uncovered: [] as string[] };
+
+  it('resolves the real case the extractor mislabelled', () => {
+    // Sent for repair as a policed claim. It names no number, no institution and no rule.
+    expect(adjudicate({ ...base,
+      text: "Buying now locks in today's cost instead of tomorrow's guess." }))
+      .toBe('OPINION_POSITIONING');
+    expect(adjudicate({ ...base, text: 'One agent means one message and one price.' }))
+      .toBe('OPINION_POSITIONING');
+  });
+
+  it('still polices anything with an external truth to be wrong about', () => {
+    expect(hasCheckableAnchor('Squatters can be evicted quickly.')).toBe(true);       // procedure
+    expect(hasCheckableAnchor('The buyer withholds 3% of the price.')).toBe(true);    // figure
+    expect(hasCheckableAnchor('Dénia runs ferries to Ibiza.')).toBe(true);            // proper noun
+    expect(hasCheckableAnchor('Exclusive mandates usually carry a lower commission.')).toBe(true);
+    expect(hasCheckableAnchor('A listing is remembered or it is skipped.')).toBe(false);
+  });
+
+  it('does not become a hiding place for agency performance', () => {
+    // No digits, no proper nouns — but past performance is caught earlier in the chain.
+    expect(adjudicate({ ...base, type: 'AGENCY_FACT',
+      text: "We've seen how that plays out." })).toBe('NEEDS_REPAIR');
   });
 });

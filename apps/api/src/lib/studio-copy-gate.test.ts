@@ -262,3 +262,21 @@ describe('a sentence with nothing checkable in it is an argument', () => {
       text: "We've seen how that plays out." })).toBe('NEEDS_REPAIR');
   });
 });
+
+describe('the writer never narrates its own checking', () => {
+  const fired = (t: string) => gateField('tips[0].body', t, '').map(h => h.rule.id);
+
+  it('blocks first-person verification talk', () => {
+    // Real generated copy. The reader must never see the machinery, and this IS the machinery.
+    expect(fired('Every current series I could verify on Alicante property points the same '
+      + 'direction: up.')).toContain('research-narrated');
+    expect(fired('I could not find a published figure for that.')).toContain('research-narrated');
+    expect(fired('As far as I can tell, the rate has not changed.')).toContain('research-narrated');
+  });
+
+  it('leaves the same point alone when stated plainly', () => {
+    expect(fired('Alicante prices rose again this quarter, on every measure that tracks them.'))
+      .toHaveLength(0);
+    expect(fired('No institution tracking the market is forecasting a fall.')).toHaveLength(0);
+  });
+});

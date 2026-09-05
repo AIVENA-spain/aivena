@@ -19,6 +19,7 @@ export type SourceClass =
   | 'official_statistics'   // INE, Interior's crime series, Catastro
   | 'official_regional'     // Generalitat, DOGV, an ayuntamiento
   | 'professional_body'     // Registradores, Notariado, the colegios
+  | 'legal_reference'       // databases that reproduce the statute text itself
   | 'press'
   | 'industry'              // portals, brokerages, consultancies
   | 'blog'
@@ -51,6 +52,10 @@ const OFFICIAL_STATISTICS = [
 ];
 const OFFICIAL_REGIONAL = ['gva.es', 'dogv.gva.es', 'habitatge.gva.es', 'argos.gva.es'];
 const PROFESSIONAL_BODY = ['registradores.org', 'notariado.org', 'colegionotarial', 'notariosyregistradores.com'];
+// Not blogs. These reproduce the consolidated statute and the case law verbatim, which is exactly
+// what a legal proposition needs to be checked against when the BOE page itself will not open.
+const LEGAL_REFERENCE = ['noticias.juridicas.com', 'iberley.es', 'vlex.es', 'vlex.com',
+  'legislacion.derecho.com', 'poderjudicial.es', 'westlaw.es'];
 const PRESS = [
   'elpais.com', 'elmundo.es', 'abc.es', 'lavanguardia.com', 'eldiario.es', 'infobae.com', 'efe.com',
   'europapress.es', 'expansion.com', 'cincodias.elpais.com', 'levante-emv.com', 'informacion.es',
@@ -83,6 +88,7 @@ export function classifySource(url: string): SourceClass {
   if (hit(OFFICIAL_STATISTICS)) return 'official_statistics';
   if (hit(OFFICIAL_REGIONAL)) return 'official_regional';
   if (hit(PROFESSIONAL_BODY)) return 'professional_body';
+  if (hit(LEGAL_REFERENCE)) return 'legal_reference';
   // an ayuntamiento: ajuntament/ayuntamiento hosts, and the .gob.es / .gov space generally
   if (/^(?:ajuntament|ayuntamiento|aytos?)\./.test(d) || /\.(?:gob|gov)\.[a-z]{2}$/.test(d)
       || d.endsWith('.gob.es') || d.endsWith('.gov')) return 'official_regional';
@@ -212,10 +218,13 @@ export function riskOf(text: string, claimType?: string): RiskClass {
 
 /** The source classes that may carry a proposition of each risk class. */
 export const SOURCE_POLICY: Readonly<Record<RiskClass, readonly SourceClass[]>> = {
-  legal_tax: ['official_primary', 'official_regional', 'official_statistics'],
+  legal_tax: ['official_primary', 'official_regional', 'official_statistics', 'legal_reference',
+    'professional_body'],
   market_statistics: ['official_statistics', 'professional_body', 'official_primary', 'official_regional'],
+  // deliberately NOT press: a newspaper reporting a figure is where you find it, not where it is
   local_fact: ['official_statistics', 'official_regional', 'official_primary', 'professional_body', 'press'],
-  none: ['official_primary', 'official_statistics', 'official_regional', 'professional_body', 'press', 'industry', 'blog', 'unknown'],
+  none: ['official_primary', 'official_statistics', 'official_regional', 'professional_body',
+    'legal_reference', 'press', 'industry', 'blog', 'unknown'],
 };
 
 /**

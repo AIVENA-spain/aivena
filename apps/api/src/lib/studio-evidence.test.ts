@@ -45,6 +45,8 @@ describe('source classification', () => {
     ['https://www.ine.es/jaxiT3/Tabla.htm', 'official_statistics'],
     ['https://estadisticasdecriminalidad.ses.mir.es/', 'official_statistics'],
     ['https://www.registradores.org/estadisticas', 'professional_body'],
+    ['https://noticias.juridicas.com/base_datos/Privado/cc.l4t4.html', 'legal_reference'],
+    ['https://www.iberley.es/legislacion/articulo-1454-codigo-civil', 'legal_reference'],
     ['https://ajuntament.calp.es/es/poblacion', 'official_regional'],
     ['https://www.gva.es/va/inicio', 'official_regional'],
     ['https://www.idealista.com/news/inmobiliario', 'press'],
@@ -81,6 +83,12 @@ describe('source policy', () => {
   const boe = src({ id: 'S2', url: 'https://www.boe.es/x' });
   const ine = src({ id: 'S3', url: 'https://www.ine.es/x' });
   it('refuses a blog as the ground of a tax rule', () => expect(policyAllows('legal_tax', [blog])).toBe(false));
+  it('accepts a database that reproduces the statute verbatim', () => {
+    expect(policyAllows('legal_tax', [src({ id: 'S9', url: 'https://noticias.juridicas.com/base_datos/Privado/cc.l4t4.html' })])).toBe(true);
+  });
+  it('refuses a newspaper as the ground of a statistic', () => {
+    expect(policyAllows('market_statistics', [src({ id: 'S8', url: 'https://elpais.com/economia/x.html' })])).toBe(false);
+  });
   it('accepts the BOE', () => expect(policyAllows('legal_tax', [boe])).toBe(true));
   it('accepts INE for a statistic', () => expect(policyAllows('market_statistics', [ine])).toBe(true));
   it('refuses a source that was found but never opened', () => {
@@ -148,6 +156,14 @@ describe('verifySupport', () => {
     expect(r.reason).toMatch(/may not rest on/);
   });
   // MUST-BLOCK: the B and H3 shape
+  // Christian 2026-09-05: partial is not permission for the paragraph, and not a bar either — the
+  // claim still has to produce direct evidence for the proposition it actually uses.
+  it('lets a partial requirement through when the claim has its own evidence', () => {
+    const r = verifySupport(
+      P({ sourceIds: ['S1'], evidenceExcerpt: 'La venta se perfeccionará entre comprador y vendedor', requirementIds: ['B11#1'] }),
+      ctx({ unestablished: new Set<string>() }));
+    expect(r.verdict).toBe('supported');
+  });
   it('refuses any claim that rests on an unestablished requirement', () => {
     const r = verifySupport(
       P({ sourceIds: ['S1'], evidenceExcerpt: 'La venta se perfeccionará entre comprador y vendedor', requirementIds: ['B12#3'] }),

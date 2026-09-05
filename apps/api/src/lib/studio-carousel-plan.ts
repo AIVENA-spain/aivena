@@ -450,11 +450,21 @@ async function openCitedSources(sources: ResearchSource[], limit = 14): Promise<
 async function openCited(findings: ResearchCall, risk: RiskClass): Promise<void> {
   const citedUrls = new Set(Array.from(findings.text.matchAll(/\[\s*(https?:\/\/[^\]\s]+)\s*\]/g),
     (m) => String(m[1]).replace(/[.,;]+$/, '')));
-  const cited = findings.sources.filter((x) => citedUrls.has(x.url));
-  const authoritative = findings.sources.filter((x) => !citedUrls.has(x.url)
-    && SOURCE_POLICY[risk].includes(x.sourceClass));
-  const rest = findings.sources.filter((x) => !cited.includes(x) && !authoritative.includes(x));
-  await openCitedSources([...cited, ...authoritative, ...rest]);
+  // A URL that appears only in a citation tag still has to become a source, and has to become one
+  // BEFORE opening — otherwise the pages the briefing actually cites are the only ones never read.
+  for (const url of citedUrls) {
+    if (findings.sources.some((x) => x.url === url || x.url.startsWith(url) || url.startsWith(x.url))) continue;
+    findings.sources.push({
+      id: `S${findings.sources.length + 1}`, url, title: '', domain: domainOf(url),
+      sourceClass: classifySource(url), opened: false, openedAt: null, contentChars: 0, excerpts: [],
+    });
+  }
+  // Order matters, because the fetch budget is finite. An authoritative page that the briefing
+  // cited is worth most; an authoritative page it did not cite is worth more than a blog it did,
+  // because a legal or statistical claim cannot rest on the blog anyway.
+  const ok = (x: ResearchSource) => SOURCE_POLICY[risk].includes(x.sourceClass);
+  const rank = (x: ResearchSource) => (citedUrls.has(x.url) ? 0 : 2) + (ok(x) ? 0 : 1);
+  await openCitedSources([...findings.sources].sort((a, b) => rank(a) - rank(b)), 18);
   const opened = findings.sources.filter((x) => x.opened);
   console.log(`[studio/carousel] opened ${opened.length} of ${findings.sources.length} sources`
     + ` (${opened.filter((x) => SOURCE_POLICY[risk].includes(x.sourceClass)).length} authoritative`
@@ -713,9 +723,12 @@ async function researchTopic(
     console.error(`[studio/carousel] RESEARCH POLICY UNMET for a ${risk} topic — no authoritative `
       + `page was opened; material claims of that kind cannot be supported and will be removed`);
   }
+  // findings starts life AS f, so emptying f.sources first would empty the array we are copying
+  // from. Snapshot, then replace.
+  const finalSources = [...findings.sources];
   f.text = findings.text;
   f.sources.length = 0;
-  f.sources.push(...findings.sources);
+  f.sources.push(...finalSources);
   // Rewrite the URL the research tagged each line with into the id of the source it belongs to, so
   // a finished sentence can name what backs it without the writer ever seeing a URL or a publisher.
   const tagged = f.text.replace(/\[\s*(https?:\/\/[^\]\s]+)\s*\]/g, (_m, url: string) => {

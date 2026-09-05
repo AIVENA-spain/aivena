@@ -597,7 +597,11 @@ export async function supportClaims(
   const sources = ctx.sources ?? [];
   const coverage = ctx.coverage ?? [];
   const bankFacts = ctx.bankFacts ?? new Map<string, string>();
-  const unestablished = new Set(coverage.filter((c) => c.status !== 'established').map((c) => c.id));
+  // ONLY not_established bars a claim. A partial requirement is not permission to assert the whole
+  // paragraph, but nor is it a bar: the claim still has to produce direct evidence for the specific
+  // proposition it uses, and that is what the support record is. Treating partial as a block took
+  // eight true, sourced sentences out of a smoke-test deck.
+  const unestablished = new Set(coverage.filter((c) => c.status === 'not_established').map((c) => c.id));
 
   const supportCtx: SupportContext = {
     sources, agencyEvidence: ctx.agencyEvidence, bankText: bankFacts, unestablished,

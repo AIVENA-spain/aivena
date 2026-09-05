@@ -1037,7 +1037,7 @@ export function adjudicate(input: AdjudicationInput): Resolution {
 // ("Idealista listed Dénia at 3,404 €/m²"). Without that distinction the citation rule flags the
 // subject of a perfectly good sentence.
 const TOWN = /\b(J[áa]vea|X[àa]bia|D[ée]nia|Moraira|Teulada|Calpe|Calp|Benissa|Altea|Alt[ée]a|Benidorm|Torrevieja|Orihuela|Guardamar|Santa Pola|El Campello|Villajoyosa|Finestrat|Polop|La Nucia|Albir|Pego|Ondara|Pedreguer|Benitachell|Poble Nou|San Javier|Cartagena|Marbella|Estepona|Nerja|Sitges|Alicante city)\b/gi;
-const REGION = /\b(?:Alicante|Valencia|Murcia|M[áa]laga|Barcelona|Madrid|Sevilla|Costa Blanca|Costa del Sol|Costa C[áa]lida|Marina Alta|Marina Baixa|Vega Baja|Comunidad Valenciana|Comunitat Valenciana|Andaluc[íi]a|Catalu[ñn]a|Catalonia|Baleares|Balearics|Canarias|Ibiza|Mallorca|Menorca|Spain|Espa[ñn]a|Europe|the EU|UK|Britain|Netherlands|Germany|Belgium|France|Norway|Sweden|Denmark|Poland)\b/gi;
+const REGION = /\b(?:Alicante|Valencia|Murcia|M[áa]laga|Barcelona|Madrid|Sevilla|Costa Blanca|Costa del Sol|Costa C[áa]lida|Marina Alta|Marina Baixa|Vega Baja|Comunidad Valenciana|Comunitat Valenciana|Andaluc[íi]a|Catalu[ñn]a|Catalonia|Baleares|Balearics|Canarias|Ibiza|Mallorca|Menorca|Spain|Espa[ñn]a|Europe|the EU)\b/gi;
 
 const CANON = (p: string) => p.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
   .replace(/^xabia$/, 'javea').replace(/^calp$/, 'calpe').replace(/^altea$/, 'altea');

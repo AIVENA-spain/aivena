@@ -913,7 +913,7 @@ const METRIC_TRAPS: readonly { of: RegExp; not: RegExp; why: string }[] = [
     not: /\b(?:sale price|sold for|paid|market price)\b/i,
     why: 'turns an appraisal into a market price' },
   { of: /(?:\bporcentaje|%|\bshare\b|\bproporci[óo]n|\bcuota\b)/i,
-    not: /\b(?:\d+\s+(?:purchases|sales|operations|transactions|homes|properties)\b)/i,
+    not: /\b\d[\d.,]*\s+(?:purchases|sales|operations|transactions|homes|properties|buyers|operaciones|compraventas|transacciones|viviendas|compradores)\b/i,
     why: 'turns a share into an absolute count' },
   { of: /(?:\bproyecto de ley|\banteproyecto|\bproposal\b|\bdraft\b|\bpropuesta|\bborrador)/i,
     not: /\b(?:the law (?:is|says|requires)|is now law|came into force|entr[óo] en vigor|enacted)\b/i,
@@ -949,11 +949,13 @@ export function canonicalWithinExcerpt(fact: { excerpt: string; canonical: strin
   const years = (t: string) => new Set((normalizeForMatch(t).match(/\b(?:19|20)\d{2}\b/g) ?? []));
   const exYears = years(ex);
   for (const y of years(can)) if (!exYears.has(y)) return { ok: false, why: `dates it to ${y}, which the excerpt does not` };
+  // Every place the canonical names must be in the excerpt, in the geography field, or in the text
+  // immediately around the excerpt on the page. Guarding this on "the excerpt names a place" left
+  // the H4 hole wide open: a NATIONAL figure whose excerpt names nowhere could be attached to
+  // Alicante province, which is the single error that started all of this.
   const exPlaces = placesOrRegionsIn(ex);
-  if (exPlaces.size) {
-    const foreign = [...placesOrRegionsIn(can)].filter((x) => !exPlaces.has(x));
-    if (foreign.length) return { ok: false, why: `moves the fact to ${foreign.join('/')}` };
-  }
+  const foreign = [...placesOrRegionsIn(can)].filter((x) => !exPlaces.has(x));
+  if (foreign.length) return { ok: false, why: `moves the fact to ${foreign.join('/')}` };
   const exNations = nationsIn(ex);
   if (exNations.size) {
     const foreign = [...nationsIn(can)].filter((x) => !exNations.has(x));

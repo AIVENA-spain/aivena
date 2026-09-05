@@ -85,6 +85,30 @@ describe('the canonical fact may translate but never conclude', () => {
     expect(r.ok).toBe(false);
     expect(r.why).toMatch(why as RegExp);
   });
+  // The H4 error, one link earlier: a NATIONAL figure attached to a province. The guard used to be
+  // skipped whenever the excerpt named no place at all, which is exactly when this happens.
+  it('refuses a national figure re-labelled as a provincial one', () => {
+    const r = F('Reino Unido 6,99% de las compras de extranjeros a nivel nacional',
+      'British buyers lead Alicante province with 6.99% of purchases.');
+    expect(r.ok).toBe(false);
+    expect(r.why).toMatch(/moves the fact to alicante/);
+  });
+
+  // A country of ORIGIN is a nationality, not a geography. "Países Bajos" and "Dutch buyers" are the
+  // same fact, and treating the country as a place threw away every nationality fact H4 needed.
+  it('does not treat a nationality as a change of geography', () => {
+    expect(F('Reino Unido 6,99%, Países Bajos 6,94%, Alemania 6,11% de las compras de extranjeros',
+      'UK buyers led nationally with 6.99%, ahead of the Netherlands at 6.94% and Germany at 6.11%.').ok)
+      .toBe(true);
+  });
+
+  // A Spanish table giving both a share and a count is not a share alone.
+  it('does not call a count a share when the source gives both in Spanish', () => {
+    expect(F('Países Bajos: 3.708 operaciones (12,53%) en Alicante en 2025',
+      'Dutch buyers completed 3,708 purchases in Alicante province in 2025, 12.53% of all sales.').ok)
+      .toBe(true);
+  });
+
   it('lets a statute be stated plainly in another language', () => {
     expect(F('Artículo 1450. La venta se perfeccionará entre comprador y vendedor, y será obligatoria para ambos',
       'A sale is perfected and binding on both parties once the thing and the price are agreed.').ok).toBe(true);

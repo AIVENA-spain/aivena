@@ -257,6 +257,9 @@ describe('7. a local premise written with no research', () => {
  */
 describe('every rule in the table can actually fire', () => {
   const CORPUS = [
+    // the palette put fact ids in front of the writer, so a slide can now carry one
+    'F3 says the ranking is published at national level only.',
+    'The withholding figure (F12) comes from 2025.',
     // the three corrections added after the 5dfb1c3 acceptance run
     'Agreeing a price by phone creates no obligation; nothing is binding until a document is signed.',
     'Filing Modelo 210 late can forfeit your right to reclaim anything at all.',

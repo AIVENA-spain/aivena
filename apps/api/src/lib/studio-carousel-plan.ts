@@ -916,10 +916,16 @@ export async function planCarousel(opts: {
   // out of what is true rather than writing from memory and having the gate delete a third of it.
   let facts: SourceFact[] = [];
   if (researchSources.some((x) => x.opened)) {
-    facts = opts.existingFacts?.length
-      ? [...opts.existingFacts]
-      : (await extractSourceFacts(researchSources, opts.topic ?? '').catch(() => ({ facts: [] }))).facts;
-    if (!opts.existingFacts?.length) {
+    if (opts.existingFacts?.length) {
+      facts = [...opts.existingFacts];
+    } else {
+      const got = await extractSourceFacts(researchSources, opts.topic ?? '')
+        .catch((err: unknown) => ({ facts: [] as SourceFact[],
+          degraded: `fact extraction threw: ${(err as Error)?.message ?? 'unknown'}` }));
+      facts = got.facts;
+      // An empty palette because nothing could be READ is not the same as an empty palette because
+      // there was nothing to find, and the writer's instructions differ for the two.
+      if (got.degraded) console.warn(`[studio/carousel] palette degraded — ${got.degraded}`);
       console.log(`[studio/carousel] palette: ${facts.length} facts off `
         + `${researchSources.filter((x) => x.opened).length} opened pages`);
     }

@@ -403,6 +403,20 @@ export const GATE_RULES: readonly GateRule[] = [
       /./],
   },
   {
+    id: 'palette-id-leaked',
+    severity: 'block',
+    problem: 'Contains an internal fact or source identifier (F3, S7) or first-person talk about '
+      + 'our sources. Those are the engine\'s own bookkeeping and the reader must never see them. '
+      + 'State the fact plainly instead.',
+    authority: 'The palette is the first thing to put fact ids in front of the writer, so it is the '
+      + 'first thing that could put one on a slide.',
+    negationImmune: true,
+    // An id USED AS A REFERENCE — in brackets, or next to a reporting verb or a citing preposition.
+    // A bare "F1" is Formula 1 as often as it is a fact id, and this rule deletes what it matches.
+    all: [/[([][FS]\d{1,2}[)\]]|\b[FS]\d{1,2}\s+(?:says?|shows?|states?|confirms?|establishes?|gives?|has|is from)\b|\b(?:per|see|from|according to|source:?|fact:?)\s+[FS]\d{1,2}\b|\b(?:our|nuestras|unsere|onze|vores|v[åa]re)\s+(?:sources?|fuentes|quellen|bronnen|kilder)\b/i,
+      /./],
+  },
+  {
     id: 'evidence-narrated',
     severity: 'block',
     problem: 'Talks about our evidence — whether it exists, agrees, is published or was checked — '
@@ -1134,4 +1148,44 @@ export function checkHashtags(
     if (out.length === 5) break;   // Instagram's own cap since December 2025
   }
   return { tags: out, removed };
+}
+
+
+/**
+ * Take one claim out of a plan, the same way everywhere.
+ *
+ * gatePlan learned this the hard way — deleting a sentence from a TITLE empties the card, and a
+ * live run shipped "2. (blank)" over an orphan body. The post-editor bank check and the final
+ * deterministic pass were then written as their own `dropSentence` calls with none of that
+ * protection, so the lesson held in one place and not in the two that run last.
+ *
+ * Prose loses the sentence. A headline takes its whole slide with it. Anything else is left, and
+ * reported, because a hole in the deck is worse than a sentence nobody could isolate.
+ */
+export function removeClaim<T extends PlanLike>(
+  plan: T, field: string, text: string,
+): { plan: T; outcome: 'sentence removed' | 'slide removed' | 'left' } {
+  const before = readField(plan, field);
+  const isProse = /(?:\.body|slide2_body|caption)$/.test(field);
+  if (isProse) {
+    const after = dropSentence(before, text);
+    if (after !== before && after.trim().length >= 40) {
+      return { plan: writeField(plan, field, after), outcome: 'sentence removed' };
+    }
+  }
+  const tip = /^tips\[(\d+)\]\./.exec(field);
+  if (tip) {
+    const tips = [...(plan.tips ?? [])];
+    const i = Number(tip[1]);
+    if (tips[i]) {
+      // Blank the body: the survival filter that runs at the end of the gate drops the slide.
+      tips[i] = { ...tips[i], body: '' };
+      return { plan: { ...plan, tips } as T, outcome: 'slide removed' };
+    }
+  }
+  if (isProse) {
+    const after = dropSentence(before, text);
+    if (after !== before) return { plan: writeField(plan, field, after), outcome: 'sentence removed' };
+  }
+  return { plan, outcome: 'left' };
 }

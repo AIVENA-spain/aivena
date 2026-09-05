@@ -30,7 +30,8 @@ import {
 } from './studio-copy-gate';
 import { getCard, retrieveBankFacts } from './studio-bank-match';
 import {
-  canonicalWithinExcerpt, checkCta, excerptOccursIn, rankFacts, riskTier, verifySupport,
+  SUPPORT_TYPES, canonicalWithinExcerpt, checkCta, excerptOccursIn, rankFacts, riskTier,
+  verifySupport,
   type ClaimSupport, type ProposedSupport, type ResearchSource, type SourceFact,
   type SupportContext,
 } from './studio-evidence';
@@ -74,6 +75,10 @@ export interface GateContext {
   coverage?: RequirementCoverage[];
   /** the facts read off the opened pages, each anchored to a verified span */
   facts?: readonly SourceFact[];
+  /** what the agency told us about its market and its clients, where it has told us anything */
+  agencyKnowledge?: string;
+  /** stored local knowledge for this area, where the product has any */
+  localIntelligence?: string;
   /** id → exact text of the verified bank facts and guardrails relevant to this post. Left unset,
    *  the gate retrieves them itself from what the finished post actually claims. */
   bankFacts?: ReadonlyMap<string, string>;
@@ -659,9 +664,7 @@ const SUPPORT_TOOL = {
           required: ['claim_id', 'support_type'],
           properties: {
             claim_id: { type: 'string' },
-            support_type: { type: 'string',
-              enum: ['source_fact', 'page_direct', 'agency_profile', 'agency_knowledge',
-                'local_intelligence', 'general_mechanism', 'bank_fact', 'none'] },
+            support_type: { type: 'string', enum: [...SUPPORT_TYPES] },
             fact_ids: { type: 'array', items: { type: 'string' },
               description: 'the F-ids of the source facts this claim follows from' },
             source_ids: { type: 'array', items: { type: 'string' },
@@ -749,6 +752,7 @@ export async function supportClaims(
 
   const supportCtx: SupportContext = {
     sources, facts, brief: ctx.research, agencyEvidence: ctx.agencyEvidence,
+    agencyKnowledge: ctx.agencyKnowledge, localIntelligence: ctx.localIntelligence,
     bankText: bankFacts, unestablished,
   };
   const unsupportedAll = (why: string) => ({
@@ -824,8 +828,7 @@ export async function supportClaims(
     }
     const proposed: ProposedSupport = {
       claimId: id, field: c.field, claim: c.text, claimType: c.type,
-      supportType: (['source_fact', 'page_direct', 'agency_profile', 'bank_fact'] as const)
-        .find((t) => t === String(r?.support_type ?? '')) ?? 'none',
+      supportType: SUPPORT_TYPES.find((t) => t === String(r?.support_type ?? '')) ?? 'none',
       factIds: Array.isArray(r?.fact_ids) ? (r.fact_ids as unknown[]).map(String) : [],
       sourceIds: Array.isArray(r?.source_ids) ? (r.source_ids as unknown[]).map(String) : [],
       evidenceExcerpt: String(r?.evidence_excerpt ?? ''),

@@ -401,15 +401,18 @@ export function figuresBacked(claim: string, evidence: string): boolean {
 
 /* ── CLAIM SUPPORT ───────────────────────────────────────────────────────────────────────── */
 
-export type SupportType =
-  | 'page_direct'        // the claim quotes an opened page word for word
-  | 'source_fact'        // the claim follows from a fact read off an opened page
-  | 'agency_profile'     // a fact the agency supplied about itself
-  | 'agency_knowledge'   // something the agency told us about its market or its clients
-  | 'local_intelligence' // stored local knowledge for this area
-  | 'general_mechanism'  // ordinary marketing reasoning: a tendency, not a measurement
-  | 'bank_fact'
-  | 'none';
+/**
+ * ONE list. The tool enum, the parser and this union are the same thing, because the last time they
+ * were three things a commit widened two of them and left the third — and the type that keeps
+ * ordinary marketing alive became unreachable while the tests, which call verifySupport directly,
+ * all stayed green.
+ */
+export const SUPPORT_TYPES = ['page_direct', 'source_fact', 'agency_profile', 'agency_knowledge',
+  'local_intelligence', 'general_mechanism', 'bank_fact', 'none'] as const;
+
+export type SupportType = typeof SUPPORT_TYPES[number];
+
+
 
 /**
  * What one published material claim rests on. The model proposes the record; the verdict below is
@@ -738,7 +741,15 @@ const languagesIn = (t: string) => new Set(
   Array.from((t ?? '').matchAll(LANGUAGE), (m) => LANG_CANON[m[1].toLowerCase()] ?? '').filter(Boolean));
 
 /** A claim about the agency's own record, which the profile never contains. */
-const PAST_RECORD = /\b(?:we(?:'ve| have)\s+(?:sold|helped|closed|handled|completed)|our (?:sellers?|buyers?|clients?|track record|average|results?)|sold \d|in \d+ (?:years?|months?)|since \d{4}|award|voted|number one|no\.? ?1|fastest|most (?:successful|trusted))\b/i;
+/**
+ * A claim about the agency's own RESULTS, which the profile never contains.
+ *
+ * Deliberately not "any sentence containing 'our buyers'". "Our buyers ask about parking here more
+ * than anything else" is knowledge the agency supplied and is exactly the kind of line the owner
+ * wants kept; "our buyers pay 8% less" is a result nobody has given us. The difference is the
+ * predicate, not the possessive.
+ */
+const PAST_RECORD = /\b(?:we(?:'ve| have)\s+(?:sold|helped|closed|handled|completed)\b|our\s+(?:track record|average|results?|success rate|numbers|figures|statistics)\b|our\s+(?:sellers?|buyers?|clients?|listings?|homes?)\s+(?:\w+\s+){0,2}(?:achiev\w+|get|gets|got|sell|sells|sold|save[ds]?|receiv\w+|pay|pays|paid|earn\w*|average|beat|outperform\w*)\b|sold \d|in \d+ (?:years?|months?)\b|since \d{4}\b|award|voted|number one|no\.? ?1\b|fastest|most (?:successful|trusted))/i;
 /** A superlative about itself. The profile is a list of facts; it never contains a ranking. */
 const SELF_SUPERLATIVE = /\b(?:the\s+)?(?:biggest|largest|leading|top|best|most established|longest[- ]established|number one|foremost|premier|market leader)\b[^.]{0,40}\b(?:agency|agent|estate agent|team|firm|office|brokerage|on the coast|in (?:the )?(?:area|region|province))\b|\bwe are (?:the\s+)?(?:biggest|largest|leading|top|best|number one)\b/i;
 

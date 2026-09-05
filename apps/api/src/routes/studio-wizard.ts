@@ -35,7 +35,7 @@ import { planCarousel, editPlan, remixHook, topicIdeas, listingCopy, listingStor
 import { POLICED_TYPES, checkBankContradictions, extractClaims, finishCopy, gatePlan,
   type GateReport } from '../lib/studio-claim-gate';
 import { cardRules, retrieveBankFacts } from '../lib/studio-bank-match';
-import { dropSentence, gateField, planFields, readField, writeField,
+import { gateField, planFields, readField, removeClaim, writeField,
   type RequirementCoverage } from '../lib/studio-copy-gate';
 import { riskTier, type ResearchSource, type SourceFact } from '../lib/studio-evidence';
 import { directScenes } from '../lib/studio-carousel-art';
@@ -1511,13 +1511,13 @@ async function runPlannedCarousel(opts: {
           const { contradictions } = await checkBankContradictions(finalMaterial, facts)
             .catch(() => ({ contradictions: [] as { field: string; text: string; bankFactId: string; why: string }[] }));
           for (const c of contradictions) {
-            const before = readField(plan, c.field);
-            const after = dropSentence(before, c.text);
-            if (after !== before) { plan = writeField(plan, c.field, after); claimQa.dropped++; }
+            const r = removeClaim(plan, c.field, c.text);
+            plan = r.plan;
+            if (r.outcome !== 'left') claimQa.dropped++;
             claimQa.bankContradictions.push(c);
             claimQa.blocked.push({ field: c.field, text: c.text, verdict: 'CONTRADICTS_GUARDRAIL',
               problem: `${c.bankFactId}: ${c.why}`,
-              outcome: after !== before ? 'removed — contradicts a verified guardrail' : 'left — could not be isolated' });
+              outcome: `${r.outcome} — contradicts a verified guardrail` });
           }
           if (contradictions.length) {
             console.warn(`[studio/carousel] final bank check removed ${contradictions.length} claim(s)`);
@@ -1536,13 +1536,13 @@ async function runPlannedCarousel(opts: {
             unpublishable: null };
           const qa = claimQa;
           for (const h of late) {
-            const before = readField(plan, h.field);
-            const after = dropSentence(before, h.sentence);
-            if (after !== before) { plan = writeField(plan, h.field, after); qa.dropped++; }
+            const r = removeClaim(plan, h.field, h.sentence);
+            plan = r.plan;
+            if (r.outcome !== 'left') qa.dropped++;
             qa.blocked.push({
               field: h.field, text: h.sentence, verdict: 'CONTRADICTS_GUARDRAIL',
               problem: h.rule.problem,
-              outcome: after !== before ? 'removed after the editor reintroduced it' : 'left — could not be isolated',
+              outcome: `${r.outcome} — the editor reintroduced it`,
             });
           }
           console.warn(`[studio/carousel] final gate removed ${qa.dropped} sentence(s) the editor reintroduced`);
@@ -1584,10 +1584,8 @@ async function runPlannedCarousel(opts: {
       // the deterministic table and the structural pass — caps, complete sentences, the CTA rule —
       // because those are about the product, not about evidence.
       for (const h of planFields(plan).flatMap((f) => gateField(f.field, f.text, research))
-        .filter((h) => h.rule.severity === 'block')) {
-        const before = readField(plan, h.field);
-        const after = dropSentence(before, h.sentence);
-        if (after !== before) plan = writeField(plan, h.field, after);
+        .filter((x) => x.rule.severity === 'block')) {
+        plan = removeClaim(plan, h.field, h.sentence).plan;
       }
       plan = finishCopy(plan, undefined, opts.agencyEvidence ?? '',
         `${opts.agencyEvidence ?? ''}\n${opts.agencyProfile ?? ''}`);

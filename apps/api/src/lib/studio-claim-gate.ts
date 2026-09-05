@@ -29,8 +29,9 @@ import {
 } from './studio-copy-gate';
 import { getCard, retrieveBankFacts } from './studio-bank-match';
 import {
-  findPassages, riskOf, verifySupport,
-  type ClaimSupport, type ProposedSupport, type ResearchSource, type SupportContext,
+  excerptOccursIn, riskTier, verifySupport,
+  type ClaimSupport, type ProposedSupport, type ResearchSource, type SourceFact,
+  type SupportContext,
 } from './studio-evidence';
 
 /** Policed: an external assertion a reader could act on and find false. */
@@ -70,6 +71,8 @@ export interface GateContext {
   sources?: ResearchSource[];
   /** requirement id → status, so a claim can be refused for resting on an unestablished one */
   coverage?: RequirementCoverage[];
+  /** the facts read off the opened pages, each anchored to a verified span */
+  facts?: readonly SourceFact[];
   /** id → exact text of the verified bank facts and guardrails relevant to this post. Left unset,
    *  the gate retrieves them itself from what the finished post actually claims. */
   bankFacts?: ReadonlyMap<string, string>;
@@ -98,6 +101,8 @@ export interface GateReport {
   materialFailures: number;
   /** what every material claim in the FIRST draft was found to rest on */
   supports: ClaimSupport[];
+  /** the facts read off the opened pages, each anchored to a verified span */
+  sourceFacts: SourceFact[];
   /** finished sentences that contradict a verified bank fact or guardrail — a hard block */
   bankContradictions: BankContradiction[];
   /** material claims that could not point at evidence, before any repair */
@@ -530,6 +535,92 @@ export async function validateClaims(
 
 /* ── 3. REPAIR ───────────────────────────────────────────────────────────────────────────── */
 
+/* ── 2a. SOURCE FACTS — what the opened pages actually say ───────────────────────────────── */
+
+const FACTS_TOOL = {
+  name: 'submit_facts',
+  description: 'The checkable facts on this page, each with the span it was read from.',
+  input_schema: {
+    type: 'object',
+    required: ['facts'],
+    properties: {
+      facts: {
+        type: 'array',
+        items: {
+          type: 'object',
+          required: ['excerpt', 'canonical'],
+          properties: {
+            excerpt: { type: 'string', description: 'the words on the page, copied EXACTLY, in the page\'s own language' },
+            canonical: { type: 'string', description: 'what it means, as one plain English statement a reader could check' },
+            language: { type: 'string', description: 'the excerpt\'s language, e.g. es, en' },
+            geography: { type: 'string', description: 'what the fact is about: Spain, Alicante province, Calpe, or empty' },
+            period: { type: 'string', description: 'the period it belongs to, e.g. 2025, Q2 2026, or empty' },
+          },
+        },
+      },
+    },
+  },
+};
+
+const FACTS_SYSTEM = `You read one page and write down the checkable facts on it.
+
+For each fact: copy the exact words from the page into "excerpt" — in the page's own language,
+character for character, no tidying, no translation, no ellipsis — and then say in "canonical" what
+that means as one plain English statement. The excerpt is checked against the page, so anything you
+did not copy exactly will be thrown away.
+
+WHAT TO TAKE: rules, thresholds, deadlines, definitions, figures, rankings, what a body publishes
+and at what geography, what a court held. Things a reader could act on and discover were wrong.
+
+WHAT TO LEAVE: navigation, boilerplate, cookie notices, marketing on the page itself, and anything
+you would have to infer. If the page says nothing checkable, return an empty list — that is a
+correct answer.
+
+BE PRECISE ABOUT GEOGRAPHY AND PERIOD. A national figure is not a provincial one and a 2019 figure
+is not today's; a post that moves a number from one to the other is the single most common way this
+system has been wrong in public.`;
+
+/**
+ * The facts on the pages the research opened, each anchored to a span that is verified to be there.
+ *
+ * This is the layer that lets a Spanish statute support an English marketing sentence. The verbatim
+ * check sits HERE — between the page and the fact — instead of between the page and the finished
+ * copy, because demanding that a marketing sentence appear on a Spanish government page is a
+ * category error that cost a smoke-test deck three of its five slides.
+ */
+export async function extractSourceFacts(
+  sources: readonly ResearchSource[], topic: string,
+): Promise<{ facts: SourceFact[]; degraded: string | null }> {
+  const opened = sources.filter((s) => s.opened && s.content);
+  if (!opened.length) return { facts: [], degraded: null };
+  const facts: SourceFact[] = [];
+  let failed = 0;
+  await Promise.all(opened.slice(0, 12).map(async (src) => {
+    // Enough of the page to carry the relevant part without paying for the whole Código Civil.
+    const body = (src.content ?? '').slice(0, 24_000);
+    const out = await callTool(`source facts ${src.id}`, FACTS_SYSTEM,
+      `THE POST IS ABOUT: ${topic}\n\nPAGE ${src.id} — ${src.url}\n\n${body}`,
+      FACTS_TOOL, 120_000, 4000);
+    const list = out && coerceList(out.facts, 'facts');
+    if (!list) { failed++; return; }
+    for (const r of list) {
+      const excerpt = String(r?.excerpt ?? '').trim();
+      const canonical = String(r?.canonical ?? '').trim();
+      if (excerpt.length < 12 || !canonical) continue;
+      // THE ANCHOR. A fact whose excerpt is not on the page is a fact the model made up.
+      if (!excerptOccursIn(excerpt, src.content ?? '')) continue;
+      facts.push({
+        id: `F${facts.length + 1}`, sourceId: src.id, excerpt, canonical,
+        language: String(r?.language ?? '').trim() || 'es',
+        sourceClass: src.sourceClass,
+        geography: String(r?.geography ?? '').trim(),
+        period: String(r?.period ?? '').trim(),
+      });
+    }
+  }));
+  return { facts, degraded: failed ? `${failed} of ${opened.length} pages could not be read` : null };
+}
+
 /* ── 2b. SUPPORT — what each material claim actually rests on ────────────────────────────── */
 
 const SUPPORT_TOOL = {
@@ -546,11 +637,14 @@ const SUPPORT_TOOL = {
           required: ['claim_id', 'support_type'],
           properties: {
             claim_id: { type: 'string' },
-            support_type: { type: 'string', enum: ['research_evidence', 'agency_profile', 'bank_fact', 'none'] },
+            support_type: { type: 'string',
+              enum: ['source_fact', 'page_direct', 'agency_profile', 'bank_fact', 'none'] },
+            fact_ids: { type: 'array', items: { type: 'string' },
+              description: 'the F-ids of the source facts this claim follows from' },
             source_ids: { type: 'array', items: { type: 'string' },
-              description: 'the S-ids tagged on the briefing lines that carry this, e.g. ["S4"]' },
+              description: 'page_direct only: the S-ids the excerpt is quoted from' },
             evidence_excerpt: { type: 'string',
-              description: 'the words themselves, copied EXACTLY from the briefing line, source or profile — never your own paraphrase' },
+              description: 'page_direct, agency_profile or bank_fact: the words themselves, copied exactly' },
             bank_fact_ids: { type: 'array', items: { type: 'string' } },
             requirement_ids: { type: 'array', items: { type: 'string' },
               description: 'any listed requirement this claim depends on, established or not' },
@@ -561,54 +655,54 @@ const SUPPORT_TOOL = {
   },
 };
 
-const SUPPORT_SYSTEM = `You attach evidence to claims. For each claim you are given, say what it
-actually rests on and quote the words that carry it.
+const SUPPORT_SYSTEM = `You attach evidence to the claims in a finished marketing post.
 
-THIS IS NOT A JUDGEMENT TASK. You are not deciding whether the claim sounds right. You are finding
-the sentence that establishes it and copying that sentence out. If you cannot find one, say so with
-support_type "none" — that is a correct and useful answer, and inventing a quotation to fill the box
-is the one thing you must never do.
+You are given FACTS that were read off pages the research actually opened. Each fact has an id, the
+exact words from the page, and what those words mean in English. For each claim, say which fact or
+facts it follows from.
 
-WHERE EVIDENCE COMES FROM
-· research_evidence — a passage printed under the claim, off a page that was actually opened. Give
-  that passage's S-id and copy its words EXACTLY, including any Spanish. The excerpt is checked
-  against the page itself, so a paraphrase, a translation or a tidied-up version will fail. Copy,
-  do not rewrite, and do not quote anything that is not printed there. If none of the passages
-  under a claim actually establishes it, that is support_type "none" — being close in subject is
-  not the same as establishing it.
-· agency_profile — a fact the agency itself supplied. Copy the words from the profile.
-· bank_fact — a verified bank fact or guardrail you were given by id. Copy its words.
-· none — nothing in front of you establishes this claim.
+THE CLAIM DOES NOT HAVE TO MATCH THE FACT WORD FOR WORD. This is marketing copy, written in a
+different language from most of the sources. "Países Bajos: 3.708 operaciones" and "Dutch buyers
+moved into first place in Alicante province last year" are the same fact in different clothes, and
+the second is a perfectly good sentence. What you are judging is whether the fact ESTABLISHES the
+claim — whether a careful reader, told the fact, would accept the claim as following from it.
+
+WHAT DOES NOT FOLLOW: a bigger number than the fact supports; a different geography (a national
+ranking is not a provincial one); a different period; a general rule where the fact gives one case;
+a cause where the fact gives only a correlation; a certainty where the fact gives a tendency.
+
+SUPPORT TYPES
+· source_fact — the normal case. Give fact_ids.
+· page_direct — the claim quotes a page word for word. Give source_ids and the exact excerpt.
+· agency_profile — a fact the agency itself supplied. Copy its words into evidence_excerpt.
+· bank_fact — a verified bank fact you were given by id. Copy its words into evidence_excerpt.
+· none — nothing in front of you establishes this claim. A correct and useful answer; never invent
+  a fact id to fill the box.
 
 REQUIREMENTS: if a numbered requirement is listed and the claim depends on it, name it in
-requirement_ids whether or not it was established. Being honest about the dependency is the point;
-whether it may publish is decided elsewhere.
-
-EXCERPT LENGTH: enough to identify the passage, roughly one sentence. Not three words, not a page.`;
+requirement_ids whether or not it was established.`;
 
 /**
  * What every material claim rests on — proposed by a model, decided offline.
  *
- * The acceptance run of 5dfb1c3 published fifteen material defects while reporting two, because
- * "supported" meant a second model had used the word. A claim about the world now has to point at
- * a page that was opened and quote it, and the quotation is checked against the page. Anything that
- * cannot is unsupported, and unsupported copy does not publish.
+ * Two things are deliberately NOT the same: whether a fact was really on the page (checked here,
+ * character by character, at extraction) and whether the claim follows from that fact (a judgement,
+ * made by a model, then constrained offline by the source policy for its risk tier and by the rule
+ * that a paraphrase may not introduce a figure the evidence never had).
  */
 export async function supportClaims(
   claims: readonly { field: string; text: string; type: string }[], ctx: GateContext,
 ): Promise<{ supports: ClaimSupport[]; degraded: string | null }> {
   if (!claims.length) return { supports: [], degraded: null };
   const sources = ctx.sources ?? [];
+  const facts = ctx.facts ?? [];
   const coverage = ctx.coverage ?? [];
   const bankFacts = ctx.bankFacts ?? new Map<string, string>();
-  // ONLY not_established bars a claim. A partial requirement is not permission to assert the whole
-  // paragraph, but nor is it a bar: the claim still has to produce direct evidence for the specific
-  // proposition it uses, and that is what the support record is. Treating partial as a block took
-  // eight true, sourced sentences out of a smoke-test deck.
   const unestablished = new Set(coverage.filter((c) => c.status === 'not_established').map((c) => c.id));
 
   const supportCtx: SupportContext = {
-    sources, brief: ctx.research, agencyEvidence: ctx.agencyEvidence, bankText: bankFacts, unestablished,
+    sources, facts, brief: ctx.research, agencyEvidence: ctx.agencyEvidence,
+    bankText: bankFacts, unestablished,
   };
   const unsupportedAll = (why: string) => ({
     supports: claims.map((c, i) => verifySupport({
@@ -617,14 +711,15 @@ export async function supportClaims(
     degraded: why,
   });
 
-  // Hand the model the actual passages off the actual pages. Asking it to quote a page it has
-  // never seen produced excerpts that were memories of a paraphrase, and nineteen of twenty claims
-  // failed verification for a reason that was about the prompt rather than about the evidence.
-  // BATCHED. Twenty claims with five passages each is a 30k-character prompt against an 8k answer,
-  // and a truncated answer parses to a list missing most of its records — which arrives looking
-  // exactly like a model that found no evidence anywhere. It reported "no support offered" on
-  // twenty claims out of twenty while the passages were sitting in front of it.
-  const BATCH = 6;
+  // Low-risk sentences never reach the model: they are not evidence-policed at all.
+  const policedIdx = claims.map((c, i) => ({ c, i }))
+    .filter(({ c }) => riskTier(c.text, c.type) !== 'low');
+  if (!policedIdx.length) {
+    return { supports: claims.map((c, i) => verifySupport({ claimId: `C${i + 1}`, field: c.field,
+      claim: c.text, claimType: c.type, supportType: 'none' }, supportCtx)), degraded: null };
+  }
+
+  const BATCH = 8;
   const byId = new Map<string, Record<string, unknown>>();
   let missing = false;
   const reqLines = coverage.length
@@ -635,20 +730,18 @@ export async function supportClaims(
     ? `\n\nVERIFIED BANK FACTS AND GUARDRAILS:\n`
       + [...bankFacts].map(([id, t]) => `${id}: ${t}`).join('\n')
     : '';
+  const factLines = facts.length
+    ? facts.map((f) => `${f.id} [${f.sourceId}${f.geography ? ` · ${f.geography}` : ''}`
+        + `${f.period ? ` · ${f.period}` : ''}] ${f.canonical}\n      page says: "${f.excerpt.slice(0, 200)}"`).join('\n')
+    : '(no page could be opened for this post)';
 
-  for (let start = 0; start < claims.length; start += BATCH) {
-    const slice = claims.slice(start, start + BATCH);
-    const numbered = slice.map((c, j) => {
-      const i = start + j;
-      const passages = findPassages(c.text, sources, ctx.research, 5, riskOf(c.text, c.type));
-      const offered = passages.length
-        ? passages.map((p) => `      [${p.sourceId}] "${p.text.replace(/\s+/g, ' ').slice(0, 300)}"`).join('\n')
-        : '      (nothing on any opened page bears on this claim)';
-      return `C${i + 1} @ ${c.field} [${c.type}]: ${c.text}\n    PASSAGES FROM THE OPENED PAGES:\n${offered}`;
-    }).join('\n\n');
+  for (let start = 0; start < policedIdx.length; start += BATCH) {
+    const slice = policedIdx.slice(start, start + BATCH);
+    const numbered = slice.map(({ c, i }) =>
+      `C${i + 1} @ ${c.field} [${c.type} · ${riskTier(c.text, c.type)} risk]: ${c.text}`).join('\n');
     const out = await callTool('claim support', SUPPORT_SYSTEM,
-      `THE BRIEFING THE POST WAS WRITTEN FROM (each factual line tagged with the source it came off):\n`
-      + `${ctx.research || '(no research was done for this post)'}\n\n`
+      `FACTS READ OFF THE PAGES THE RESEARCH OPENED:\n${factLines}\n\n`
+      + `THE BRIEFING THE POST WAS WRITTEN FROM:\n${ctx.research || '(no research was done)'}\n\n`
       + `WHAT THE AGENCY ITSELF TOLD US:\n${ctx.agencyEvidence}`
       + `${bankLines}${reqLines}\n\nTHE CLAIMS:\n${numbered}`,
       SUPPORT_TOOL, 120_000, 4000);
@@ -659,9 +752,9 @@ export async function supportClaims(
       if (id) byId.set(id, r);
     }
   }
-  const answered = claims.filter((_c, i) => byId.has(`C${i + 1}`)).length;
-  if (answered < claims.length) {
-    console.warn(`[studio/claim-gate] support pass answered ${answered} of ${claims.length} claims`);
+  const answered = policedIdx.filter(({ i }) => byId.has(`C${i + 1}`)).length;
+  if (answered < policedIdx.length) {
+    console.warn(`[studio/claim-gate] support pass answered ${answered} of ${policedIdx.length} policed claims`);
   }
   if (!answered) return unsupportedAll('claim support unavailable');
 
@@ -669,15 +762,16 @@ export async function supportClaims(
     const id = `C${i + 1}`;
     const r = byId.get(id);
     if (!r) {
-      // NOT the same as the model saying "nothing supports this". Recorded separately so a broken
-      // call can never be read as an evidence finding.
-      return { ...verifySupport({ claimId: id, field: c.field, claim: c.text, claimType: c.type,
-        supportType: 'none' }, supportCtx), reason: 'the support pass returned no record for this claim' };
+      const base = verifySupport({ claimId: id, field: c.field, claim: c.text, claimType: c.type,
+        supportType: 'none' }, supportCtx);
+      return base.tier === 'low' ? base
+        : { ...base, reason: 'the support pass returned no record for this claim' };
     }
     const proposed: ProposedSupport = {
       claimId: id, field: c.field, claim: c.text, claimType: c.type,
-      supportType: (['research_evidence', 'agency_profile', 'bank_fact'] as const)
+      supportType: (['source_fact', 'page_direct', 'agency_profile', 'bank_fact'] as const)
         .find((t) => t === String(r?.support_type ?? '')) ?? 'none',
+      factIds: Array.isArray(r?.fact_ids) ? (r.fact_ids as unknown[]).map(String) : [],
       sourceIds: Array.isArray(r?.source_ids) ? (r.source_ids as unknown[]).map(String) : [],
       evidenceExcerpt: String(r?.evidence_excerpt ?? ''),
       bankFactIds: Array.isArray(r?.bank_fact_ids) ? (r.bank_fact_ids as unknown[]).map(String) : [],
@@ -872,9 +966,10 @@ export async function gatePlan<T extends PlanLike>(
   const report: GateReport = {
     claims: 0, policed: 0, verdicts: {}, blocked: [], deterministic: [],
     repairs: 0, dropped: 0, degraded: null, adjudications: [], rawFlags: 0, materialFailures: 0,
-    supports: [], bankContradictions: [], unsupportedMaterial: 0, unpublishable: null,
+    supports: [], sourceFacts: [], bankContradictions: [], unsupportedMaterial: 0, unpublishable: null,
   };
   let current = plan;
+  let facts: SourceFact[] | undefined = ctx.facts ? [...ctx.facts] : undefined;
 
   for (let round = 0; round <= maxRepairs; round++) {
     // The deterministic table first — it is free, it cannot have an off day, and its 'block' rules
@@ -922,6 +1017,16 @@ export async function gatePlan<T extends PlanLike>(
           + 'the last clause — make the whole point fit.',
       }));
 
+    // The facts off the opened pages. Extracted once and reused across repair rounds — reading
+    // twelve pages again for every round would be waste, and the pages have not changed.
+    if (!facts && (ctx.sources ?? []).length) {
+      const got = await extractSourceFacts(ctx.sources ?? [], ctx.topic);
+      facts = got.facts;
+      if (got.degraded) report.degraded = report.degraded ?? got.degraded;
+      console.log(`[studio/claim-gate] ${facts.length} source facts off `
+        + `${(ctx.sources ?? []).filter((x) => x.opened).length} opened pages`);
+    }
+
     // RETRIEVAL HAPPENS HERE, on what the post ended up claiming — not on the topic it started
     // from. H1 and H2 matched no card and made the run's worst legal and tax claims; the bank
     // covers both subjects. Retrieval is restricted to material claims so marketing stays fast.
@@ -939,7 +1044,8 @@ export async function gatePlan<T extends PlanLike>(
     // the record is checked offline against the pages the research actually opened. This is the
     // step whose absence let fifteen defects publish under a report of two: a claim used to need
     // only a second model's approval, and approval is not evidence.
-    const { supports, degraded: supportDegraded } = await supportClaims(policed, { ...ctx, bankFacts });
+    const { supports, degraded: supportDegraded } =
+      await supportClaims(policed, { ...ctx, bankFacts, facts });
     if (supportDegraded) report.degraded = supportDegraded;
     const supportOf = new Map<string, ClaimSupport>();
     supports.forEach((sup, i) => supportOf.set(`${policed[i].field}::${policed[i].text}`, sup));
@@ -951,6 +1057,7 @@ export async function gatePlan<T extends PlanLike>(
     if (bankDegraded) report.degraded = report.degraded ?? bankDegraded;
     if (round === 0) {
       report.supports = supports;
+      report.sourceFacts = facts ?? [];
       report.bankContradictions = contradictions;
       report.unsupportedMaterial = supports.filter((x) => x.verdict === 'unsupported').length;
     }

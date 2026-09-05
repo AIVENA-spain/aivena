@@ -868,14 +868,38 @@ const ATTRIBUTION = [
 
 /** Does this sentence attribute its content to a source, inside the copy? */
 /** A named organisation, followed by a reporting verb. Excludes places, which are subjects. */
-const REPORTER = /\b([A-ZÀ-Ý][\wÀ-ÿ]*(?:\s+(?:&|and|de|del|la|el|of)?\s*[A-ZÀ-Ý][\wÀ-ÿ]*){0,3})\s+(?:puts|places|listed|lists|reports|reported|records|recorded|found|finds|shows|showed|says|said|estimates|estimated|publishes|published|gives|gave)\b/g;
+const REPORTER = /\b([A-ZÀ-Ý][\wÀ-ÿ]*(?:\s+(?:&|and|de|del|la|el|of)?\s*[A-ZÀ-Ý][\wÀ-ÿ]*){0,3})(?:\s+(?:data|figures?|report|reports|study|studies|survey|index|analysis|series|numbers))?\s+(?:puts|places|listed|lists|reports|reported|records|recorded|found|finds|shows|showed|says|said|estimates|estimated|publishes|published|gives|gave)\b/g;
 
+/**
+ * Producers whose name in the copy is a deliberate strengthening, not a leak.
+ *
+ * Christian, 2026-09-05: "INE figures show…" or "According to the latest Notariado data…" can
+ * intentionally strengthen a data-led post. Naming the official producer of a figure is authority.
+ * Naming whatever page the research happened to land on — Visit Jávea, a regional study, a portal —
+ * is a footnote, and a slide is not a footnote.
+ */
+const AUTHORITY = /\b(?:INE\b|Instituto Nacional de Estad[íi]stica|AEAT\b|Agencia Tributaria|BOE\b|Bolet[íi]n Oficial|C[óo]digo Civil|C[óo]digo Penal|Registradores|Notariado|Consejo General del Notariado|Colegio Notarial|Ministerio del Interior|Ministerio de [A-ZÀ-Ý]\w+|Catastro|Generalitat|Banco de Espa[ñn]a|Eurostat|Tribunal Supremo|Supreme Court|Audiencia Provincial|Fiscal[íi]a|UNESCO)\b/i;
+
+/** Is the source named here an official producer of the fact, rather than a page we happened on? */
+export function intentionalAuthority(text: string): boolean {
+  return AUTHORITY.test(text ?? '');
+}
+
+/** "<Publisher> data for 2025 shows…" — the name owns the data rather than the data being about it. */
+const PUBLISHER_DATA = /\b([A-ZÀ-Ý][\wÀ-ÿ]*(?:\s+[A-ZÀ-Ý][\wÀ-ÿ]*){0,3})\s+(?:figures?|data|statistics|series|records?|index)\b[^.]{0,24}?\b(?:show|shows|showed|put|puts|record|records|give|gives|report|reports)\b/g;
+
+/** Does this sentence footnote itself to a source that is not an official producer? */
 export function attributesSource(text: string): boolean {
   const t = text ?? '';
+  if (intentionalAuthority(t)) return false;
   if (ATTRIBUTION.some((r) => r.test(t))) return true;
-  REPORTER.lastIndex = 0;
-  for (let m = REPORTER.exec(t); m; m = REPORTER.exec(t)) {
-    if (!isPlaceName(m[1])) return true;
+  // A named organisation doing the reporting. A PLACE doing it is the subject of a fact — "Alicante
+  // recorded the highest share" — and flagging that would delete a perfectly good sentence.
+  for (const re of [REPORTER, PUBLISHER_DATA]) {
+    re.lastIndex = 0;
+    for (let m = re.exec(t); m; m = re.exec(t)) {
+      if (!isPlaceName(m[1])) return true;
+    }
   }
   return false;
 }

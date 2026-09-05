@@ -203,7 +203,9 @@ describe('three defects the c631b64 run shipped', () => {
     const fired = (t: string) => gateField('tips[1].body', t, '').map(h => h.rule.id);
     expect(fired("Xàbia's population grew 331% in the 2019 Observatori Marina Alta study."))
       .toContain('source-attributed');
-    expect(fired('According to a Banco de España report, rates rose.')).toContain('source-attributed');
+    // Christian 2026-09-05: naming an OFFICIAL producer is a deliberate strengthening, not a leak.
+    expect(fired('According to a Banco de España report, rates rose.')).toHaveLength(0);
+    expect(fired('According to a Costa Blanca Property Guide report, rates rose.')).toContain('source-attributed');
     // Ordinary copy that merely mentions a portal for what it is stays untouched.
     expect(fired('The same home turns up on Idealista under three agencies.')).toHaveLength(0);
     expect(fired('Buyers scroll fast and judge in seconds.')).toHaveLength(0);

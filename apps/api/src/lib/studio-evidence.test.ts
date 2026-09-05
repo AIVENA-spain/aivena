@@ -115,13 +115,13 @@ describe('verifySupport', () => {
     src({ id: 'S3', url: 'https://www.ine.es/x', content: 'Calp 27.616 habitantes a 1 de enero de 2025' }),
   ];
   const ctx = (over: Partial<SupportContext> = {}): SupportContext => ({
-    sources, agencyEvidence: 'Works in: Jávea, Moraira, Dénia, Teulada. Staff speak es, en, nl, de.',
+    sources, facts: [], agencyEvidence: 'Works in: Jávea, Moraira, Dénia, Teulada. Staff speak es, en, nl, de.',
     bankText: new Map([['B43#2', 'The current Registradores nationality ranking is published at NATIONAL level only']]),
     unestablished: new Set<string>(), ...over,
   });
   const P = (o: Partial<ProposedSupport>): ProposedSupport => ({
     claimId: 'c1', field: 'tips[0].body', claim: 'A sale is binding once thing and price are agreed.',
-    claimType: 'LEGAL_CONSEQUENCE', supportType: 'research_evidence', ...o,
+    claimType: 'LEGAL_CONSEQUENCE', supportType: 'page_direct', ...o,
   });
 
   it('supports a claim quoted off an official page that was opened', () => {
@@ -222,11 +222,11 @@ describe('every unsupported reason is reachable', () => {
     const sources = [src({ id: 'S1', url: 'https://www.boe.es/x', content: CC1450 })];
     const base: SupportContext = { sources, agencyEvidence: 'Works in: Jávea', bankText: new Map(), unestablished: new Set(['R#1']) };
     const cases: ProposedSupport[] = [
-      { claimId: 'a', field: 'f', claim: 'x tax', claimType: 'LEGAL_CONSEQUENCE', supportType: 'research_evidence', requirementIds: ['R#1'] },
-      { claimId: 'b', field: 'f', claim: 'x tax', claimType: 'LEGAL_CONSEQUENCE', supportType: 'research_evidence', sourceIds: ['S1'] },
-      { claimId: 'c', field: 'f', claim: 'x tax', claimType: 'LEGAL_CONSEQUENCE', supportType: 'research_evidence', sourceIds: ['ZZ'], evidenceExcerpt: 'La venta se perfeccionará entre comprador' },
-      { claimId: 'd', field: 'f', claim: 'x tax', claimType: 'LEGAL_CONSEQUENCE', supportType: 'research_evidence', evidenceExcerpt: 'La venta se perfeccionará entre comprador' },
-      { claimId: 'e', field: 'f', claim: 'x tax', claimType: 'LEGAL_CONSEQUENCE', supportType: 'research_evidence', sourceIds: ['S1'], evidenceExcerpt: 'something not on that page at all really' },
+      { claimId: 'a', field: 'f', claim: 'x tax', claimType: 'LEGAL_CONSEQUENCE', supportType: 'page_direct', requirementIds: ['R#1'] },
+      { claimId: 'b', field: 'f', claim: 'x tax', claimType: 'LEGAL_CONSEQUENCE', supportType: 'page_direct', sourceIds: ['S1'] },
+      { claimId: 'c', field: 'f', claim: 'x tax', claimType: 'LEGAL_CONSEQUENCE', supportType: 'page_direct', sourceIds: ['ZZ'], evidenceExcerpt: 'La venta se perfeccionará entre comprador' },
+      { claimId: 'd', field: 'f', claim: 'x tax', claimType: 'LEGAL_CONSEQUENCE', supportType: 'page_direct', evidenceExcerpt: 'La venta se perfeccionará entre comprador' },
+      { claimId: 'e', field: 'f', claim: 'x tax', claimType: 'LEGAL_CONSEQUENCE', supportType: 'page_direct', sourceIds: ['S1'], evidenceExcerpt: 'something not on that page at all really' },
       { claimId: 'f', field: 'f', claim: 'x', claimType: 'AGENCY_FACT', supportType: 'agency_profile', evidenceExcerpt: 'we are the biggest agency on the coast' },
       { claimId: 'g', field: 'f', claim: 'x', claimType: 'QUANTIFIED_CLAIM', supportType: 'bank_fact', bankFactIds: ['nope'], evidenceExcerpt: 'anything at all here' },
       { claimId: 'h', field: 'f', claim: 'x', claimType: 'FACTUAL_MATERIAL', supportType: 'none' },

@@ -226,6 +226,49 @@ const hitsAny = (rs: RegExp[], t: string) => rs.some((r) => r.test(t));
  * consequence or a quantity, and no wording test should be able to talk that down. The patterns
  * then raise it for a sentence whose type was milder than its content.
  */
+/* ────────────────────────────────────────────────────────────────────────────────────────────
+ * HOW HARD TO VERIFY: three tiers, not one bar.
+ *
+ * Christian, 2026-09-05: "If being wrong could cost the reader money, change their legal decision,
+ * misrepresent the agency, or make the agency publicly look incompetent → verify hard. If it is
+ * ordinary rhetoric, interpretation, aspiration or harmless marketing exaggeration → give the
+ * writer room." A single courtroom standard applied to every sentence cost a smoke-test deck three
+ * of its five slides, and the deleted slides were not wrong — they were unquotable.
+ * ──────────────────────────────────────────────────────────────────────────────────────────── */
+
+export type RiskTier = 'high' | 'medium' | 'low';
+
+/** Anything with a figure, a date, a deadline or a threshold in it is a number the reader may act on. */
+const HAS_FIGURE = /(?:\d[\d.,]*\s?%|\b\d[\d.,]*\s?(?:€|eur|euros?|k|m|million|thousand)\b|€\s?\d|\b\d[\d.,]{2,}\b|\b(?:one|two|three|four|five|six|nine|ten|twelve|fifteen|twenty|thirty|sixty|ninety)\s+(?:days?|weeks?|months?|years?|per ?cent|percent)\b|\b\d+\s*(?:days?|weeks?|months?|years?|km|m2|m²|bed|bath)\b|\b(?:19|20)\d{2}\b)/i;
+/** A ranking or a superlative about a group — "the British still lead the province". */
+const RANKING = /\b(?:largest|biggest|leading|leads?\b|lead the|top(?:s)?\b|ranked?|ranking|first place|ahead of|overtaken|overtook|outnumber\w*|majority|most (?:buyers|owners|sales|popular)|fastest|highest|lowest|cheapest)\b/i;
+/** Money the reader will or will not have. */
+const FINANCIAL_OUTCOME = /\b(?:you (?:will |'ll )?(?:pay|owe|save|lose|get back|receive|keep)|costs? you|refund|reclaim|withhold\w*|deposit|fee|commission|tax bill|surcharge|penalty|fine)\b/i;
+
+/**
+ * How hard this claim has to be verified before it may publish.
+ *
+ * The claim type sets a floor and the content can raise it, never lower it. A LOCAL_FACT with a
+ * population figure in it is a numerical claim; a LOCAL_FACT about what a town feels like in winter
+ * is not, and demanding a citation for the second is how a content engine becomes a filing cabinet.
+ */
+export function riskTier(text: string, claimType?: string): RiskTier {
+  const t = text ?? '';
+  // Rhetoric, opinion, hooks and hypotheticals are never evidence-policed.
+  if (claimType && ['MARKETING_PUFFERY', 'OPINION_POSITIONING', 'CREATIVE_HOOK', 'HYPOTHETICAL']
+    .includes(claimType)) return 'low';
+  // Law, tax, deadlines, money, the agency's own record, and anything with a number or a ranking.
+  if (claimType === 'LEGAL_CONSEQUENCE' || claimType === 'QUANTIFIED_CLAIM'
+      || claimType === 'TIME_SENSITIVE_FACT' || claimType === 'AGENCY_FACT') return 'high';
+  if (LEGAL_TAX.some((r) => r.test(t))) return 'high';
+  if (HAS_FIGURE.test(t) || RANKING.test(t) || FINANCIAL_OUTCOME.test(t)) return 'high';
+  // Everything else a reader could check but could not be financially hurt by: how a town feels,
+  // how buyers behave, how a mechanism generally works, an unquantified comparison.
+  if (claimType && ['FACTUAL_MATERIAL', 'LOCAL_FACT', 'CAUSAL_INFERENCE'].includes(claimType)) return 'medium';
+  return 'medium';
+}
+
+/** What kind of evidence this proposition needs. Decided from what it claims. */
 export function riskOf(text: string, claimType?: string): RiskClass {
   const t = text ?? '';
   if (claimType === 'LEGAL_CONSEQUENCE' || hitsAny(LEGAL_TAX, t)) return 'legal_tax';
@@ -236,13 +279,25 @@ export function riskOf(text: string, claimType?: string): RiskClass {
   return 'none';
 }
 
-/** The source classes that may carry a proposition of each risk class. */
+/**
+ * Which classes of page may carry a proposition, by how much being wrong would cost.
+ *
+ * Christian, 2026-09-05: "Do not require INE/BOE to prove that a town has a lively marina or that
+ * one area feels more urban than another." A tax deadline and a description of a seafront are not
+ * the same kind of assertion and must not face the same bar.
+ */
 export const SOURCE_POLICY: Readonly<Record<RiskClass, readonly SourceClass[]>> = {
+  // HIGH-RISK legal and tax: the official text, the tax authority, the courts, or a database that
+  // reproduces the statute. A law firm's summary is where you find the article, not the article.
   legal_tax: ['official_primary', 'official_regional', 'official_statistics', 'legal_reference',
     'professional_body'],
+  // HIGH-RISK numbers: the producer of the figure. Deliberately not press — a paper reporting a
+  // statistic is a report about it.
   market_statistics: ['official_statistics', 'professional_body', 'official_primary', 'official_regional'],
-  // deliberately NOT press: a newspaper reporting a figure is where you find it, not where it is
-  local_fact: ['official_statistics', 'official_regional', 'official_primary', 'professional_body', 'press'],
+  // MEDIUM-RISK local and qualitative: the town hall, the tourism authority, a serious portal, a
+  // respected local or industry source. This is where a description of a place legitimately lives.
+  local_fact: ['official_statistics', 'official_regional', 'official_primary', 'professional_body',
+    'legal_reference', 'press', 'industry'],
   none: ['official_primary', 'official_statistics', 'official_regional', 'professional_body',
     'legal_reference', 'press', 'industry', 'blog', 'unknown'],
 };
@@ -251,9 +306,13 @@ export const SOURCE_POLICY: Readonly<Record<RiskClass, readonly SourceClass[]>> 
  * May these sources carry this proposition? A blog can be where you find out an issue exists; it is
  * not where a reader's tax deadline comes from.
  */
-export function policyAllows(risk: RiskClass, cited: readonly ResearchSource[]): boolean {
-  if (risk === 'none') return true;
-  const allowed = SOURCE_POLICY[risk];
+export function policyAllows(
+  risk: RiskClass, cited: readonly ResearchSource[], tier: RiskTier = 'high',
+): boolean {
+  if (risk === 'none' || tier === 'low') return true;
+  // A medium-risk claim may rest on any reliable published source. Only high-risk claims are held
+  // to the producer of the fact.
+  const allowed = tier === 'medium' ? SOURCE_POLICY.local_fact : SOURCE_POLICY[risk];
   return cited.some((s) => s.opened && allowed.includes(s.sourceClass));
 }
 
@@ -263,9 +322,65 @@ export function policyUnmetFor(risk: RiskClass, sources: readonly ResearchSource
   return !policyAllows(risk, sources);
 }
 
+/* ── SOURCE FACTS ────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * One fact, read off one page, with the span it was read from.
+ *
+ * The layer that was missing. Requiring a finished English marketing sentence to appear on a
+ * Spanish statute page is a category error: Aivena is a writer and must paraphrase, and the sources
+ * are in a different language from most of the posts. So the verbatim anchor moves one link back —
+ * the FACT is anchored to the page word for word, and the claim is then judged against the fact.
+ *
+ *   opened page → source fact (excerpt verified on the page) → writer → claim (entailed by the fact)
+ */
+export interface SourceFact {
+  id: string;
+  sourceId: string;
+  /** the span on the page, in the page's own language, verified to occur there */
+  excerpt: string;
+  language: string;
+  /** what it means, in English, as a single checkable statement */
+  canonical: string;
+  sourceClass: SourceClass;
+  /** what the fact is about geographically — a national figure is not a province figure */
+  geography: string;
+  /** the period it belongs to, where that matters */
+  period: string;
+}
+
+/** Digits as they appear in either convention, so 3.708 and 3,708 compare equal. */
+export function figuresIn(text: string): string[] {
+  const out = new Set<string>();
+  for (const m of (text ?? '').matchAll(/\d[\d.,]*/g)) {
+    const raw = m[0].replace(/[.,]$/, '');
+    const digits = raw.replace(/[.,]/g, '');
+    if (digits.length >= 2) out.add(digits);
+  }
+  return [...out];
+}
+
+/**
+ * Does the evidence carry the figures the claim states?
+ *
+ * A high-risk claim that puts a number in front of a reader has to have got that number from
+ * somewhere. Deterministic, language-independent, and it is what a paraphrase cannot launder.
+ */
+export function figuresBacked(claim: string, evidence: string): boolean {
+  const want = figuresIn(claim);
+  if (!want.length) return true;
+  const have = new Set(figuresIn(evidence));
+  return want.every((n) => have.has(n));
+}
+
 /* ── CLAIM SUPPORT ───────────────────────────────────────────────────────────────────────── */
 
-export type SupportType = 'research_evidence' | 'agency_profile' | 'bank_fact' | 'none';
+export type SupportType =
+  | 'page_direct'        // the claim quotes an opened page word for word
+  | 'source_fact'        // the claim follows from a fact read off an opened page
+  | 'agency_profile'
+  | 'bank_fact'
+  | 'none';
 
 /**
  * What one published material claim rests on. The model proposes the record; the verdict below is
@@ -280,8 +395,11 @@ export interface ClaimSupport {
   supportType: SupportType;
   sourceIds: string[];
   evidenceExcerpt: string;
+  factIds: string[];
   bankFactIds: string[];
   requirementIds: string[];
+  /** how hard this particular claim had to be verified */
+  tier: RiskTier;
   verdict: 'supported' | 'unsupported';
   /** why it landed there — the deterministic reason, not the model's narration */
   reason: string;
@@ -296,6 +414,8 @@ export interface ClaimSupport {
 
 export interface SupportContext {
   sources: readonly ResearchSource[];
+  /** the facts read off those pages, each anchored to a verified span */
+  facts?: readonly SourceFact[];
   /** the tagged briefing, so a quote from a line that names an opened page can be traced */
   brief?: string;
   agencyEvidence: string;
@@ -308,6 +428,8 @@ export interface SupportContext {
 export interface ProposedSupport {
   claimId: string; field: string; claim: string; claimType: string;
   supportType: SupportType; sourceIds?: string[]; evidenceExcerpt?: string;
+  /** the source facts this claim follows from */
+  factIds?: string[];
   bankFactIds?: string[]; requirementIds?: string[];
 }
 
@@ -323,47 +445,82 @@ export function verifySupport(p: ProposedSupport, ctx: SupportContext): ClaimSup
   const sourceIds = (p.sourceIds ?? []).map((s) => String(s).trim()).filter(Boolean);
   const requirementIds = (p.requirementIds ?? []).map((s) => String(s).trim()).filter(Boolean);
   const bankFactIds = (p.bankFactIds ?? []).map((s) => String(s).trim()).filter(Boolean);
+  const factIds = (p.factIds ?? []).map((s) => String(s).trim()).filter(Boolean);
   const excerpt = (p.evidenceExcerpt ?? '').trim();
   const risk = riskOf(p.claim, p.claimType);
-  const out = (verdict: 'supported' | 'unsupported', reason: string): ClaimSupport => ({
+  const tier = riskTier(p.claim, p.claimType);
+  const out = (verdict: 'supported' | 'unsupported', reason: string, via = false): ClaimSupport => ({
     claimId: p.claimId, field: p.field, claim: p.claim, claimType: p.claimType,
-    supportType: p.supportType, sourceIds, evidenceExcerpt: excerpt, bankFactIds,
-    requirementIds, verdict, reason, risk,
+    supportType: p.supportType, sourceIds, evidenceExcerpt: excerpt, factIds, bankFactIds,
+    requirementIds, verdict, reason, risk, tier, viaBriefing: via || undefined,
   });
 
-  // 1. A requirement the research did not establish cannot become the ground of a published claim,
-  //    however well the sentence reads. This is the rule B and H3 both broke.
+  // LOW RISK IS NOT POLICED. Opinion, puffery, a hook, a hypothetical — the post earns its living
+  // here and demanding a citation for it is how a content engine turns into a filing cabinet.
+  if (tier === 'low') return out('supported', 'opinion, rhetoric or framing — not evidence-policed');
+
+  // A requirement the research did not establish cannot become the ground of a HIGH-RISK claim.
+  // At medium risk it is a reason to keep the sentence general, not to refuse it outright.
   const blocked = requirementIds.filter((r) => ctx.unestablished.has(r));
-  if (blocked.length) return out('unsupported', `rests on unestablished requirement ${blocked.join(', ')}`);
+  if (blocked.length && tier === 'high') {
+    return out('unsupported', `rests on unestablished requirement ${blocked.join(', ')}`);
+  }
+
+  const facts = ctx.facts ?? [];
+  const byFact = new Map(facts.map((f) => [f.id, f]));
+  const sourceOf = new Map(ctx.sources.map((s) => [s.id, s]));
 
   switch (p.supportType) {
-    case 'research_evidence': {
+    case 'source_fact': {
+      const linked = factIds.map((id) => byFact.get(id)).filter((f): f is SourceFact => !!f);
+      if (!linked.length) {
+        return out('unsupported', factIds.length
+          ? `cites source facts that do not exist: ${factIds.join(', ')}`
+          : 'no source fact cited');
+      }
+      const pages = linked.map((f) => sourceOf.get(f.sourceId)).filter((s): s is ResearchSource => !!s);
+      if (!policyAllows(risk, pages, tier)) {
+        return out('unsupported', `a ${tier}-risk ${risk.replace('_', '/')} claim may not rest on `
+          + `${[...new Set(pages.map((b) => b.sourceClass))].join(', ')} alone`);
+      }
+      // The one thing a paraphrase must not do: introduce a number the evidence never had.
+      if (tier === 'high' && !figuresBacked(p.claim, linked.map((f) => `${f.excerpt} ${f.canonical}`).join(' '))) {
+        return out('unsupported', 'states a figure that is not in the evidence it cites');
+      }
+      for (const f of linked) {
+        const src = sourceOf.get(f.sourceId);
+        if (src && !src.excerpts.includes(f.excerpt)) src.excerpts.push(f.excerpt);
+      }
+      return out('supported', `follows from ${linked.map((f) => f.id).join(', ')} `
+        + `(${linked.map((f) => f.sourceId).join(', ')})`);
+    }
+    case 'page_direct': {
       if (!excerpt) return out('unsupported', 'no evidence excerpt offered');
-      const known = sourceIds.filter((id) => ctx.sources.some((s) => s.id === id));
+      const known = sourceIds.filter((id) => sourceOf.has(id));
       const unknown = sourceIds.filter((id) => !known.includes(id));
       if (unknown.length) return out('unsupported', `cites source ids that do not exist: ${unknown.join(', ')}`);
       if (!known.length) return out('unsupported', 'no source cited');
       const backing = sourcesBacking(excerpt, known, ctx.sources);
       if (!backing.length) {
-        // Second link in the chain: a briefing line that quotes this and names one of the cited
-        // pages. Weaker than the page itself — the transcription is the research model's — so it is
-        // marked and counted separately, never presented as page-verified.
         const viaLine = briefingLineFor(excerpt, known, ctx.brief ?? '');
         if (viaLine) {
           const opened = ctx.sources.filter((s) => viaLine.includes(s.id) && s.opened);
-          if (opened.length && policyAllows(risk, opened)) {
-            return { ...out('supported', `on a briefing line tagged to ${viaLine.join(', ')}`), viaBriefing: true };
+          if (opened.length && policyAllows(risk, opened, tier)) {
+            return out('supported', `on a briefing line tagged to ${viaLine.join(', ')}`, true);
           }
         }
-        const openedCited = known.filter((id) => ctx.sources.find((s) => s.id === id)?.opened);
+        const openedCited = known.filter((id) => sourceOf.get(id)?.opened);
         return out('unsupported', openedCited.length
           ? 'the excerpt does not occur on any cited page'
           : 'the cited pages were listed by a search but never opened');
       }
       const backers = ctx.sources.filter((s) => backing.includes(s.id));
-      if (!policyAllows(risk, backers)) {
-        return out('unsupported', `a ${risk.replace('_', '/')} claim may not rest on `
+      if (!policyAllows(risk, backers, tier)) {
+        return out('unsupported', `a ${tier}-risk ${risk.replace('_', '/')} claim may not rest on `
           + `${[...new Set(backers.map((b) => b.sourceClass))].join(', ')} alone`);
+      }
+      if (tier === 'high' && !figuresBacked(p.claim, excerpt)) {
+        return out('unsupported', 'states a figure that is not in the excerpt it cites');
       }
       for (const b of backers) if (!b.excerpts.includes(excerpt)) b.excerpts.push(excerpt);
       return out('supported', `verbatim on ${backing.join(', ')}`);
@@ -388,6 +545,7 @@ export function verifySupport(p: ProposedSupport, ctx: SupportContext): ClaimSup
       return out('unsupported', 'no support offered');
   }
 }
+
 
 
 /* ── PASSAGE RETRIEVAL ───────────────────────────────────────────────────────────────────── */

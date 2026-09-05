@@ -692,6 +692,11 @@ export interface AdjudicationInput {
   research: string;
   agencyEvidence: string;
   uncovered: readonly string[];
+  /**
+   * Whether a support record exists for this sentence that survived verification against the pages
+   * the research actually opened. The ONLY thing that may produce SUPPORTED_BY_RESEARCH.
+   */
+  supported?: boolean;
 }
 
 /* ────────────────────────────────────────────────────────────────────────────────────────────
@@ -785,6 +790,17 @@ export function classifyAssertion(text: string): Assertion {
   return 'FACTUAL';
 }
 
+/**
+ * A material factual claim that has no verified support may not be resolved as an opinion.
+ *
+ * Without this, the chain has a door in it: a claim the support pass could not evidence falls
+ * through to classifyAssertion, and any sentence that reads as a stance leaves as
+ * OPINION_POSITIONING. "Practitioner consensus holds that a stale listing makes buyers suspicious"
+ * is a claim about the world wearing an opinion's clothes.
+ */
+const MATERIAL_TYPES = new Set(['FACTUAL_MATERIAL', 'TIME_SENSITIVE_FACT', 'LOCAL_FACT',
+  'CAUSAL_INFERENCE', 'QUANTIFIED_CLAIM', 'LEGAL_CONSEQUENCE', 'AGENCY_FACT']);
+
 export function adjudicate(input: AdjudicationInput): Resolution {
   if (input.deterministic) return 'DETERMINISTIC_CONTRADICTION';
 
@@ -805,7 +821,13 @@ export function adjudicate(input: AdjudicationInput): Resolution {
   }
 
   if (evidenceOverlap(input.text, input.agencyEvidence) >= 0.6) return 'SUPPORTED_BY_AGENCY_PROFILE';
-  if (evidenceOverlap(input.text, input.research) >= 0.55) return 'SUPPORTED_BY_RESEARCH';
+
+  // THE INVARIANT. SUPPORTED_BY_RESEARCH used to mean the sentence shared enough words with the
+  // briefing — which is how a claim the verifier had just described as "no evidence establishes
+  // this" came out the other side marked supported. It now means one thing only: a support record
+  // exists for this sentence, naming a page that was actually opened, quoting words that are
+  // actually on it. No record, no resolution.
+  if (input.supported === true) return 'SUPPORTED_BY_RESEARCH';
 
   if (input.type === 'MARKETING_PUFFERY') return 'MARKETING_PUFFERY';
   if (input.type === 'OPINION_POSITIONING' || input.type === 'CREATIVE_HOOK') return 'OPINION_POSITIONING';
@@ -822,7 +844,11 @@ export function adjudicate(input: AdjudicationInput): Resolution {
 
   // What does the sentence CLAIM? Not what does it look like. A mislabelled opinion should not be
   // repaired away, and a claim about how the market behaves needs evidence with or without a figure.
-  if (classifyAssertion(input.text) === 'POSITIONING') return 'OPINION_POSITIONING';
+  // A claim the extractor typed as material has already been judged an assertion about the world,
+  // and no reading of its wording may downgrade that to a position.
+  if (!MATERIAL_TYPES.has(input.type) && classifyAssertion(input.text) === 'POSITIONING') {
+    return 'OPINION_POSITIONING';
+  }
 
   return 'NEEDS_REPAIR';
 }

@@ -1497,7 +1497,8 @@ async function runPlannedCarousel(opts: {
         .filter((h) => h.rule.severity === 'block');
       if (late.length) {
         claimQa = claimQa ?? { claims: 0, policed: 0, verdicts: {}, blocked: [], deterministic: [],
-          repairs: 0, dropped: 0, degraded: null, adjudications: [], rawFlags: 0, materialFailures: 0 };
+          repairs: 0, dropped: 0, degraded: null, adjudications: [], rawFlags: 0, materialFailures: 0,
+          supports: [], bankContradictions: [], unsupportedMaterial: 0 };
         const qa = claimQa;
         for (const h of late) {
           const before = readField(plan, h.field);

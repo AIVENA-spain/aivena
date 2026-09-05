@@ -117,10 +117,17 @@ describe('adjudication — the second opinion is evidence, not a judge', () => {
       .toBe('SUPPORTED_BY_AGENCY_PROFILE');
   });
 
-  it('keeps what the research actually established', () => {
-    expect(adjudicate({ ...base,
+  // SUPPORTED_BY_RESEARCH now means one thing: a support record survived verification against a
+  // page that was actually opened. Resembling the briefing is not evidence and no longer resolves.
+  it('keeps a claim a verified support record stands behind', () => {
+    expect(adjudicate({ ...base, supported: true,
       text: 'The buyer withholds 3% of the price and pays it to the Treasury.' }))
       .toBe('SUPPORTED_BY_RESEARCH');
+  });
+  it('refuses to call a claim research-supported on word overlap alone', () => {
+    expect(adjudicate({ ...base,
+      text: 'The buyer withholds 3% of the price and pays it to the Treasury.' }))
+      .not.toBe('SUPPORTED_BY_RESEARCH');
   });
 
   it('never lets past performance hide behind a service promise', () => {
@@ -286,10 +293,23 @@ describe('factual or positioning — decided by the claim, not the surface', () 
   });
 
   it('feeds through adjudication the same way', () => {
-    const base = { type: 'FACTUAL_MATERIAL', research: '', agencyEvidence: '', uncovered: [] as string[] };
-    expect(adjudicate({ ...base, text: 'Exclusive listings sell faster.' })).toBe('NEEDS_REPAIR');
-    expect(adjudicate({ ...base, text: 'Your home deserves better marketing.' }))
+    const base = { research: '', agencyEvidence: '', uncovered: [] as string[] };
+    expect(adjudicate({ ...base, type: 'FACTUAL_MATERIAL', text: 'Exclusive listings sell faster.' }))
+      .toBe('NEEDS_REPAIR');
+    expect(adjudicate({ ...base, type: 'OPINION_POSITIONING', text: 'Your home deserves better marketing.' }))
       .toBe('OPINION_POSITIONING');
+  });
+
+  // A sentence the extractor typed as material has already been judged an assertion about the
+  // world. Nothing about its WORDING may hand it back as a position — that door is how
+  // "practitioner consensus holds that a stale listing makes buyers suspicious" published.
+  it('will not let a material claim leave as an opinion because it reads like one', () => {
+    for (const type of ['FACTUAL_MATERIAL', 'CAUSAL_INFERENCE', 'LOCAL_FACT', 'QUANTIFIED_CLAIM',
+      'TIME_SENSITIVE_FACT', 'LEGAL_CONSEQUENCE', 'AGENCY_FACT']) {
+      expect(adjudicate({ type, research: '', agencyEvidence: '', uncovered: [],
+        text: 'We believe a stale listing makes buyers wonder what is wrong with it.' }))
+        .toBe('NEEDS_REPAIR');
+    }
   });
 });
 

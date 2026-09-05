@@ -89,6 +89,12 @@ export interface GateReport {
   rawFlags: number;
   /** flags that survived adjudication as genuine failures */
   materialFailures: number;
+  /** what every material claim in the FIRST draft was found to rest on */
+  supports: ClaimSupport[];
+  /** finished sentences that contradict a verified bank fact or guardrail — a hard block */
+  bankContradictions: BankContradiction[];
+  /** material claims that could not point at evidence, before any repair */
+  unsupportedMaterial: number;
 }
 
 // A gate step that fails silently is the bug this whole layer exists to fix. Every failure path
@@ -578,7 +584,7 @@ EXCERPT LENGTH: enough to identify the passage, roughly one sentence. Not three 
  * cannot is unsupported, and unsupported copy does not publish.
  */
 export async function supportClaims(
-  claims: ClaimVerdict[], ctx: GateContext,
+  claims: readonly { field: string; text: string; type: string }[], ctx: GateContext,
 ): Promise<{ supports: ClaimSupport[]; degraded: string | null }> {
   if (!claims.length) return { supports: [], degraded: null };
   const sources = ctx.sources ?? [];
@@ -634,6 +640,84 @@ export async function supportClaims(
     return verifySupport(proposed, supportCtx);
   });
   return { supports, degraded: null };
+}
+
+/* ── 2c. THE VERIFIED BANK, CONSULTED AFTER WRITING ──────────────────────────────────────── */
+
+const CONTRADICTION_TOOL = {
+  name: 'submit_contradictions',
+  description: 'Which claims contradict a verified fact or guardrail.',
+  input_schema: {
+    type: 'object',
+    required: ['findings'],
+    properties: {
+      findings: {
+        type: 'array',
+        items: {
+          type: 'object',
+          required: ['claim_id', 'contradicts', 'bank_fact_id'],
+          properties: {
+            claim_id: { type: 'string' },
+            contradicts: { type: 'boolean' },
+            bank_fact_id: { type: 'string' },
+            why: { type: 'string', description: 'what the bank says and what the claim says instead' },
+          },
+        },
+      },
+    },
+  },
+};
+
+const CONTRADICTION_SYSTEM = `You hold a small set of statements that have already been verified
+against primary law, tax and official statistics. They are the ground truth. You are given the
+sentences of a finished post. Say which of those sentences contradict one of the verified
+statements, or do the thing a guardrail expressly forbids.
+
+A CONTRADICTION IS: the claim says the opposite of a verified fact; the claim asserts something a
+guardrail says must never be asserted; the claim moves a figure to a geography, a period or a
+population the verified statement says it does not cover.
+
+IT IS NOT: the claim being about something the statements do not mention; the claim being vaguer
+than the statement; the claim being marketing language; the claim being one you personally doubt.
+Silence in the bank is not permission and it is not contradiction — report only real conflicts.
+
+This exists because a post matched a card whose guardrail read "do not generalise a national ranking
+to Alicante province", and then published a province ranking taken from the national one. The
+guardrail was in front of the writer the whole time. Nobody checked the finished sentence against it.`;
+
+export interface BankContradiction { field: string; text: string; bankFactId: string; why: string }
+
+/**
+ * Check the FINISHED copy against the verified bank.
+ *
+ * Handing guardrails to the writer is necessary and demonstrably not sufficient. Retrieval is over
+ * the whole relevant bank rather than the one card matched before research, because the two posts
+ * that made the worst legal and tax claims in the last run matched no card at all.
+ */
+export async function checkBankContradictions(
+  claims: readonly { field: string; text: string }[], facts: ReadonlyMap<string, string>,
+): Promise<{ contradictions: BankContradiction[]; degraded: string | null }> {
+  if (!claims.length || !facts.size) return { contradictions: [], degraded: null };
+  const numbered = claims.map((c, i) => `C${i + 1} @ ${c.field}: ${c.text}`).join('\n');
+  const bank = [...facts].map(([id, t]) => `${id}: ${t}`).join('\n');
+  const out = await callTool('bank contradiction', CONTRADICTION_SYSTEM,
+    `VERIFIED STATEMENTS:\n${bank}\n\nTHE POST'S CLAIMS:\n${numbered}`,
+    CONTRADICTION_TOOL, 120_000, 6000);
+  const list = out && coerceList(out.findings, 'findings');
+  // FAILS CLOSED IN THE OTHER DIRECTION on purpose: if this check cannot run we do not invent
+  // contradictions, we record that it did not run. Blocking every claim because a model timed out
+  // would empty the deck; the support pass is what holds the line on evidence.
+  if (!list) return { contradictions: [], degraded: 'bank contradiction check unavailable' };
+  const found: BankContradiction[] = [];
+  for (const r of list) {
+    if (r?.contradicts !== true) continue;
+    const idx = Number(String(r?.claim_id ?? '').replace(/[^0-9]/g, '')) - 1;
+    const claim = claims[idx];
+    const factId = String(r?.bank_fact_id ?? '').trim();
+    if (!claim || !facts.has(factId)) continue;   // an id the bank does not contain is not evidence
+    found.push({ field: claim.field, text: claim.text, bankFactId: factId, why: String(r?.why ?? '') });
+  }
+  return { contradictions: found, degraded: null };
 }
 
 const REPAIR_TOOL = {
@@ -742,6 +826,7 @@ export async function gatePlan<T extends PlanLike>(
   const report: GateReport = {
     claims: 0, policed: 0, verdicts: {}, blocked: [], deterministic: [],
     repairs: 0, dropped: 0, degraded: null, adjudications: [], rawFlags: 0, materialFailures: 0,
+    supports: [], bankContradictions: [], unsupportedMaterial: 0,
   };
   let current = plan;
 
@@ -791,29 +876,72 @@ export async function gatePlan<T extends PlanLike>(
           + 'the last clause — make the whole point fit.',
       }));
 
+    // SUPPORT. Every material claim, not only the flagged ones, has to say what it rests on, and
+    // the record is checked offline against the pages the research actually opened. This is the
+    // step whose absence let fifteen defects publish under a report of two: a claim used to need
+    // only a second model's approval, and approval is not evidence.
+    const { supports, degraded: supportDegraded } = await supportClaims(policed, ctx);
+    if (supportDegraded) report.degraded = supportDegraded;
+    const supportOf = new Map<string, ClaimSupport>();
+    supports.forEach((sup, i) => supportOf.set(`${policed[i].field}::${policed[i].text}`, sup));
+    const isSupported = (f: string, t: string) => supportOf.get(`${f}::${t}`)?.verdict === 'supported';
+
+    // THE VERIFIED BANK, ON THE FINISHED DRAFT. Retrieval is over the whole relevant bank, because
+    // the posts that made the worst claims last time matched no card at all.
+    const { contradictions, degraded: bankDegraded } =
+      await checkBankContradictions(policed, ctx.bankFacts ?? new Map<string, string>());
+    if (bankDegraded) report.degraded = report.degraded ?? bankDegraded;
+    if (round === 0) {
+      report.supports = supports;
+      report.bankContradictions = contradictions;
+      report.unsupportedMaterial = supports.filter((x) => x.verdict === 'unsupported').length;
+    }
+
     // ADJUDICATION. The validator's opinion is evidence, not a verdict: a flagged claim is resolved
-    // against the research, the agency's own evidence and its own claim type before anything is
-    // repaired, and only a deterministic contradiction or a missing required research point can
-    // force removal. Without this, chasing a stochastic flag to zero deletes true copy.
+    // against the support record, the agency's own evidence and its own claim type before anything
+    // is repaired. It can no longer rescue a claim by resemblance — only a verified support record
+    // produces SUPPORTED_BY_RESEARCH.
     const hitFields = new Set(hits.map((h) => `${h.field}::${h.sentence}`));
     const flagged = (verdicts ?? []).filter((v) => !PUBLISHABLE.has(v.verdict));
-    const needRepair: ClaimVerdict[] = [];
     for (const v of flagged) {
       const resolution = adjudicate({
         text: v.text, type: v.type, research: ctx.research,
         agencyEvidence: ctx.agencyEvidence, uncovered: ctx.uncovered ?? [],
         deterministic: hitFields.has(`${v.field}::${v.text}`),
+        supported: isSupported(v.field, v.text),
       });
       if (round === 0) {
         report.rawFlags++;
         report.adjudications.push({ field: v.field, text: v.text, verdict: v.verdict, resolution });
       }
-      if (RESOLVED_OK.has(resolution)) continue;           // stands on evidence — leave it alone
-      needRepair.push(v);
     }
 
+    // A material claim that cannot point at evidence is a failure whether or not the validator
+    // liked it. This replaces "the second model said SUPPORTED" as the publication test.
+    const unsupported: ClaimVerdict[] = policed
+      .map((c, i) => ({ c, sup: supports[i] }))
+      .filter(({ sup }) => sup && sup.verdict === 'unsupported')
+      .map(({ c, sup }) => {
+        const flaggedProblem = (verdicts ?? []).find((v) => v.field === c.field && v.text === c.text)?.problem;
+        return {
+          field: c.field, text: c.text, type: c.type as ClaimType,
+          verdict: 'UNSUPPORTED' as Verdict,
+          problem: `Nothing establishes this: ${sup.reason}.`
+            + (flaggedProblem ? ` The check also said: ${flaggedProblem}` : '')
+            + ` Rewrite the line so it says something the briefing DOES establish, or make the same`
+            + ` argument without this claim. Do not hedge it — replace it.`,
+        };
+      });
+
     const failures: ClaimVerdict[] = [
-      ...needRepair,
+      ...unsupported,
+      // A guardrail that was verified against primary sources outranks the draft, always.
+      ...contradictions.map((c) => ({
+        field: c.field, text: c.text, type: 'FACTUAL_MATERIAL' as ClaimType,
+        verdict: 'CONTRADICTS_GUARDRAIL' as Verdict,
+        problem: `This contradicts a verified fact (${c.bankFactId}). ${c.why} `
+          + `Write what the verified fact actually says, or drop the point.`,
+      })),
       // A deterministic hit is a failure in its own right, so a model that shrugs at the 15-day
       // myth cannot wave it through.
       ...hits.map((h) => ({

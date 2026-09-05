@@ -6,6 +6,14 @@ import { bankIndex, cardRules, getCard, keywordCandidates, parseCardPick } from 
 import { assessCoverage } from './studio-claim-gate';
 import { coverageGaps, requirementsFor, type RequirementCoverage } from './studio-copy-gate';
 import type { BankCard } from './studio-bank.generated';
+import { classifySource, domainOf, policyUnmetFor, riskOf, SOURCE_POLICY,
+  type ResearchSource as Source, type RiskClass } from './studio-evidence';
+
+/** The shape the web_fetch server tool returns. */
+interface WebFetchResult {
+  type?: string; url?: string; retrieved_at?: string;
+  content?: { title?: string; source?: { data?: string } };
+}
 
 // CAROUSEL PLANNER v2 (research-rebuilt 2026-07-16): the AI writes the WORDS of a tips/quote carousel
 // as a validated plan; the deterministic slide library draws every pixel. The prompt encodes the
@@ -311,8 +319,133 @@ function planIssues(p: CarouselPlan, quoteSource: string, hasResearch = false): 
  *  threshold or a requirement nobody checked. Being informed is the point; refusing to write is a
  *  failure, not a safe outcome. */
 interface ResearchCall { text: string; failure: string | null; ms: number; sources: ResearchSource[] }
-/** A page the research actually opened, so a coverage claim can name what backs it. */
-export interface ResearchSource { id: string; url: string; title: string }
+export type { ResearchSource } from './studio-evidence';
+type ResearchSource = Source;
+
+/**
+ * What the research must open before it may answer, by what the topic is about.
+ *
+ * H1 told a reader that agreeing a price by phone binds nobody, and H2 told a seller a late Modelo
+ * 210 forfeits their refund. Both are false, both were written confidently, and neither topic had a
+ * bank card. A legal or tax proposition has an official text behind it; the research has to go and
+ * open that text rather than assemble the answer from whatever a search summarised.
+ */
+function SOURCE_POLICY_BRIEF(risk: RiskClass): string {
+  if (risk === 'legal_tax') {
+    return `\n\nTHIS TOPIC TURNS ON SPANISH LAW OR TAX, SO SEARCH RESULTS ARE NOT ENOUGH. For every `
+      + `legal or tax proposition you are going to state, OPEN the official text with web_fetch and `
+      + `read it: boe.es for the law itself (Código Civil, Código Penal, LAU, LEC, the decree), `
+      + `sede.agenciatributaria.gob.es for anything about tax, filing, withholding, deadlines or `
+      + `refunds, fiscal.es or poderjudicial.es where a prosecution or court practice is at issue, `
+      + `and gva.es or the ayuntamiento for a regional or municipal rule. Quote the article or the `
+      + `rule as it is actually written. A summary on a law firm's blog is where you FIND the `
+      + `article; it is not where the answer comes from. Distinguish carefully between a filing `
+      + `deadline and the period in which a right prescribes — they are different clocks and `
+      + `confusing them is how a seller gets told they have lost money they have not lost.`;
+  }
+  if (risk === 'market_statistics') {
+    return `\n\nTHIS TOPIC TURNS ON NUMBERS, SO OPEN THE DATASET. Use web_fetch on the actual `
+      + `publisher — ine.es, registradores.org, notariado.org, the Colegio Notarial, the Ministerio `
+      + `del Interior series — and read the figure off the source rather than off an article about `
+      + `it. State the geography the figure is published at, and never move a number to a geography `
+      + `it was not published for: a national ranking is not a province ranking, and a province `
+      + `figure is not a town's.`;
+  }
+  if (risk === 'local_fact') {
+    return `\n\nTHIS TOPIC MAKES CONCRETE CLAIMS ABOUT REAL PLACES. Open the municipal or `
+      + `statistical source with web_fetch — the ayuntamiento, INE's padrón tables, the official `
+      + `regional data — rather than repeating a figure from a listing site or a travel page. Say `
+      + `which year each population or distance figure belongs to.`;
+  }
+  return '';
+}
+
+/**
+ * The writer's copy of the briefing: the same facts with the provenance taken off.
+ *
+ * Handing the writer tagged lines invites it to attribute them, and five of the twelve posts in the
+ * last acceptance run named a source in the copy. Provenance is for the gate; the writer gets the
+ * fact and states it plainly.
+ */
+const RESEARCH_VOICE = /^(?:now |ok[,.]? |right[,.]? |here(?:'s| is) |i (?:have|now have|found|could|couldn't|was able)|based on (?:my|the) (?:search|research|sources)|after (?:searching|reading|checking)|let me|to summari[sz]e|in summary|sources? (?:confirm|disagree)|—+$|-{3,}$|\*\*briefing)/i;
+
+export function stripSourceTags(brief: string): string {
+  return (brief ?? '')
+    .replace(/\s*\[\s*S\d+(?:\s*,\s*S\d+)*\s*\]/g, '')
+    .replace(/\s*\[\s*https?:\/\/[^\]]+\]/g, '')
+    .replace(/[ \t]+$/gm, '')
+    // Drop the researcher's own voice. It is the first thing a writer imitates, and five of the
+    // twelve posts in the last run told the reader what had and had not been checked.
+    .split('\n').filter((l) => !RESEARCH_VOICE.test(l.trim())).join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+/** Text of an HTML page, good enough to check whether a sentence is on it. */
+function htmlToText(html: string): string {
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<!--[\s\S]*?-->/g, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/gi, ' ').replace(/&amp;/gi, '&').replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>').replace(/&quot;/gi, '"').replace(/&#(\d+);/g, (_m, d) => String.fromCharCode(Number(d)))
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Open the pages the research cited.
+ *
+ * Asking the model to call web_fetch does not make it call web_fetch: given eight permitted fetches
+ * and an explicit instruction, one run used one. So the engine opens them. The model's job is to
+ * say which page carries which fact; retrieving that page is a deterministic step that either
+ * succeeds or is recorded as a failure, and a page nobody could open carries nothing.
+ */
+async function openCitedSources(sources: ResearchSource[], limit = 14): Promise<void> {
+  const pending = sources.filter((s) => !s.opened).slice(0, limit);
+  await Promise.all(pending.map(async (src) => {
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 20_000);
+    try {
+      const res = await fetch(src.url, {
+        signal: ctl.signal, redirect: 'follow',
+        headers: {
+          'user-agent': 'Mozilla/5.0 (compatible; AivenaStudio/1.0; +https://aivena.es)',
+          accept: 'text/html,application/xhtml+xml,text/plain;q=0.9,*/*;q=0.5',
+          'accept-language': 'es,en;q=0.8',
+        },
+      });
+      if (!res.ok) return;
+      const type = res.headers.get('content-type') ?? '';
+      if (!/text\/html|text\/plain|application\/xhtml/i.test(type)) return;
+      const body = await res.text();
+      const text = /html|xhtml/i.test(type) ? htmlToText(body) : body.replace(/\s+/g, ' ').trim();
+      if (text.length < 200) return;
+      src.content = text.slice(0, 400_000);
+      src.contentChars = src.content.length;
+      src.opened = true;
+      src.openedAt = new Date().toISOString();
+    } catch { /* a page that will not open is a page nothing may rest on */ } finally {
+      clearTimeout(timer);
+    }
+  }));
+}
+
+/** Open what a briefing cited, cited pages first, then anything authoritative for the topic. */
+async function openCited(findings: ResearchCall, risk: RiskClass): Promise<void> {
+  const citedUrls = new Set(Array.from(findings.text.matchAll(/\[\s*(https?:\/\/[^\]\s]+)\s*\]/g),
+    (m) => String(m[1]).replace(/[.,;]+$/, '')));
+  const cited = findings.sources.filter((x) => citedUrls.has(x.url));
+  const authoritative = findings.sources.filter((x) => !citedUrls.has(x.url)
+    && SOURCE_POLICY[risk].includes(x.sourceClass));
+  const rest = findings.sources.filter((x) => !cited.includes(x) && !authoritative.includes(x));
+  await openCitedSources([...cited, ...authoritative, ...rest]);
+  const opened = findings.sources.filter((x) => x.opened);
+  console.log(`[studio/carousel] opened ${opened.length} of ${findings.sources.length} sources`
+    + ` (${opened.filter((x) => SOURCE_POLICY[risk].includes(x.sourceClass)).length} authoritative`
+    + ` for a ${risk} topic)`);
+}
 
 async function researchTopic(
   topic: string, lang: string, region: string, markets = '', cardMust = '',
@@ -349,14 +482,41 @@ async function researchTopic(
           stop_reason?: string;
           content?: Array<{ type: string; text?: string; content?: unknown }>;
         };
-        // Capture the pages the search actually opened. A requirement is not established because
-        // the briefing uses similar words — it is established because something backs it.
+        // Two different things, and the difference is the whole point. A search RESULT is a
+        // pointer somebody's index returned. A FETCH is the page itself, read, with its text in
+        // hand — the only thing an excerpt can be checked against. Both are recorded; only the
+        // second may carry a published claim.
+        const add = (url: string, title: string, opened: boolean, at: string | null, content?: string) => {
+          const existing = sources.find((x) => x.url === url);
+          if (existing) {
+            if (opened && !existing.opened) {
+              existing.opened = true; existing.openedAt = at;
+              existing.content = content; existing.contentChars = content?.length ?? 0;
+            }
+            if (title && !existing.title) existing.title = title;
+            return;
+          }
+          sources.push({
+            id: `S${sources.length + 1}`, url, title, domain: domainOf(url),
+            sourceClass: classifySource(url), opened, openedAt: at,
+            contentChars: content?.length ?? 0, content, excerpts: [],
+          });
+        };
         for (const block of data.content ?? []) {
-          if (block.type !== 'web_search_tool_result' || !Array.isArray(block.content)) continue;
-          for (const r of block.content as Array<{ type?: string; url?: string; title?: string }>) {
-            if (r?.type !== 'web_search_result' || !r.url || seen.has(r.url)) continue;
-            seen.add(r.url);
-            sources.push({ id: `S${sources.length + 1}`, url: r.url, title: r.title ?? '' });
+          if (block.type === 'web_search_tool_result' && Array.isArray(block.content)) {
+            for (const r of block.content as Array<{ type?: string; url?: string; title?: string }>) {
+              if (r?.type !== 'web_search_result' || !r.url || seen.has(r.url)) continue;
+              seen.add(r.url);
+              add(r.url, r.title ?? '', false, null);
+            }
+          }
+          if (block.type === 'web_fetch_tool_result') {
+            const c = (block as { content?: WebFetchResult }).content;
+            if (c?.type === 'web_fetch_result' && c.url) {
+              const text = typeof c.content?.source?.data === 'string' ? c.content.source.data : '';
+              seen.add(c.url);
+              add(c.url, c.content?.title ?? '', true, c.retrieved_at ?? null, text);
+            }
           }
         }
         const text = (data.content ?? []).filter((c) => c.type === 'text').map((c) => c.text ?? '').join('\n').trim();
@@ -426,12 +586,29 @@ async function researchTopic(
     return '';
   }
 
+  // What kind of evidence this topic's riskiest claims need. Decided from the QUESTIONS as well as
+  // the topic: "can a buyer change their mind after agreeing a price" reads as a market topic and
+  // is a contract-law one, and the questions are where that becomes visible.
+  const risk: RiskClass = riskOf(`${topic}\n${cardMust}\n${questions}`);
+
   // 2 — answer them, with live search, and say plainly what could not be established
   const f = await call('findings', {
     model: 'claude-sonnet-5', max_tokens: 2400,
     output_config: { effort: 'low' },
-    tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 5 }],
+    tools: [
+      { type: 'web_search_20250305', name: 'web_search', max_uses: 5 },
+      // A search tells you a page exists. Only opening it gives you something a claim can quote.
+      { type: 'web_fetch_20250910', name: 'web_fetch', max_uses: 6, max_content_tokens: 12_000 },
+    ],
     messages: [{ role: 'user', content:
+      (risk !== 'none'
+        ? `BEFORE ANYTHING ELSE, READ THIS. Search engines are how you FIND the source. They are not `
+          + `the source. For every proposition you are going to write down, you must CALL web_fetch ON `
+          + `THE PAGE THAT ACTUALLY CARRIES IT and read it. A briefing assembled from search snippets `
+          + `and law-firm blog summaries will be rejected: an earlier version of this step answered a `
+          + `Spanish contract-law question from eleven commercial blogs and got the law backwards, `
+          + `which is the exact failure this instruction exists to prevent. Fetch first, write second.\n\n`
+        : '') +
       `Research these questions for an estate agency on ${region} writing practical content for buyers and owners of Spanish coastal property. ` +
       `Search where it helps; today's rules matter more than old ones.\n\n${questions}\n\n` +
       `Write a plain briefing of what is ESTABLISHED — the mechanics, the sequence, what actually happens. Be specific where you are sure. ` +
@@ -455,6 +632,13 @@ async function researchTopic(
       `· THE METRIC. Asking price is not sale price; a search or a listing view is not an enquiry and ` +
       `not a purchase; transactions are not value; residents and non-residents are different populations. ` +
       `Name the metric and the period beside every number.\n\n` +
+      SOURCE_POLICY_BRIEF(risk) +
+      // The brief is the only thing the writer sees. Tagging every line with the page it came off
+      // is what lets a finished sentence be checked back to a page instead of to a resemblance.
+      `\n\nEND EVERY FACTUAL LINE WITH THE URL YOU TOOK IT FROM, in square brackets, exactly as you ` +
+      `fetched it: ... [https://www.boe.es/...]. One URL per line, the page that actually carries ` +
+      `that fact. A line with no URL will be treated as unsourced and nothing in the post may rest ` +
+      `on it. Do NOT write the institution's name inside the sentence — the tag carries it.\n\n` +
       `If you could not establish something, write "UNCLEAR:" and the question — do not fill the gap with a plausible answer. ` +
       `And if the TOPIC ITSELF turns out to rest on something you could not establish, or that the ` +
       `sources contradict, say so in one line beginning "PREMISE FAILS:" — the post can still be ` +
@@ -462,8 +646,83 @@ async function researchTopic(
       `No preamble, no headings, no markdown. Under 400 words.` }],
   }, 150_000);
   if (f.failure) fail('stage 2 (findings)', f);
+
+  // ENFORCEMENT. Telling a model to open the official text is not the same as it opening one, and
+  // the first run of this path opened nothing at all. If the topic needs an authoritative page and
+  // none was read, go back with the draft briefing and require it — twice, then give up loudly and
+  // let the claim gate refuse the propositions that needed it.
+  let findings = f;
+  await openCited(findings, risk);
+  for (let attempt = 0; attempt < 2 && policyUnmetFor(risk, findings.sources); attempt++) {
+    console.warn(`[studio/carousel] ${risk} topic and nothing authoritative was opened — `
+      + `enforcement pass ${attempt + 1}`);
+    const forced = await call('sourcing', {
+      model: 'claude-sonnet-5', max_tokens: 2400,
+      output_config: { effort: 'low' },
+      tools: [
+        { type: 'web_search_20250305', name: 'web_search', max_uses: 4 },
+        { type: 'web_fetch_20250910', name: 'web_fetch', max_uses: 8, max_content_tokens: 12_000 },
+      ],
+      messages: [{ role: 'user', content:
+        `Below is a draft briefing written WITHOUT opening a single authoritative source. Every `
+        + `factual line in it is currently unusable.\n\n${findings.text}\n\n`
+        + `Your job is to go and read the actual sources, then rewrite the briefing.\n`
+        + `CALL web_fetch on the pages themselves. `
+        + (risk === 'legal_tax'
+          ? `For each legal or tax proposition: find the governing article or rule, then FETCH `
+            + `boe.es for the legislation (Código Civil, Código Penal, LAU, LEC, LECrim, the decree) `
+            + `or sede.agenciatributaria.gob.es for anything about tax, filing, withholding or `
+            + `refunds, and quote what it actually says. If the draft has the rule backwards, say so `
+            + `plainly and give the correct rule.\n`
+          : `For each figure: FETCH the publisher's own page — ine.es, registradores.org, `
+            + `notariado.org, the Colegio Notarial, the Ministerio del Interior series — and read `
+            + `the number off it, with the geography it is published at.\n`)
+        + `Rewrite the briefing as plain established facts. END EVERY FACTUAL LINE WITH THE URL YOU `
+        + `FETCHED IT FROM in square brackets. Do not name the institution inside the sentence. `
+        + `Anything you could not open, drop or mark "UNCLEAR:". Under 400 words.` }],
+    }, 150_000);
+    if (forced.failure) { fail(`enforcement pass ${attempt + 1}`, forced); }
+    // keep every source seen across passes, and prefer the sourced rewrite when it produced one
+    const merged = [...findings.sources];
+    for (const src of forced.sources) {
+      const hit = merged.find((x) => x.url === src.url);
+      if (!hit) { merged.push({ ...src, id: `S${merged.length + 1}` }); continue; }
+      if (src.opened && !hit.opened) {
+        hit.opened = true; hit.openedAt = src.openedAt;
+        hit.content = src.content; hit.contentChars = src.contentChars;
+      }
+    }
+    findings = { ...forced, text: forced.text || findings.text, sources: merged };
+    await openCited(findings, risk);
+  }
+  if (policyUnmetFor(risk, findings.sources)) {
+    console.error(`[studio/carousel] RESEARCH POLICY UNMET for a ${risk} topic — no authoritative `
+      + `page was opened; material claims of that kind cannot be supported and will be removed`);
+  }
+  f.text = findings.text;
+  f.sources.length = 0;
+  f.sources.push(...findings.sources);
+  // Rewrite the URL the research tagged each line with into the id of the source it belongs to, so
+  // a finished sentence can name what backs it without the writer ever seeing a URL or a publisher.
+  const tagged = f.text.replace(/\[\s*(https?:\/\/[^\]\s]+)\s*\]/g, (_m, url: string) => {
+    const clean = String(url).replace(/[.,;]+$/, '');
+    let hit = f.sources.find((x) => x.url === clean)
+      ?? f.sources.find((x) => x.url.startsWith(clean) || clean.startsWith(x.url));
+    if (!hit) {
+      hit = {
+        id: `S${f.sources.length + 1}`, url: clean, title: '', domain: domainOf(clean),
+        sourceClass: classifySource(clean), opened: false, openedAt: null,
+        contentChars: 0, excerpts: [],
+      };
+      f.sources.push(hit);
+    }
+    return `[${hit.id}]`;
+  });
+  const opened = f.sources.filter((x) => x.opened).length;
+  console.log(`[studio/carousel] research opened ${opened} of ${f.sources.length} sources`
+    + (risk !== 'none' ? ` · ${risk} topic` : ''));
   onSources?.(f.sources);
-  return f.text;
+  return tagged;
 }
 
 /**
@@ -541,6 +800,8 @@ export async function planCarousel(opts: {
    *  receives what the research established, so the agent can read what their tips were built on
    *  before publishing under their own name. */
   onResearch?: (brief: string) => void;
+  /** every page the research touched, with the text of the ones it actually opened */
+  onSources?: (sources: ResearchSource[]) => void;
 }): Promise<CarouselPlan> {
   const langNames: Record<string, string> = { es: 'Spanish', en: 'English', de: 'German', fr: 'French', nl: 'Dutch', sv: 'Swedish', no: 'Norwegian', da: 'Danish', fi: 'Finnish', pl: 'Polish', ru: 'Russian', it: 'Italian', pt: 'Portuguese' };
   const lang = langNames[opts.language] ?? 'Spanish';
@@ -552,7 +813,7 @@ export async function planCarousel(opts: {
   // their post.
   const brief = opts.type === 'tips' && opts.topic
     ? await researchTopic(opts.topic, lang, region, opts.marketBrief ?? '', opts.cardMust ?? '',
-        (src) => { researchSources = src; }).catch(() => '')
+        (src) => { researchSources = src; opts.onSources?.(src); }).catch(() => '')
     : '';
   if (brief) {
     console.log(`[studio/carousel] researched "${String(opts.topic).slice(0, 60)}" — ${brief.length} chars`);
@@ -579,6 +840,8 @@ export async function planCarousel(opts: {
     }
     opts.onCoverage?.(missing, assessed.degraded, assessed.coverage);
   }
+  // The writer never sees where a fact came from — that is what stops it attributing one.
+  const writerBrief = stripSourceTags(brief);
   const missingBlock = missing.length ? `
 THE RESEARCH DID NOT ESTABLISH THESE, AND THEY WERE REQUIRED:
 ${missing.map((m) => `· ${m}`).join('\n')}
@@ -640,7 +903,7 @@ the research could not support. Do NOT write the deck the topic asked for. Write
 supports instead, on the same subject, and change the cover to match — a true post on a smaller claim
 beats a confident one on a false one. The topic is a suggestion; the research is the evidence.
 
-${brief}
+${writerBrief}
 ` : ''}${brief ? `
 ${STATUS_MODEL}
 ` : ''}${opts.marketBrief ? `\n${opts.marketBrief}\n` : ''}${opts.agencyEvidence ? `\n${opts.agencyEvidence}\n` : ''} For anything about the NIE, banks, taxes, residency, mortgages or ownership: state what is USUALLY true and why it helps, never an absolute impossibility you cannot verify. Worked example of the failure: "without a local account you cannot pay utilities, taxes or a mortgage" is FALSE — Eurozone SEPA rules forbid refusing a valid IBAN from another member state. The honest version keeps the value: "a Spanish account makes utilities, taxes and a mortgage far simpler to run".
@@ -792,7 +1055,7 @@ A real example of what this catches, from Christian's own deck: a slide said "bo
 are capped" when the research established that only ONE of them is. Accurate on its face, false in
 substance, and it took an eight-agent legal check to find. That is the job.
 
-${brief}
+${stripSourceTags(brief)}
 ` : ''}
 HOW A CORRECTION MUST BE WRITTEN — this matters as much as the correction. Christian, 2026-09-01:
 "i just want to make sure that it still is content, not just an information bomb. it needs to be as

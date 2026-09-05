@@ -12,7 +12,8 @@
  * which classes of page may carry a legal, tax or statistical proposition.
  */
 
-import { claimTouchesRequirement, placesIn as placesInText } from './studio-copy-gate';
+import { claimTouchesRequirement, placesIn as placesInText,
+  placesOrRegionsIn } from './studio-copy-gate';
 
 /* ── SOURCES ─────────────────────────────────────────────────────────────────────────────── */
 
@@ -855,4 +856,88 @@ export function checkCta(text: string, capabilities: string): CtaDecision {
     : "Message us and we'll talk you through the key points.";
   return { ok: false, deliverable, rewrite,
     why: `promises a ${deliverable} the agency has not said it produces` };
+}
+
+
+/* ── THE CANONICAL LAYER MAY NORMALISE, NEVER CONCLUDE ───────────────────────────────────── */
+
+/** Demonyms across the languages a source may be written in, so "Países Bajos" ≡ "Dutch". */
+const NATION: Readonly<Record<string, string>> = {
+  'países bajos': 'nl', 'paises bajos': 'nl', holanda: 'nl', neerlandeses: 'nl', dutch: 'nl',
+  netherlands: 'nl', holandeses: 'nl',
+  'reino unido': 'uk', britanicos: 'uk', 'británicos': 'uk', british: 'uk', uk: 'uk', ingleses: 'uk',
+  alemania: 'de', alemanes: 'de', german: 'de', germans: 'de', germany: 'de',
+  belgica: 'be', 'bélgica': 'be', belgas: 'be', belgian: 'be', belgians: 'be', belgium: 'be',
+  francia: 'fr', franceses: 'fr', french: 'fr', france: 'fr',
+  polonia: 'pl', polacos: 'pl', polish: 'pl', poland: 'pl',
+  marruecos: 'ma', marroquies: 'ma', 'marroquíes': 'ma', moroccan: 'ma', morocco: 'ma',
+  rumania: 'ro', rumanos: 'ro', romanian: 'ro', romania: 'ro',
+};
+const nationsIn = (t: string) => {
+  const n = normalizeForMatch(t);
+  const out = new Set<string>();
+  for (const [k, v] of Object.entries(NATION)) if (n.includes(normalizeForMatch(k))) out.add(v);
+  return out;
+};
+
+/** A measurement is not another measurement. These pairs have each produced a published error. */
+const METRIC_TRAPS: readonly { of: RegExp; not: RegExp; why: string }[] = [
+  { of: /(?:\bcapacidad|\bplazas|\bpuede albergar|\bllega a albergar|\bcapacity\b|\bcan host\b|\baccommodat\w+)/i,
+    not: /\b(?:population|residents|inhabitants|people live|habitantes)\b/i,
+    why: 'turns a hosting capacity into a population' },
+  { of: /(?:\bprecio de oferta|\bprecio de anuncio|\basking\b|\badvertised\b|\blisting price\b|\boferta)/i,
+    not: /\b(?:sale price|sold for|paid|transaction price|precio de venta)\b/i,
+    why: 'turns an asking price into a price someone paid' },
+  { of: /(?:\btasaci[óo]n|\bvalor tasado|\bappraisal\b|\bvaluation\b)/i,
+    not: /\b(?:sale price|sold for|paid|market price)\b/i,
+    why: 'turns an appraisal into a market price' },
+  { of: /(?:\bporcentaje|%|\bshare\b|\bproporci[óo]n|\bcuota\b)/i,
+    not: /\b(?:\d+\s+(?:purchases|sales|operations|transactions|homes|properties)\b)/i,
+    why: 'turns a share into an absolute count' },
+  { of: /(?:\bproyecto de ley|\banteproyecto|\bproposal\b|\bdraft\b|\bpropuesta|\bborrador)/i,
+    not: /\b(?:the law (?:is|says|requires)|is now law|came into force|entr[óo] en vigor|enacted)\b/i,
+    why: 'turns a proposal into law in force' },
+  { of: /(?:\bpodr[áa]|\bpuede|\bmay\b|\bcan\b|\bmight\b)/i,
+    not: /\b(?:must|has to|is required|always|will always|siempre|obligatorio)\b/i,
+    why: 'turns a possibility into an obligation' },
+];
+
+export interface FactScope { ok: boolean; why: string }
+
+/**
+ * Does the canonical statement stay inside its excerpt?
+ *
+ * Christian, 2026-09-05: "Países Bajos: 3.708 operaciones en Alicante en 2025" may become "Dutch
+ * buyers completed 3,708 purchases in Alicante province in 2025". It may NOT become "Dutch buyers
+ * became the dominant group across the Costa Blanca" — that is a conclusion the excerpt does not
+ * carry. The canonical layer normalises and translates; it never concludes.
+ */
+export function canonicalWithinExcerpt(fact: { excerpt: string; canonical: string;
+  geography?: string; period?: string }): FactScope {
+  const ex = `${fact.excerpt} ${fact.geography ?? ''} ${fact.period ?? ''}`;
+  const can = fact.canonical ?? '';
+  if (!figuresBacked(can, ex)) return { ok: false, why: 'states a figure the excerpt does not contain' };
+  // Years are figures too, but they are the ones that silently drift.
+  const years = (t: string) => new Set((normalizeForMatch(t).match(/\b(?:19|20)\d{2}\b/g) ?? []));
+  const exYears = years(ex);
+  for (const y of years(can)) if (!exYears.has(y)) return { ok: false, why: `dates it to ${y}, which the excerpt does not` };
+  const exPlaces = placesOrRegionsIn(ex);
+  if (exPlaces.size) {
+    const foreign = [...placesOrRegionsIn(can)].filter((x) => !exPlaces.has(x));
+    if (foreign.length) return { ok: false, why: `moves the fact to ${foreign.join('/')}` };
+  }
+  const exNations = nationsIn(ex);
+  if (exNations.size) {
+    const foreign = [...nationsIn(can)].filter((x) => !exNations.has(x));
+    if (foreign.length) return { ok: false, why: 'names a nationality the excerpt does not' };
+  }
+  for (const trap of METRIC_TRAPS) {
+    if (trap.of.test(ex) && trap.not.test(can) && !trap.not.test(ex)) return { ok: false, why: trap.why };
+  }
+  // A conclusion the excerpt cannot carry: a superlative or a dominance claim added on top of it.
+  if (/\b(?:dominant|dominate[sd]?|the leader|leads the|overtaken|took over|the biggest|the largest|most popular)\b/i.test(can)
+      && !/\b(?:l[íi]der|lidera|domina|mayor|m[áa]s|primer|first|lead|top|dominant)\b/i.test(ex)) {
+    return { ok: false, why: 'draws a ranking conclusion the excerpt does not state' };
+  }
+  return { ok: true, why: 'stays inside the excerpt' };
 }

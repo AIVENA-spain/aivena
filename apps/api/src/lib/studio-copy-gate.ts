@@ -1032,6 +1032,14 @@ export function placesIn(text: string): Set<string> {
   return new Set(Array.from((text ?? '').matchAll(TOWN), (m) => CANON(m[1])));
 }
 
+/** Towns AND the regions and countries a fact can belong to — for checking geography drift. */
+export function placesOrRegionsIn(text: string): Set<string> {
+  const out = placesIn(text);
+  REGION.lastIndex = 0;
+  for (const m of (text ?? '').matchAll(REGION)) out.add(CANON(m[0]));
+  return out;
+}
+
 /** Is this capitalised token a place rather than an organisation that could report something? */
 export function isPlaceName(name: string): boolean {
   const n = (name ?? '').trim();

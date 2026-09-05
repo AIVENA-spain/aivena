@@ -30,7 +30,7 @@ import {
 } from './studio-copy-gate';
 import { getCard, retrieveBankFacts } from './studio-bank-match';
 import {
-  checkCta, excerptOccursIn, riskTier, verifySupport,
+  canonicalWithinExcerpt, checkCta, excerptOccursIn, riskTier, verifySupport,
   type ClaimSupport, type ProposedSupport, type ResearchSource, type SourceFact,
   type SupportContext,
 } from './studio-evidence';
@@ -618,6 +618,16 @@ export async function extractSourceFacts(
       if (excerpt.length < 12 || !canonical) continue;
       // THE ANCHOR. A fact whose excerpt is not on the page is a fact the model made up.
       if (!excerptOccursIn(excerpt, src.content ?? '')) continue;
+      // AND THE CEILING. The canonical layer may translate and normalise; it may not conclude.
+      // "Países Bajos: 3.708 operaciones" may become "Dutch buyers completed 3,708 purchases in
+      // Alicante province in 2025". It may not become "Dutch buyers became the dominant group
+      // across the Costa Blanca" — that is the H4 error, one link earlier.
+      const scope = canonicalWithinExcerpt({ excerpt, canonical,
+        geography: String(r?.geography ?? ''), period: String(r?.period ?? '') });
+      if (!scope.ok) {
+        console.warn(`[studio/claim-gate] dropped a source fact off ${src.id} — ${scope.why}`);
+        continue;
+      }
       facts.push({
         id: `F${facts.length + 1}`, sourceId: src.id, excerpt, canonical,
         language: String(r?.language ?? '').trim() || 'es',

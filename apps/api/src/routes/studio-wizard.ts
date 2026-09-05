@@ -32,11 +32,12 @@ import {
 } from '../../../../studio/engine/carouselStyles';
 import type { CarouselBrand } from '../../../../studio/engine/renderCarousel';
 import { planCarousel, editPlan, remixHook, topicIdeas, listingCopy, listingStory, pickBankCard, PlanSchema, normalisePlan } from '../lib/studio-carousel-plan';
-import { finishCopy, gatePlan, type GateReport } from '../lib/studio-claim-gate';
-import { cardRules } from '../lib/studio-bank-match';
+import { POLICED_TYPES, checkBankContradictions, extractClaims, finishCopy, gatePlan,
+  type GateReport } from '../lib/studio-claim-gate';
+import { cardRules, retrieveBankFacts } from '../lib/studio-bank-match';
 import { dropSentence, gateField, planFields, readField, writeField,
   type RequirementCoverage } from '../lib/studio-copy-gate';
-import type { ResearchSource } from '../lib/studio-evidence';
+import { riskTier, type ResearchSource } from '../lib/studio-evidence';
 import { directScenes } from '../lib/studio-carousel-art';
 import { renderTipsImageStyled, renderTipsImageStyledV2, isTipsImageStyle } from '../../../../studio/engine/carouselTipsImage';
 import { renderFreeform, type DesignSpec } from '../../../../studio/engine/renderFreeform';
@@ -1528,6 +1529,37 @@ async function runPlannedCarousel(opts: {
             claimQa.blocked.push(...regated.report.blocked);
             claimQa.degraded = claimQa.degraded ?? regated.report.degraded;
           } else { claimQa = regated.report; }
+        }
+      }
+
+      // THE VERIFIED BANK, ON WHAT WILL ACTUALLY PUBLISH. The editor rewrites whole fields, and
+      // five bank contradictions survived into final copy in the calibration run because the check
+      // ran before it. A guardrail verified against primary sources is a hard block, always.
+      if (opts.type === 'tips' && claimQa) {
+        const finalClaims = await extractClaims(plan, opts.language).catch(() => null);
+        const finalMaterial = (finalClaims ?? []).filter((c) =>
+          (POLICED_TYPES as readonly string[]).includes(c.type) && riskTier(c.text, c.type) === 'high');
+        const facts = new Map<string, string>();
+        if (card) {
+          card.must.forEach((t, i) => facts.set(`${card.id}#${i + 1}`, t));
+          card.never.forEach((t, i) => facts.set(`${card.id}#never${i + 1}`, t));
+        }
+        for (const f of retrieveBankFacts(finalMaterial.map((c) => c.text), card?.bank)) {
+          facts.set(f.id, f.text);
+        }
+        const { contradictions } = await checkBankContradictions(finalMaterial, facts)
+          .catch(() => ({ contradictions: [] as { field: string; text: string; bankFactId: string; why: string }[] }));
+        for (const c of contradictions) {
+          const before = readField(plan, c.field);
+          const after = dropSentence(before, c.text);
+          if (after !== before) { plan = writeField(plan, c.field, after); claimQa.dropped++; }
+          claimQa.bankContradictions.push(c);
+          claimQa.blocked.push({ field: c.field, text: c.text, verdict: 'CONTRADICTS_GUARDRAIL',
+            problem: `${c.bankFactId}: ${c.why}`,
+            outcome: after !== before ? 'removed — contradicts a verified guardrail' : 'left — could not be isolated' });
+        }
+        if (contradictions.length) {
+          console.warn(`[studio/carousel] final bank check removed ${contradictions.length} claim(s)`);
         }
       }
 

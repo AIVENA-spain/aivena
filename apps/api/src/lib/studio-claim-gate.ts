@@ -22,6 +22,7 @@ import { env } from '../../../../packages/config/env';
 
 import {
   adjudicate, capFor, coverageGaps, dropSentence, endsMidThought, gateField, incompleteBody,
+  requirementsFor,
   checkHashtags, fieldIncomplete, planFields, readField, shortenToBoundary, writeField,
   RESOLVED_HARD_FAIL, RESOLVED_OK,
   type CoverageStatus, type GateHit, type PlanLike, type Requirement, type RequirementCoverage,
@@ -261,7 +262,7 @@ A requirement whose support you cannot point at is not_established, however plau
  */
 export async function assessCoverage(
   requirements: readonly Requirement[], brief: string,
-  sources: readonly { id: string; url: string; title: string }[] = [],
+  sources: readonly ResearchSource[] = [],
 ): Promise<{ coverage: RequirementCoverage[]; degraded: string | null }> {
   const allUnestablished = (why: string) => ({
     coverage: requirements.map((r) => ({
@@ -281,7 +282,9 @@ export async function assessCoverage(
   const list = out && coerceList(out.coverage, 'coverage');
   if (!list) return allUnestablished('coverage assessment unavailable');
 
-  const known = new Set(sources.map((s) => s.id));
+  // A search result is a pointer. Coverage that rests on one is coverage that rests on nothing —
+  // the strict run had three coverage records citing pages nobody ever opened.
+  const known = new Set(sources.filter((s) => s.opened).map((s) => s.id));
   const byId = new Map<string, RequirementCoverage>();
   for (const c of list) {
     const id = String(c?.id ?? '').trim();
@@ -535,6 +538,12 @@ export async function validateClaims(
 
 /* ── 3. REPAIR ───────────────────────────────────────────────────────────────────────────── */
 
+/** The matched card's requirement list, for turning a coverage id back into what it required. */
+function cardMustList(ctx: GateContext): string[] {
+  const card = ctx.cardId ? getCard(ctx.cardId) : undefined;
+  return card ? [...card.must] : [];
+}
+
 /* ── 2a. SOURCE FACTS — what the opened pages actually say ───────────────────────────────── */
 
 const FACTS_TOOL = {
@@ -698,7 +707,10 @@ export async function supportClaims(
   const facts = ctx.facts ?? [];
   const coverage = ctx.coverage ?? [];
   const bankFacts = ctx.bankFacts ?? new Map<string, string>();
-  const unestablished = new Set(coverage.filter((c) => c.status === 'not_established').map((c) => c.id));
+  const reqText = new Map<string, string>();
+  for (const r of requirementsFor(ctx.cardId ?? '', cardMustList(ctx))) reqText.set(r.id, r.text);
+  const unestablished = new Map(coverage.filter((c) => c.status === 'not_established')
+    .map((c) => [c.id, reqText.get(c.id) ?? '']));
 
   const supportCtx: SupportContext = {
     sources, facts, brief: ctx.research, agencyEvidence: ctx.agencyEvidence,
@@ -1018,6 +1030,19 @@ export async function gatePlan<T extends PlanLike>(
     // A prose card cut at the character limit goes back to be rewritten short and whole. Christian's
     // rule: prefer the last complete sentence; if none is viable, shorten the card by rewriting it —
     // never ship prose that stops mid-sentence, and never butcher good prose to avoid it.
+    // A field that will not fit and has no boundary to shorten at is rewritten, not cut. This is
+    // the other half of never truncating: five fields shipped over their cap in the strict run
+    // because refusing to cut them left them long.
+    const tooLong = planFields(current)
+      .filter((f) => { const c = capFor(f.field); return c !== null && f.text.length > c
+        && shortenToBoundary(f.text, c) === null; })
+      .map((f) => ({
+        field: f.field, text: f.text, type: 'FACTUAL_MATERIAL' as ClaimType,
+        verdict: 'UNSUPPORTED' as Verdict,
+        problem: `This is ${f.text.length} characters against a limit of ${capFor(f.field)}, and it `
+          + `has no sentence or clause break to shorten at. Say the same thing in fewer words, as a `
+          + `complete thought. Do not drop the end of it.`,
+      }));
     const cutShort = planFields(current)
       .filter((f) => fieldIncomplete(f.field, f.text))
       .map((f) => ({
@@ -1126,6 +1151,7 @@ export async function gatePlan<T extends PlanLike>(
         problem: h.rule.problem,
       })),
       ...cutShort,
+      ...tooLong,
     ];
     if (round === 0) report.materialFailures = failures.length;
     // SUPPORTED_WITH_NUANCE is not a failure — the corrected wording is simply applied.

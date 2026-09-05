@@ -12,6 +12,8 @@
  * which classes of page may carry a legal, tax or statistical proposition.
  */
 
+import { claimTouchesRequirement, placesIn as placesInText } from './studio-copy-gate';
+
 /* ── SOURCES ─────────────────────────────────────────────────────────────────────────────── */
 
 export type SourceClass =
@@ -421,8 +423,8 @@ export interface SupportContext {
   agencyEvidence: string;
   /** bank fact or guardrail id → its exact text, for a claim that rests on the verified bank */
   bankText: ReadonlyMap<string, string>;
-  /** requirement ids this generation's research did NOT establish */
-  unestablished: ReadonlySet<string>;
+  /** requirement id → text, for the ones this generation's research did NOT establish */
+  unestablished: ReadonlyMap<string, string>;
 }
 
 export interface ProposedSupport {
@@ -461,7 +463,14 @@ export function verifySupport(p: ProposedSupport, ctx: SupportContext): ClaimSup
 
   // A requirement the research did not establish cannot become the ground of a HIGH-RISK claim.
   // At medium risk it is a reason to keep the sentence general, not to refuse it outright.
-  const blocked = requirementIds.filter((r) => ctx.unestablished.has(r));
+  // TWO SIGNALS, not one. The support model names requirement ids liberally — it tagged an eyebrow
+  // reading "Costa Blanca buyers, 2026" as depending on a price-series requirement — and a true
+  // sentence should not be deleted because a model was generous with a label. The claim must ALSO
+  // use the requirement's own distinctive content.
+  const blocked = requirementIds.filter((r) => {
+    const text = ctx.unestablished.get(r);
+    return !!text && claimTouchesRequirement(p.claim, text);
+  });
   if (blocked.length && tier === 'high') {
     return out('unsupported', `rests on unestablished requirement ${blocked.join(', ')}`);
   }
@@ -526,10 +535,13 @@ export function verifySupport(p: ProposedSupport, ctx: SupportContext): ClaimSup
       return out('supported', `verbatim on ${backing.join(', ')}`);
     }
     case 'agency_profile': {
-      if (!excerpt) return out('unsupported', 'no evidence excerpt offered');
-      return excerptOccursIn(excerpt, ctx.agencyEvidence)
-        ? out('supported', 'stated in the agency profile')
-        : out('unsupported', 'not in what the agency has told us');
+      // NOT a verbatim test. The profile is a list of facts, and an agency line is a sentence made
+      // out of them — "We handle sales and listings across Jávea, Moraira, Dénia and Teulada, in
+      // Spanish, English, Dutch and German" is every fact in the profile and none of its words. The
+      // strict run refused that line on seven posts out of twelve.
+      const bad = agencyOverreach(p.claim, ctx.agencyEvidence);
+      if (bad) return out('unsupported', bad);
+      return out('supported', 'within what the agency has told us');
     }
     case 'bank_fact': {
       if (!excerpt) return out('unsupported', 'no evidence excerpt offered');
@@ -635,4 +647,66 @@ export function findPassages(
     if (spread.length >= perClaim) break;
   }
   return spread;
+}
+
+
+/* ── AGENCY CLAIMS ───────────────────────────────────────────────────────────────────────── */
+
+/** Services an agency might claim. Each has to be in the profile or it is being invented. */
+const SERVICES: Readonly<Record<string, RegExp>> = {
+  'rentals': /\b(?:rental|rentals|letting|lettings|long-term let|holiday let)\b/i,
+  'property management': /\b(?:property management|managing your property|key ?holding)\b/i,
+  'mortgages': /\b(?:mortgage|financing|lending)\b/i,
+  'legal services': /\b(?:legal (?:advice|service)|conveyancing|lawyer|abogad\w+|notary service)\b/i,
+  'valuations': /\b(?:valuation|appraisal|tasaci[óo]n)\b/i,
+  'insurance': /\b(?:insurance|seguro)\b/i,
+  'relocation': /\b(?:relocation|moving service|removals)\b/i,
+  'renovation': /\b(?:renovation|refurbishment|building work|reform)\b/i,
+};
+
+/** Languages, as an agency profile writes them and as copy writes them. */
+const LANGUAGE = /\b(es|en|nl|de|fr|sv|no|da|fi|pl|ru|it|pt|spanish|english|dutch|german|french|swedish|norwegian|danish|finnish|polish|russian|italian|portuguese|castellano|espa[ñn]ol|ingl[ée]s|holand[ée]s|neerland[ée]s|alem[áa]n)\b/gi;
+const LANG_CANON: Readonly<Record<string, string>> = {
+  es: 'es', spanish: 'es', castellano: 'es', 'español': 'es', espanol: 'es',
+  en: 'en', english: 'en', 'inglés': 'en', ingles: 'en',
+  nl: 'nl', dutch: 'nl', 'holandés': 'nl', holandes: 'nl', 'neerlandés': 'nl', neerlandes: 'nl',
+  de: 'de', german: 'de', 'alemán': 'de', aleman: 'de',
+  fr: 'fr', french: 'fr', sv: 'sv', swedish: 'sv', no: 'no', norwegian: 'no',
+  da: 'da', danish: 'da', fi: 'fi', finnish: 'fi', pl: 'pl', polish: 'pl',
+  ru: 'ru', russian: 'ru', it: 'it', italian: 'it', pt: 'pt', portuguese: 'pt',
+};
+const languagesIn = (t: string) => new Set(
+  Array.from((t ?? '').matchAll(LANGUAGE), (m) => LANG_CANON[m[1].toLowerCase()] ?? '').filter(Boolean));
+
+/** A claim about the agency's own record, which the profile never contains. */
+const PAST_RECORD = /\b(?:we(?:'ve| have)\s+(?:sold|helped|closed|handled|completed)|our (?:sellers?|buyers?|clients?|track record|average|results?)|sold \d|in \d+ (?:years?|months?)|since \d{4}|award|voted|number one|no\.? ?1|fastest|most (?:successful|trusted))\b/i;
+/** A superlative about itself. The profile is a list of facts; it never contains a ranking. */
+const SELF_SUPERLATIVE = /\b(?:the\s+)?(?:biggest|largest|leading|top|best|most established|longest[- ]established|number one|foremost|premier|market leader)\b[^.]{0,40}\b(?:agency|agent|estate agent|team|firm|office|brokerage|on the coast|in (?:the )?(?:area|region|province))\b|\bwe are (?:the\s+)?(?:biggest|largest|leading|top|best|number one)\b/i;
+
+/**
+ * What in this agency claim goes beyond what the agency told us. Empty string when nothing does.
+ *
+ * Three deterministic guards instead of one verbatim test: the places named, the languages named,
+ * and the services promised must each be inside the profile — and a claim about the agency's own
+ * record needs evidence the profile does not contain at all.
+ */
+export function agencyOverreach(claim: string, profile: string): string {
+  const t = claim ?? '';
+  if (PAST_RECORD.test(t)) return 'claims a record or a result the agency has not given us';
+  if (SELF_SUPERLATIVE.test(t)) return 'ranks the agency against others, which nothing establishes';
+  const knownPlaces = placesInText(profile);
+  if (knownPlaces.size) {
+    const foreign = [...placesInText(t)].filter((x) => !knownPlaces.has(x));
+    if (foreign.length) return `names ${foreign.join('/')}, where this agency has not said it works`;
+  }
+  const knownLangs = languagesIn(profile);
+  if (knownLangs.size) {
+    const foreign = [...languagesIn(t)].filter((x) => !knownLangs.has(x));
+    if (foreign.length) return `claims ${foreign.join('/')}, which is not in the agency profile`;
+  }
+  for (const [name, re] of Object.entries(SERVICES)) {
+    if (re.test(t) && !re.test(profile)) return `claims ${name}, which the agency has not said it offers`;
+  }
+  if (!figuresBacked(t, profile)) return 'states a figure the agency profile does not contain';
+  return '';
 }

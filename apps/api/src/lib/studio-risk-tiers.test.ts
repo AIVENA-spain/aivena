@@ -82,7 +82,7 @@ describe('a Spanish page supports an English sentence', () => {
     canonical: 'Dutch buyers completed 3,708 purchases in Alicante province in 2025.',
     sourceClass: 'professional_body', geography: 'Alicante province', period: '2025',
   }];
-  const ctx: SupportContext = { sources, facts, agencyEvidence: '', bankText: new Map(), unestablished: new Set() };
+  const ctx: SupportContext = { sources, facts, agencyEvidence: '', bankText: new Map(), unestablished: new Map() };
   const P = (o: Partial<ProposedSupport>): ProposedSupport => ({
     claimId: 'c1', field: 'tips[0].body', claim: 'Dutch buyers moved into first place in Alicante province last year.',
     claimType: 'QUANTIFIED_CLAIM', supportType: 'source_fact', factIds: ['F1'], ...o });

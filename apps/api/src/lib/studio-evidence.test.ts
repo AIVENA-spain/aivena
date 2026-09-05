@@ -117,7 +117,7 @@ describe('verifySupport', () => {
   const ctx = (over: Partial<SupportContext> = {}): SupportContext => ({
     sources, facts: [], agencyEvidence: 'Works in: Jávea, Moraira, Dénia, Teulada. Staff speak es, en, nl, de.',
     bankText: new Map([['B43#2', 'The current Registradores nationality ranking is published at NATIONAL level only']]),
-    unestablished: new Set<string>(), ...over,
+    unestablished: new Map<string, string>(), ...over,
   });
   const P = (o: Partial<ProposedSupport>): ProposedSupport => ({
     claimId: 'c1', field: 'tips[0].body', claim: 'A sale is binding once thing and price are agreed.',
@@ -179,15 +179,30 @@ describe('verifySupport', () => {
   it('lets a partial requirement through when the claim has its own evidence', () => {
     const r = verifySupport(
       P({ sourceIds: ['S1'], evidenceExcerpt: 'La venta se perfeccionará entre comprador y vendedor', requirementIds: ['B11#1'] }),
-      ctx({ unestablished: new Set<string>() }));
+      ctx({ unestablished: new Map<string, string>() }));
     expect(r.verdict).toBe('supported');
   });
-  it('refuses any claim that rests on an unestablished requirement', () => {
+  // MUST-BLOCK: the B and H3 shape — the claim uses the very thing the research did not establish
+  it('refuses a claim that rests on an unestablished requirement it actually uses', () => {
     const r = verifySupport(
-      P({ sourceIds: ['S1'], evidenceExcerpt: 'La venta se perfeccionará entre comprador y vendedor', requirementIds: ['B12#3'] }),
-      ctx({ unestablished: new Set(['B12#3']) }));
+      P({ claim: 'Occupation figures for the Comunidad Valenciana sit well below Catalonia.',
+        claimType: 'QUANTIFIED_CLAIM', sourceIds: ['S1'],
+        evidenceExcerpt: 'La venta se perfeccionará entre comprador y vendedor', requirementIds: ['B12#3'] }),
+      ctx({ unestablished: new Map([['B12#3', 'Occupation figures for Alicante province or the Comunidad Valenciana from an official source']]) }));
     expect(r.verdict).toBe('unsupported');
     expect(r.reason).toMatch(/unestablished requirement B12#3/);
+  });
+
+  // Christian 2026-09-05: the support model labels requirement ids generously — it tagged an
+  // eyebrow reading "Costa Blanca buyers, 2026" as depending on a price-series requirement. A true
+  // sentence must not be deleted because of a generous label, so the claim has to use the
+  // requirement's own content before the gap can bar it.
+  it('does not delete a sentence merely tagged with an unrelated requirement', () => {
+    const r = verifySupport(
+      P({ sourceIds: ['S1'], evidenceExcerpt: 'La venta se perfeccionará entre comprador y vendedor',
+        requirementIds: ['B12#3'] }),
+      ctx({ unestablished: new Map([['B12#3', 'Occupation figures for Alicante province or the Comunidad Valenciana from an official source']]) }));
+    expect(r.verdict).toBe('supported');
   });
   it('supports an agency claim that is in the profile', () => {
     const r = verifySupport(P({ claim: 'We work in Jávea and Dénia.', claimType: 'AGENCY_FACT',
@@ -220,14 +235,17 @@ describe('every unsupported reason is reachable', () => {
   it('covers each branch at least once', () => {
     const reasons = new Set<string>();
     const sources = [src({ id: 'S1', url: 'https://www.boe.es/x', content: CC1450 })];
-    const base: SupportContext = { sources, agencyEvidence: 'Works in: Jávea', bankText: new Map(), unestablished: new Set(['R#1']) };
+    const base: SupportContext = { sources, agencyEvidence: 'Works in: Jávea', bankText: new Map(), unestablished: new Map([['R#1', 'the tax withholding rate and the filing deadline for a non-resident seller']]) };
     const cases: ProposedSupport[] = [
-      { claimId: 'a', field: 'f', claim: 'x tax', claimType: 'LEGAL_CONSEQUENCE', supportType: 'page_direct', requirementIds: ['R#1'] },
+      { claimId: 'a', field: 'f', claim: 'The tax withholding rate for a non-resident seller is set by the filing deadline.',
+        claimType: 'LEGAL_CONSEQUENCE', supportType: 'page_direct', requirementIds: ['R#1'] },
       { claimId: 'b', field: 'f', claim: 'x tax', claimType: 'LEGAL_CONSEQUENCE', supportType: 'page_direct', sourceIds: ['S1'] },
       { claimId: 'c', field: 'f', claim: 'x tax', claimType: 'LEGAL_CONSEQUENCE', supportType: 'page_direct', sourceIds: ['ZZ'], evidenceExcerpt: 'La venta se perfeccionará entre comprador' },
       { claimId: 'd', field: 'f', claim: 'x tax', claimType: 'LEGAL_CONSEQUENCE', supportType: 'page_direct', evidenceExcerpt: 'La venta se perfeccionará entre comprador' },
       { claimId: 'e', field: 'f', claim: 'x tax', claimType: 'LEGAL_CONSEQUENCE', supportType: 'page_direct', sourceIds: ['S1'], evidenceExcerpt: 'something not on that page at all really' },
-      { claimId: 'f', field: 'f', claim: 'x', claimType: 'AGENCY_FACT', supportType: 'agency_profile', evidenceExcerpt: 'we are the biggest agency on the coast' },
+      // the CLAIM is what publishes, so that is what is judged — not the excerpt offered for it
+      { claimId: 'f', field: 'f', claim: 'We are the biggest agency on the coast.', claimType: 'AGENCY_FACT',
+        supportType: 'agency_profile', evidenceExcerpt: 'Works in: Jávea' },
       { claimId: 'g', field: 'f', claim: 'x', claimType: 'QUANTIFIED_CLAIM', supportType: 'bank_fact', bankFactIds: ['nope'], evidenceExcerpt: 'anything at all here' },
       { claimId: 'h', field: 'f', claim: 'x', claimType: 'FACTUAL_MATERIAL', supportType: 'none' },
     ];

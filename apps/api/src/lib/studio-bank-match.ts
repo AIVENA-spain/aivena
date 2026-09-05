@@ -103,3 +103,126 @@ export function cardRules(card: BankCard): string {
       : '',
   ].filter(Boolean).join('\n');
 }
+
+/* ── SCOPE ───────────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * The places a card is written about.
+ *
+ * B20 is "Jávea or Dénia?" — its four required points are about those two towns, one of them
+ * naming the UNESCO designation Dénia holds. Matched to a Moraira-versus-Calpe topic it produced
+ * four requirements that could not be established by construction, and the post asserted seasonal
+ * population figures anyway. A card that names towns is about those towns.
+ */
+// TOWNS scope a card. A region does not: a card about "the Costa Blanca" is about a subject that
+// happens to have a coastline, and scoping it to that coastline would make it govern nothing.
+const TOWN = /\b(J[áa]vea|X[àa]bia|D[ée]nia|Moraira|Teulada|Calpe|Calp|Benissa|Altea|Alt[ée]a|Benidorm|Torrevieja|Orihuela|Guardamar|Santa Pola|El Campello|Villajoyosa|Finestrat|Polop|La Nucia|Albir|Pego|Ondara|Pedreguer|Benitachell|Poble Nou|San Javier|Cartagena|Marbella|Estepona|Nerja|Sitges|Alicante city)\b/gi;
+
+const CANON = (p: string) => p.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  .replace(/^xabia$/, 'javea').replace(/^calp$/, 'calpe').replace(/^altea$/, 'altea');
+
+/** The distinct places a piece of text names, canonicalised so Xàbia and Jávea are one place. */
+export function placesIn(text: string): Set<string> {
+  return new Set(Array.from((text ?? '').matchAll(TOWN), (m) => CANON(m[1])));
+}
+
+/**
+ * Is this card written about specific places rather than about a subject?
+ *
+ * A card whose QUESTION names towns is scoped to them. A card that mentions a town only in passing
+ * inside its requirements is not — "use the INE table for the town the piece names" is general
+ * advice that happens to contain an example.
+ */
+export function cardScope(card: BankCard): Set<string> {
+  return placesIn(card.question);
+}
+
+/**
+ * May this card govern this topic?
+ *
+ * A card with no places in its question is general and governs by subject. A card scoped to places
+ * governs only a topic that names at least one of them. Anything else borrows another town's
+ * verified requirements, which is how a Moraira/Calpe post came to be judged against Jávea/Dénia.
+ */
+export function cardInScope(card: BankCard, topic: string): boolean {
+  const scope = cardScope(card);
+  if (!scope.size) return true;                       // a card about a subject governs by subject
+  const topicPlaces = placesIn(topic);
+  for (const p of topicPlaces) if (scope.has(p)) return true;
+  // A topic that names no place at all is not the place-scoped card's topic either: "which coastal
+  // town suits year-round living" must not inherit requirements written about Jávea and Dénia.
+  return false;
+}
+
+/** Why a card was refused, for the record. Empty string when it was in scope. */
+export function outOfScopeReason(card: BankCard, topic: string): string {
+  if (cardInScope(card, topic)) return '';
+  const t = [...placesIn(topic)];
+  return `card ${card.id} is written about ${[...cardScope(card)].join('/')} and the topic is about `
+    + `${t.length ? t.join('/') : 'no named place'}`;
+}
+
+/* ── RETRIEVAL FOR VALIDATION ────────────────────────────────────────────────────────────── */
+
+/** One verified statement out of the bank, addressable by id. */
+export interface BankFact { id: string; text: string; cardId: string; kind: 'must' | 'never' | 'hook' }
+
+function factsOf(card: BankCard): BankFact[] {
+  const out: BankFact[] = [];
+  if (card.hook) out.push({ id: `${card.id}#hook`, text: card.hook, cardId: card.id, kind: 'hook' });
+  card.must.forEach((t, i) => out.push({ id: `${card.id}#${i + 1}`, text: t, cardId: card.id, kind: 'must' }));
+  card.never.forEach((t, i) => out.push({ id: `${card.id}#never${i + 1}`, text: t, cardId: card.id, kind: 'never' }));
+  return out;
+}
+
+/**
+ * The verified statements most relevant to what a finished post actually claims.
+ *
+ * Retrieval is across the whole bank, not only the card that was matched before research. H1 and H2
+ * matched no card at all and made high-risk legal and tax claims that the bank already covers; a
+ * guardrail is only useful if it is consulted by what the post says, not by what the topic said.
+ */
+export function retrieveBankFacts(
+  claims: readonly string[], bank?: 'seller' | 'buyer', limit = 14,
+): BankFact[] {
+  const text = claims.join(' \n ');
+  const want = terms(text);
+  if (!want.size) return [];
+  const pool = BANK_CARDS.filter((c) => (bank ? c.bank === bank : true) && c.state !== 'blocked')
+    .flatMap(factsOf);
+  const df = new Map<string, number>();
+  const indexed = pool.map((f) => {
+    const t = terms(f.text);
+    for (const w of t) df.set(w, (df.get(w) ?? 0) + 1);
+    return { f, t };
+  });
+  const idf = (w: string) => Math.log(pool.length / (df.get(w) ?? 1));
+  const picked = indexed
+    .map(({ f, t }) => {
+      let score = 0;
+      let overlap = 0;
+      for (const w of want) if (t.has(w)) { score += idf(w); overlap++; }
+      // a guardrail is the half that stops a wrong sentence, so it outranks a requirement
+      return { f, score: score * (f.kind === 'never' ? 1.25 : 1), overlap };
+    })
+    // One shared word is a coincidence. Marketing copy shares "listing" and "detail" with half the
+    // bank, and retrieving on that would drag a rhetorical line in front of a legal guardrail.
+    .filter((x) => x.overlap >= 4 && x.score >= 12)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit)
+    .map((x) => x.f);
+  // A guardrail travels with the requirement it guards. Retrieval on the H4 copy found B43's
+  // requirement — the one that says the nationality ranking is national only — and left behind
+  // B43's "do not generalise a national ranking to Alicante province", which is the sentence that
+  // would have stopped the post. Once a card is in, its whole never_assume list comes with it.
+  const cards = new Set(picked.map((f) => f.cardId));
+  const withGuardrails = [...picked];
+  for (const id of cards) {
+    const c = BY_ID.get(id);
+    if (!c) continue;
+    for (const g of factsOf(c)) {
+      if (g.kind === 'never' && !withGuardrails.some((x) => x.id === g.id)) withGuardrails.push(g);
+    }
+  }
+  return withGuardrails;
+}

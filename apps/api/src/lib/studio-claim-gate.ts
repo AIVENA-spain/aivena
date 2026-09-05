@@ -26,6 +26,10 @@ import {
   type CoverageStatus, type GateHit, type PlanLike, type Requirement, type RequirementCoverage,
   type Resolution,
 } from './studio-copy-gate';
+import {
+  riskOf, verifySupport,
+  type ClaimSupport, type ProposedSupport, type ResearchSource, type SupportContext,
+} from './studio-evidence';
 
 /** Policed: an external assertion a reader could act on and find false. */
 export const POLICED_TYPES = ['FACTUAL_MATERIAL', 'TIME_SENSITIVE_FACT', 'AGENCY_FACT',
@@ -60,6 +64,12 @@ export interface GateContext {
   uncovered?: string[];
   /** the facts the agency itself supplied */
   agencyEvidence: string;
+  /** every page the research touched, with the text of the ones that were opened */
+  sources?: ResearchSource[];
+  /** requirement id → status, so a claim can be refused for resting on an unestablished one */
+  coverage?: RequirementCoverage[];
+  /** id → exact text of the verified bank facts and guardrails relevant to this post */
+  bankFacts?: ReadonlyMap<string, string>;
 }
 
 export interface GateReport {
@@ -504,6 +514,127 @@ export async function validateClaims(
 }
 
 /* ── 3. REPAIR ───────────────────────────────────────────────────────────────────────────── */
+
+/* ── 2b. SUPPORT — what each material claim actually rests on ────────────────────────────── */
+
+const SUPPORT_TOOL = {
+  name: 'submit_support',
+  description: 'For each claim, the evidence it rests on.',
+  input_schema: {
+    type: 'object',
+    required: ['supports'],
+    properties: {
+      supports: {
+        type: 'array',
+        items: {
+          type: 'object',
+          required: ['claim_id', 'support_type'],
+          properties: {
+            claim_id: { type: 'string' },
+            support_type: { type: 'string', enum: ['research_evidence', 'agency_profile', 'bank_fact', 'none'] },
+            source_ids: { type: 'array', items: { type: 'string' },
+              description: 'the S-ids tagged on the briefing lines that carry this, e.g. ["S4"]' },
+            evidence_excerpt: { type: 'string',
+              description: 'the words themselves, copied EXACTLY from the briefing line, source or profile — never your own paraphrase' },
+            bank_fact_ids: { type: 'array', items: { type: 'string' } },
+            requirement_ids: { type: 'array', items: { type: 'string' },
+              description: 'any listed requirement this claim depends on, established or not' },
+          },
+        },
+      },
+    },
+  },
+};
+
+const SUPPORT_SYSTEM = `You attach evidence to claims. For each claim you are given, say what it
+actually rests on and quote the words that carry it.
+
+THIS IS NOT A JUDGEMENT TASK. You are not deciding whether the claim sounds right. You are finding
+the sentence that establishes it and copying that sentence out. If you cannot find one, say so with
+support_type "none" — that is a correct and useful answer, and inventing a quotation to fill the box
+is the one thing you must never do.
+
+WHERE EVIDENCE COMES FROM
+· research_evidence — a line of the briefing. Give the S-ids tagged on that line and copy the
+  quoted words EXACTLY as the briefing has them, including any Spanish. The excerpt is checked
+  character by character against the page that was actually opened, so a paraphrase, a translation
+  or a tidied-up version will fail. Copy, do not rewrite.
+· agency_profile — a fact the agency itself supplied. Copy the words from the profile.
+· bank_fact — a verified bank fact or guardrail you were given by id. Copy its words.
+· none — nothing in front of you establishes this claim.
+
+REQUIREMENTS: if a numbered requirement is listed and the claim depends on it, name it in
+requirement_ids whether or not it was established. Being honest about the dependency is the point;
+whether it may publish is decided elsewhere.
+
+EXCERPT LENGTH: enough to identify the passage, roughly one sentence. Not three words, not a page.`;
+
+/**
+ * What every material claim rests on — proposed by a model, decided offline.
+ *
+ * The acceptance run of 5dfb1c3 published fifteen material defects while reporting two, because
+ * "supported" meant a second model had used the word. A claim about the world now has to point at
+ * a page that was opened and quote it, and the quotation is checked against the page. Anything that
+ * cannot is unsupported, and unsupported copy does not publish.
+ */
+export async function supportClaims(
+  claims: ClaimVerdict[], ctx: GateContext,
+): Promise<{ supports: ClaimSupport[]; degraded: string | null }> {
+  if (!claims.length) return { supports: [], degraded: null };
+  const sources = ctx.sources ?? [];
+  const coverage = ctx.coverage ?? [];
+  const bankFacts = ctx.bankFacts ?? new Map<string, string>();
+  const unestablished = new Set(coverage.filter((c) => c.status !== 'established').map((c) => c.id));
+
+  const supportCtx: SupportContext = {
+    sources, agencyEvidence: ctx.agencyEvidence, bankText: bankFacts, unestablished,
+  };
+  const unsupportedAll = (why: string) => ({
+    supports: claims.map((c, i) => verifySupport({
+      claimId: `C${i + 1}`, field: c.field, claim: c.text, claimType: c.type, supportType: 'none',
+    }, supportCtx)),
+    degraded: why,
+  });
+
+  const numbered = claims.map((c, i) => `C${i + 1} @ ${c.field} [${c.type}]: ${c.text}`).join('\n');
+  const reqLines = coverage.length
+    ? `\n\nREQUIREMENTS FOR THIS TOPIC (status in brackets):\n`
+      + coverage.map((c) => `${c.id} [${c.status}]`).join('\n')
+    : '';
+  const bankLines = bankFacts.size
+    ? `\n\nVERIFIED BANK FACTS AND GUARDRAILS:\n`
+      + [...bankFacts].map(([id, t]) => `${id}: ${t}`).join('\n')
+    : '';
+  const out = await callTool('claim support', SUPPORT_SYSTEM,
+    `THE BRIEFING THE POST WAS WRITTEN FROM (each factual line tagged with the source it came off):\n`
+    + `${ctx.research || '(no research was done for this post)'}\n\n`
+    + `WHAT THE AGENCY ITSELF TOLD US:\n${ctx.agencyEvidence}`
+    + `${bankLines}${reqLines}\n\nTHE CLAIMS:\n${numbered}`,
+    SUPPORT_TOOL, 120_000, 8000);
+  const list = out && coerceList(out.supports, 'supports');
+  if (!list) return unsupportedAll('claim support unavailable');
+
+  const byId = new Map<string, Record<string, unknown>>();
+  for (const r of list) {
+    const id = String(r?.claim_id ?? '').trim().toUpperCase();
+    if (id) byId.set(id, r);
+  }
+  const supports = claims.map((c, i) => {
+    const id = `C${i + 1}`;
+    const r = byId.get(id);
+    const proposed: ProposedSupport = {
+      claimId: id, field: c.field, claim: c.text, claimType: c.type,
+      supportType: (['research_evidence', 'agency_profile', 'bank_fact'] as const)
+        .find((t) => t === String(r?.support_type ?? '')) ?? 'none',
+      sourceIds: Array.isArray(r?.source_ids) ? (r!.source_ids as unknown[]).map(String) : [],
+      evidenceExcerpt: String(r?.evidence_excerpt ?? ''),
+      bankFactIds: Array.isArray(r?.bank_fact_ids) ? (r!.bank_fact_ids as unknown[]).map(String) : [],
+      requirementIds: Array.isArray(r?.requirement_ids) ? (r!.requirement_ids as unknown[]).map(String) : [],
+    };
+    return verifySupport(proposed, supportCtx);
+  });
+  return { supports, degraded: null };
+}
 
 const REPAIR_TOOL = {
   name: 'submit_repairs',

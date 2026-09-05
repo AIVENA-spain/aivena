@@ -378,23 +378,65 @@ function windows(text: string): string[] {
  * verify means the evidence is genuinely absent rather than that nobody looked it up.
  */
 export function findPassages(
-  claim: string, sources: readonly ResearchSource[], perClaim = 4,
+  claim: string, sources: readonly ResearchSource[], brief = '', perClaim = 5,
+  risk: RiskClass = 'none',
 ): Passage[] {
-  const want = new Set(significantTokens(claim));
-  if (!want.size) return [];
+  const opened = sources.filter((s) => s.opened && s.content);
+  if (!opened.length) return [];
+
+  // THE BRIEFING IS THE BRIDGE. The pages are in Spanish and the post is in English, so scoring a
+  // claim directly against page text shares almost no tokens and retrieves nothing — which is why
+  // an earlier version handed the model no passages and got "no support offered" on nine claims out
+  // of eleven. The briefing is English, and each of its lines is tagged with the page it came off.
+  // Match claim → briefing line (same language), then look inside the pages that line names.
+  const claimTokens = new Set(significantTokens(claim));
+  const numbers = new Set(normalizeForMatch(claim).match(/\b\d[\d.,]*\b/g) ?? []);
+  const lines = brief.split('\n').map((l) => l.trim()).filter((l) => l.length > 30);
+  const scoredLines = lines.map((line) => {
+    const t = significantTokens(line);
+    let hit = 0;
+    const seen = new Set<string>();
+    for (const w of t) if (claimTokens.has(w) && !seen.has(w)) { hit++; seen.add(w); }
+    const ids = Array.from(line.matchAll(/\[\s*(S\d+)\s*\]/g), (m) => m[1]);
+    return { line, ids, score: hit };
+  }).filter((x) => x.score >= 2).sort((a, b) => b.score - a.score).slice(0, 3);
+
+  const named = new Set(scoredLines.flatMap((x) => x.ids));
+  // Prefer the pages the briefing pointed at; fall back to every opened page when it pointed at none.
+  const pool = named.size ? opened.filter((s) => named.has(s.id)) : opened;
+  // Score page passages against the briefing lines (which quote them) rather than against the
+  // English claim, plus any figure the claim uses, which survives translation intact.
+  const target = new Set([...scoredLines.flatMap((x) => significantTokens(x.line)), ...claimTokens]);
+
   const out: Passage[] = [];
-  for (const s of sources) {
-    if (!s.opened || !s.content) continue;
-    for (const w of windows(s.content)) {
+  for (const s of pool) {
+    for (const w of windows(s.content ?? '')) {
       const toks = significantTokens(w);
       if (!toks.length) continue;
       let hit = 0;
       const seen = new Set<string>();
-      for (const t of toks) if (want.has(t) && !seen.has(t)) { hit++; seen.add(t); }
-      if (hit < 3) continue;
-      // favour density: a 40-word passage sharing five terms beats a 400-word one sharing six
-      out.push({ sourceId: s.id, text: w, score: hit / Math.sqrt(toks.length) });
+      for (const t of toks) if (target.has(t) && !seen.has(t)) { hit++; seen.add(t); }
+      const wn = normalizeForMatch(w);
+      let numHit = 0;
+      for (const n of numbers) if (wn.includes(n)) numHit++;
+      if (hit < 2 && !numHit) continue;
+      // Offer evidence the claim is ALLOWED to rest on. A perfectly quoted passage off a law
+      // firm's blog cannot carry a tax rule, so putting it in front of the model wastes the slot
+      // and produces a support record that was always going to fail policy.
+      const allowed = SOURCE_POLICY[risk].includes(s.sourceClass) ? 2.5 : 1;
+      out.push({ sourceId: s.id, text: w, score: allowed * (hit + numHit * 3) / Math.sqrt(toks.length) });
     }
   }
-  return out.sort((a, b) => b.score - a.score).slice(0, perClaim);
+  out.sort((a, b) => b.score - a.score);
+  // Spread across sources: five passages off one page is a worse offer than one off five.
+  const perSource = new Map<string, number>();
+  const spread: Passage[] = [];
+  for (const p of out) {
+    const n = perSource.get(p.sourceId) ?? 0;
+    if (n >= 2) continue;
+    perSource.set(p.sourceId, n + 1);
+    spread.push(p);
+    if (spread.length >= perClaim) break;
+  }
+  return spread;
 }

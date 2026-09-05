@@ -257,6 +257,10 @@ describe('7. a local premise written with no research', () => {
  */
 describe('every rule in the table can actually fire', () => {
   const CORPUS = [
+    // the three corrections added after the 5dfb1c3 acceptance run
+    'Agreeing a price by phone creates no obligation; nothing is binding until a document is signed.',
+    'Filing Modelo 210 late can forfeit your right to reclaim anything at all.',
+    'A furnished holiday home with electricity and water connected counts as an occupied residence.',
     'Since 3 April 2025, Ley Orgánica 1/2025 moved usurpación and allanamiento de morada into '
       + 'juicios rápidos, aiming to resolve these cases in about 15 days.',
     'You have 48 hours to report it before the okupas gain rights.',

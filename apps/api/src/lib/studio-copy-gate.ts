@@ -343,6 +343,54 @@ export const GATE_RULES: readonly GateRule[] = [
     all: [/\bgolden visa\b/i, /\b(?:buy|purchase|invest\w*|property|residen\w*|obtain|get|apply)\b/i],
   },
   {
+    // H1, 5dfb1c3: published twice, in a tip body and in the caption. Two adversarial checks
+    // against the consolidated Código Civil confirmed it is the opposite of the law.
+    id: 'binding-only-on-signature',
+    severity: 'block',
+    problem: 'Says nothing is binding until a document is signed. Código Civil art. 1450: a sale is '
+      + 'perfected and binding on both parties once they agree on the thing and the price, even '
+      + 'before either is delivered; arts. 1254, 1258 and 1278 say the same about contracts '
+      + 'generally. Do NOT replace this with the opposite absolute either — "any accepted offer is '
+      + 'automatically binding" is also wrong. Write that agreement on the property and the price '
+      + 'CAN already bind, that whether a particular exchange did depends on what was actually '
+      + 'agreed and on proof, and that what you sign next decides the remedies.',
+    authority: 'BOE-A-1889-4763, Código Civil arts. 1450, 1254, 1258, 1278. Christian, 2026-09-05.',
+    negationImmune: true,
+    all: [/\b(?:nothing|no(?:thing)? is|not binding|isn'?t binding|no obligation|creates no obligation|binds nobody|non-binding)\b/i,
+      /\b(?:until|before|unless)\b[^.]{0,44}?\b(?:sign|signed|signs|signing|in writing|notaris\w*|escritura)\b|\bverbal\b|\bby phone or email\b|\bhandshake\b/i],
+  },
+  {
+    // H2, 5dfb1c3. Orden EHA/3316/2010: a refund autoliquidación may be filed within FOUR YEARS
+    // of the end of the retention period. Missing the filing window costs surcharges, not the money.
+    id: 'late-filing-forfeits-refund',
+    severity: 'block',
+    problem: 'Says a late filing forfeits the right to reclaim. It does not: the refund claim '
+      + 'prescribes on its own four-year clock (Orden EHA/3316/2010, and the general four-year '
+      + 'prescription in the Ley General Tributaria), and filing late costs surcharges and interest '
+      + 'rather than the money itself. Keep the distinction the reader needs — the statutory filing '
+      + 'period is one clock, the period in which the right prescribes is another — and do not '
+      + 'replace it with a different absolute.',
+    authority: 'Orden EHA/3316/2010 (Modelo 210); LGT arts. 66, 27. Christian, 2026-09-05.',
+    negationImmune: true,
+    all: [/\b(?:modelo\s?210|the (?:3|three)\s?%|withhold\w*|retenci[oó]n|refund|reclaim|claim (?:it )?back)\b/i,
+      /\b(?:forfeit\w*|lose|loses|losing|lost|never (?:get|see)|no longer (?:able|entitled)|gives? up|write it off)\b[^.]{0,60}\b(?:right|refund|money|reclaim|anything)\b|\b(?:late|missing|miss)\b[^.]{0,40}\b(?:forfeit\w*|lose|loses)\b/i],
+  },
+  {
+    // B, 5dfb1c3. Furniture and connected utilities are EVIDENCE that a place is someone's morada;
+    // they are not a switch that makes it one.
+    id: 'morada-by-checklist',
+    severity: 'challenge',
+    problem: 'Treats furniture and connected utilities as automatically making a second home a '
+      + 'morada. They are evidence of actual private use, not a checklist that decides the '
+      + 'category: a second or seasonal residence CAN constitute morada where its lawful occupier '
+      + 'genuinely uses it for private life, even occasionally. Write "can constitute" and say what '
+      + 'the courts actually weigh, rather than presenting a test that returns a yes.',
+    authority: 'CP art. 202 and the case law on morada; Christian, 2026-09-05.',
+    negationImmune: false,
+    all: [/\b(?:morada|residence|dwelling|home)\b/i,
+      /\b(?:counts as|is treated as|qualifies as|becomes|makes it|automatically)\b[^.]{0,50}\b(?:occupied|morada|residence|dwelling)\b|\b(?:furnished|furniture|electricity|water|gas|utilities)\b[^.]{0,60}\b(?:counts?|qualifies|means it is|is (?:therefore )?(?:an? )?(?:occupied|morada))\b/i],
+  },
+  {
     id: 'research-narrated',
     severity: 'block',
     problem: 'Narrates the research instead of using it. The reader must never feel they are '

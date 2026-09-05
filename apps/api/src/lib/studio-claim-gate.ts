@@ -620,13 +620,13 @@ export async function supportClaims(
   // Hand the model the actual passages off the actual pages. Asking it to quote a page it has
   // never seen produced excerpts that were memories of a paraphrase, and nineteen of twenty claims
   // failed verification for a reason that was about the prompt rather than about the evidence.
-  const numbered = claims.map((c, i) => {
-    const passages = findPassages(c.text, sources);
-    const offered = passages.length
-      ? passages.map((p) => `      [${p.sourceId}] "${p.text.replace(/\s+/g, ' ').slice(0, 320)}"`).join('\n')
-      : '      (nothing on any opened page bears on this claim)';
-    return `C${i + 1} @ ${c.field} [${c.type}]: ${c.text}\n    PASSAGES FROM THE OPENED PAGES:\n${offered}`;
-  }).join('\n\n');
+  // BATCHED. Twenty claims with five passages each is a 30k-character prompt against an 8k answer,
+  // and a truncated answer parses to a list missing most of its records — which arrives looking
+  // exactly like a model that found no evidence anywhere. It reported "no support offered" on
+  // twenty claims out of twenty while the passages were sitting in front of it.
+  const BATCH = 6;
+  const byId = new Map<string, Record<string, unknown>>();
+  let missing = false;
   const reqLines = coverage.length
     ? `\n\nREQUIREMENTS FOR THIS TOPIC (status in brackets):\n`
       + coverage.map((c) => `${c.id} [${c.status}]`).join('\n')
@@ -635,35 +635,57 @@ export async function supportClaims(
     ? `\n\nVERIFIED BANK FACTS AND GUARDRAILS:\n`
       + [...bankFacts].map(([id, t]) => `${id}: ${t}`).join('\n')
     : '';
-  const out = await callTool('claim support', SUPPORT_SYSTEM,
-    `THE BRIEFING THE POST WAS WRITTEN FROM (each factual line tagged with the source it came off):\n`
-    + `${ctx.research || '(no research was done for this post)'}\n\n`
-    + `WHAT THE AGENCY ITSELF TOLD US:\n${ctx.agencyEvidence}`
-    + `${bankLines}${reqLines}\n\nTHE CLAIMS:\n${numbered}`,
-    SUPPORT_TOOL, 120_000, 8000);
-  const list = out && coerceList(out.supports, 'supports');
-  if (!list) return unsupportedAll('claim support unavailable');
 
-  const byId = new Map<string, Record<string, unknown>>();
-  for (const r of list) {
-    const id = String(r?.claim_id ?? '').trim().toUpperCase();
-    if (id) byId.set(id, r);
+  for (let start = 0; start < claims.length; start += BATCH) {
+    const slice = claims.slice(start, start + BATCH);
+    const numbered = slice.map((c, j) => {
+      const i = start + j;
+      const passages = findPassages(c.text, sources, ctx.research, 5, riskOf(c.text, c.type));
+      const offered = passages.length
+        ? passages.map((p) => `      [${p.sourceId}] "${p.text.replace(/\s+/g, ' ').slice(0, 300)}"`).join('\n')
+        : '      (nothing on any opened page bears on this claim)';
+      return `C${i + 1} @ ${c.field} [${c.type}]: ${c.text}\n    PASSAGES FROM THE OPENED PAGES:\n${offered}`;
+    }).join('\n\n');
+    const out = await callTool('claim support', SUPPORT_SYSTEM,
+      `THE BRIEFING THE POST WAS WRITTEN FROM (each factual line tagged with the source it came off):\n`
+      + `${ctx.research || '(no research was done for this post)'}\n\n`
+      + `WHAT THE AGENCY ITSELF TOLD US:\n${ctx.agencyEvidence}`
+      + `${bankLines}${reqLines}\n\nTHE CLAIMS:\n${numbered}`,
+      SUPPORT_TOOL, 120_000, 4000);
+    const list = out && coerceList(out.supports, 'supports');
+    if (!list) { missing = true; continue; }
+    for (const r of list) {
+      const id = String(r?.claim_id ?? '').trim().toUpperCase();
+      if (id) byId.set(id, r);
+    }
   }
+  const answered = claims.filter((_c, i) => byId.has(`C${i + 1}`)).length;
+  if (answered < claims.length) {
+    console.warn(`[studio/claim-gate] support pass answered ${answered} of ${claims.length} claims`);
+  }
+  if (!answered) return unsupportedAll('claim support unavailable');
+
   const supports = claims.map((c, i) => {
     const id = `C${i + 1}`;
     const r = byId.get(id);
+    if (!r) {
+      // NOT the same as the model saying "nothing supports this". Recorded separately so a broken
+      // call can never be read as an evidence finding.
+      return { ...verifySupport({ claimId: id, field: c.field, claim: c.text, claimType: c.type,
+        supportType: 'none' }, supportCtx), reason: 'the support pass returned no record for this claim' };
+    }
     const proposed: ProposedSupport = {
       claimId: id, field: c.field, claim: c.text, claimType: c.type,
       supportType: (['research_evidence', 'agency_profile', 'bank_fact'] as const)
         .find((t) => t === String(r?.support_type ?? '')) ?? 'none',
-      sourceIds: Array.isArray(r?.source_ids) ? (r!.source_ids as unknown[]).map(String) : [],
+      sourceIds: Array.isArray(r?.source_ids) ? (r.source_ids as unknown[]).map(String) : [],
       evidenceExcerpt: String(r?.evidence_excerpt ?? ''),
-      bankFactIds: Array.isArray(r?.bank_fact_ids) ? (r!.bank_fact_ids as unknown[]).map(String) : [],
-      requirementIds: Array.isArray(r?.requirement_ids) ? (r!.requirement_ids as unknown[]).map(String) : [],
+      bankFactIds: Array.isArray(r?.bank_fact_ids) ? (r.bank_fact_ids as unknown[]).map(String) : [],
+      requirementIds: Array.isArray(r?.requirement_ids) ? (r.requirement_ids as unknown[]).map(String) : [],
     };
     return verifySupport(proposed, supportCtx);
   });
-  return { supports, degraded: null };
+  return { supports, degraded: missing ? 'part of the claim support pass did not return' : null };
 }
 
 /* ── 2c. THE VERIFIED BANK, CONSULTED AFTER WRITING ──────────────────────────────────────── */

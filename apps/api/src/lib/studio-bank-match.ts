@@ -11,6 +11,7 @@
  * scorer below is the fallback for when that call fails, not the primary path.
  */
 import { BANK_CARDS, type BankCard } from './studio-bank.generated';
+import { placesIn } from './studio-copy-gate';
 
 const BY_ID = new Map(BANK_CARDS.map((c) => [c.id, c]));
 
@@ -114,17 +115,8 @@ export function cardRules(card: BankCard): string {
  * four requirements that could not be established by construction, and the post asserted seasonal
  * population figures anyway. A card that names towns is about those towns.
  */
-// TOWNS scope a card. A region does not: a card about "the Costa Blanca" is about a subject that
-// happens to have a coastline, and scoping it to that coastline would make it govern nothing.
-const TOWN = /\b(J[áa]vea|X[àa]bia|D[ée]nia|Moraira|Teulada|Calpe|Calp|Benissa|Altea|Alt[ée]a|Benidorm|Torrevieja|Orihuela|Guardamar|Santa Pola|El Campello|Villajoyosa|Finestrat|Polop|La Nucia|Albir|Pego|Ondara|Pedreguer|Benitachell|Poble Nou|San Javier|Cartagena|Marbella|Estepona|Nerja|Sitges|Alicante city)\b/gi;
 
-const CANON = (p: string) => p.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-  .replace(/^xabia$/, 'javea').replace(/^calp$/, 'calpe').replace(/^altea$/, 'altea');
 
-/** The distinct places a piece of text names, canonicalised so Xàbia and Jávea are one place. */
-export function placesIn(text: string): Set<string> {
-  return new Set(Array.from((text ?? '').matchAll(TOWN), (m) => CANON(m[1])));
-}
 
 /**
  * Is this card written about specific places rather than about a subject?

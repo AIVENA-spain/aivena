@@ -368,16 +368,13 @@ export const GATE_RULES: readonly GateRule[] = [
   {
     id: 'source-attributed',
     severity: 'block',
-    problem: 'Attributes a figure to a named data provider inside the post. That is a footnote, not '
-      + 'a slide. State the point without the citation, or drop the figure.',
+    problem: 'Attributes a figure to a named source inside the post. That is a footnote, not a '
+      + 'slide. State the point without the citation, or drop the figure.',
     authority: 'Same rule: the research is internal support, never subject matter. Naming a portal '
       + 'for what it IS ("your listing appears on Idealista") is fine — this is about attribution.',
     negationImmune: true,
-    // Two shapes. A named data provider used as attribution, OR any "per a 2019 Somebody study"
-    // construction — a live post cited "the 2019 Observatori Marina Alta study" and the fixed list
-    // of provider names could never have caught it. A citation is a shape, not a vocabulary.
-    all: [/(?:\b(?:Idealista|Fotocasa|Engel\s*(?:&|and)\s*V[öo]lkers|Tinsa|Registradores|Notariado|INE\b|Eurostat|Colegio de Registradores|MIVAU|CGPJ)\b|\b(?:per|according to|based on|cited (?:by|in)|from|in)\s+(?:a|the)?\s*\d{4}\s+[A-ZÀ-Ý][^,.;]{2,60}?\s+(?:study|report|index|survey|analysis)\b|\b(?:per|according to)\s+(?:a|the)\s+[A-ZÀ-Ý][^,.;]{2,60}?\s+(?:study|report|index|survey|analysis)\b)/i,
-      /\b(?:listed|reported|reports|according to|says|said|data|figures?|index|averag\w*|recorded|published|study|grew|rose|fell|per)\b/i],
+    all: [/.*/, /.*/],   // decided semantically below, not by a vocabulary of provider names
+    semantic: attributesSource,
   },
   {
     id: 'legal-timeline-approximate',
@@ -789,9 +786,64 @@ const EVIDENCE_PREDICATE = /\b(?:don'?t agree|do not agree|disagree\w*|agree on|
 /** Predicates that narrate the checking regardless of what the subject is. */
 const NARRATION_ANY = /\b(?:we|i)\s+(?:couldn'?t|could not|can'?t|cannot|didn'?t|did not|haven'?t|have not)\s+(?:find|verify|confirm|establish|check|source)\b|\bhasn'?t been checked\b|\bhas not been checked\b|\bnot checked here\b|\bthis round\b|\bnobody can point to\b/i;
 
-/** Does this sentence talk about our evidence rather than about the world? */
+/**
+ * Vague authority: a claim propped up by unnamed people who supposedly agree.
+ *
+ * "Practitioner consensus holds that…", "practitioners report that…", "commonly reported to…". This
+ * is narration wearing a fact's clothes — it tells the reader the state of opinion instead of the
+ * state of the world, and it is what a writer reaches for when the briefing gave it a soft finding.
+ */
+const VAGUE_AUTHORITY = /\b(?:practitioner\s+consensus|practitioners?\s+(?:report|say|agree|note|find)|experts?\s+(?:agree|say|report)|industry\s+consensus|commonly\s+(?:reported|held|believed|understood)|widely\s+(?:reported|believed|held)|reportedly|it is (?:said|believed|reported|understood)|is (?:said|believed|thought|reported) to\b|anecdotally|conventional wisdom|\b\w+s\s+(?:broadly|generally|widely|largely|mostly|commonly|typically)\s+(?:agree|report|say|hold|find))/i;
+
+/** Hedging that reveals the checking rather than the subject. */
+const PROCESS_HEDGE = /\b(?:depend\w*\s+on\s+which\s+\w+\s+you\s+(?:read|use|pick|choose)|which\s+\w+\s+you\s+read|sources?\s+(?:vary|differ)\s+by|varies?\s+by\s+(?:method|source|publisher)|what(?:'s| is)\s+(?:genuinely\s+)?established|what\s+(?:nobody|no\s?one)(?:'s| has)?\s+measured|the exact number shifts)\b/i;
+
+/**
+ * A source named inside the copy.
+ *
+ * Two shapes, and the second is the one that keeps getting through: "A regional study by the
+ * Observatori Marina Alta found…" and "Visit Jávea puts the drive at 16km" put the provenance in
+ * the sentence where the fact belongs. Attribution is a footnote; a slide is not a footnote.
+ */
+const ATTRIBUTION = [
+  // "A regional study by the Observatori Marina Alta found…"
+  /\b(?:[Aa]|[Aa]n|[Tt]he|[Oo]ne)\s+(?:\w+\s+){0,3}(?:stud(?:y|ies)|report|survey|index|analysis|research|dataset|figures?)\s+(?:by|from|published by)\s+(?:the\s+|el\s+|la\s+)?[A-ZÀ-Ý]/,
+  // "…in the 2019 Observatori Marina Alta study"
+  /\b(?:in|from|per)\s+(?:a|an|the)\s+(?:\d{4}\s+)?[A-ZÀ-Ý][\wÀ-ÿ]*(?:\s+[A-ZÀ-Ý][\wÀ-ÿ]*){0,3}\s+(?:stud(?:y|ies)|report|survey|index|analysis|series)\b/,
+  // "Visit Jávea puts the drive at 16km", "Idealista listed Dénia at…" — handled below, because a
+  // PLACE that recorded something is the subject of a fact, not the source of one.
+  // "According to a Banco de España report…"
+  /\b(?:[Aa]ccording to|[Pp]er|[Bb]ased on|[Cc]ited (?:by|in)|[Ss]ourced from|[Ff]igures? from|[Dd]ata from)\s+(?:a|an|the)?\s*[A-ZÀ-Ý]/,
+  // "Official Interior figures for 2025 put…"
+  /\b(?:official|government|national|regional|ministry|ministerial)\s+(?:\w+\s+){0,2}(?:figures?|data|statistics|series|records?)\s+(?:for|from|put|show|record|give)/i,
+];
+
+/** Does this sentence attribute its content to a source, inside the copy? */
+/** A named organisation, followed by a reporting verb. Excludes places, which are subjects. */
+const REPORTER = /\b([A-ZÀ-Ý][\wÀ-ÿ]*(?:\s+(?:&|and|de|del|la|el|of)?\s*[A-ZÀ-Ý][\wÀ-ÿ]*){0,3})\s+(?:puts|places|listed|lists|reports|reported|records|recorded|found|finds|shows|showed|says|said|estimates|estimated|publishes|published|gives|gave)\b/g;
+
+export function attributesSource(text: string): boolean {
+  const t = text ?? '';
+  if (ATTRIBUTION.some((r) => r.test(t))) return true;
+  REPORTER.lastIndex = 0;
+  for (let m = REPORTER.exec(t); m; m = REPORTER.exec(t)) {
+    if (!isPlaceName(m[1])) return true;
+  }
+  return false;
+}
+
+/**
+ * Does this sentence talk about our evidence rather than about the world?
+ *
+ * The line that matters: narrating the PROCESS is leakage, stating a fact about what is PUBLISHED
+ * is content. "We could not verify which nationality leads" is the machinery showing. "No municipal
+ * nationality ranking is published" is a checkable fact about the world that the verified bank
+ * itself asserts, and blocking it would delete the honest half of a good post.
+ */
 export function narratesEvidence(text: string): boolean {
   if (NARRATION_ANY.test(text)) return true;
+  if (VAGUE_AUTHORITY.test(text)) return true;
+  if (PROCESS_HEDGE.test(text)) return true;
   return EVIDENCE_SUBJECT.test(text) && EVIDENCE_PREDICATE.test(text);
 }
 
@@ -890,6 +942,31 @@ export function adjudicate(input: AdjudicationInput): Resolution {
   return 'NEEDS_REPAIR';
 }
 
+
+/* ── PLACES ──────────────────────────────────────────────────────────────────────────────── */
+
+// Towns, and the regions and countries a post can legitimately be about. Kept here, in the pure
+// module, because two different checks need it: bank-card scope, and telling a PLACE that recorded
+// something ("Alicante recorded the highest share") from a PUBLISHER that reported something
+// ("Idealista listed Dénia at 3,404 €/m²"). Without that distinction the citation rule flags the
+// subject of a perfectly good sentence.
+const TOWN = /\b(J[áa]vea|X[àa]bia|D[ée]nia|Moraira|Teulada|Calpe|Calp|Benissa|Altea|Alt[ée]a|Benidorm|Torrevieja|Orihuela|Guardamar|Santa Pola|El Campello|Villajoyosa|Finestrat|Polop|La Nucia|Albir|Pego|Ondara|Pedreguer|Benitachell|Poble Nou|San Javier|Cartagena|Marbella|Estepona|Nerja|Sitges|Alicante city)\b/gi;
+const REGION = /\b(?:Alicante|Valencia|Murcia|M[áa]laga|Barcelona|Madrid|Sevilla|Costa Blanca|Costa del Sol|Costa C[áa]lida|Marina Alta|Marina Baixa|Vega Baja|Comunidad Valenciana|Comunitat Valenciana|Andaluc[íi]a|Catalu[ñn]a|Catalonia|Baleares|Balearics|Canarias|Ibiza|Mallorca|Menorca|Spain|Espa[ñn]a|Europe|the EU|UK|Britain|Netherlands|Germany|Belgium|France|Norway|Sweden|Denmark|Poland)\b/gi;
+
+const CANON = (p: string) => p.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  .replace(/^xabia$/, 'javea').replace(/^calp$/, 'calpe').replace(/^altea$/, 'altea');
+/** The distinct places a piece of text names, canonicalised so Xàbia and Jávea are one place. */
+export function placesIn(text: string): Set<string> {
+  return new Set(Array.from((text ?? '').matchAll(TOWN), (m) => CANON(m[1])));
+}
+
+/** Is this capitalised token a place rather than an organisation that could report something? */
+export function isPlaceName(name: string): boolean {
+  const n = (name ?? '').trim();
+  if (!n) return false;
+  TOWN.lastIndex = 0; REGION.lastIndex = 0;
+  return new RegExp(`^(?:${TOWN.source}|${REGION.source})$`, 'i').test(n);
+}
 
 /* ────────────────────────────────────────────────────────────────────────────────────────────
  * WHAT EACH PUBLISHED FIELD IS FOR

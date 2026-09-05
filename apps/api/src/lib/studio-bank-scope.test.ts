@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { BANK_CARDS } from './studio-bank.generated';
-import { cardInScope, cardScope, getCard, outOfScopeReason, placesIn, retrieveBankFacts } from './studio-bank-match';
+import { cardInScope, cardScope, getCard, outOfScopeReason, retrieveBankFacts } from './studio-bank-match';
+import { placesIn } from './studio-copy-gate';
 
 const card = (id: string) => {
   const c = getCard(id);

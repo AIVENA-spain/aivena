@@ -1045,7 +1045,12 @@ Submit with the submit_carousel tool.`;
       headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'claude-sonnet-5',
-        max_tokens: 4000,
+        // A five-slide plan carries title, body, teaser and an image scene per slide on top of the
+        // cover, the second cover, the recap, the CTA block and the caption. At 4000 the model ran
+        // out mid-object, the tool input came back truncated, and `tips` arrived as a half-written
+        // string — which killed four posts in twenty-four generations with a schema error that
+        // named the wrong problem.
+        max_tokens: 8000,
         tools: [PLAN_TOOL],
         tool_choice: { type: 'tool', name: 'submit_carousel' },
         messages: [{ role: 'user', content: attempt === 0 ? prompt : `${prompt}\n\nYour previous plan was rejected: ${lastErr}. Fix exactly that and resubmit the full plan.` }],
@@ -1056,7 +1061,17 @@ Submit with the submit_carousel tool.`;
       if (res.status >= 500 || res.status === 429) continue;
       throw new Error(`carousel plan failed: ${res.status} ${(await res.text()).slice(0, 300)}`);
     }
-    const data = (await res.json()) as { content?: { type: string; input?: unknown }[] };
+    const data = (await res.json()) as {
+      stop_reason?: string; content?: { type: string; input?: unknown }[];
+    };
+    // A truncated plan is not an invalid plan, and telling the model its schema was wrong when it
+    // simply ran out of room sent it round the retry loop fixing something that was never broken.
+    if (data.stop_reason === 'max_tokens') {
+      console.warn('[studio/carousel] the plan hit the token ceiling and came back truncated');
+      lastErr = 'your previous plan was cut off before it finished. Write the same deck more '
+        + 'concisely — shorter image scenes and a tighter caption — so the whole plan fits.';
+      continue;
+    }
     const tool = data.content?.find((c) => c.type === 'tool_use');
     const input = { type: opts.type, ...(unesc(tool?.input) as object ?? {}) } as Record<string, unknown>;  // the requested type always wins
     // Self-heal common model quirks instead of failing the whole generation (2026-08-28: a

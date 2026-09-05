@@ -30,7 +30,7 @@ import {
 } from './studio-copy-gate';
 import { getCard, retrieveBankFacts } from './studio-bank-match';
 import {
-  canonicalWithinExcerpt, checkCta, excerptOccursIn, riskTier, verifySupport,
+  canonicalWithinExcerpt, checkCta, excerptOccursIn, rankFacts, riskTier, verifySupport,
   type ClaimSupport, type ProposedSupport, type ResearchSource, type SourceFact,
   type SupportContext,
 } from './studio-evidence';
@@ -767,15 +767,22 @@ export async function supportClaims(
     ? `\n\nVERIFIED BANK FACTS AND GUARDRAILS:\n`
       + [...bankFacts].map(([id, t]) => `${id}: ${t}`).join('\n')
     : '';
+  // The full ledger is context; the shortlist under each claim is what the model actually picks from.
   const factLines = facts.length
-    ? facts.map((f) => `${f.id} [${f.sourceId}${f.geography ? ` · ${f.geography}` : ''}`
-        + `${f.period ? ` · ${f.period}` : ''}] ${f.canonical}\n      page says: "${f.excerpt.slice(0, 200)}"`).join('\n')
+    ? facts.slice(0, 40).map((f) => `${f.id} [${f.sourceId}] ${f.canonical.slice(0, 160)}`).join('\n')
     : '(no page could be opened for this post)';
 
   for (let start = 0; start < policedIdx.length; start += BATCH) {
     const slice = policedIdx.slice(start, start + BATCH);
-    const numbered = slice.map(({ c, i }) =>
-      `C${i + 1} @ ${c.field} [${c.type} · ${riskTier(c.text, c.type)} risk]: ${c.text}`).join('\n');
+    const numbered = slice.map(({ c, i }) => {
+      const near = rankFacts(c.text, facts);
+      const offered = near.length
+        ? near.map((f) => `      ${f.id} [${f.sourceId}${f.geography ? ` · ${f.geography}` : ''}`
+            + `${f.period ? ` · ${f.period}` : ''}] ${f.canonical.slice(0, 220)}`).join('\n')
+        : '      (no fact on any opened page looks related — say none, or use another support type)';
+      return `C${i + 1} @ ${c.field} [${c.type} · ${riskTier(c.text, c.type)} risk]: ${c.text}\n`
+        + `    FACTS THAT MAY BEAR ON THIS ONE:\n${offered}`;
+    }).join('\n\n');
     const out = await callTool('claim support', SUPPORT_SYSTEM,
       `FACTS READ OFF THE PAGES THE RESEARCH OPENED:\n${factLines}\n\n`
       + `THE BRIEFING THE POST WAS WRITTEN FROM:\n${ctx.research || '(no research was done)'}\n\n`

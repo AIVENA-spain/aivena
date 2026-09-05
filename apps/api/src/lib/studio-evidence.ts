@@ -195,7 +195,8 @@ export type RiskClass = 'legal_tax' | 'market_statistics' | 'local_fact' | 'none
  * word actually ends, and the claim type the extractor already assigned decides the floor.
  */
 const LEGAL_TAX = [
-  /\b(?:law|legal|legally|statute|decree|obligation|obliged|liable|liability|prescription|binding|perfected|enforceable)\b/i,
+  /\b(?:law|legal|legally|statute|decree|obligation|obliged|liable|liability|prescription|binding|perfected|enforceable|unenforceable)\b/i,
+  /\b(?:contract|contractual|clause|wording|signed|signature|agreement|arras|reservation (?:form|contract|fee|sum)|deposit|penalty|forfeit\w*|withdraw\w*|walk away|rescind\w*|breach|remedy|remedies|court|courts|the judge|ruling|case law)\b/i,
   /\b(?:c[oó]digo civil|civil code|BOE|real decreto|royal decree|LAU|LEC|LECrim|c[oó]digo penal|penal code)\b/i,
   /\bart(?:icle|ículo|\.)?\s?\d+/i,
   /\bmodelo\s?\d+/i,
@@ -334,7 +335,8 @@ export function policyAllows(
   if (risk === 'none' || tier === 'low') return true;
   // A medium-risk claim may rest on any reliable published source. Only high-risk claims are held
   // to the producer of the fact.
-  const allowed = tier === 'medium' ? SOURCE_POLICY.local_fact : SOURCE_POLICY[risk];
+  if (tier === 'medium') return cited.some((s) => s.opened);
+  const allowed = SOURCE_POLICY[risk];
   return cited.some((s) => s.opened && allowed.includes(s.sourceClass));
 }
 
@@ -953,4 +955,30 @@ export function canonicalWithinExcerpt(fact: { excerpt: string; canonical: strin
     return { ok: false, why: 'draws a ranking conclusion the excerpt does not state' };
   }
   return { ok: true, why: 'stays inside the excerpt' };
+}
+
+
+/**
+ * The source facts most likely to bear on a claim.
+ *
+ * The support pass was handed all sixty-five facts a post had gathered and answered "no source fact
+ * cited" on eight claims out of ten — not because nothing fitted, but because nothing was findable.
+ * The canonical statements are English and so is the claim, so ranking them is straightforward.
+ */
+export function rankFacts(
+  claim: string, facts: readonly SourceFact[], k = 6,
+): SourceFact[] {
+  if (!facts.length) return [];
+  const want = new Set(significantTokens(claim));
+  const nums = new Set(figuresIn(claim));
+  const scored = facts.map((f) => {
+    const toks = significantTokens(`${f.canonical} ${f.geography} ${f.period}`);
+    const seen = new Set<string>();
+    let hit = 0;
+    for (const t of toks) if (want.has(t) && !seen.has(t)) { hit++; seen.add(t); }
+    let numHit = 0;
+    for (const n of figuresIn(`${f.canonical} ${f.excerpt}`)) if (nums.has(n)) numHit++;
+    return { f, score: hit + numHit * 4 };
+  });
+  return scored.filter((x) => x.score > 0).sort((a, b) => b.score - a.score).slice(0, k).map((x) => x.f);
 }

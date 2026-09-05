@@ -268,6 +268,7 @@ describe('every rule in the table can actually fire', () => {
     "Fewer sales, not less demand. That's tight supply, not cooling interest.",
     'Jávea needs a car for the school run; Dénia you can do on foot.',
     "The exact multiplier isn't something either town publishes reliably.",
+    "We couldn't find comparable published data for that this round.",
     'Idealista listed Dénia around 3,404 €/m² in mid-2026, according to its index.',
   ];
   it('is exercised by at least one string each', () => {
@@ -344,5 +345,42 @@ describe('the machinery never shows through', () => {
     expect(fired('The same home turns up on Idealista under three agencies at three prices.'))
       .toHaveLength(0);
     expect(fired('Your listing goes out on Idealista and Fotocasa the same day.')).toHaveLength(0);
+  });
+});
+
+/**
+ * The four leaks the twelve-post run shipped, and the copy that must survive beside them.
+ *
+ * Every one of these got past a phrasing-based rule that already knew "I could not find". Matching
+ * narration by wording will always lag the model; the test is what the sentence is DOING.
+ */
+describe('a sentence about our evidence is never a sentence for the reader', () => {
+  const fired = (t: string) => gateField('tips[0].body', t, '').map(h => h.rule.id);
+
+  it('blocks all four leaks from the live run', () => {
+    for (const t of [
+      "We couldn't find comparable published data for Calpe's beaches this round, so ask locally.",
+      'None trace to a current, citable municipal source.',
+      "Route calculators don't agree on the exact numbers, putting it anywhere from 11-14 km.",
+      "Jávea's own mix hasn't been checked here, so don't assume it mirrors Dénia's.",
+    ]) expect(fired(t), t).toContain('evidence-narrated');
+  });
+
+  it('still blocks the phrasings it already knew', () => {
+    expect(fired('Every current series I could verify points the same direction.'))
+      .toContain('research-narrated');
+    expect(fired('Nobody publishes the exact formula.')).toEqual(
+      expect.arrayContaining([expect.stringMatching(/narrated/)]));
+  });
+
+  it('leaves copy about the world alone', () => {
+    for (const t of [
+      'Ask any agent for the figure specific to the street you are considering.',
+      'Buyers remember a listing for the one detail that stuck with them.',
+      'The buyer withholds 3% of the price and pays it to the tax office.',
+      'Alicante recorded the highest foreign-buyer share of any Spanish province in 2024.',
+      'Playa de l\'Ampolla and El Portet hold Blue Flag status each season.',
+      'Dénia has been a UNESCO Creative City of Gastronomy since 2015.',
+    ]) expect(fired(t), t).toHaveLength(0);
   });
 });

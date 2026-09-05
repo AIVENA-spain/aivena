@@ -160,6 +160,8 @@ export interface GateRule {
   placesMustBeResearched?: RegExp;
   /** challenge rules pass when the research brief contains any of these */
   supportedBy?: RegExp[];
+  /** decided by what the sentence does, not by what it contains */
+  semantic?: (text: string) => boolean;
 }
 
 /**
@@ -316,6 +318,17 @@ export const GATE_RULES: readonly GateRule[] = [
       /./],
   },
   {
+    id: 'evidence-narrated',
+    severity: 'block',
+    problem: 'Talks about our evidence — whether it exists, agrees, is published or was checked — '
+      + 'rather than about the reader\'s world. Say the thing you CAN say, or say nothing.',
+    authority: 'Christian: "Research and validation stay invisible. The customer sees confident '
+      + 'marketing, not our compliance machinery."',
+    negationImmune: true,
+    all: [/.*/, /.*/],   // decided semantically below, not by these
+    semantic: narratesEvidence,
+  },
+  {
     id: 'source-attributed',
     severity: 'block',
     problem: 'Attributes a figure to a named data provider inside the post. That is a footnote, not '
@@ -431,7 +444,9 @@ export function gateField(field: string, text: string, research = ''): GateHit[]
   for (let i = 0; i < parts.length; i++) {
     const sentence = parts[i];
     for (const rule of GATE_RULES) {
-      if (!rule.all.every((re) => re.test(sentence))) continue;
+      if (rule.semantic) {
+        if (!rule.semantic(sentence)) continue;
+      } else if (!rule.all.every((re) => re.test(sentence))) continue;
       if (rule.unless?.some((re) => re.test(sentence))) continue;
       // A QUESTION WITH NO ANSWER BEHIND IT ASSERTS NOTHING. A teaser reading "Does the '48-hour
       // rule' people mention actually exist?" is the open loop that sets up the debunk on the next
@@ -714,6 +729,29 @@ const OUTCOME = /\b(?:sells?|sold|selling|holds?|held|keeps?|kept|attracts?|draw
 
 /** Comparative or frequency framing. Strengthens a claim; never makes one on its own. */
 const GENERALISING = /\b(?:faster|slower|quicker|better|worse|more|less|higher|lower|stronger|weaker|longer|shorter|cheaper|dearer|usually|typically|often|generally|normally|commonly|always|never|most|tend to|tends to|on average|as a rule)\b/i;
+
+/**
+ * Is this sentence about the WORLD, or about the EVIDENCE?
+ *
+ * Narration was matched by phrasing, and phrasing always lags the model: it caught "I could not
+ * find" and then shipped "we couldn't find", "none trace to a citable source", "route calculators
+ * don't agree" and "hasn't been checked here". That is the same mistake as judging factuality by
+ * surface features — the test has to be what the sentence is DOING.
+ *
+ * A sentence whose subject is the evidence itself, predicated on whether that evidence exists,
+ * agrees, is published or was checked, is talking about our research rather than about the reader's
+ * world. The reader must never see that.
+ */
+const EVIDENCE_SUBJECT = /\b(?:data|dataset|datasets|figures?|statistics?|stats?|numbers?|sources?|records?|stud(?:y|ies)|surveys?|calculators?|indexe?s?|series|estimates?|breakdowns?|reports?|evidence|research)\b/i;
+const EVIDENCE_PREDICATE = /\b(?:don'?t agree|do not agree|disagree\w*|agree on|exists?|available|unavailable|published|unpublished|traceable|trace to|citable|verifiable|reliable|comparable|consistent|couldn'?t (?:find|verify|confirm)|could not (?:find|verify|confirm)|can'?t (?:find|verify|be found)|cannot be (?:found|verified)|wasn'?t (?:found|checked|verified)|hasn'?t been (?:checked|verified|published|found)|has not been (?:checked|verified|published)|not been (?:checked|verified)|nobody (?:publishes|can point)|no one (?:publishes|can point))\b/i;
+/** Predicates that narrate the checking regardless of what the subject is. */
+const NARRATION_ANY = /\b(?:we|i)\s+(?:couldn'?t|could not|can'?t|cannot|didn'?t|did not|haven'?t|have not)\s+(?:find|verify|confirm|establish|check|source)\b|\bhasn'?t been checked\b|\bhas not been checked\b|\bnot checked here\b|\bthis round\b|\bnobody can point to\b/i;
+
+/** Does this sentence talk about our evidence rather than about the world? */
+export function narratesEvidence(text: string): boolean {
+  if (NARRATION_ANY.test(text)) return true;
+  return EVIDENCE_SUBJECT.test(text) && EVIDENCE_PREDICATE.test(text);
+}
 
 export type Assertion = 'FACTUAL' | 'POSITIONING';
 

@@ -1526,7 +1526,7 @@ async function runPlannedCarousel(opts: {
       }
       // Absolutely last: caps, complete sentences, nothing dangling. Everything above can rewrite
       // copy, so this has to come after all of it or it cleans a draft that no longer exists.
-      plan = finishCopy(plan, claimQa);
+      plan = finishCopy(plan, claimQa, opts.agencyEvidence ?? '');
     }
     const contact = contactLine(opts.agency);
     // AI-imagery styles compose the pre-seeded generated family; a library miss falls back to the

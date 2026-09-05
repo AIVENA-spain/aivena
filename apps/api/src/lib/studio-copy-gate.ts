@@ -1058,3 +1058,44 @@ export function fieldIncomplete(field: string, text: string): boolean {
   if (PROSE_FIELD.test(field)) return !/[.!?…]["'”’)]?$/.test(t);
   return endsMidThought(t);
 }
+
+
+/* ── HASHTAGS ────────────────────────────────────────────────────────────────────────────── */
+
+/** Superlatives and guarantees. A hashtag is short, but it is still the agency saying something. */
+const TAG_CLAIM = /^(?:no1|number1|nº1|best|cheapest|fastest|top|leading|guaranteed|guarantee|riskfree|bestprices?|lowestprices?|topagent\w*|bestagent\w*|sellfast|quicksale|goldenvisa|visadoro|taxfree|notax|zerotax)$/i;
+
+/**
+ * Structural and brand sanity on the hashtags. Deliberately NOT the factual verifier — running
+ * claim extraction over "#CostaBlanca" is waste — but they publish on every post and until now
+ * nothing looked at them at all.
+ *
+ * Three things are removed: a tag that is not a usable hashtag, a tag that makes a claim the post
+ * would have had to evidence in prose, and a tag naming a place this agency does not work in.
+ */
+export function checkHashtags(
+  tags: readonly string[] | undefined, markets = '',
+): { tags: string[]; removed: { tag: string; why: string }[] } {
+  const out: string[] = [];
+  const removed: { tag: string; why: string }[] = [];
+  const known = placesIn(markets);
+  const seen = new Set<string>();
+  for (const raw of tags ?? []) {
+    const tag = String(raw ?? '').replace(/[#\s]/g, '').trim();
+    if (tag.length < 2 || tag.length > 40) { removed.push({ tag: String(raw), why: 'not a usable hashtag' }); continue; }
+    const key = tag.toLowerCase();
+    if (seen.has(key)) { removed.push({ tag, why: 'duplicate' }); continue; }
+    if (TAG_CLAIM.test(key)) { removed.push({ tag, why: 'makes a claim the post would have to evidence' }); continue; }
+    // A place in the tag that the agency does not work in: only checked when we know its markets,
+    // and only for places we recognise, so an ordinary word is never mistaken for a town.
+    if (known.size) {
+      const inTag = placesIn(tag.replace(/([a-z])([A-Z])/g, '$1 $2'));
+      const foreign = [...inTag].filter((pl) => !known.has(pl));
+      if (foreign.length) { removed.push({ tag, why: `names ${foreign.join('/')}, where this agency does not work` }); continue; }
+    }
+    seen.add(key);
+    out.push(tag);
+    if (out.length === 5) break;   // Instagram's own cap since December 2025
+  }
+  return { tags: out, removed };
+}

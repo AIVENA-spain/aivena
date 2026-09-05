@@ -22,7 +22,7 @@ import { env } from '../../../../packages/config/env';
 
 import {
   adjudicate, capFor, coverageGaps, dropSentence, endsMidThought, gateField, incompleteBody,
-  fieldIncomplete, planFields, readField, shortenToBoundary, writeField,
+  checkHashtags, fieldIncomplete, planFields, readField, shortenToBoundary, writeField,
   RESOLVED_HARD_FAIL, RESOLVED_OK,
   type CoverageStatus, type GateHit, type PlanLike, type Requirement, type RequirementCoverage,
   type Resolution,
@@ -1098,8 +1098,21 @@ export async function gatePlan<T extends PlanLike>(
  * titled "Borrowing is getting more expensive, not" for precisely that reason: the check that
  * catches it had already run. Exported so the orchestrator can call it after everything else.
  */
-export function finishCopy<T extends PlanLike>(plan: T, report?: GateReport): T {
+export function finishCopy<T extends PlanLike>(plan: T, report?: GateReport, markets = ''): T {
   let current = plan;
+  // Hashtags publish with every post and nothing walked them until now. Structural and brand
+  // sanity only — the factual verifier has no business reading the word "Desliza".
+  const tagged = current as unknown as { hashtags?: string[] };
+  if (Array.isArray(tagged.hashtags)) {
+    const { tags, removed } = checkHashtags(tagged.hashtags, markets);
+    if (removed.length) {
+      current = { ...current, hashtags: tags } as T;
+      for (const r of removed) {
+        report?.blocked.push({ field: 'hashtags', text: r.tag, verdict: 'UNSUPPORTED',
+          problem: r.why, outcome: 'hashtag removed' });
+      }
+    }
+  }
   for (const f of planFields(current)) {
     const cap = capFor(f.field);
     if (cap && f.text.length > cap) {

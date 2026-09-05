@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PUBLISHED_FIELDS, capFor, fieldIncomplete, fieldPolicy, shortenToBoundary } from './studio-copy-gate';
+import { PUBLISHED_FIELDS, capFor, checkHashtags, fieldIncomplete, fieldPolicy, shortenToBoundary } from './studio-copy-gate';
 
 // The four fields that shipped cut in the 5dfb1c3 acceptance run, with the kind of longer line each
 // was cut FROM. None of them may ever be produced by shortening again.
@@ -93,5 +93,32 @@ describe('every published field has a policy', () => {
       'tips[0].title', 'tips[0].body', 'tips[0].teaser']) {
       expect(capFor(f)).toBeGreaterThan(0);
     }
+  });
+});
+
+
+describe('hashtags get structural and brand checks, not a factual verifier', () => {
+  const MARKETS = 'Works in: Jávea, Moraira, Dénia, Teulada';
+  it('keeps ordinary, relevant tags', () => {
+    const { tags, removed } = checkHashtags(['CostaBlanca', 'Javea', 'SellingInSpain'], MARKETS);
+    expect(tags).toEqual(['CostaBlanca', 'Javea', 'SellingInSpain']);
+    expect(removed).toEqual([]);
+  });
+  it('removes a tag that makes a claim the post never evidenced', () => {
+    const { tags, removed } = checkHashtags(['CostaBlanca', 'No1', 'GoldenVisa', 'Guaranteed'], MARKETS);
+    expect(tags).toEqual(['CostaBlanca']);
+    expect(removed.map((r) => r.tag)).toEqual(['No1', 'GoldenVisa', 'Guaranteed']);
+  });
+  it('removes a town the agency does not work in', () => {
+    const { tags, removed } = checkHashtags(['Javea', 'Marbella', 'MorairaHomes'], MARKETS);
+    expect(tags).toEqual(['Javea', 'MorairaHomes']);
+    expect(removed[0].why).toMatch(/marbella.*does not work/i);
+  });
+  it('strips hashes, dedupes and honours the cap of five', () => {
+    const { tags } = checkHashtags(['#Javea', 'javea', 'a', 'Denia', 'Teulada', 'Moraira', 'CostaBlanca', 'SpainProperty'], MARKETS);
+    expect(tags).toEqual(['Javea', 'Denia', 'Teulada', 'Moraira', 'CostaBlanca']);
+  });
+  it('does nothing about places when the agency markets are unknown', () => {
+    expect(checkHashtags(['Marbella', 'Javea']).tags).toEqual(['Marbella', 'Javea']);
   });
 });

@@ -1081,18 +1081,39 @@ Submit with the submit_carousel tool.`;
         + 'a title is one phrase and cutting it mid-sentence leaves it hanging. Keep every other field.';
       continue;
     }
-    // Twice in sixteen generations the writer returned `tips` as a JSON string rather than an
-    // array, and the post died on a schema error after three retries. Parse it rather than lose it.
+    // THREE TIMES IN TWENTY GENERATIONS the writer has returned `tips` as a string rather than an
+    // array and the post has died after three retries. Recover it where we can, and where we
+    // cannot, tell the model what is actually wrong: the raw schema error it used to receive reads
+    // "Too big: expected string to have <=7 characters", which is zod checking the array's max
+    // against a string's length, and means nothing to the model that has to fix it.
+    let tipsWereAString = false;
     if (typeof input.tips === 'string') {
-      try {
-        const parsed = JSON.parse(input.tips as string);
-        if (Array.isArray(parsed)) input.tips = parsed;
-      } catch { /* leave it and let the schema report honestly */ }
+      tipsWereAString = true;
+      const raw = (input.tips as string).trim().replace(/^```(?:json)?\s*|\s*```$/g, '');
+      const attempts = [raw, raw.replace(/'/g, '"'), `[${raw}]`];
+      for (const candidate of attempts) {
+        try {
+          const parsed = JSON.parse(candidate);
+          if (Array.isArray(parsed) && parsed.every((x) => x && typeof x === 'object')) {
+            input.tips = parsed;
+            tipsWereAString = false;
+            console.warn('[studio/carousel] recovered a string-shaped tips array');
+            break;
+          }
+        } catch { /* try the next shape */ }
+      }
+      if (tipsWereAString) {
+        console.warn(`[studio/carousel] tips came back as an unparseable string: `
+          + `${raw.slice(0, 180)}`);
+      }
     }
     const overCap = trimToCaps(input);
     const parsed = PlanSchema.safeParse(input);
     if (!parsed.success) {
-      lastErr = parsed.error.issues.slice(0, 5).map((i) => `${i.path.join('.')}: ${i.message}`).join('; ');
+      lastErr = tipsWereAString
+        ? 'tips must be an ARRAY of objects — one object per slide, each with title, body and '
+          + 'teaser — not a string containing them. Send the array itself.'
+        : parsed.error.issues.slice(0, 5).map((i) => `${i.path.join('.')}: ${i.message}`).join('; ');
       continue;
     }
     const plan = parsed.data as CarouselPlan;

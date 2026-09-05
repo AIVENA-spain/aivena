@@ -1,8 +1,9 @@
 import { z } from 'zod';
 import { env } from '../../../../packages/config/env';
 import type { CarouselPlan } from '../../../../studio/engine/carouselSlides';
-import { trimWords } from './studio-copy-gate';
-import { bankIndex, cardRules, getCard, keywordCandidates, parseCardPick } from './studio-bank-match';
+import { shortenToBoundary } from './studio-copy-gate';
+import { bankIndex, cardRules, getCard, keywordCandidates, outOfScopeReason,
+  parseCardPick } from './studio-bank-match';
 import { assessCoverage } from './studio-claim-gate';
 import { coverageGaps, requirementsFor, type RequirementCoverage } from './studio-copy-gate';
 import type { BankCard } from './studio-bank.generated';
@@ -244,23 +245,36 @@ export function riskyClaims(plan: CarouselPlan): string[] {
 }
 
 
-// A COSMETIC overflow must never kill a post. The model routinely writes a 45-character eyebrow
-// or a teaser a few words long; that used to burn all three retries and hard-fail the whole
-// generation — twice now, in front of Christian. These fields are trimmed at a word boundary
-// instead. Structural problems (missing tips, wrong counts, a non-verbatim quote) still retry:
-// those cannot be repaired without the model.
+// A COSMETIC overflow must never kill a post — but nor may it produce a fragment. The model
+// routinely writes a 45-character eyebrow, and hard-failing the whole generation for it was wrong.
+// Cutting it at a word boundary was also wrong: that is what published "…a bigger problem than
+// other" and "Moraira vs Calpe, for people who actually". A field over its cap is now shortened
+// only to a boundary the sentence itself provides, and when it has none the writer is asked for a
+// shorter one. Structural problems (missing tips, wrong counts, a non-verbatim quote) still retry.
 const SOFT_CAPS: Record<string, number> = {
   eyebrow: 44, hook_title: 90, slide2_title: 80, slide2_body: 220,
   recap_title: 60, save_line: 70, cta_heading: 78, agency_line: 170,
   cta_action: 140, cta_keyword: 90, swipe_cue: 18,
 };
-function trimToCaps(input: Record<string, unknown>): void {
-  for (const [k, max] of Object.entries(SOFT_CAPS)) input[k] = trimWords(input[k], max);
+const TIP_CAPS: Record<string, number> = { title: 62, body: 250, teaser: 70 };
+
+/** Shorten what can be shortened whole; report what cannot, so the writer is asked again. */
+function trimToCaps(input: Record<string, unknown>): string[] {
+  const stuck: string[] = [];
+  const fit = (field: string, v: unknown, max: number): unknown => {
+    if (typeof v !== 'string' || v.length <= max) return v;
+    const out = shortenToBoundary(v, max);
+    if (out === null) { stuck.push(field); return v; }
+    return out;
+  };
+  for (const [k, max] of Object.entries(SOFT_CAPS)) input[k] = fit(k, input[k], max);
   if (Array.isArray(input.tips)) {
-    input.tips = (input.tips as Record<string, unknown>[]).map((t) => (t && typeof t === 'object'
-      ? { ...t, title: trimWords(t.title, 62), body: trimWords(t.body, 250), teaser: trimWords(t.teaser, 70) }
+    input.tips = (input.tips as Record<string, unknown>[]).map((t, i) => (t && typeof t === 'object'
+      ? Object.fromEntries(Object.entries(t).map(([k, v]) => [k,
+          k in TIP_CAPS ? fit(`tips[${i}].${k}`, v, TIP_CAPS[k]) : v]))
       : t));
   }
+  return stuck;
 }
 
 /** Doctrine + honesty gate on the generated copy (client quotes exempt — they're the client's words). */
@@ -736,8 +750,24 @@ async function researchTopic(
  * Matching NOTHING is a normal, correct outcome. Most typed topics are not in the bank, and the
  * wrong card would hand the writer the wrong guardrails — worse than none.
  */
+/**
+ * The verified card that governs a topic, or none.
+ *
+ * SCOPE IS PART OF MATCHING. B20 is written about Jávea and Dénia; matched to a Moraira-versus-Calpe
+ * topic it handed the post four required points that no research about Moraira or Calpe could ever
+ * establish, and the post asserted seasonal population figures anyway. A card about named towns
+ * governs those towns. Everything else falls back to fresh research under the source policy, which
+ * is the honest answer rather than a borrowed one.
+ */
 export async function pickBankCard(topic: string): Promise<BankCard | null> {
   if (!topic?.trim()) return null;
+  const inScope = (card: BankCard | null | undefined): BankCard | null => {
+    if (!card) return null;
+    const why = outOfScopeReason(card, topic);
+    if (!why) return card;
+    console.warn(`[studio/carousel] rejected out-of-scope card — ${why}`);
+    return null;
+  };
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), 30_000);
   try {
@@ -758,13 +788,16 @@ export async function pickBankCard(topic: string): Promise<BankCard | null> {
       const data = await res.json() as { content?: { type: string; text?: string }[] };
       const reply = (data.content ?? []).filter((c) => c.type === 'text').map((c) => c.text ?? '').join(' ');
       if (/\bNONE\b/i.test(reply)) return null;
-      const card = getCard(parseCardPick(reply));
+      const card = inScope(getCard(parseCardPick(reply)));
       if (card) return card;
     }
   } catch { /* fall through to the keyword scorer */ }
   finally { clearTimeout(timer); }
-  const top = keywordCandidates(topic, 1);
-  return top.length ? getCard(top[0].id) ?? null : null;
+  for (const cand of keywordCandidates(topic, 3)) {
+    const card = inScope(getCard(cand.id));
+    if (card) return card;
+  }
+  return null;
 }
 
 export async function planCarousel(opts: {
@@ -971,7 +1004,7 @@ Submit with the submit_carousel tool.`;
         + 'a title is one phrase and cutting it mid-sentence leaves it hanging. Keep every other field.';
       continue;
     }
-    trimToCaps(input);
+    const overCap = trimToCaps(input);
     const parsed = PlanSchema.safeParse(input);
     if (!parsed.success) {
       lastErr = parsed.error.issues.slice(0, 5).map((i) => `${i.path.join('.')}: ${i.message}`).join('; ');
@@ -984,6 +1017,14 @@ Submit with the submit_carousel tool.`;
     const dequote = (s: string) => s.replace(/^["“”«»'\s]+/, '').replace(/["“”«»'\s]+$/, '');
     plan.quote_hook = dequote(plan.quote_hook);
     plan.quote_parts = plan.quote_parts.map(dequote);
+    if (overCap.length) {
+      // Never cut it. Ask for it shorter — a headline that was chopped to fit is the wrong
+      // headline, not a shorter one.
+      lastErr = `${overCap.join(', ')} ${overCap.length > 1 ? 'are' : 'is'} over the character `
+        + `limit and cannot be shortened without breaking the sentence. Write ${overCap.length > 1
+          ? 'them' : 'it'} shorter — same point, fewer words, still a complete thought.`;
+      continue;
+    }
     const issue = planIssues(plan, opts.quoteText ?? '', !!brief);
     if (issue) { lastErr = issue; continue; }
     return normalisePlan(plan, opts.language);
@@ -1107,7 +1148,9 @@ Submit with the submit_edited_plan tool.`;
         .map((h) => h.replace(/["'\u201c\u201d\u2018\u2019#]/g, '').trim().slice(0, 40))
         .filter((h) => h.length >= 2).slice(0, 5);
     }
-    trimToCaps(input);
+    // The editor may not hand back a field that only fits by being cut: fail open to the original
+    // plan instead, which is whole.
+    if (trimToCaps(input).length) return null;
     const parsed = PlanSchema.safeParse(input);
     if (!parsed.success) return null;
     const edited = parsed.data as CarouselPlan;

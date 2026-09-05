@@ -22,7 +22,8 @@ import { env } from '../../../../packages/config/env';
 
 import {
   adjudicate, capFor, coverageGaps, dropSentence, endsMidThought, gateField, incompleteBody,
-  planFields, readField, trimWords, writeField, RESOLVED_HARD_FAIL, RESOLVED_OK,
+  fieldIncomplete, planFields, readField, shortenToBoundary, writeField,
+  RESOLVED_HARD_FAIL, RESOLVED_OK,
   type CoverageStatus, type GateHit, type PlanLike, type Requirement, type RequirementCoverage,
   type Resolution,
 } from './studio-copy-gate';
@@ -794,7 +795,7 @@ async function repairFields(
       // A repair writes whatever the model returned; the caps were applied once, when the plan was
       // first parsed. A repaired title shipped at 161 characters against a 62-character cap.
       const cap = capFor(f.field);
-      const text = cap ? String(trimWords(f.text.trim(), cap)) : f.text.trim();
+      const text = cap ? (shortenToBoundary(f.text.trim(), cap) ?? f.text.trim()) : f.text.trim();
       next = writeField(next, f.field, text);
     }
   }
@@ -867,7 +868,7 @@ export async function gatePlan<T extends PlanLike>(
     // rule: prefer the last complete sentence; if none is viable, shorten the card by rewriting it —
     // never ship prose that stops mid-sentence, and never butcher good prose to avoid it.
     const cutShort = planFields(current)
-      .filter((f) => incompleteBody(f.field, f.text))
+      .filter((f) => fieldIncomplete(f.field, f.text))
       .map((f) => ({
         field: f.field, text: f.text, type: 'FACTUAL_MATERIAL' as ClaimType,
         verdict: 'UNSUPPORTED' as Verdict,
@@ -1038,7 +1039,25 @@ export function finishCopy<T extends PlanLike>(plan: T, report?: GateReport): T 
   let current = plan;
   for (const f of planFields(current)) {
     const cap = capFor(f.field);
-    if (cap && f.text.length > cap) current = writeField(current, f.field, String(trimWords(f.text, cap)));
+    if (cap && f.text.length > cap) {
+      const whole = shortenToBoundary(f.text, cap);
+      if (whole !== null) current = writeField(current, f.field, whole);
+      else if (/^tips\[\d+\]\./.test(f.field)) {
+        // No boundary to cut at. A slide is droppable; a fragment is not shippable.
+        const idx = Number(/^tips\[(\d+)\]/.exec(f.field)?.[1] ?? -1);
+        const tips = [...(current.tips ?? [])];
+        if (tips[idx]) { tips[idx] = { ...tips[idx], body: '' }; current = { ...current, tips } as T; }
+        report?.blocked.push({ field: f.field, text: f.text, verdict: 'OVER_CAP',
+          problem: `${f.text.length} characters against a cap of ${cap}, with no sentence or clause `
+            + `boundary inside it`, outcome: 'slide removed — cutting it would have shipped a fragment' });
+      } else {
+        // Left long and reported. A field that renders slightly over is a layout problem; a field
+        // cut mid-phrase is a lie about what the writer said.
+        report?.blocked.push({ field: f.field, text: f.text, verdict: 'OVER_CAP',
+          problem: `${f.text.length} characters against a cap of ${cap}, with no boundary to shorten at`,
+          outcome: 'left whole — never cut mid-phrase' });
+      }
+    }
   }
   // A prose card still stopping mid-sentence is cut back to its last complete sentence. Losing a
   // clause beats publishing a fragment; this only runs when a rewrite could not fit the point.

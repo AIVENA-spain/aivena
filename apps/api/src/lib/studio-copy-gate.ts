@@ -14,7 +14,7 @@
 // Connectives, prepositions, determiners and bare negators. A live post ended a card on "not" —
 // "the 15-day figures people quote are hearing timelines, not" — because the first version of this
 // list only knew connectives. Anything that cannot legitimately end a sentence belongs here.
-const DANGLING = /\s+(?:and|or|but|so|because|since|while|when|if|although|though|with|without|for|from|to|of|in|on|at|by|as|that|which|than|per|into|onto|about|after|before|not|no|nor|the|an|its|their|our|your|my|his|her|these|those|very|more|most|less|only|just|also|even|still|both|such|y|e|o|u|pero|porque|mientras|cuando|si|aunque|con|sin|para|de|del|en|por|como|que|a|al|sobre|entre|hasta|desde|el|la|los|las|un|una|su|sus|muy|m[áa]s|menos|s[óo]lo|tambi[ée]n)$/i;
+const DANGLING = /\s+(?:and|or|but|so|because|since|while|when|if|although|though|with|without|for|from|to|of|in|on|at|by|as|that|which|than|per|into|onto|about|after|before|not|no|nor|the|an|its|their|our|your|my|his|her|these|those|very|more|most|less|fewer|only|just|also|even|still|both|such|other|another|same|either|neither|any|every|each|several|certain|various|y|e|o|u|pero|porque|mientras|cuando|si|aunque|con|sin|para|de|del|en|por|como|que|a|al|sobre|entre|hasta|desde|el|la|los|las|un|una|su|sus|muy|m[áa]s|menos|s[óo]lo|tambi[ée]n)$/i;
 
 /**
  * Trim a generated field to its cap without ending mid-thought.
@@ -73,6 +73,43 @@ export function trimWords(v: unknown, max: number): unknown {
   for (let i = 0; i < 2 && DANGLING.test(out); i++) out = out.replace(DANGLING, '');
   return out.replace(/[\s,;:—–-]+$/, '');
 }
+/**
+ * Shorten to a boundary a sentence actually has, or refuse.
+ *
+ * trimWords is word-aware truncation, and word-aware truncation is still truncation: it shipped
+ * "…a bigger problem than other", "…residency status, among other", "Moraira vs Calpe, for people
+ * who actually" and "Practitioner consensus holds that a stale listing makes" in a single run, all
+ * four inside three characters of their cap. Cutting on a word boundary only guarantees the result
+ * is words. This cuts at a boundary the writing itself provides — the end of a sentence, else the
+ * end of a clause — and returns null when there is none, because the honest move then is to rewrite
+ * the field, not to hand the reader half a thought.
+ */
+export function shortenToBoundary(text: string, cap: number): string | null {
+  const t = (text ?? '').trim();
+  if (t.length <= cap) return t;
+  const window = t.slice(0, cap + 1);
+  // Twelve characters is the floor for either boundary: below that the result is a stub, not a
+  // shorter version of the line, and rewriting is the honest move.
+  const FLOOR = 12;
+  const end = lastSentenceEnd(window);
+  if (end >= FLOOR) {
+    const out = window.slice(0, end).trim();
+    if (out.length <= cap) return out;
+  }
+  // A clause boundary: a comma, semicolon, colon or dash that a complete phrase ends at. "Moraira
+  // vs Calpe, for people who actually" becomes "Moraira vs Calpe" — shorter, and whole.
+  const clause = /[,;:—–-]\s/g;
+  let cut = -1;
+  for (let m = clause.exec(window); m; m = clause.exec(window)) {
+    if (m.index >= FLOOR && m.index <= cap) cut = m.index;
+  }
+  if (cut > 0) {
+    const out = window.slice(0, cut).replace(/[\s,;:—–-]+$/, '').trim();
+    if (out.length >= FLOOR) return out;
+  }
+  return null;
+}
+
 
 /**
  * The generated field length limits, and the re-application of them.
@@ -851,4 +888,48 @@ export function adjudicate(input: AdjudicationInput): Resolution {
   }
 
   return 'NEEDS_REPAIR';
+}
+
+
+/* ────────────────────────────────────────────────────────────────────────────────────────────
+ * WHAT EACH PUBLISHED FIELD IS FOR
+ *
+ * The schema publishes twenty text fields and the factual gate walked fourteen of them. Hashtags
+ * and the swipe cue reach every reader and nothing looked at either. They do not all need the same
+ * treatment — running claim extraction on the literal word "Desliza" is waste — so each field gets
+ * a policy and every published field has one.
+ * ──────────────────────────────────────────────────────────────────────────────────────────── */
+
+export type FieldPolicy = 'claim' | 'static' | 'hashtags';
+
+/** What kind of checking this field gets. Unknown fields are treated as claim-bearing, not skipped. */
+export function fieldPolicy(field: string): FieldPolicy {
+  const base = field.replace(/^tips\[\d+\]\./, '').replace(/^quote_parts\[\d+\]$/, 'quote_parts');
+  if (base === 'swipe_cue') return 'static';
+  if (base === 'hashtags') return 'hashtags';
+  return 'claim';
+}
+
+/** Every text field the plan publishes, in render order, with its policy. */
+export const PUBLISHED_FIELDS: readonly { field: string; policy: FieldPolicy }[] = [
+  'eyebrow', 'hook_title', 'slide2_title', 'slide2_body', 'tips[].title', 'tips[].body',
+  'tips[].teaser', 'recap_title', 'save_line', 'quote_hook', 'quote_parts', 'quote_context',
+  'attribution', 'cta_heading', 'cta_action', 'cta_keyword', 'agency_line', 'caption',
+  'swipe_cue', 'hashtags',
+].map((field) => ({ field, policy: fieldPolicy(field) }));
+
+/**
+ * Does this published field stop before it finishes saying something?
+ *
+ * Prose has to end on terminal punctuation — a body or a caption without one was cut. A headline
+ * legitimately has none, so it is judged on whether its last word can end a phrase at all: "…than
+ * other", "…among other", "…for people who actually" cannot. Applies to every claim-bearing field,
+ * not only the three prose ones, which is how four cut headlines shipped while the counter read nil.
+ */
+export function fieldIncomplete(field: string, text: string): boolean {
+  if (fieldPolicy(field) !== 'claim') return false;
+  const t = (text ?? '').trim();
+  if (!t) return false;
+  if (PROSE_FIELD.test(field)) return !/[.!?…]["'”’)]?$/.test(t);
+  return endsMidThought(t);
 }

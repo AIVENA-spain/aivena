@@ -1094,7 +1094,8 @@ Submit with the submit_carousel tool.`;
       for (const candidate of attempts) {
         try {
           const parsed = JSON.parse(candidate);
-          if (Array.isArray(parsed) && parsed.every((x) => x && typeof x === 'object')) {
+          if (Array.isArray(parsed) && parsed.length
+              && parsed.every((x) => !!x && typeof x === 'object' && !Array.isArray(x))) {
             input.tips = parsed;
             tipsWereAString = false;
             console.warn('[studio/carousel] recovered a string-shaped tips array');

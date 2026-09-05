@@ -14,7 +14,8 @@ function recoverTips(value: unknown): { tips: unknown; recovered: boolean; still
   for (const candidate of [raw, raw.replace(/'/g, '"'), `[${raw}]`]) {
     try {
       const parsed = JSON.parse(candidate);
-      if (Array.isArray(parsed) && parsed.every((x) => x && typeof x === 'object')) {
+      if (Array.isArray(parsed) && parsed.length
+          && parsed.every((x) => !!x && typeof x === 'object' && !Array.isArray(x))) {
         return { tips: parsed, recovered: true, stillAString: false };
       }
     } catch { /* next shape */ }

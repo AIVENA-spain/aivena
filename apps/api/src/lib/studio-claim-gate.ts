@@ -195,6 +195,8 @@ const COVERAGE_TOOL = {
             id: { type: 'string', description: 'the requirement id exactly as given' },
             status: { type: 'string', enum: ['established', 'partial', 'not_established'] },
             evidence: { type: 'string', description: 'the sentence of the briefing that establishes it; omit when nothing does' },
+            source_ids: { type: 'array', items: { type: 'string' },
+              description: 'ids of the listed sources that back it, e.g. ["S2","S5"]. Required for established or partial.' },
           },
         },
       },
@@ -214,7 +216,11 @@ without answering the question is NOT established.
 
 Be strict. The purpose of these requirements is to stop a writer asserting something plausible that
 nobody checked, so "the briefing probably implies it" is not established. Judge each requirement on
-its own; do not let a rich briefing carry a requirement it never addressed.`;
+its own; do not let a rich briefing carry a requirement it never addressed.
+
+EVIDENCE IS NOT SIMILAR WORDING. For anything you mark established or partial you must quote the
+sentence of the briefing that carries it AND name the source ids that back it, from the list given.
+A requirement whose support you cannot point at is not_established, however plausible it sounds.`;
 
 /**
  * Which of the card's requirements this generation's research actually established.
@@ -225,31 +231,48 @@ its own; do not let a rich briefing carry a requirement it never addressed.`;
  */
 export async function assessCoverage(
   requirements: readonly Requirement[], brief: string,
+  sources: readonly { id: string; url: string; title: string }[] = [],
 ): Promise<{ coverage: RequirementCoverage[]; degraded: string | null }> {
   const allUnestablished = (why: string) => ({
-    coverage: requirements.map((r) => ({ id: r.id, status: 'not_established' as CoverageStatus, evidence: '' })),
+    coverage: requirements.map((r) => ({
+      id: r.id, status: 'not_established' as CoverageStatus, evidence: '', sourceIds: [] })),
     degraded: why,
   });
   if (!requirements.length) return { coverage: [], degraded: null };
   if (!brief.trim()) return allUnestablished('no research brief');
 
   const out = await callTool('requirement coverage', COVERAGE_SYSTEM,
-    `THE BRIEFING:\n${brief}\n\nTHE REQUIREMENTS:\n`
+    `THE BRIEFING:\n${brief}\n\nTHE SOURCES THE RESEARCH OPENED:\n`
+    + (sources.length ? sources.map((s) => `${s.id}: ${s.title || s.url} — ${s.url}`).join('\n')
+                      : '(none recorded)')
+    + `\n\nTHE REQUIREMENTS:\n`
     + requirements.map((r) => `${r.id}: ${r.text}`).join('\n'),
     COVERAGE_TOOL, 120_000, 8000);
   const list = out && coerceList(out.coverage, 'coverage');
   if (!list) return allUnestablished('coverage assessment unavailable');
 
+  const known = new Set(sources.map((s) => s.id));
   const byId = new Map<string, RequirementCoverage>();
   for (const c of list) {
     const id = String(c?.id ?? '').trim();
     const status = String(c?.status ?? '');
     if (!id || !['established', 'partial', 'not_established'].includes(status)) continue;
-    byId.set(id, { id, status: status as CoverageStatus, evidence: String(c?.evidence ?? '') });
+    const evidence = String(c?.evidence ?? '').trim();
+    const sourceIds = (Array.isArray(c?.source_ids) ? c.source_ids : [])
+      .map((x) => String(x).trim()).filter((x) => known.has(x));
+    // A requirement is established because something backs it, not because the briefing used
+    // similar words. No quoted evidence, or no source that was actually opened, means not
+    // established — however plausible the wording.
+    const grounded = evidence.length > 0 && (sourceIds.length > 0 || known.size === 0);
+    byId.set(id, {
+      id,
+      status: (status !== 'not_established' && !grounded ? 'not_established' : status) as CoverageStatus,
+      evidence, sourceIds,
+    });
   }
   return {
     coverage: requirements.map((r) => byId.get(r.id)
-      ?? { id: r.id, status: 'not_established' as CoverageStatus, evidence: '' }),
+      ?? { id: r.id, status: 'not_established' as CoverageStatus, evidence: '', sourceIds: [] }),
     degraded: null,
   };
 }

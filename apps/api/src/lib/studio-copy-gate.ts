@@ -561,6 +561,8 @@ export interface RequirementCoverage {
   status: CoverageStatus;
   /** the sentence of the brief that establishes it, empty when nothing does */
   evidence: string;
+  /** ids of the pages the research actually opened that back it */
+  sourceIds: string[];
 }
 
 /** Stable ids for a card's requirements: the card id and the requirement's position on it. */

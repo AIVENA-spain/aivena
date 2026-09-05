@@ -310,9 +310,14 @@ function planIssues(p: CarouselPlan, quoteSource: string, hasResearch = false): 
  *  stable and easy to establish; what must never happen is an INVENTED SPECIFIC — a deadline, a
  *  threshold or a requirement nobody checked. Being informed is the point; refusing to write is a
  *  failure, not a safe outcome. */
-interface ResearchCall { text: string; failure: string | null; ms: number }
+interface ResearchCall { text: string; failure: string | null; ms: number; sources: ResearchSource[] }
+/** A page the research actually opened, so a coverage claim can name what backs it. */
+export interface ResearchSource { id: string; url: string; title: string }
 
-async function researchTopic(topic: string, lang: string, region: string, markets = '', cardMust = ''): Promise<string> {
+async function researchTopic(
+  topic: string, lang: string, region: string, markets = '', cardMust = '',
+  onSources?: (s: ResearchSource[]) => void,
+): Promise<string> {
   // RESEARCH THAT FAILS MUST SAY SO. This returned a bare '' on every failure path — timeout,
   // HTTP error, pause-loop exhaustion, an empty completion — and the caller could not tell "nothing
   // to research" from "the research died". Two posts in a six-post proof run were written entirely
@@ -323,6 +328,8 @@ async function researchTopic(topic: string, lang: string, region: string, market
     const ctl = new AbortController();
     const timer = setTimeout(() => ctl.abort(), ms);
     const started = Date.now();
+    const sources: ResearchSource[] = [];
+    const seen = new Set<string>();
     try {
       let messages = body.messages as Array<{ role: string; content: unknown }>;
       let best = '';
@@ -336,9 +343,22 @@ async function researchTopic(topic: string, lang: string, region: string, market
           body: JSON.stringify({ ...body, messages }),
         });
         if (!res.ok) {
-          return { text: best, failure: `http_${res.status}`, ms: Date.now() - started };
+          return { text: best, failure: `http_${res.status}`, ms: Date.now() - started, sources };
         }
-        const data = await res.json() as { stop_reason?: string; content?: Array<{ type: string; text?: string }> };
+        const data = await res.json() as {
+          stop_reason?: string;
+          content?: Array<{ type: string; text?: string; content?: unknown }>;
+        };
+        // Capture the pages the search actually opened. A requirement is not established because
+        // the briefing uses similar words — it is established because something backs it.
+        for (const block of data.content ?? []) {
+          if (block.type !== 'web_search_tool_result' || !Array.isArray(block.content)) continue;
+          for (const r of block.content as Array<{ type?: string; url?: string; title?: string }>) {
+            if (r?.type !== 'web_search_result' || !r.url || seen.has(r.url)) continue;
+            seen.add(r.url);
+            sources.push({ id: `S${sources.length + 1}`, url: r.url, title: r.title ?? '' });
+          }
+        }
         const text = (data.content ?? []).filter((c) => c.type === 'text').map((c) => c.text ?? '').join('\n').trim();
         if (text.length > best.length) best = text;
         // the model paused mid-search — echo its turn back so the tool loop continues
@@ -349,13 +369,13 @@ async function researchTopic(topic: string, lang: string, region: string, market
         return {
           text: best,
           failure: best ? null : `empty_completion_${data.stop_reason ?? 'unknown'}`,
-          ms: Date.now() - started,
+          ms: Date.now() - started, sources,
         };
       }
-      return { text: best, failure: best ? null : 'pause_loop_exhausted', ms: Date.now() - started };
+      return { text: best, failure: best ? null : 'pause_loop_exhausted', ms: Date.now() - started, sources };
     } catch (err) {
       const aborted = (err as { name?: string })?.name === 'AbortError';
-      return { text: '', failure: aborted ? `timeout_${ms}ms` : 'network_error', ms: Date.now() - started };
+      return { text: '', failure: aborted ? `timeout_${ms}ms` : 'network_error', ms: Date.now() - started, sources };
     } finally { clearTimeout(timer); }
   };
   const fail = (stage: string, r: ResearchCall) => {
@@ -442,6 +462,7 @@ async function researchTopic(topic: string, lang: string, region: string, market
       `No preamble, no headings, no markdown. Under 400 words.` }],
   }, 150_000);
   if (f.failure) fail('stage 2 (findings)', f);
+  onSources?.(f.sources);
   return f.text;
 }
 
@@ -523,11 +544,13 @@ export async function planCarousel(opts: {
   const lang = langNames[opts.language] ?? 'Spanish';
   const region = opts.region || 'the Costa Blanca';
 
+  let researchSources: ResearchSource[] = [];
   // Find out BEFORE writing. Never fatal: if research fails or times out the deck is still written,
   // just from the model's own knowledge as it always was — a slow search must not cost an agent
   // their post.
   const brief = opts.type === 'tips' && opts.topic
-    ? await researchTopic(opts.topic, lang, region, opts.marketBrief ?? '', opts.cardMust ?? '').catch(() => '')
+    ? await researchTopic(opts.topic, lang, region, opts.marketBrief ?? '', opts.cardMust ?? '',
+        (src) => { researchSources = src; }).catch(() => '')
     : '';
   if (brief) {
     console.log(`[studio/carousel] researched "${String(opts.topic).slice(0, 60)}" — ${brief.length} chars`);
@@ -545,7 +568,7 @@ export async function planCarousel(opts: {
   let missing: string[] = [];
   if (opts.cardId && opts.cardMustList?.length) {
     const requirements = requirementsFor(opts.cardId, opts.cardMustList);
-    const assessed = await assessCoverage(requirements, brief)
+    const assessed = await assessCoverage(requirements, brief, researchSources)
       .catch(() => ({ coverage: [], degraded: 'coverage assessment threw' }));
     missing = coverageGaps(requirements, assessed.coverage).map((g) => g.text);
     if (assessed.degraded) {

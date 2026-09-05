@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { adjudicate, capFor, classifyAssertion, coverageGaps, gateField, requirementsFor, incompleteBody, trimWords, endsMidThought, RESOLVED_HARD_FAIL, RESOLVED_OK } from './studio-copy-gate';
+import { adjudicate, capFor, classifyAssertion, coverageGaps, gateField, requirementsFor, type RequirementCoverage, incompleteBody, trimWords, endsMidThought, RESOLVED_HARD_FAIL, RESOLVED_OK } from './studio-copy-gate';
 
 /**
  * REGRESSION: a generated card shipped ending "timelines still vary by court and".
@@ -334,10 +334,26 @@ describe('requirement identity replaces lexical overlap', () => {
   it('counts anything not explicitly established as a gap', () => {
     const reqs = requirementsFor('B12', ['A', 'B', 'C']);
     const gaps = coverageGaps(reqs, [
-      { id: 'B12#1', status: 'established', evidence: 'x' },
-      { id: 'B12#2', status: 'partial', evidence: '' },
+      { id: 'B12#1', status: 'established', evidence: 'x', sourceIds: ['S1'] },
+      { id: 'B12#2', status: 'partial', evidence: '', sourceIds: [] },
       // B12#3 unassessed entirely
     ]);
     expect(gaps.map(g => g.id)).toEqual(['B12#2', 'B12#3']);
+  });
+});
+
+describe('a requirement is established by evidence, not by similar wording', () => {
+  it('carries the evidence and the sources that back it', () => {
+    const cov: RequirementCoverage[] = [
+      { id: 'S17#1', status: 'established', evidence: 'The buyer withholds 3%.', sourceIds: ['S2'] },
+      { id: 'S17#2', status: 'partial', evidence: 'Rates vary.', sourceIds: ['S1', 'S3'] },
+      { id: 'S17#3', status: 'not_established', evidence: '', sourceIds: [] },
+    ];
+    for (const c of cov.filter(x => x.status !== 'not_established')) {
+      expect(c.evidence.length, c.id).toBeGreaterThan(0);
+      expect(c.sourceIds.length, c.id).toBeGreaterThan(0);
+    }
+    expect(coverageGaps(requirementsFor('S17', ['a', 'b', 'c']), cov).map(g => g.id))
+      .toEqual(['S17#2', 'S17#3']);
   });
 });

@@ -885,14 +885,18 @@ const REPAIR_TOOL = {
 const REPAIR_SYSTEM = `You repair specific lines of a social post that asserted something we cannot
 stand behind. You are the same writer who wrote it, not a compliance officer.
 
-THREE MOVES, IN THIS ORDER OF PREFERENCE:
-1. Make the same point with a DIFFERENT TRUE ARGUMENT. This is almost always available and it is
-   almost always the best post. If you cannot say that exclusive mandates are cheaper, say that one
-   agency means one point of contact, one coordinated strategy, consistent presentation, clear
-   accountability and fewer conflicting messages to a buyer. The commercial position survives; only
-   the unsupportable sentence goes.
-2. State the true, narrower version — at the same length and with the same confidence.
-3. Cut the claim and let the line do less.
+THE LADDER. Work down it and stop at the first rung that works. Deleting the slide is the LAST
+rung, not the first, and a post that loses one factual argument should still be a post.
+1. KEEP the point and say it another way — the same claim, worded so it no longer overreaches.
+2. REPLACE the unsupported detail with a truthful broader argument. If you cannot say "overpriced
+   listings receive 40% fewer enquiries", say "launching too high can make buyers question the
+   property before they ever book a viewing." The argument survives; the number goes.
+3. TURN IT INTO A POSITION. A commercial view is allowed to be a view: "We would rather have the
+   difficult pricing conversation before launch than the price-cut conversation three months
+   later." This is a real repair, not a retreat — but it must NOT smuggle the number back in. An
+   opinion with a statistic inside it is still a statistic.
+4. REBUILD THE SLIDE around a different angle from the same topic, keeping the deck's shape.
+5. Only if none of those is possible: cut the claim and let the line do less.
 
 WHAT YOU MUST NOT DO, AND THIS MATTERS MORE THAN THE REPAIR:
 · Never add a hedge. No "generally", "in many cases", "it depends", "may vary", "typically" bolted on
@@ -903,6 +907,13 @@ WHAT YOU MUST NOT DO, AND THIS MATTERS MORE THAN THE REPAIR:
 · Never turn a bold line into a cautious one. If the repaired copy is more timid than what you
   received, you have failed even if every word is true.
 · Keep the length, the rhythm and the voice. These are slides — a body is one idea, 15-40 words.
+
+HOW HARD TO HOLD THE LINE, BY WHAT THE SENTENCE RISKS:
+· Law, tax, deadlines, figures, rankings, money, and anything about this agency's own record or
+  services — these have to be right. Take the argument somewhere you can stand behind.
+· How a town feels, how buyers behave, how a mechanism generally works — write these with normal
+  confidence. They do not need a citation, only to be true and not overstated.
+· Opinion, rhetoric, hooks, aspiration — leave them alone entirely. They were never the problem.
 
 Return the FULL rewritten text of each field you were asked to fix, and nothing else.`;
 
@@ -1186,11 +1197,12 @@ export async function gatePlan<T extends PlanLike>(
       report.dropped += tips.length - kept.length;
       current = { ...current, tips: kept };
     } else if (!kept.length) {
-      // Nothing survived. The old behaviour here was to keep every slide rather than end up with a
-      // deck of none — which published five titles over five empty bodies. A post that cannot
-      // evidence a single point is not a shorter post, it is not a post.
+      // Nothing survived. The old behaviour was to keep every slide rather than end up with none,
+      // which published five titles over five empty bodies. Report the truth instead and hand the
+      // caller an empty deck, so the minimum-viable check can try the topic another way.
       report.unpublishable = `no slide survived: ${tips.length} of ${tips.length} could not be `
         + `evidenced (${report.unsupportedMaterial} material claims unsupported)`;
+      current = { ...current, tips: [] };
     }
   }
 

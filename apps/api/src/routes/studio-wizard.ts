@@ -1432,7 +1432,8 @@ async function runPlannedCarousel(opts: {
     // most typed topics are not in the bank — and a wrong card would be worse than none.
     const card = opts.type === 'tips' ? await pickBankCard(opts.topic ?? '').catch(() => null) : null;
     if (card) console.log(`[studio/carousel] topic governed by bank card ${card.id} (${card.state})`);
-    let plan = await planCarousel({
+    const writeDeck = (saferAngle: boolean) => planCarousel({
+      saferAngle,
       type: opts.type, topic: opts.topic, quoteText: opts.quoteText, quoteAuthor: opts.quoteAuthor,
       slideCount: opts.slideCount, language: opts.language, agencyName: opts.agency.name,
       agencyProfile: opts.agencyProfile, avoidMotifs,
@@ -1445,6 +1446,7 @@ async function runPlannedCarousel(opts: {
       onCoverage: (u, degraded, cov) => { uncovered = u; coverageDegraded = degraded; coverage = cov; },
       onSources: (src) => { sources = src; },
     });
+    let plan = await writeDeck(false);
     // EDITOR pass (Christian 2026-08-28): a skeptical second read of the copy — sense, value,
     // trust — before anything renders. Quote decks are verbatim client words and skip it.
     let copyQa: { revised: boolean; notes: string[] } | undefined;
@@ -1470,10 +1472,36 @@ async function runPlannedCarousel(opts: {
         return null;
       });
       if (gated) { plan = gated.plan; claimQa = gated.report; }
-      // A deck whose every point failed verification does not get published in a reduced form. It
-      // fails, visibly, and the agent is told why rather than handed five headlines over nothing.
-      if (gated?.report.unpublishable) {
-        throw new Error(`nothing in this post could be evidenced — ${gated.report.unpublishable}`);
+
+      // MINIMUM VIABLE CAROUSEL (Christian, 2026-09-05). A deck that lost most of its slides is not
+      // a shorter post, it is a broken one — and the fix is not to publish it reduced. Write the
+      // topic once more on arguments that do not depend on figures or legal detail, keep whichever
+      // deck stands up better, and only give up if neither does.
+      const wanted = Math.min(7, Math.max(1, opts.slideCount ?? 5));
+      const floor = wanted >= 5 ? 4 : Math.max(2, wanted - 1);
+      if (opts.type === 'tips' && (plan.tips?.length ?? 0) < floor) {
+        console.warn(`[studio/carousel] ${plan.tips?.length ?? 0} of ${wanted} slides survived — `
+          + `rewriting the topic on arguments that do not need a figure`);
+        const retry = await writeDeck(true).catch(() => null);
+        if (retry) {
+          const regatedRetry = await gatePlan(retry, {
+            language: opts.language, topic: opts.topic ?? '', research,
+            cardRules: card ? cardRules(card) : '',
+            agencyEvidence: opts.agencyEvidence ?? '', uncovered,
+            sources, coverage, cardId: card?.id, bank: card?.bank,
+            facts: claimQa?.sourceFacts,
+          }).catch(() => null);
+          const candidate = regatedRetry?.plan ?? retry;
+          if ((candidate.tips?.length ?? 0) > (plan.tips?.length ?? 0)) {
+            plan = candidate;
+            if (regatedRetry) claimQa = regatedRetry.report;
+          }
+        }
+      }
+      if (opts.type === 'tips' && (plan.tips?.length ?? 0) < Math.min(floor, 3)) {
+        // Friendly, and in the agent's language of the product — never our compliance vocabulary.
+        throw new Error('Not enough reliable information for this angle yet. Try a broader version '
+          + 'of the topic, or a different angle on it.');
       }
 
       const edited = await editPlan(plan, opts.topic ?? '', opts.language, research);
@@ -1510,7 +1538,8 @@ async function runPlannedCarousel(opts: {
       if (late.length) {
         claimQa = claimQa ?? { claims: 0, policed: 0, verdicts: {}, blocked: [], deterministic: [],
           repairs: 0, dropped: 0, degraded: null, adjudications: [], rawFlags: 0, materialFailures: 0,
-          supports: [], bankContradictions: [], unsupportedMaterial: 0, unpublishable: null };
+          supports: [], sourceFacts: [], bankContradictions: [], unsupportedMaterial: 0,
+          unpublishable: null };
         const qa = claimQa;
         for (const h of late) {
           const before = readField(plan, h.field);

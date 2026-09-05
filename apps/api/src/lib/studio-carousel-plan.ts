@@ -845,6 +845,12 @@ export async function planCarousel(opts: {
   /** Christian 2026-08-31 ("they could have a little box that informs them yes") — the caller
    *  receives what the research established, so the agent can read what their tips were built on
    *  before publishing under their own name. */
+  /**
+   * Second attempt, after a first deck could not stand behind enough of its points. Asks for the
+   * same topic built on arguments that do not depend on figures or legal detail — which is a real
+   * post, not a lesser one.
+   */
+  saferAngle?: boolean;
   onResearch?: (brief: string) => void;
   /** every page the research touched, with the text of the ones it actually opened */
   onSources?: (sources: ResearchSource[]) => void;
@@ -888,6 +894,15 @@ export async function planCarousel(opts: {
   }
   // The writer never sees where a fact came from — that is what stops it attributing one.
   const writerBrief = stripSourceTags(brief);
+  const saferBlock = opts.saferAngle ? `
+WRITE THIS ONE FROM THE ARGUMENTS THAT DO NOT NEED A FIGURE.
+A first version of this deck leaned on specific numbers, legal detail and market statistics that
+could not be stood behind, and most of it had to come out. Build this one on what is solidly true:
+how the process works, what the reader should look at, what experience says, what this agency's
+position is. Keep every bit of the confidence and the edge — this is not a softer post, it is a
+post built on ground that holds. If a point genuinely needs a number to exist, choose a different
+point; there is always another true thing to say about this topic.
+` : '';
   const missingBlock = missing.length ? `
 THE RESEARCH DID NOT ESTABLISH THESE, AND THEY WERE REQUIRED:
 ${missing.map((m) => `· ${m}`).join('\n')}
@@ -934,7 +949,7 @@ CAROUSEL DOCTRINE (how these posts win — follow it):
 - RECENTLY USED in this agency's previous posts — do NOT use any of these as a hero object again, find fresh ones: ${opts.avoidMotifs.join('; ')}.` : ''}
 
 - EVERY FACTUAL CLAIM MUST BE TRUE. Claims are wanted — vague advice is worthless — but a wrong one destroys trust.
-${brief ? `
+${saferBlock}${brief ? `
 ${/^\s*PREMISE FAILS/m.test(brief) ? `THE STARTING IDEA WAS REJECTED. The research below contradicts the claim the topic was built on.
 Treat the topic ONLY as a pointer to the subject area — never as the angle, never as the headline to
 aim at, and never as something to soften into a half-truth. Write the deck the findings support and

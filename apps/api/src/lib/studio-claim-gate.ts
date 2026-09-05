@@ -920,6 +920,10 @@ rung, not the first, and a post that loses one factual argument should still be 
 4. REBUILD THE SLIDE around a different angle from the same topic, keeping the deck's shape.
 5. Only if none of those is possible: cut the claim and let the line do less.
 
+NEVER SWAP ONE UNSUPPORTED NUMBER FOR ANOTHER. If a figure could not be stood behind, the repair is
+the argument without the figure — not a different figure that sounds safer. A statistic you reached
+for because the first one failed is an invention, and it is the worst possible outcome of this step.
+
 WHAT YOU MUST NOT DO, AND THIS MATTERS MORE THAN THE REPAIR:
 · Never add a hedge. No "generally", "in many cases", "it depends", "may vary", "typically" bolted on
   to rescue a sentence. A hedged sentence is a worse failure than the one you are fixing.

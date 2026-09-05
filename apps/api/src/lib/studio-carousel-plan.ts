@@ -4,7 +4,7 @@ import type { CarouselPlan } from '../../../../studio/engine/carouselSlides';
 import { trimWords } from './studio-copy-gate';
 import { bankIndex, cardRules, getCard, keywordCandidates, parseCardPick } from './studio-bank-match';
 import { assessCoverage } from './studio-claim-gate';
-import { coverageGaps, requirementsFor } from './studio-copy-gate';
+import { coverageGaps, requirementsFor, type RequirementCoverage } from './studio-copy-gate';
 import type { BankCard } from './studio-bank.generated';
 
 // CAROUSEL PLANNER v2 (research-rebuilt 2026-07-16): the AI writes the WORDS of a tips/quote carousel
@@ -533,8 +533,10 @@ export async function planCarousel(opts: {
   cardId?: string;
   /** the card's must_establish list, for the same purpose */
   cardMustList?: string[];
-  /** reports back which requirements the research did NOT establish, for the validator */
-  onCoverage?: (uncovered: string[], degraded: string | null) => void;
+  /** reports back which requirements the research did NOT establish, for the validator, and the
+   *  full per-requirement assessment — id, status, the sentence that establishes it, the pages it
+   *  came from. A gap that is only ever counted cannot be audited afterwards. */
+  onCoverage?: (uncovered: string[], degraded: string | null, coverage: RequirementCoverage[]) => void;
   /** Christian 2026-08-31 ("they could have a little box that informs them yes") — the caller
    *  receives what the research established, so the agent can read what their tips were built on
    *  before publishing under their own name. */
@@ -575,7 +577,7 @@ export async function planCarousel(opts: {
       console.warn(`[studio/carousel] ${assessed.degraded} — treating all `
         + `${requirements.length} required points as unestablished`);
     }
-    opts.onCoverage?.(missing, assessed.degraded);
+    opts.onCoverage?.(missing, assessed.degraded, assessed.coverage);
   }
   const missingBlock = missing.length ? `
 THE RESEARCH DID NOT ESTABLISH THESE, AND THEY WERE REQUIRED:

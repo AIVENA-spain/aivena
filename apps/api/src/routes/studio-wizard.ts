@@ -34,7 +34,8 @@ import type { CarouselBrand } from '../../../../studio/engine/renderCarousel';
 import { planCarousel, editPlan, remixHook, topicIdeas, listingCopy, listingStory, pickBankCard, PlanSchema, normalisePlan } from '../lib/studio-carousel-plan';
 import { finishCopy, gatePlan, type GateReport } from '../lib/studio-claim-gate';
 import { cardRules } from '../lib/studio-bank-match';
-import { dropSentence, gateField, planFields, readField, writeField } from '../lib/studio-copy-gate';
+import { dropSentence, gateField, planFields, readField, writeField,
+  type RequirementCoverage } from '../lib/studio-copy-gate';
 import { directScenes } from '../lib/studio-carousel-art';
 import { renderTipsImageStyled, renderTipsImageStyledV2, isTipsImageStyle } from '../../../../studio/engine/carouselTipsImage';
 import { renderFreeform, type DesignSpec } from '../../../../studio/engine/renderFreeform';
@@ -1419,6 +1420,10 @@ async function runPlannedCarousel(opts: {
     let research = '';
     let uncovered: string[] = [];
     let coverageDegraded: string | null = null;
+    // Christian 2026-09-04: the per-requirement assessment is kept, not just the count of gaps —
+    // requirement id, status, the sentence of the research that establishes it, and the pages it
+    // was read from, so a published post can be audited back to what it was allowed to say.
+    let coverage: RequirementCoverage[] = [];
     // THE VERIFIED BANK GOVERNS THE TOPIC BEFORE ANYTHING IS WRITTEN. Matching nothing is normal —
     // most typed topics are not in the bank — and a wrong card would be worse than none.
     const card = opts.type === 'tips' ? await pickBankCard(opts.topic ?? '').catch(() => null) : null;
@@ -1433,7 +1438,7 @@ async function runPlannedCarousel(opts: {
       cardMust: card ? card.must.map((m) => `· ${m}`).join('\n') : '',
       cardId: card?.id, cardMustList: card ? [...card.must] : undefined,
       onResearch: (b) => { research = b; },
-      onCoverage: (u, degraded) => { uncovered = u; coverageDegraded = degraded; },
+      onCoverage: (u, degraded, cov) => { uncovered = u; coverageDegraded = degraded; coverage = cov; },
     });
     // EDITOR pass (Christian 2026-08-28): a skeptical second read of the copy — sense, value,
     // trust — before anything renders. Quote decks are verbatim client words and skip it.
@@ -1594,7 +1599,7 @@ async function runPlannedCarousel(opts: {
       result_metadata: {
         engine: 'carousel', carousel_type: opts.type, carousel_style: usedStyle, slide_count: stored.length, slides: stored,
         ai_imagery: opts.type === 'tips' && isTipsImageStyle(usedStyle),
-        image_paths: imagePaths, image_scheme: opts.scheme, per_slide_art: perSlideArt, artwork_source: artworkSource, artwork_error: artworkError, artwork_qa: artworkQa, copy_qa: copyQa, claim_qa: claimQa, research, include_recap: opts.includeRecap, include_context: opts.includeContext,
+        image_paths: imagePaths, image_scheme: opts.scheme, per_slide_art: perSlideArt, artwork_source: artworkSource, artwork_error: artworkError, artwork_qa: artworkQa, copy_qa: copyQa, claim_qa: claimQa, requirement_coverage: coverage, research, include_recap: opts.includeRecap, include_context: opts.includeContext,
         plan, caption: plan.caption, hashtags: plan.hashtags,
       },
       completed_at: new Date().toISOString(),

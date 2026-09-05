@@ -82,7 +82,9 @@ describe('every published field has a policy', () => {
     const byPolicy = (p: string) => PUBLISHED_FIELDS.filter((f) => f.policy === p).map((f) => f.field);
     expect(byPolicy('static')).toEqual(['swipe_cue']);
     expect(byPolicy('hashtags')).toEqual(['hashtags']);
-    expect(byPolicy('claim')).toHaveLength(18);
+    // A CTA promises a conversation or a deliverable: a capability question, not an evidence one.
+    expect(byPolicy('cta')).toEqual(['cta_action', 'cta_keyword']);
+    expect(byPolicy('claim')).toHaveLength(16);
   });
   it('treats an unknown field as claim-bearing rather than skipping it', () => {
     expect(fieldPolicy('some_future_field')).toBe('claim');

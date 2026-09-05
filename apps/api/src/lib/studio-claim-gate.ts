@@ -23,14 +23,14 @@ import { env } from '../../../../packages/config/env';
 import {
   adjudicate, capFor, coverageGaps, dropSentence, endsMidThought, gateField, incompleteBody,
   requirementsFor,
-  checkHashtags, fieldIncomplete, planFields, readField, shortenToBoundary, writeField,
+  checkHashtags, fieldIncomplete, fieldPolicy, planFields, readField, shortenToBoundary, writeField,
   RESOLVED_HARD_FAIL, RESOLVED_OK,
   type CoverageStatus, type GateHit, type PlanLike, type Requirement, type RequirementCoverage,
   type Resolution,
 } from './studio-copy-gate';
 import { getCard, retrieveBankFacts } from './studio-bank-match';
 import {
-  excerptOccursIn, riskTier, verifySupport,
+  checkCta, excerptOccursIn, riskTier, verifySupport,
   type ClaimSupport, type ProposedSupport, type ResearchSource, type SourceFact,
   type SupportContext,
 } from './studio-evidence';
@@ -1004,7 +1004,9 @@ export async function gatePlan<T extends PlanLike>(
       report.degraded = 'claim extraction unavailable — only the deterministic table ran';
     }
     const policed = (claims ?? []).filter((c) =>
-      (POLICED_TYPES as readonly string[]).includes(c.type));
+      (POLICED_TYPES as readonly string[]).includes(c.type)
+      // A CTA is judged by whether the agency can do the thing, not by whether a page says so.
+      && fieldPolicy(c.field) !== 'cta');
     const verdicts = claims === null ? [] : await validateClaims(policed, ctx);
     if (claims !== null && verdicts === null) {
       report.degraded = 'claim validation unavailable — only the deterministic table ran';
@@ -1243,8 +1245,21 @@ export async function gatePlan<T extends PlanLike>(
  * titled "Borrowing is getting more expensive, not" for precisely that reason: the check that
  * catches it had already run. Exported so the orchestrator can call it after everything else.
  */
-export function finishCopy<T extends PlanLike>(plan: T, report?: GateReport, markets = ''): T {
+export function finishCopy<T extends PlanLike>(
+  plan: T, report?: GateReport, markets = '', capabilities = markets,
+): T {
   let current = plan;
+  // A CTA that promises a deliverable the agency has not said it produces is rewritten into the
+  // conversation it should have been. It never fails a post: the marketing survives, the invented
+  // service does not.
+  for (const f of planFields(current)) {
+    if (fieldPolicy(f.field) !== 'cta') continue;
+    const d = checkCta(f.text, capabilities);
+    if (d.ok) continue;
+    current = writeField(current, f.field, d.rewrite);
+    report?.blocked.push({ field: f.field, text: f.text, verdict: 'UNSUPPORTED',
+      problem: d.why, outcome: `rewritten as a conversation: "${d.rewrite}"` });
+  }
   // Hashtags publish with every post and nothing walked them until now. Structural and brand
   // sanity only — the factual verifier has no business reading the word "Desliza".
   const tagged = current as unknown as { hashtags?: string[] };

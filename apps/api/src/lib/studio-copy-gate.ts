@@ -1049,13 +1049,16 @@ export function isPlaceName(name: string): boolean {
  * a policy and every published field has one.
  * ──────────────────────────────────────────────────────────────────────────────────────────── */
 
-export type FieldPolicy = 'claim' | 'static' | 'hashtags';
+export type FieldPolicy = 'claim' | 'cta' | 'static' | 'hashtags';
 
 /** What kind of checking this field gets. Unknown fields are treated as claim-bearing, not skipped. */
 export function fieldPolicy(field: string): FieldPolicy {
   const base = field.replace(/^tips\[\d+\]\./, '').replace(/^quote_parts\[\d+\]$/, 'quote_parts');
   if (base === 'swipe_cue') return 'static';
   if (base === 'hashtags') return 'hashtags';
+  // A call to action promises a conversation or a deliverable. That is a capability question, not
+  // an evidence question, and it gets its own cheap rule rather than the whole pipeline.
+  if (base === 'cta_action' || base === 'cta_keyword') return 'cta';
   return 'claim';
 }
 
@@ -1076,7 +1079,8 @@ export const PUBLISHED_FIELDS: readonly { field: string; policy: FieldPolicy }[]
  * not only the three prose ones, which is how four cut headlines shipped while the counter read nil.
  */
 export function fieldIncomplete(field: string, text: string): boolean {
-  if (fieldPolicy(field) !== 'claim') return false;
+  const policy = fieldPolicy(field);
+  if (policy !== 'claim' && policy !== 'cta') return false;
   const t = (text ?? '').trim();
   if (!t) return false;
   if (PROSE_FIELD.test(field)) return !/[.!?…]["'”’)]?$/.test(t);

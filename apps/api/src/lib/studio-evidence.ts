@@ -380,7 +380,10 @@ export function figuresBacked(claim: string, evidence: string): boolean {
 export type SupportType =
   | 'page_direct'        // the claim quotes an opened page word for word
   | 'source_fact'        // the claim follows from a fact read off an opened page
-  | 'agency_profile'
+  | 'agency_profile'     // a fact the agency supplied about itself
+  | 'agency_knowledge'   // something the agency told us about its market or its clients
+  | 'local_intelligence' // stored local knowledge for this area
+  | 'general_mechanism'  // ordinary marketing reasoning: a tendency, not a measurement
   | 'bank_fact'
   | 'none';
 
@@ -416,6 +419,10 @@ export interface ClaimSupport {
 
 export interface SupportContext {
   sources: readonly ResearchSource[];
+  /** what the agency has told us about its market and its clients, beyond the bare profile */
+  agencyKnowledge?: string;
+  /** stored local knowledge for this area, where the product has any */
+  localIntelligence?: string;
   /** the facts read off those pages, each anchored to a verified span */
   facts?: readonly SourceFact[];
   /** the tagged briefing, so a quote from a line that names an opened page can be traced */
@@ -533,6 +540,34 @@ export function verifySupport(p: ProposedSupport, ctx: SupportContext): ClaimSup
       }
       for (const b of backers) if (!b.excerpts.includes(excerpt)) b.excerpts.push(excerpt);
       return out('supported', `verbatim on ${backing.join(', ')}`);
+    }
+    case 'agency_knowledge':
+    case 'local_intelligence': {
+      // Something the agency told us about its market or its clients, or stored local knowledge.
+      // The model may not manufacture it because it sounds like the kind of thing an agent says.
+      const store = p.supportType === 'agency_knowledge'
+        ? `${ctx.agencyEvidence}\n${ctx.agencyKnowledge ?? ''}` : (ctx.localIntelligence ?? '');
+      if (!store.trim()) {
+        return out('unsupported', p.supportType === 'agency_knowledge'
+          ? 'the agency has not supplied knowledge of this kind'
+          : 'there is no stored local intelligence for this area');
+      }
+      if (!excerpt) return out('unsupported', 'no evidence excerpt offered');
+      if (!excerptOccursIn(excerpt, store)) {
+        return out('unsupported', 'not in what the agency or the local record actually says');
+      }
+      const over = agencyOverreach(p.claim, store);
+      if (over) return out('unsupported', over);
+      return out('supported', p.supportType === 'agency_knowledge'
+        ? 'from what the agency told us' : 'from stored local knowledge');
+    }
+    case 'general_mechanism': {
+      // MEDIUM RISK ONLY. A high-risk claim is never ordinary reasoning.
+      if (tier === 'high') {
+        return out('unsupported', 'law, tax, money and figures are not general reasoning');
+      }
+      const m = mechanismAllowed(p.claim);
+      return m.ok ? out('supported', m.why) : out('unsupported', m.why);
     }
     case 'agency_profile': {
       // NOT a verbatim test. The profile is a list of facts, and an agency line is a sentence made
@@ -709,4 +744,115 @@ export function agencyOverreach(claim: string, profile: string): string {
   }
   if (!figuresBacked(t, profile)) return 'states a figure the agency profile does not contain';
   return '';
+}
+
+
+/* ── WHAT MAY STAND WITHOUT A SOURCE ─────────────────────────────────────────────────────── */
+
+/**
+ * A claim that names a place, a time, a nationality in the market, or a specific platform is a
+ * checkable fact about the outside world however qualitatively it is phrased.
+ *
+ * Christian, 2026-09-05: "Launching too high can make buyers hesitate" may stand on ordinary
+ * reasoning. "Moraira is quieter in winter than Calpe", "Parking is harder in Dénia", "Dutch buyers
+ * dominate Jávea", "This portal pushes old listings down" may not — those are local or current
+ * facts wearing a qualitative coat.
+ */
+const DEICTIC_SPECIFIC = /\b(?:this (?:town|area|neighbourhood|neighborhood|village|coast|portal|platform|site|street|urbanisation|urbanization|development)|round here|here in|the (?:local|nearby) \w+)\b/i;
+const MARKET_NATIONALITY = /\b(?:british|dutch|german|belgian|polish|french|scandinavian|norwegian|swedish|danish|irish|russian|foreign)\s+(?:buyers?|owners?|purchasers?|clients?|families|money)\b/i;
+const PERIOD_MARKER = /\b(?:winter|summer|spring|autumn|off[- ]season|high season|peak season|right now|currently|at the moment|this year|last year|these days|since \d{4}|in \d{4}|nowadays)\b/i;
+const NAMED_PLATFORM = /\b(?:Idealista|Fotocasa|Kyero|Rightmove|Zillow|Habitaclia|Pisos\.com|Google|Instagram|Facebook|TikTok|portal algorithms?)\b/i;
+
+/** Is this a specific claim about a real place, market or platform rather than a general tendency? */
+export function isSpecificLocalOrCurrent(text: string): boolean {
+  const t = text ?? '';
+  if (placesInText(t).size) return true;
+  return DEICTIC_SPECIFIC.test(t) || MARKET_NATIONALITY.test(t)
+    || PERIOD_MARKER.test(t) || NAMED_PLATFORM.test(t);
+}
+
+/** Stated as a law of nature rather than a tendency. An industry mechanism is never universal. */
+const UNIVERSAL = /\b(?:always|never|every (?:buyer|seller|listing|home|time)|all (?:buyers|sellers|listings|homes)|guarantee[sd]?|guaranteed|will (?:definitely|certainly)|invariably|without exception|in every case)\b/i;
+
+/** Modal qualification — the register a tendency belongs in. */
+const QUALIFIED = /\b(?:can|may|might|often|usually|typically|tend(?:s)? to|generally|frequently|sometimes|commonly|in many cases|more likely|less likely|risks?|could)\b/i;
+
+/**
+ * May this medium-risk claim stand as ordinary marketing reasoning, with no source?
+ *
+ * Yes when it is a tendency about how selling works. No when it is a specific local or current
+ * fact, and no when it has been written as a universal law — "overpricing always costs you the
+ * first two weeks" is a measurement pretending to be a maxim.
+ */
+export function mechanismAllowed(text: string): { ok: boolean; why: string } {
+  const t = text ?? '';
+  if (isSpecificLocalOrCurrent(t)) {
+    return { ok: false, why: 'this is a specific claim about a place, a market or a platform, not a general mechanism' };
+  }
+  if (UNIVERSAL.test(t) && !QUALIFIED.test(t)) {
+    return { ok: false, why: 'stated as a universal rule rather than a tendency' };
+  }
+  return { ok: true, why: 'ordinary reasoning about how selling works' };
+}
+
+
+/* ── CALLS TO ACTION ─────────────────────────────────────────────────────────────────────── */
+
+/** Things a CTA can promise to hand over. Each is a real deliverable someone has to produce. */
+const DELIVERABLE = /\b(?:we(?:'ll| will)\s+|I(?:'ll| will)\s+)?(?:send|share|email|post|deliver|arrange|book|prepare|produce|provide|give)\s+(?:you\s+)?(?:a|an|the|our|your)?\s*([^.,;!?]{3,60})/i;
+/** Services and artefacts an agency has to actually offer. Anything else promised is a thing. */
+const NAMED_SERVICE = /\b(valuation|appraisal|tasaci[óo]n|survey|drone photography|photography|photoshoot|floor ?plan|video|virtual tour|staging|mortgage|legal advice|conveyancing|translation|management)\b/i;
+
+/** Ordinary invitations to talk. These promise a conversation, which every agency can have. */
+const GENERIC_CTA = /\b(?:talk|chat|speak|call|message|write|DM|reply|comment|tell us|ask us|let us know|walk you through|answer|discuss|get in touch|come back to you|point you)\b/i;
+
+export interface CtaDecision {
+  ok: boolean;
+  /** the deliverable it promised, when it promised one */
+  deliverable: string;
+  /** a generic version that keeps the marketing and drops the promise, when one is needed */
+  rewrite: string;
+  why: string;
+}
+
+/**
+ * Is this CTA promising something the agency can actually hand over?
+ *
+ * Deliberately cheap — a CTA does not go through the evidence pipeline. And an unsupported promise
+ * never fails the post: it is rewritten into the conversation it should have been.
+ *
+ * Christian, 2026-09-05: "Comment ARRAS and we'll send you the full breakdown" becomes "Comment
+ * ARRAS and we'll talk you through the key points." The marketing survives; the invented service
+ * does not.
+ */
+export function checkCta(text: string, capabilities: string): CtaDecision {
+  const t = (text ?? '').trim();
+  if (!t) return { ok: true, deliverable: '', rewrite: t, why: 'empty' };
+  const m = DELIVERABLE.exec(t);
+  if (!m) {
+    return { ok: true, deliverable: '', rewrite: t,
+      why: GENERIC_CTA.test(t) ? 'an invitation to talk, which needs nothing'
+        : 'promises nothing that has to be produced' };
+  }
+  const deliverable = m[1].trim().toLowerCase();
+  // A named service has to be one the agency offers. Anything else is a document it would have to
+  // produce, which is equally a promise — but if the profile already names it, it stands.
+  const service = NAMED_SERVICE.exec(deliverable)?.[1];
+  const cap = capabilities ?? '';
+  if (service && new RegExp(service.replace(/\s+/g, '\\s?'), 'i').test(cap)) {
+    return { ok: true, deliverable, rewrite: t, why: `the agency offers ${service}` };
+  }
+  if (!service && new RegExp(deliverable.split(/\s+/).slice(0, 2).join('\\s+'), 'i').test(cap)) {
+    return { ok: true, deliverable, rewrite: t, why: 'the agency profile names this' };
+  }
+  // Rewrite: keep everything up to the promise, then offer the conversation instead.
+  const head = t.slice(0, m.index)
+    .replace(/\s*(?:and|y|und|en)?\s*(?:we(?:'ll| will)|I(?:'ll| will))?\s*$/i, '')
+    .replace(/\s*(?:and|y|und|en)\s*$/i, '')
+    .replace(/[\s,;:—–-]+$/, '');
+  const rewrite = head
+    ? `${head} and we'll talk you through the key points.`
+    : "Message us and we'll talk you through the key points.";
+  return { ok: false, deliverable, rewrite,
+    why: `promises a ${deliverable} the agency has not said it produces` };
 }

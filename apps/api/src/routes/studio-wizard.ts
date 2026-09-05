@@ -36,6 +36,7 @@ import { finishCopy, gatePlan, type GateReport } from '../lib/studio-claim-gate'
 import { cardRules } from '../lib/studio-bank-match';
 import { dropSentence, gateField, planFields, readField, writeField,
   type RequirementCoverage } from '../lib/studio-copy-gate';
+import type { ResearchSource } from '../lib/studio-evidence';
 import { directScenes } from '../lib/studio-carousel-art';
 import { renderTipsImageStyled, renderTipsImageStyledV2, isTipsImageStyle } from '../../../../studio/engine/carouselTipsImage';
 import { renderFreeform, type DesignSpec } from '../../../../studio/engine/renderFreeform';
@@ -1424,6 +1425,9 @@ async function runPlannedCarousel(opts: {
     // requirement id, status, the sentence of the research that establishes it, and the pages it
     // was read from, so a published post can be audited back to what it was allowed to say.
     let coverage: RequirementCoverage[] = [];
+    // Every page the research touched, with the text of the ones it opened. A published claim is
+    // checked back against these, so they have to travel with the plan.
+    let sources: ResearchSource[] = [];
     // THE VERIFIED BANK GOVERNS THE TOPIC BEFORE ANYTHING IS WRITTEN. Matching nothing is normal —
     // most typed topics are not in the bank — and a wrong card would be worse than none.
     const card = opts.type === 'tips' ? await pickBankCard(opts.topic ?? '').catch(() => null) : null;
@@ -1439,6 +1443,7 @@ async function runPlannedCarousel(opts: {
       cardId: card?.id, cardMustList: card ? [...card.must] : undefined,
       onResearch: (b) => { research = b; },
       onCoverage: (u, degraded, cov) => { uncovered = u; coverageDegraded = degraded; coverage = cov; },
+      onSources: (src) => { sources = src; },
     });
     // EDITOR pass (Christian 2026-08-28): a skeptical second read of the copy — sense, value,
     // trust — before anything renders. Quote decks are verbatim client words and skip it.
@@ -1459,6 +1464,7 @@ async function runPlannedCarousel(opts: {
         language: opts.language, topic: opts.topic ?? '', research,
         cardRules: card ? cardRules(card) : '',
         agencyEvidence: opts.agencyEvidence ?? '', uncovered,
+        sources, coverage, cardId: card?.id, bank: card?.bank,
       }).catch((err: unknown) => {
         console.warn(`[studio/carousel] claim gate failed: ${(err as Error)?.message}`);
         return null;
@@ -1479,6 +1485,7 @@ async function runPlannedCarousel(opts: {
           language: opts.language, topic: opts.topic ?? '', research,
           cardRules: card ? cardRules(card) : '',
           agencyEvidence: opts.agencyEvidence ?? '', uncovered,
+          sources, coverage, cardId: card?.id, bank: card?.bank,
         }, 1).catch(() => null);
         if (regated) {
           plan = regated.plan;
@@ -1600,7 +1607,15 @@ async function runPlannedCarousel(opts: {
       result_metadata: {
         engine: 'carousel', carousel_type: opts.type, carousel_style: usedStyle, slide_count: stored.length, slides: stored,
         ai_imagery: opts.type === 'tips' && isTipsImageStyle(usedStyle),
-        image_paths: imagePaths, image_scheme: opts.scheme, per_slide_art: perSlideArt, artwork_source: artworkSource, artwork_error: artworkError, artwork_qa: artworkQa, copy_qa: copyQa, claim_qa: claimQa, requirement_coverage: coverage, research, include_recap: opts.includeRecap, include_context: opts.includeContext,
+        image_paths: imagePaths, image_scheme: opts.scheme, per_slide_art: perSlideArt, artwork_source: artworkSource, artwork_error: artworkError, artwork_qa: artworkQa, copy_qa: copyQa, claim_qa: claimQa, requirement_coverage: coverage,
+        // The source ledger. Coverage and claim-support records reference these ids, so a published
+        // sentence can be traced to the page it came off long after the run.
+        research_sources: sources.map((x) => ({
+          source_id: x.id, url: x.url, title: x.title, domain: x.domain,
+          source_class: x.sourceClass, opened: x.opened, opened_at: x.openedAt,
+          content_chars: x.contentChars, evidence_excerpts: x.excerpts,
+        })),
+        research, include_recap: opts.includeRecap, include_context: opts.includeContext,
         plan, caption: plan.caption, hashtags: plan.hashtags,
       },
       completed_at: new Date().toISOString(),

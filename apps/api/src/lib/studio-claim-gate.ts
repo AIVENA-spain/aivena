@@ -27,6 +27,7 @@ import {
   type CoverageStatus, type GateHit, type PlanLike, type Requirement, type RequirementCoverage,
   type Resolution,
 } from './studio-copy-gate';
+import { getCard, retrieveBankFacts } from './studio-bank-match';
 import {
   riskOf, verifySupport,
   type ClaimSupport, type ProposedSupport, type ResearchSource, type SupportContext,
@@ -69,8 +70,13 @@ export interface GateContext {
   sources?: ResearchSource[];
   /** requirement id → status, so a claim can be refused for resting on an unestablished one */
   coverage?: RequirementCoverage[];
-  /** id → exact text of the verified bank facts and guardrails relevant to this post */
+  /** id → exact text of the verified bank facts and guardrails relevant to this post. Left unset,
+   *  the gate retrieves them itself from what the finished post actually claims. */
   bankFacts?: ReadonlyMap<string, string>;
+  /** the matched card, whose own requirements and guardrails always apply */
+  cardId?: string;
+  /** which bank to retrieve across when no card matched */
+  bank?: 'seller' | 'buyer';
 }
 
 export interface GateReport {
@@ -877,11 +883,24 @@ export async function gatePlan<T extends PlanLike>(
           + 'the last clause — make the whole point fit.',
       }));
 
+    // RETRIEVAL HAPPENS HERE, on what the post ended up claiming — not on the topic it started
+    // from. H1 and H2 matched no card and made the run's worst legal and tax claims; the bank
+    // covers both subjects. Retrieval is restricted to material claims so marketing stays fast.
+    const bankFacts = new Map<string, string>(ctx.bankFacts ?? []);
+    if (!ctx.bankFacts && policed.length) {
+      for (const f of retrieveBankFacts(policed.map((c) => c.text), ctx.bank)) bankFacts.set(f.id, f.text);
+      const card = ctx.cardId ? getCard(ctx.cardId) : undefined;
+      if (card) {
+        // The matched card is authoritative for this topic whatever retrieval scored.
+        card.must.forEach((t, i) => bankFacts.set(`${card.id}#${i + 1}`, t));
+        card.never.forEach((t, i) => bankFacts.set(`${card.id}#never${i + 1}`, t));
+      }
+    }
     // SUPPORT. Every material claim, not only the flagged ones, has to say what it rests on, and
     // the record is checked offline against the pages the research actually opened. This is the
     // step whose absence let fifteen defects publish under a report of two: a claim used to need
     // only a second model's approval, and approval is not evidence.
-    const { supports, degraded: supportDegraded } = await supportClaims(policed, ctx);
+    const { supports, degraded: supportDegraded } = await supportClaims(policed, { ...ctx, bankFacts });
     if (supportDegraded) report.degraded = supportDegraded;
     const supportOf = new Map<string, ClaimSupport>();
     supports.forEach((sup, i) => supportOf.set(`${policed[i].field}::${policed[i].text}`, sup));
@@ -889,8 +908,7 @@ export async function gatePlan<T extends PlanLike>(
 
     // THE VERIFIED BANK, ON THE FINISHED DRAFT. Retrieval is over the whole relevant bank, because
     // the posts that made the worst claims last time matched no card at all.
-    const { contradictions, degraded: bankDegraded } =
-      await checkBankContradictions(policed, ctx.bankFacts ?? new Map<string, string>());
+    const { contradictions, degraded: bankDegraded } = await checkBankContradictions(policed, bankFacts);
     if (bankDegraded) report.degraded = report.degraded ?? bankDegraded;
     if (round === 0) {
       report.supports = supports;

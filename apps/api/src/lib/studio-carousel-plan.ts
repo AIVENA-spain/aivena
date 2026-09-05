@@ -851,6 +851,13 @@ export async function planCarousel(opts: {
    * post, not a lesser one.
    */
   saferAngle?: boolean;
+  /**
+   * Research already done for this topic. The safer rewrite is the SAME topic with different
+   * arguments, and re-running the whole research for it threw away fifteen opened pages and came
+   * back with one — the second deck was then judged against evidence the first one had gathered.
+   */
+  existingBrief?: string;
+  existingSources?: ResearchSource[];
   onResearch?: (brief: string) => void;
   /** every page the research touched, with the text of the ones it actually opened */
   onSources?: (sources: ResearchSource[]) => void;
@@ -863,11 +870,14 @@ export async function planCarousel(opts: {
   // Find out BEFORE writing. Never fatal: if research fails or times out the deck is still written,
   // just from the model's own knowledge as it always was — a slow search must not cost an agent
   // their post.
-  const brief = opts.type === 'tips' && opts.topic
+  const brief = opts.existingBrief !== undefined
+    ? opts.existingBrief
+    : opts.type === 'tips' && opts.topic
     ? await researchTopic(opts.topic, lang, region, opts.marketBrief ?? '', opts.cardMust ?? '',
         (src) => { researchSources = src; opts.onSources?.(src); }).catch(() => '')
     : '';
-  if (brief) {
+  if (opts.existingSources?.length) researchSources = opts.existingSources;
+  if (brief && opts.existingBrief === undefined) {
     console.log(`[studio/carousel] researched "${String(opts.topic).slice(0, 60)}" — ${brief.length} chars`);
     opts.onResearch?.(brief);
   }
@@ -1031,6 +1041,14 @@ Submit with the submit_carousel tool.`;
       lastErr = `${longTitles} slide title(s) exceed 62 characters. Rewrite those titles shorter — `
         + 'a title is one phrase and cutting it mid-sentence leaves it hanging. Keep every other field.';
       continue;
+    }
+    // Twice in sixteen generations the writer returned `tips` as a JSON string rather than an
+    // array, and the post died on a schema error after three retries. Parse it rather than lose it.
+    if (typeof input.tips === 'string') {
+      try {
+        const parsed = JSON.parse(input.tips as string);
+        if (Array.isArray(parsed)) input.tips = parsed;
+      } catch { /* leave it and let the schema report honestly */ }
     }
     const overCap = trimToCaps(input);
     const parsed = PlanSchema.safeParse(input);

@@ -606,10 +606,10 @@ export async function extractSourceFacts(
   let failed = 0;
   await Promise.all(opened.slice(0, 12).map(async (src) => {
     // Enough of the page to carry the relevant part without paying for the whole Código Civil.
-    const body = (src.content ?? '').slice(0, 24_000);
+    const body = (src.content ?? '').slice(0, 18_000);
     const out = await callTool(`source facts ${src.id}`, FACTS_SYSTEM,
       `THE POST IS ABOUT: ${topic}\n\nPAGE ${src.id} — ${src.url}\n\n${body}`,
-      FACTS_TOOL, 120_000, 4000);
+      FACTS_TOOL, 180_000, 4000);
     const list = out && coerceList(out.facts, 'facts');
     if (!list) { failed++; return; }
     for (const r of list) {
@@ -623,7 +623,7 @@ export async function extractSourceFacts(
       // Alicante province in 2025". It may not become "Dutch buyers became the dominant group
       // across the Costa Blanca" — that is the H4 error, one link earlier.
       const scope = canonicalWithinExcerpt({ excerpt, canonical,
-        geography: String(r?.geography ?? ''), period: String(r?.period ?? '') });
+        geography: String(r?.geography ?? ''), period: String(r?.period ?? '') }, src.content ?? '');
       if (!scope.ok) {
         console.warn(`[studio/claim-gate] dropped a source fact off ${src.id} — ${scope.why}`);
         continue;
@@ -657,7 +657,8 @@ const SUPPORT_TOOL = {
           properties: {
             claim_id: { type: 'string' },
             support_type: { type: 'string',
-              enum: ['source_fact', 'page_direct', 'agency_profile', 'bank_fact', 'none'] },
+              enum: ['source_fact', 'page_direct', 'agency_profile', 'agency_knowledge',
+                'local_intelligence', 'general_mechanism', 'bank_fact', 'none'] },
             fact_ids: { type: 'array', items: { type: 'string' },
               description: 'the F-ids of the source facts this claim follows from' },
             source_ids: { type: 'array', items: { type: 'string' },
@@ -691,12 +692,26 @@ ranking is not a provincial one); a different period; a general rule where the f
 a cause where the fact gives only a correlation; a certainty where the fact gives a tendency.
 
 SUPPORT TYPES
-· source_fact — the normal case. Give fact_ids.
+· source_fact — the normal case for anything about the outside world. Give fact_ids.
 · page_direct — the claim quotes a page word for word. Give source_ids and the exact excerpt.
-· agency_profile — a fact the agency itself supplied. Copy its words into evidence_excerpt.
+· agency_profile — a fact the agency supplied about itself. Copy its words into evidence_excerpt.
+· agency_knowledge — something the agency told us about its market or its clients. Copy its words.
+· local_intelligence — stored local knowledge for this area. Copy its words.
+· general_mechanism — ORDINARY MARKETING REASONING. Use this, and use it freely, for a claim about
+  how selling generally works: "launching too high can make buyers hesitate", "a listing that sits
+  for a long time can make buyers wonder why", "five versions of one property can create
+  conflicting messaging". These are tendencies, not measurements, and they do not need a source.
+  They are where the post earns its living. Do NOT use it for a claim about a particular place, a
+  particular market, a particular platform, a period of time, or anything with a number in it —
+  "Moraira is quieter in winter than Calpe" and "this portal pushes old listings down" are checkable
+  facts wearing a qualitative coat, and they need real evidence.
 · bank_fact — a verified bank fact you were given by id. Copy its words into evidence_excerpt.
 · none — nothing in front of you establishes this claim. A correct and useful answer; never invent
   a fact id to fill the box.
+
+CHOOSING BETWEEN THEM: ask what would have to be true for the sentence to be wrong. If it would take
+a measurement, a law or a dataset, it needs source_fact or page_direct. If it is the kind of thing an
+experienced agent says about how buyers behave in general, it is general_mechanism.
 
 REQUIREMENTS: if a numbered requirement is listed and the claim depends on it, name it in
 requirement_ids whether or not it was established.`;

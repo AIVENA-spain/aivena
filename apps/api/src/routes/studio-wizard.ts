@@ -1435,6 +1435,10 @@ async function runPlannedCarousel(opts: {
     if (card) console.log(`[studio/carousel] topic governed by bank card ${card.id} (${card.state})`);
     const writeDeck = (saferAngle: boolean) => planCarousel({
       saferAngle,
+      // The rewrite is the same topic on different arguments — it reuses the research rather than
+      // paying for it twice and ending up with less than the first pass had.
+      existingBrief: saferAngle ? research : undefined,
+      existingSources: saferAngle ? sources : undefined,
       type: opts.type, topic: opts.topic, quoteText: opts.quoteText, quoteAuthor: opts.quoteAuthor,
       slideCount: opts.slideCount, language: opts.language, agencyName: opts.agency.name,
       agencyProfile: opts.agencyProfile, avoidMotifs,

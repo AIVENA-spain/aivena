@@ -239,6 +239,20 @@ const hitsAny = (rs: RegExp[], t: string) => rs.some((r) => r.test(t));
  * of its five slides, and the deleted slides were not wrong — they were unquotable.
  * ──────────────────────────────────────────────────────────────────────────────────────────── */
 
+const DEICTIC_SPECIFIC = /\b(?:this (?:town|area|neighbourhood|neighborhood|village|coast|portal|platform|site|street|urbanisation|urbanization|development)|round here|here in|the (?:local|nearby) \w+)\b/i;
+const MARKET_NATIONALITY = /\b(?:british|dutch|german|belgian|polish|french|scandinavian|norwegian|swedish|danish|irish|russian|foreign)\s+(?:buyers?|owners?|purchasers?|clients?|families|money)\b/i;
+const PERIOD_MARKER = /\b(?:winter|summer|spring|autumn|off[- ]season|high season|peak season|right now|currently|at the moment|this year|last year|these days|since \d{4}|in \d{4}|nowadays)\b/i;
+const NAMED_PLATFORM = /\b(?:Idealista|Fotocasa|Kyero|Rightmove|Zillow|Habitaclia|Pisos\.com|Google|Instagram|Facebook|TikTok|portal algorithms?)\b/i;
+
+/** Is this a specific claim about a real place, market or platform rather than a general tendency? */
+export function isSpecificLocalOrCurrent(text: string): boolean {
+  const t = text ?? '';
+  if (placesInText(t).size) return true;
+  return DEICTIC_SPECIFIC.test(t) || MARKET_NATIONALITY.test(t)
+    || PERIOD_MARKER.test(t) || NAMED_PLATFORM.test(t);
+}
+
+
 export type RiskTier = 'high' | 'medium' | 'low';
 
 /** Anything with a figure, a date, a deadline or a threshold in it is a number the reader may act on. */
@@ -264,7 +278,12 @@ export function riskTier(text: string, claimType?: string): RiskTier {
   if (claimType === 'LEGAL_CONSEQUENCE' || claimType === 'QUANTIFIED_CLAIM'
       || claimType === 'TIME_SENSITIVE_FACT' || claimType === 'AGENCY_FACT') return 'high';
   if (LEGAL_TAX.some((r) => r.test(t))) return 'high';
-  if (HAS_FIGURE.test(t) || RANKING.test(t) || FINANCIAL_OUTCOME.test(t)) return 'high';
+  if (HAS_FIGURE.test(t) || FINANCIAL_OUTCOME.test(t)) return 'high';
+  // A RANKING is high risk when someone actually holds the rank. "A nationality can spend more per
+  // purchase without being the biggest group of buyers" names nobody and asserts no position — it
+  // is a statement about two metrics not being interchangeable, which is the SAFE version of the
+  // claim, and the strict run refused it.
+  if (RANKING.test(t) && isSpecificLocalOrCurrent(t)) return 'high';
   // Everything else a reader could check but could not be financially hurt by: how a town feels,
   // how buyers behave, how a mechanism generally works, an unquantified comparison.
   if (claimType && ['FACTUAL_MATERIAL', 'LOCAL_FACT', 'CAUSAL_INFERENCE'].includes(claimType)) return 'medium';
@@ -759,19 +778,6 @@ export function agencyOverreach(claim: string, profile: string): string {
  * dominate Jávea", "This portal pushes old listings down" may not — those are local or current
  * facts wearing a qualitative coat.
  */
-const DEICTIC_SPECIFIC = /\b(?:this (?:town|area|neighbourhood|neighborhood|village|coast|portal|platform|site|street|urbanisation|urbanization|development)|round here|here in|the (?:local|nearby) \w+)\b/i;
-const MARKET_NATIONALITY = /\b(?:british|dutch|german|belgian|polish|french|scandinavian|norwegian|swedish|danish|irish|russian|foreign)\s+(?:buyers?|owners?|purchasers?|clients?|families|money)\b/i;
-const PERIOD_MARKER = /\b(?:winter|summer|spring|autumn|off[- ]season|high season|peak season|right now|currently|at the moment|this year|last year|these days|since \d{4}|in \d{4}|nowadays)\b/i;
-const NAMED_PLATFORM = /\b(?:Idealista|Fotocasa|Kyero|Rightmove|Zillow|Habitaclia|Pisos\.com|Google|Instagram|Facebook|TikTok|portal algorithms?)\b/i;
-
-/** Is this a specific claim about a real place, market or platform rather than a general tendency? */
-export function isSpecificLocalOrCurrent(text: string): boolean {
-  const t = text ?? '';
-  if (placesInText(t).size) return true;
-  return DEICTIC_SPECIFIC.test(t) || MARKET_NATIONALITY.test(t)
-    || PERIOD_MARKER.test(t) || NAMED_PLATFORM.test(t);
-}
-
 /** Stated as a law of nature rather than a tendency. An industry mechanism is never universal. */
 const UNIVERSAL = /\b(?:always|never|every (?:buyer|seller|listing|home|time)|all (?:buyers|sellers|listings|homes)|guarantee[sd]?|guaranteed|will (?:definitely|certainly)|invariably|without exception|in every case)\b/i;
 
@@ -913,8 +919,15 @@ export interface FactScope { ok: boolean; why: string }
  * carry. The canonical layer normalises and translates; it never concludes.
  */
 export function canonicalWithinExcerpt(fact: { excerpt: string; canonical: string;
-  geography?: string; period?: string }): FactScope {
-  const ex = `${fact.excerpt} ${fact.geography ?? ''} ${fact.period ?? ''}`;
+  geography?: string; period?: string }, pageText = ''): FactScope {
+  // The excerpt is a span, and a table row rarely repeats the province its own page is about. So
+  // geography may also come from the text immediately around the excerpt — a real locality test,
+  // not the whole page, which would let a national figure borrow a provincial heading.
+  const at = pageText ? normalizeForMatch(pageText).indexOf(normalizeForMatch(fact.excerpt)) : -1;
+  const near = at >= 0
+    ? normalizeForMatch(pageText).slice(Math.max(0, at - 600), at + fact.excerpt.length + 600)
+    : '';
+  const ex = `${fact.excerpt} ${fact.geography ?? ''} ${fact.period ?? ''} ${near}`;
   const can = fact.canonical ?? '';
   if (!figuresBacked(can, ex)) return { ok: false, why: 'states a figure the excerpt does not contain' };
   // Years are figures too, but they are the ones that silently drift.

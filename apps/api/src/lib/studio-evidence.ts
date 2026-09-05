@@ -161,6 +161,26 @@ export function sourcesBacking(
   });
 }
 
+/**
+ * The source ids of a briefing line that contains this excerpt verbatim.
+ *
+ * Empty when no line does, or when the line names no source. This is the one place the briefing is
+ * allowed to stand in for the page, and only for an excerpt that is on the line word for word.
+ */
+export function briefingLineFor(
+  excerpt: string, cited: readonly string[], brief: string,
+): string[] | null {
+  if (!brief) return null;
+  for (const line of brief.split('\n')) {
+    if (line.trim().length < 30) continue;
+    if (!excerptOccursIn(excerpt, line)) continue;
+    const ids = Array.from(line.matchAll(/\[\s*(S\d+)\s*\]/g), (m) => m[1])
+      .filter((id) => cited.includes(id));
+    if (ids.length) return ids;
+  }
+  return null;
+}
+
 /* ── SOURCE POLICY ───────────────────────────────────────────────────────────────────────── */
 
 export type RiskClass = 'legal_tax' | 'market_statistics' | 'local_fact' | 'none';
@@ -266,10 +286,18 @@ export interface ClaimSupport {
   /** why it landed there — the deterministic reason, not the model's narration */
   reason: string;
   risk: RiskClass;
+  /**
+   * TRUE when the excerpt was found on a briefing line tagged to an opened page rather than on the
+   * page itself. The chain still ends at a real source, but one link in it is the research model's
+   * transcription, so these are counted apart and never silently mixed with page-verified claims.
+   */
+  viaBriefing?: boolean;
 }
 
 export interface SupportContext {
   sources: readonly ResearchSource[];
+  /** the tagged briefing, so a quote from a line that names an opened page can be traced */
+  brief?: string;
   agencyEvidence: string;
   /** bank fact or guardrail id → its exact text, for a claim that rests on the verified bank */
   bankText: ReadonlyMap<string, string>;
@@ -317,6 +345,16 @@ export function verifySupport(p: ProposedSupport, ctx: SupportContext): ClaimSup
       if (!known.length) return out('unsupported', 'no source cited');
       const backing = sourcesBacking(excerpt, known, ctx.sources);
       if (!backing.length) {
+        // Second link in the chain: a briefing line that quotes this and names one of the cited
+        // pages. Weaker than the page itself — the transcription is the research model's — so it is
+        // marked and counted separately, never presented as page-verified.
+        const viaLine = briefingLineFor(excerpt, known, ctx.brief ?? '');
+        if (viaLine) {
+          const opened = ctx.sources.filter((s) => viaLine.includes(s.id) && s.opened);
+          if (opened.length && policyAllows(risk, opened)) {
+            return { ...out('supported', `on a briefing line tagged to ${viaLine.join(', ')}`), viaBriefing: true };
+          }
+        }
         const openedCited = known.filter((id) => ctx.sources.find((s) => s.id === id)?.opened);
         return out('unsupported', openedCited.length
           ? 'the excerpt does not occur on any cited page'

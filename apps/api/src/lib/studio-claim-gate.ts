@@ -608,7 +608,7 @@ export async function supportClaims(
   const unestablished = new Set(coverage.filter((c) => c.status === 'not_established').map((c) => c.id));
 
   const supportCtx: SupportContext = {
-    sources, agencyEvidence: ctx.agencyEvidence, bankText: bankFacts, unestablished,
+    sources, brief: ctx.research, agencyEvidence: ctx.agencyEvidence, bankText: bankFacts, unestablished,
   };
   const unsupportedAll = (why: string) => ({
     supports: claims.map((c, i) => verifySupport({

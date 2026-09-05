@@ -139,6 +139,24 @@ describe('verifySupport', () => {
     expect(r.verdict).toBe('unsupported');
     expect(r.reason).toMatch(/do not exist/);
   });
+  // The second link: allowed, marked, and counted apart — never presented as page-verified.
+  it('accepts a quote off a briefing line that names an opened page, and marks it', () => {
+    const brief = 'A sale binds both sides once thing and price are agreed. [S1]';
+    const r = verifySupport(P({ sourceIds: ['S1'], evidenceExcerpt: 'A sale binds both sides once thing and price are agreed' }),
+      { ...ctx(), brief });
+    expect(r.verdict).toBe('supported');
+    expect(r.viaBriefing).toBe(true);
+  });
+  it('will not accept a briefing line that names no cited source', () => {
+    const brief = 'A sale binds both sides once thing and price are agreed.';
+    expect(verifySupport(P({ sourceIds: ['S1'], evidenceExcerpt: 'A sale binds both sides once thing and price are agreed' }),
+      { ...ctx(), brief }).verdict).toBe('unsupported');
+  });
+  it('will not let a briefing line launder a source class that may not carry the claim', () => {
+    const brief = 'A sale binds both sides once thing and price are agreed. [S2]';
+    expect(verifySupport(P({ sourceIds: ['S2'], evidenceExcerpt: 'A sale binds both sides once thing and price are agreed' }),
+      { ...ctx(), brief }).verdict).toBe('unsupported');
+  });
   it('refuses an excerpt that is not on the page it cites', () => {
     const r = verifySupport(P({ sourceIds: ['S3'], evidenceExcerpt: 'La venta se perfeccionará entre comprador' }), ctx());
     expect(r.verdict).toBe('unsupported');

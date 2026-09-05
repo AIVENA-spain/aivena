@@ -966,9 +966,16 @@ export function canonicalWithinExcerpt(fact: { excerpt: string; canonical: strin
  * The canonical statements are English and so is the claim, so ranking them is straightforward.
  */
 export function rankFacts(
-  claim: string, facts: readonly SourceFact[], k = 6,
+  claim: string, facts: readonly SourceFact[], k = 6, claimType?: string,
 ): SourceFact[] {
   if (!facts.length) return [];
+  // Offer evidence the claim is ALLOWED to rest on. Eleven high-risk legal claims cited facts off
+  // unclassified pages while the research had the BOE and two legal databases open, and six
+  // statistical claims cited portals while eleven professional-body sources sat unused. A fact the
+  // policy will refuse is a wasted slot, however well it matches.
+  const tier = riskTier(claim, claimType);
+  const risk = riskOf(claim, claimType);
+  const allowed = new Set<SourceClass>(SOURCE_POLICY[risk]);
   const want = new Set(significantTokens(claim));
   const nums = new Set(figuresIn(claim));
   const scored = facts.map((f) => {
@@ -978,7 +985,8 @@ export function rankFacts(
     for (const t of toks) if (want.has(t) && !seen.has(t)) { hit++; seen.add(t); }
     let numHit = 0;
     for (const n of figuresIn(`${f.canonical} ${f.excerpt}`)) if (nums.has(n)) numHit++;
-    return { f, score: hit + numHit * 4 };
+    const usable = tier === 'high' && !allowed.has(f.sourceClass) ? 0.2 : 1;
+    return { f, score: usable * (hit + numHit * 4) };
   });
   return scored.filter((x) => x.score > 0).sort((a, b) => b.score - a.score).slice(0, k).map((x) => x.f);
 }

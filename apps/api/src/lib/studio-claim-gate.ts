@@ -709,6 +709,13 @@ SUPPORT TYPES
 · none — nothing in front of you establishes this claim. A correct and useful answer; never invent
   a fact id to fill the box.
 
+WHERE A HIGH-RISK CLAIM MAY REST: law and tax come from the official text, the tax authority, the
+courts or a database that reproduces the statute. Figures come from the body that produced them —
+the statistical office, the registrars, the notaries. A portal or an unclassified page can be where
+an issue was found; it is not where a reader's tax deadline or a nationality ranking comes from.
+The source class is printed beside each fact. If the only fact that fits a high-risk claim comes
+off the wrong kind of page, answer none — the claim will be rewritten, which is the right outcome.
+
 CHOOSING BETWEEN THEM: ask what would have to be true for the sentence to be wrong. If it would take
 a measurement, a law or a dataset, it needs source_fact or page_direct. If it is the kind of thing an
 experienced agent says about how buyers behave in general, it is general_mechanism.
@@ -775,10 +782,11 @@ export async function supportClaims(
   for (let start = 0; start < policedIdx.length; start += BATCH) {
     const slice = policedIdx.slice(start, start + BATCH);
     const numbered = slice.map(({ c, i }) => {
-      const near = rankFacts(c.text, facts);
+      const near = rankFacts(c.text, facts, 6, c.type);
       const offered = near.length
-        ? near.map((f) => `      ${f.id} [${f.sourceId}${f.geography ? ` · ${f.geography}` : ''}`
-            + `${f.period ? ` · ${f.period}` : ''}] ${f.canonical.slice(0, 220)}`).join('\n')
+        ? near.map((f) => `      ${f.id} [${f.sourceId} · ${f.sourceClass}`
+            + `${f.geography ? ` · ${f.geography}` : ''}${f.period ? ` · ${f.period}` : ''}]`
+            + ` ${f.canonical.slice(0, 220)}`).join('\n')
         : '      (no fact on any opened page looks related — say none, or use another support type)';
       return `C${i + 1} @ ${c.field} [${c.type} · ${riskTier(c.text, c.type)} risk]: ${c.text}\n`
         + `    FACTS THAT MAY BEAR ON THIS ONE:\n${offered}`;

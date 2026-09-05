@@ -80,7 +80,7 @@ describe('a Spanish page supports an English sentence', () => {
   const facts: SourceFact[] = [{
     id: 'F1', sourceId: 'S1', excerpt: 'Países Bajos: 3.708 operaciones', language: 'es',
     canonical: 'Dutch buyers completed 3,708 purchases in Alicante province in 2025.',
-    sourceClass: 'professional_body', geography: 'Alicante province', period: '2025',
+    sourceClass: 'professional_body', geography: 'Alicante province', period: '2025', metric: 'count',
   }];
   const ctx: SupportContext = { sources, facts, agencyEvidence: '', bankText: new Map(), unestablished: new Map() };
   const P = (o: Partial<ProposedSupport>): ProposedSupport => ({

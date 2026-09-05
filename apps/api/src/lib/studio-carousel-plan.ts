@@ -4,10 +4,12 @@ import type { CarouselPlan } from '../../../../studio/engine/carouselSlides';
 import { shortenToBoundary } from './studio-copy-gate';
 import { bankIndex, cardRules, getCard, keywordCandidates, outOfScopeReason,
   parseCardPick } from './studio-bank-match';
-import { assessCoverage } from './studio-claim-gate';
+import { assessCoverage, extractSourceFacts } from './studio-claim-gate';
 import { coverageGaps, requirementsFor, type RequirementCoverage } from './studio-copy-gate';
 import type { BankCard } from './studio-bank.generated';
+import { buildPalette } from './studio-palette';
 import { classifySource, domainOf, policyUnmetFor, riskOf, SOURCE_POLICY,
+  type SourceFact,
   type ResearchSource as Source, type RiskClass } from './studio-evidence';
 
 /** The shape the web_fetch server tool returns. */
@@ -851,6 +853,14 @@ export async function planCarousel(opts: {
    * post, not a lesser one.
    */
   saferAngle?: boolean;
+  /** the card's never_assume list — the conclusions this topic is known to invite and get wrong */
+  cardNever?: string[];
+  /** what the agency has told us about its market, beyond the bare profile */
+  agencyKnowledge?: string;
+  /** facts already read for this topic, so the safer rewrite does not pay for them twice */
+  existingFacts?: SourceFact[];
+  /** the palette this generation was written from, so the gate can verify against the same facts */
+  onFacts?: (facts: SourceFact[]) => void;
   /**
    * Research already done for this topic. The safer rewrite is the SAME topic with different
    * arguments, and re-running the whole research for it threw away fifteen opened pages and came
@@ -902,6 +912,27 @@ export async function planCarousel(opts: {
     }
     opts.onCoverage?.(missing, assessed.degraded, assessed.coverage);
   }
+  // THE PALETTE. Read the facts off the opened pages BEFORE the writer runs, so it builds the post
+  // out of what is true rather than writing from memory and having the gate delete a third of it.
+  let facts: SourceFact[] = [];
+  if (researchSources.some((x) => x.opened)) {
+    facts = opts.existingFacts?.length
+      ? [...opts.existingFacts]
+      : (await extractSourceFacts(researchSources, opts.topic ?? '').catch(() => ({ facts: [] }))).facts;
+    if (!opts.existingFacts?.length) {
+      console.log(`[studio/carousel] palette: ${facts.length} facts off `
+        + `${researchSources.filter((x) => x.opened).length} opened pages`);
+    }
+    opts.onFacts?.(facts);
+  }
+  const palette = buildPalette({
+    facts,
+    unknown: missing,
+    forbidden: opts.cardNever ?? [],
+    agency: opts.agencyEvidence ?? '',
+    agencyKnowledge: opts.agencyKnowledge,
+  });
+
   // The writer never sees where a fact came from — that is what stops it attributing one.
   const writerBrief = stripSourceTags(brief);
   const saferBlock = opts.saferAngle ? `
@@ -959,7 +990,9 @@ CAROUSEL DOCTRINE (how these posts win — follow it):
 - RECENTLY USED in this agency's previous posts — do NOT use any of these as a hero object again, find fresh ones: ${opts.avoidMotifs.join('; ')}.` : ''}
 
 - EVERY FACTUAL CLAIM MUST BE TRUE. Claims are wanted — vague advice is worthless — but a wrong one destroys trust.
-${saferBlock}${brief ? `
+${palette ? `
+${palette}
+` : ''}${saferBlock}${brief ? `
 ${/^\s*PREMISE FAILS/m.test(brief) ? `THE STARTING IDEA WAS REJECTED. The research below contradicts the claim the topic was built on.
 Treat the topic ONLY as a pointer to the subject area — never as the angle, never as the headline to
 aim at, and never as something to soften into a half-truth. Write the deck the findings support and

@@ -371,6 +371,8 @@ export interface SourceFact {
   geography: string;
   /** the period it belongs to, where that matters */
   period: string;
+  /** what KIND of number or rule it is — a share is not a count, a capacity is not a population */
+  metric: string;
 }
 
 /** Digits as they appear in either convention, so 3.708 and 3,708 compare equal. */

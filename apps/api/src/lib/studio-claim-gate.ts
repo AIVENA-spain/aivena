@@ -564,6 +564,8 @@ const FACTS_TOOL = {
             language: { type: 'string', description: 'the excerpt\'s language, e.g. es, en' },
             geography: { type: 'string', description: 'what the fact is about: Spain, Alicante province, Calpe, or empty' },
             period: { type: 'string', description: 'the period it belongs to, e.g. 2025, Q2 2026, or empty' },
+            metric: { type: 'string', description: 'what kind of thing it is: rule, deadline, count, '
+              + 'share, price, rate, population, capacity, duration, ranking, definition' },
           },
         },
       },
@@ -634,6 +636,7 @@ export async function extractSourceFacts(
         sourceClass: src.sourceClass,
         geography: String(r?.geography ?? '').trim(),
         period: String(r?.period ?? '').trim(),
+        metric: String(r?.metric ?? '').trim(),
       });
     }
   }));

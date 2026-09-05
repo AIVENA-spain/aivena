@@ -37,7 +37,7 @@ import { POLICED_TYPES, checkBankContradictions, extractClaims, finishCopy, gate
 import { cardRules, retrieveBankFacts } from '../lib/studio-bank-match';
 import { dropSentence, gateField, planFields, readField, writeField,
   type RequirementCoverage } from '../lib/studio-copy-gate';
-import { riskTier, type ResearchSource } from '../lib/studio-evidence';
+import { riskTier, type ResearchSource, type SourceFact } from '../lib/studio-evidence';
 import { directScenes } from '../lib/studio-carousel-art';
 import { renderTipsImageStyled, renderTipsImageStyledV2, isTipsImageStyle } from '../../../../studio/engine/carouselTipsImage';
 import { renderFreeform, type DesignSpec } from '../../../../studio/engine/renderFreeform';
@@ -1429,6 +1429,9 @@ async function runPlannedCarousel(opts: {
     // Every page the research touched, with the text of the ones it opened. A published claim is
     // checked back against these, so they have to travel with the plan.
     let sources: ResearchSource[] = [];
+    // The facts the post was WRITTEN from. The gate verifies against the same palette rather than
+    // reading the pages a second time.
+    let paletteFacts: SourceFact[] = [];
     // THE VERIFIED BANK GOVERNS THE TOPIC BEFORE ANYTHING IS WRITTEN. Matching nothing is normal —
     // most typed topics are not in the bank — and a wrong card would be worse than none.
     const card = opts.type === 'tips' ? await pickBankCard(opts.topic ?? '').catch(() => null) : null;
@@ -1439,6 +1442,10 @@ async function runPlannedCarousel(opts: {
       // paying for it twice and ending up with less than the first pass had.
       existingBrief: saferAngle ? research : undefined,
       existingSources: saferAngle ? sources : undefined,
+      existingFacts: saferAngle ? paletteFacts : undefined,
+      // The guardrails reach the writer as forbidden conclusions, not only the gate as a check.
+      cardNever: card ? [...card.never] : undefined,
+      onFacts: (f) => { paletteFacts = f; },
       type: opts.type, topic: opts.topic, quoteText: opts.quoteText, quoteAuthor: opts.quoteAuthor,
       slideCount: opts.slideCount, language: opts.language, agencyName: opts.agency.name,
       agencyProfile: opts.agencyProfile, avoidMotifs,
@@ -1479,7 +1486,7 @@ async function runPlannedCarousel(opts: {
           language: opts.language, topic: opts.topic ?? '', research,
           cardRules: card ? cardRules(card) : '',
           agencyEvidence: opts.agencyEvidence ?? '', uncovered,
-          sources, coverage, cardId: card?.id, bank: card?.bank,
+          sources, coverage, cardId: card?.id, bank: card?.bank, facts: paletteFacts,
         }).catch((err: unknown) => {
           console.warn(`[studio/carousel] claim gate failed: ${(err as Error)?.message}`);
           return null;

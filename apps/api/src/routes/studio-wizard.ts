@@ -1463,131 +1463,122 @@ async function runPlannedCarousel(opts: {
           + `${card?.must.length ?? 0} required points for card ${card?.id}`
           + (coverageDegraded ? ` (${coverageDegraded})` : ''));
       }
-      const gated = await gatePlan(plan, {
-        language: opts.language, topic: opts.topic ?? '', research,
-        cardRules: card ? cardRules(card) : '',
-        agencyEvidence: opts.agencyEvidence ?? '', uncovered,
-        sources, coverage, cardId: card?.id, bank: card?.bank,
-      }).catch((err: unknown) => {
-        console.warn(`[studio/carousel] claim gate failed: ${(err as Error)?.message}`);
-        return null;
-      });
-      if (gated) { plan = gated.plan; claimQa = gated.report; }
-
-      // MINIMUM VIABLE CAROUSEL (Christian, 2026-09-05). A deck that lost most of its slides is not
-      // a shorter post, it is a broken one — and the fix is not to publish it reduced. Write the
-      // topic once more on arguments that do not depend on figures or legal detail, keep whichever
-      // deck stands up better, and only give up if neither does.
-      const wanted = Math.min(7, Math.max(1, opts.slideCount ?? 5));
-      const floor = wanted >= 5 ? 4 : Math.max(2, wanted - 1);
-      if (opts.type === 'tips' && (plan.tips?.length ?? 0) < floor) {
-        console.warn(`[studio/carousel] ${plan.tips?.length ?? 0} of ${wanted} slides survived — `
-          + `rewriting the topic on arguments that do not need a figure`);
-        const retry = await writeDeck(true).catch(() => null);
-        if (retry) {
-          const regatedRetry = await gatePlan(retry, {
-            language: opts.language, topic: opts.topic ?? '', research,
-            cardRules: card ? cardRules(card) : '',
-            agencyEvidence: opts.agencyEvidence ?? '', uncovered,
-            sources, coverage, cardId: card?.id, bank: card?.bank,
-            facts: claimQa?.sourceFacts,
-          }).catch(() => null);
-          const candidate = regatedRetry?.plan ?? retry;
-          if ((candidate.tips?.length ?? 0) > (plan.tips?.length ?? 0)) {
-            plan = candidate;
-            if (regatedRetry) claimQa = regatedRetry.report;
-          }
-        }
-      }
-      if (opts.type === 'tips' && (plan.tips?.length ?? 0) < Math.min(floor, 3)) {
-        // Friendly, and in the agent's language of the product — never our compliance vocabulary.
-        throw new Error('Not enough reliable information for this angle yet. Try a broader version '
-          + 'of the topic, or a different angle on it.');
-      }
-
-      const edited = await editPlan(plan, opts.topic ?? '', opts.language, research);
-      if (edited) {
-        plan = edited.plan;
-        copyQa = { revised: edited.notes.length > 0, notes: edited.notes };
-      }
-
-      // THE EDITOR IS A WRITER TOO. It rewrites whole fields, so everything it produces is copy the
-      // claim gate never saw — an acceptance run had unsupported claims reaching final copy for
-      // exactly this reason. Validate the edited plan once more, with a single repair round.
-      if (edited) {
-        const regated = await gatePlan(plan, {
+      /**
+       * Everything that may change the words, in the order Christian set: the factual gate, the
+       * editor, the gate again on what the editor wrote, the verified bank on the finished draft,
+       * then the deterministic table one last time. Caps and completeness run AFTER all of it,
+       * once, so no mutation can reintroduce a chopped field.
+       */
+      const refine = async (draft: typeof plan): Promise<typeof plan> => {
+        plan = draft;
+        const gated = await gatePlan(plan, {
           language: opts.language, topic: opts.topic ?? '', research,
           cardRules: card ? cardRules(card) : '',
           agencyEvidence: opts.agencyEvidence ?? '', uncovered,
           sources, coverage, cardId: card?.id, bank: card?.bank,
-        }, 1).catch(() => null);
-        if (regated) {
-          plan = regated.plan;
-          if (claimQa) {
-            claimQa.repairs += regated.report.repairs;
-            claimQa.dropped += regated.report.dropped;
-            claimQa.blocked.push(...regated.report.blocked);
-            claimQa.degraded = claimQa.degraded ?? regated.report.degraded;
-          } else { claimQa = regated.report; }
-        }
-      }
+        }).catch((err: unknown) => {
+          console.warn(`[studio/carousel] claim gate failed: ${(err as Error)?.message}`);
+          return null;
+        });
+        if (gated) { plan = gated.plan; claimQa = gated.report; }
 
-      // THE VERIFIED BANK, ON WHAT WILL ACTUALLY PUBLISH. The editor rewrites whole fields, and
-      // five bank contradictions survived into final copy in the calibration run because the check
-      // ran before it. A guardrail verified against primary sources is a hard block, always.
-      if (opts.type === 'tips' && claimQa) {
-        const finalClaims = await extractClaims(plan, opts.language).catch(() => null);
-        const finalMaterial = (finalClaims ?? []).filter((c) =>
-          (POLICED_TYPES as readonly string[]).includes(c.type) && riskTier(c.text, c.type) === 'high');
-        const facts = new Map<string, string>();
-        if (card) {
-          card.must.forEach((t, i) => facts.set(`${card.id}#${i + 1}`, t));
-          card.never.forEach((t, i) => facts.set(`${card.id}#never${i + 1}`, t));
+        // THE VERIFIED BANK, ON WHAT WILL ACTUALLY PUBLISH. The editor rewrites whole fields, and
+        // five bank contradictions survived into final copy in the calibration run because the check
+        // ran before it. A guardrail verified against primary sources is a hard block, always.
+        if (opts.type === 'tips' && claimQa) {
+          const finalClaims = await extractClaims(plan, opts.language).catch(() => null);
+          const finalMaterial = (finalClaims ?? []).filter((c) =>
+            (POLICED_TYPES as readonly string[]).includes(c.type) && riskTier(c.text, c.type) === 'high');
+          const facts = new Map<string, string>();
+          if (card) {
+            card.must.forEach((t, i) => facts.set(`${card.id}#${i + 1}`, t));
+            card.never.forEach((t, i) => facts.set(`${card.id}#never${i + 1}`, t));
+          }
+          for (const f of retrieveBankFacts(finalMaterial.map((c) => c.text), card?.bank)) {
+            facts.set(f.id, f.text);
+          }
+          const { contradictions } = await checkBankContradictions(finalMaterial, facts)
+            .catch(() => ({ contradictions: [] as { field: string; text: string; bankFactId: string; why: string }[] }));
+          for (const c of contradictions) {
+            const before = readField(plan, c.field);
+            const after = dropSentence(before, c.text);
+            if (after !== before) { plan = writeField(plan, c.field, after); claimQa.dropped++; }
+            claimQa.bankContradictions.push(c);
+            claimQa.blocked.push({ field: c.field, text: c.text, verdict: 'CONTRADICTS_GUARDRAIL',
+              problem: `${c.bankFactId}: ${c.why}`,
+              outcome: after !== before ? 'removed — contradicts a verified guardrail' : 'left — could not be isolated' });
+          }
+          if (contradictions.length) {
+            console.warn(`[studio/carousel] final bank check removed ${contradictions.length} claim(s)`);
+          }
         }
-        for (const f of retrieveBankFacts(finalMaterial.map((c) => c.text), card?.bank)) {
-          facts.set(f.id, f.text);
-        }
-        const { contradictions } = await checkBankContradictions(finalMaterial, facts)
-          .catch(() => ({ contradictions: [] as { field: string; text: string; bankFactId: string; why: string }[] }));
-        for (const c of contradictions) {
-          const before = readField(plan, c.field);
-          const after = dropSentence(before, c.text);
-          if (after !== before) { plan = writeField(plan, c.field, after); claimQa.dropped++; }
-          claimQa.bankContradictions.push(c);
-          claimQa.blocked.push({ field: c.field, text: c.text, verdict: 'CONTRADICTS_GUARDRAIL',
-            problem: `${c.bankFactId}: ${c.why}`,
-            outcome: after !== before ? 'removed — contradicts a verified guardrail' : 'left — could not be isolated' });
-        }
-        if (contradictions.length) {
-          console.warn(`[studio/carousel] final bank check removed ${contradictions.length} claim(s)`);
-        }
-      }
 
-      // FINAL PUBLICATION GATE. The deterministic table is free, so run it once more on what will
-      // actually publish and delete anything a primary source contradicts.
-      const late = planFields(plan).flatMap((f) => gateField(f.field, f.text, research))
-        .filter((h) => h.rule.severity === 'block');
-      if (late.length) {
-        claimQa = claimQa ?? { claims: 0, policed: 0, verdicts: {}, blocked: [], deterministic: [],
-          repairs: 0, dropped: 0, degraded: null, adjudications: [], rawFlags: 0, materialFailures: 0,
-          supports: [], sourceFacts: [], bankContradictions: [], unsupportedMaterial: 0,
-          unpublishable: null };
-        const qa = claimQa;
-        for (const h of late) {
-          const before = readField(plan, h.field);
-          const after = dropSentence(before, h.sentence);
-          if (after !== before) { plan = writeField(plan, h.field, after); qa.dropped++; }
-          qa.blocked.push({
-            field: h.field, text: h.sentence, verdict: 'CONTRADICTS_GUARDRAIL',
-            problem: h.rule.problem,
-            outcome: after !== before ? 'removed after the editor reintroduced it' : 'left — could not be isolated',
-          });
+
+        // FINAL PUBLICATION GATE. The deterministic table is free, so run it once more on what will
+        // actually publish and delete anything a primary source contradicts.
+        const late = planFields(plan).flatMap((f) => gateField(f.field, f.text, research))
+          .filter((h) => h.rule.severity === 'block');
+        if (late.length) {
+          claimQa = claimQa ?? { claims: 0, policed: 0, verdicts: {}, blocked: [], deterministic: [],
+            repairs: 0, dropped: 0, degraded: null, adjudications: [], rawFlags: 0, materialFailures: 0,
+            supports: [], sourceFacts: [], bankContradictions: [], unsupportedMaterial: 0,
+            unpublishable: null };
+          const qa = claimQa;
+          for (const h of late) {
+            const before = readField(plan, h.field);
+            const after = dropSentence(before, h.sentence);
+            if (after !== before) { plan = writeField(plan, h.field, after); qa.dropped++; }
+            qa.blocked.push({
+              field: h.field, text: h.sentence, verdict: 'CONTRADICTS_GUARDRAIL',
+              problem: h.rule.problem,
+              outcome: after !== before ? 'removed after the editor reintroduced it' : 'left — could not be isolated',
+            });
+          }
+          console.warn(`[studio/carousel] final gate removed ${qa.dropped} sentence(s) the editor reintroduced`);
         }
-        console.warn(`[studio/carousel] final gate removed ${qa.dropped} sentence(s) the editor reintroduced`);
+        // Absolutely last: caps, complete sentences, nothing dangling. Everything above can rewrite
+        // copy, so this has to come after all of it or it cleans a draft that no longer exists.
+
+        return plan;
+      };
+
+      plan = await refine(plan);
+
+      // MINIMUM VIABLE CAROUSEL (Christian, 2026-09-05). A deck that lost most of its slides is
+      // not a shorter post, it is a broken one. Write the topic once more on arguments that do not
+      // depend on figures or legal detail, put that through the same refinement, and keep whichever
+      // stands up better. Only give up if neither does.
+      const wanted = Math.min(7, Math.max(1, opts.slideCount ?? 5));
+      const floor = wanted >= 5 ? 4 : Math.max(2, wanted - 1);
+      if ((plan.tips?.length ?? 0) < floor) {
+        console.warn(`[studio/carousel] ${plan.tips?.length ?? 0} of ${wanted} slides survived — `
+          + `rewriting the topic on arguments that do not need a figure`);
+        const kept = plan;
+        const keptQa = claimQa;
+        const retry = await writeDeck(true).then((d) => refine(d)).catch(() => null);
+        if (!retry || (retry.tips?.length ?? 0) <= (kept.tips?.length ?? 0)) {
+          plan = kept;
+          claimQa = keptQa;
+        }
       }
-      // Absolutely last: caps, complete sentences, nothing dangling. Everything above can rewrite
-      // copy, so this has to come after all of it or it cleans a draft that no longer exists.
+      if ((plan.tips?.length ?? 0) < Math.min(floor, 3)) {
+        // Friendly, in the language of the product — never our compliance vocabulary.
+        throw new Error('Not enough reliable information for this angle yet. Try a broader version '
+          + 'of the topic, or a different angle on it.');
+      }
       plan = finishCopy(plan, claimQa, opts.agencyEvidence ?? '',
+        `${opts.agencyEvidence ?? ''}\n${opts.agencyProfile ?? ''}`);
+    } else {
+      // A quote deck is the client's own words and never goes through the claim gate. It still gets
+      // the deterministic table and the structural pass — caps, complete sentences, the CTA rule —
+      // because those are about the product, not about evidence.
+      for (const h of planFields(plan).flatMap((f) => gateField(f.field, f.text, research))
+        .filter((h) => h.rule.severity === 'block')) {
+        const before = readField(plan, h.field);
+        const after = dropSentence(before, h.sentence);
+        if (after !== before) plan = writeField(plan, h.field, after);
+      }
+      plan = finishCopy(plan, undefined, opts.agencyEvidence ?? '',
         `${opts.agencyEvidence ?? ''}\n${opts.agencyProfile ?? ''}`);
     }
     const contact = contactLine(opts.agency);

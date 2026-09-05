@@ -29,7 +29,7 @@ import {
 } from './studio-copy-gate';
 import { getCard, retrieveBankFacts } from './studio-bank-match';
 import {
-  riskOf, verifySupport,
+  findPassages, riskOf, verifySupport,
   type ClaimSupport, type ProposedSupport, type ResearchSource, type SupportContext,
 } from './studio-evidence';
 
@@ -102,6 +102,8 @@ export interface GateReport {
   bankContradictions: BankContradiction[];
   /** material claims that could not point at evidence, before any repair */
   unsupportedMaterial: number;
+  /** set when what survived is not a post — the generation must fail rather than publish it */
+  unpublishable: string | null;
 }
 
 // A gate step that fails silently is the bug this whole layer exists to fix. Every failure path
@@ -568,10 +570,12 @@ support_type "none" — that is a correct and useful answer, and inventing a quo
 is the one thing you must never do.
 
 WHERE EVIDENCE COMES FROM
-· research_evidence — a line of the briefing. Give the S-ids tagged on that line and copy the
-  quoted words EXACTLY as the briefing has them, including any Spanish. The excerpt is checked
-  character by character against the page that was actually opened, so a paraphrase, a translation
-  or a tidied-up version will fail. Copy, do not rewrite.
+· research_evidence — a passage printed under the claim, off a page that was actually opened. Give
+  that passage's S-id and copy its words EXACTLY, including any Spanish. The excerpt is checked
+  against the page itself, so a paraphrase, a translation or a tidied-up version will fail. Copy,
+  do not rewrite, and do not quote anything that is not printed there. If none of the passages
+  under a claim actually establishes it, that is support_type "none" — being close in subject is
+  not the same as establishing it.
 · agency_profile — a fact the agency itself supplied. Copy the words from the profile.
 · bank_fact — a verified bank fact or guardrail you were given by id. Copy its words.
 · none — nothing in front of you establishes this claim.
@@ -613,7 +617,16 @@ export async function supportClaims(
     degraded: why,
   });
 
-  const numbered = claims.map((c, i) => `C${i + 1} @ ${c.field} [${c.type}]: ${c.text}`).join('\n');
+  // Hand the model the actual passages off the actual pages. Asking it to quote a page it has
+  // never seen produced excerpts that were memories of a paraphrase, and nineteen of twenty claims
+  // failed verification for a reason that was about the prompt rather than about the evidence.
+  const numbered = claims.map((c, i) => {
+    const passages = findPassages(c.text, sources);
+    const offered = passages.length
+      ? passages.map((p) => `      [${p.sourceId}] "${p.text.replace(/\s+/g, ' ').slice(0, 320)}"`).join('\n')
+      : '      (nothing on any opened page bears on this claim)';
+    return `C${i + 1} @ ${c.field} [${c.type}]: ${c.text}\n    PASSAGES FROM THE OPENED PAGES:\n${offered}`;
+  }).join('\n\n');
   const reqLines = coverage.length
     ? `\n\nREQUIREMENTS FOR THIS TOPIC (status in brackets):\n`
       + coverage.map((c) => `${c.id} [${c.status}]`).join('\n')
@@ -837,7 +850,7 @@ export async function gatePlan<T extends PlanLike>(
   const report: GateReport = {
     claims: 0, policed: 0, verdicts: {}, blocked: [], deterministic: [],
     repairs: 0, dropped: 0, degraded: null, adjudications: [], rawFlags: 0, materialFailures: 0,
-    supports: [], bankContradictions: [], unsupportedMaterial: 0,
+    supports: [], bankContradictions: [], unsupportedMaterial: 0, unpublishable: null,
   };
   let current = plan;
 
@@ -1040,9 +1053,15 @@ export async function gatePlan<T extends PlanLike>(
     // 49-character body under a title promising more — the sentence removal had taken the half that
     // made the point. Twenty characters was never enough to be a card.
     const kept = tips.filter((t) => (t?.body ?? '').trim().length >= 60 && (t?.title ?? '').trim().length >= 3);
-    if (kept.length !== tips.length && kept.length >= 1) {
+    if (kept.length >= 1 && kept.length !== tips.length) {
       report.dropped += tips.length - kept.length;
       current = { ...current, tips: kept };
+    } else if (!kept.length) {
+      // Nothing survived. The old behaviour here was to keep every slide rather than end up with a
+      // deck of none — which published five titles over five empty bodies. A post that cannot
+      // evidence a single point is not a shorter post, it is not a post.
+      report.unpublishable = `no slide survived: ${tips.length} of ${tips.length} could not be `
+        + `evidenced (${report.unsupportedMaterial} material claims unsupported)`;
     }
   }
 

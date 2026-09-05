@@ -350,3 +350,51 @@ export function verifySupport(p: ProposedSupport, ctx: SupportContext): ClaimSup
       return out('unsupported', 'no support offered');
   }
 }
+
+
+/* ── PASSAGE RETRIEVAL ───────────────────────────────────────────────────────────────────── */
+
+/** A stretch of a fetched page, offered to the support pass as something it may quote. */
+export interface Passage { sourceId: string; text: string; score: number }
+
+/** Sentence-ish windows of a page, long enough to be evidence and short enough to quote. */
+function windows(text: string): string[] {
+  const out: string[] = [];
+  for (const para of text.split(/(?<=[.!?])\s+/)) {
+    const t = para.trim();
+    if (t.length < 40) continue;
+    out.push(t.length > 400 ? t.slice(0, 400) : t);
+  }
+  return out;
+}
+
+/**
+ * The passages on the opened pages that actually bear on a claim.
+ *
+ * Without this the support pass is asked to quote pages it has never seen: it only ever received
+ * the briefing, so its "verbatim excerpt" was a memory of a paraphrase, and verification against
+ * the real page failed on nineteen claims out of twenty in a smoke test. The pages are in hand —
+ * the right move is to hand the model the candidate passages and let it pick, so that a failure to
+ * verify means the evidence is genuinely absent rather than that nobody looked it up.
+ */
+export function findPassages(
+  claim: string, sources: readonly ResearchSource[], perClaim = 4,
+): Passage[] {
+  const want = new Set(significantTokens(claim));
+  if (!want.size) return [];
+  const out: Passage[] = [];
+  for (const s of sources) {
+    if (!s.opened || !s.content) continue;
+    for (const w of windows(s.content)) {
+      const toks = significantTokens(w);
+      if (!toks.length) continue;
+      let hit = 0;
+      const seen = new Set<string>();
+      for (const t of toks) if (want.has(t) && !seen.has(t)) { hit++; seen.add(t); }
+      if (hit < 3) continue;
+      // favour density: a 40-word passage sharing five terms beats a 400-word one sharing six
+      out.push({ sourceId: s.id, text: w, score: hit / Math.sqrt(toks.length) });
+    }
+  }
+  return out.sort((a, b) => b.score - a.score).slice(0, perClaim);
+}

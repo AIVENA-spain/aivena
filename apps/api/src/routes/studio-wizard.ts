@@ -1470,6 +1470,11 @@ async function runPlannedCarousel(opts: {
         return null;
       });
       if (gated) { plan = gated.plan; claimQa = gated.report; }
+      // A deck whose every point failed verification does not get published in a reduced form. It
+      // fails, visibly, and the agent is told why rather than handed five headlines over nothing.
+      if (gated?.report.unpublishable) {
+        throw new Error(`nothing in this post could be evidenced — ${gated.report.unpublishable}`);
+      }
 
       const edited = await editPlan(plan, opts.topic ?? '', opts.language, research);
       if (edited) {
@@ -1505,7 +1510,7 @@ async function runPlannedCarousel(opts: {
       if (late.length) {
         claimQa = claimQa ?? { claims: 0, policed: 0, verdicts: {}, blocked: [], deterministic: [],
           repairs: 0, dropped: 0, degraded: null, adjudications: [], rawFlags: 0, materialFailures: 0,
-          supports: [], bankContradictions: [], unsupportedMaterial: 0 };
+          supports: [], bankContradictions: [], unsupportedMaterial: 0, unpublishable: null };
         const qa = claimQa;
         for (const h of late) {
           const before = readField(plan, h.field);

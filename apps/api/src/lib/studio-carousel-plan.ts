@@ -1656,18 +1656,74 @@ const BUYER_NEEDS: Array<[string, string, string]> = [
   ['TRUST', 'can I trust this agency?', 'transparency, mistakes agencies make, what a good agent does that a bad one does not'],
 ];
 
-export async function topicIdeas(language: string, exclude: string[]): Promise<string[] | null> {
+/**
+ * What a SELLER lies awake about. The needs table was written for buyers, so "Get inspired" gave a
+ * seller buyer ideas dressed up — and Christian's read was that the suggestions felt like blog
+ * subjects rather than something you have to open.
+ */
+const SELLER_NEEDS: Array<[string, string, string]> = [
+  ['PRICE', 'am I asking the right number?', 'what overpricing actually costs, the first two weeks, why a good home starts to look unwanted'],
+  ['TIME', 'why is this taking so long?', 'what makes a home sit, what changes when it does, the cost of waiting for a number'],
+  ['CONTROL', 'who is actually working for me?', 'one agent or five, what a mandate really means, who answers when it goes quiet'],
+  ['PRESENTATION', 'is my home being shown properly?', 'photos, the story, what buyers decide before they read a word'],
+  ['MONEY OUT', 'what do I actually walk away with?', 'fees, taxes, the withholding, the gap between the price and the bank balance'],
+  ['TIMING', 'is this the right moment?', 'season, the market, what actually moves a decision and what only feels like it does'],
+  ['TRUST', 'is anyone telling me the truth?', 'the conversation a good agent has early and a bad one avoids until month three'],
+  ['REGRET', 'what will I wish I had known?', 'the decision sellers make at the start that decides the whole campaign'],
+];
+
+export type Audience = 'buyer' | 'seller' | 'both';
+
+export async function topicIdeas(
+  language: string, exclude: string[], audience: Audience = 'both',
+): Promise<string[] | null> {
   const month = new Date().toLocaleString('en', { month: 'long' });
   // Six ideas must span SIX DIFFERENT needs. Christian, 2026-09-01: "i feel like i am seeing the
   // same topics over and over again just another way of saying it." They were — the generator was
   // free to circle whichever theme it liked, and it liked paperwork and trust. Rotating the needs
   // forces breadth into the batch instead of hoping for it. The offset moves with the exclusion
   // list, so consecutive taps start from a different need.
-  const off = exclude.length % BUYER_NEEDS.length;
-  const chosen = Array.from({ length: 6 }, (_, i) => BUYER_NEEDS[(off + i) % BUYER_NEEDS.length]);
+  // Who the post is FOR decides which worries it can draw on. A seller does not care where to buy,
+  // and a buyer does not care what their asking price signals.
+  const table = audience === 'seller' ? SELLER_NEEDS
+    : audience === 'buyer' ? BUYER_NEEDS
+    : BUYER_NEEDS.flatMap((b, i) => [b, SELLER_NEEDS[i % SELLER_NEEDS.length]]);
+  const off = exclude.length % table.length;
+  const chosen = Array.from({ length: 6 }, (_, i) => table[(off + i) % table.length]);
+  const who = audience === 'seller'
+    ? 'a SELLER — someone who owns a home here and is deciding whether, when and how to sell it'
+    : audience === 'buyer'
+    ? 'a BUYER — usually foreign, dreaming of or planning a home on this coast'
+    : 'BUYERS AND SELLERS BOTH — alternate between them across the six';
   const prompt = `You suggest Instagram tips-carousel topics for a real-estate agency on the Spanish coast (buyers are often foreign, sellers often local; the audience dreams of a home in Spain).
 
+THIS POST IS FOR ${who}.
+
 Write 6 topic ideas in language "${language}".
+
+THESE ARE NOT ARTICLE TITLES. That is the single most common failure and the one that makes the list
+useless: "A guide to buying costs in Spain" is correct, useful, and nobody stops for it. Every idea
+has to carry a POSITION, a TENSION or a COST — something with a point of view attached that makes a
+person think "wait, is that true?" or "that's exactly my situation".
+
+THE LEVEL, in the owner's own words — match this register, never copy the lines:
+SELLER
+· "The price mistake that makes a good home look unwanted"
+· "Why we'd rather tell a seller €20,000 less today than chase the market for six months"
+· "Five agents marketing your home can actually make the sale messier"
+· "Your home may not need a renovation. It may need a better story."
+BUYER
+· "The Costa Blanca town that feels perfect in August can feel completely different in January"
+· "The cheapest home can easily become the most expensive one you buy"
+· "The mistake buyers make when they choose the house before they choose the area"
+· "Some buyers want sea views. What they actually need is a life they won't get bored of."
+
+Notice what those do: they take a side, they name a specific mistake, they set two things against
+each other, or they reframe what the reader thinks they want. A title that merely announces a
+subject has done none of that.
+
+If an idea itself asserts a statistic, a law or a tax rule, keep it modest and checkable — the post
+will be researched and a topic built on something false gets rewritten before it is written.
 
 EVERY idea must be built on a REAL pain point or desire of a REAL person in this audience. Draw from concerns like these (rotate widely, never all from one area):
 - foreign buyers: overpaying, being far away during the process, not knowing the true costs, choosing the wrong town or wrong type of home (apartment vs villa vs townhouse)

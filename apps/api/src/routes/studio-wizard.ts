@@ -31,7 +31,7 @@ import {
   renderPlannedStyled, renderListingStyled, vibraListing, PLANNED_STYLES, LISTING_STYLES, TYPE_EDITIONS, type CarouselStyle,
 } from '../../../../studio/engine/carouselStyles';
 import type { CarouselBrand } from '../../../../studio/engine/renderCarousel';
-import { planCarousel, editPlan, remixHook, topicIdeas, listingCopy, listingStory, pickBankCard, PlanSchema, normalisePlan } from '../lib/studio-carousel-plan';
+import { planCarousel, editPlan, remixHook, topicIdeas, listingCopy, listingStory, pickBankCard, PlanSchema, normalisePlan, type Audience } from '../lib/studio-carousel-plan';
 import { POLICED_TYPES, checkBankContradictions, checkIntent, extractClaims, finishCopy, gatePlan,
   type GateReport } from '../lib/studio-claim-gate';
 import { cardRules, retrieveBankFacts } from '../lib/studio-bank-match';
@@ -2168,6 +2168,9 @@ route.post('/carousel/topic-ideas', async (c) => {
   const language = typeof b.language === 'string' && b.language.trim() ? b.language.trim().slice(0, 5) : 'es';
   const exclude = Array.isArray(b.exclude)
     ? (b.exclude as unknown[]).filter((x): x is string => typeof x === 'string').slice(0, 24) : [];
+  // Who the post is for, chosen before the ideas are asked for. A seller does not want to be told
+  // where to buy, and the ideas were drawn from a buyer-only table until now.
+  const audience: Audience = b.audience === 'buyer' || b.audience === 'seller' ? b.audience : 'both';
   try {
     // Christian 2026-08-30: "i feel like i have seen the same ones over and over again — they
     // shouldn't get resent as inspiration over and over, it should be new ones, just a few
@@ -2201,7 +2204,8 @@ route.post('/carousel/topic-ideas', async (c) => {
         ? (prefs.shown_topics as unknown[]).filter((x): x is string => typeof x === 'string') : [];
     } catch { /* no prefs row yet — nothing shown before */ }
 
-    const topics = await topicIdeas(language, [...new Set([...exclude, ...seen, ...shown])].slice(0, 120));
+    const topics = await topicIdeas(language,
+      [...new Set([...exclude, ...seen, ...shown])].slice(0, 120), audience);
     if (!topics) return c.json({ ok: false, error: 'ideas_failed', message: "Couldn't think of ideas right now — please try again." }, 502);
 
     // remember what we just offered. Newest first, capped — an agency that has seen 400 ideas does

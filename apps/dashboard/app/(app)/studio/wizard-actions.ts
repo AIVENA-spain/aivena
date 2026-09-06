@@ -240,8 +240,10 @@ export async function carouselUpdateAction(
   });
 }
 // GET INSPIRED: 6 fresh tips-carousel topic ideas (free; exclude = already-shown ideas)
-export async function carouselTopicIdeasAction(language: string, exclude: string[]): Promise<Envelope> {
-  return call("/api/studio/carousel/topic-ideas", { method: "POST", body: { language, exclude } });
+export async function carouselTopicIdeasAction(
+  language: string, exclude: string[], audience: "buyer" | "seller" | "both" = "both",
+): Promise<Envelope> {
+  return call("/api/studio/carousel/topic-ideas", { method: "POST", body: { language, exclude, audience } });
 }
 // SUGGESTED FOR TODAY: the Studio-home suggestion row (a carousel topic + a real listing + a room nudge)
 export async function studioSuggestionsAction(): Promise<Envelope> {

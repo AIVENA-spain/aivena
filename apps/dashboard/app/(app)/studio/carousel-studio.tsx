@@ -156,6 +156,9 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
   const [copied, setCopied] = useState(false);
   // tips/quote form fields — a suggestion from the Studio home can pre-fill the topic + language
   const [topic, setTopic] = useState(initialTopic);
+  // Who the post is for, chosen BEFORE the ideas are asked for — a seller does not want to be told
+  // where to buy, and "Get inspired" drew from a buyer-only table until now.
+  const [audience, setAudience] = useState<"buyer" | "seller" | "both">("both");
   const [ideas, setIdeas] = useState<string[]>([
     "First-time buyer mistakes", "How to prepare your home for viewings", "Questions to ask before you make an offer",
   ]);
@@ -349,7 +352,7 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
   async function inspire() {
     if (ideasLoading) return;
     setIdeasLoading(true); setErr(null);
-    const r = await carouselTopicIdeasAction(language, seenIdeas);
+    const r = await carouselTopicIdeasAction(language, seenIdeas, audience);
     setIdeasLoading(false);
     if (!r.ok || !Array.isArray(r.topics)) { setErr((r.message as string) ?? "Couldn't think of ideas right now — please try again."); return; }
     const fresh = r.topics as string[];
@@ -424,7 +427,21 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
               <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
             </div>
 
-            <div className="mb-2 mt-7 text-sm font-semibold text-neutral-900 dark:text-neutral-100">2. What&rsquo;s your topic?</div>
+            <div className="mb-2 mt-7 text-sm font-semibold text-neutral-900 dark:text-neutral-100">2. Who is this post for?</div>
+            <div className="flex flex-wrap gap-2">
+              {([["buyer", "Buyers"], ["seller", "Sellers"], ["both", "Both"]] as const).map(([v, label]) => (
+                <button key={v} type="button"
+                  onClick={() => { setAudience(v); setIdeas([]); }}
+                  aria-pressed={audience === v}
+                  className={`rounded-lg border px-3.5 py-2 text-xs font-medium transition ${audience === v
+                    ? "border-emerald-600 bg-emerald-600 text-white"
+                    : "border-neutral-200 bg-white text-neutral-700 hover:border-emerald-600 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200"}`}>
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            <div className="mb-2 mt-7 text-sm font-semibold text-neutral-900 dark:text-neutral-100">3. What&rsquo;s your topic?</div>
             <div className="flex gap-3">
               <div className="relative flex-1">
                 <Sparkles className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
@@ -453,7 +470,7 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
               </button>
             </div>
 
-            <div className="mb-2 mt-7 text-sm font-semibold text-neutral-900 dark:text-neutral-100">3. How many slides?</div>
+            <div className="mb-2 mt-7 text-sm font-semibold text-neutral-900 dark:text-neutral-100">4. How many slides?</div>
             <div className="flex flex-wrap gap-2">
               {[3, 4, 5, 6, 7, 8, 9].map((n) => (
                 <button key={n} onClick={() => setSlideTotal(n)}
@@ -476,7 +493,7 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
               })()}
             </div>
 
-            <div className="mb-2 mt-7 text-sm font-semibold text-neutral-900 dark:text-neutral-100">4. Choose a look &amp; feel</div>
+            <div className="mb-2 mt-7 text-sm font-semibold text-neutral-900 dark:text-neutral-100">5. Choose a look &amp; feel</div>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
               {STYLES.tips.map(([key, name, desc]) => (
                 <div key={key} role="button" tabIndex={0}
@@ -519,7 +536,7 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
               </>
             )}
 
-            <div className="mb-2 mt-7 text-sm font-semibold text-neutral-900 dark:text-neutral-100">5. Detail colours <span className="font-normal text-neutral-400">(optional — your brand colours unless you choose)</span></div>
+            <div className="mb-2 mt-7 text-sm font-semibold text-neutral-900 dark:text-neutral-100">6. Detail colours <span className="font-normal text-neutral-400">(optional — your brand colours unless you choose)</span></div>
             <div className="flex flex-wrap items-center gap-3">
               <button type="button" onClick={() => setCustomColours((v) => !v)}
                 className={`rounded-lg border px-3.5 py-2 text-xs font-medium transition ${customColours

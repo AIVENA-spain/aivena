@@ -1189,3 +1189,52 @@ export function removeClaim<T extends PlanLike>(
   }
   return { plan, outcome: 'left' };
 }
+
+
+/* ── THE COMMENT KEYWORD ─────────────────────────────────────────────────────────────────── */
+
+const foldWords = (t: string) => (t ?? '')
+  .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  .toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+
+const KEYWORD_STOP = new Set(`the and for you your with what how why when this that from into
+about which does can could should would actually really once after before more less than then
+buying selling buy sell home homes house property properties costa blanca spain spanish`.split(/\s+/));
+
+/** The SHOUTED word in a comment CTA — "Comment ARRAS and we'll…" → "ARRAS". */
+export function ctaKeyword(text: string): string {
+  const m = /\b([A-ZÁÉÍÓÚÑÜ][A-ZÁÉÍÓÚÑÜ0-9]{2,})\b/.exec(text ?? '');
+  return m ? m[1] : '';
+}
+
+/**
+ * A comment keyword the reader can connect to the post they just read.
+ *
+ * A live deck about new build versus resale closed with "Comment ROUTE" — a word from nowhere,
+ * which reads as a leftover and gives the reader nothing to hold on to. The keyword has to come
+ * from the post's own subject.
+ */
+export function keywordFitsTopic(keyword: string, subject: string): boolean {
+  const k = foldWords(keyword);
+  if (!k || k.length < 3) return false;
+  const words = new Set<string>(foldWords(subject).split(' ').filter(Boolean));
+  for (const w of words) {
+    if (w === k || w.startsWith(k) || k.startsWith(w.slice(0, Math.max(4, k.length - 2)))) return true;
+  }
+  return false;
+}
+
+/** A keyword drawn from what the post is actually about. Empty when nothing suitable exists. */
+export function keywordFromTopic(subject: string): string {
+  const words = foldWords(subject).split(' ')
+    .filter((w) => w.length >= 4 && w.length <= 10 && !KEYWORD_STOP.has(w) && !/^\d+$/.test(w));
+  return words.length ? words[0].toUpperCase() : '';
+}
+
+/** Swap an unrelated keyword for one the post earns. Returns the text unchanged when it fits. */
+export function fitCtaKeyword(text: string, subject: string): string {
+  const current = ctaKeyword(text);
+  if (!current || keywordFitsTopic(current, subject)) return text;
+  const better = keywordFromTopic(subject);
+  return better ? text.replace(current, better) : text;
+}

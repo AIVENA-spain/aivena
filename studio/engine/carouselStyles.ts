@@ -2,7 +2,7 @@ import { renderFreeform, DesignSpec } from "./renderFreeform";
 import { textWidth } from "./renderEditable";
 import {
   CarouselPlan, renderPlannedCarousel, buildPlannedSpecs, getPlannedSerif, setPlannedSerif,
-  renderWideSliced, applyGrain, mix, wrap, chrome, visibleTone, hex6,
+  renderWideSliced, applyGrain, mix, wrap, chrome, visibleTone, hex6, numero,
 } from "./carouselSlides";
 import { CarouselFacts, CarouselCopy, CarouselBrand, renderCarousel } from "./renderCarousel";
 
@@ -87,10 +87,18 @@ function seal(cx: number, cy: number, r: number, ring: string, ground: string, i
     { type: "text", bbox: [cx - r, cy - 20, cx + r, cy + 20], content: initials, font: "Jost", size: 26, colour: ring, align: "center", tracking: 6, valign: "center" },
   ];
 }
-function band(agency: string, i: number, total: number, colour: string) {
+/**
+ * The folio: the agency on the left, this card's place in the deck on the right.
+ *
+ * ONE numbering convention per card. A live English deck carried three at once — a 720px decorative
+ * numeral, a hardcoded Spanish "Nº 1 DE 3", and this folio — and the reader had to work out which
+ * number meant what. The decorative numeral stays, the Spanish counter is gone, and the numero sign
+ * follows the post's language instead of always being Spanish.
+ */
+function band(agency: string, i: number, total: number, colour: string, lang = "es") {
   return [
     { type: "text", bbox: [80, 1272, 640, 1300], content: agency.toUpperCase(), font: "Jost", size: 17, colour, align: "left", weight: "500", tracking: 4 },
-    { type: "text", bbox: [640, 1272, 1000, 1300], content: `Nº ${String(i).padStart(2, "0")} — ${String(total).padStart(2, "0")}`, font: "Jost", size: 17, colour, align: "right", tracking: 3 },
+    { type: "text", bbox: [640, 1272, 1000, 1300], content: `${numero(lang)} ${String(i).padStart(2, "0")} — ${String(total).padStart(2, "0")}`, font: "Jost", size: 17, colour, align: "right", tracking: 3 },
   ];
 }
 /** agency initials for the ring seal: first letters of up to 3 words */
@@ -162,7 +170,7 @@ function cartelPlanned(plan: CarouselPlan, agency: string, contact: string, bran
     });
   }
   coverEls.push({ type: "text", bbox: [80, 1050, 1000, 1082], content: plan.eyebrow.toUpperCase(), font: "Archivo", size: 20, colour: mix(CREAM, NAVY, 0.7), align: "center", tracking: 4 });
-  coverEls.push(...band(agency, 1, total, mix(CREAM, NAVY, 0.6)));
+  coverEls.push(...band(agency, 1, total, mix(CREAM, NAVY, 0.6), lang));
   specs.push(DesignSpec.parse({ background: NAVY, elements: coverEls }));
 
   // slide 2: terracotta gamma turn
@@ -173,7 +181,7 @@ function cartelPlanned(plan: CarouselPlan, agency: string, contact: string, bran
       rule(640, LIME),
       { type: "text", bbox: [140, 700, 940, 900], content: wrap(plan.slide2_body, "Archivo", 32, 780), font: "Archivo", size: 32, colour: LIME, align: "center", line_height: 48 },
       { type: "text", bbox: [80, 1050, 1000, 1082], content: `${T.follow.toUpperCase()} · 01 / ${String(plan.tips.length).padStart(2, '0')}`, font: "Archivo", size: 20, colour: LIME, align: "center", tracking: 4 },
-      ...band(agency, 2, total, mix(LIME, TERRA, 0.75)),
+      ...band(agency, 2, total, mix(LIME, TERRA, 0.75), lang),
     ],
   }));
 
@@ -198,13 +206,12 @@ function cartelPlanned(plan: CarouselPlan, agency: string, contact: string, bran
       elements: [
         // shield:false — a deliberately washed background numeral, not copy (RULE 1 opt-out)
         { type: "text", bbox: [620, 610, 1560, 1560], content: String(i + 1), font: "Anton", size: 720, colour: g.num, align: "left", shield: false },
-        { type: "text", bbox: [80, 96, 600, 128], content: `Nº ${i + 1} DE ${plan.tips.length}`, font: "Archivo", size: 20, colour: g.kick, align: "left", tracking: 5 },
         { type: "rect", bbox: [80, 160, 240, 166], fill: g.ruleC },
         { type: "text", bbox: [80, 230, 1000, 230 + tLines * 98 + 8], content: titleTxt, font: "Anton", size: 84, colour: g.head, align: "left", line_height: 98 },
         { type: "rect", bbox: [80, yRule, 560, yRule + 2], fill: g.ruleC },
         { type: "text", bbox: [80, yBody, 640, yBody + 360], content: wrap(tip.body, "Archivo", 30, 540), font: "Archivo", size: 30, colour: g.bodyC, align: "left", line_height: 46 },
         ...(tip.teaser ? [{ type: "text", bbox: [80, 1140, 880, 1196], content: tip.teaser.toUpperCase(), font: "Archivo", size: 21, colour: g.bg, align: "left", weight: "500", tracking: 2, valign: "center", pill: { fill: g.head, pad_x: 28, pad_y: 14 } }] : []),
-        ...band(agency, i + 2 + (includeContext ? 1 : 0), total, mix(g.head, g.bg, 0.55)),
+        ...band(agency, i + 2 + (includeContext ? 1 : 0), total, mix(g.head, g.bg, 0.55), lang),
       ],
     }));
   });
@@ -225,7 +232,7 @@ function cartelPlanned(plan: CarouselPlan, agency: string, contact: string, bran
         ];
       }),
       { type: "text", bbox: [230, 1130, 850, 1186], content: plan.save_line.toUpperCase(), font: "Archivo", size: 23, colour: CREAM, align: "center", weight: "500", tracking: 2, valign: "center", pill: { fill: NAVY, pad_x: 34, pad_y: 16 } },
-      ...band(agency, total - 1, total, mix(NAVY, CREAM, 0.55)),
+      ...band(agency, total - 1, total, mix(NAVY, CREAM, 0.55), lang),
     ],
   }));
 
@@ -240,7 +247,7 @@ function cartelPlanned(plan: CarouselPlan, agency: string, contact: string, bran
       { type: "text", bbox: [280, 830, 800, 894], content: plan.cta_keyword, font: "Archivo", size: 23, colour: brand.gold, align: "center", weight: "500", tracking: 3, valign: "center", pill: { fill: NAVY, pad_x: 44, pad_y: 20 } },
       { type: "text", bbox: [80, 990, 1000, 1040], content: "→ → →", font: "Anton", size: 44, colour: NAVY, align: "center", tracking: 30 },
       { type: "text", bbox: [80, 1110, 1000, 1140], content: contact.toUpperCase(), font: "Archivo", size: 20, colour: NAVY, align: "center", tracking: 3 },
-      ...band(agency, total, total, mix(NAVY, brand.gold, 0.8)),
+      ...band(agency, total, total, mix(NAVY, brand.gold, 0.8), lang),
     ],
   }));
   return specs;

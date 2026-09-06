@@ -23,7 +23,8 @@ import { env } from '../../../../packages/config/env';
 import {
   adjudicate, capFor, coverageGaps, dropSentence, endsMidThought, gateField, incompleteBody,
   requirementsFor,
-  checkHashtags, fieldIncomplete, fieldPolicy, planFields, readField, shortenToBoundary, writeField,
+  checkHashtags, ctaKeyword, fieldIncomplete, fieldPolicy, fitCtaKeyword, planFields, readField,
+  shortenToBoundary, writeField,
   RESOLVED_HARD_FAIL, RESOLVED_OK,
   type CoverageStatus, type GateHit, type PlanLike, type Requirement, type RequirementCoverage,
   type Resolution,
@@ -1299,6 +1300,21 @@ export function finishCopy<T extends PlanLike>(
   plan: T, report?: GateReport, markets = '', capabilities = markets,
 ): T {
   let current = plan;
+  // A keyword the reader cannot connect to the post they just read is a leftover. "Comment ROUTE"
+  // closed a deck about new build versus resale.
+  const subject = `${readField(current, 'hook_title')} ${readField(current, 'eyebrow')} `
+    + `${readField(current, 'slide2_title')}`;
+  for (const f of planFields(current)) {
+    if (fieldPolicy(f.field) !== 'cta') continue;
+    const fitted = fitCtaKeyword(f.text, subject);
+    if (fitted !== f.text) {
+      current = writeField(current, f.field, fitted);
+      report?.blocked.push({ field: f.field, text: f.text, verdict: 'UNSUPPORTED',
+        problem: `the comment keyword "${ctaKeyword(f.text)}" has nothing to do with the post`,
+        outcome: `keyword changed to "${ctaKeyword(fitted)}"` });
+    }
+  }
+
   // A CTA that promises a deliverable the agency has not said it produces is rewritten into the
   // conversation it should have been. It never fails a post: the marketing survives, the invented
   // service does not.

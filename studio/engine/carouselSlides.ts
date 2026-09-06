@@ -17,6 +17,18 @@ const M = 80;                       // doctrine margin (covers IG's 3:4 grid cro
 let SERIF = "Libre Caslon Display";
 // Edition support (Christian 2026-08-28): the display face is swappable for the duration of a
 // SYNCHRONOUS spec build — set, build, restore; never held across an await.
+/**
+ * The numero sign in the post's language. "Nº" is Spanish and Portuguese; an English deck that says
+ * "Nº 02 — 05" has quietly leaked its build language onto the artwork.
+ */
+export function numero(lang = "es"): string {
+  const byLang: Record<string, string> = {
+    es: "Nº", pt: "Nº", fr: "Nº", it: "N.", en: "No.", de: "Nr.", nl: "Nr.",
+    sv: "Nr", no: "Nr", da: "Nr.", fi: "Nro", pl: "Nr", ru: "№",
+  };
+  return byLang[lang] ?? "No.";
+}
+
 export function getPlannedSerif(): string { return SERIF; }
 export function setPlannedSerif(f: string): void { SERIF = f; }
 const SANS = "Jost";

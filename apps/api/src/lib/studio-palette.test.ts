@@ -39,7 +39,20 @@ describe('the palette governs facts, not creativity', () => {
   });
   it('leaves hooks, framing, opinion and argument explicitly free', () => {
     expect(p).toMatch(/EVERYTHING ELSE IS YOURS/);
-    expect(p).toMatch(/HOW SELLING WORKS IS NOT A FACT THAT NEEDS A SOURCE/);
+    expect(p).toMatch(/ORDINARY SELLING REASONING DOES NOT COME OFF THIS LIST/);
+  });
+
+  // Christian, 2026-09-06: the earlier absolute wording ("how selling works is not a fact that
+  // needs a source") was a loophole waiting to be used. The permission has to carry its own limit.
+  it('states the mechanism permission in the register of a tendency, not a licence', () => {
+    expect(p).toMatch(/it can happen, it often does, not it\s+always will/);
+  });
+  it('names what still follows the evidence rules whatever register it is written in', () => {
+    for (const must of ['law', 'tax', 'a deadline', 'a\n  statistic', 'a ranking',
+      'anything with a number in it', 'a named place', 'a current market',
+      "agency's own record or services"]) {
+      expect(p).toContain(must);
+    }
   });
   it('says what to do instead of reaching for a remembered number', () => {
     expect(p).toMatch(/A figure you did not get from this list is an invention/);

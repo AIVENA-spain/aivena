@@ -33,7 +33,7 @@ import {
 import type { CarouselBrand } from '../../../../studio/engine/renderCarousel';
 import { planCarousel, editPlan, remixHook, topicIdeas, listingCopy, listingStory, pickBankCard, PlanSchema, normalisePlan, type Audience } from '../lib/studio-carousel-plan';
 import { POLICED_TYPES, checkBankContradictions, checkIntent, extractClaims, finishCopy, gatePlan,
-  type GateReport } from '../lib/studio-claim-gate';
+  type ExtractedClaim, type GateReport } from '../lib/studio-claim-gate';
 import { cardRules, retrieveBankFacts } from '../lib/studio-bank-match';
 import { gateField, planFields, readField, removeClaim, writeField,
   type RequirementCoverage } from '../lib/studio-copy-gate';
@@ -1441,6 +1441,9 @@ async function runPlannedCarousel(opts: {
     // post someone actually generates answers the question without a synthetic run.
     const t0 = Date.now();
     const timings: Record<string, number> = {};
+    // Claim extraction paid for once per exact piece of copy, for this generation only. Dies with
+    // the request, so it can never hand back a classification from an older extractor.
+    const claimCache = new Map<string, ExtractedClaim[] | null>();
     const stage = async <R,>(name: string, fn: () => Promise<R>): Promise<R> => {
       const started = Date.now();
       try { return await fn(); } finally {
@@ -1519,7 +1522,9 @@ async function runPlannedCarousel(opts: {
     let plan = await stage('research_palette_and_write', () => writeDeck(false));
     // EDITOR pass (Christian 2026-08-28): a skeptical second read of the copy — sense, value,
     // trust — before anything renders. Quote decks are verbatim client words and skip it.
-    let copyQa: { revised: boolean; notes: string[] } | undefined;
+    let copyQa: {
+      revised: boolean; notes: string[]; outcome?: string; degraded?: boolean; why?: string;
+    } | undefined;
     let claimQa: GateReport | undefined;
     if (opts.type === 'tips') {
       // THE FACTUAL GATE, on the finished draft and BEFORE the editor. Guardrails in the prompt are
@@ -1545,29 +1550,50 @@ async function runPlannedCarousel(opts: {
           cardRules: card ? cardRules(card) : '',
           agencyEvidence: opts.agencyEvidence ?? '', uncovered,
           sources, coverage, cardId: card?.id, bank: card?.bank, facts: paletteFacts,
+          claimCache,
         }).catch((err: unknown) => {
           console.warn(`[studio/carousel] claim gate failed: ${(err as Error)?.message}`);
           return null;
         }));
         if (gated) { plan = gated.plan; claimQa = gated.report; }
 
-        // THE EDITOR — the skeptical second read of the copy, and now the pass that carries the
-        // comprehension standard. Restoring it: the ordering refactor that moved these steps into
-        // refine() dropped the call, and TypeScript said nothing because an unused import is not an
-        // error. It ran on every deck for a week before that and none since.
-        const edited = await stage('editor',
+        // THE EDITOR — the skeptical second read of the copy, and the pass that carries the
+        // reader-first standard. Its outcome is now named rather than null: a silent failure here
+        // ships exactly the unreadable copy the editor exists to prevent, and a profile caught the
+        // re-gate never running with no way to tell approval from collapse.
+        let edit = await stage('editor',
           () => editPlan(plan, opts.topic ?? '', opts.language, research));
-        if (edited) {
-          plan = edited.plan;
-          copyQa = { revised: edited.notes.length > 0, notes: edited.notes };
+        if (edit.outcome === 'FAILED' || edit.outcome === 'TIMED_OUT' || edit.outcome === 'MALFORMED') {
+          console.warn(`[studio/carousel] editor ${edit.outcome}: ${edit.why ?? ''} — retrying once`);
+          edit = await stage('editor_retry',
+            () => editPlan(plan, opts.topic ?? '', opts.language, research));
+        }
+        const editorDegraded = edit.outcome !== 'EDITED' && edit.outcome !== 'NO_CHANGES';
+        if (editorDegraded) {
+          // Continue only because the factual gate has already cleared this copy — but say so, in
+          // the record, rather than letting it look like the editor approved it.
+          console.error(`[studio/carousel] editor unavailable (${edit.outcome}: ${edit.why ?? ''}) `
+            + `— publishing copy the factual gate cleared, without the readability pass`);
+        }
+        copyQa = {
+          revised: edit.outcome === 'EDITED',
+          notes: edit.notes ?? [],
+          outcome: edit.outcome,
+          degraded: editorDegraded || undefined,
+          why: editorDegraded ? edit.why : undefined,
+        };
 
-          // THE EDITOR IS A WRITER TOO. It rewrites whole fields, so everything it produces is copy
-          // the claim gate never saw. Validate the edited plan once more, with a single repair round.
+        // NO_CHANGES needs no re-gate: the copy the gate already cleared is the copy that publishes.
+        if (edit.outcome === 'EDITED' && edit.plan) {
+          plan = edit.plan;
+
+          // THE EDITOR IS A WRITER TOO. Everything it rewrote is copy the claim gate never saw.
           const regated = await stage('regate_after_editor', () => gatePlan(plan, {
             language: opts.language, topic: opts.topic ?? '', research,
             cardRules: card ? cardRules(card) : '',
             agencyEvidence: opts.agencyEvidence ?? '', uncovered,
             sources, coverage, cardId: card?.id, bank: card?.bank, facts: paletteFacts,
+            claimCache,
           }, 1).catch(() => null));
           if (regated) {
             plan = regated.plan;
@@ -1585,7 +1611,7 @@ async function runPlannedCarousel(opts: {
         // five bank contradictions survived into final copy in the calibration run because the check
         // ran before it. A guardrail verified against primary sources is a hard block, always.
         if (opts.type === 'tips' && claimQa) {
-          const finalClaims = await extractClaims(plan, opts.language).catch(() => null);
+          const finalClaims = await extractClaims(plan, opts.language, claimCache).catch(() => null);
           const finalMaterial = (finalClaims ?? []).filter((c) =>
             (POLICED_TYPES as readonly string[]).includes(c.type) && riskTier(c.text, c.type) === 'high');
           const facts = new Map<string, string>();

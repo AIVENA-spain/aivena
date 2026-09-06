@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import { env } from '../../../../packages/config/env';
 import type { CarouselPlan } from '../../../../studio/engine/carouselSlides';
-import { shortenToBoundary } from './studio-copy-gate';
+import { planFields, readField, shortenToBoundary,
+  type PlanLike } from './studio-copy-gate';
 import { bankIndex, cardRules, getCard, keywordCandidates, outOfScopeReason,
   parseCardPick } from './studio-bank-match';
 import { assessCoverage, extractSourceFacts } from './studio-claim-gate';
@@ -920,37 +921,45 @@ export async function planCarousel(opts: {
   // word overlap, which only ever worked by comparing five-character prefixes.
   // Coverage is judged between research and writing, per requirement id — the writer cannot be told
   // what went unanswered until the research has come back, and must be told before it writes.
+  // COVERAGE AND FACTS AT THE SAME TIME. Both read the same two things — the research brief and the
+  // pages that were opened — and neither reads the other's output, so waiting for the first before
+  // starting the second bought nothing. No factual standard changes: the same assessment, the same
+  // extraction, the same fail-closed behaviour, concurrently.
   let missing: string[] = [];
-  if (opts.cardId && opts.cardMustList?.length) {
-    const requirements = requirementsFor(opts.cardId, opts.cardMustList);
-    const assessed = await assessCoverage(requirements, brief, researchSources)
-      .catch(() => ({ coverage: [], degraded: 'coverage assessment threw' }));
-    missing = coverageGaps(requirements, assessed.coverage).map((g) => g.text);
-    if (assessed.degraded) {
-      console.warn(`[studio/carousel] ${assessed.degraded} — treating all `
-        + `${requirements.length} required points as unestablished`);
-    }
-    opts.onCoverage?.(missing, assessed.degraded, assessed.coverage);
-  }
-  // THE PALETTE. Read the facts off the opened pages BEFORE the writer runs, so it builds the post
-  // out of what is true rather than writing from memory and having the gate delete a third of it.
   let facts: SourceFact[] = [];
-  if (researchSources.some((x) => x.opened)) {
-    if (opts.existingFacts?.length) {
-      facts = [...opts.existingFacts];
-    } else {
+  const needFacts = researchSources.some((x) => x.opened);
+  const [assessed] = await Promise.all([
+    (async () => {
+      if (!opts.cardId || !opts.cardMustList?.length) return null;
+      const requirements = requirementsFor(opts.cardId, opts.cardMustList);
+      const got = await assessCoverage(requirements, brief, researchSources)
+        .catch(() => ({ coverage: [], degraded: 'coverage assessment threw' }));
+      missing = coverageGaps(requirements, got.coverage).map((g) => g.text);
+      if (got.degraded) {
+        console.warn(`[studio/carousel] ${got.degraded} — treating all `
+          + `${requirements.length} required points as unestablished`);
+      }
+      opts.onCoverage?.(missing, got.degraded, got.coverage);
+      return got;
+    })(),
+    (async () => {
+      if (!needFacts) return;
+      if (opts.existingFacts?.length) { facts = [...opts.existingFacts]; opts.onFacts?.(facts); return; }
       const got = await extractSourceFacts(researchSources, opts.topic ?? '')
-        .catch((err: unknown) => ({ facts: [] as SourceFact[],
+        .catch((err: unknown) => ({ facts: [] as SourceFact[], timedOut: [] as string[],
           degraded: `fact extraction threw: ${(err as Error)?.message ?? 'unknown'}` }));
       facts = got.facts;
-      // An empty palette because nothing could be READ is not the same as an empty palette because
-      // there was nothing to find, and the writer's instructions differ for the two.
       if (got.degraded) console.warn(`[studio/carousel] palette degraded — ${got.degraded}`);
+      if (got.timedOut.length) {
+        console.warn(`[studio/carousel] pages that would not answer: ${got.timedOut.join(', ')}`);
+      }
       console.log(`[studio/carousel] palette: ${facts.length} facts off `
         + `${researchSources.filter((x) => x.opened).length} opened pages`);
-    }
-    opts.onFacts?.(facts);
-  }
+      opts.onFacts?.(facts);
+    })(),
+  ]);
+  void assessed;
+
   const palette = buildPalette({
     facts,
     unknown: missing,
@@ -1212,7 +1221,24 @@ const EDIT_TOOL = {
   },
 } as const;
 
-export async function editPlan(plan: CarouselPlan, topic: string, language = 'es', brief = ''): Promise<{ plan: CarouselPlan; notes: string[] } | null> {
+/**
+ * What the editor did — named, because "null" meant five different things.
+ *
+ * The editor now carries the reader-first pass, so a silent failure recreates exactly the copy
+ * problem it exists to prevent: unreadable slides shipping while the pipeline reports success. A
+ * profile showed the re-gate never running and nobody could say whether the editor had approved the
+ * copy or fallen over.
+ */
+export type EditOutcome = 'EDITED' | 'NO_CHANGES' | 'FAILED' | 'TIMED_OUT' | 'MALFORMED';
+export interface EditResult {
+  outcome: EditOutcome;
+  plan?: CarouselPlan;
+  notes?: string[];
+  /** why it failed, for the record — never shown to the agent */
+  why?: string;
+}
+
+export async function editPlan(plan: CarouselPlan, topic: string, language = 'es', brief = ''): Promise<EditResult> {
   // RULE 4 — the deterministic detector names the exact sentences that assert an absolute about
   // a regulated subject, so the editor verifies or hedges THOSE rather than re-reading blind.
   const flagged = riskyClaims(plan);
@@ -1301,10 +1327,10 @@ Submit with the submit_edited_plan tool.`;
         messages: [{ role: 'user', content: prompt }],
       }),
     });
-    if (!res.ok) return null;
+    if (!res.ok) return { outcome: res.status === 408 || res.status === 504 ? 'TIMED_OUT' : 'FAILED', why: `http_${res.status}` };
     const data = (await res.json()) as { content?: { type: string; input?: unknown }[] };
     const raw = unesc(data.content?.find((c) => c.type === 'tool_use')?.input) as Record<string, unknown> | undefined;
-    if (!raw) return null;
+    if (!raw) return { outcome: 'MALFORMED', why: 'the editor returned no tool call' };
     const notes = Array.isArray(raw.review_notes)
       ? (raw.review_notes as unknown[]).filter((n): n is string => typeof n === 'string' && n.trim().length > 0).slice(0, 12)
       : [];
@@ -1326,15 +1352,28 @@ Submit with the submit_edited_plan tool.`;
     }
     // The editor may not hand back a field that only fits by being cut: fail open to the original
     // plan instead, which is whole.
-    if (trimToCaps(input).length) return null;
+    const stuck = trimToCaps(input);
+    if (stuck.length) return { outcome: 'MALFORMED', why: `${stuck.join(', ')} came back over the cap` };
     const parsed = PlanSchema.safeParse(input);
-    if (!parsed.success) return null;
+    if (!parsed.success) return { outcome: 'MALFORMED', why: parsed.error.issues.slice(0, 3).map((x) => `${x.path.join('.')}: ${x.message}`).join('; ') };
     const edited = parsed.data as CarouselPlan;
-    if (edited.tips.length !== plan.tips.length) return null;   // the editor may not add or drop slides
-    if (planIssues(edited, '')) return null;
-    return { plan: normalisePlan(edited, language), notes };
-  } catch {
-    return null;
+    // the editor may not add or drop slides
+    if (edited.tips.length !== plan.tips.length) {
+      return { outcome: 'MALFORMED', why: `slide count changed ${plan.tips.length} → ${edited.tips.length}` };
+    }
+    const issue = planIssues(edited, '');
+    if (issue) return { outcome: 'MALFORMED', why: issue };
+    const next = normalisePlan(edited, language);
+    // NO CHANGES is not a failure and needs no re-gate — the copy the gate already cleared is the
+    // copy that publishes. Compared on the fields that actually render.
+    const same = planFields(next as unknown as PlanLike)
+      .every((f) => f.text === readField(plan as unknown as PlanLike, f.field));
+    return same
+      ? { outcome: 'NO_CHANGES', plan: next, notes }
+      : { outcome: 'EDITED', plan: next, notes };
+  } catch (err) {
+    const aborted = (err as { name?: string })?.name === 'AbortError';
+    return { outcome: aborted ? 'TIMED_OUT' : 'FAILED', why: (err as Error)?.message ?? 'threw' };
   }
 }
 

@@ -18,6 +18,8 @@
  * And the second rule: this is NOT a puffery police. "Buyers scroll fast and judge in seconds" is
  * not a claim to be sourced. Only genuine external assertions are policed; persuasion is left alone.
  */
+import { createHash } from 'node:crypto';
+
 import { env } from '../../../../packages/config/env';
 
 import {
@@ -31,7 +33,8 @@ import {
 } from './studio-copy-gate';
 import { getCard, retrieveBankFacts } from './studio-bank-match';
 import {
-  SUPPORT_TYPES, canonicalWithinExcerpt, checkCta, excerptOccursIn, rankFacts, riskTier,
+  EXTRACTOR_VERSION, SUPPORT_TYPES, canonicalWithinExcerpt, checkCta, excerptOccursIn,
+  rankFacts, riskTier,
   verifySupport,
   type ClaimSupport, type ProposedSupport, type ResearchSource, type SourceFact,
   type SupportContext,
@@ -80,6 +83,15 @@ export interface GateContext {
   agencyKnowledge?: string;
   /** stored local knowledge for this area, where the product has any */
   localIntelligence?: string;
+  /**
+   * Claim extraction already paid for, WITHIN THIS GENERATION ONLY.
+   *
+   * The extractor runs once per gate round, again after the editor, and again in the final bank
+   * check — often over copy that has not changed a byte. The cache is created per generation and
+   * dies with it, and its key carries the extractor version, so it can never survive a prompt
+   * change and hand back a stale classification.
+   */
+  claimCache?: Map<string, ExtractedClaim[] | null>;
   /** id → exact text of the verified bank facts and guardrails relevant to this post. Left unset,
    *  the gate retrieves them itself from what the finished post actually claims. */
   bankFacts?: ReadonlyMap<string, string>;
@@ -377,7 +389,29 @@ a factual claim — it asserts nothing about the world.
 Split multi-sentence bodies into one entry per sentence. Copy each sentence VERBATIM and repeat the
 field address you were given exactly. Do not invent, merge or tidy sentences.`;
 
-export async function extractClaims(plan: PlanLike, language: string): Promise<ExtractedClaim[] | null> {
+const EXTRACTOR_MODEL = 'claude-sonnet-5';
+
+/** A stable key for one exact piece of copy under one exact extractor. */
+function claimCacheKey(plan: PlanLike, language: string): string {
+  const body = planFields(plan).map((f) => `${f.field}\u0000${f.text}`).join('\u0001');
+  return createHash('sha256')
+    .update(`${EXTRACTOR_VERSION}\u0001${EXTRACTOR_MODEL}\u0001${language}\u0001${body}`)
+    .digest('hex');
+}
+
+export async function extractClaims(
+  plan: PlanLike, language: string, cache?: Map<string, ExtractedClaim[] | null>,
+): Promise<ExtractedClaim[] | null> {
+  const key = cache ? claimCacheKey(plan, language) : '';
+  if (cache && cache.has(key)) return cache.get(key) ?? null;
+  const out = await extractClaimsUncached(plan, language);
+  // A null is a FAILURE, not an answer — caching it would turn one bad call into a whole
+  // generation's worth of "extraction unavailable".
+  if (cache && out !== null) cache.set(key, out);
+  return out;
+}
+
+async function extractClaimsUncached(plan: PlanLike, language: string): Promise<ExtractedClaim[] | null> {
   const fields = planFields(plan);
   if (!fields.length) return [];
   const body = fields.map((f) => `[${f.field}] ${f.text}`).join('\n');
@@ -607,19 +641,30 @@ system has been wrong in public.`;
  */
 export async function extractSourceFacts(
   sources: readonly ResearchSource[], topic: string,
-): Promise<{ facts: SourceFact[]; degraded: string | null }> {
+): Promise<{ facts: SourceFact[]; degraded: string | null; timedOut: string[] }> {
   const opened = sources.filter((s) => s.opened && s.content);
-  if (!opened.length) return { facts: [], degraded: null };
+  if (!opened.length) return { facts: [], degraded: null, timedOut: [] };
   const facts: SourceFact[] = [];
+  const timedOut: string[] = [];
   let failed = 0;
-  await Promise.all(opened.slice(0, 12).map(async (src) => {
+  const attempted = new Set<string>();
+  const readPage = async (src: ResearchSource): Promise<boolean> => {
+    attempted.add(src.id);
     // Enough of the page to carry the relevant part without paying for the whole Código Civil.
     const body = (src.content ?? '').slice(0, 18_000);
     const out = await callTool(`source facts ${src.id}`, FACTS_SYSTEM,
       `THE POST IS ABOUT: ${topic}\n\nPAGE ${src.id} — ${src.url}\n\n${body}`,
-      FACTS_TOOL, 180_000, 4000);
+      // 45 SECONDS, NOT 180. A profile spent 180 of a 415-second generation waiting on three
+      // pages that never answered — 43% of the run, producing nothing. A page that has not been
+      // read in 45 seconds is not going to be.
+      FACTS_TOOL, 45_000, 4000);
     const list = out && coerceList(out.facts, 'facts');
-    if (!list) { failed++; return; }
+    if (!list) {
+      failed++;
+      timedOut.push(src.domain || src.url);
+      console.warn(`[studio/claim-gate] could not read ${src.id} (${src.domain}) within 45s`);
+      return false;
+    }
     for (const r of list) {
       const excerpt = String(r?.excerpt ?? '').trim();
       const canonical = String(r?.canonical ?? '').trim();
@@ -645,8 +690,28 @@ export async function extractSourceFacts(
         metric: String(r?.metric ?? '').trim(),
       });
     }
-  }));
-  return { facts, degraded: failed ? `${failed} of ${opened.length} pages could not be read` : null };
+    return true;
+  };
+
+  await Promise.all(opened.slice(0, 12).map(readPage));
+
+  // TRY ANOTHER SOURCE — DO NOT LOWER THE BAR. A page that would not answer costs us its facts, so
+  // reach for the next page of the same standing rather than leaving a high-risk claim unevidenced.
+  // What stays unread stays unread: no evidence rule moves because a server was slow.
+  if (failed) {
+    const spare = opened.filter((s) => !attempted.has(s.id)).slice(0, failed);
+    if (spare.length) {
+      console.warn(`[studio/claim-gate] ${failed} page(s) unreadable — reading `
+        + `${spare.length} more of the same standing instead`);
+      await Promise.all(spare.map(readPage));
+    }
+  }
+
+  return {
+    facts,
+    degraded: failed ? `${failed} of ${opened.length} pages could not be read` : null,
+    timedOut,
+  };
 }
 
 /* ── 2b. SUPPORT — what each material claim actually rests on ────────────────────────────── */
@@ -1128,7 +1193,7 @@ export async function gatePlan<T extends PlanLike>(
     // outrank anything a model concludes.
     const hits: GateHit[] = planFields(current)
       .flatMap((f) => gateField(f.field, f.text, ctx.research));
-    const claims = await extractClaims(current, ctx.language);
+    const claims = await extractClaims(current, ctx.language, ctx.claimCache);
     if (claims === null) {
       report.degraded = 'claim extraction unavailable — only the deterministic table ran';
     }

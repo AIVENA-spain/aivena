@@ -15,6 +15,15 @@
 import { claimTouchesRequirement, placesIn as placesInText,
   placesOrRegionsIn } from './studio-copy-gate';
 
+/**
+ * Bump when the claim extractor's prompt, tool schema or taxonomy changes.
+ *
+ * Part of every claim-cache key, so a new extractor can never read an old extractor's answers.
+ * Lives here rather than beside the extractor because this module imports no environment, and
+ * anything that has to be provable by a test cannot sit behind a process.exit on a missing var.
+ */
+export const EXTRACTOR_VERSION = 'v3-2026-09-06';
+
 /* ── SOURCES ─────────────────────────────────────────────────────────────────────────────── */
 
 export type SourceClass =

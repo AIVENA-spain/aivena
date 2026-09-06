@@ -1392,6 +1392,18 @@ async function runPlannedCarousel(opts: {
   const { genId, agencyId } = opts;
   try {
     // Variety across generations (Christian 2026-08-28: "a key or a luggage appears" on every
+    // WHERE THE MINUTES GO. A real generation takes over five minutes and nobody could say which
+    // step owned it. Every stage is timed and the breakdown is stored with the deck, so the next
+    // post someone actually generates answers the question without a synthetic run.
+    const t0 = Date.now();
+    const timings: Record<string, number> = {};
+    const stage = async <R,>(name: string, fn: () => Promise<R>): Promise<R> => {
+      const started = Date.now();
+      try { return await fn(); } finally {
+        timings[name] = (timings[name] ?? 0) + (Date.now() - started);
+      }
+    };
+
     // house/moving topic): hand the planner the hero objects from this agency's recent decks so it
     // must find fresh ones. Best-effort — a fetch failure never blocks the post.
     let avoidMotifs: string[] = [];
@@ -1434,7 +1446,9 @@ async function runPlannedCarousel(opts: {
     let paletteFacts: SourceFact[] = [];
     // THE VERIFIED BANK GOVERNS THE TOPIC BEFORE ANYTHING IS WRITTEN. Matching nothing is normal —
     // most typed topics are not in the bank — and a wrong card would be worse than none.
-    const card = opts.type === 'tips' ? await pickBankCard(opts.topic ?? '').catch(() => null) : null;
+    const card = opts.type === 'tips'
+      ? await stage('bank_card', () => pickBankCard(opts.topic ?? '').catch(() => null))
+      : null;
     if (card) console.log(`[studio/carousel] topic governed by bank card ${card.id} (${card.state})`);
     const writeDeck = (saferAngle: boolean) => planCarousel({
       saferAngle,
@@ -1458,7 +1472,7 @@ async function runPlannedCarousel(opts: {
       onCoverage: (u, degraded, cov) => { uncovered = u; coverageDegraded = degraded; coverage = cov; },
       onSources: (src) => { sources = src; },
     });
-    let plan = await writeDeck(false);
+    let plan = await stage('research_palette_and_write', () => writeDeck(false));
     // EDITOR pass (Christian 2026-08-28): a skeptical second read of the copy — sense, value,
     // trust — before anything renders. Quote decks are verbatim client words and skip it.
     let copyQa: { revised: boolean; notes: string[] } | undefined;
@@ -1482,7 +1496,7 @@ async function runPlannedCarousel(opts: {
        */
       const refine = async (draft: typeof plan): Promise<typeof plan> => {
         plan = draft;
-        const gated = await gatePlan(plan, {
+        const gated = await stage('factual_gate', () => gatePlan(plan, {
           language: opts.language, topic: opts.topic ?? '', research,
           cardRules: card ? cardRules(card) : '',
           agencyEvidence: opts.agencyEvidence ?? '', uncovered,
@@ -1490,8 +1504,38 @@ async function runPlannedCarousel(opts: {
         }).catch((err: unknown) => {
           console.warn(`[studio/carousel] claim gate failed: ${(err as Error)?.message}`);
           return null;
-        });
+        }));
         if (gated) { plan = gated.plan; claimQa = gated.report; }
+
+        // THE EDITOR — the skeptical second read of the copy, and now the pass that carries the
+        // comprehension standard. Restoring it: the ordering refactor that moved these steps into
+        // refine() dropped the call, and TypeScript said nothing because an unused import is not an
+        // error. It ran on every deck for a week before that and none since.
+        const edited = await stage('editor',
+          () => editPlan(plan, opts.topic ?? '', opts.language, research));
+        if (edited) {
+          plan = edited.plan;
+          copyQa = { revised: edited.notes.length > 0, notes: edited.notes };
+
+          // THE EDITOR IS A WRITER TOO. It rewrites whole fields, so everything it produces is copy
+          // the claim gate never saw. Validate the edited plan once more, with a single repair round.
+          const regated = await stage('regate_after_editor', () => gatePlan(plan, {
+            language: opts.language, topic: opts.topic ?? '', research,
+            cardRules: card ? cardRules(card) : '',
+            agencyEvidence: opts.agencyEvidence ?? '', uncovered,
+            sources, coverage, cardId: card?.id, bank: card?.bank, facts: paletteFacts,
+          }, 1).catch(() => null));
+          if (regated) {
+            plan = regated.plan;
+            if (claimQa) {
+              claimQa.repairs += regated.report.repairs;
+              claimQa.dropped += regated.report.dropped;
+              claimQa.blocked.push(...regated.report.blocked);
+              claimQa.bankContradictions.push(...regated.report.bankContradictions);
+              claimQa.degraded = claimQa.degraded ?? regated.report.degraded;
+            } else { claimQa = regated.report; }
+          }
+        }
 
         // THE VERIFIED BANK, ON WHAT WILL ACTUALLY PUBLISH. The editor rewrites whole fields, and
         // five bank contradictions survived into final copy in the calibration run because the check
@@ -1508,7 +1552,8 @@ async function runPlannedCarousel(opts: {
           for (const f of retrieveBankFacts(finalMaterial.map((c) => c.text), card?.bank)) {
             facts.set(f.id, f.text);
           }
-          const { contradictions } = await checkBankContradictions(finalMaterial, facts)
+          const { contradictions } = await stage('final_bank_check',
+            () => checkBankContradictions(finalMaterial, facts))
             .catch(() => ({ contradictions: [] as { field: string; text: string; bankFactId: string; why: string }[] }));
           for (const c of contradictions) {
             const r = removeClaim(plan, c.field, c.text);
@@ -1560,7 +1605,8 @@ async function runPlannedCarousel(opts: {
       // of them an answer. When the deck cannot keep the cover's promise, the honest move is to
       // change the promise; keeping the hook and answering something else is bait.
       if (opts.type === 'tips') {
-        const intent = await checkIntent(plan, opts.topic ?? '', opts.language).catch(() => null);
+        const intent = await stage('intent_check',
+          () => checkIntent(plan, opts.topic ?? '', opts.language).catch(() => null));
         if (intent && !intent.answersIt) {
           console.warn(`[studio/carousel] the deck does not answer its cover — ${intent.why}`);
           if (intent.honestHook && intent.honestHook.length <= 90) {
@@ -1694,6 +1740,7 @@ async function runPlannedCarousel(opts: {
         engine: 'carousel', carousel_type: opts.type, carousel_style: usedStyle, slide_count: stored.length, slides: stored,
         ai_imagery: opts.type === 'tips' && isTipsImageStyle(usedStyle),
         image_paths: imagePaths, image_scheme: opts.scheme, per_slide_art: perSlideArt, artwork_source: artworkSource, artwork_error: artworkError, artwork_qa: artworkQa, copy_qa: copyQa, claim_qa: claimQa, requirement_coverage: coverage,
+        timings: { ...timings, total_ms: Date.now() - t0 },
         // The source ledger. Coverage and claim-support records reference these ids, so a published
         // sentence can be traced to the page it came off long after the run.
         research_sources: sources.map((x) => ({

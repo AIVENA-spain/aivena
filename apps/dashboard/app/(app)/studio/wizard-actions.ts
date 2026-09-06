@@ -99,6 +99,11 @@ export async function statusAction(id: string): Promise<Envelope> {
   return call(`/api/studio/status/${encodeURIComponent(id)}`);
 }
 
+/** Whatever this agency has in flight right now — asked of the server, so it survives a reload. */
+export async function activeGenerationAction(): Promise<Envelope> {
+  return call("/api/studio/active");
+}
+
 export async function libraryAction(): Promise<Envelope> {
   return call("/api/studio/library");
 }

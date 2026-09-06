@@ -397,6 +397,50 @@ function shapeStatus(r: GenRow) {
   };
 }
 
+/**
+ * GET /api/studio/active — is anything being generated for this agency right now?
+ *
+ * The Studio used to hold the browser on "Writing your carousel — about a minute…" for the whole
+ * run, and a five-minute run trapped the agent on one screen. The status now lives where it always
+ * lived — on the generation record — so a widget anywhere in the dashboard can ask the server and
+ * survive navigation, a reload, or closing the tab and coming back.
+ */
+route.get('/active', async (c) => {
+  const tx = c.get('tx');
+  const agencyId = c.get('agencyId');
+  try {
+    const result = await tx.execute(sql`
+      SELECT id, status::text AS status, prompt, raw_request, created_at, completed_at
+      FROM image_generations
+      WHERE agency_id = ${agencyId}
+        AND created_at > now() - interval '30 minutes'
+        AND (status = 'processing' OR completed_at > now() - interval '5 minutes')
+      ORDER BY created_at DESC
+      LIMIT 1
+    `);
+    const rows = result as unknown as Array<{
+      id: string; status: string; prompt: string | null;
+      raw_request: { topic?: string; content_type?: string } | null;
+      created_at: string; completed_at: string | null;
+    }>;
+    if (!rows.length) return c.json({ ok: true, active: null });
+    const r = rows[0];
+    return c.json({
+      ok: true,
+      active: {
+        id: r.id,
+        status: r.status,
+        topic: r.raw_request?.topic ?? r.prompt ?? '',
+        started_at: r.created_at,
+        finished_at: r.completed_at,
+      },
+    });
+  } catch (err) {
+    console.error('[studio/active] failed:', err);
+    return c.json({ ok: true, active: null });   // never let a widget break the dashboard
+  }
+});
+
 // ── GET /api/studio/status/:id — poll (DB read, RLS-fenced) ────────────────
 route.get('/status/:id', async (c) => {
   const tx = c.get('tx');

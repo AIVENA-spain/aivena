@@ -11,6 +11,7 @@ import { NoAgencyState } from "@/components/shell/no-agency-state";
 import { Sidebar } from "@/components/shell/sidebar";
 import { Topbar } from "@/components/shell/topbar";
 import { AssistantWidget } from "@/components/shell/assistant-widget";
+import { GenerationWidget } from "@/components/shell/generation-widget";
 
 const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
 
@@ -176,6 +177,7 @@ export default async function AppLayout({
         </main>
       </div>
       <AssistantWidget />
+      <GenerationWidget />
     </div>
   );
 }

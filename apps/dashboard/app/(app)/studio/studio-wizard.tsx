@@ -372,7 +372,9 @@ export function StudioWizard({
       if (st === "failed") { setError("That image couldn't be generated. Please try again."); setGenStatus("failed"); return; }
       // Renovations can run two models back-to-back (auto-fallback) — give the job real time before
       // giving up, and never imply failure while it may still complete in the background.
-      if (Date.now() - started > 480_000) { setError("Still working in the background — check your library in a couple of minutes."); setGenStatus("failed"); return; }
+      // The browser losing patience is not the generation failing — and marking it "failed" told
+      // the agent their work was lost when it was still running. The global widget carries it.
+      if (Date.now() - started > 480_000) { setGenStatus("idle"); return; }
       pollRef.current = window.setTimeout(tick, 3000);
     };
     tick();
@@ -927,7 +929,7 @@ function RenovationStep({
         )}
       </div>
 
-      <p className="text-[11px] text-muted-foreground">This is a full generation (uses one credit) — there's no live preview. Takes about a minute.</p>
+      <p className="text-[11px] text-muted-foreground">This is a full generation and uses one credit — there&apos;s no live preview. You can keep working while it runs.</p>
 
       <div>
         <Button type="button" disabled={!photo || !prompt.trim()} onClick={onGenerate} className="gap-1.5">

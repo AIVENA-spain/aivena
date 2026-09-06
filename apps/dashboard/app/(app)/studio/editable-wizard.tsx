@@ -264,7 +264,7 @@ export function EditableWizard({ initialLanguage }: { initialLanguage?: string }
         setClassicBusy(null); return;
       }
       if (Date.now() - started > 5 * 60 * 1000) {
-        setErr("This is taking longer than expected — check your library in a minute.");
+        setErr("Still going. You can keep working — we'll show it in the corner when it's ready.");
         setClassicBusy(null); return;
       }
       classicPoll.current = setTimeout(tick, 4000);
@@ -276,7 +276,7 @@ export function EditableWizard({ initialLanguage }: { initialLanguage?: string }
     setClassicKey(key); setStep("classic"); setErr(null);
     setClassicImage(null); setClassicGenId(null); setClassicRevLeft(2);
     setClassicNote(""); setClassicSection(""); setClassicFiled(false);
-    setClassicBusy("Polishing the photo and composing your design — about a minute…");
+    setClassicBusy("Polishing the photo and composing your design…");
     const res = await generateAction({
       generation_type: "social_post", content_type: "listing", composition: key,
       source_property_id: property.id, image_urls: [photos[0]],

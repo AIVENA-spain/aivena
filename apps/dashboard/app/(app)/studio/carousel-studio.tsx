@@ -269,7 +269,9 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
       const st = s.ok ? (s.status as string) : null;
       if (st === "completed") { showResult(s); return; }
       if (st === "failed") { setErr((s.message as string) ?? "That didn't come out — please try again."); setPhase(ctype === "listing" ? "pick" : "form"); return; }
-      if (Date.now() - started > 300_000) { setErr("Still working in the background — check your library in a minute."); setPhase(ctype === "listing" ? "pick" : "form"); return; }
+      // The browser losing patience is not the generation failing. Hand it to the global widget,
+      // which reads the record from the server, and give the agent their Studio back.
+      if (Date.now() - started > 240_000) { setPhase(ctype === "listing" ? "pick" : "form"); return; }
       poll.current = setTimeout(tick, 2500);
     };
     poll.current = setTimeout(tick, 2000);
@@ -642,10 +644,12 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
       {phase === "working" && (
         <div className="flex flex-col items-center gap-3 py-24 text-neutral-500">
           <Loader2 className="h-7 w-7 animate-spin" />
-          <p className="text-sm">{resuming ? "Opening your design…"
-            : AI_STYLE_KEYS.includes(style) || style === "vibra"
-            ? "Writing the copy and painting the artwork — this takes a few minutes. Worth it."
-            : ctype === "listing" ? "Building your carousel — under a minute…" : "Writing your carousel — about a minute…"}</p>
+          <p className="text-sm">{resuming ? "Opening your design…" : "Creating your carousel…"}</p>
+          {!resuming && (
+            <p className="max-w-xs text-center text-xs text-muted-foreground">
+              You can keep working — we&apos;ll show it in the corner when it&apos;s ready.
+            </p>
+          )}
         </div>
       )}
 

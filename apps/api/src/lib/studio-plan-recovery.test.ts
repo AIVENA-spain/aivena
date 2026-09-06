@@ -8,9 +8,16 @@ import { describe, expect, it } from 'vitest';
  *
  * This is the recovery, lifted out of the retry loop so it can be tested without the network.
  */
+function stripParameterTags(v: string): string {
+  return v
+    .replace(/<\/?parameter(?:\s+name="[^"]*")?\s*>/g, '')
+    .replace(/<\/?(?:antml:)?(?:invoke|function_calls|parameter)[^>]*>/g, '')
+    .trim();
+}
+
 function recoverTips(value: unknown): { tips: unknown; recovered: boolean; stillAString: boolean } {
   if (typeof value !== 'string') return { tips: value, recovered: false, stillAString: false };
-  const raw = value.trim().replace(/^```(?:json)?\s*|\s*```$/g, '');
+  const raw = stripParameterTags(value).trim().replace(/^```(?:json)?\s*|\s*```$/g, '');
   for (const candidate of [raw, raw.replace(/'/g, '"'), `[${raw}]`]) {
     try {
       const parsed = JSON.parse(candidate);
@@ -61,6 +68,20 @@ describe('a string-shaped tips array is recovered, not lost', () => {
     const r = recoverTips('Five tips about buying on the Costa Blanca');
     expect(r.recovered).toBe(false);
     expect(r.stillAString).toBe(true);
+  });
+
+  // THE ACTUAL CAUSE, caught in a latency profile after four dead posts: the model emitted the
+  // textual tool-call syntax INSIDE the tool input, so a good array arrived with a tag glued to the
+  // front. It was never truncation.
+  it('recovers an array the model wrapped in its own parameter tags', () => {
+    const r = recoverTips('<parameter name="items">' + JSON.stringify([TIP]));
+    expect(r.recovered).toBe(true);
+    expect((r.tips as { title: string }[])[0].title).toBe(TIP.title);
+  });
+  it('recovers one wrapped and fenced at the same time', () => {
+    const r = recoverTips('<parameter name="items">```json\n' + JSON.stringify([TIP, TIP]) + '\n```</parameter>');
+    expect(r.recovered).toBe(true);
+    expect(r.tips).toHaveLength(2);
   });
 
   it('refuses an array of strings, which is not a slide list', () => {

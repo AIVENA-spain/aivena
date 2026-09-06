@@ -108,8 +108,28 @@ const PLAN_TOOL = {
 } as const;
 
 /** Models sometimes emit literal backslash-n sequences — render them as real newlines everywhere. */
+/**
+ * A tool value the model wrapped in its own parameter tags.
+ *
+ * THE CAUSE OF FOUR DEAD POSTS. A latency profile finally caught the string that was arriving as
+ * `tips`: `<parameter name="items">[{"title":"Resale and new build aren't taxed…`. The model was
+ * emitting the textual tool-call syntax INSIDE the tool input, so a perfectly good array of slides
+ * arrived as a string with a tag glued to the front, JSON.parse failed on it, three retries did the
+ * same thing, and the whole generation died on a schema error that named the wrong problem. It was
+ * never truncation.
+ */
+function stripParameterTags(v: string): string {
+  return v
+    .replace(/<\/?parameter(?:\s+name="[^"]*")?\s*>/g, '')
+    .replace(/<\/?(?:antml:)?(?:invoke|function_calls|parameter)[^>]*>/g, '')
+    .trim();
+}
+
 function unesc(v: unknown): unknown {
-  if (typeof v === 'string') return v.replace(/\\n/g, '\n');
+  if (typeof v === 'string') {
+    const clean = v.includes('<parameter') || v.includes('</parameter') ? stripParameterTags(v) : v;
+    return clean.replace(/\\n/g, '\n');
+  }
   if (Array.isArray(v)) return v.map(unesc);
   if (v && typeof v === 'object') return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, unesc(x)]));
   return v;

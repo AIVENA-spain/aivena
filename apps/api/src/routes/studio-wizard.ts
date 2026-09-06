@@ -32,7 +32,7 @@ import {
 } from '../../../../studio/engine/carouselStyles';
 import type { CarouselBrand } from '../../../../studio/engine/renderCarousel';
 import { planCarousel, editPlan, remixHook, topicIdeas, listingCopy, listingStory, pickBankCard, PlanSchema, normalisePlan } from '../lib/studio-carousel-plan';
-import { POLICED_TYPES, checkBankContradictions, extractClaims, finishCopy, gatePlan,
+import { POLICED_TYPES, checkBankContradictions, checkIntent, extractClaims, finishCopy, gatePlan,
   type GateReport } from '../lib/studio-claim-gate';
 import { cardRules, retrieveBankFacts } from '../lib/studio-bank-match';
 import { gateField, planFields, readField, removeClaim, writeField,
@@ -1554,6 +1554,25 @@ async function runPlannedCarousel(opts: {
       };
 
       plan = await refine(plan);
+
+      // INTENT FIDELITY. A live post promised "which one actually saves you money" and delivered
+      // three slides about how pre-completion payments are protected — every one supportable, none
+      // of them an answer. When the deck cannot keep the cover's promise, the honest move is to
+      // change the promise; keeping the hook and answering something else is bait.
+      if (opts.type === 'tips') {
+        const intent = await checkIntent(plan, opts.topic ?? '', opts.language).catch(() => null);
+        if (intent && !intent.answersIt) {
+          console.warn(`[studio/carousel] the deck does not answer its cover — ${intent.why}`);
+          if (intent.honestHook && intent.honestHook.length <= 90) {
+            const before = plan.hook_title;
+            plan = { ...plan, hook_title: intent.honestHook };
+            claimQa?.blocked.push({ field: 'hook_title', text: before, verdict: 'UNSUPPORTED',
+              problem: `the deck did not answer this promise: ${intent.why}`,
+              outcome: `cover rewritten to what the deck delivers: "${intent.honestHook}"` });
+            console.warn(`[studio/carousel] cover rewritten: "${before}" → "${intent.honestHook}"`);
+          }
+        }
+      }
 
       // MINIMUM VIABLE CAROUSEL (Christian, 2026-09-05). A deck that lost most of its slides is
       // not a shorter post, it is a broken one. Write the topic once more on arguments that do not

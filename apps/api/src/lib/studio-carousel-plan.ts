@@ -965,6 +965,26 @@ TONE LAW — read the topic's REGISTER first and match the whole deck to it:
 - DREAM / PHILOSOPHICAL topics (the life, the place, time, identity — e.g. "location-life balance", "a life you don't need to retire from") → STAY in that reflective, aspirational register: tips become principles, perspectives and ways to choose, written with warmth and longing. Converting a dream topic into a warnings-and-mistakes listicle is a FAILURE — the reader chose that topic for its feeling.
 - PROVOCATIVE topics (a sting, a challenged belief) → keep the sting through the whole deck, not just the cover.
 Each point = one slide: punchy title + 15-40 words that genuinely deliver in the topic's register — practical advice for practical topics, a real shift in perspective for dream topics. One idea per point. Each point's "teaser" is an open loop pulling to the next slide; leave the last teaser empty.
+
+READER LAW — this decides whether the post is any good, and a real one failed it badly:
+· ONE IDEA PER SLIDE. A reader must be able to say what the slide was about in one sentence. Do not
+  stack three concepts on a card because all three happen to be true.
+· PLAIN WORDS. Write for someone buying their first home in Spain, not for a lawyer. Say "before the
+  home is built" not "off-plan". Say "money you have already paid" not "the amount advanced". Say
+  "payments during construction" not "staged payments". If a specialist term genuinely matters,
+  explain it in the same breath — otherwise use the ordinary word.
+· SHAPE: the point, then why it matters, then (if useful) what to do. Like this:
+    TITLE  If you are paying before the home is finished, protect the money
+    BODY   You may be paying in stages before you ever get the keys. Before signing, ask exactly
+           what protects those payments if something goes wrong.
+· DO NOT EMPTY THE RESEARCH ONTO THE CARD. You may know the guarantee must cover the full amount
+  plus interest in a segregated account. The reader needs "ask how your payments are protected".
+  Pick the ONE or TWO things that make them understand; the rest stays behind the scenes.
+· THE TEST, before you write each body: if someone with no knowledge of Spanish property reads this
+  once, do they get the point? If not, write it again.
+· SIMPLE IS NOT STUPID. Clear, sharp, conversational and useful — not legalistic, not padded, and
+  not beginner fluff either. You are talking to an intelligent adult who does not do this for a
+  living.
 IF THE TOPIC ALREADY READS AS A FINISHED HOOK LINE — a crafted sentence or two with its own punch (often picked from the inspiration ideas, e.g. "Some people buy a home in the sun. Others buy a problem with a pool.") — the user chose those words on purpose: use the line (translated into the post language if needed) VERBATIM as hook_title when it fits 90 chars; if longer, the sharpest sentence verbatim as hook_title and let slide2 carry the rest. NEVER flatten a provocative topic into a generic listicle title — losing its edge is a failure.
 If the hook promises a number ("5 errores"), it MUST equal the number of points delivered.`
     : `Create a CLIENT STORY carousel from this quote (provided by the agency — treat as authentic):
@@ -1187,6 +1207,20 @@ export async function editPlan(plan: CarouselPlan, topic: string, language = 'es
 THIS DECK IS WRITTEN IN ${deckLang.toUpperCase()}. Every field you return must stay in ${deckLang}. The
 language was chosen by the agent, not by you — never translate a field, and never "correct" one that
 looks out of place to you. If a field is already in ${deckLang}, leave its language alone. The reader of this Instagram carousel is a potential client — every slide must make sense on first read, teach something useful, and sound like an agent they can trust. Review the plan below and correct ONLY what fails.
+
+YOUR FIRST JOB IS COMPREHENSION, AND A REAL DECK FAILED IT. Read each body once, at speed, as a
+person who has never bought property in Spain. Then ask what they now know. If the answer is "not
+much", rewrite it — the sentence may be perfectly true and still be useless.
+· A slide with three concepts on it has none. Keep the one that makes the point and cut the rest.
+  A card explaining that a guarantee must cover the amount advanced plus interest in a segregated
+  account should say: ask exactly what protects the payments you make before the keys.
+· Replace trade language with ordinary words: "off-plan" → "before the home is built"; "the amount
+  advanced" → "the money you have already paid"; "staged payments" → "payments during
+  construction"; "completion" → whichever of "when the sale completes" or "when the home is
+  finished" is actually meant. If a term has to stay, explain it in the same sentence.
+· Research is not a writing style. The engine knows the statute; the reader needs the point.
+· Do not flatten it into beginner fluff either. Clear, sharp and conversational — an intelligent
+  adult who simply does not do this for a living.
 
 POST TOPIC: "${topic}"${/^\s*PREMISE FAILS/m.test(brief) ? ' — REJECTED BY RESEARCH. The deck deliberately does not answer this topic as written; do not steer it back.' : ''}${flagged.length ? `
 

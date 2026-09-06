@@ -841,6 +841,84 @@ export async function supportClaims(
   return { supports, degraded: missing ? 'part of the claim support pass did not return' : null };
 }
 
+/* ── 2b-ii. INTENT FIDELITY — does the deck answer the promise it made? ──────────────────── */
+
+const INTENT_TOOL = {
+  name: 'submit_intent',
+  description: 'Whether the deck answers the question its cover asked.',
+  input_schema: {
+    type: 'object',
+    required: ['promise', 'answers_it', 'slides_off_topic'],
+    properties: {
+      promise: { type: 'string', description: 'the question or promise the cover makes, in one line' },
+      answers_it: { type: 'boolean', description: 'does the deck as a whole actually answer that' },
+      slides_off_topic: { type: 'array', items: { type: 'string' },
+        description: 'field addresses of substantive slides that do not help answer it' },
+      why: { type: 'string' },
+      honest_hook: { type: 'string',
+        description: 'if it does NOT answer it: a cover line, in the post language and under 90 characters, that promises what this deck genuinely delivers' },
+    },
+  },
+};
+
+const INTENT_SYSTEM = `You check one thing: does this carousel answer the question its own cover asks?
+
+A reader stops on the cover because of a promise. If the cover asks which option saves money and the
+slides explain types of property and how deposits are protected, the reader has been baited — the
+slides may all be true and the post has still failed.
+
+Ask in order:
+1. What question or promise does the cover make?
+2. Does each substantive slide help answer THAT question?
+3. Does the closing line actually answer or reframe the cover?
+
+Be strict about the subject and generous about the route: a slide can approach the promise from an
+angle, or reframe it, and still be answering it. What it may not do is answer a different question.
+
+If the deck does not answer its cover, write an honest_hook: a cover line that promises what this
+deck genuinely delivers. Keep the voice — it must still be a hook worth stopping for, not a summary.
+"New build vs resale: the trade-offs buyers often miss" is a good honest hook. "Some information
+about new builds" is not.`;
+
+export interface IntentVerdict {
+  promise: string; answersIt: boolean; offTopic: string[]; why: string; honestHook: string;
+}
+
+/**
+ * Did the deck answer the question it asked?
+ *
+ * A live post promised "which one actually saves you money" and delivered types of new build, how
+ * pre-completion payments are protected, and the merits of viewing a finished home. Every slide was
+ * supportable; none of them answered the cover. The evidence-first writer must not quietly change
+ * the question because a different set of facts was easier to establish — and when it cannot keep
+ * the promise, the honest move is to change the promise, not to keep the hook and answer something
+ * else.
+ */
+export async function checkIntent(
+  plan: PlanLike, topic: string, language: string,
+): Promise<IntentVerdict | null> {
+  const cover = String((plan as Record<string, unknown>).hook_title ?? '');
+  if (!cover) return null;
+  const slides = (plan.tips ?? []).map((t, i) =>
+    `tips[${i}]: ${t?.title ?? ''} — ${t?.body ?? ''}`).join('\n');
+  const out = await callTool('intent fidelity', INTENT_SYSTEM,
+    `THE TOPIC THE AGENT ASKED FOR: ${topic}\n\nTHE COVER: ${cover}\n`
+    + `SECOND COVER: ${String((plan as Record<string, unknown>).slide2_title ?? '')}\n\n`
+    + `THE SLIDES:\n${slides}\n\n`
+    + `THE CLOSING LINE: ${String((plan as Record<string, unknown>).recap_title ?? '')}\n`
+    + `THE CAPTION: ${String((plan as Record<string, unknown>).caption ?? '')}\n\n`
+    + `The post language is ${language}.`,
+    INTENT_TOOL, 90_000, 2000);
+  if (!out) return null;
+  return {
+    promise: String(out.promise ?? ''),
+    answersIt: out.answers_it !== false,
+    offTopic: Array.isArray(out.slides_off_topic) ? (out.slides_off_topic as unknown[]).map(String) : [],
+    why: String(out.why ?? ''),
+    honestHook: String(out.honest_hook ?? '').trim(),
+  };
+}
+
 /* ── 2c. THE VERIFIED BANK, CONSULTED AFTER WRITING ──────────────────────────────────────── */
 
 const CONTRADICTION_TOOL = {

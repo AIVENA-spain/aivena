@@ -1769,19 +1769,41 @@ export async function topicIdeas(
     ? 'a SELLER — someone who owns a home here and is deciding whether, when and how to sell it'
     : audience === 'buyer'
     ? 'a BUYER — usually foreign, dreaming of or planning a home on this coast'
-    : 'BUYERS AND SELLERS BOTH — alternate between them across the six';
+    : 'BUYERS AND SELLERS BOTH — alternate across the six, but each single idea must be clearly for '
+      + 'ONE of them. A buyer does not sell a home and a seller is not choosing a town to move to; '
+      + 'an idea that mixes the two reads as nonsense.';
   const prompt = `You suggest Instagram tips-carousel topics for a real-estate agency on the Spanish coast (buyers are often foreign, sellers often local; the audience dreams of a home in Spain).
 
 THIS POST IS FOR ${who}.
 
 Write 6 topic ideas in language "${language}".
 
-THESE ARE NOT ARTICLE TITLES. That is the single most common failure and the one that makes the list
-useless: "A guide to buying costs in Spain" is correct, useful, and nobody stops for it. Every idea
-has to carry a POSITION, a TENSION or a COST — something with a point of view attached that makes a
-person think "wait, is that true?" or "that's exactly my situation".
+THESE ARE NOT ARTICLE TITLES, AND THEY ARE NOT WORDPLAY EITHER. Both failures are real and the
+second one is the one that keeps happening. "A guide to buying costs in Spain" is correct and nobody
+stops for it. But "The home that sits unsold for months isn't cursed. It's just priced for last
+season" is worse: the reader has to decode "cursed" and "priced for last season" before they know
+what the post is even about, and they will not bother.
 
-THE LEVEL, in the owner's own words — match this register, never copy the lines:
+THE RULE THAT OUTRANKS EVERYTHING ELSE: a person scrolling must understand the idea COMPLETELY on
+one read, without thinking about it. The interest comes from WHAT IS BEING SAID, never from how
+cleverly it is phrased. Ordinary words. Plain sentences. If it sounds like a headline writer being
+pleased with themselves, it has failed.
+
+NEVER: metaphor, riddles, "isn't X, it's Y" reversals where either half is figurative, knowing
+phrases in quotation marks, abstractions like "the number on the contract and the number in your
+bank account", or anything a reader has to unpack.
+
+REJECTED — real ones, and exactly what not to do:
+· "The home that sits unsold for months isn't cursed. It's just priced for last season." — decoration.
+· "The number on the contract and the number in your bank account are rarely the same one" — a plain
+  fact wrapped in a puzzle. Say it plainly: what you actually keep after the sale.
+· "Why 'just send me the documents' is the riskiest sentence in a Spanish purchase" — sounds knowing,
+  says nothing.
+· "Five agents on one listing sounds like more chances. Buyers read it as a warning sign." — the
+  second half is an invented claim doing the work the idea should do.
+
+THE LEVEL, in the owner's own words. Read what these actually DO — they name a concrete thing a real
+person recognises, and the surprise is in the substance, not the sentence:
 SELLER
 · "The price mistake that makes a good home look unwanted"
 · "Why we'd rather tell a seller €20,000 less today than chase the market for six months"
@@ -1793,9 +1815,24 @@ BUYER
 · "The mistake buyers make when they choose the house before they choose the area"
 · "Some buyers want sea views. What they actually need is a life they won't get bored of."
 
-Notice what those do: they take a side, they name a specific mistake, they set two things against
-each other, or they reframe what the reader thinks they want. A title that merely announces a
-subject has done none of that.
+Every one of those is literal. Nothing needs decoding. The reader knows immediately what the post is
+about AND why they would open it. That is the whole target: interesting because it is TRUE and
+slightly uncomfortable, not because it is clever.
+
+A SUBJECT IS NOT AN IDEA. "The extra costs buyers forget to add to the purchase price" announces a
+topic and earns nothing — the only possible reaction is "ok". "The cheapest home can easily become
+the most expensive one you buy" says something a person could argue with, and that is why they open
+it. Every one of your six must contain a CLAIM someone could question, or a specific CONSEQUENCE —
+not merely the area the post covers.
+
+THE TWO TESTS, both of which every idea must pass:
+1. ONE READ. A stranger scrolling understands it completely, first time, no re-reading.
+2. "REALLY?" A reader could reasonably answer "really?" or "is that true?" — not just "ok".
+An idea that fails the first is clever nonsense. An idea that fails the second is a table of
+contents. You need both.
+
+NEVER REPRODUCE THE EXAMPLES ABOVE. They are calibration, not inventory. Returning one of those
+lines, or a light rewording of it, is a failure — the agency has seen them.
 
 If an idea itself asserts a statistic, a law or a tax rule, keep it modest and checkable — the post
 will be researched and a topic built on something false gets rewritten before it is written.

@@ -1,0 +1,166 @@
+/**
+ * WHAT A CAROUSEL COSTS — recorded, not estimated.
+ *
+ * Studio wrote no token usage anywhere, so a month of spend could only be guessed at from character
+ * counts and call sites. A generation makes 38 model calls across two files and half a dozen
+ * stages; anything that has to be threaded through every one of those by hand will be wrong within
+ * a week, so the collector rides on AsyncLocalStorage instead: the wizard opens one per generation
+ * and every call site inside records into it, whether or not it knows the collector exists.
+ *
+ * Pure of the environment on purpose — the pricing arithmetic and the aggregation are testable
+ * without any variables set.
+ */
+import { AsyncLocalStorage } from 'node:async_hooks';
+
+/** What one Anthropic call cost, and what it was for. */
+export interface UsageEntry {
+  stage: string;
+  model: string;
+  inputTokens: number;
+  outputTokens: number;
+  cacheCreationTokens: number;
+  cacheReadTokens: number;
+  ms: number;
+  costUsd: number;
+}
+
+export interface UsageSummary {
+  generationId: string | null;
+  calls: number;
+  inputTokens: number;
+  outputTokens: number;
+  cacheCreationTokens: number;
+  cacheReadTokens: number;
+  totalCostUsd: number;
+  /** what each stage cost, most expensive first */
+  byStage: Array<{ stage: string; calls: number; costUsd: number; inputTokens: number; outputTokens: number }>;
+  byModel: Array<{ model: string; calls: number; costUsd: number }>;
+  /** true when this generation passed the warning threshold */
+  overThreshold?: boolean;
+  thresholdUsd?: number;
+}
+
+/**
+ * List prices per MILLION tokens, used for estimation only.
+ *
+ * One place to correct, because a wrong price here silently misinforms every decision made from
+ * these numbers. Cache writes bill at 1.25× the input rate and cache reads at 0.1×, which is the
+ * whole reason caching is worth doing at all.
+ */
+export const PRICES: Readonly<Record<string, { input: number; output: number }>> = {
+  'claude-sonnet-5': { input: 3, output: 15 },
+  'claude-opus-5': { input: 15, output: 75 },
+  'claude-haiku-4-5-20251001': { input: 1, output: 5 },
+  'claude-haiku-4-5': { input: 1, output: 5 },
+};
+const CACHE_WRITE_MULTIPLIER = 1.25;
+const CACHE_READ_MULTIPLIER = 0.1;
+/** Anything unpriced is charged at the Sonnet rate rather than silently counted as free. */
+const FALLBACK = { input: 3, output: 15 };
+
+export interface RawUsage {
+  input_tokens?: number;
+  output_tokens?: number;
+  cache_creation_input_tokens?: number;
+  cache_read_input_tokens?: number;
+}
+
+/** What one call cost, in dollars. */
+export function costOf(model: string, u: RawUsage): number {
+  const p = PRICES[model] ?? FALLBACK;
+  const input = (u.input_tokens ?? 0) / 1e6 * p.input;
+  const output = (u.output_tokens ?? 0) / 1e6 * p.output;
+  const write = (u.cache_creation_input_tokens ?? 0) / 1e6 * p.input * CACHE_WRITE_MULTIPLIER;
+  const read = (u.cache_read_input_tokens ?? 0) / 1e6 * p.input * CACHE_READ_MULTIPLIER;
+  return input + output + write + read;
+}
+
+class Collector {
+  readonly entries: UsageEntry[] = [];
+  constructor(readonly generationId: string | null) {}
+}
+
+const store = new AsyncLocalStorage<Collector>();
+
+/** Run one generation with a usage collector attached to its async context. */
+export function withUsage<T>(generationId: string | null, fn: () => Promise<T>): Promise<T> {
+  return store.run(new Collector(generationId), fn);
+}
+
+/**
+ * Record one Anthropic call. Safe to call from anywhere — outside a generation it does nothing,
+ * so a call site never has to know whether it is being measured.
+ */
+export function recordUsage(stage: string, model: string, u: RawUsage | undefined, ms: number): void {
+  const c = store.getStore();
+  if (!c || !u) return;
+  c.entries.push({
+    stage,
+    model,
+    inputTokens: u.input_tokens ?? 0,
+    outputTokens: u.output_tokens ?? 0,
+    cacheCreationTokens: u.cache_creation_input_tokens ?? 0,
+    cacheReadTokens: u.cache_read_input_tokens ?? 0,
+    ms,
+    costUsd: costOf(model, u),
+  });
+}
+
+/** Every call recorded so far in this generation. Empty outside one. */
+export function currentEntries(): readonly UsageEntry[] {
+  return store.getStore()?.entries ?? [];
+}
+
+const round = (n: number, dp = 6) => Math.round(n * 10 ** dp) / 10 ** dp;
+
+/** Roll the entries up into the per-generation picture. */
+export function summarise(
+  entries: readonly UsageEntry[], generationId: string | null = null, thresholdUsd?: number,
+): UsageSummary {
+  const byStage = new Map<string, { calls: number; costUsd: number; inputTokens: number; outputTokens: number }>();
+  const byModel = new Map<string, { calls: number; costUsd: number }>();
+  let inputTokens = 0; let outputTokens = 0; let cacheCreationTokens = 0;
+  let cacheReadTokens = 0; let totalCostUsd = 0;
+
+  for (const e of entries) {
+    inputTokens += e.inputTokens;
+    outputTokens += e.outputTokens;
+    cacheCreationTokens += e.cacheCreationTokens;
+    cacheReadTokens += e.cacheReadTokens;
+    totalCostUsd += e.costUsd;
+    const s = byStage.get(e.stage) ?? { calls: 0, costUsd: 0, inputTokens: 0, outputTokens: 0 };
+    s.calls++; s.costUsd += e.costUsd; s.inputTokens += e.inputTokens; s.outputTokens += e.outputTokens;
+    byStage.set(e.stage, s);
+    const m = byModel.get(e.model) ?? { calls: 0, costUsd: 0 };
+    m.calls++; m.costUsd += e.costUsd;
+    byModel.set(e.model, m);
+  }
+
+  return {
+    generationId,
+    calls: entries.length,
+    inputTokens, outputTokens, cacheCreationTokens, cacheReadTokens,
+    totalCostUsd: round(totalCostUsd),
+    byStage: [...byStage.entries()]
+      .map(([stage, v]) => ({ stage, ...v, costUsd: round(v.costUsd) }))
+      .sort((a, b) => b.costUsd - a.costUsd),
+    byModel: [...byModel.entries()]
+      .map(([model, v]) => ({ model, ...v, costUsd: round(v.costUsd) }))
+      .sort((a, b) => b.costUsd - a.costUsd),
+    ...(thresholdUsd ? { thresholdUsd, overThreshold: totalCostUsd > thresholdUsd } : {}),
+  };
+}
+
+/** One line per stage, cheap enough to log on every generation. */
+export function formatSummary(s: UsageSummary): string {
+  const money = (n: number) => `$${n.toFixed(4)}`;
+  const lines = s.byStage.map((x) =>
+    `    ${x.stage.padEnd(28)} ${money(x.costUsd).padStart(9)}  ${String(x.calls).padStart(2)} calls`
+    + `  in ${x.inputTokens.toLocaleString()}  out ${x.outputTokens.toLocaleString()}`);
+  return [
+    `[studio/cost] ${money(s.totalCostUsd)} · ${s.calls} calls`
+    + ` · in ${s.inputTokens.toLocaleString()} · out ${s.outputTokens.toLocaleString()}`
+    + ` · cache read ${s.cacheReadTokens.toLocaleString()} · cache written ${s.cacheCreationTokens.toLocaleString()}`,
+    ...lines,
+  ].join('\n');
+}

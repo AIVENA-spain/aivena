@@ -38,6 +38,8 @@ import { cardRules, retrieveBankFacts } from '../lib/studio-bank-match';
 import { gateField, planFields, readField, removeClaim, writeField,
   type RequirementCoverage } from '../lib/studio-copy-gate';
 import { riskTier, type ResearchSource, type SourceFact } from '../lib/studio-evidence';
+import { currentEntries, formatSummary, summarise, withUsage,
+  type UsageSummary } from '../lib/studio-usage';
 import { directScenes } from '../lib/studio-carousel-art';
 import { renderTipsImageStyled, renderTipsImageStyledV2, isTipsImageStyle } from '../../../../studio/engine/carouselTipsImage';
 import { renderFreeform, type DesignSpec } from '../../../../studio/engine/renderFreeform';
@@ -1441,6 +1443,7 @@ async function runPlannedCarousel(opts: {
     // post someone actually generates answers the question without a synthetic run.
     const t0 = Date.now();
     const timings: Record<string, number> = {};
+    let usage: UsageSummary | undefined;
     // Claim extraction paid for once per exact piece of copy, for this generation only. Dies with
     // the request, so it can never hand back a classification from an older extractor.
     const claimCache = new Map<string, ExtractedClaim[] | null>();
@@ -1802,6 +1805,17 @@ async function runPlannedCarousel(opts: {
     }
     const stored = await storeSlides(agencyId, genId, slides);
 
+    // WHAT THIS COST. Computed here so it counts every call the generation made, artwork included.
+    // A month of spend could hide because nothing wrote this down; the threshold is observability
+    // only and never kills a post half-written.
+    const warnAt = Number(process.env.STUDIO_COST_WARN_USD ?? '2');
+    usage = summarise(currentEntries(), genId, Number.isFinite(warnAt) ? warnAt : 2);
+    console.log(formatSummary(usage));
+    if (usage.overThreshold) {
+      console.error(`[studio/cost] GENERATION OVER THRESHOLD — $${usage.totalCostUsd.toFixed(4)} `
+        + `against a $${usage.thresholdUsd?.toFixed(2)} warning line (generation ${genId})`);
+    }
+
     await supabaseAdmin.from('image_generations').update({
       status: 'completed',
       result_image_url: stored[0].url,
@@ -1811,6 +1825,7 @@ async function runPlannedCarousel(opts: {
         ai_imagery: opts.type === 'tips' && isTipsImageStyle(usedStyle),
         image_paths: imagePaths, image_scheme: opts.scheme, per_slide_art: perSlideArt, artwork_source: artworkSource, artwork_error: artworkError, artwork_qa: artworkQa, copy_qa: copyQa, claim_qa: claimQa, requirement_coverage: coverage,
         timings: { ...timings, total_ms: Date.now() - t0 },
+        usage,
         // The source ledger. Coverage and claim-support records reference these ids, so a published
         // sentence can be traced to the page it came off long after the run.
         research_sources: sources.map((x) => ({
@@ -1969,11 +1984,13 @@ route.post('/carousel', async (c) => {
       const genId = rows[0]?.id;
       if (!genId) throw new Error('insert failed');
 
-      void runPlannedCarousel({
+      // Everything this generation spends, collected in one place. The wizard opens the context;
+      // every call site inside records into it without knowing it is being measured.
+      void withUsage(genId, () => runPlannedCarousel({
         genId, agencyId, type, topic, quoteText, quoteAuthor, slideCount, language, style, scheme, includeRecap, includeContext,
         agency: { name: agency.name, web: agency.web, phone: agency.phone }, brand,
         agencyProfile, styleEdition, lockPalette, agencyTaste, marketBrief: brief, agencyEvidence: evidence,
-      });
+      }));
       return c.json({ ok: true, generation_id: genId, status: 'processing' });
     }
 

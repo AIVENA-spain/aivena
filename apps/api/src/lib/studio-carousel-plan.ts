@@ -1,4 +1,6 @@
 import { z } from 'zod';
+
+import { recordUsage, type RawUsage } from './studio-usage';
 import { env } from '../../../../packages/config/env';
 import type { CarouselPlan } from '../../../../studio/engine/carouselSlides';
 import { planFields, readField, shortenToBoundary,
@@ -517,6 +519,7 @@ async function researchTopic(
       // regimes. Three was too few, and worse, exhausting the loop threw away everything the model
       // had already established. Keep the best text seen and hand it back either way.
       for (let i = 0; i < 8; i++) {
+        const usageStarted_research = Date.now();
         const res = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST', signal: ctl.signal,
           headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
@@ -529,6 +532,7 @@ async function researchTopic(
           stop_reason?: string;
           content?: Array<{ type: string; text?: string; content?: unknown }>;
         };
+        recordUsage('research', 'claude-sonnet-5', (data as { usage?: RawUsage }).usage, Date.now() - usageStarted_research);
         // Two different things, and the difference is the whole point. A search RESULT is a
         // pointer somebody's index returned. A FETCH is the page itself, read, with its text in
         // hand — the only thing an excerpt can be checked against. Both are recorded; only the
@@ -807,6 +811,7 @@ export async function pickBankCard(topic: string): Promise<BankCard | null> {
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), 30_000);
   try {
+    const usageStarted_bank_card = Date.now();
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST', signal: ctl.signal,
       headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
@@ -822,6 +827,7 @@ export async function pickBankCard(topic: string): Promise<BankCard | null> {
     });
     if (res.ok) {
       const data = await res.json() as { content?: { type: string; text?: string }[] };
+    recordUsage('bank_card', 'claude-sonnet-5', (data as { usage?: RawUsage }).usage, Date.now() - usageStarted_bank_card);
       const reply = (data.content ?? []).filter((c) => c.type === 'text').map((c) => c.text ?? '').join(' ');
       if (/\bNONE\b/i.test(reply)) return null;
       const card = inScope(getCard(parseCardPick(reply)));
@@ -1089,6 +1095,7 @@ Submit with the submit_carousel tool.`;
 
   let lastErr = '';
   for (let attempt = 0; attempt < 3; attempt++) {
+    const usageStarted_writer = Date.now();
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
@@ -1113,6 +1120,7 @@ Submit with the submit_carousel tool.`;
     const data = (await res.json()) as {
       stop_reason?: string; content?: { type: string; input?: unknown }[];
     };
+    recordUsage('writer', 'claude-sonnet-5', (data as { usage?: RawUsage }).usage, Date.now() - usageStarted_writer);
     // A truncated plan is not an invalid plan, and telling the model its schema was wrong when it
     // simply ran out of room sent it round the retry loop fixing something that was never broken.
     if (data.stop_reason === 'max_tokens') {
@@ -1318,6 +1326,7 @@ Never make a slide longer to make it more correct. Make it shorter and truer.
 
 Submit with the submit_edited_plan tool.`;
   try {
+    const usageStarted_editor = Date.now();
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
@@ -1329,6 +1338,7 @@ Submit with the submit_edited_plan tool.`;
     });
     if (!res.ok) return { outcome: res.status === 408 || res.status === 504 ? 'TIMED_OUT' : 'FAILED', why: `http_${res.status}` };
     const data = (await res.json()) as { content?: { type: string; input?: unknown }[] };
+    recordUsage('editor', 'claude-sonnet-5', (data as { usage?: RawUsage }).usage, Date.now() - usageStarted_editor);
     const raw = unesc(data.content?.find((c) => c.type === 'tool_use')?.input) as Record<string, unknown> | undefined;
     if (!raw) return { outcome: 'MALFORMED', why: 'the editor returned no tool call' };
     const notes = Array.isArray(raw.review_notes)
@@ -1450,6 +1460,7 @@ export async function listingStory(opts: {
       type: 'text',
       text: `These are the chosen photos (in posting order) of a real listing marketed by "${opts.agencyName}". Facts (verbatim only): \n${factList}\n\nWrite the story package in ${langNames[opts.language] ?? 'Spanish'} (vibe_scene in English). One photo_line PER photo, same order, each specific to what is visible in THAT photo. Also hunt for 2-3 evocative DETAILS (small telling things: the sliver of sea between walls, original tiles, the lemon tree) with precise boxes — they become cinematic cold-open crops. End the caption with a short P.D. question answerable in ONE word (e.g. 'P.D. ¿Terraza o playa?'). Human, warm, zero brochure-speak. Submit with submit_story.`,
     });
+    const usageStarted_listing_story = Date.now();
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
@@ -1461,6 +1472,7 @@ export async function listingStory(opts: {
     });
     if (!res.ok) return null;
     const data = (await res.json()) as { content?: { type: string; input?: unknown }[] };
+    recordUsage('listing_story', 'claude-sonnet-5', (data as { usage?: RawUsage }).usage, Date.now() - usageStarted_listing_story);
     const input = unesc(data.content?.find((c) => c.type === 'tool_use')?.input) as Partial<ListingStory> | undefined;
     if (!input || typeof input.hook !== 'string' || !Array.isArray(input.photo_lines)) return null;
     const clean = (x: unknown, max: number) => (typeof x === 'string' ? x.trim().slice(0, max) : '');
@@ -1502,6 +1514,7 @@ THE FACTS (the design renders these separately — your copy must NOT restate nu
 ${factList}
 
 The hook is the reason to stop: the lifestyle benefit, never the spec sheet. The caption stays SHORT (short captions + carousels measure best for listings). One CTA only, matched to a DM keyword. Submit with submit_listing_copy.`;
+    const usageStarted_listing_copy = Date.now();
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
@@ -1515,6 +1528,7 @@ The hook is the reason to stop: the lifestyle benefit, never the spec sheet. The
     });
     if (!res.ok) return null;
     const data = (await res.json()) as { content?: { type: string; input?: unknown }[] };
+    recordUsage('listing_copy', 'claude-sonnet-5', (data as { usage?: RawUsage }).usage, Date.now() - usageStarted_listing_copy);
     const input = unesc(data.content?.find((c) => c.type === 'tool_use')?.input) as Partial<ListingCopy> | undefined;
     if (!input || typeof input.hook !== 'string' || typeof input.caption !== 'string') return null;
     const clean = (s: unknown, max: number) => (typeof s === 'string' ? s.trim().slice(0, max) : '');
@@ -1566,6 +1580,7 @@ Write a NEW cover in ${language} with a DIFFERENT persuasion angle: if the curre
 
 Submit with the submit_remix tool.`;
   try {
+    const usageStarted_remix_hook = Date.now();
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
@@ -1577,6 +1592,7 @@ Submit with the submit_remix tool.`;
     });
     if (!res.ok) return null;
     const data = (await res.json()) as { content?: { type: string; input?: unknown }[] };
+    recordUsage('remix_hook', 'claude-sonnet-5', (data as { usage?: RawUsage }).usage, Date.now() - usageStarted_remix_hook);
     const input = unesc(data.content?.find((c) => c.type === 'tool_use')?.input) as Record<string, unknown> | undefined;
     const out = z.object({
       eyebrow: z.string().min(1).max(44),
@@ -1842,6 +1858,7 @@ Rules for all 6:
 
 Submit with the submit_ideas tool.`;
   try {
+    const usageStarted_topic_ideas = Date.now();
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
@@ -1853,6 +1870,7 @@ Submit with the submit_ideas tool.`;
     });
     if (!res.ok) return null;
     const data = (await res.json()) as { content?: { type: string; input?: unknown }[] };
+    recordUsage('topic_ideas', 'claude-sonnet-5', (data as { usage?: RawUsage }).usage, Date.now() - usageStarted_topic_ideas);
     const input = unesc(data.content?.find((c) => c.type === 'tool_use')?.input) as { topics?: unknown } | undefined;
     const topics = Array.isArray(input?.topics)
       ? input.topics.filter((t): t is string => typeof t === 'string' && t.trim().length >= 10).map((t) => t.trim().slice(0, 160)).slice(0, 6)

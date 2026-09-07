@@ -20,6 +20,8 @@
  */
 import { createHash } from 'node:crypto';
 
+import { recordUsage, type RawUsage } from './studio-usage';
+
 import { env } from '../../../../packages/config/env';
 
 import {
@@ -132,6 +134,9 @@ export interface GateReport {
 
 // A gate step that fails silently is the bug this whole layer exists to fix. Every failure path
 // says which one it was, so a degraded run is never mistaken for a clean one.
+/** Every gate pass runs on this model; named once so the usage record and the call agree. */
+const MODEL = 'claude-sonnet-5';
+
 async function callTool(
   label: string, system: string, user: string, tool: Record<string, unknown>,
   ms: number, maxTokens = 8000,
@@ -145,11 +150,12 @@ async function callTool(
   try {
     let last = 'no attempt completed';
     for (let attempt = 0; attempt < 3; attempt++) {
+      const started = Date.now();
       const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST', signal: ctl.signal,
         headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'claude-sonnet-5', max_tokens: maxTokens, system,
+          model: MODEL, max_tokens: maxTokens, system,
           tools: [tool], tool_choice: { type: 'tool', name: tool.name },
           messages: [{ role: 'user', content: user }],
         }),
@@ -160,8 +166,11 @@ async function callTool(
         return why(last);
       }
       const data = await res.json() as {
-        stop_reason?: string; content?: { type: string; input?: unknown }[];
+        stop_reason?: string; content?: { type: string; input?: unknown }[]; usage?: RawUsage;
       };
+      // Every call, including the ones that come back useless — a retry storm is exactly the shape
+      // of spend that hid for a month, and it has to appear in the record.
+      recordUsage(label, MODEL, data.usage, Date.now() - started);
       const found = data.content?.find((c) => c.type === 'tool_use')?.input;
       if (found && typeof found === 'object') return found as Record<string, unknown>;
       last = `no tool_use in response (stop_reason=${data.stop_reason ?? 'unknown'})`;

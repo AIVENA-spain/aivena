@@ -889,6 +889,12 @@ export async function planCarousel(opts: {
   /** the palette this generation was written from, so the gate can verify against the same facts */
   onFacts?: (facts: SourceFact[]) => void;
   /**
+   * Pages that were opened but never answered inside the timeout, and whether extraction degraded.
+   * Logged to the console only, until a failed run needed to say WHICH sources it lost — a research
+   * step that quietly drops half its pages looks identical to one that found nothing.
+   */
+  onFactHealth?: (health: { timedOut: string[]; degraded: string | null }) => void;
+  /**
    * Research already done for this topic. The safer rewrite is the SAME topic with different
    * arguments, and re-running the whole research for it threw away fifteen opened pages and came
    * back with one — the second deck was then judged against evidence the first one had gathered.
@@ -959,6 +965,7 @@ export async function planCarousel(opts: {
       if (got.timedOut.length) {
         console.warn(`[studio/carousel] pages that would not answer: ${got.timedOut.join(', ')}`);
       }
+      opts.onFactHealth?.({ timedOut: got.timedOut, degraded: got.degraded ?? null });
       console.log(`[studio/carousel] palette: ${facts.length} facts off `
         + `${researchSources.filter((x) => x.opened).length} opened pages`);
       opts.onFacts?.(facts);

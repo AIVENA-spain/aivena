@@ -1455,6 +1455,18 @@ async function runPlannedCarousel(opts: {
   let coverage: RequirementCoverage[] = [];
   let sources: ResearchSource[] = [];
   let claimQa: GateReport | undefined;
+  let copyQa: {
+    revised: boolean; notes: string[]; outcome?: string; degraded?: boolean; why?: string;
+  } | undefined;
+  /** Pages opened that never answered in time, and whether the palette came back degraded. */
+  let factHealth: { timedOut: string[]; degraded: string | null } | undefined;
+  /**
+   * Whether the deck was written a second time on safer arguments, and which draft won. A rewrite
+   * roughly doubles the cost of a generation, so it must not be something you can only learn by
+   * reading the logs.
+   */
+  let rewrite: { triggered: boolean; slidesBefore: number; slidesAfter: number | null;
+    kept: 'original' | 'rewrite' } | undefined;
   /** The deck as it last stood. A draft that failed is the evidence about why it failed. */
   let lastPlan: CarouselPlan | undefined;
   try {
@@ -1532,14 +1544,13 @@ async function runPlannedCarousel(opts: {
       onResearch: (b) => { research = b; },
       onCoverage: (u, degraded, cov) => { uncovered = u; coverageDegraded = degraded; coverage = cov; },
       onSources: (src) => { sources = src; },
+      onFactHealth: (h) => { factHealth = h; },
     });
     let plan = await stage('research_palette_and_write', () => writeDeck(false));
     lastPlan = plan;
     // EDITOR pass (Christian 2026-08-28): a skeptical second read of the copy — sense, value,
     // trust — before anything renders. Quote decks are verbatim client words and skip it.
-    let copyQa: {
-      revised: boolean; notes: string[]; outcome?: string; degraded?: boolean; why?: string;
-    } | undefined;
+    // (`copyQa` is hoisted above the try so a failed run keeps the editor's outcome.)
     if (opts.type === 'tips') {
       // THE FACTUAL GATE, on the finished draft and BEFORE the editor. Guardrails in the prompt are
       // necessary and not sufficient: the writer can invent a factual sentence no guardrail
@@ -1717,10 +1728,18 @@ async function runPlannedCarousel(opts: {
         const kept = plan;
         const keptQa = claimQa;
         const retry = await writeDeck(true).then((d) => refine(d)).catch(() => null);
-        if (!retry || (retry.tips?.length ?? 0) <= (kept.tips?.length ?? 0)) {
+        const useKept = !retry || (retry.tips?.length ?? 0) <= (kept.tips?.length ?? 0);
+        if (useKept) {
           plan = kept;
           claimQa = keptQa;
         }
+        rewrite = {
+          triggered: true,
+          slidesBefore: kept.tips?.length ?? 0,
+          slidesAfter: retry ? (retry.tips?.length ?? 0) : null,
+          kept: useKept ? 'original' : 'rewrite',
+        };
+        lastPlan = plan;
       }
       if ((plan.tips?.length ?? 0) < Math.min(floor, 3)) {
         // Friendly, in the language of the product — never our compliance vocabulary.
@@ -1837,7 +1856,7 @@ async function runPlannedCarousel(opts: {
         ai_imagery: opts.type === 'tips' && isTipsImageStyle(usedStyle),
         image_paths: imagePaths, image_scheme: opts.scheme, per_slide_art: perSlideArt, artwork_source: artworkSource, artwork_error: artworkError, artwork_qa: artworkQa, copy_qa: copyQa, claim_qa: claimQa, requirement_coverage: coverage,
         timings: { ...timings, total_ms: Date.now() - t0 },
-        usage,
+        usage, fact_health: factHealth, rewrite,
         // The source ledger. Coverage and claim-support records reference these ids, so a published
         // sentence can be traced to the page it came off long after the run.
         research_sources: sources.map((x) => ({
@@ -1876,8 +1895,8 @@ async function runPlannedCarousel(opts: {
         engine: 'carousel', carousel_type: opts.type, failed: true,
         error: String((err as Error)?.message ?? err).slice(0, 600),
         timings: { ...timings, total_ms: Date.now() - t0 },
-        usage,
-        claim_qa: claimQa, requirement_coverage: coverage,
+        usage, fact_health: factHealth, rewrite,
+        claim_qa: claimQa, copy_qa: copyQa, requirement_coverage: coverage,
         research_sources: sources.map((x) => ({
           source_id: x.id, url: x.url, title: x.title, domain: x.domain,
           source_class: x.sourceClass, opened: x.opened, opened_at: x.openedAt,

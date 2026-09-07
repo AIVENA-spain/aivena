@@ -1436,14 +1436,28 @@ async function runPlannedCarousel(opts: {
   agencyEvidence?: string; // the facts this agency has supplied — the only agency facts that exist
 }): Promise<void> {
   const { genId, agencyId } = opts;
+  // WHAT A FAILED GENERATION LEAVES BEHIND.
+  //
+  // A run that threw used to save one sentence of apology and nothing else. The first real
+  // generation on this engine spent six minutes and real money, failed, and left no record of what
+  // it cost, which pages it opened, or which sentences the gate dropped — so the only question
+  // worth asking ("why did this die?") had no answer anywhere. These live outside the try so the
+  // catch can write the same diagnostic record the success path writes. The run you most need the
+  // evidence from is the one that failed.
+  //
+  // WHERE THE MINUTES GO. A real generation takes over five minutes and nobody could say which
+  // step owned it. Every stage is timed and the breakdown is stored with the deck, so the next
+  // post someone actually generates answers the question without a synthetic run.
+  const t0 = Date.now();
+  const timings: Record<string, number> = {};
+  let usage: UsageSummary | undefined;
+  let research = '';
+  let coverage: RequirementCoverage[] = [];
+  let sources: ResearchSource[] = [];
+  let claimQa: GateReport | undefined;
+  /** The deck as it last stood. A draft that failed is the evidence about why it failed. */
+  let lastPlan: CarouselPlan | undefined;
   try {
-    // Variety across generations (Christian 2026-08-28: "a key or a luggage appears" on every
-    // WHERE THE MINUTES GO. A real generation takes over five minutes and nobody could say which
-    // step owned it. Every stage is timed and the breakdown is stored with the deck, so the next
-    // post someone actually generates answers the question without a synthetic run.
-    const t0 = Date.now();
-    const timings: Record<string, number> = {};
-    let usage: UsageSummary | undefined;
     // Claim extraction paid for once per exact piece of copy, for this generation only. Dies with
     // the request, so it can never hand back a classification from an older extractor.
     const claimCache = new Map<string, ExtractedClaim[] | null>();
@@ -1454,6 +1468,7 @@ async function runPlannedCarousel(opts: {
       }
     };
 
+    // Variety across generations (Christian 2026-08-28: "a key or a luggage appears" on every
     // house/moving topic): hand the planner the hero objects from this agency's recent decks so it
     // must find fresh ones. Best-effort — a fetch failure never blocks the post.
     let avoidMotifs: string[] = [];
@@ -1481,16 +1496,12 @@ async function runPlannedCarousel(opts: {
     }
     // what the research established — stored with the deck so the agent can read what their tips
     // were built on before they publish it under their own name
-    let research = '';
     let uncovered: string[] = [];
     let coverageDegraded: string | null = null;
     // Christian 2026-09-04: the per-requirement assessment is kept, not just the count of gaps —
     // requirement id, status, the sentence of the research that establishes it, and the pages it
     // was read from, so a published post can be audited back to what it was allowed to say.
-    let coverage: RequirementCoverage[] = [];
-    // Every page the research touched, with the text of the ones it opened. A published claim is
-    // checked back against these, so they have to travel with the plan.
-    let sources: ResearchSource[] = [];
+    // (`research`, `coverage` and `sources` are hoisted above the try so a failed run keeps them.)
     // The facts the post was WRITTEN from. The gate verifies against the same palette rather than
     // reading the pages a second time.
     let paletteFacts: SourceFact[] = [];
@@ -1523,12 +1534,12 @@ async function runPlannedCarousel(opts: {
       onSources: (src) => { sources = src; },
     });
     let plan = await stage('research_palette_and_write', () => writeDeck(false));
+    lastPlan = plan;
     // EDITOR pass (Christian 2026-08-28): a skeptical second read of the copy — sense, value,
     // trust — before anything renders. Quote decks are verbatim client words and skip it.
     let copyQa: {
       revised: boolean; notes: string[]; outcome?: string; degraded?: boolean; why?: string;
     } | undefined;
-    let claimQa: GateReport | undefined;
     if (opts.type === 'tips') {
       // THE FACTUAL GATE, on the finished draft and BEFORE the editor. Guardrails in the prompt are
       // necessary and not sufficient: the writer can invent a factual sentence no guardrail
@@ -1668,6 +1679,7 @@ async function runPlannedCarousel(opts: {
         // Absolutely last: caps, complete sentences, nothing dangling. Everything above can rewrite
         // copy, so this has to come after all of it or it cleans a draft that no longer exists.
 
+        lastPlan = plan;
         return plan;
       };
 
@@ -1846,9 +1858,35 @@ async function runPlannedCarousel(opts: {
     if (qErr) console.error('[studio/carousel] usage increment failed:', qErr.message);
   } catch (err) {
     console.error('[studio/carousel] planned render failed:', err);
+    // THE MONEY WAS STILL SPENT. A generation that fails has already paid for its research, its
+    // pages, its writer and its gate, so it is recorded exactly like one that succeeded — otherwise
+    // every failure is invisible in the month's bill and undiagnosable afterwards.
+    usage ??= summarise(currentEntries(), genId);
+    if (usage.calls) console.log(formatSummary(usage));
+    const dropped = claimQa?.blocked?.length ?? 0;
+    console.error(`[studio/carousel] failed after ${((Date.now() - t0) / 1000).toFixed(1)}s · `
+      + `${usage.calls} calls · $${usage.totalCostUsd.toFixed(4)} · ${sources.length} sources · `
+      + `${dropped} sentence(s) dropped · ${lastPlan?.tips?.length ?? 0} slide(s) standing`);
     await supabaseAdmin.from('image_generations').update({
       status: 'failed',
       failure_reason: ((err as Error)?.message ?? 'carousel_failed').slice(0, 240),
+      // Same shape as the success path, so one query answers "what did this cost and why did it
+      // die?" for any generation, finished or not.
+      result_metadata: {
+        engine: 'carousel', carousel_type: opts.type, failed: true,
+        error: String((err as Error)?.message ?? err).slice(0, 600),
+        timings: { ...timings, total_ms: Date.now() - t0 },
+        usage,
+        claim_qa: claimQa, requirement_coverage: coverage,
+        research_sources: sources.map((x) => ({
+          source_id: x.id, url: x.url, title: x.title, domain: x.domain,
+          source_class: x.sourceClass, opened: x.opened, opened_at: x.openedAt,
+          content_chars: x.contentChars, evidence_excerpts: x.excerpts,
+        })),
+        research,
+        // The draft as it stood when it died — which slides survived, and what they said.
+        plan: lastPlan,
+      },
       completed_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }).eq('id', genId).eq('agency_id', agencyId);

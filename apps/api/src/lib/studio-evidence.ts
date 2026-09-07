@@ -251,7 +251,16 @@ const hitsAny = (rs: RegExp[], t: string) => rs.some((r) => r.test(t));
 
 const DEICTIC_SPECIFIC = /\b(?:this (?:town|area|neighbourhood|neighborhood|village|coast|portal|platform|site|street|urbanisation|urbanization|development)|round here|here in|the (?:local|nearby) \w+)\b/i;
 const MARKET_NATIONALITY = /\b(?:british|dutch|german|belgian|polish|french|scandinavian|norwegian|swedish|danish|irish|russian|foreign)\s+(?:buyers?|owners?|purchasers?|clients?|families|money)\b/i;
-const PERIOD_MARKER = /\b(?:winter|summer|spring|autumn|off[- ]season|high season|peak season|right now|currently|at the moment|this year|last year|these days|since \d{4}|in \d{4}|nowadays)\b/i;
+/**
+ * A time-bound state, which can go stale and therefore has to be checked against something.
+ *
+ * Seasons are deliberately NOT in here. "A resort empties out in winter, a working town does not"
+ * is a recurring pattern, not a claim about how things stand today — it is exactly the kind of
+ * ordinary reasoning a lifestyle post is made of, and treating it as a current market fact meant
+ * the engine could not say the single most useful thing about where someone should live. A season
+ * attached to a named place, a figure or a nationality is still caught, by those signals.
+ */
+const CURRENCY_MARKER = /\b(?:right now|currently|at the moment|this year|last year|these days|since \d{4}|in \d{4}|nowadays)\b/i;
 const NAMED_PLATFORM = /\b(?:Idealista|Fotocasa|Kyero|Rightmove|Zillow|Habitaclia|Pisos\.com|Google|Instagram|Facebook|TikTok|portal algorithms?)\b/i;
 
 /** Is this a specific claim about a real place, market or platform rather than a general tendency? */
@@ -259,7 +268,7 @@ export function isSpecificLocalOrCurrent(text: string): boolean {
   const t = text ?? '';
   if (placesInText(t).size) return true;
   return DEICTIC_SPECIFIC.test(t) || MARKET_NATIONALITY.test(t)
-    || PERIOD_MARKER.test(t) || NAMED_PLATFORM.test(t);
+    || CURRENCY_MARKER.test(t) || NAMED_PLATFORM.test(t);
 }
 
 
@@ -267,6 +276,12 @@ export type RiskTier = 'high' | 'medium' | 'low';
 
 /** Anything with a figure, a date, a deadline or a threshold in it is a number the reader may act on. */
 const HAS_FIGURE = /(?:\d[\d.,]*\s?%|\b\d[\d.,]*\s?(?:€|eur|euros?|k|m|million|thousand)\b|€\s?\d|\b\d[\d.,]{2,}\b|\b(?:one|two|three|four|five|six|nine|ten|twelve|fifteen|twenty|thirty|sixty|ninety)\s+(?:days?|weeks?|months?|years?|per ?cent|percent)\b|\b\d+\s*(?:days?|weeks?|months?|years?|km|m2|m²|bed|bath)\b|\b(?:19|20)\d{2}\b)/i;
+/**
+ * A measured quantity written as a word. "The population triples in summer" states a number as
+ * surely as "the population grows 200%" does, and letting seasons stand as ordinary reasoning
+ * opened exactly this gap — the test caught it before it shipped.
+ */
+const QUANTIFIED_CHANGE = /\b(?:doubl\w*|tripl\w*|quadrupl\w*|halv\w*|multipli\w*|ten ?fold|fivefold|per capita)\b/i;
 /** A ranking or a superlative about a group — "the British still lead the province". */
 const RANKING = /\b(?:largest|biggest|leading|leads?\b|lead the|top(?:s)?\b|ranked?|ranking|first place|ahead of|overtaken|overtook|outnumber\w*|majority|most (?:buyers|owners|sales|popular)|fastest|highest|lowest|cheapest)\b/i;
 /** Money the reader will or will not have. */
@@ -288,7 +303,7 @@ export function riskTier(text: string, claimType?: string): RiskTier {
   if (claimType === 'LEGAL_CONSEQUENCE' || claimType === 'QUANTIFIED_CLAIM'
       || claimType === 'TIME_SENSITIVE_FACT' || claimType === 'AGENCY_FACT') return 'high';
   if (LEGAL_TAX.some((r) => r.test(t))) return 'high';
-  if (HAS_FIGURE.test(t) || FINANCIAL_OUTCOME.test(t)) return 'high';
+  if (HAS_FIGURE.test(t) || FINANCIAL_OUTCOME.test(t) || QUANTIFIED_CHANGE.test(t)) return 'high';
   // A RANKING is high risk when someone actually holds the rank. "A nationality can spend more per
   // purchase without being the biggest group of buyers" names nobody and asserts no position — it
   // is a statement about two metrics not being interchangeable, which is the SAFE version of the
@@ -819,6 +834,9 @@ export function mechanismAllowed(text: string): { ok: boolean; why: string } {
   const t = text ?? '';
   if (isSpecificLocalOrCurrent(t)) {
     return { ok: false, why: 'this is a specific claim about a place, a market or a platform, not a general mechanism' };
+  }
+  if (QUANTIFIED_CHANGE.test(t)) {
+    return { ok: false, why: 'this measures something — a quantity is not ordinary reasoning' };
   }
   if (UNIVERSAL.test(t) && !QUALIFIED.test(t)) {
     return { ok: false, why: 'stated as a universal rule rather than a tendency' };

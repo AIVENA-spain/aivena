@@ -26,6 +26,30 @@ describe('what may stand without a source', () => {
     expect(mechanismAllowed(t).ok).toBe(false);
   });
 
+  /**
+   * The topic that broke this open: "golf course community or old town square — which one fits your
+   * actual daily habits". A deck about where to live is made of seasonal rhythm and daily routine.
+   * Every one of these was refused as a specific current claim, which left a lifestyle post with
+   * nothing it was allowed to say.
+   */
+  it.each([
+    'A resort tends to empty out in winter, while a working town keeps its rhythm all year.',
+    'Summer flatters everywhere; a Tuesday in November tells you more.',
+    'Off-season is when you find out whether the bakery stays open.',
+  ])('allows a seasonal rhythm, which recurs rather than dates: %s', (t) => {
+    expect(isSpecificLocalOrCurrent(t)).toBe(false);
+    expect(mechanismAllowed(t).ok).toBe(true);
+  });
+
+  it.each([
+    'Moraira is quieter in winter than Calpe.',       // a named place
+    'The population triples in summer.',              // a figure
+    'German buyers arrive in spring.',                // a market nationality
+    'Right now the winter lets are gone.',            // an actual currency marker
+  ])('still refuses a season attached to a real claim: %s', (t) => {
+    expect(mechanismAllowed(t).ok).toBe(false);
+  });
+
   it('refuses a tendency written as a law of nature', () => {
     expect(mechanismAllowed('Overpricing always costs you the first two weeks.').ok).toBe(false);
     expect(mechanismAllowed('Overpricing can cost you the first two weeks.').ok).toBe(true);

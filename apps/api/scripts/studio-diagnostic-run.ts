@@ -46,9 +46,13 @@ async function readOut(id: string): Promise<void> {
   const src = m.research_sources ?? [];
   const elapsed = (new Date(r.completed_at ?? Date.now()).getTime() - new Date(r.created_at).getTime()) / 1000;
 
+  const rt = m.routing;
   console.log('\n══ HEADLINE ══');
   for (const [k, v] of [
     ['status', r.status], ['elapsed', `${elapsed.toFixed(1)}s`],
+    ['risk tier', rt ? `${String(rt.tier).toUpperCase()} (${rt.signal}) — ${rt.why}` : '(not recorded)'],
+    ['research ran', rt ? (rt.researched ? 'yes' : 'no') : '(not recorded)'],
+    ['escalated', rt?.escalated ? `YES — ${rt.escalatedWhy}` : 'no'],
     ['cost', money(u.totalCostUsd ?? 0)], ['model calls', u.calls ?? 0],
     ['input tokens', (u.inputTokens ?? 0).toLocaleString()],
     ['output tokens', (u.outputTokens ?? 0).toLocaleString()],

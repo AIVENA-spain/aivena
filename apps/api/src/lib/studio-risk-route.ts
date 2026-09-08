@@ -25,13 +25,28 @@
 import { planFields, type PlanLike } from './studio-copy-gate';
 import { riskOf, riskTier } from './studio-evidence';
 
-export type Route = 'low' | 'researched';
+/**
+ * ONE taxonomy, not two. LOW / MEDIUM / HIGH is the conceptual model everywhere — the cost
+ * buckets, the routing and the source policy all speak it, so the codebase cannot drift into
+ * calling the same thing two names.
+ *
+ * LOW    asserts nothing a reader could act on and find false — skips research entirely.
+ * MEDIUM local character, market context, mechanisms — researched, any reliable published source.
+ * HIGH   law, tax, money, figures, rankings — researched, and held to the producer of the fact.
+ */
+export type Tier = 'low' | 'medium' | 'high';
 
 export interface RouteDecision {
-  route: Route;
+  tier: Tier;
   /** plain-language reason, for the record and the log */
   why: string;
+  /** the signal that decided it, so a false positive can be found in the data later */
+  signal: 'empty' | 'ranking_question' | 'currency_question' | 'risk_class' | 'figure_or_rule'
+    | 'card_needs_agency_data' | 'nothing_checkable';
 }
+
+/** Whether this tier goes and looks things up. */
+export const researches = (t: Tier): boolean => t !== 'low';
 
 /**
  * A question that ASKS FOR a superlative, a comparison or a count.
@@ -58,28 +73,37 @@ const ASKS_ABOUT_NOW =
  */
 export function routeTopic(topic: string, opts: { cardRisky?: boolean } = {}): RouteDecision {
   const t = (topic ?? '').trim();
-  if (!t) return { route: 'researched', why: 'no topic given' };
+  if (!t) return { tier: 'high', why: 'no topic given', signal: 'empty' };
   if (ASKS_FOR_A_RANKING.test(t)) {
-    return { route: 'researched', why: 'the topic asks which one is the most or the biggest' };
+    return { tier: 'high', why: 'the topic asks which one is the most or the biggest',
+      signal: 'ranking_question' };
   }
   if (ASKS_ABOUT_NOW.test(t)) {
-    return { route: 'researched', why: 'the topic asks how things stand right now' };
+    return { tier: 'medium', why: 'the topic asks how things stand right now',
+      signal: 'currency_question' };
   }
   const risk = riskOf(t);
   if (risk !== 'none') {
-    return { route: 'researched', why: `the topic itself asks about ${risk.replace('_', '/')}` };
+    return {
+      tier: risk === 'legal_tax' || risk === 'market_statistics' ? 'high' : 'medium',
+      why: `the topic itself asks about ${risk.replace('_', '/')}`,
+      signal: 'risk_class',
+    };
   }
   // Deliberately kept broad. "The version of you who is ten years older" reads as a figure here and
   // takes the expensive path — a false positive that costs money, never truth. Narrowing the figure
   // detector to win it back would weaken the same test the publication gate depends on, and the
   // second check below is what actually protects the reader.
   if (riskTier(t) === 'high') {
-    return { route: 'researched', why: 'the topic names a figure, a rule or a ranking' };
+    return { tier: 'high', why: 'the topic names a figure, a rule or a ranking',
+      signal: 'figure_or_rule' };
   }
   if (opts.cardRisky) {
-    return { route: 'researched', why: 'the verified bank governs this subject with checkable facts' };
+    return { tier: 'medium', why: 'this subject cannot be written without the agency\'s own figures',
+      signal: 'card_needs_agency_data' };
   }
-  return { route: 'low', why: 'opinion, lifestyle or marketing — nothing a reader could act on and find false' };
+  return { tier: 'low', signal: 'nothing_checkable',
+    why: 'opinion, lifestyle or marketing — nothing a reader could act on and find false' };
 }
 
 export interface EscalationCheck {

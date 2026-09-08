@@ -35,7 +35,7 @@ import { planCarousel, editPlan, remixHook, topicIdeas, listingCopy, listingStor
 import { POLICED_TYPES, checkBankContradictions, checkIntent, extractClaims, gatePlan,
   type ExtractedClaim, type GateReport } from '../lib/studio-claim-gate';
 import { finishCopy } from '../lib/studio-publish';
-import { needsEscalation, routeTopic, type Route } from '../lib/studio-risk-route';
+import { needsEscalation, researches, routeTopic, type Tier } from '../lib/studio-risk-route';
 import { cardRules, retrieveBankFacts } from '../lib/studio-bank-match';
 import { gateField, planFields, readField, removeClaim, writeField,
   type RequirementCoverage } from '../lib/studio-copy-gate';
@@ -360,6 +360,10 @@ function shapeStatus(r: GenRow) {
     id: r.id,
     status: r.status,
     generation_type: r.generation_type,
+    // A TRUST SIGNAL, NOT A STATUS BADGE (Christian, 2026-09-08). True only when the engine actually
+    // went and looked something up. The agent never sees LOW/MEDIUM/HIGH, a gate, or any word from
+    // the compliance vocabulary — an ordinary lifestyle post simply shows nothing at all.
+    researched: (meta as { routing?: { researched?: boolean } } | null)?.routing?.researched === true,
     content_type:
       (r.raw_request && typeof r.raw_request.content_type === 'string'
         ? (r.raw_request.content_type as string)
@@ -1497,7 +1501,10 @@ async function runPlannedCarousel(opts: {
    * from one that researched and found nothing, and the bill will not explain which happened unless
    * the route is written down next to it.
    */
-  let routing: { route: Route; why: string; escalated?: boolean; escalatedWhy?: string } | undefined;
+  let routing: {
+    tier: Tier; why: string; signal: string; researched: boolean;
+    escalated?: boolean; escalatedWhy?: string;
+  } | undefined;
   try {
     // Claim extraction paid for once per exact piece of copy, for this generation only. Dies with
     // the request, so it can never hand back a classification from an older extractor.
@@ -1558,11 +1565,17 @@ async function runPlannedCarousel(opts: {
     // data", so it is the only one that routes.
     const route = opts.type === 'tips'
       ? routeTopic(opts.topic ?? '', { cardRisky: card?.agencyRequired === true })
-      : { route: 'researched' as Route, why: 'a quote deck is the client\'s own words' };
-    routing = { route: route.route, why: route.why };
-    console.log(`[studio/carousel] route=${route.route} — ${route.why}`);
+      : { tier: 'medium' as Tier, why: 'a quote deck is the client\'s own words',
+          signal: 'nothing_checkable' as const };
+    routing = { tier: route.tier, why: route.why, signal: route.signal,
+      researched: researches(route.tier) };
+    // THE SIGNAL IS RECORDED, NOT JUST THE ANSWER. "The version of you who is ten years older"
+    // reads as a figure and takes the expensive path — an accepted false positive today, but only
+    // real usage can say how often ordinary lifestyle language trips it. Storing WHICH rule fired
+    // is what lets that be fixed from data instead of from argument.
+    console.log(`[studio/carousel] tier=${route.tier} (${route.signal}) — ${route.why}`);
 
-    const writeDeck = (saferAngle: boolean, skipResearch = route.route === 'low') => planCarousel({
+    const writeDeck = (saferAngle: boolean, skipResearch = !researches(route.tier)) => planCarousel({
       saferAngle, skipResearch,
       // The rewrite is the same topic on different arguments — it reuses the research rather than
       // paying for it twice and ending up with less than the first pass had.
@@ -1741,7 +1754,7 @@ async function runPlannedCarousel(opts: {
       // behind it at all. So the finished copy is scanned, deterministically and for free, and a
       // post that turns out to assert something checkable goes and gets it CHECKED. It is never
       // quietly deleted: a strong factual point is worth verifying, not sterilising.
-      if (route.route === 'low') {
+      if (!researches(route.tier)) {
         // THE READABILITY PASS STILL RUNS. Skipping research does not mean skipping the editor —
         // this is the copy that ships most often, and the reader-first standard is the whole
         // product. It touches no evidence, so it is safe on a post that has none.
@@ -1912,12 +1925,12 @@ async function runPlannedCarousel(opts: {
     // only and never kills a post half-written.
     // The warning line follows how deep the post actually went: a lifestyle post that skipped
     // research and still cost thirty cents is worth looking at; a high-risk one is not.
-    const warnAt = budgetFor(routing?.escalated ? 'researched' : routing?.route)
+    const warnAt = budgetFor(routing?.escalated ? 'high' : routing?.tier)
       ?? Number(process.env.STUDIO_COST_WARN_USD ?? '2');
     usage = summarise(currentEntries(), genId, Number.isFinite(warnAt) ? warnAt : 2);
     console.log(formatSummary(usage));
     if (usage.overThreshold) {
-      console.error(`[studio/cost] ${routing?.route ?? 'unrouted'} generation unusually expensive — `
+      console.error(`[studio/cost] ${routing?.tier ?? 'unrouted'} generation unusually expensive — `
         + `$${usage.totalCostUsd.toFixed(4)} against a $${usage.thresholdUsd?.toFixed(2)} warning line `
         + `(generation ${genId}). Nothing was stopped; this is observability only.`);
     }

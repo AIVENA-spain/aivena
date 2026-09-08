@@ -169,7 +169,7 @@ export function summarise(
  */
 export const TIER_BUDGETS: Readonly<Record<string, number>> = {
   low: 0.15,
-  researched: 0.30,
+  medium: 0.30,
   high: 0.60,
 };
 

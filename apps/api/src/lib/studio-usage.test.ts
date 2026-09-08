@@ -118,13 +118,13 @@ describe('what a generation cost', () => {
  */
 describe('the cost warning line', () => {
   it('expects a lifestyle post to cost less than a researched one', () => {
-    expect(TIER_BUDGETS.low).toBeLessThan(TIER_BUDGETS.researched);
-    expect(TIER_BUDGETS.researched).toBeLessThan(TIER_BUDGETS.high);
+    expect(TIER_BUDGETS.low).toBeLessThan(TIER_BUDGETS.medium);
+    expect(TIER_BUDGETS.medium).toBeLessThan(TIER_BUDGETS.high);
   });
 
   it('reads the line for a route', () => {
     expect(budgetFor('low', {})).toBe(0.15);
-    expect(budgetFor('researched', {})).toBe(0.30);
+    expect(budgetFor('medium', {})).toBe(0.30);
   });
 
   it('can be recalibrated per environment while the numbers are still guesses', () => {

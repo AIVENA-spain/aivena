@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LOW_RISK_BRIEF, needsEscalation, routeTopic } from './studio-risk-route';
+import { LOW_RISK_BRIEF, needsEscalation, researches, routeTopic } from './studio-risk-route';
 import { DEFAULT_MODELS, ROLES, describeRouting, envKeyFor, modelFor, roleOverrides } from './studio-models';
 
 /**
@@ -24,7 +24,7 @@ describe('which path a topic starts on', () => {
     'Golf course community or old town square: which one fits your actual daily habits',
     'What nobody tells you about choosing a neighbourhood',
   ])('sends opinion and lifestyle down the cheap path: %s', (t) => {
-    expect(routeTopic(t).route).toBe('low');
+    expect(routeTopic(t).tier).toBe('low');
   });
 
   it.each([
@@ -34,7 +34,7 @@ describe('which path a topic starts on', () => {
     'Which nationality buys the most homes in Alicante',
     'How long does it take to get a licence of first occupation',
   ])('researches anything a reader could act on and find false: %s', (t) => {
-    expect(routeTopic(t).route).toBe('researched');
+    expect(researches(routeTopic(t).tier)).toBe(true);
   });
 
   /**
@@ -44,19 +44,32 @@ describe('which path a topic starts on', () => {
    * scan on the finished copy is what actually protects the reader either way.
    */
   it('errs toward research when rhetoric reads like a figure', () => {
-    expect(routeTopic('The version of you who is ten years older is the one buying this house').route)
-      .toBe('researched');
+    const d = routeTopic('The version of you who is ten years older is the one buying this house');
+    expect(researches(d.tier)).toBe(true);
+    // recorded so real usage can say how often ordinary lifestyle language trips this
+    expect(d.signal).toBe('figure_or_rule');
   });
 
   it('researches when the verified bank governs the subject with checkable facts', () => {
     const t = 'Golf course community or old town square: which fits your daily habits';
-    expect(routeTopic(t).route).toBe('low');
-    expect(routeTopic(t, { cardRisky: true }).route).toBe('researched');
+    expect(routeTopic(t).tier).toBe('low');
+    expect(researches(routeTopic(t, { cardRisky: true }).tier)).toBe(true);
   });
 
   it('researches when there is no topic at all rather than guessing', () => {
-    expect(routeTopic('').route).toBe('researched');
-    expect(routeTopic('   ').route).toBe('researched');
+    expect(researches(routeTopic('').tier)).toBe(true);
+    expect(researches(routeTopic('   ').tier)).toBe(true);
+  });
+
+  it('names LOW, MEDIUM and HIGH — one taxonomy, not two', () => {
+    expect(routeTopic('Why people fall in love with Moraira').tier).toBe('low');
+    expect(routeTopic('How things are selling right now on the coast').tier).toBe('medium');
+    expect(routeTopic('What tax do I pay when I sell my Spanish property').tier).toBe('high');
+  });
+
+  it('records which rule fired, so a false positive can be found in the data', () => {
+    expect(routeTopic('Which nationality buys the most homes in Alicante').signal).toBe('ranking_question');
+    expect(routeTopic('Why people fall in love with Moraira').signal).toBe('nothing_checkable');
   });
 
   it('gives a reason in plain language, for the record', () => {

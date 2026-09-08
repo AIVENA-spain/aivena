@@ -13,8 +13,22 @@ const entry = (o: Partial<UsageEntry> & { stage: string }): UsageEntry => ({
 
 describe('what a call costs', () => {
   it('prices plain input and output at the model rate', () => {
-    // 1M input + 1M output on Sonnet = $3 + $15
-    expect(costOf('claude-sonnet-5', { input_tokens: 1e6, output_tokens: 1e6 })).toBeCloseTo(18, 6);
+    // 1M input + 1M output on Sonnet 5 = $2 + $10
+    expect(costOf('claude-sonnet-5', { input_tokens: 1e6, output_tokens: 1e6 })).toBeCloseTo(12, 6);
+  });
+
+  /**
+   * THE NUMBER EVERYTHING ELSE IS DECIDED FROM. The first table carried Sonnet 4.6's $3/$15 under
+   * the Sonnet 5 key, which overstated the first measured generation by exactly 1.5x — and that
+   * figure was about to become the baseline for a cost-reduction programme. Pinned against
+   * Anthropic's published list pricing so a stale rate cannot pass silently again.
+   */
+  it('carries the published list price for every model the engine can call', () => {
+    expect(PRICES['claude-sonnet-5']).toEqual({ input: 2, output: 10 });
+    expect(PRICES['claude-opus-5']).toEqual({ input: 5, output: 25 });
+    expect(PRICES['claude-haiku-4-5']).toEqual({ input: 1, output: 5 });
+    // Sonnet 4.6 is a different model at a different price — keeping both stops the mix-up.
+    expect(PRICES['claude-sonnet-4-6']).toEqual({ input: 3, output: 15 });
   });
 
   it('charges a cache write above the input rate and a cache read far below it', () => {

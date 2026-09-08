@@ -48,15 +48,23 @@ export interface UsageSummary {
  * whole reason caching is worth doing at all.
  */
 export const PRICES: Readonly<Record<string, { input: number; output: number }>> = {
-  'claude-sonnet-5': { input: 3, output: 15 },
-  'claude-opus-5': { input: 15, output: 75 },
+  // Verified against Anthropic's published list pricing, 2026-09-08. The first version of this
+  // table carried Sonnet 4.6's $3/$15 under the Sonnet 5 key and Opus 4.x's $15/$75 under Opus 5,
+  // which overstated the first measured generation by exactly 1.5x. A wrong number here is worse
+  // than no number, because it is the one everything else is decided from.
+  'claude-sonnet-5': { input: 2, output: 10 },
+  'claude-sonnet-4-6': { input: 3, output: 15 },
+  'claude-opus-5': { input: 5, output: 25 },
   'claude-haiku-4-5-20251001': { input: 1, output: 5 },
   'claude-haiku-4-5': { input: 1, output: 5 },
 };
 const CACHE_WRITE_MULTIPLIER = 1.25;
 const CACHE_READ_MULTIPLIER = 0.1;
-/** Anything unpriced is charged at the Sonnet rate rather than silently counted as free. */
-const FALLBACK = { input: 3, output: 15 };
+/**
+ * Anything unpriced is charged at a deliberately HIGH rate rather than silently counted as free —
+ * an unknown model should overstate the bill, never hide it.
+ */
+const FALLBACK = { input: 5, output: 25 };
 
 export interface RawUsage {
   input_tokens?: number;

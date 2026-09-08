@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PRICES, TIER_BUDGETS, budgetFor, costOf, formatSummary, summarise, type UsageEntry } from './studio-usage';
+import { PRICES, TIER_BUDGETS, budgetFor, cacheStateOf, costOf, formatSummary, summarise, uncachedCostOf, type UsageEntry } from './studio-usage';
 
 /**
  * Studio wrote no token usage at all, so a month of spend could only be guessed at from character
@@ -188,6 +188,66 @@ describe('what caching actually cost', () => {
       stage: 'writer', inputTokens: 1000, cacheReadTokens: 4000, costUsd: 0.01,
     })]));
     expect(out).toContain('uncached input');
-    expect(out).toContain('hit rate');
+    // the log reports the benefit against no caching; the hit rate stays in the record, because a
+    // percentage of a prefix read is not the same question as whether the run was better off
+    expect(out).toContain('vs no caching at all');
+  });
+});
+
+/**
+ * Christian, 2026-09-08: "Don't treat the saving as guaranteed per generation. An isolated
+ * generation will pay the cache-write premium and get no read benefit."
+ *
+ * So the record must not report a hit rate and call it a benefit. A cold run is a real loss and has
+ * to read as one; only the difference against what the same tokens would have cost uncached tells
+ * the two apart.
+ */
+describe('did caching actually help this run', () => {
+  const cat = 5412;   // the bank catalogue, the only block cached today
+
+  it('shows an isolated generation as a LOSS, not as a 0% hit rate', () => {
+    const cold = summarise([entry({
+      stage: 'bank_card', inputTokens: 190, cacheCreationTokens: cat, outputTokens: 4,
+      costUsd: costOf('claude-sonnet-5', {
+        input_tokens: 190, cache_creation_input_tokens: cat, output_tokens: 4,
+      }),
+    })]);
+    expect(cold.cacheCalls.cold).toBe(1);
+    expect(cold.cacheSavingUsd).toBeLessThan(0);              // it cost us money
+    expect(cold.uncachedEquivalentUsd).toBeLessThan(cold.totalCostUsd);
+  });
+
+  it('shows a second generation inside the window as a real saving', () => {
+    const warm = summarise([entry({
+      stage: 'bank_card', inputTokens: 190, cacheReadTokens: cat, outputTokens: 4,
+      costUsd: costOf('claude-sonnet-5', {
+        input_tokens: 190, cache_read_input_tokens: cat, output_tokens: 4,
+      }),
+    })]);
+    expect(warm.cacheCalls.warm).toBe(1);
+    expect(warm.cacheSavingUsd).toBeGreaterThan(0.009);       // ~a cent, as audited
+  });
+
+  it('prices the uncached baseline off ALL the input, not just the uncached part', () => {
+    // input_tokens counts only what follows the breakpoint — the trap in Anthropic's own docs.
+    expect(uncachedCostOf('claude-sonnet-5', {
+      input_tokens: 190, cache_read_input_tokens: cat,
+    })).toBeCloseTo((190 + cat) / 1e6 * 2, 8);
+  });
+
+  it('names what happened at the cache for each call', () => {
+    expect(cacheStateOf({ cacheCreationTokens: 100, cacheReadTokens: 0 })).toBe('cold');
+    expect(cacheStateOf({ cacheCreationTokens: 0, cacheReadTokens: 100 })).toBe('warm');
+    expect(cacheStateOf({ cacheCreationTokens: 100, cacheReadTokens: 100 })).toBe('mixed');
+    expect(cacheStateOf({ cacheCreationTokens: 0, cacheReadTokens: 0 })).toBe('none');
+  });
+
+  it('says SAVED or COST in words, so the log cannot be misread', () => {
+    const cold = formatSummary(summarise([entry({
+      stage: 'bank_card', cacheCreationTokens: cat,
+      costUsd: costOf('claude-sonnet-5', { cache_creation_input_tokens: cat }),
+    })]));
+    expect(cold).toContain('caching COST');
+    expect(cold).toContain('1 cold');
   });
 });

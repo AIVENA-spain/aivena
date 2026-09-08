@@ -811,6 +811,23 @@ async function researchTopic(
  * governs those towns. Everything else falls back to fresh research under the source policy, which
  * is the honest answer rather than a borrowed one.
  */
+/**
+ * The cached prefix for the card matcher — instructions and the whole catalogue, nothing else.
+ *
+ * Takes no arguments ON PURPOSE. Christian's invariant, 2026-09-08: "agency/topic/timestamp/
+ * per-generation information must not appear before the catalogue breakpoint." A function with no
+ * parameters cannot violate that by accident; the day someone needs to interpolate something here,
+ * they have to add a parameter and notice why that is wrong.
+ */
+export function matcherSystem(): string {
+  return 'You match a writer\'s topic to a catalogue of researched questions. The topic may be '
+    + 'in any language; the catalogue is in English. Reply with the single best id (e.g. "B12") '
+    + 'when the catalogue genuinely covers the same ground, or exactly NONE when it does not. '
+    + 'A loose thematic overlap is NOT a match — half the catalogue is about Spanish property, '
+    + 'so requiring the same actual subject is the point. Reply with the id or NONE, nothing else.'
+    + `\n\nCATALOGUE:\n${bankIndex()}`;
+}
+
 export async function pickBankCard(topic: string): Promise<BankCard | null> {
   if (!topic?.trim()) return null;
   const inScope = (card: BankCard | null | undefined): BankCard | null => {
@@ -829,12 +846,18 @@ export async function pickBankCard(topic: string): Promise<BankCard | null> {
       headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: modelFor('CARD_MATCHER'), max_tokens: 24,
-        system: 'You match a writer\'s topic to a catalogue of researched questions. The topic may be '
-          + 'in any language; the catalogue is in English. Reply with the single best id (e.g. "B12") '
-          + 'when the catalogue genuinely covers the same ground, or exactly NONE when it does not. '
-          + 'A loose thematic overlap is NOT a match — half the catalogue is about Spanish property, '
-          + 'so requiring the same actual subject is the point. Reply with the id or NONE, nothing else.',
-        messages: [{ role: 'user', content: `TOPIC: ${topic}\n\nCATALOGUE:\n${bankIndex()}` }],
+        // THE ONLY BLOCK IN STUDIO WORTH CACHING TODAY.
+        //
+        // The catalogue is 5,412 tokens, identical for every agency and every topic, and it was
+        // being sent AFTER the topic in the user message — a stable block behind a varying one,
+        // which is precisely the shape that can never cache. It moves into `system` ahead of the
+        // breakpoint; the topic stays in `messages`, after it.
+        //
+        // Nothing agency-specific, topic-specific or time-specific may ever appear before that
+        // breakpoint, or the prefix hash changes on every request and we pay the write premium
+        // forever without a single read.
+        system: [{ type: 'text', text: matcherSystem(), cache_control: { type: 'ephemeral' } }],
+        messages: [{ role: 'user', content: `TOPIC: ${topic}` }],
       }),
     });
     if (res.ok) {

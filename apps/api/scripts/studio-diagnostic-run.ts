@@ -58,6 +58,11 @@ async function readOut(id: string): Promise<void> {
     ['output tokens', (u.outputTokens ?? 0).toLocaleString()],
     ['cache read', (u.cacheReadTokens ?? 0).toLocaleString()],
     ['cache written', (u.cacheCreationTokens ?? 0).toLocaleString()],
+    ['vs no caching', u.uncachedEquivalentUsd != null
+      ? `${money(u.uncachedEquivalentUsd)} — caching ${(u.cacheSavingUsd ?? 0) >= 0 ? 'SAVED' : 'COST'} `
+        + `${money(Math.abs(u.cacheSavingUsd ?? 0))} (${u.cacheCalls?.cold ?? 0} cold, `
+        + `${u.cacheCalls?.warm ?? 0} warm)`
+      : '(not recorded)'],
     ['pages opened', `${src.filter((s: any) => s.opened).length} of ${src.length}`],
     ['pages timed out', (m.fact_health?.timedOut ?? []).join(', ') || 'none'],
     ['palette degraded', m.fact_health?.degraded ?? 'no'],
@@ -71,7 +76,10 @@ async function readOut(id: string): Promise<void> {
   console.log('\n══ COST BY STAGE ══');
   for (const s of u.byStage ?? []) {
     console.log(`  ${String(s.stage).padEnd(28)} ${money(s.costUsd).padStart(9)} ${String(s.calls).padStart(3)} calls`
-      + `  in ${s.inputTokens.toLocaleString().padStart(9)}  out ${s.outputTokens.toLocaleString().padStart(7)}`);
+      + `  in ${s.inputTokens.toLocaleString().padStart(9)}  out ${s.outputTokens.toLocaleString().padStart(7)}`
+      + (s.cacheState && s.cacheState !== 'none'
+        ? `  cache ${String(s.cacheState).toUpperCase()} ${s.cacheSavingUsd >= 0 ? 'saved' : 'cost'} `
+          + money(Math.abs(s.cacheSavingUsd)) : ''));
   }
   console.log('\n══ TIME BY STAGE ══');
   for (const [k, v] of Object.entries(m.timings ?? {}).sort((a, b) => (b[1] as number) - (a[1] as number))) {

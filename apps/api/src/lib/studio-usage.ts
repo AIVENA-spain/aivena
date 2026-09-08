@@ -49,12 +49,19 @@ export interface UsageSummary {
   cacheReadTokens: number;
   totalCostUsd: number;
   /** what each stage cost, most expensive first */
-  byStage: Array<{ stage: string; calls: number; costUsd: number; inputTokens: number; outputTokens: number }>;
+  byStage: Array<{ stage: string; calls: number; costUsd: number; inputTokens: number;
+    outputTokens: number; cacheState: CacheState; cacheSavingUsd: number }>;
   byModel: Array<{ model: string; calls: number; costUsd: number }>;
   /** what each input category cost, and what the output cost */
   costSplit: CostSplit;
   /** share of cacheable input actually served from cache, 0 when nothing was cached */
   cacheHitRate: number;
+  /** what this generation would have cost with caching switched off entirely */
+  uncachedEquivalentUsd: number;
+  /** uncached minus actual. NEGATIVE means caching cost us money on this run. */
+  cacheSavingUsd: number;
+  /** how many calls wrote a prefix, read one, or did neither */
+  cacheCalls: { cold: number; warm: number; mixed: number; none: number };
   /** true when this generation passed the warning threshold */
   overThreshold?: boolean;
   thresholdUsd?: number;
@@ -91,6 +98,31 @@ export interface RawUsage {
   output_tokens?: number;
   cache_creation_input_tokens?: number;
   cache_read_input_tokens?: number;
+}
+
+/**
+ * What these same tokens WOULD have cost with no caching at all.
+ *
+ * The number caching has to beat. A hit rate says how much of the cacheable prefix was read; it
+ * does not say whether the run was better off. An isolated generation writes the prefix at 1.25x
+ * and never reads it, which is a real loss with a hit rate of 0% — and a busy hour is a real
+ * saving. Only the difference against this baseline distinguishes them.
+ */
+export function uncachedCostOf(model: string, u: RawUsage): number {
+  const p = PRICES[model] ?? FALLBACK;
+  const allInput = (u.input_tokens ?? 0) + (u.cache_read_input_tokens ?? 0)
+    + (u.cache_creation_input_tokens ?? 0);
+  return allInput / 1e6 * p.input + (u.output_tokens ?? 0) / 1e6 * p.output;
+}
+
+/** What happened at the cache for one call. */
+export type CacheState = 'cold' | 'warm' | 'mixed' | 'none';
+
+export function cacheStateOf(u: { cacheCreationTokens: number; cacheReadTokens: number }): CacheState {
+  if (u.cacheReadTokens && u.cacheCreationTokens) return 'mixed';
+  if (u.cacheReadTokens) return 'warm';
+  if (u.cacheCreationTokens) return 'cold';
+  return 'none';
 }
 
 /** What one call cost, in dollars. */
@@ -145,7 +177,8 @@ const round = (n: number, dp = 6) => Math.round(n * 10 ** dp) / 10 ** dp;
 export function summarise(
   entries: readonly UsageEntry[], generationId: string | null = null, thresholdUsd?: number,
 ): UsageSummary {
-  const byStage = new Map<string, { calls: number; costUsd: number; inputTokens: number; outputTokens: number }>();
+  const byStage = new Map<string, { calls: number; costUsd: number; inputTokens: number;
+    outputTokens: number; cacheCreationTokens: number; cacheReadTokens: number; uncachedUsd: number }>();
   const byModel = new Map<string, { calls: number; costUsd: number }>();
   let inputTokens = 0; let outputTokens = 0; let cacheCreationTokens = 0;
   let cacheReadTokens = 0; let totalCostUsd = 0;
@@ -156,8 +189,14 @@ export function summarise(
     cacheCreationTokens += e.cacheCreationTokens;
     cacheReadTokens += e.cacheReadTokens;
     totalCostUsd += e.costUsd;
-    const s = byStage.get(e.stage) ?? { calls: 0, costUsd: 0, inputTokens: 0, outputTokens: 0 };
+    const s = byStage.get(e.stage) ?? { calls: 0, costUsd: 0, inputTokens: 0, outputTokens: 0,
+      cacheCreationTokens: 0, cacheReadTokens: 0, uncachedUsd: 0 };
     s.calls++; s.costUsd += e.costUsd; s.inputTokens += e.inputTokens; s.outputTokens += e.outputTokens;
+    s.cacheCreationTokens += e.cacheCreationTokens; s.cacheReadTokens += e.cacheReadTokens;
+    s.uncachedUsd += uncachedCostOf(e.model, {
+      input_tokens: e.inputTokens, output_tokens: e.outputTokens,
+      cache_creation_input_tokens: e.cacheCreationTokens, cache_read_input_tokens: e.cacheReadTokens,
+    });
     byStage.set(e.stage, s);
     const m = byModel.get(e.model) ?? { calls: 0, costUsd: 0 };
     m.calls++; m.costUsd += e.costUsd;
@@ -177,15 +216,25 @@ export function summarise(
   // Of everything that passed through a cache breakpoint, how much was read rather than written.
   const cacheable = cacheReadTokens + cacheCreationTokens;
   const cacheHitRate = cacheable ? round(cacheReadTokens / cacheable, 4) : 0;
+  // The number that actually answers "did caching help THIS run?"
+  const uncachedEquivalentUsd = round([...byStage.values()].reduce((a, v) => a + v.uncachedUsd, 0));
+  const cacheSavingUsd = round(uncachedEquivalentUsd - totalCostUsd);
+  const cacheCalls = { cold: 0, warm: 0, mixed: 0, none: 0 };
+  for (const e of entries) cacheCalls[cacheStateOf(e)]++;
 
   return {
     generationId,
     calls: entries.length,
     inputTokens, outputTokens, cacheCreationTokens, cacheReadTokens,
     totalCostUsd: round(totalCostUsd),
-    costSplit, cacheHitRate,
+    costSplit, cacheHitRate, uncachedEquivalentUsd, cacheSavingUsd, cacheCalls,
     byStage: [...byStage.entries()]
-      .map(([stage, v]) => ({ stage, ...v, costUsd: round(v.costUsd) }))
+      .map(([stage, v]) => ({
+        stage, calls: v.calls, costUsd: round(v.costUsd),
+        inputTokens: v.inputTokens, outputTokens: v.outputTokens,
+        cacheState: cacheStateOf(v),
+        cacheSavingUsd: round(v.uncachedUsd - v.costUsd),
+      }))
       .sort((a, b) => b.costUsd - a.costUsd),
     byModel: [...byModel.entries()]
       .map(([model, v]) => ({ model, ...v, costUsd: round(v.costUsd) }))
@@ -223,7 +272,10 @@ export function formatSummary(s: UsageSummary): string {
   const money = (n: number) => `$${n.toFixed(4)}`;
   const lines = s.byStage.map((x) =>
     `    ${x.stage.padEnd(28)} ${money(x.costUsd).padStart(9)}  ${String(x.calls).padStart(2)} calls`
-    + `  in ${x.inputTokens.toLocaleString()}  out ${x.outputTokens.toLocaleString()}`);
+    + `  in ${x.inputTokens.toLocaleString()}  out ${x.outputTokens.toLocaleString()}`
+    + (x.cacheState === 'none' ? ''
+      : `  cache ${x.cacheState.toUpperCase()} ${x.cacheSavingUsd >= 0 ? 'saved' : 'cost'} `
+        + money(Math.abs(x.cacheSavingUsd))));
   const c = s.costSplit;
   return [
     `[studio/cost] ${money(s.totalCostUsd)} · ${s.calls} calls`
@@ -231,7 +283,10 @@ export function formatSummary(s: UsageSummary): string {
     + ` · cache read ${s.cacheReadTokens.toLocaleString()} · cache written ${s.cacheCreationTokens.toLocaleString()}`,
     `    ${'uncached input'.padEnd(28)} ${money(c.uncachedInput).padStart(9)}`
     + `   cache write ${money(c.cacheWrite)}   cache read ${money(c.cacheRead)}`
-    + `   output ${money(c.output)}   hit rate ${(s.cacheHitRate * 100).toFixed(0)}%`,
+    + `   output ${money(c.output)}`,
+    `    ${'vs no caching at all'.padEnd(28)} ${money(s.uncachedEquivalentUsd).padStart(9)}`
+    + `   → caching ${s.cacheSavingUsd >= 0 ? 'SAVED' : 'COST'} ${money(Math.abs(s.cacheSavingUsd))}`
+    + `   (${s.cacheCalls.cold} cold, ${s.cacheCalls.warm} warm, ${s.cacheCalls.mixed} mixed)`,
     ...lines,
   ].join('\n');
 }

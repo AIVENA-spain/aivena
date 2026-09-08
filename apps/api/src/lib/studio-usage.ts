@@ -24,6 +24,22 @@ export interface UsageEntry {
   costUsd: number;
 }
 
+/**
+ * What the three input categories cost, kept apart.
+ *
+ * Anthropic bills input as `cache_read + cache_creation + uncached input`, and the `input_tokens`
+ * field is only the tokens AFTER the last breakpoint — not the total. Rolling them into one number
+ * would hide both whether caching hit and whether it paid: a write costs 1.25x and a read 0.1x, so
+ * a prefix that is written and never read is a loss, and it looks identical to a win unless these
+ * are separated.
+ */
+export interface CostSplit {
+  uncachedInput: number;
+  cacheWrite: number;
+  cacheRead: number;
+  output: number;
+}
+
 export interface UsageSummary {
   generationId: string | null;
   calls: number;
@@ -35,6 +51,10 @@ export interface UsageSummary {
   /** what each stage cost, most expensive first */
   byStage: Array<{ stage: string; calls: number; costUsd: number; inputTokens: number; outputTokens: number }>;
   byModel: Array<{ model: string; calls: number; costUsd: number }>;
+  /** what each input category cost, and what the output cost */
+  costSplit: CostSplit;
+  /** share of cacheable input actually served from cache, 0 when nothing was cached */
+  cacheHitRate: number;
   /** true when this generation passed the warning threshold */
   overThreshold?: boolean;
   thresholdUsd?: number;
@@ -144,11 +164,26 @@ export function summarise(
     byModel.set(e.model, m);
   }
 
+  // Priced per category rather than in total, so "did caching help?" is answerable from the record.
+  const costSplit: CostSplit = { uncachedInput: 0, cacheWrite: 0, cacheRead: 0, output: 0 };
+  for (const e of entries) {
+    const p = PRICES[e.model] ?? FALLBACK;
+    costSplit.uncachedInput += e.inputTokens / 1e6 * p.input;
+    costSplit.cacheWrite += e.cacheCreationTokens / 1e6 * p.input * CACHE_WRITE_MULTIPLIER;
+    costSplit.cacheRead += e.cacheReadTokens / 1e6 * p.input * CACHE_READ_MULTIPLIER;
+    costSplit.output += e.outputTokens / 1e6 * p.output;
+  }
+  for (const k of Object.keys(costSplit) as Array<keyof CostSplit>) costSplit[k] = round(costSplit[k]);
+  // Of everything that passed through a cache breakpoint, how much was read rather than written.
+  const cacheable = cacheReadTokens + cacheCreationTokens;
+  const cacheHitRate = cacheable ? round(cacheReadTokens / cacheable, 4) : 0;
+
   return {
     generationId,
     calls: entries.length,
     inputTokens, outputTokens, cacheCreationTokens, cacheReadTokens,
     totalCostUsd: round(totalCostUsd),
+    costSplit, cacheHitRate,
     byStage: [...byStage.entries()]
       .map(([stage, v]) => ({ stage, ...v, costUsd: round(v.costUsd) }))
       .sort((a, b) => b.costUsd - a.costUsd),
@@ -189,10 +224,14 @@ export function formatSummary(s: UsageSummary): string {
   const lines = s.byStage.map((x) =>
     `    ${x.stage.padEnd(28)} ${money(x.costUsd).padStart(9)}  ${String(x.calls).padStart(2)} calls`
     + `  in ${x.inputTokens.toLocaleString()}  out ${x.outputTokens.toLocaleString()}`);
+  const c = s.costSplit;
   return [
     `[studio/cost] ${money(s.totalCostUsd)} · ${s.calls} calls`
     + ` · in ${s.inputTokens.toLocaleString()} · out ${s.outputTokens.toLocaleString()}`
     + ` · cache read ${s.cacheReadTokens.toLocaleString()} · cache written ${s.cacheCreationTokens.toLocaleString()}`,
+    `    ${'uncached input'.padEnd(28)} ${money(c.uncachedInput).padStart(9)}`
+    + `   cache write ${money(c.cacheWrite)}   cache read ${money(c.cacheRead)}`
+    + `   output ${money(c.output)}   hit rate ${(s.cacheHitRate * 100).toFixed(0)}%`,
     ...lines,
   ].join('\n');
 }

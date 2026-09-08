@@ -145,3 +145,49 @@ describe('the cost warning line', () => {
     expect(Object.keys(over)).not.toContain('cancelled');
   });
 });
+
+/**
+ * Anthropic bills input as `cache_read + cache_creation + uncached input`, and a cache write costs
+ * 1.25x while a read costs 0.1x. A prefix that is written and never read is a LOSS — and it looks
+ * exactly like a win unless the categories are priced apart.
+ */
+describe('what caching actually cost', () => {
+  it('prices the three input categories separately', () => {
+    const s = summarise([entry({
+      stage: 'writer', inputTokens: 1000, cacheCreationTokens: 2000, cacheReadTokens: 4000,
+      outputTokens: 500,
+    })]);
+    expect(s.costSplit.uncachedInput).toBeCloseTo(1000 / 1e6 * 2, 8);
+    expect(s.costSplit.cacheWrite).toBeCloseTo(2000 / 1e6 * 2 * 1.25, 8);
+    expect(s.costSplit.cacheRead).toBeCloseTo(4000 / 1e6 * 2 * 0.1, 8);
+    expect(s.costSplit.output).toBeCloseTo(500 / 1e6 * 10, 8);
+  });
+
+  it('shows a write-only generation as a hit rate of zero', () => {
+    const s = summarise([entry({ stage: 'writer', cacheCreationTokens: 1400 })]);
+    expect(s.cacheHitRate).toBe(0);
+    expect(s.costSplit.cacheWrite).toBeGreaterThan(0);
+    expect(s.costSplit.cacheRead).toBe(0);
+  });
+
+  it('shows a well-reused prefix as a high hit rate', () => {
+    const s = summarise([
+      entry({ stage: 'a', cacheCreationTokens: 1400 }),
+      entry({ stage: 'b', cacheReadTokens: 1400 }),
+      entry({ stage: 'c', cacheReadTokens: 1400 }),
+    ]);
+    expect(s.cacheHitRate).toBeCloseTo(2 / 3, 3);
+  });
+
+  it('reports no hit rate at all when nothing went through a cache', () => {
+    expect(summarise([entry({ stage: 'writer', inputTokens: 5000 })]).cacheHitRate).toBe(0);
+  });
+
+  it('puts the split on the one glanceable line', () => {
+    const out = formatSummary(summarise([entry({
+      stage: 'writer', inputTokens: 1000, cacheReadTokens: 4000, costUsd: 0.01,
+    })]));
+    expect(out).toContain('uncached input');
+    expect(out).toContain('hit rate');
+  });
+});

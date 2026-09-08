@@ -159,6 +159,30 @@ export function summarise(
   };
 }
 
+/**
+ * WHAT A GENERATION OF THIS DEPTH SHOULD COST — provisional, and warning-only.
+ *
+ * Christian, 2026-09-08: "Add the infrastructure now... but do not treat $0.15/$0.30/$0.60 as
+ * sacred limits. No cancellation. No weakening evidence. Just flag it." These are first guesses
+ * from a single measured generation; after twenty or fifty real posts they become distributions
+ * and get recalibrated. Nothing here ever stops a post.
+ */
+export const TIER_BUDGETS: Readonly<Record<string, number>> = {
+  low: 0.15,
+  researched: 0.30,
+  high: 0.60,
+};
+
+/** The warning line for a route, overridable per environment while the numbers are still guesses. */
+export function budgetFor(
+  route: string | undefined, env: Record<string, string | undefined> = process.env,
+): number | undefined {
+  const key = (route ?? '').toLowerCase();
+  const override = Number(env[`STUDIO_COST_WARN_${key.toUpperCase()}`]);
+  if (Number.isFinite(override) && override > 0) return override;
+  return TIER_BUDGETS[key];
+}
+
 /** One line per stage, cheap enough to log on every generation. */
 export function formatSummary(s: UsageSummary): string {
   const money = (n: number) => `$${n.toFixed(4)}`;

@@ -35,11 +35,12 @@ import { planCarousel, editPlan, remixHook, topicIdeas, listingCopy, listingStor
 import { POLICED_TYPES, checkBankContradictions, checkIntent, extractClaims, gatePlan,
   type ExtractedClaim, type GateReport } from '../lib/studio-claim-gate';
 import { finishCopy } from '../lib/studio-publish';
+import { needsEscalation, routeTopic, type Route } from '../lib/studio-risk-route';
 import { cardRules, retrieveBankFacts } from '../lib/studio-bank-match';
 import { gateField, planFields, readField, removeClaim, writeField,
   type RequirementCoverage } from '../lib/studio-copy-gate';
 import { riskTier, type ResearchSource, type SourceFact } from '../lib/studio-evidence';
-import { currentEntries, formatSummary, summarise, withUsage,
+import { budgetFor, currentEntries, formatSummary, summarise, withUsage,
   type UsageSummary } from '../lib/studio-usage';
 import { directScenes } from '../lib/studio-carousel-art';
 import { renderTipsImageStyled, renderTipsImageStyledV2, isTipsImageStyle } from '../../../../studio/engine/carouselTipsImage';
@@ -1491,6 +1492,12 @@ async function runPlannedCarousel(opts: {
     kept: 'original' | 'rewrite' } | undefined;
   /** The deck as it last stood. A draft that failed is the evidence about why it failed. */
   let lastPlan: CarouselPlan | undefined;
+  /**
+   * HOW DEEP THIS POST WENT. A lifestyle post that skipped research is a different product decision
+   * from one that researched and found nothing, and the bill will not explain which happened unless
+   * the route is written down next to it.
+   */
+  let routing: { route: Route; why: string; escalated?: boolean; escalatedWhy?: string } | undefined;
   try {
     // Claim extraction paid for once per exact piece of copy, for this generation only. Dies with
     // the request, so it can never hand back a classification from an older extractor.
@@ -1545,8 +1552,18 @@ async function runPlannedCarousel(opts: {
       ? await stage('bank_card', () => pickBankCard(opts.topic ?? '').catch(() => null))
       : null;
     if (card) console.log(`[studio/carousel] topic governed by bank card ${card.id} (${card.state})`);
-    const writeDeck = (saferAngle: boolean) => planCarousel({
-      saferAngle,
+    // WHICH PATH THIS POST TAKES. The user's question decides it — a matched card lends guardrails,
+    // never an agenda (that was today's other fix). A card that says the topic cannot be written
+    // without the agency's own figures is the one card signal that genuinely means "this needs
+    // data", so it is the only one that routes.
+    const route = opts.type === 'tips'
+      ? routeTopic(opts.topic ?? '', { cardRisky: card?.agencyRequired === true })
+      : { route: 'researched' as Route, why: 'a quote deck is the client\'s own words' };
+    routing = { route: route.route, why: route.why };
+    console.log(`[studio/carousel] route=${route.route} — ${route.why}`);
+
+    const writeDeck = (saferAngle: boolean, skipResearch = route.route === 'low') => planCarousel({
+      saferAngle, skipResearch,
       // The rewrite is the same topic on different arguments — it reuses the research rather than
       // paying for it twice and ending up with less than the first pass had.
       existingBrief: saferAngle ? research : undefined,
@@ -1590,9 +1607,9 @@ async function runPlannedCarousel(opts: {
        * then the deterministic table one last time. Caps and completeness run AFTER all of it,
        * once, so no mutation can reintroduce a chopped field.
        */
-      const refine = async (draft: typeof plan): Promise<typeof plan> => {
+      const refine = async (draft: typeof plan, editorOnly = false): Promise<typeof plan> => {
         plan = draft;
-        const gated = await stage('factual_gate', () => gatePlan(plan, {
+        const gated = editorOnly ? null : await stage('factual_gate', () => gatePlan(plan, {
           language: opts.language, topic: opts.topic ?? '', research,
           cardRules: card ? cardRules(card) : '',
           agencyEvidence: opts.agencyEvidence ?? '', uncovered,
@@ -1635,7 +1652,9 @@ async function runPlannedCarousel(opts: {
           plan = edit.plan;
 
           // THE EDITOR IS A WRITER TOO. Everything it rewrote is copy the claim gate never saw.
-          const regated = await stage('regate_after_editor', () => gatePlan(plan, {
+          // On a low-risk post there is no research to check it against; the escalation scan on the
+          // edited copy is what catches an editor that introduced something checkable.
+          const regated = editorOnly ? null : await stage('regate_after_editor', () => gatePlan(plan, {
             language: opts.language, topic: opts.topic ?? '', research,
             cardRules: card ? cardRules(card) : '',
             agencyEvidence: opts.agencyEvidence ?? '', uncovered,
@@ -1657,7 +1676,7 @@ async function runPlannedCarousel(opts: {
         // THE VERIFIED BANK, ON WHAT WILL ACTUALLY PUBLISH. The editor rewrites whole fields, and
         // five bank contradictions survived into final copy in the calibration run because the check
         // ran before it. A guardrail verified against primary sources is a hard block, always.
-        if (opts.type === 'tips' && claimQa) {
+        if (opts.type === 'tips' && claimQa && !editorOnly) {
           const finalClaims = await extractClaims(plan, opts.language, claimCache).catch(() => null);
           const finalMaterial = (finalClaims ?? []).filter((c) =>
             (POLICED_TYPES as readonly string[]).includes(c.type) && riskTier(c.text, c.type) === 'high');
@@ -1689,7 +1708,7 @@ async function runPlannedCarousel(opts: {
 
         // FINAL PUBLICATION GATE. The deterministic table is free, so run it once more on what will
         // actually publish and delete anything a primary source contradicts.
-        const late = planFields(plan).flatMap((f) => gateField(f.field, f.text, research))
+        const late = editorOnly ? [] : planFields(plan).flatMap((f) => gateField(f.field, f.text, research))
           .filter((h) => h.rule.severity === 'block');
         if (late.length) {
           claimQa = claimQa ?? { claims: 0, policed: 0, verdicts: {}, blocked: [], deterministic: [],
@@ -1716,7 +1735,37 @@ async function runPlannedCarousel(opts: {
         return plan;
       };
 
-      plan = await refine(plan);
+      // THE SECOND CHECK (Christian, 2026-09-08). A LOW topic is a statement about the QUESTION.
+      // The writer can still reach for a number — "Moraira prices have risen 23% this year" inside
+      // a post about why people love the place — and that claim would publish with no research
+      // behind it at all. So the finished copy is scanned, deterministically and for free, and a
+      // post that turns out to assert something checkable goes and gets it CHECKED. It is never
+      // quietly deleted: a strong factual point is worth verifying, not sterilising.
+      if (route.route === 'low') {
+        // THE READABILITY PASS STILL RUNS. Skipping research does not mean skipping the editor —
+        // this is the copy that ships most often, and the reader-first standard is the whole
+        // product. It touches no evidence, so it is safe on a post that has none.
+        plan = await refine(plan, true);
+        const esc = needsEscalation(plan);
+        if (!esc.escalate) {
+          console.log('[studio/carousel] low-risk post stayed low-risk — publishing without the evidence engine');
+          routing = { ...routing!, escalated: false };
+          lastPlan = plan;
+          // No refine(): no gate, no editor, no re-gate, no bank check. The structural pass at the
+          // end of this function still runs on it, so caps, CTA capability and deck invariants hold.
+        } else {
+          console.warn(`[studio/carousel] low-risk post made a checkable claim — ${esc.why}`);
+          for (const t of esc.triggers) console.warn(`    ${t.field}: "${t.text.slice(0, 90)}"`);
+          routing = { ...routing!, escalated: true, escalatedWhy: esc.why };
+          // Write it again WITH research, then refine normally. The cheap draft is spent, but the
+          // claim the writer wanted to make now has evidence behind it rather than being cut.
+          plan = await stage('escalated_rewrite', () => writeDeck(false, false));
+          lastPlan = plan;
+          plan = await refine(plan);
+        }
+      } else {
+        plan = await refine(plan);
+      }
 
       // INTENT FIDELITY. A live post promised "which one actually saves you money" and delivered
       // three slides about how pre-completion payments are protected — every one supportable, none
@@ -1861,12 +1910,16 @@ async function runPlannedCarousel(opts: {
     // WHAT THIS COST. Computed here so it counts every call the generation made, artwork included.
     // A month of spend could hide because nothing wrote this down; the threshold is observability
     // only and never kills a post half-written.
-    const warnAt = Number(process.env.STUDIO_COST_WARN_USD ?? '2');
+    // The warning line follows how deep the post actually went: a lifestyle post that skipped
+    // research and still cost thirty cents is worth looking at; a high-risk one is not.
+    const warnAt = budgetFor(routing?.escalated ? 'researched' : routing?.route)
+      ?? Number(process.env.STUDIO_COST_WARN_USD ?? '2');
     usage = summarise(currentEntries(), genId, Number.isFinite(warnAt) ? warnAt : 2);
     console.log(formatSummary(usage));
     if (usage.overThreshold) {
-      console.error(`[studio/cost] GENERATION OVER THRESHOLD — $${usage.totalCostUsd.toFixed(4)} `
-        + `against a $${usage.thresholdUsd?.toFixed(2)} warning line (generation ${genId})`);
+      console.error(`[studio/cost] ${routing?.route ?? 'unrouted'} generation unusually expensive — `
+        + `$${usage.totalCostUsd.toFixed(4)} against a $${usage.thresholdUsd?.toFixed(2)} warning line `
+        + `(generation ${genId}). Nothing was stopped; this is observability only.`);
     }
 
     await supabaseAdmin.from('image_generations').update({
@@ -1878,7 +1931,7 @@ async function runPlannedCarousel(opts: {
         ai_imagery: opts.type === 'tips' && isTipsImageStyle(usedStyle),
         image_paths: imagePaths, image_scheme: opts.scheme, per_slide_art: perSlideArt, artwork_source: artworkSource, artwork_error: artworkError, artwork_qa: artworkQa, copy_qa: copyQa, claim_qa: claimQa, requirement_coverage: coverage,
         timings: { ...timings, total_ms: Date.now() - t0 },
-        usage, fact_health: factHealth, rewrite,
+        usage, fact_health: factHealth, rewrite, routing,
         // The source ledger. Coverage and claim-support records reference these ids, so a published
         // sentence can be traced to the page it came off long after the run.
         research_sources: sources.map((x) => ({
@@ -1917,7 +1970,7 @@ async function runPlannedCarousel(opts: {
         engine: 'carousel', carousel_type: opts.type, failed: true,
         error: String((err as Error)?.message ?? err).slice(0, 600),
         timings: { ...timings, total_ms: Date.now() - t0 },
-        usage, fact_health: factHealth, rewrite,
+        usage, fact_health: factHealth, rewrite, routing,
         claim_qa: claimQa, copy_qa: copyQa, requirement_coverage: coverage,
         research_sources: sources.map((x) => ({
           source_id: x.id, url: x.url, title: x.title, domain: x.domain,

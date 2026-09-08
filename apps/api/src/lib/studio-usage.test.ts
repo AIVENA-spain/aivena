@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PRICES, costOf, formatSummary, summarise, type UsageEntry } from './studio-usage';
+import { PRICES, TIER_BUDGETS, budgetFor, costOf, formatSummary, summarise, type UsageEntry } from './studio-usage';
 
 /**
  * Studio wrote no token usage at all, so a month of spend could only be guessed at from character
@@ -109,5 +109,39 @@ describe('what a generation cost', () => {
     const out = formatSummary(summarise(entries, 'gen-1'));
     expect(out).toMatch(/\[studio\/cost\] \$\d+\.\d{4} · 4 calls/);
     expect(out).toContain('writer');
+  });
+});
+
+/**
+ * Provisional warning lines, deliberately. Christian, 2026-09-08: "do not treat $0.15/$0.30/$0.60
+ * as fixed targets or interrupt generations. We'll recalibrate them from real usage."
+ */
+describe('the cost warning line', () => {
+  it('expects a lifestyle post to cost less than a researched one', () => {
+    expect(TIER_BUDGETS.low).toBeLessThan(TIER_BUDGETS.researched);
+    expect(TIER_BUDGETS.researched).toBeLessThan(TIER_BUDGETS.high);
+  });
+
+  it('reads the line for a route', () => {
+    expect(budgetFor('low', {})).toBe(0.15);
+    expect(budgetFor('researched', {})).toBe(0.30);
+  });
+
+  it('can be recalibrated per environment while the numbers are still guesses', () => {
+    expect(budgetFor('low', { STUDIO_COST_WARN_LOW: '0.22' })).toBe(0.22);
+    expect(budgetFor('low', { STUDIO_COST_WARN_LOW: 'nonsense' })).toBe(0.15);
+    expect(budgetFor('low', { STUDIO_COST_WARN_LOW: '0' })).toBe(0.15);
+  });
+
+  it('has no line for a route it does not know, rather than inventing one', () => {
+    expect(budgetFor('something-else', {})).toBeUndefined();
+    expect(budgetFor(undefined, {})).toBeUndefined();
+  });
+
+  // The whole point: it annotates, it never stops anything.
+  it('only ever flags — the summary carries a threshold, not a decision', () => {
+    const over = summarise([entry({ stage: 'writer', costUsd: 0.9 })], 'g', 0.15);
+    expect(over.overThreshold).toBe(true);
+    expect(Object.keys(over)).not.toContain('cancelled');
   });
 });

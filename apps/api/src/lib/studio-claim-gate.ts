@@ -34,6 +34,7 @@ import {
   type Resolution,
 } from './studio-copy-gate';
 import { getCard, retrieveBankFacts } from './studio-bank-match';
+import { finishCopy } from './studio-publish';
 import {
   EXTRACTOR_VERSION, SUPPORT_TYPES, canonicalWithinExcerpt, checkCta, excerptOccursIn,
   rankFacts, riskTier,
@@ -1440,95 +1441,3 @@ export async function gatePlan<T extends PlanLike>(
   return { plan: finishCopy(current, report), report };
 }
 
-/**
- * The very last thing that touches the copy — caps, complete sentences, no dangling word.
- *
- * This used to live at the end of gatePlan, which meant the editor (and the final deterministic
- * pass) ran AFTER it and could reintroduce exactly what it had cleaned. A live post shipped a card
- * titled "Borrowing is getting more expensive, not" for precisely that reason: the check that
- * catches it had already run. Exported so the orchestrator can call it after everything else.
- */
-export function finishCopy<T extends PlanLike>(
-  plan: T, report?: GateReport, markets = '', capabilities = markets,
-): T {
-  let current = plan;
-  // A keyword the reader cannot connect to the post they just read is a leftover. "Comment ROUTE"
-  // closed a deck about new build versus resale.
-  const subject = `${readField(current, 'hook_title')} ${readField(current, 'eyebrow')} `
-    + `${readField(current, 'slide2_title')}`;
-  for (const f of planFields(current)) {
-    if (fieldPolicy(f.field) !== 'cta') continue;
-    const fitted = fitCtaKeyword(f.text, subject);
-    if (fitted !== f.text) {
-      current = writeField(current, f.field, fitted);
-      report?.blocked.push({ field: f.field, text: f.text, verdict: 'UNSUPPORTED',
-        problem: `the comment keyword "${ctaKeyword(f.text)}" has nothing to do with the post`,
-        outcome: `keyword changed to "${ctaKeyword(fitted)}"` });
-    }
-  }
-
-  // A CTA that promises a deliverable the agency has not said it produces is rewritten into the
-  // conversation it should have been. It never fails a post: the marketing survives, the invented
-  // service does not.
-  for (const f of planFields(current)) {
-    if (fieldPolicy(f.field) !== 'cta') continue;
-    const d = checkCta(f.text, capabilities);
-    if (d.ok) continue;
-    current = writeField(current, f.field, d.rewrite);
-    report?.blocked.push({ field: f.field, text: f.text, verdict: 'UNSUPPORTED',
-      problem: d.why, outcome: `rewritten as a conversation: "${d.rewrite}"` });
-  }
-  // Hashtags publish with every post and nothing walked them until now. Structural and brand
-  // sanity only — the factual verifier has no business reading the word "Desliza".
-  const tagged = current as unknown as { hashtags?: string[] };
-  if (Array.isArray(tagged.hashtags)) {
-    const { tags, removed } = checkHashtags(tagged.hashtags, markets);
-    if (removed.length) {
-      current = { ...current, hashtags: tags } as T;
-      for (const r of removed) {
-        report?.blocked.push({ field: 'hashtags', text: r.tag, verdict: 'UNSUPPORTED',
-          problem: r.why, outcome: 'hashtag removed' });
-      }
-    }
-  }
-  for (const f of planFields(current)) {
-    const cap = capFor(f.field);
-    if (cap && f.text.length > cap) {
-      const whole = shortenToBoundary(f.text, cap);
-      if (whole !== null) current = writeField(current, f.field, whole);
-      else if (/^tips\[\d+\]\./.test(f.field)) {
-        // No boundary to cut at. A slide is droppable; a fragment is not shippable.
-        const idx = Number(/^tips\[(\d+)\]/.exec(f.field)?.[1] ?? -1);
-        const tips = [...(current.tips ?? [])];
-        if (tips[idx]) { tips[idx] = { ...tips[idx], body: '' }; current = { ...current, tips } as T; }
-        report?.blocked.push({ field: f.field, text: f.text, verdict: 'OVER_CAP',
-          problem: `${f.text.length} characters against a cap of ${cap}, with no sentence or clause `
-            + `boundary inside it`, outcome: 'slide removed — cutting it would have shipped a fragment' });
-      } else {
-        // Left long and reported. A field that renders slightly over is a layout problem; a field
-        // cut mid-phrase is a lie about what the writer said.
-        report?.blocked.push({ field: f.field, text: f.text, verdict: 'OVER_CAP',
-          problem: `${f.text.length} characters against a cap of ${cap}, with no boundary to shorten at`,
-          outcome: 'left whole — never cut mid-phrase' });
-      }
-    }
-  }
-  // A prose card still stopping mid-sentence is cut back to its last complete sentence. Losing a
-  // clause beats publishing a fragment; this only runs when a rewrite could not fit the point.
-  for (const f of planFields(current)) {
-    if (incompleteBody(f.field, f.text)) {
-      const whole = f.text.replace(/\s*[^.!?…]*$/, '').trim();
-      if (whole.length >= 40) {
-        current = writeField(current, f.field, whole);
-        if (report) report.dropped++;
-      }
-    }
-  }
-  for (const f of planFields(current)) {
-    if (endsMidThought(f.text)) {
-      current = writeField(current, f.field,
-        f.text.replace(/\s+\S+$/, '').replace(/[\s,;:—–-]+$/, ''));
-    }
-  }
-  return current;
-}

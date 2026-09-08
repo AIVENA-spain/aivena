@@ -1167,27 +1167,63 @@ export function removeClaim<T extends PlanLike>(
 ): { plan: T; outcome: 'sentence removed' | 'slide removed' | 'left' } {
   const before = readField(plan, field);
   const isProse = /(?:\.body|slide2_body|caption)$/.test(field);
+  const tip = /^tips\[(\d+)\]\./.exec(field);
+  /** Take the whole slide out of the deck. Removal means removal. */
+  const dropSlide = (i: number): { plan: T; outcome: 'slide removed' } | null => {
+    const tips = [...(plan.tips ?? [])];
+    if (!tips[i]) return null;
+    tips.splice(i, 1);
+    return { plan: { ...plan, tips } as T, outcome: 'slide removed' };
+  };
+
   if (isProse) {
     const after = dropSentence(before, text);
     if (after !== before && after.trim().length >= 40) {
+      // TITLE AND BODY ARE ONE CLAIM (Christian 2026-09-07). Taking the sentence out of the body
+      // while the headline still asserts it published "Community fees follow a fixed share, not a
+      // vote on the day" over a body that no longer said so — the guardrail fired at the sentence
+      // and missed the headline the sentence existed to support. If the title still carries the
+      // claim we just refused, the slide goes with it.
+      if (tip) {
+        const title = (plan.tips ?? [])[Number(tip[1])]?.title ?? '';
+        if (claimTouchesRequirement(title, text)) {
+          const dropped = dropSlide(Number(tip[1]));
+          if (dropped) return dropped;
+        }
+      }
       return { plan: writeField(plan, field, after), outcome: 'sentence removed' };
     }
   }
-  const tip = /^tips\[(\d+)\]\./.exec(field);
   if (tip) {
-    const tips = [...(plan.tips ?? [])];
-    const i = Number(tip[1]);
-    if (tips[i]) {
-      // Blank the body: the survival filter that runs at the end of the gate drops the slide.
-      tips[i] = { ...tips[i], body: '' };
-      return { plan: { ...plan, tips } as T, outcome: 'slide removed' };
-    }
+    // This used to blank the body and trust "the survival filter at the end of the gate" to drop
+    // the slide. That filter runs inside gatePlan, BEFORE finishCopy and before the two passes the
+    // orchestrator runs last, so anything blanked after it published as a headline over an empty
+    // card — a live deck shipped a 113-character title with no body underneath it.
+    const dropped = dropSlide(Number(tip[1]));
+    if (dropped) return dropped;
   }
   if (isProse) {
     const after = dropSentence(before, text);
     if (after !== before) return { plan: writeField(plan, field, after), outcome: 'sentence removed' };
   }
   return { plan, outcome: 'left' };
+}
+
+/**
+ * The deck's structural invariant, applied after every pass that can change the copy.
+ *
+ * A tip needs both halves: PlanSchema requires a non-empty body, so a headline over an empty card
+ * is not a shorter slide, it is a broken one that also cannot be reopened for editing. Idempotent
+ * and deterministic — safe to run as the last thing before anything is stored or rendered.
+ * Removing a slide renumbers the deck for free, because every count is read off `tips.length`.
+ */
+export function settleDeck<T extends PlanLike>(plan: T, report?: { dropped: number }): T {
+  const tips = plan.tips ?? [];
+  if (!tips.length) return plan;
+  const kept = tips.filter((t) => (t?.body ?? '').trim().length > 0 && (t?.title ?? '').trim().length >= 3);
+  if (kept.length === tips.length) return plan;
+  if (report) report.dropped += tips.length - kept.length;
+  return { ...plan, tips: kept } as T;
 }
 
 

@@ -32,8 +32,9 @@ import {
 } from '../../../../studio/engine/carouselStyles';
 import type { CarouselBrand } from '../../../../studio/engine/renderCarousel';
 import { planCarousel, editPlan, remixHook, topicIdeas, listingCopy, listingStory, pickBankCard, PlanSchema, normalisePlan, type Audience } from '../lib/studio-carousel-plan';
-import { POLICED_TYPES, checkBankContradictions, checkIntent, extractClaims, finishCopy, gatePlan,
+import { POLICED_TYPES, checkBankContradictions, checkIntent, extractClaims, gatePlan,
   type ExtractedClaim, type GateReport } from '../lib/studio-claim-gate';
+import { finishCopy } from '../lib/studio-publish';
 import { cardRules, retrieveBankFacts } from '../lib/studio-bank-match';
 import { gateField, planFields, readField, removeClaim, writeField,
   type RequirementCoverage } from '../lib/studio-copy-gate';

@@ -15,7 +15,10 @@ import { carouselAction, carouselRemixAction, carouselTopicIdeasAction, carousel
  */
 
 type CarouselType = "listing" | "tips" | "quote";
-type Phase = "type" | "pick" | "form" | "working" | "result";
+type Phase = "type" | "pick" | "form" | "working" | "result" | "unfinished";
+
+/** A slide that survived a generation that could not finish. Text only — nothing is rendered. */
+interface DraftSlide { order: number; title: string; body: string }
 
 interface Plan {
   type: "tips" | "quote";
@@ -149,6 +152,11 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
   const [hashtags, setHashtags] = useState<string[]>([]);
   const [plan, setPlan] = useState<Plan | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  // What survived a generation that could not finish, and the one line explaining why.
+  const [draftSlides, setDraftSlides] = useState<DraftSlide[]>([]);
+  const [failNote, setFailNote] = useState("");
+  const [showDraft, setShowDraft] = useState(false);
+  const lastBody = useRef<Parameters<typeof carouselAction>[0] | null>(null);
   const [sections, setSections] = useState<string[]>([]);
   const [section, setSection] = useState("");
   const [saved, setSaved] = useState(false);
@@ -271,7 +279,16 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
       const s = await statusAction(id);
       const st = s.ok ? (s.status as string) : null;
       if (st === "completed") { showResult(s); return; }
-      if (st === "failed") { setErr((s.message as string) ?? "That didn't come out — please try again."); setPhase(ctype === "listing" ? "pick" : "form"); return; }
+      if (st === "failed") {
+        // Christian 2026-09-07: a failed generation must not disappear, and must not be dressed up
+        // as a finished one. Keep whatever survived, show it as an unfinished draft, and offer the
+        // two ways forward.
+        const kept = Array.isArray(s.draft_slides) ? (s.draft_slides as DraftSlide[]) : [];
+        setDraftSlides(kept);
+        setFailNote(typeof s.message === "string" ? s.message : "");
+        setPhase("unfinished");
+        return;
+      }
       // The browser losing patience is not the generation failing. Hand it to the global widget,
       // which reads the record from the server, and give the agent their Studio back.
       if (Date.now() - started > 240_000) { setPhase(ctype === "listing" ? "pick" : "form"); return; }
@@ -281,6 +298,7 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
   }
 
   async function start(body: Parameters<typeof carouselAction>[0], backTo: Phase) {
+    lastBody.current = body;          // so "Try again" repeats exactly what was asked for
     setErr(null); setSaved(false); setSection("");
     setPhase("working");
     const res = await carouselAction(body);
@@ -666,6 +684,67 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
             <p className="max-w-xs text-center text-xs text-muted-foreground">
               You can keep working — we&apos;ll show it in the corner when it&apos;s ready.
             </p>
+          )}
+        </div>
+      )}
+
+      {/*
+        COULDN'T FINISH — Christian 2026-09-07: "save what worked, but don't pretend it's finished."
+        A failed generation used to vanish into a red banner on the form. What survived is kept and
+        shown plainly as a draft, never as a carousel. The two ways forward are the two that
+        actually help: the same angle again, or a wider one.
+      */}
+      {phase === "unfinished" && (
+        <div className="mx-auto max-w-lg py-16">
+          <h2 className="text-lg font-medium">Couldn&apos;t finish this angle</h2>
+          <p className="mt-1 text-sm text-muted-foreground">We saved the useful parts.</p>
+          {failNote && <p className="mt-3 text-sm text-neutral-500">{failNote}</p>}
+
+          <div className="mt-6 flex flex-wrap gap-2">
+            <button
+              onClick={() => {
+                setShowDraft(false);
+                if (lastBody.current) void start(lastBody.current, "form"); else setPhase("form");
+              }}
+              className="rounded-md bg-foreground px-3 py-2 text-sm text-background"
+            >
+              Try again
+            </button>
+            <button
+              onClick={() => { setShowDraft(false); setPhase("form"); }}
+              className="rounded-md border border-border px-3 py-2 text-sm"
+            >
+              Try a broader angle
+            </button>
+            {draftSlides.length > 0 && (
+              <button
+                onClick={() => setShowDraft((v) => !v)}
+                className="rounded-md border border-border px-3 py-2 text-sm"
+              >
+                {showDraft ? "Hide what worked" : "View what worked"}
+              </button>
+            )}
+          </div>
+
+          {showDraft && draftSlides.length > 0 && (
+            <div className="mt-6 rounded-lg border border-border p-4">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                Incomplete draft — not ready to post
+              </p>
+              <ol className="mt-3 space-y-4">
+                {draftSlides.map((d) => (
+                  <li key={d.order} className="flex gap-3">
+                    <span className="mt-0.5 w-5 shrink-0 text-sm tabular-nums text-muted-foreground">
+                      {d.order}
+                    </span>
+                    <div>
+                      <p className="text-sm font-medium">{d.title}</p>
+                      <p className="mt-0.5 text-sm text-neutral-600">{d.body}</p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </div>
           )}
         </div>
       )}

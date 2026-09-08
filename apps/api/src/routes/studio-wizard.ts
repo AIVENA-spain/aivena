@@ -329,6 +329,8 @@ type GenRow = {
   raw_request: Record<string, unknown> | null;
   created_at: string;
   completed_at: string | null;
+  /** the engine's own words about why it stopped — only shown when written for the agent */
+  failure_reason?: string | null;
 };
 
 function metaNum(meta: Record<string, unknown> | null, ...path: string[]): number | null {
@@ -444,6 +446,13 @@ route.get('/active', async (c) => {
   }
 });
 
+/**
+ * Failure text written FOR the agent, in the language of the product. Anything else — a stack
+ * message, an insert error, a timeout string — is replaced with the plain line, so internal
+ * vocabulary ("unsupported claim", "bank contradiction", "evidence") can never reach the screen.
+ */
+const FRIENDLY_FAILURE = /^Not enough reliable information for this angle yet/i;
+
 // ── GET /api/studio/status/:id — poll (DB read, RLS-fenced) ────────────────
 route.get('/status/:id', async (c) => {
   const tx = c.get('tx');
@@ -452,7 +461,7 @@ route.get('/status/:id', async (c) => {
   try {
     const result = await tx.execute(sql`
       SELECT id, status::text AS status, generation_type, result_image_url,
-             result_metadata, raw_request, created_at, completed_at
+             result_metadata, raw_request, created_at, completed_at, failure_reason
       FROM image_generations
       WHERE id = ${id}::uuid AND agency_id = ${agencyId}
       LIMIT 1
@@ -463,11 +472,23 @@ route.get('/status/:id', async (c) => {
     }
     const r = rows[0];
     if (r.status === 'failed') {
+      // WHAT SURVIVED (Christian 2026-09-07: "save what worked, but don't pretend it's finished").
+      // Text only — these slides were never rendered, and showing them as a carousel would claim a
+      // finished post. The reason is the friendly one the engine already wrote for the agent;
+      // anything technical stays in the record and never reaches the screen.
+      const meta = r.result_metadata as { plan?: { tips?: Array<{ title?: string; body?: string }> } } | null;
+      const draft = (meta?.plan?.tips ?? [])
+        .filter((t) => (t?.title ?? '').trim() && (t?.body ?? '').trim())
+        .map((t, i) => ({ order: i + 1, title: String(t.title), body: String(t.body) }));
+      const reason = r.failure_reason ?? '';
       return c.json({
         ok: true,
         id: r.id,
         status: 'failed',
-        message: "That image couldn't be generated. Please try again.",
+        // Only a reason written for the agent is shown; anything else falls back to the plain line.
+        message: FRIENDLY_FAILURE.test(reason) ? reason
+          : "That one didn't come together. Try it again, or come at the topic another way.",
+        draft_slides: draft,
       });
     }
     return c.json({ ok: true, ...shapeStatus(r) });

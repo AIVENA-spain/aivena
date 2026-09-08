@@ -34,6 +34,7 @@ import {
   type Resolution,
 } from './studio-copy-gate';
 import { getCard, retrieveBankFacts } from './studio-bank-match';
+import { modelFor, type Role } from './studio-models';
 import { finishCopy } from './studio-publish';
 import {
   EXTRACTOR_VERSION, SUPPORT_TYPES, canonicalWithinExcerpt, checkCta, excerptOccursIn,
@@ -135,13 +136,19 @@ export interface GateReport {
 
 // A gate step that fails silently is the bug this whole layer exists to fix. Every failure path
 // says which one it was, so a degraded run is never mistaken for a clean one.
-/** Every gate pass runs on this model; named once so the usage record and the call agree. */
-const MODEL = 'claude-sonnet-5';
-
+/**
+ * Which model a gate pass runs on is a property of the ROLE, not of this file.
+ *
+ * Every pass used to name `claude-sonnet-5` here, so "what would it cost to extract facts on a
+ * cheaper model?" could only be answered by editing the engine. The role travels with the call and
+ * resolves through configuration; the usage record then reports what actually ran, which is the
+ * only way an A/B of one role can be read afterwards.
+ */
 async function callTool(
   label: string, system: string, user: string, tool: Record<string, unknown>,
-  ms: number, maxTokens = 8000,
+  ms: number, maxTokens = 8000, role: Role = 'CLAIM_CLASSIFIER',
 ): Promise<Record<string, unknown> | null> {
+  const MODEL = modelFor(role);
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), ms);
   const why = (reason: string) => {
@@ -306,7 +313,7 @@ export async function assessCoverage(
                       : '(none recorded)')
     + `\n\nTHE REQUIREMENTS:\n`
     + requirements.map((r) => `${r.id}: ${r.text}`).join('\n'),
-    COVERAGE_TOOL, 120_000, 8000);
+    COVERAGE_TOOL, 120_000, 8000, 'RESEARCH_PLANNER');
   const list = out && coerceList(out.coverage, 'coverage');
   if (!list) return allUnestablished('coverage assessment unavailable');
 
@@ -399,7 +406,7 @@ a factual claim — it asserts nothing about the world.
 Split multi-sentence bodies into one entry per sentence. Copy each sentence VERBATIM and repeat the
 field address you were given exactly. Do not invent, merge or tidy sentences.`;
 
-const EXTRACTOR_MODEL = 'claude-sonnet-5';
+const EXTRACTOR_MODEL = modelFor('CLAIM_EXTRACTOR');
 
 /** A stable key for one exact piece of copy under one exact extractor. */
 function claimCacheKey(plan: PlanLike, language: string): string {
@@ -426,7 +433,7 @@ async function extractClaimsUncached(plan: PlanLike, language: string): Promise<
   if (!fields.length) return [];
   const body = fields.map((f) => `[${f.field}] ${f.text}`).join('\n');
   const out = await callTool('claim extraction', EXTRACT_SYSTEM,
-    `The post is written in ${language}. Classify every sentence.\n\n${body}`, EXTRACT_TOOL, 120_000);
+    `The post is written in ${language}. Classify every sentence.\n\n${body}`, EXTRACT_TOOL, 120_000, 8000, 'CLAIM_EXTRACTOR');
   const list = out && coerceList(out.claims, 'claims');
   if (!list) {
     if (out) console.warn('[studio/gate] claim extraction returned an unreadable shape');
@@ -567,7 +574,7 @@ export async function validateClaims(
   ].join('\n');
   // A verdict list is short; the prose around it is not. Leaving out problem/rewrite for everything
   // that passed is what keeps the payload inside the budget on a 20-claim post.
-  const out = await callTool('claim validation', VALIDATE_SYSTEM, user, VALIDATE_TOOL, 150_000, 16_000);
+  const out = await callTool('claim validation', VALIDATE_SYSTEM, user, VALIDATE_TOOL, 150_000, 16_000, 'CLAIM_CLASSIFIER');
   const list = out && coerceList(out.verdicts, 'verdicts');
   if (!list) {
     if (out) console.warn('[studio/gate] claim validation returned an unreadable shape');
@@ -670,7 +677,7 @@ export async function extractSourceFacts(
       // 45 SECONDS, NOT 180. A profile spent 180 of a 415-second generation waiting on three
       // pages that never answered — 43% of the run, producing nothing. A page that has not been
       // read in 45 seconds is not going to be.
-      FACTS_TOOL, 45_000, 4000);
+      FACTS_TOOL, 45_000, 4000, 'FACT_EXTRACTOR');
     const list = out && coerceList(out.facts, 'facts');
     if (!list) {
       failed++;
@@ -882,7 +889,7 @@ export async function supportClaims(
       + `THE BRIEFING THE POST WAS WRITTEN FROM:\n${ctx.research || '(no research was done)'}\n\n`
       + `WHAT THE AGENCY ITSELF TOLD US:\n${ctx.agencyEvidence}`
       + `${bankLines}${reqLines}\n\nTHE CLAIMS:\n${numbered}`,
-      SUPPORT_TOOL, 120_000, 4000);
+      SUPPORT_TOOL, 120_000, 4000, 'EVIDENCE_MATCHER');
     const list = out && coerceList(out.supports, 'supports');
     if (!list) { missing = true; continue; }
     for (const r of list) {
@@ -986,7 +993,7 @@ export async function checkIntent(
     + `THE CLOSING LINE: ${String((plan as Record<string, unknown>).recap_title ?? '')}\n`
     + `THE CAPTION: ${String((plan as Record<string, unknown>).caption ?? '')}\n\n`
     + `The post language is ${language}.`,
-    INTENT_TOOL, 90_000, 2000);
+    INTENT_TOOL, 90_000, 2000, 'INTENT_CHECKER');
   if (!out) return null;
   return {
     promise: String(out.promise ?? ''),
@@ -1057,7 +1064,7 @@ export async function checkBankContradictions(
   const bank = [...facts].map(([id, t]) => `${id}: ${t}`).join('\n');
   const out = await callTool('bank contradiction', CONTRADICTION_SYSTEM,
     `VERIFIED STATEMENTS:\n${bank}\n\nTHE POST'S CLAIMS:\n${numbered}`,
-    CONTRADICTION_TOOL, 120_000, 6000);
+    CONTRADICTION_TOOL, 120_000, 6000, 'BANK_CHECKER');
   const list = out && coerceList(out.findings, 'findings');
   // FAILS CLOSED IN THE OTHER DIRECTION on purpose: if this check cannot run we do not invent
   // contradictions, we record that it did not run. Blocking every claim because a model timed out
@@ -1155,7 +1162,7 @@ async function repairFields(
       ctx.research ? `\nWhat the research established (use it — do not quote it):\n${ctx.research}` : '',
       ctx.agencyEvidence ? `\n${ctx.agencyEvidence}` : '',
       `\nRewrite these fields:\n\n${asks}`].join('\n'),
-    REPAIR_TOOL, 150_000);
+    REPAIR_TOOL, 150_000, 8000, 'HIGH_RISK_ADJUDICATOR');
   const list = out && coerceList(out.fields, 'fields');
   if (!list) return plan;
   let next = plan;

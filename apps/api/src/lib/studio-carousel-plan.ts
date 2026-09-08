@@ -11,6 +11,8 @@ import { assessCoverage, extractSourceFacts } from './studio-claim-gate';
 import { coverageGaps, requirementsFor, type RequirementCoverage } from './studio-copy-gate';
 import type { BankCard } from './studio-bank.generated';
 import { buildPalette } from './studio-palette';
+import { modelFor } from './studio-models';
+import { LOW_RISK_BRIEF } from './studio-risk-route';
 import { classifySource, domainOf, policyUnmetFor, riskOf, SOURCE_POLICY,
   type SourceFact,
   type ResearchSource as Source, type RiskClass } from './studio-evidence';
@@ -532,7 +534,7 @@ async function researchTopic(
           stop_reason?: string;
           content?: Array<{ type: string; text?: string; content?: unknown }>;
         };
-        recordUsage('research', 'claude-sonnet-5', (data as { usage?: RawUsage }).usage, Date.now() - usageStarted_research);
+        recordUsage('research', modelFor('RESEARCH_PLANNER'), (data as { usage?: RawUsage }).usage, Date.now() - usageStarted_research);
         // Two different things, and the difference is the whole point. A search RESULT is a
         // pointer somebody's index returned. A FETCH is the page itself, read, with its text in
         // hand — the only thing an excerpt can be checked against. Both are recorded; only the
@@ -598,7 +600,7 @@ async function researchTopic(
   // 900 was not enough: the model can spend the whole budget reasoning and return no text at all,
   // which reads as "nothing to research" and silently costs the post its facts.
   const q = await call('questions', {
-    model: 'claude-sonnet-5', max_tokens: 2500,
+    model: modelFor('RESEARCH_PLANNER'), max_tokens: 2500,
     messages: [{ role: 'user', content:
       `An estate agency on ${region} is writing an Instagram carousel of practical tips for buyers and owners on this topic:\n\n"${topic}"\n\n` +
       `List the 3-5 questions someone would need answered to write ACCURATE, genuinely useful tips on it — the mechanics that decide whether the advice is right. ` +
@@ -654,7 +656,7 @@ async function researchTopic(
 
   // 2 — answer them, with live search, and say plainly what could not be established
   const f = await call('findings', {
-    model: 'claude-sonnet-5', max_tokens: 2400,
+    model: modelFor('RESEARCH_PLANNER'), max_tokens: 2400,
     output_config: { effort: 'low' },
     tools: [
       { type: 'web_search_20250305', name: 'web_search', max_uses: 5 },
@@ -718,7 +720,7 @@ async function researchTopic(
     console.warn(`[studio/carousel] ${risk} topic and nothing authoritative was opened — `
       + `enforcement pass ${attempt + 1}`);
     const forced = await call('sourcing', {
-      model: 'claude-sonnet-5', max_tokens: 2400,
+      model: modelFor('RESEARCH_PLANNER'), max_tokens: 2400,
       output_config: { effort: 'low' },
       tools: [
         { type: 'web_search_20250305', name: 'web_search', max_uses: 4 },
@@ -826,7 +828,7 @@ export async function pickBankCard(topic: string): Promise<BankCard | null> {
       method: 'POST', signal: ctl.signal,
       headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-5', max_tokens: 24,
+        model: modelFor('CARD_MATCHER'), max_tokens: 24,
         system: 'You match a writer\'s topic to a catalogue of researched questions. The topic may be '
           + 'in any language; the catalogue is in English. Reply with the single best id (e.g. "B12") '
           + 'when the catalogue genuinely covers the same ground, or exactly NONE when it does not. '
@@ -837,7 +839,7 @@ export async function pickBankCard(topic: string): Promise<BankCard | null> {
     });
     if (res.ok) {
       const data = await res.json() as { content?: { type: string; text?: string }[] };
-    recordUsage('bank_card', 'claude-sonnet-5', (data as { usage?: RawUsage }).usage, Date.now() - usageStarted_bank_card);
+    recordUsage('bank_card', modelFor('CARD_MATCHER'), (data as { usage?: RawUsage }).usage, Date.now() - usageStarted_bank_card);
       const reply = (data.content ?? []).filter((c) => c.type === 'text').map((c) => c.text ?? '').join(' ');
       if (/\bNONE\b/i.test(reply)) return null;
       const card = inScope(getCard(parseCardPick(reply)));
@@ -877,6 +879,12 @@ export async function planCarousel(opts: {
   cardId?: string;
   /** the card's must_establish list, for the same purpose */
   cardMustList?: string[];
+  /**
+   * Skip research entirely — this topic asserts nothing a reader could act on and find false.
+   * The writer gets a brief in place of a palette. Whether the COPY stayed low-risk is checked
+   * afterwards, on what was actually written; this flag is about the question, not the answer.
+   */
+  skipResearch?: boolean;
   /** reports back which requirements the research did NOT establish, for the validator, and the
    *  full per-requirement assessment — id, status, the sentence that establishes it, the pages it
    *  came from. A gap that is only ever counted cannot be audited afterwards. */
@@ -923,7 +931,9 @@ export async function planCarousel(opts: {
   // Find out BEFORE writing. Never fatal: if research fails or times out the deck is still written,
   // just from the model's own knowledge as it always was — a slow search must not cost an agent
   // their post.
-  const brief = opts.existingBrief !== undefined
+  const brief = opts.skipResearch
+    ? ''
+    : opts.existingBrief !== undefined
     ? opts.existingBrief
     : opts.type === 'tips' && opts.topic
     ? await researchTopic(opts.topic, lang, region, opts.marketBrief ?? '', opts.cardMust ?? '',
@@ -952,7 +962,9 @@ export async function planCarousel(opts: {
   const needFacts = researchSources.some((x) => x.opened);
   const [assessed] = await Promise.all([
     (async () => {
-      if (!opts.cardId || !opts.cardMustList?.length) return null;
+      // Nothing was researched, so there is no coverage to assess — asking would spend a call to be
+      // told that every requirement is unestablished, which is true and useless.
+      if (opts.skipResearch || !opts.cardId || !opts.cardMustList?.length) return null;
       const requirements = requirementsFor(opts.cardId, opts.cardMustList);
       const got = await assessCoverage(requirements, brief, researchSources)
         .catch(() => ({ coverage: [], degraded: 'coverage assessment threw' }));
@@ -1070,6 +1082,8 @@ CAROUSEL DOCTRINE (how these posts win — follow it):
 - EVERY FACTUAL CLAIM MUST BE TRUE. Claims are wanted — vague advice is worthless — but a wrong one destroys trust.
 ${palette ? `
 ${palette}
+` : ''}${opts.skipResearch ? `
+${LOW_RISK_BRIEF}
 ` : ''}${saferBlock}${brief ? `
 ${/^\s*PREMISE FAILS/m.test(brief) ? `THE STARTING IDEA WAS REJECTED. The research below contradicts the claim the topic was built on.
 Treat the topic ONLY as a pointer to the subject area — never as the angle, never as the headline to
@@ -1117,7 +1131,7 @@ Submit with the submit_carousel tool.`;
       method: 'POST',
       headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-5',
+        model: modelFor('WRITER'),
         // A five-slide plan carries title, body, teaser and an image scene per slide on top of the
         // cover, the second cover, the recap, the CTA block and the caption. At 4000 the model ran
         // out mid-object, the tool input came back truncated, and `tips` arrived as a half-written
@@ -1137,7 +1151,7 @@ Submit with the submit_carousel tool.`;
     const data = (await res.json()) as {
       stop_reason?: string; content?: { type: string; input?: unknown }[];
     };
-    recordUsage('writer', 'claude-sonnet-5', (data as { usage?: RawUsage }).usage, Date.now() - usageStarted_writer);
+    recordUsage('writer', modelFor('WRITER'), (data as { usage?: RawUsage }).usage, Date.now() - usageStarted_writer);
     // A truncated plan is not an invalid plan, and telling the model its schema was wrong when it
     // simply ran out of room sent it round the retry loop fixing something that was never broken.
     if (data.stop_reason === 'max_tokens') {
@@ -1348,14 +1362,14 @@ Submit with the submit_edited_plan tool.`;
       method: 'POST',
       headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-5', max_tokens: 3000,
+        model: modelFor('EDITOR'), max_tokens: 3000,
         tools: [EDIT_TOOL], tool_choice: { type: 'tool', name: 'submit_edited_plan' },
         messages: [{ role: 'user', content: prompt }],
       }),
     });
     if (!res.ok) return { outcome: res.status === 408 || res.status === 504 ? 'TIMED_OUT' : 'FAILED', why: `http_${res.status}` };
     const data = (await res.json()) as { content?: { type: string; input?: unknown }[] };
-    recordUsage('editor', 'claude-sonnet-5', (data as { usage?: RawUsage }).usage, Date.now() - usageStarted_editor);
+    recordUsage('editor', modelFor('EDITOR'), (data as { usage?: RawUsage }).usage, Date.now() - usageStarted_editor);
     const raw = unesc(data.content?.find((c) => c.type === 'tool_use')?.input) as Record<string, unknown> | undefined;
     if (!raw) return { outcome: 'MALFORMED', why: 'the editor returned no tool call' };
     const notes = Array.isArray(raw.review_notes)
@@ -1482,14 +1496,14 @@ export async function listingStory(opts: {
       method: 'POST',
       headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-5', max_tokens: 1600,
+        model: modelFor('WRITER'), max_tokens: 1600,
         tools: [STORY_TOOL], tool_choice: { type: 'tool', name: 'submit_story' },
         messages: [{ role: 'user', content }],
       }),
     });
     if (!res.ok) return null;
     const data = (await res.json()) as { content?: { type: string; input?: unknown }[] };
-    recordUsage('listing_story', 'claude-sonnet-5', (data as { usage?: RawUsage }).usage, Date.now() - usageStarted_listing_story);
+    recordUsage('listing_story', modelFor('WRITER'), (data as { usage?: RawUsage }).usage, Date.now() - usageStarted_listing_story);
     const input = unesc(data.content?.find((c) => c.type === 'tool_use')?.input) as Partial<ListingStory> | undefined;
     if (!input || typeof input.hook !== 'string' || !Array.isArray(input.photo_lines)) return null;
     const clean = (x: unknown, max: number) => (typeof x === 'string' ? x.trim().slice(0, max) : '');
@@ -1536,7 +1550,7 @@ The hook is the reason to stop: the lifestyle benefit, never the spec sheet. The
       method: 'POST',
       headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-5',
+        model: modelFor('WRITER'),
         max_tokens: 1500,
         tools: [LISTING_TOOL],
         tool_choice: { type: 'tool', name: 'submit_listing_copy' },
@@ -1545,7 +1559,7 @@ The hook is the reason to stop: the lifestyle benefit, never the spec sheet. The
     });
     if (!res.ok) return null;
     const data = (await res.json()) as { content?: { type: string; input?: unknown }[] };
-    recordUsage('listing_copy', 'claude-sonnet-5', (data as { usage?: RawUsage }).usage, Date.now() - usageStarted_listing_copy);
+    recordUsage('listing_copy', modelFor('WRITER'), (data as { usage?: RawUsage }).usage, Date.now() - usageStarted_listing_copy);
     const input = unesc(data.content?.find((c) => c.type === 'tool_use')?.input) as Partial<ListingCopy> | undefined;
     if (!input || typeof input.hook !== 'string' || typeof input.caption !== 'string') return null;
     const clean = (s: unknown, max: number) => (typeof s === 'string' ? s.trim().slice(0, max) : '');
@@ -1602,14 +1616,14 @@ Submit with the submit_remix tool.`;
       method: 'POST',
       headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-5', max_tokens: 600,
+        model: modelFor('WRITER'), max_tokens: 600,
         tools: [REMIX_TOOL], tool_choice: { type: 'tool', name: 'submit_remix' },
         messages: [{ role: 'user', content: prompt }],
       }),
     });
     if (!res.ok) return null;
     const data = (await res.json()) as { content?: { type: string; input?: unknown }[] };
-    recordUsage('remix_hook', 'claude-sonnet-5', (data as { usage?: RawUsage }).usage, Date.now() - usageStarted_remix_hook);
+    recordUsage('remix_hook', modelFor('WRITER'), (data as { usage?: RawUsage }).usage, Date.now() - usageStarted_remix_hook);
     const input = unesc(data.content?.find((c) => c.type === 'tool_use')?.input) as Record<string, unknown> | undefined;
     const out = z.object({
       eyebrow: z.string().min(1).max(44),
@@ -1917,14 +1931,14 @@ Submit with the submit_ideas tool.`;
       method: 'POST',
       headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-5', max_tokens: 700,
+        model: modelFor('WRITER'), max_tokens: 700,
         tools: [IDEAS_TOOL], tool_choice: { type: 'tool', name: 'submit_ideas' },
         messages: [{ role: 'user', content: prompt }],
       }),
     });
     if (!res.ok) return null;
     const data = (await res.json()) as { content?: { type: string; input?: unknown }[] };
-    recordUsage('topic_ideas', 'claude-sonnet-5', (data as { usage?: RawUsage }).usage, Date.now() - usageStarted_topic_ideas);
+    recordUsage('topic_ideas', modelFor('WRITER'), (data as { usage?: RawUsage }).usage, Date.now() - usageStarted_topic_ideas);
     const input = unesc(data.content?.find((c) => c.type === 'tool_use')?.input) as { topics?: unknown } | undefined;
     const topics = Array.isArray(input?.topics)
       ? input.topics.filter((t): t is string => typeof t === 'string' && t.trim().length >= 10).map((t) => t.trim().slice(0, 160)).slice(0, 6)

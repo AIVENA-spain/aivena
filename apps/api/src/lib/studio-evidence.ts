@@ -213,10 +213,17 @@ const LEGAL_TAX = [
   /\b(?:deadline|filing period|within (?:one|two|three|four|six|\d+) (?:month|months|years?|days?)|fine|fined|penalty|penalties|sanction|surcharge)\b/i,
   /\b(?:licence|license|permit|c[eé]dula|habitation certificate|planning|inheritance|notary|notario|escritura|arras|deposit contract|eviction|desahucio|okupa\w*|usurpaci[oó]n|allanamiento|morada|squatt\w*)\b/i,
   /\b(?:residency|resident status|non-resident|visa|NIE|padr[oó]n|empadron\w*)\b/i,
+  // Planning and heritage protection. "The old town is a protected zone, so you cannot change the
+  // façade" is a rule of law with a real cost attached, and the list knew "licence" and "planning"
+  // but not the words anyone actually uses for it. B22 names this exact restriction.
+  /\b(?:protected (?:zone|area|building|status)|conservation area|listed building|heritage (?:listing|protection|site)|catalogu\w*|bien de inter[eé]s cultural|PGOU|zoning|urban[ií]stic\w*|urbanism|conjunto hist[oó]rico)\b/i,
 ];
 const MARKET_STATS = [
   /\d\s?%|\bper cent\b|\bpercent\b/i,
   /\b(?:price|prices|priced|index|indices|transactions?|sales volume|volume|turnover|average|median|growth|grew|fell|rose|climbed|declined|dropped)\b/i,
+  // "What does a golf urbanisation COST per year" read as no-risk at all, because the list knew
+  // "price" and not the ordinary words people use for the same thing.
+  /\b(?:costs?|cost of|fees?|charges?|service charge|comunidad|cheaper|dearer|more expensive|less expensive|pricier|affordab\w*)\b/i,
   /\b(?:euribor|mortgage rate|interest rate|loan-to-value|yield|affordability)\b/i,
   /\b(?:largest|biggest|leading|leads?|lead the|top|ranked?|ranking|ahead of|overtaken|overtook|outnumber\w*|majority|share of)\b/i,
   /\b(?:british|dutch|german|belgian|polish|french|scandinavian|foreign)\s+(?:buyers?|owners?|purchasers?)\b/i,
@@ -284,6 +291,12 @@ const HAS_FIGURE = /(?:\d[\d.,]*\s?%|\b\d[\d.,]*\s?(?:€|eur|euros?|k|m|million
 const QUANTIFIED_CHANGE = /\b(?:doubl\w*|tripl\w*|quadrupl\w*|halv\w*|multipli\w*|ten ?fold|fivefold|per capita)\b/i;
 /** A ranking or a superlative about a group — "the British still lead the province". */
 const RANKING = /\b(?:largest|biggest|leading|leads?\b|lead the|top(?:s)?\b|ranked?|ranking|first place|ahead of|overtaken|overtook|outnumber\w*|majority|most (?:buyers|owners|sales|popular)|fastest|highest|lowest|cheapest)\b/i;
+/**
+ * A comparison of what things cost, with or without a number in it. "Resort prices per square metre
+ * sit above the old town here" states a market fact as firmly as any figure does, and it is exactly
+ * the claim B22 exists to guard — it read as medium risk because it contains no digits.
+ */
+const PRICE_COMPARISON = /\b(?:price|prices|priced|cost|costs|fees?|rent|rents|value|values|€|per (?:square )?met(?:re|er)|per m2|per m²)\b[^.!?]{0,60}\b(?:above|below|higher|lower|cheaper|dearer|more|less|beat\w*|exceed\w*|under|over|than|compared|versus|vs\.?)\b/i;
 /** Money the reader will or will not have. */
 const FINANCIAL_OUTCOME = /\b(?:you (?:will |'ll )?(?:pay|owe|save|lose|get back|receive|keep)|costs? you|refund|reclaim|withhold\w*|deposit|fee|commission|tax bill|surcharge|penalty|fine)\b/i;
 
@@ -303,7 +316,8 @@ export function riskTier(text: string, claimType?: string): RiskTier {
   if (claimType === 'LEGAL_CONSEQUENCE' || claimType === 'QUANTIFIED_CLAIM'
       || claimType === 'TIME_SENSITIVE_FACT' || claimType === 'AGENCY_FACT') return 'high';
   if (LEGAL_TAX.some((r) => r.test(t))) return 'high';
-  if (HAS_FIGURE.test(t) || FINANCIAL_OUTCOME.test(t) || QUANTIFIED_CHANGE.test(t)) return 'high';
+  if (HAS_FIGURE.test(t) || FINANCIAL_OUTCOME.test(t) || QUANTIFIED_CHANGE.test(t)
+      || PRICE_COMPARISON.test(t)) return 'high';
   // A RANKING is high risk when someone actually holds the rank. "A nationality can spend more per
   // purchase without being the biggest group of buyers" names nobody and asserts no position — it
   // is a statement about two metrics not being interchangeable, which is the SAFE version of the
@@ -835,8 +849,15 @@ export function mechanismAllowed(text: string): { ok: boolean; why: string } {
   if (isSpecificLocalOrCurrent(t)) {
     return { ok: false, why: 'this is a specific claim about a place, a market or a platform, not a general mechanism' };
   }
-  if (QUANTIFIED_CHANGE.test(t)) {
+  // A DIGIT, A CURRENCY OR A PERCENTAGE — not the whole figure vocabulary. Reaching for HAS_FIGURE
+  // here refused "overpricing can cost you the first two weeks", which is ordinary selling reasoning
+  // with an idiomatic span in it, not a measurement. Christian's rule: ordinary reasoning does not
+  // come off the evidence list.
+  if (QUANTIFIED_CHANGE.test(t) || /[\d€%]/.test(t) || PRICE_COMPARISON.test(t)) {
     return { ok: false, why: 'this measures something — a quantity is not ordinary reasoning' };
+  }
+  if (LEGAL_TAX.some((r) => r.test(t))) {
+    return { ok: false, why: 'a rule of law or tax is never ordinary reasoning' };
   }
   if (UNIVERSAL.test(t) && !QUALIFIED.test(t)) {
     return { ok: false, why: 'stated as a universal rule rather than a tendency' };

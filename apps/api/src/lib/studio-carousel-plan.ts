@@ -640,7 +640,17 @@ async function researchTopic(
   // What kind of evidence this topic's riskiest claims need. Decided from the QUESTIONS as well as
   // the topic: "can a buyer change their mind after agreeing a price" reads as a market topic and
   // is a contract-law one, and the questions are where that becomes visible.
-  const risk: RiskClass = riskOf(`${topic}\n${cardMust}\n${questions}`);
+  //
+  // THE CARD'S REQUIREMENTS ARE DELIBERATELY NOT AN INPUT HERE (Christian, 2026-09-08: "a bank card
+  // should provide useful knowledge and guardrails, but it should not hijack the user's intent").
+  // Card B22 covers golf urbanisation versus old town, and its required points are about prices,
+  // community fees and protected-zone renovation licences. Asked "which one fits your daily
+  // habits" — a question with no legal or numerical content at all — the card's agenda alone
+  // pushed the whole topic to a legal/tax classification, which forced official-primary-only
+  // sources, burned two enforcement passes, and opened 92,000 characters of the BOE for a post
+  // about walking to the bakery. What the USER asked and what the research actually went looking
+  // for decide the risk; what the card wishes were established does not.
+  const risk: RiskClass = riskOf(`${topic}\n${questions}`);
 
   // 2 — answer them, with live search, and say plainly what could not be established
   const f = await call('findings', {

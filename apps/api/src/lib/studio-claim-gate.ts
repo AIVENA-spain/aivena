@@ -553,9 +553,12 @@ export async function validateClaims(
     ctx.agencyEvidence || 'The agency has supplied no facts about itself. Any claim about this '
       + 'agency is REQUIRES_AGENCY_EVIDENCE.',
     ctx.uncovered?.length
-      ? `\nTHE BANK REQUIRED THESE AND THE RESEARCH DID NOT ESTABLISH THEM. Any claim that depends `
-        + `on one of them is REQUIRES_FRESH_RESEARCH, however mild it sounds and however obvious it `
-        + `seems — "known to be", "generally", "both towns" do not make an unchecked claim checked:\n`
+      ? `\nTHE RESEARCH DID NOT ESTABLISH THESE. A claim that DEPENDS ON ONE of them is `
+        + `REQUIRES_FRESH_RESEARCH, however mild it sounds and however obvious it seems — "known to `
+        + `be", "generally", "both towns" do not make an unchecked claim checked. But these are `
+        + `checks for this subject, not a list of banned words: a claim that merely sits near one `
+        + `without resting on it is judged on its own terms. A post about which neighbourhood suits `
+        + `someone's daily routine does not depend on a price series:\n`
         + ctx.uncovered.map((m) => `· ${m}`).join('\n')
       : '',
     '',

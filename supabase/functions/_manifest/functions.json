@@ -165,7 +165,7 @@
       "verify_jwt": false,
       "extra_files": [],
       "status": "VERIFIED_CURRENT",
-      "difference": "none \u2014 exact source match (captured 2026-09-01 with the earlier header format, before the source marker convention; source hash therefore covers the whole file)"
+      "difference": "none \u2014 exact source match. Captured 2026-07-06 (commit ff53be2, Packet 3 schema-drift work), NOT 2026-09-01 as this entry previously said; it was RE-VERIFIED against live on 2026-09-01, when its deployed ezbr_sha256 proved audit finding F5 wrong (F5 had claimed unshipped edits on the evidence of git file timestamps). Earlier header format, before the source marker convention, so the source hash covers the whole file."
     },
     {
       "function": "property-sync",

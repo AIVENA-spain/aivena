@@ -26,7 +26,10 @@ const manifest = JSON.parse(readFileSync(MANIFEST, "utf8")) as {
 };
 
 const KNOWN_STATUSES = new Set([
-  "VERIFIED", "REPO_AHEAD_OF_PRODUCTION", "PRODUCTION_ONLY", "UNVERIFIED",
+  "VERIFIED_CURRENT",                            // repo checked against what is RUNNING
+  "REPO_AHEAD_OF_PRODUCTION",                    // differs by intent, base was diffed against live
+  "REPO_AHEAD_PENDING_LIVE_SOURCE_VERIFICATION", // differs by intent, base NOT diffed against live
+  "PRODUCTION_ONLY", "UNVERIFIED",
   "BEHAVIOURAL_MISMATCH", "UNCERTAIN",
 ]);
 
@@ -48,7 +51,7 @@ describe("edge function manifest — every production function is accounted for"
       expect(e.status, "status must never be blank").not.toBe("");
       // A function may only be UNVERIFIED/UNCERTAIN if that is stated explicitly —
       // it can never be the accidental default.
-      if (e.status === "VERIFIED" || e.status === "REPO_AHEAD_OF_PRODUCTION") {
+      if (e.status !== "PRODUCTION_ONLY") {
         expect(e.present_in_repo, `${e.function} claims ${e.status} but has no repo file`).toBe(true);
       }
     },
@@ -70,8 +73,8 @@ describe("edge function manifest — every production function is accounted for"
     expect(onDisk.filter((n) => !known.has(n)), "function on disk with no manifest entry").toEqual([]);
   });
 
-  it("every VERIFIED entry records both hash identities", () => {
-    for (const e of manifest.functions.filter((f) => f.status === "VERIFIED")) {
+  it("every entry records both hash identities", () => {
+    for (const e of manifest.functions.filter((f) => f.status !== "PRODUCTION_ONLY")) {
       expect(e.deployed_bundle_sha256, `${e.function} missing deployed bundle hash`).toMatch(/^[0-9a-f]{64}$/);
       expect(e.captured_source_sha256, `${e.function} missing captured source hash`).toMatch(/^[0-9a-f]{64}$/);
     }
@@ -81,7 +84,7 @@ describe("edge function manifest — every production function is accounted for"
     const drifted: string[] = [];
     for (const e of manifest.functions) {
       if (!e.present_in_repo || !e.captured_source_sha256) continue;
-      if (e.status === "REPO_AHEAD_OF_PRODUCTION") continue; // repo intentionally differs from prod, not from itself
+      if (e.status.startsWith("REPO_AHEAD")) continue; // repo intentionally differs from prod, not from itself
       const txt = readFileSync(join(ROOT, e.repo_path), "utf8");
       const body = txt.includes(MARK) ? txt.split(MARK)[1].replace(/^\n/, "") : txt;
       const sha = createHash("sha256").update(body, "utf8").digest("hex");
@@ -90,9 +93,28 @@ describe("edge function manifest — every production function is accounted for"
     expect(drifted, "repo source changed without re-capturing — re-verify against live").toEqual([]);
   });
 
-  it("every non-VERIFIED entry explains itself", () => {
-    for (const e of manifest.functions.filter((f) => f.status !== "VERIFIED")) {
+  it("every entry that is not verified against production explains itself", () => {
+    for (const e of manifest.functions.filter((f) => f.status !== "VERIFIED_CURRENT")) {
       expect(e.difference, `${e.function} is ${e.status} with no explanation`).toBeTruthy();
     }
+  });
+  // "Accounted for" and "verified" must not collapse into the same number. An entry
+  // whose live source has never been diffed is a deploy hazard, not a verified one.
+  it("a function pending live-source verification is flagged as a deploy blocker", () => {
+    for (const e of manifest.functions) {
+      if (e.status === "REPO_AHEAD_PENDING_LIVE_SOURCE_VERIFICATION") {
+        expect((e as any).blocks_deploy, `${e.function} is unverified against live but not marked as blocking deploy`).toBe(true);
+        expect((e as any).unblocks_when, `${e.function} does not say what would unblock it`).toBeTruthy();
+      }
+    }
+  });
+
+  it("the summary counts agree with the entries, and do not overstate verification", () => {
+    const total = manifest.functions.length;
+    const verified = manifest.functions.filter((f) => f.status === "VERIFIED_CURRENT").length;
+    const s = (manifest as any).summary;
+    expect(s.total_functions_accounted_for, "summary total disagrees with entries").toBe(total);
+    expect(s.verified_against_current_production, "summary overstates what is verified").toBe(verified);
+    expect(s.accounted_for_but_not_verified).toBe(total - verified);
   });
 });

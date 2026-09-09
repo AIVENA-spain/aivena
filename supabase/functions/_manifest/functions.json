@@ -17,7 +17,7 @@
       "source_hash_covers": "source below marker",
       "verify_jwt": true,
       "extra_files": [],
-      "status": "VERIFIED",
+      "status": "VERIFIED_CURRENT",
       "difference": "none \u2014 exact source match"
     },
     {
@@ -30,7 +30,7 @@
       "source_hash_covers": "whole file",
       "verify_jwt": false,
       "extra_files": [],
-      "status": "VERIFIED",
+      "status": "VERIFIED_CURRENT",
       "difference": "none \u2014 exact source match (captured 2026-09-01 with the earlier header format, before the source marker convention; source hash therefore covers the whole file)"
     },
     {
@@ -45,7 +45,7 @@
       "extra_files": [
         "deno.json"
       ],
-      "status": "VERIFIED",
+      "status": "VERIFIED_CURRENT",
       "difference": "none \u2014 exact source match (captured 2026-09-01 with the earlier header format, before the source marker convention; source hash therefore covers the whole file)"
     },
     {
@@ -60,7 +60,7 @@
       "extra_files": [
         "eval"
       ],
-      "status": "VERIFIED",
+      "status": "VERIFIED_CURRENT",
       "difference": "none \u2014 exact source match"
     },
     {
@@ -73,7 +73,7 @@
       "source_hash_covers": "source below marker",
       "verify_jwt": false,
       "extra_files": [],
-      "status": "VERIFIED",
+      "status": "VERIFIED_CURRENT",
       "difference": "none \u2014 exact source match"
     },
     {
@@ -86,7 +86,7 @@
       "source_hash_covers": "whole file",
       "verify_jwt": true,
       "extra_files": [],
-      "status": "VERIFIED",
+      "status": "VERIFIED_CURRENT",
       "difference": "none \u2014 exact source match (captured 2026-09-01 with the earlier header format, before the source marker convention; source hash therefore covers the whole file)"
     },
     {
@@ -99,7 +99,7 @@
       "source_hash_covers": "source below marker",
       "verify_jwt": true,
       "extra_files": [],
-      "status": "VERIFIED",
+      "status": "VERIFIED_CURRENT",
       "difference": "none \u2014 exact source match"
     },
     {
@@ -112,7 +112,7 @@
       "source_hash_covers": "source below marker",
       "verify_jwt": false,
       "extra_files": [],
-      "status": "VERIFIED",
+      "status": "VERIFIED_CURRENT",
       "difference": "none \u2014 exact source match"
     },
     {
@@ -125,7 +125,7 @@
       "source_hash_covers": "source below marker",
       "verify_jwt": false,
       "extra_files": [],
-      "status": "VERIFIED",
+      "status": "VERIFIED_CURRENT",
       "difference": "none \u2014 exact source match"
     },
     {
@@ -138,7 +138,7 @@
       "source_hash_covers": "source below marker",
       "verify_jwt": false,
       "extra_files": [],
-      "status": "VERIFIED",
+      "status": "VERIFIED_CURRENT",
       "difference": "none \u2014 exact source match"
     },
     {
@@ -151,7 +151,7 @@
       "source_hash_covers": "source below marker",
       "verify_jwt": false,
       "extra_files": [],
-      "status": "VERIFIED",
+      "status": "VERIFIED_CURRENT",
       "difference": "none \u2014 exact source match"
     },
     {
@@ -164,7 +164,7 @@
       "source_hash_covers": "whole file",
       "verify_jwt": false,
       "extra_files": [],
-      "status": "VERIFIED",
+      "status": "VERIFIED_CURRENT",
       "difference": "none \u2014 exact source match (captured 2026-09-01 with the earlier header format, before the source marker convention; source hash therefore covers the whole file)"
     },
     {
@@ -183,7 +183,7 @@
         "kyero.test.ts",
         "kyero.ts"
       ],
-      "status": "VERIFIED",
+      "status": "VERIFIED_CURRENT",
       "difference": "index.ts: COSMETIC by the scanner (executable code proven identical). The repo header was NOT preserved here, unlike kyero.ts, because it contained a claim that is FALSE of current production: it said deployed live is still v2, the old unguarded engine, and warned against pointing a real feed at it. Live IS v3 \u2014 the deployed source header says v3 and the deployed code calls evaluateWithdrawalGuard and mirrorImages. A stale warning about a danger that no longer exists would mislead the next reader, so the live header stands. The repo version is preserved at scratchpad/capture/preserved/."
     },
     {
@@ -200,10 +200,11 @@
         "constant-time.ts",
         "index.pre-gate-2026-07-31.ts"
       ],
-      "status": "VERIFIED",
+      "status": "VERIFIED_CURRENT",
       "difference": "NONE. The F10 constant-time comparison for the launch-gate test key (commit 18a1174) reached production on 2026-09-09 as v11; repo and production now match. The helper was extracted to constant-time.ts so it is unit-tested rather than assumed \u2014 no test covered it before. Live v10 is preserved verbatim at supabase/rollback/property-valuation.v10.PRODUCTION.ts. The launch gate remains fully closed: AIVENA_VALUATION_LAUNCH and AIVENA_VALUATION_TEST_KEY are both unset, so every request returns 503 and nothing is written.",
       "verified_at": "2026-09-09",
-      "method": "deployed FROM this repo source (v10 -> v11), then the deployed source was read back from Supabase and compared against the repo file"
+      "method": "deployed FROM this repo source (v10 -> v11), then the deployed source was read back from Supabase and compared against the repo file",
+      "blocks_deploy": false
     },
     {
       "function": "send-invitation-email",
@@ -215,7 +216,7 @@
       "source_hash_covers": "whole file",
       "verify_jwt": true,
       "extra_files": [],
-      "status": "VERIFIED",
+      "status": "VERIFIED_CURRENT",
       "difference": "none \u2014 exact source match (captured 2026-09-01 with the earlier header format, before the source marker convention; source hash therefore covers the whole file)"
     },
     {
@@ -228,7 +229,7 @@
       "source_hash_covers": "source below marker",
       "verify_jwt": false,
       "extra_files": [],
-      "status": "VERIFIED",
+      "status": "VERIFIED_CURRENT",
       "difference": "none \u2014 exact source match"
     },
     {
@@ -241,7 +242,7 @@
       "source_hash_covers": "source below marker",
       "verify_jwt": false,
       "extra_files": [],
-      "status": "VERIFIED",
+      "status": "VERIFIED_CURRENT",
       "difference": "none \u2014 exact source match"
     },
     {
@@ -254,7 +255,7 @@
       "source_hash_covers": "source below marker",
       "verify_jwt": false,
       "extra_files": [],
-      "status": "VERIFIED",
+      "status": "VERIFIED_CURRENT",
       "difference": "none \u2014 exact source match"
     },
     {
@@ -267,7 +268,7 @@
       "source_hash_covers": "source below marker",
       "verify_jwt": false,
       "extra_files": [],
-      "status": "VERIFIED",
+      "status": "VERIFIED_CURRENT",
       "difference": "none \u2014 exact source match"
     },
     {
@@ -280,7 +281,7 @@
       "source_hash_covers": "source below marker",
       "verify_jwt": false,
       "extra_files": [],
-      "status": "VERIFIED",
+      "status": "VERIFIED_CURRENT",
       "difference": "none \u2014 exact source match"
     },
     {
@@ -293,7 +294,7 @@
       "source_hash_covers": "source below marker",
       "verify_jwt": false,
       "extra_files": [],
-      "status": "VERIFIED",
+      "status": "VERIFIED_CURRENT",
       "difference": "none \u2014 exact source match"
     },
     {
@@ -306,7 +307,7 @@
       "source_hash_covers": "source below marker",
       "verify_jwt": false,
       "extra_files": [],
-      "status": "VERIFIED",
+      "status": "VERIFIED_CURRENT",
       "difference": "none \u2014 exact source match"
     },
     {
@@ -319,7 +320,7 @@
       "source_hash_covers": "source below marker",
       "verify_jwt": false,
       "extra_files": [],
-      "status": "VERIFIED",
+      "status": "VERIFIED_CURRENT",
       "difference": "none \u2014 exact source match"
     },
     {
@@ -332,7 +333,7 @@
       "source_hash_covers": "whole file",
       "verify_jwt": false,
       "extra_files": [],
-      "status": "VERIFIED",
+      "status": "VERIFIED_CURRENT",
       "difference": "none \u2014 exact source match (captured 2026-09-01 with the earlier header format, before the source marker convention; source hash therefore covers the whole file)"
     },
     {
@@ -347,7 +348,7 @@
       "extra_files": [
         "sync-logic.ts"
       ],
-      "status": "VERIFIED",
+      "status": "VERIFIED_CURRENT",
       "difference": "none \u2014 exact source match"
     },
     {
@@ -363,7 +364,7 @@
         "CAPTURE_NOTES.md",
         "index.v3-proposed.ts"
       ],
-      "status": "VERIFIED",
+      "status": "VERIFIED_CURRENT",
       "difference": "COSMETIC ONLY, reported to Christian 2026-09-09. The pre-existing repo copy differed from live on ONE line: the number of box-drawing characters in a // comment divider at the v6 header. Proven zero-impact by diffing both files with all comments and whitespace stripped \u2014 the executable code was byte-identical. Captured from LIVE, which is what a capture records. No deploy, no behavioural choice was made."
     },
     {
@@ -376,7 +377,7 @@
       "source_hash_covers": "whole file",
       "verify_jwt": false,
       "extra_files": [],
-      "status": "VERIFIED",
+      "status": "VERIFIED_CURRENT",
       "difference": "none \u2014 exact source match (captured 2026-09-01 with the earlier header format, before the source marker convention; source hash therefore covers the whole file)"
     },
     {
@@ -389,7 +390,7 @@
       "source_hash_covers": "source below marker",
       "verify_jwt": true,
       "extra_files": [],
-      "status": "VERIFIED",
+      "status": "VERIFIED_CURRENT",
       "difference": "none \u2014 exact source match"
     },
     {
@@ -402,7 +403,7 @@
       "source_hash_covers": "source below marker",
       "verify_jwt": false,
       "extra_files": [],
-      "status": "VERIFIED",
+      "status": "VERIFIED_CURRENT",
       "difference": "none \u2014 exact source match"
     },
     {
@@ -415,7 +416,7 @@
       "source_hash_covers": "source below marker",
       "verify_jwt": false,
       "extra_files": [],
-      "status": "VERIFIED",
+      "status": "VERIFIED_CURRENT",
       "difference": "none \u2014 exact source match"
     },
     {
@@ -433,9 +434,11 @@
         "twilio-config.test.ts",
         "twilio-config.ts"
       ],
-      "status": "REPO_AHEAD_OF_PRODUCTION",
+      "status": "REPO_AHEAD_PENDING_LIVE_SOURCE_VERIFICATION",
       "difference": "REPO_AHEAD: repo carries v6.8 \u2014 both Twilio credentials now come from the ONE platform secret vault via _get_platform_secret (the auth token always did; the SID was a source literal in production v20). Production still runs v20. DEPLOY BLOCKED, and NOT on the vault: the vault path is verified (SID present, format valid for a Twilio Account SID, token present, RPC is SECURITY DEFINER with no name filter, service_role has EXECUTE, anon/authenticated do not). It is blocked because the repo copy of this function has never been verified against production. Commit d779383 (2026-08-03) ADDED the file whole \u2014 535 insertions, 0 deletions, no prior history \u2014 so the repo is one unverified transcription of live v20 plus the SID change. Deploying it could silently drop a production behaviour, the same class of failure that would have silenced Amanda via twilio-whatsapp-inbound. A live-vs-repo diff must come first, and it cannot be done in-session without pulling the hardcoded SID out of production.",
-      "verified_at": "2026-09-09"
+      "verified_at": "2026-09-09",
+      "blocks_deploy": true,
+      "unblocks_when": "A fresh copy of deployed v20 is diffed against the repo source and the ONLY executable difference is the intended SID/vault change. Then -> REPO_AHEAD_OF_PRODUCTION; after deploy + readback -> VERIFIED_CURRENT."
     },
     {
       "function": "whatsapp-send-template",
@@ -447,7 +450,7 @@
       "source_hash_covers": "whole file",
       "verify_jwt": false,
       "extra_files": [],
-      "status": "VERIFIED",
+      "status": "VERIFIED_CURRENT",
       "difference": "none \u2014 exact source match (captured 2026-09-01 with the earlier header format, before the source marker convention; source hash therefore covers the whole file)"
     },
     {
@@ -460,8 +463,19 @@
       "source_hash_covers": "source below marker",
       "verify_jwt": false,
       "extra_files": [],
-      "status": "VERIFIED",
+      "status": "VERIFIED_CURRENT",
       "difference": "none \u2014 exact source match"
     }
-  ]
+  ],
+  "status_vocabulary": {
+    "VERIFIED_CURRENT": "Repo source has been mechanically compared against the CURRENTLY deployed source and matches, allowing only differences proven non-executable. This is the only status that means 'verified'.",
+    "REPO_AHEAD_OF_PRODUCTION": "Repo intentionally differs from production by a change that is understood, and the repo copy HAS been mechanically diffed against current live source. Safe to deploy once approved.",
+    "REPO_AHEAD_PENDING_LIVE_SOURCE_VERIFICATION": "Repo intentionally differs from production, but the repo copy itself has NOT been mechanically diffed against the current live source. Accounted for, NOT verified. MUST NOT be deployed: an unverified base could silently drop a production behaviour."
+  },
+  "summary": {
+    "total_functions_accounted_for": 33,
+    "verified_against_current_production": 32,
+    "accounted_for_but_not_verified": 1,
+    "note": "Accounted for is not the same as verified. Only VERIFIED_CURRENT means the repo has been checked against what is actually running."
+  }
 }

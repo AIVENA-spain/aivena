@@ -86,7 +86,7 @@ for (const [slug] of live) {
   if (!manifest.functions.some((e) => e.function === slug)) newFns.push(slug);
 }
 
-const parked = manifest.functions.filter((e) => e.status === "REPO_AHEAD_OF_PRODUCTION").map((e) => e.function);
+const parked = manifest.functions.filter((e) => e.status.startsWith("REPO_AHEAD")).map((e) => e.function);
 
 if (asJson) {
   console.log(JSON.stringify({ checked: manifest.functions.length, drift, new_functions: newFns, removed: gone, parked }, null, 2));
@@ -103,9 +103,16 @@ if (asJson) {
   }
   for (const n of newFns) console.log(`  NEW    ${n} — deployed but not in the manifest. Capture it.`);
   for (const g of gone) console.log(`  GONE   ${g} — in the manifest but no longer deployed.`);
-  if (parked.length) {
-    console.log(`\n  note: ${parked.join(", ")} are REPO_AHEAD_OF_PRODUCTION by intent.`);
-    console.log(`        Their repo source is meant to differ from live until deployed.`);
+  const ahead   = manifest.functions.filter((e) => e.status === "REPO_AHEAD_OF_PRODUCTION");
+  const pending = manifest.functions.filter((e) => e.status === "REPO_AHEAD_PENDING_LIVE_SOURCE_VERIFICATION");
+  if (ahead.length) {
+    console.log(`\n  note: repo intentionally ahead of production, diffed against live, safe to deploy:`);
+    for (const e of ahead) console.log(`        ${e.function} (live v${e.deployed_version})`);
+  }
+  if (pending.length) {
+    console.log(`\n  DEPLOY BLOCKED — repo differs from production and has NOT been diffed against live:`);
+    for (const e of pending) console.log(`        ${e.function} (live v${e.deployed_version})`);
+    console.log(`        Deploying an unverified base can silently drop a production behaviour.`);
   }
 }
 // A NEW function fails too. An uncaptured production function is exactly the

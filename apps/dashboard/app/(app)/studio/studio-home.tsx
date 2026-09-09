@@ -163,6 +163,21 @@ export function StudioHome({
   // open a past carousel straight into its editing screen (no regeneration)
   const [resumeGenId, setResumeGenId] = useState<string | undefined>(undefined);
   const openCarousel = (id: string) => { setMenuId(null); setResumeGenId(id); setView("carousel"); };
+
+  // THE WIDGET'S "VIEW IT" LINKS HERE. It has always written /studio?generation=<id>, and nothing
+  // has ever read it — so the one button an agent presses when their post is ready dropped them on
+  // the creation form instead of on the carousel they had just waited for.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const id = new URLSearchParams(window.location.search).get("generation");
+    if (!id) return;
+    openCarousel(id);
+    // Clear it, so a later back-navigation does not reopen the same deck over the agent's work.
+    const url = new URL(window.location.href);
+    url.searchParams.delete("generation");
+    window.history.replaceState({}, "", url.toString());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   useEffect(() => {
     let cancelled = false;
     (async () => {

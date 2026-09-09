@@ -13,7 +13,7 @@ import type { BankCard } from './studio-bank.generated';
 import { buildPalette } from './studio-palette';
 import { modelFor } from './studio-models';
 import { CALL_BUDGET_MS, ModelCallError, boundedCall } from './studio-bounded-call';
-import { LOW_RISK_BRIEF } from './studio-risk-route';
+import { LOW_RISK_BRIEF, ideasNeedingCheck } from './studio-risk-route';
 import { classifySource, domainOf, policyUnmetFor, riskOf, SOURCE_POLICY,
   type SourceFact,
   type ResearchSource as Source, type RiskClass } from './studio-evidence';
@@ -497,6 +497,132 @@ async function openCited(findings: ResearchCall, risk: RiskClass): Promise<void>
   console.log(`[studio/carousel] opened ${opened.length} of ${findings.sources.length} sources`
     + ` (${opened.filter((x) => SOURCE_POLICY[risk].includes(x.sourceClass)).length} authoritative`
     + ` for a ${risk} topic)`);
+}
+
+/* ── CAN THE HEADLINE SURVIVE? ─────────────────────────────────────────────────────────────── */
+
+export interface PremiseVerdict {
+  verdict: 'CAN_SUPPORT' | 'CANNOT_SUPPORT' | 'NEEDS_SOFTER_FORM';
+  why: string;
+  /** the angle to write instead, when the original premise cannot stand as stated */
+  supportedPremise?: string;
+  sources: ResearchSource[];
+  ms: number;
+}
+
+const PREMISE_TOOL = {
+  name: 'submit_premise_verdict',
+  description: 'Say whether the central promise of this post can be established.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      verdict: { type: 'string', enum: ['CAN_SUPPORT', 'CANNOT_SUPPORT', 'NEEDS_SOFTER_FORM'] },
+      why: { type: 'string', description: 'one or two sentences, plain' },
+      supported_premise: {
+        type: 'string',
+        description: 'when the original cannot stand: the strongest adjacent angle the evidence '
+          + 'DOES support, written as a headline-shaped promise a reader would want to open',
+      },
+    },
+    required: ['verdict', 'why'],
+  },
+} as const;
+
+/**
+ * ASK THE EXPENSIVE QUESTION FIRST.
+ *
+ * A HIGH post opened 16 of 17 pages, made 38 calls and spent $0.7973 — and then concluded that the
+ * cover's own promise could not be established, so it rewrote the cover at the very end. The reader
+ * had already committed to an angle; the money had already been spent researching a premise that
+ * was never going to survive.
+ *
+ * Christian, 2026-09-09: "Do not open 17 pages before discovering the headline itself cannot
+ * survive." So the central promise is checked BEFORE the deck is planned — the verified bank first,
+ * then two or three of the best sources, and nothing more. If the premise cannot stand, the angle
+ * is replaced before a single slide is written, not patched afterwards.
+ *
+ * Deliberately small: three searches, three fetches, one bounded call. It is a triage step, not a
+ * research pass.
+ */
+export async function premisePreflight(opts: {
+  topic: string;
+  language: string;
+  region: string;
+  /** what the verified bank already says about this subject — consulted before the web */
+  bankFacts?: string;
+}): Promise<PremiseVerdict> {
+  const started = Date.now();
+  const sources: ResearchSource[] = [];
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 120_000);
+  const bail = (why: string): PremiseVerdict =>
+    ({ verdict: 'CAN_SUPPORT', why: `preflight unavailable (${why}) — proceeding as before`,
+       sources, ms: Date.now() - started });
+
+  const system =
+    'You are checking ONE thing before an estate agency writes a post: can its central promise be '
+    + 'established?\n\n'
+    + 'Use the verified facts supplied first. Only if they do not settle it, search — and open at '
+    + 'most three pages. This is triage, not research.\n\n'
+    + 'CAN_SUPPORT — the evidence backs the promise substantially as stated.\n'
+    + 'NEEDS_SOFTER_FORM — something real is there, but not at the strength claimed. Give the '
+    + 'version that IS supportable in supported_premise.\n'
+    + 'CANNOT_SUPPORT — nothing establishes it. Give the strongest genuinely supported adjacent '
+    + 'angle in supported_premise: a headline-shaped promise on the same subject that the evidence '
+    + 'does back, and that a reader would still want to open. Do not offer a vague or timid '
+    + 'replacement — a weak true angle is worth more than a bold false one, but it still has to be '
+    + 'worth reading.';
+
+  try {
+    let messages: Array<{ role: string; content: unknown }> = [{
+      role: 'user',
+      content: `REGION: ${opts.region || 'Costa Blanca, Spain'}\n`
+        + `THE POST'S CENTRAL PROMISE:\n"${opts.topic}"\n\n`
+        + (opts.bankFacts?.trim()
+          ? `ALREADY VERIFIED BY THIS AGENCY (use before searching):\n${opts.bankFacts}\n\n` : '')
+        + 'Can that promise be established? Answer with submit_premise_verdict.',
+    }];
+    for (let round = 0; round < 4; round++) {
+      const t0 = Date.now();
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST', signal: ctl.signal,
+        headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: modelFor('RESEARCH_PLANNER'), max_tokens: 1500, system,
+          tools: [
+            { type: 'web_search_20250305', name: 'web_search', max_uses: 3 },
+            { type: 'web_fetch_20250910', name: 'web_fetch', max_uses: 3, max_content_tokens: 6000 },
+            PREMISE_TOOL,
+          ],
+          messages,
+        }),
+      });
+      if (!res.ok) return bail(`http_${res.status}`);
+      const data = await res.json() as {
+        stop_reason?: string; content?: Array<{ type: string; name?: string; input?: unknown }>;
+      };
+      recordUsage('premise preflight', modelFor('RESEARCH_PLANNER'),
+        (data as { usage?: RawUsage }).usage, Date.now() - t0);
+      const verdict = data.content?.find((c) => c.type === 'tool_use' && c.name === PREMISE_TOOL.name);
+      if (verdict) {
+        const v = (verdict.input ?? {}) as Record<string, unknown>;
+        const kind = String(v.verdict ?? '');
+        if (!['CAN_SUPPORT', 'CANNOT_SUPPORT', 'NEEDS_SOFTER_FORM'].includes(kind)) return bail('unusable verdict');
+        const replacement = typeof v.supported_premise === 'string' ? v.supported_premise.trim() : '';
+        return {
+          verdict: kind as PremiseVerdict['verdict'],
+          why: String(v.why ?? '').slice(0, 400),
+          supportedPremise: replacement && replacement.length >= 10 ? replacement.slice(0, 300) : undefined,
+          sources, ms: Date.now() - started,
+        };
+      }
+      if (data.stop_reason !== 'tool_use') return bail('no verdict offered');
+      messages = [...messages, { role: 'assistant', content: data.content ?? [] }];
+    }
+    return bail('did not settle within four rounds');
+  } catch (err) {
+    return bail((err as Error)?.name === 'AbortError' ? 'timed out' : String((err as Error)?.message ?? err).slice(0, 80));
+  } finally { clearTimeout(timer); }
 }
 
 /**
@@ -1124,6 +1250,12 @@ CAROUSEL DOCTRINE (how these posts win — follow it):
 - PLACES: mention a specific town/area ONLY if the topic itself names one. If it doesn't, keep every slide and the caption location-neutral ("the coast", "the area") — never insert a town the user didn't ask for.
 - Slide 2 is a SECOND cover: Instagram re-serves unswiped carousels starting at slide 2, so slide2_title must stand alone with zero context ("Selling this year? This saves you money.").
 - One idea per slide. Each slide answers the question the previous one raised.
+- EVERY SLIDE MUST EARN ITS PLACE. Before you write, decide what job each slide does — a mechanism,
+  a consequence, a decision the reader has to make, a practical conclusion — and make sure no two do
+  the same job. THE TEST: if a slide were deleted, would the reader lose something they could not
+  get from the others? If not, that slide is a restatement and the deck is padding. A live deck
+  published four slides that all said "launch well and don't let it linger" in different words; it
+  cost as much as four different points and taught one.
 - The recap is the SAVE unit — people screenshot and forward it.
 - THE CLOSING SLIDE SAYS WHAT THE AGENCY DOES — ONLY WHEN WE KNOW IT. agency_line may be written ONLY from stated SERVICES in the agency profile above; a voice note, a tone, a content style or a town is not a service. With no stated services, agency_line is an EMPTY STRING — printing an invented speciality would be a false claim about this business. cta_action stays SHORT — the action itself, nothing else. Contact details are handled by the design, not by you. NEVER "tag a friend", "share this", "follow for more" — Meta demotes engagement bait.
 - save_line is the SECONDARY line, demoted under the agency line: the save/keep framing ("Save it for the week the move gets hard.").
@@ -1358,6 +1490,14 @@ YOUR FIRST JOB IS COMPREHENSION, AND A REAL DECK FAILED IT. Read each body once,
 person who has never bought property in Spain. Then ask what they now know. If the answer is "not
 much", rewrite it — the sentence may be perfectly true and still be useless.
 · A slide with three concepts on it has none. Keep the one that makes the point and cut the rest.
+· REPETITION IS A FAILURE, NOT A STYLE. Read the deck as a set: if two slides make the same point in
+  different words, rewrite the weaker one so it adds something the others do not — another
+  mechanism, another consequence, another decision — or say so in your notes if nothing can. A
+  reader who has read slide 1 must still learn something from slide 3.
+· NEVER MANUFACTURE AUTHORITY. Do not write "agents say", "agencies report", "experts agree",
+  "research suggests" or any attribution to nobody in particular. If the claim stands, state it
+  plainly; if it needs a source, it needs a real one. An editor added exactly these phrases to a
+  live deck, inventing a source for a claim that had none.
   A card explaining that a guarantee must cover the amount advanced plus interest in a segregated
   account should say: ask exactly what protects the payments you make before the keys.
 · Replace trade language with ordinary words: "off-plan" → "before the home is built"; "the amount
@@ -2019,4 +2159,54 @@ Submit with the submit_ideas tool.`;
   } catch {
     return null;
   }
+}
+
+/* ── INSPIRATION MAY NOT PROMISE WHAT THE ENGINE CANNOT KEEP ───────────────────────────────── */
+
+/**
+ * Filter proposed ideas through the same truth boundary a typed topic faces.
+ *
+ * AIVENA suggested "Listing your home in the wrong month can add years, not weeks, to the sale".
+ * The agent picked it, the engine spent $0.80 researching it, discovered its OWN suggestion could
+ * not be supported, and rewrote the post into a different angle. Christian, 2026-09-09: "the
+ * product currently creates a factual promise, lets me select it, then later tells me its own
+ * promise was not supportable. That is a product defect."
+ *
+ * LOW ideas — opinion, lifestyle, positioning, emotion — are shown immediately and cost nothing.
+ * Only a factual or measurable hook is checked, and it is checked with the SAME preflight the HIGH
+ * generation path uses, so this is not a second research engine.
+ *
+ * Bounded hard: at most `maxChecks` premise checks per batch. Anything unchecked is passed through
+ * rather than dropped — an unverified idea is still a legitimate topic, it just has to earn its
+ * cover at generation time like any other.
+ */
+export async function vetIdeas(opts: {
+  ideas: readonly string[];
+  language: string;
+  region?: string;
+  bankFacts?: string;
+  /** ceiling on premise checks for one batch of suggestions */
+  maxChecks?: number;
+}): Promise<{ ideas: string[]; checked: number; replaced: Array<{ from: string; to: string; why: string }> }> {
+  const max = opts.maxChecks ?? 2;
+  const replaced: Array<{ from: string; to: string; why: string }> = [];
+  const out: string[] = [];
+  let checked = 0;
+
+  const { check } = ideasNeedingCheck(opts.ideas, max);
+  const needsCheck = new Set(check);
+  for (const idea of opts.ideas) {
+    // The same router the generation uses. Most inspiration is opinion and never reaches a check.
+    if (!needsCheck.has(idea)) { out.push(idea); continue; }
+    checked++;
+    const pre = await premisePreflight({
+      topic: idea, language: opts.language,
+      region: opts.region ?? '', bankFacts: opts.bankFacts,
+    });
+    if (pre.verdict === 'CAN_SUPPORT' || !pre.supportedPremise) { out.push(idea); continue; }
+    // Replace it BEFORE the agent ever sees it, rather than abandoning their choice later.
+    replaced.push({ from: idea, to: pre.supportedPremise, why: pre.why });
+    out.push(pre.supportedPremise);
+  }
+  return { ideas: out, checked, replaced };
 }

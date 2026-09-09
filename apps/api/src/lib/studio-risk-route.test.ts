@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { LOW_RISK_BRIEF, mayEscalate, mayRewriteDeck, needsEscalation, researches, routeTopic } from './studio-risk-route';
+import {
+  LOW_RISK_BRIEF, ideasNeedingCheck, mayEscalate, mayRewriteDeck, needsEscalation, researches,
+  routeTopic,
+} from './studio-risk-route';
 import { DEFAULT_MODELS, ROLES, describeRouting, envKeyFor, modelFor, roleOverrides } from './studio-models';
 
 /**
@@ -267,5 +270,51 @@ describe('where the one research cycle gets spent', () => {
     expect(second.ok).toBe(false);
     expect(second.why).toMatch(/reusing the evidence already gathered/);
     expect(mayRewriteDeck(spent).ok).toBe(false);
+  });
+});
+
+/**
+ * AIVENA's own Get Inspired proposed the topic that later cost $0.80 and could not be supported.
+ * Christian, 2026-09-09: "the product currently creates a factual promise, lets me select it, then
+ * later tells me its own promise was not supportable. That is a product defect."
+ */
+describe('inspiration obeys the same truth boundary — cheaply', () => {
+  const batch = [
+    'Why people fall in love with Moraira',                                    // low
+    'What nobody tells you about choosing a neighbourhood',                    // low
+    'Listing your home in the wrong month can add years, not weeks, to the sale', // HIGH
+    'Homes sell 30% faster in spring',                                         // HIGH
+    'Which nationality buys the most homes in Alicante',                       // HIGH
+    'The version of you in ten years is the one buying this house',            // low-ish
+  ];
+
+  it('never spends anything on opinion and lifestyle ideas', () => {
+    const { check } = ideasNeedingCheck(batch, 2);
+    expect(check).not.toContain('Why people fall in love with Moraira');
+    expect(check).not.toContain('What nobody tells you about choosing a neighbourhood');
+  });
+
+  it('checks the factual hooks, which are the ones that can embarrass us', () => {
+    const { check } = ideasNeedingCheck(batch, 2);
+    expect(check[0]).toMatch(/wrong month/);
+    expect(check[1]).toMatch(/30% faster/);
+  });
+
+  it('never checks more than the batch ceiling, whatever arrives', () => {
+    expect(ideasNeedingCheck(batch, 2).check).toHaveLength(2);
+    expect(ideasNeedingCheck(batch, 0).check).toHaveLength(0);
+    expect(ideasNeedingCheck(batch, 99).check.length).toBeLessThanOrEqual(batch.length);
+  });
+
+  it('passes unchecked ideas through rather than dropping them', () => {
+    const { check, free } = ideasNeedingCheck(batch, 1);
+    expect(check.length + free.length).toBe(batch.length);
+  });
+
+  it('costs nothing at all on a batch of pure opinion', () => {
+    expect(ideasNeedingCheck([
+      'Why people fall in love with Moraira',
+      'What nobody tells you about choosing a neighbourhood',
+    ], 2).check).toEqual([]);
   });
 });

@@ -73,7 +73,33 @@ async function readOut(id: string): Promise<void> {
     ['failure', r.failure_reason ?? '(succeeded)'],
   ] as Array<[string, unknown]>) console.log(`${k.padEnd(20)} ${String(v)}`);
 
-  const esc = m.escalation; const su = m.semantic_unit;
+  const esc = m.escalation; const su = m.semantic_unit; const pf = m.premise; const ap = m.artwork_plan;
+  console.log('\n══ PREMISE PREFLIGHT ══');
+  if (!pf) console.log('  not run — only HIGH topics are preflighted');
+  else {
+    console.log(`  original             "${String(pf.original).slice(0, 90)}"`);
+    console.log(`  verdict              ${pf.verdict}  (${secs(pf.ms ?? 0)})`);
+    console.log(`  why                  ${String(pf.why).slice(0, 140)}`);
+    if (pf.rewritten) console.log(`  written instead      "${String(pf.supportedPremise).slice(0, 90)}"`);
+  }
+  console.log('\n══ CLAIM LINEAGE ══');
+  if (!m.claim_lineage) console.log('  not run — nothing was refused on evidence');
+  else {
+    console.log(`  refused propositions ${m.claim_lineage.rejected}`);
+    console.log(`  restatements caught  ${(m.claim_lineage.restatements ?? []).length}`);
+    for (const r of m.claim_lineage.restatements ?? []) {
+      console.log(`      [${r.field}] ${String(r.why).slice(0, 100)}`);
+    }
+    if (m.claim_lineage.checkFailed) console.log('  CHECK FAILED — fell back to content overlap');
+  }
+  console.log('\n══ ARTWORK ══');
+  if (!ap) console.log(`  ${m.artwork_source ?? '(not recorded)'}`);
+  else {
+    console.log(`  requested            ${ap.requested}  (${ap.scenesUsable}/${ap.scenesWanted} scenes usable)`);
+    console.log(`  actual               ${ap.actual}${ap.fellBack ? '   FELL BACK' : ''}`);
+    if (ap.skippedBecause) console.log(`  why                  ${ap.skippedBecause}`);
+  }
+
   console.log('\n══ ESCALATION ══');
   console.log(`  deck writes          ${m.deck_writes ?? '(not recorded)'}`);
   console.log(`  research cycles      ${m.escalation_cycles ?? 0}`);

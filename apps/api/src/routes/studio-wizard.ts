@@ -31,7 +31,7 @@ import {
   renderPlannedStyled, renderListingStyled, vibraListing, PLANNED_STYLES, LISTING_STYLES, TYPE_EDITIONS, type CarouselStyle,
 } from '../../../../studio/engine/carouselStyles';
 import type { CarouselBrand } from '../../../../studio/engine/renderCarousel';
-import { planCarousel, editPlan, remixHook, topicIdeas, listingCopy, listingStory, pickBankCard, researchClaims, PlanSchema, normalisePlan, type Audience } from '../lib/studio-carousel-plan';
+import { planCarousel, editPlan, remixHook, topicIdeas, listingCopy, listingStory, pickBankCard, researchClaims, premisePreflight, vetIdeas, PlanSchema, normalisePlan, type Audience } from '../lib/studio-carousel-plan';
 import { POLICED_TYPES, checkBankContradictions, checkIntent, extractClaims, gatePlan,
   type ExtractedClaim, type GateReport , judgeSemanticUnits, findRestatements } from '../lib/studio-claim-gate';
 import { finishCopy } from '../lib/studio-publish';
@@ -1603,6 +1603,18 @@ async function runPlannedCarousel(opts: {
    * inherit the same bar rather than escape it by dropping the number.
    */
   let rejectedLedger: RejectedProposition[] = [];
+  /**
+   * WHETHER THE HEADLINE COULD SURVIVE, asked before the deck was written rather than after.
+   * Records the premise the agent committed to, the verdict, and the angle actually written.
+   */
+  let premise: {
+    original: string; verdict: string; why: string;
+    supportedPremise?: string; rewritten: boolean; ms: number;
+  } | undefined;
+  /** What artwork was asked for versus what was produced — a fallback is never silent again. */
+  let artworkPlan: {
+    requested: string; scenesWanted: number; scenesUsable: number; skippedBecause?: string;
+  } | undefined;
   let lineage: { rejected: number; restatements: Restatement[]; checkFailed?: boolean } | undefined;
   /** What the semantic-unit check inspected and decided, per slide. */
   let semanticUnit: {
@@ -1727,6 +1739,31 @@ async function runPlannedCarousel(opts: {
     progress = { ...progress, tier: route.tier, signal: route.signal, researched: researches(route.tier) };
     await beat();
 
+    // CORE-PREMISE PREFLIGHT (HIGH only). Ask the expensive question first: can the promise the
+    // agent committed to actually be established? A live HIGH post opened 16 of 17 pages and spent
+    // $0.80 before discovering its own cover could not stand — and then rewrote the cover at the
+    // very end, which is intent drift the agent never agreed to.
+    let angle = opts.topic ?? '';
+    if (opts.type === 'tips' && route.tier === 'high' && angle) {
+      const pre = await stage('premise_preflight', () => premisePreflight({
+        topic: angle, language: opts.language,
+        region: opts.marketBrief ?? '',
+        bankFacts: card ? cardRules(card) : '',
+      }));
+      const replaced = pre.verdict !== 'CAN_SUPPORT' && !!pre.supportedPremise;
+      premise = {
+        original: angle, verdict: pre.verdict, why: pre.why,
+        supportedPremise: pre.supportedPremise, rewritten: replaced, ms: pre.ms,
+      };
+      console.log(`[studio/carousel] premise ${pre.verdict} — ${pre.why}`);
+      if (replaced) {
+        console.warn(`[studio/carousel] writing a supported angle instead: "${pre.supportedPremise}"`);
+        angle = pre.supportedPremise!;
+      }
+      progress = { ...progress, stage: 'premise_preflight' };
+      await beat();
+    }
+
     const writeDeck = (saferAngle: boolean, skipResearch = !researches(route.tier)) => {
       deckWrites++;
       return planCarousel({
@@ -1739,7 +1776,7 @@ async function runPlannedCarousel(opts: {
       // The guardrails reach the writer as forbidden conclusions, not only the gate as a check.
       cardNever: card ? [...card.never] : undefined,
       onFacts: (f) => { paletteFacts = f; },
-      type: opts.type, topic: opts.topic, quoteText: opts.quoteText, quoteAuthor: opts.quoteAuthor,
+      type: opts.type, topic: angle, quoteText: opts.quoteText, quoteAuthor: opts.quoteAuthor,
       slideCount: opts.slideCount, language: opts.language, agencyName: opts.agency.name,
       agencyProfile: opts.agencyProfile, avoidMotifs,
       marketBrief: opts.marketBrief,
@@ -2232,6 +2269,19 @@ async function runPlannedCarousel(opts: {
         : undefined;
       let images: Buffer[] | null = null;
       let contextArt = false;
+      // WHY THE ARTWORK CAME OUT THE WAY IT DID. A live deck fell back to the three-scene family for
+      // a six-slide post and recorded `artwork_error: null` — so it looked like nothing had gone
+      // wrong, and the visuals simply did not match the style's own example. Requested versus actual
+      // is now recorded whether or not anything failed.
+      const thinScenes = allScenes
+        .map((x, i) => (typeof x === 'string' && x.trim().length >= 10 ? null : `scene ${i + 1}`))
+        .filter((x): x is string => !!x);
+      artworkPlan = {
+        requested: 'fresh_per_slide',
+        scenesWanted: allScenes.length,
+        scenesUsable: allScenes.length - thinScenes.length,
+        ...(thinScenes.length ? { skippedBecause: `no usable scene for ${thinScenes.join(', ')}` } : {}),
+      };
       if (allScenes.every((x) => typeof x === 'string' && x.trim().length >= 10)) {
         const fresh = await generateTipsImages({ style: opts.style, scheme: opts.scheme, scenes: allScenes, agencyId, genId, ideas: allIdeas, quietZones: allZones, brandColours: opts.lockPalette ? { navy: opts.brand.navy, gold: opts.brand.gold } : undefined, onFail });
         if (fresh && fresh.buffers.length === allScenes.length) {
@@ -2241,6 +2291,9 @@ async function runPlannedCarousel(opts: {
         }
       }
       if (!images) {
+        if (artworkPlan && !artworkPlan.skippedBecause) {
+          artworkPlan.skippedBecause = 'per-slide artwork was attempted and did not come back complete';
+        }
         const fam = await generateTipsImages({ style: opts.style, scheme: opts.scheme, scenes: (plan.image_scenes ?? []).slice(0, 3), agencyId, genId, brandColours: opts.lockPalette ? { navy: opts.brand.navy, gold: opts.brand.gold } : undefined, onFail });
         if (fam && fam.buffers.length === 3) { images = fam.buffers; imagePaths = fam.paths; artworkSource = 'fresh_family'; }
       }
@@ -2293,6 +2346,7 @@ async function runPlannedCarousel(opts: {
         usage, fact_health: factHealth, rewrite, routing, progress,
         deck_writes: deckWrites, escalation_cycles: escalationCycles, recovery_suppressed: recoverySuppressed,
         escalation: escalationDetail, semantic_unit: semanticUnit, claim_lineage: lineage,
+        premise,
         // The LOW draft before any evidence work touched it, so its voice can be judged apart from
         // what the gate did to it.
         pre_escalation_plan: preEscalationDraft,
@@ -2340,7 +2394,7 @@ async function runPlannedCarousel(opts: {
         usage, fact_health: factHealth, rewrite, routing, progress,
         deck_writes: deckWrites, escalation_cycles: escalationCycles, recovery_suppressed: recoverySuppressed,
         escalation: escalationDetail, semantic_unit: semanticUnit, claim_lineage: lineage,
-        pre_escalation_plan: preEscalationDraft,
+        premise, pre_escalation_plan: preEscalationDraft,
         claim_qa: claimQa, copy_qa: copyQa, requirement_coverage: coverage,
         research_sources: sources.map((x) => ({
           source_id: x.id, url: x.url, title: x.title, domain: x.domain,
@@ -2749,9 +2803,22 @@ route.post('/carousel/topic-ideas', async (c) => {
         ? (prefs.shown_topics as unknown[]).filter((x): x is string => typeof x === 'string') : [];
     } catch { /* no prefs row yet — nothing shown before */ }
 
-    const topics = await topicIdeas(language,
+    const proposed = await topicIdeas(language,
       [...new Set([...exclude, ...seen, ...shown])].slice(0, 120), audience);
-    if (!topics) return c.json({ ok: false, error: 'ideas_failed', message: "Couldn't think of ideas right now — please try again." }, 502);
+    if (!proposed) return c.json({ ok: false, error: 'ideas_failed', message: "Couldn't think of ideas right now — please try again." }, 502);
+
+    // INSPIRATION OBEYS THE SAME TRUTH BOUNDARY AS A TYPED TOPIC. AIVENA suggested "listing in the
+    // wrong month can add years to the sale", the agent picked it, and the engine then spent $0.80
+    // discovering its own suggestion could not be supported. A factual hook is checked BEFORE it is
+    // offered; opinion and lifestyle ideas — most of them — cost nothing and appear as they always did.
+    const vetted = await vetIdeas({
+      ideas: proposed, language,
+      region: typeof prefs.region === 'string' ? prefs.region : '',
+    }).catch(() => ({ ideas: proposed, checked: 0, replaced: [] as Array<{ from: string; to: string; why: string }> }));
+    const topics = vetted.ideas;
+    for (const r of vetted.replaced) {
+      console.warn(`[studio/ideas] replaced an unsupportable suggestion: "${r.from}" → "${r.to}" (${r.why})`);
+    }
 
     // remember what we just offered. Newest first, capped — an agency that has seen 400 ideas does
     // not need the oldest ones held against it forever, and the cap keeps the prompt sane.

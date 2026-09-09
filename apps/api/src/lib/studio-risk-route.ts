@@ -249,3 +249,23 @@ export function mayRewriteDeck(b: RunBudget): { ok: boolean; why: string } {
   }
   return { ok: true, why: 'one deck-level recovery is still available' };
 }
+
+/**
+ * Which suggested ideas need a premise check before an agent is shown them, and which are free.
+ *
+ * AIVENA proposed "listing in the wrong month can add years to the sale", the agent picked it, and
+ * the engine spent $0.80 discovering its own suggestion could not be supported. A factual hook has
+ * to clear the same bar as a typed topic — but most inspiration is opinion, and opinion costs
+ * nothing, so only the factual ones are checked and never more than `maxChecks` of them.
+ */
+export function ideasNeedingCheck(
+  ideas: readonly string[], maxChecks = 2,
+): { check: string[]; free: string[] } {
+  const check: string[] = [];
+  const free: string[] = [];
+  for (const idea of ideas) {
+    if (routeTopic(idea).tier !== 'low' && check.length < maxChecks) check.push(idea);
+    else free.push(idea);
+  }
+  return { check, free };
+}

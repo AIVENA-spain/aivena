@@ -1,3 +1,29 @@
+// AIVENA CAPTURE — deploy-only Edge Function `twilio-template-sync`
+//
+// This file is a RECORD of what is deployed, not a source of new work.
+// Do NOT deploy it without diffing against live first: the repo has been
+// stale before, and deploying a stale twilio-whatsapp-inbound would have
+// silenced Amanda entirely.
+//
+//   function          : twilio-template-sync
+//   repo path         : supabase/functions/twilio-template-sync/index.ts
+//   deployed version  : 2
+//   deployed bundle   : ezbr_sha256 876eeeba553f466e43c3ff134505a6ecc941d212c630972b08d04e6fef9164a0
+//   captured source   : sha256 6060556834002b6cde244baf87fb1a3c2be9b3e93a07e91e4d24665c72cacd17
+//   verified_at       : 2026-09-09
+//   method            : pulled deployed source via Supabase Management API
+//                       and written verbatim below the marker
+//   verify_jwt        : false  (MUST be passed explicitly on any redeploy)
+//   status            : verified
+//   also captured     : sync-logic.ts (also verified EXACT against live)
+//   difference        : none — both index.ts and sync-logic.ts were already byte-for-byte identical to the deployed sources (verified by full-file diff).
+//
+// The bundle hash is Supabase's hash of the DEPLOYED BUNDLE and cannot be
+// recomputed from this file. It proves 'production has not changed since
+// capture'. Source equivalence was established AT CAPTURE TIME by pulling
+// live source and writing it verbatim; `captured source sha256` above lets
+// us detect later edits to this file.
+// ---8<--- CAPTURED SOURCE BELOW — verbatim from production, do not edit ---8<---
 // supabase/functions/twilio-template-sync/index.ts  (Phase 1c)
 // Reconciles whatsapp_templates.status from Twilio ContentAndApprovals.
 // Read-only against Twilio (GET only). Writes ONLY via apply_template_provider_status.

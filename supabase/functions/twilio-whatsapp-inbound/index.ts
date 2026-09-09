@@ -1,3 +1,28 @@
+// AIVENA CAPTURE — deploy-only Edge Function `twilio-whatsapp-inbound`
+//
+// This file is a RECORD of what is deployed, not a source of new work.
+// Do NOT deploy it without diffing against live first: the repo has been
+// stale before, and deploying a stale twilio-whatsapp-inbound would have
+// silenced Amanda entirely.
+//
+//   function          : twilio-whatsapp-inbound
+//   repo path         : supabase/functions/twilio-whatsapp-inbound/index.ts
+//   deployed version  : 15
+//   deployed bundle   : ezbr_sha256 afd67380e59662eec494160a7edc3e0e409508545d1d4fadaf8b36a3eced5ed4
+//   captured source   : sha256 f3cadcd81d96233ae379248dfe35d4515ef10bdc11d950ea290a85730f76f284
+//   verified_at       : 2026-09-09
+//   method            : pulled deployed source via Supabase Management API
+//                       and written verbatim below the marker
+//   verify_jwt        : false  (MUST be passed explicitly on any redeploy)
+//   status            : verified
+//   difference        : COSMETIC ONLY, reported to Christian 2026-09-09. The pre-existing repo copy differed from live on ONE line: the number of box-drawing characters in a // comment divider at the v6 header. Proven zero-impact by diffing both files with all comments and whitespace stripped — the executable code was byte-identical. Captured from LIVE, which is what a capture records. No deploy, no behavioural choice was made.
+//
+// The bundle hash is Supabase's hash of the DEPLOYED BUNDLE and cannot be
+// recomputed from this file. It proves 'production has not changed since
+// capture'. Source equivalence was established AT CAPTURE TIME by pulling
+// live source and writing it verbatim; `captured source sha256` above lets
+// us detect later edits to this file.
+// ---8<--- CAPTURED SOURCE BELOW — verbatim from production, do not edit ---8<---
 // twilio-whatsapp-inbound — W6 receive path v6 (2026-08-31).
 //
 //   v6: THE AGENT'S REPLY IS THE ANSWER. A staff message used to be recorded
@@ -134,7 +159,7 @@ Deno.serve(async (req) => {
         .update({ last_checkin_at: new Date().toISOString(), updated_at: new Date().toISOString() })
         .eq("id", agent.id);
 
-      // ── v6: THE REPLY IS THE ANSWER ────────────────────────────────────────
+      // ── v6: THE REPLY IS THE ANSWER ───────────────────────────────────
       // Until now a staff message was recorded and dropped. If we pinged this
       // agent a question, their next message IS the answer to it — that is what
       // the ping literally asks for — so it is matched back and relayed to the

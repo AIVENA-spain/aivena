@@ -1,3 +1,28 @@
+// AIVENA CAPTURE — deploy-only Edge Function `image-generate-create`
+//
+// This file is a RECORD of what is deployed, not a source of new work.
+// Do NOT deploy it without diffing against live first: the repo has been
+// stale before, and deploying a stale twilio-whatsapp-inbound would have
+// silenced Amanda entirely.
+//
+//   function          : image-generate-create
+//   repo path         : supabase/functions/image-generate-create/index.ts
+//   deployed version  : 27
+//   deployed bundle   : ezbr_sha256 3d6a90b781072015b5ec7a3e1fada75eaad9a67a828e61e69b1bb84142857ed4
+//   captured source   : sha256 419c885edb256362545fdf9c04c07514c6d9aeeb850631022e14f3bdf1530c8f
+//   verified_at       : 2026-09-09
+//   method            : pulled deployed source via Supabase Management API
+//                       and written verbatim below the marker
+//   verify_jwt        : false  (MUST be passed explicitly on any redeploy)
+//   status            : verified
+//   difference        : none — repo file was already byte-for-byte identical to deployed source (full-file diff).
+//
+// The bundle hash is Supabase's hash of the DEPLOYED BUNDLE and cannot be
+// recomputed from this file. It proves 'production has not changed since
+// capture'. Source equivalence was established AT CAPTURE TIME by pulling
+// live source and writing it verbatim; `captured source sha256` above lets
+// us detect later edits to this file.
+// ---8<--- CAPTURED SOURCE BELOW — verbatim from production, do not edit ---8<---
 // image-generate-create — W13 image generation create path v0.6.9 (AIVENA Studio).
 // v0.6.9 (2026-07-15): renovation back on nano-banana-edit — seedream preserved the room instead of
 //   restyling it (Christian: "looks the same just more ai"). Quality > occasional E005 retry.

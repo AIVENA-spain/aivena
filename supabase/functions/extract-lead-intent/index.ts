@@ -1,3 +1,28 @@
+// AIVENA CAPTURE — deploy-only Edge Function `extract-lead-intent`
+//
+// This file is a RECORD of what is deployed, not a source of new work.
+// Do NOT deploy it without diffing against live first: the repo has been
+// stale before, and deploying a stale twilio-whatsapp-inbound would have
+// silenced Amanda entirely.
+//
+//   function          : extract-lead-intent
+//   repo path         : supabase/functions/extract-lead-intent/index.ts
+//   deployed version  : 1
+//   deployed bundle   : ezbr_sha256 01d45f8d25cbe906ef916434ea8cbdf0e0a238e9f1efd911c53f01f99e90e811
+//   captured source   : sha256 e450730636ab5cf7a85a838afab41df82de79c823763afd9c728bd73ea38a1de
+//   verified_at       : 2026-09-09
+//   method            : pulled deployed source via Supabase Management API
+//                       and written verbatim below the marker
+//   verify_jwt        : false  (MUST be passed explicitly on any redeploy)
+//   status            : verified
+//   difference        : none — the pre-existing repo file was already byte-for-byte identical to the deployed source (verified by full-file diff, not inspection).
+//
+// The bundle hash is Supabase's hash of the DEPLOYED BUNDLE and cannot be
+// recomputed from this file. It proves 'production has not changed since
+// capture'. Source equivalence was established AT CAPTURE TIME by pulling
+// live source and writing it verbatim; `captured source sha256` above lets
+// us detect later edits to this file.
+// ---8<--- CAPTURED SOURCE BELOW — verbatim from production, do not edit ---8<---
 // AIVENA — extract-lead-intent  (El Raso Phase 2 · Option 2: LLM buyer-message intent extraction)
 // Slug: extract-lead-intent · verify_jwt=false (internal-secret gated, mirrors property-sync)
 //

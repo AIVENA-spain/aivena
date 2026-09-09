@@ -1,3 +1,28 @@
+// AIVENA CAPTURE — deploy-only Edge Function `image-generate-callback`
+//
+// This file is a RECORD of what is deployed, not a source of new work.
+// Do NOT deploy it without diffing against live first: the repo has been
+// stale before, and deploying a stale twilio-whatsapp-inbound would have
+// silenced Amanda entirely.
+//
+//   function          : image-generate-callback
+//   repo path         : supabase/functions/image-generate-callback/index.ts
+//   deployed version  : 17
+//   deployed bundle   : ezbr_sha256 53c94f098bfe88453b8fe97dea571a77197accb93350e711427e38b0be98fcec
+//   captured source   : sha256 ee843ddf6e05bf24ca0473592f851149f01bfcbe1897de6dcafa2814a739d164
+//   verified_at       : 2026-09-09
+//   method            : pulled deployed source via Supabase Management API
+//                       and written verbatim below the marker
+//   verify_jwt        : false  (MUST be passed explicitly on any redeploy)
+//   status            : verified
+//   difference        : none — repo file was already byte-for-byte identical to deployed source (full-file diff).
+//
+// The bundle hash is Supabase's hash of the DEPLOYED BUNDLE and cannot be
+// recomputed from this file. It proves 'production has not changed since
+// capture'. Source equivalence was established AT CAPTURE TIME by pulling
+// live source and writing it verbatim; `captured source sha256` above lets
+// us detect later edits to this file.
+// ---8<--- CAPTURED SOURCE BELOW — verbatim from production, do not edit ---8<---
 // image-generate-callback — W13 completion handler v0.5.1 (AIVENA Studio pipeline).
 // v0.5.1 (2026-07-16): revision results write to a NEW storage path (-revN suffix). Until now a revision
 //   UPSERTED over the original file — Christian's favourite first renovation was destroyed by its own

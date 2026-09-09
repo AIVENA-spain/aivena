@@ -1,3 +1,28 @@
+// AIVENA CAPTURE — deploy-only Edge Function `image-generate-revise`
+//
+// This file is a RECORD of what is deployed, not a source of new work.
+// Do NOT deploy it without diffing against live first: the repo has been
+// stale before, and deploying a stale twilio-whatsapp-inbound would have
+// silenced Amanda entirely.
+//
+//   function          : image-generate-revise
+//   repo path         : supabase/functions/image-generate-revise/index.ts
+//   deployed version  : 15
+//   deployed bundle   : ezbr_sha256 6947fdf620fe9731cb19a2acb522053d09a9b51f556c422ee0d23e88684ae072
+//   captured source   : sha256 2ddc94ec483b49f091066e0612cb499780b75005de15fcbc402c935b1568ec05
+//   verified_at       : 2026-09-09
+//   method            : pulled deployed source via Supabase Management API
+//                       and written verbatim below the marker
+//   verify_jwt        : false  (MUST be passed explicitly on any redeploy)
+//   status            : verified
+//   difference        : none — repo file was already byte-for-byte identical to deployed source (full-file diff).
+//
+// The bundle hash is Supabase's hash of the DEPLOYED BUNDLE and cannot be
+// recomputed from this file. It proves 'production has not changed since
+// capture'. Source equivalence was established AT CAPTURE TIME by pulling
+// live source and writing it verbatim; `captured source sha256` above lets
+// us detect later edits to this file.
+// ---8<--- CAPTURED SOURCE BELOW — verbatim from production, do not edit ---8<---
 // image-generate-revise — W13 free-revision path v0.6.1 (AIVENA Studio pipeline).
 //
 // v0.6.1 (2026-07-16): multi-change revision notes. v0.6's "ONE change only" phrasing made the model

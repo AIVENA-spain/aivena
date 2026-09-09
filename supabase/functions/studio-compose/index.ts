@@ -1,3 +1,28 @@
+// AIVENA CAPTURE — deploy-only Edge Function `studio-compose`
+//
+// This file is a RECORD of what is deployed, not a source of new work.
+// Do NOT deploy it without diffing against live first: the repo has been
+// stale before, and deploying a stale twilio-whatsapp-inbound would have
+// silenced Amanda entirely.
+//
+//   function          : studio-compose
+//   repo path         : supabase/functions/studio-compose/index.ts
+//   deployed version  : 31
+//   deployed bundle   : ezbr_sha256 dca327b16311eb701d0e0effb7477b8540c7949522465f73e249b7927683156e
+//   captured source   : sha256 50285f59613251175fa13eed3ce4efb87bd09905bfe67e4062d1b90b5fdd6568
+//   verified_at       : 2026-09-09
+//   method            : pulled deployed source via Supabase Management API
+//                       and written verbatim below the marker
+//   verify_jwt        : false  (MUST be passed explicitly on any redeploy)
+//   status            : verified
+//   difference        : none — repo file was already byte-for-byte identical to deployed source. Verified by sha256 of both files (50285f59…), not by inspection. Live version re-checked immediately before capture (still v31, same bundle hash). Studio session untouched: capture only, no logic change.
+//
+// The bundle hash is Supabase's hash of the DEPLOYED BUNDLE and cannot be
+// recomputed from this file. It proves 'production has not changed since
+// capture'. Source equivalence was established AT CAPTURE TIME by pulling
+// live source and writing it verbatim; `captured source sha256` above lets
+// us detect later edits to this file.
+// ---8<--- CAPTURED SOURCE BELOW — verbatim from production, do not edit ---8<---
 // studio-compose — deterministic creative renderer v3.6.3 (AIVENA Studio).
 // v3.5.5 (2026-06-17): collage rebuilt — clean cream editorial DUO.
 // v3.5.6 (2026-06-17): collage branches by photo count.

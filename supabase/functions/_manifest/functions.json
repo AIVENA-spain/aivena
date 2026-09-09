@@ -18,7 +18,7 @@
       "verify_jwt": true,
       "extra_files": [],
       "status": "VERIFIED",
-      "difference": "none — exact source match"
+      "difference": "none \u2014 exact source match"
     },
     {
       "function": "classify-reply",
@@ -31,7 +31,7 @@
       "verify_jwt": false,
       "extra_files": [],
       "status": "VERIFIED",
-      "difference": "none — exact source match (captured 2026-09-01 with the earlier header format, before the source marker convention; source hash therefore covers the whole file)"
+      "difference": "none \u2014 exact source match (captured 2026-09-01 with the earlier header format, before the source marker convention; source hash therefore covers the whole file)"
     },
     {
       "function": "clean-inbound-body",
@@ -46,7 +46,7 @@
         "deno.json"
       ],
       "status": "VERIFIED",
-      "difference": "none — exact source match (captured 2026-09-01 with the earlier header format, before the source marker convention; source hash therefore covers the whole file)"
+      "difference": "none \u2014 exact source match (captured 2026-09-01 with the earlier header format, before the source marker convention; source hash therefore covers the whole file)"
     },
     {
       "function": "extract-lead-intent",
@@ -61,7 +61,7 @@
         "eval"
       ],
       "status": "VERIFIED",
-      "difference": "none — exact source match"
+      "difference": "none \u2014 exact source match"
     },
     {
       "function": "fetch-b64",
@@ -74,7 +74,7 @@
       "verify_jwt": false,
       "extra_files": [],
       "status": "VERIFIED",
-      "difference": "none — exact source match"
+      "difference": "none \u2014 exact source match"
     },
     {
       "function": "generate-lead-embedding",
@@ -87,7 +87,7 @@
       "verify_jwt": true,
       "extra_files": [],
       "status": "VERIFIED",
-      "difference": "none — exact source match (captured 2026-09-01 with the earlier header format, before the source marker convention; source hash therefore covers the whole file)"
+      "difference": "none \u2014 exact source match (captured 2026-09-01 with the earlier header format, before the source marker convention; source hash therefore covers the whole file)"
     },
     {
       "function": "generate-property-embedding",
@@ -100,7 +100,7 @@
       "verify_jwt": true,
       "extra_files": [],
       "status": "VERIFIED",
-      "difference": "none — exact source match"
+      "difference": "none \u2014 exact source match"
     },
     {
       "function": "image-generate-callback",
@@ -113,7 +113,7 @@
       "verify_jwt": false,
       "extra_files": [],
       "status": "VERIFIED",
-      "difference": "none — exact source match"
+      "difference": "none \u2014 exact source match"
     },
     {
       "function": "image-generate-create",
@@ -126,7 +126,7 @@
       "verify_jwt": false,
       "extra_files": [],
       "status": "VERIFIED",
-      "difference": "none — exact source match"
+      "difference": "none \u2014 exact source match"
     },
     {
       "function": "image-generate-revise",
@@ -139,7 +139,7 @@
       "verify_jwt": false,
       "extra_files": [],
       "status": "VERIFIED",
-      "difference": "none — exact source match"
+      "difference": "none \u2014 exact source match"
     },
     {
       "function": "internal-agency-asset-upload",
@@ -152,7 +152,7 @@
       "verify_jwt": false,
       "extra_files": [],
       "status": "VERIFIED",
-      "difference": "none — exact source match"
+      "difference": "none \u2014 exact source match"
     },
     {
       "function": "property-enrich-montinmo",
@@ -165,7 +165,7 @@
       "verify_jwt": false,
       "extra_files": [],
       "status": "VERIFIED",
-      "difference": "none — exact source match (captured 2026-09-01 with the earlier header format, before the source marker convention; source hash therefore covers the whole file)"
+      "difference": "none \u2014 exact source match (captured 2026-09-01 with the earlier header format, before the source marker convention; source hash therefore covers the whole file)"
     },
     {
       "function": "property-sync",
@@ -184,22 +184,26 @@
         "kyero.ts"
       ],
       "status": "VERIFIED",
-      "difference": "index.ts: COSMETIC by the scanner (executable code proven identical). The repo header was NOT preserved here, unlike kyero.ts, because it contained a claim that is FALSE of current production: it said deployed live is still v2, the old unguarded engine, and warned against pointing a real feed at it. Live IS v3 — the deployed source header says v3 and the deployed code calls evaluateWithdrawalGuard and mirrorImages. A stale warning about a danger that no longer exists would mislead the next reader, so the live header stands. The repo version is preserved at scratchpad/capture/preserved/."
+      "difference": "index.ts: COSMETIC by the scanner (executable code proven identical). The repo header was NOT preserved here, unlike kyero.ts, because it contained a claim that is FALSE of current production: it said deployed live is still v2, the old unguarded engine, and warned against pointing a real feed at it. Live IS v3 \u2014 the deployed source header says v3 and the deployed code calls evaluateWithdrawalGuard and mirrorImages. A stale warning about a danger that no longer exists would mislead the next reader, so the live header stands. The repo version is preserved at scratchpad/capture/preserved/."
     },
     {
       "function": "property-valuation",
       "repo_path": "supabase/functions/property-valuation/index.ts",
       "present_in_repo": true,
-      "deployed_version": 10,
-      "deployed_bundle_sha256": "922e14cfc429dbcc092857732027d61be1642f9b754bef015270479406ed91ca",
-      "captured_source_sha256": "772b07906aebe43bf5562a5afd4e1ea61a52f487d2c051578170da9d4ac08528",
+      "deployed_version": 11,
+      "deployed_bundle_sha256": "1365e5437dc89fcfe332a881378ca17b98756faa627bb3a068fd1e2a971514dc",
+      "captured_source_sha256": "698833fd0150810c4cfab1918f3a4005f61795d0cc90a490b8155ab5744cb199",
       "source_hash_covers": "whole file",
       "verify_jwt": false,
       "extra_files": [
+        "constant-time.test.ts",
+        "constant-time.ts",
         "index.pre-gate-2026-07-31.ts"
       ],
-      "status": "REPO_AHEAD_OF_PRODUCTION",
-      "difference": "REPO_AHEAD: repo carries the constant-time comparison for the launch-gate test key (audit finding F10, commit 18a1174); production v10 still uses !==. Repo is the INTENDED version. Edge Functions deploy separately from the Railway API, which is why the committed fix never reached production."
+      "status": "VERIFIED",
+      "difference": "NONE. The F10 constant-time comparison for the launch-gate test key (commit 18a1174) reached production on 2026-09-09 as v11; repo and production now match. The helper was extracted to constant-time.ts so it is unit-tested rather than assumed \u2014 no test covered it before. Live v10 is preserved verbatim at supabase/rollback/property-valuation.v10.PRODUCTION.ts. The launch gate remains fully closed: AIVENA_VALUATION_LAUNCH and AIVENA_VALUATION_TEST_KEY are both unset, so every request returns 503 and nothing is written.",
+      "verified_at": "2026-09-09",
+      "method": "deployed FROM this repo source (v10 -> v11), then the deployed source was read back from Supabase and compared against the repo file"
     },
     {
       "function": "send-invitation-email",
@@ -212,7 +216,7 @@
       "verify_jwt": true,
       "extra_files": [],
       "status": "VERIFIED",
-      "difference": "none — exact source match (captured 2026-09-01 with the earlier header format, before the source marker convention; source hash therefore covers the whole file)"
+      "difference": "none \u2014 exact source match (captured 2026-09-01 with the earlier header format, before the source marker convention; source hash therefore covers the whole file)"
     },
     {
       "function": "studio-asset",
@@ -225,7 +229,7 @@
       "verify_jwt": false,
       "extra_files": [],
       "status": "VERIFIED",
-      "difference": "none — exact source match"
+      "difference": "none \u2014 exact source match"
     },
     {
       "function": "studio-callback",
@@ -238,7 +242,7 @@
       "verify_jwt": false,
       "extra_files": [],
       "status": "VERIFIED",
-      "difference": "none — exact source match"
+      "difference": "none \u2014 exact source match"
     },
     {
       "function": "studio-compose",
@@ -251,7 +255,7 @@
       "verify_jwt": false,
       "extra_files": [],
       "status": "VERIFIED",
-      "difference": "none — exact source match"
+      "difference": "none \u2014 exact source match"
     },
     {
       "function": "studio-generate",
@@ -264,7 +268,7 @@
       "verify_jwt": false,
       "extra_files": [],
       "status": "VERIFIED",
-      "difference": "none — exact source match"
+      "difference": "none \u2014 exact source match"
     },
     {
       "function": "studio-template-render",
@@ -277,7 +281,7 @@
       "verify_jwt": false,
       "extra_files": [],
       "status": "VERIFIED",
-      "difference": "none — exact source match"
+      "difference": "none \u2014 exact source match"
     },
     {
       "function": "studio-tpl",
@@ -290,7 +294,7 @@
       "verify_jwt": false,
       "extra_files": [],
       "status": "VERIFIED",
-      "difference": "none — exact source match"
+      "difference": "none \u2014 exact source match"
     },
     {
       "function": "studio-upload",
@@ -303,7 +307,7 @@
       "verify_jwt": false,
       "extra_files": [],
       "status": "VERIFIED",
-      "difference": "none — exact source match"
+      "difference": "none \u2014 exact source match"
     },
     {
       "function": "tpl-io",
@@ -316,7 +320,7 @@
       "verify_jwt": false,
       "extra_files": [],
       "status": "VERIFIED",
-      "difference": "none — exact source match"
+      "difference": "none \u2014 exact source match"
     },
     {
       "function": "translate-text",
@@ -329,7 +333,7 @@
       "verify_jwt": false,
       "extra_files": [],
       "status": "VERIFIED",
-      "difference": "none — exact source match (captured 2026-09-01 with the earlier header format, before the source marker convention; source hash therefore covers the whole file)"
+      "difference": "none \u2014 exact source match (captured 2026-09-01 with the earlier header format, before the source marker convention; source hash therefore covers the whole file)"
     },
     {
       "function": "twilio-template-sync",
@@ -344,7 +348,7 @@
         "sync-logic.ts"
       ],
       "status": "VERIFIED",
-      "difference": "none — exact source match"
+      "difference": "none \u2014 exact source match"
     },
     {
       "function": "twilio-whatsapp-inbound",
@@ -360,7 +364,7 @@
         "index.v3-proposed.ts"
       ],
       "status": "VERIFIED",
-      "difference": "COSMETIC ONLY, reported to Christian 2026-09-09. The pre-existing repo copy differed from live on ONE line: the number of box-drawing characters in a // comment divider at the v6 header. Proven zero-impact by diffing both files with all comments and whitespace stripped — the executable code was byte-identical. Captured from LIVE, which is what a capture records. No deploy, no behavioural choice was made."
+      "difference": "COSMETIC ONLY, reported to Christian 2026-09-09. The pre-existing repo copy differed from live on ONE line: the number of box-drawing characters in a // comment divider at the v6 header. Proven zero-impact by diffing both files with all comments and whitespace stripped \u2014 the executable code was byte-identical. Captured from LIVE, which is what a capture records. No deploy, no behavioural choice was made."
     },
     {
       "function": "twilio-whatsapp-status",
@@ -373,7 +377,7 @@
       "verify_jwt": false,
       "extra_files": [],
       "status": "VERIFIED",
-      "difference": "none — exact source match (captured 2026-09-01 with the earlier header format, before the source marker convention; source hash therefore covers the whole file)"
+      "difference": "none \u2014 exact source match (captured 2026-09-01 with the earlier header format, before the source marker convention; source hash therefore covers the whole file)"
     },
     {
       "function": "upload-agency-logo",
@@ -386,7 +390,7 @@
       "verify_jwt": true,
       "extra_files": [],
       "status": "VERIFIED",
-      "difference": "none — exact source match"
+      "difference": "none \u2014 exact source match"
     },
     {
       "function": "vapi-call-webhook",
@@ -399,7 +403,7 @@
       "verify_jwt": false,
       "extra_files": [],
       "status": "VERIFIED",
-      "difference": "none — exact source match"
+      "difference": "none \u2014 exact source match"
     },
     {
       "function": "vapi-property-search",
@@ -412,7 +416,7 @@
       "verify_jwt": false,
       "extra_files": [],
       "status": "VERIFIED",
-      "difference": "none — exact source match"
+      "difference": "none \u2014 exact source match"
     },
     {
       "function": "whatsapp-send-execute",
@@ -420,7 +424,7 @@
       "present_in_repo": true,
       "deployed_version": 20,
       "deployed_bundle_sha256": "ab0698a53dcebeadb5e73493914167b908562c471b93694f568e395a0f505216",
-      "captured_source_sha256": "09a5fa9641f98ed36ed0bc03606735ef5bb48b53172f3040bc099663eeb925db",
+      "captured_source_sha256": "b594d312cf1fa655d46fc93167eaf23796a62424568a5a2a35932b952e599b16",
       "source_hash_covers": "whole file",
       "verify_jwt": false,
       "extra_files": [
@@ -430,7 +434,8 @@
         "twilio-config.ts"
       ],
       "status": "REPO_AHEAD_OF_PRODUCTION",
-      "difference": "REPO_AHEAD: repo carries v6.7 (Twilio Account SID from TWILIO_ACCOUNT_SID env var + fail-closed validation + twilio-config.ts helper); production runs v20 with the SID as a source literal. Repo is the INTENDED version. Deploy blocked until the TWILIO_ACCOUNT_SID function secret exists and is confirmed valid — without it the function fails closed for every send."
+      "difference": "REPO_AHEAD: repo carries v6.8 \u2014 both Twilio credentials now come from the ONE platform secret vault via _get_platform_secret (the auth token always did; the SID was a source literal in production v20). Production still runs v20. DEPLOY BLOCKED, and NOT on the vault: the vault path is verified (SID present, format valid for a Twilio Account SID, token present, RPC is SECURITY DEFINER with no name filter, service_role has EXECUTE, anon/authenticated do not). It is blocked because the repo copy of this function has never been verified against production. Commit d779383 (2026-08-03) ADDED the file whole \u2014 535 insertions, 0 deletions, no prior history \u2014 so the repo is one unverified transcription of live v20 plus the SID change. Deploying it could silently drop a production behaviour, the same class of failure that would have silenced Amanda via twilio-whatsapp-inbound. A live-vs-repo diff must come first, and it cannot be done in-session without pulling the hardcoded SID out of production.",
+      "verified_at": "2026-09-09"
     },
     {
       "function": "whatsapp-send-template",
@@ -443,7 +448,7 @@
       "verify_jwt": false,
       "extra_files": [],
       "status": "VERIFIED",
-      "difference": "none — exact source match (captured 2026-09-01 with the earlier header format, before the source marker convention; source hash therefore covers the whole file)"
+      "difference": "none \u2014 exact source match (captured 2026-09-01 with the earlier header format, before the source marker convention; source hash therefore covers the whole file)"
     },
     {
       "function": "whatsapp-template-replicate",
@@ -456,7 +461,7 @@
       "verify_jwt": false,
       "extra_files": [],
       "status": "VERIFIED",
-      "difference": "none — exact source match"
+      "difference": "none \u2014 exact source match"
     }
   ]
 }

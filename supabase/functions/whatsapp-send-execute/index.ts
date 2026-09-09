@@ -1,10 +1,12 @@
-// whatsapp-send-execute — W6 send path v6.7 (Twilio WhatsApp API).
-// v6.7 (P3 source cleanup, 2026-07-31): the Twilio Account SID is read from the
-//   TWILIO_ACCOUNT_SID env var (Deno.env) instead of a hardcoded literal, so the
-//   full source can be versioned without a secret in git. Fail-closed: a missing /
-//   empty / malformed SID returns 500 credentials_unavailable BEFORE any Twilio
-//   request is built (no send). Auth token, verify_jwt=false, the v6.6 opt-out
-//   guard, and all send/template/audit/thread behavior are unchanged.
+// whatsapp-send-execute — W6 send path v6.8 (Twilio WhatsApp API).
+// v6.8 (source-of-truth alignment, 2026-09-09): the Twilio Account SID now comes
+//   from the SAME platform secret vault as the auth token (_get_platform_secret),
+//   not from a source literal and not from a Deno.env var. Both credentials are
+//   read together and validated together; a missing SID, a malformed SID, or a
+//   missing token returns 500 credentials_unavailable BEFORE any Twilio request is
+//   built (no send). The rejection reason is a category, never a value, so it is
+//   safe to log. verify_jwt=false, the v6.6 opt-out guard, and all send / template
+//   / audit / thread behavior are unchanged.
 // v6.6 (P3 audit fix, 2026-07-31): opt-out guard now refuses BOTH 'blocked' AND
 //   'opted_out' (was blocked-only). Single shared predicate sendBlockedByOptIn in
 //   ./optout-guard.ts (unit-tested). Defense-in-depth only; every other behavior,
@@ -57,14 +59,11 @@
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { sendBlockedByOptIn } from "./optout-guard.ts";
-import { isValidTwilioAccountSid, twilioMessagesUrl, twilioBasicAuth } from "./twilio-config.ts";
+import { resolveTwilioConfig, twilioMessagesUrl, twilioBasicAuth } from "./twilio-config.ts";
 
 const SUPABASE_URL              = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-// Read from the Edge Function env var (set via Supabase function secrets) — never
-// hardcoded, so the source is secret-free. Validated + fail-closed at request time.
-const TWILIO_ACCOUNT_SID = Deno.env.get("TWILIO_ACCOUNT_SID") ?? "";
 const STATUS_CALLBACK_URL = "https://atminvhrybxegpdtnnpl.supabase.co/functions/v1/twilio-whatsapp-status";
 
 const E164 = /^\+[1-9]\d{6,14}$/;
@@ -323,19 +322,28 @@ Deno.serve(async (req) => {
     renderedContent = tplBody ? renderBody(tplBody, contentVars) : `[template:${templateKey}]`;
   }
 
-  const { data: token, error: tokenErr } = await admin.rpc("_get_platform_secret", { p_name: "TWILIO_AUTH_TOKEN" });
-  if (tokenErr || !token) {
+  // Both Twilio credentials come from the one vault, read together so a partially
+  // configured account cannot produce a half-formed send. Fail closed before any
+  // Twilio request is built.
+  const [sidRes, tokenRes] = await Promise.all([
+    admin.rpc("_get_platform_secret", { p_name: "TWILIO_ACCOUNT_SID" }),
+    admin.rpc("_get_platform_secret", { p_name: "TWILIO_AUTH_TOKEN" }),
+  ]);
+  if (sidRes.error || tokenRes.error) {
+    console.error("[whatsapp-send-execute] platform secret lookup failed");
     return j(500, { ok: false, error: "credentials_unavailable" });
   }
 
-  // Fail closed: a missing / empty / malformed TWILIO_ACCOUNT_SID env var stops the
-  // send BEFORE any Twilio request is built (no request, no send). Same error shape
-  // as a missing auth token.
-  if (!isValidTwilioAccountSid(TWILIO_ACCOUNT_SID)) {
+  const twilio = resolveTwilioConfig(sidRes.data, tokenRes.data);
+  if (!twilio.ok) {
+    // Category only — never the value. Without this line a vault misconfiguration
+    // is a silent 500 on every send with nothing to point at.
+    console.error(`[whatsapp-send-execute] twilio config rejected: ${twilio.reason}`);
     return j(500, { ok: false, error: "credentials_unavailable" });
   }
+  const token = twilio.authToken;
 
-  const twilioUrl = twilioMessagesUrl(TWILIO_ACCOUNT_SID);
+  const twilioUrl = twilioMessagesUrl(twilio.accountSid);
   let form: URLSearchParams;
   if (templateMode) {
     form = new URLSearchParams({
@@ -370,7 +378,7 @@ Deno.serve(async (req) => {
     const resp = await fetch(twilioUrl, {
       method: "POST",
       headers: {
-        "Authorization": twilioBasicAuth(TWILIO_ACCOUNT_SID, token),
+        "Authorization": twilioBasicAuth(twilio.accountSid, token),
         "Content-Type": "application/x-www-form-urlencoded",
       },
       body: form.toString(),

@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { isValidTwilioAccountSid, twilioMessagesUrl, twilioBasicAuth } from './twilio-config';
+import {
+  isValidTwilioAccountSid,
+  twilioMessagesUrl,
+  twilioBasicAuth,
+  resolveTwilioConfig,
+} from './twilio-config';
 
 // Fake, shape-valid SIDs built by concatenation so NO scannable "AC…" literal ever
 // appears in source (push-protection-safe). These are not real credentials.
@@ -41,5 +46,53 @@ describe('twilioMessagesUrl / twilioBasicAuth — build the request without fetc
     twilioMessagesUrl(FAKE_SID);
     twilioBasicAuth(FAKE_SID, 'tok');
     expect(fetchSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe('resolveTwilioConfig — one vault, four outcomes', () => {
+  // These four cases are the whole contract. Three of them must stop the send
+  // before a Twilio request exists; the fourth must hand back both credentials.
+
+  it('missing SID → sid_missing, fails closed', () => {
+    for (const sid of [null, undefined, '', '   ']) {
+      const r = resolveTwilioConfig(sid, 'tok');
+      expect(r.ok).toBe(false);
+      expect(r.ok === false && r.reason).toBe('sid_missing');
+    }
+  });
+
+  it('malformed SID → sid_malformed, fails closed', () => {
+    for (const sid of ['A' + 'C' + '123', 'X' + 'Y' + '0'.repeat(32), '0'.repeat(34), 'A' + 'C' + 'g'.repeat(32)]) {
+      const r = resolveTwilioConfig(sid, 'tok');
+      expect(r.ok).toBe(false);
+      expect(r.ok === false && r.reason).toBe('sid_malformed');
+    }
+  });
+
+  it('missing auth token → token_missing, fails closed even with a valid SID', () => {
+    for (const tok of [null, undefined, '', '   ']) {
+      const r = resolveTwilioConfig(FAKE_SID, tok);
+      expect(r.ok).toBe(false);
+      expect(r.ok === false && r.reason).toBe('token_missing');
+    }
+  });
+
+  it('valid configuration → returns both credentials for the request', () => {
+    const r = resolveTwilioConfig(FAKE_SID, 'tok');
+    expect(r.ok).toBe(true);
+    expect(r.ok === true && r.accountSid).toBe(FAKE_SID);
+    expect(r.ok === true && r.authToken).toBe('tok');
+  });
+
+  it('a rejection reason never carries any part of a credential', () => {
+    // The reason is logged in production. If a value could leak into it, the log
+    // becomes the leak. Assert the reason is one of three fixed strings.
+    const reasons = [
+      resolveTwilioConfig(null, 'tok'),
+      resolveTwilioConfig('A' + 'C' + 'nope', 'tok'),
+      resolveTwilioConfig(FAKE_SID, null),
+    ].map((r) => (r.ok === false ? r.reason : 'ok'));
+    expect(reasons).toEqual(['sid_missing', 'sid_malformed', 'token_missing']);
+    for (const r of reasons) expect(r).not.toContain('AC');
   });
 });

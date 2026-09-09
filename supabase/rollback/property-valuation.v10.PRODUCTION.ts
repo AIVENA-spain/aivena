@@ -23,9 +23,6 @@
 //   source_meta? }
 
 import { createClient } from "npm:@supabase/supabase-js@2";
-// Same guard the studio and send-executor edge functions use. Extracted to its
-// own module so it is unit-tested (constant-time.test.ts) rather than assumed.
-import { constantTimeEqual } from "./constant-time.ts";
 
 const SUPABASE_URL              = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -64,7 +61,7 @@ Deno.serve(async (req) => {
   if (!launched) {
     const testKey = Deno.env.get("AIVENA_VALUATION_TEST_KEY");
     const given   = req.headers.get("x-aivena-valuation-test");
-    if (!testKey || !given || !constantTimeEqual(given, testKey)) {
+    if (!testKey || !given || given !== testKey) {
       return j(503, { ok: false, error: "valuation_unavailable", message: FRIENDLY.valuation_unavailable });
     }
   }

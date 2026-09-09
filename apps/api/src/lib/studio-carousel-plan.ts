@@ -12,6 +12,7 @@ import { coverageGaps, requirementsFor, type RequirementCoverage } from './studi
 import type { BankCard } from './studio-bank.generated';
 import { buildPalette } from './studio-palette';
 import { modelFor } from './studio-models';
+import { CALL_BUDGET_MS, ModelCallError, boundedCall } from './studio-bounded-call';
 import { LOW_RISK_BRIEF } from './studio-risk-route';
 import { classifySource, domainOf, policyUnmetFor, riskOf, SOURCE_POLICY,
   type SourceFact,
@@ -1150,10 +1151,17 @@ Submit with the submit_carousel tool.`;
   let lastErr = '';
   for (let attempt = 0; attempt < 3; attempt++) {
     const usageStarted_writer = Date.now();
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
+    // BOUNDED, AND THE TRANSIENT RETRY LIVES INSIDE THE CALL. This outer loop repairs CONTENT — a
+    // truncated plan, a rejected schema — and must not double as a network retry, or one hung
+    // request becomes six. boundedCall tries once more for a timeout, a dead socket or a 429; a
+    // failure that survives that ends the generation honestly instead of spinning.
+    const call = await boundedCall<{
+      stop_reason?: string; content?: { type: string; input?: unknown }[]; usage?: RawUsage;
+    }>({
+      label: 'writer', url: 'https://api.anthropic.com/v1/messages',
       headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+      timeoutMs: CALL_BUDGET_MS.WRITER,
+      body: {
         model: modelFor('WRITER'),
         // A five-slide plan carries title, body, teaser and an image scene per slide on top of the
         // cover, the second cover, the recap, the CTA block and the caption. At 4000 the model ran
@@ -1164,17 +1172,16 @@ Submit with the submit_carousel tool.`;
         tools: [PLAN_TOOL],
         tool_choice: { type: 'tool', name: 'submit_carousel' },
         messages: [{ role: 'user', content: attempt === 0 ? prompt : `${prompt}\n\nYour previous plan was rejected: ${lastErr}. Fix exactly that and resubmit the full plan.` }],
-      }),
+      },
     });
-    if (!res.ok) {
-      lastErr = `api_${res.status}`;
-      if (res.status >= 500 || res.status === 429) continue;
-      throw new Error(`carousel plan failed: ${res.status} ${(await res.text()).slice(0, 300)}`);
+    if (call.outcome !== 'OK' || !call.data) {
+      // The transient retry already happened inside the call. Whatever this is, it will not fix
+      // itself by asking the same question a third time — end the generation and say which failure
+      // it was, so the record shows TIMED_OUT rather than a generic "carousel plan failed".
+      throw new ModelCallError(call.outcome, 'the writer', call.attempts, call.detail);
     }
-    const data = (await res.json()) as {
-      stop_reason?: string; content?: { type: string; input?: unknown }[];
-    };
-    recordUsage('writer', modelFor('WRITER'), (data as { usage?: RawUsage }).usage, Date.now() - usageStarted_writer);
+    const data = call.data;
+    recordUsage('writer', modelFor('WRITER'), data.usage, Date.now() - usageStarted_writer);
     // A truncated plan is not an invalid plan, and telling the model its schema was wrong when it
     // simply ran out of room sent it round the retry loop fixing something that was never broken.
     if (data.stop_reason === 'max_tokens') {
@@ -1381,18 +1388,29 @@ Never make a slide longer to make it more correct. Make it shorter and truer.
 Submit with the submit_edited_plan tool.`;
   try {
     const usageStarted_editor = Date.now();
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
+    // BOUNDED. `TIMED_OUT` was already in this function's vocabulary and the orchestrator already
+    // branched on it — but nothing could ever produce it, because no AbortController existed. It
+    // can now, and a hung editor ends after two minutes instead of never.
+    const call = await boundedCall<{ content?: { type: string; input?: unknown }[]; usage?: RawUsage }>({
+      label: 'editor', url: 'https://api.anthropic.com/v1/messages',
       headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+      body: {
         model: modelFor('EDITOR'), max_tokens: 3000,
         tools: [EDIT_TOOL], tool_choice: { type: 'tool', name: 'submit_edited_plan' },
         messages: [{ role: 'user', content: prompt }],
-      }),
+      },
+      timeoutMs: CALL_BUDGET_MS.EDITOR,
     });
-    if (!res.ok) return { outcome: res.status === 408 || res.status === 504 ? 'TIMED_OUT' : 'FAILED', why: `http_${res.status}` };
-    const data = (await res.json()) as { content?: { type: string; input?: unknown }[] };
-    recordUsage('editor', modelFor('EDITOR'), (data as { usage?: RawUsage }).usage, Date.now() - usageStarted_editor);
+    if (call.outcome !== 'OK' || !call.data) {
+      const why = `${call.detail ?? call.outcome} (${call.attempts.map((a) => `${(a.ms / 1000).toFixed(1)}s ${a.outcome}`).join(', ')})`;
+      return {
+        outcome: call.outcome === 'TIMED_OUT' ? 'TIMED_OUT'
+          : call.outcome === 'MALFORMED' ? 'MALFORMED' : 'FAILED',
+        why,
+      };
+    }
+    const data = call.data;
+    recordUsage('editor', modelFor('EDITOR'), data.usage, Date.now() - usageStarted_editor);
     const raw = unesc(data.content?.find((c) => c.type === 'tool_use')?.input) as Record<string, unknown> | undefined;
     if (!raw) return { outcome: 'MALFORMED', why: 'the editor returned no tool call' };
     const notes = Array.isArray(raw.review_notes)

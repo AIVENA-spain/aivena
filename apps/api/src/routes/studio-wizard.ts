@@ -35,7 +35,12 @@ import { planCarousel, editPlan, remixHook, topicIdeas, listingCopy, listingStor
 import { POLICED_TYPES, checkBankContradictions, checkIntent, extractClaims, gatePlan,
   type ExtractedClaim, type GateReport } from '../lib/studio-claim-gate';
 import { finishCopy } from '../lib/studio-publish';
+import { randomUUID } from 'node:crypto';
 import { needsEscalation, researches, routeTopic, type Tier } from '../lib/studio-risk-route';
+import {
+  STALE_AFTER_MS, STALLED_CODE, STALLED_MESSAGE, beginStage, describeStall, endStage, isStalled,
+  openProgress, ownsRun, type ProgressRecord,
+} from '../lib/studio-progress';
 import { cardRules, retrieveBankFacts } from '../lib/studio-bank-match';
 import { gateField, planFields, readField, removeClaim, writeField,
   type RequirementCoverage } from '../lib/studio-copy-gate';
@@ -419,6 +424,10 @@ route.get('/active', async (c) => {
   const tx = c.get('tx');
   const agencyId = c.get('agencyId');
   try {
+    // The widget is the only thing that reliably runs while a generation is in flight, so it is
+    // where the sweep lives — no scheduler, and a stalled row clears from the corner by itself.
+    // Throttled internally to once every thirty seconds.
+    await reapStalled(agencyId);
     const result = await tx.execute(sql`
       SELECT id, status::text AS status, prompt, raw_request, created_at, completed_at
       FROM image_generations
@@ -457,6 +466,58 @@ route.get('/active', async (c) => {
  * vocabulary ("unsupported claim", "bank contradiction", "evidence") can never reach the screen.
  */
 const FRIENDLY_FAILURE = /^Not enough reliable information for this angle yet/i;
+
+/**
+ * REAP RUNS THAT STOPPED MOVING — by heartbeat, never by age.
+ *
+ * Christian, 2026-09-08: "do not simply say processing > X minutes → failed, because a legitimate
+ * HIGH-risk generation could someday take longer." A researched post still stepping through its
+ * stages is healthy at fifteen minutes; a post whose progress record has not moved for eight is
+ * not going to finish, because every call it could be in is now bounded.
+ *
+ * A row with no progress record at all predates this instrumentation, so it is judged on its own
+ * age against a much wider window rather than being left to spin forever.
+ */
+const ORPHAN_AFTER_MS = 30 * 60_000;
+let lastSweepAt = 0;
+
+async function reapStalled(agencyId: string): Promise<number> {
+  // The widget polls every four seconds; sweeping on every poll would be silly.
+  if (Date.now() - lastSweepAt < 30_000) return 0;
+  lastSweepAt = Date.now();
+  try {
+    const { data } = await supabaseAdmin.from('image_generations')
+      .select('id, created_at, updated_at, result_metadata')
+      .eq('agency_id', agencyId).eq('status', 'processing').limit(20);
+    const now = Date.now();
+    let reaped = 0;
+    for (const row of (data ?? []) as Array<Record<string, any>>) {
+      const p = row.result_metadata?.progress as ProgressRecord | undefined;
+      const stalled = p
+        ? isStalled(p, now, STALE_AFTER_MS)
+        : now - Date.parse(row.updated_at ?? row.created_at) > ORPHAN_AFTER_MS;
+      if (!stalled) continue;
+      console.error(`[studio/reaper] ${row.id} — ${p ? describeStall(p, now) : 'no progress record (predates instrumentation)'}`);
+      // Conditional on status: if the run woke up and finished in the meantime, leave it alone.
+      const { error } = await supabaseAdmin.from('image_generations').update({
+        status: 'failed',
+        failure_reason: STALLED_MESSAGE,
+        result_metadata: {
+          ...(row.result_metadata ?? {}), failed: true, error_code: STALLED_CODE,
+          error: p ? describeStall(p, now) : 'stopped responding with no progress record',
+          reaped_at: new Date().toISOString(),
+        },
+        completed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }).eq('id', row.id).eq('status', 'processing');
+      if (!error) reaped++;
+    }
+    return reaped;
+  } catch (err) {
+    console.warn(`[studio/reaper] sweep failed: ${(err as Error)?.message}`);
+    return 0;
+  }
+}
 
 // ── GET /api/studio/status/:id — poll (DB read, RLS-fenced) ────────────────
 route.get('/status/:id', async (c) => {
@@ -1497,6 +1558,16 @@ async function runPlannedCarousel(opts: {
   /** The deck as it last stood. A draft that failed is the evidence about why it failed. */
   let lastPlan: CarouselPlan | undefined;
   /**
+   * WHO OWNS THIS ROW, AND WHERE THE RUN HAS GOT TO.
+   *
+   * Written to the database at every stage boundary rather than only at the end, because the one
+   * generation that most needed a record — stuck for ten minutes — had none. The attempt id is the
+   * lease: once a run has been reaped, its attempt is no longer the active one, so an old request
+   * that finally returns cannot come back and publish over the failure.
+   */
+  const attemptId = randomUUID();
+  let progress: ProgressRecord = openProgress({ attemptId, at: new Date().toISOString() });
+  /**
    * HOW DEEP THIS POST WENT. A lifestyle post that skipped research is a different product decision
    * from one that researched and found nothing, and the bill will not explain which happened unless
    * the route is written down next to it.
@@ -1509,10 +1580,43 @@ async function runPlannedCarousel(opts: {
     // Claim extraction paid for once per exact piece of copy, for this generation only. Dies with
     // the request, so it can never hand back a classification from an older extractor.
     const claimCache = new Map<string, ExtractedClaim[] | null>();
+
+    /** Push the current progress to the row. Best-effort: a failed heartbeat must never kill a post. */
+    const beat = async (): Promise<void> => {
+      try {
+        await supabaseAdmin.from('image_generations')
+          .update({ result_metadata: { progress }, updated_at: new Date().toISOString() })
+          .eq('id', genId).eq('agency_id', agencyId).eq('status', 'processing');
+      } catch (err) {
+        console.warn(`[studio/carousel] heartbeat failed: ${(err as Error)?.message}`);
+      }
+    };
+    /** Does this execution still own the row? Checked before anything is published. */
+    const stillOurs = async (): Promise<{ ok: boolean; why: string }> => {
+      const { data } = await supabaseAdmin.from('image_generations')
+        .select('status, result_metadata').eq('id', genId).eq('agency_id', agencyId).maybeSingle();
+      return ownsRun(data as Parameters<typeof ownsRun>[0], attemptId);
+    };
+
+    // A stage boundary is a heartbeat: written BEFORE the call so a hang is attributed to the right
+    // step, and again after it however it ended. Deterministic helpers in between write nothing.
     const stage = async <R,>(name: string, fn: () => Promise<R>): Promise<R> => {
       const started = Date.now();
-      try { return await fn(); } finally {
-        timings[name] = (timings[name] ?? 0) + (Date.now() - started);
+      progress = beginStage(progress, name, new Date().toISOString());
+      await beat();
+      let outcome = 'ok';
+      try {
+        return await fn();
+      } catch (err) {
+        outcome = (err as { outcome?: string })?.outcome ?? 'threw';
+        throw err;
+      } finally {
+        const ms = Date.now() - started;
+        timings[name] = (timings[name] ?? 0) + ms;
+        const spent = summarise(currentEntries(), genId);
+        progress = endStage(progress, name, new Date().toISOString(),
+          { ms, outcome, calls: spent.calls, costUsd: spent.totalCostUsd });
+        await beat();
       }
     };
 
@@ -1574,6 +1678,8 @@ async function runPlannedCarousel(opts: {
     // real usage can say how often ordinary lifestyle language trips it. Storing WHICH rule fired
     // is what lets that be fixed from data instead of from argument.
     console.log(`[studio/carousel] tier=${route.tier} (${route.signal}) — ${route.why}`);
+    progress = { ...progress, tier: route.tier, signal: route.signal, researched: researches(route.tier) };
+    await beat();
 
     const writeDeck = (saferAngle: boolean, skipResearch = !researches(route.tier)) => planCarousel({
       saferAngle, skipResearch,
@@ -1770,6 +1876,8 @@ async function runPlannedCarousel(opts: {
           console.warn(`[studio/carousel] low-risk post made a checkable claim — ${esc.why}`);
           for (const t of esc.triggers) console.warn(`    ${t.field}: "${t.text.slice(0, 90)}"`);
           routing = { ...routing!, escalated: true, escalatedWhy: esc.why };
+          progress = { ...progress, escalated: true };
+          await beat();
           // Write it again WITH research, then refine normally. The cheap draft is spent, but the
           // claim the writer wanted to make now has evidence behind it rather than being cut.
           plan = await stage('escalated_rewrite', () => writeDeck(false, false));
@@ -1935,6 +2043,14 @@ async function runPlannedCarousel(opts: {
         + `(generation ${genId}). Nothing was stopped; this is observability only.`);
     }
 
+    // ZOMBIE GUARD. If this run was reaped while a call hung, or a newer attempt took the row, the
+    // old execution must not come back and publish over the failure. Christian, 2026-09-08:
+    // "once a run has been failed/reaped, the old execution must not be allowed to come back."
+    const own = await stillOurs();
+    if (!own.ok) {
+      console.warn(`[studio/carousel] not publishing — ${own.why}`);
+      return;
+    }
     await supabaseAdmin.from('image_generations').update({
       status: 'completed',
       result_image_url: stored[0].url,
@@ -1944,7 +2060,7 @@ async function runPlannedCarousel(opts: {
         ai_imagery: opts.type === 'tips' && isTipsImageStyle(usedStyle),
         image_paths: imagePaths, image_scheme: opts.scheme, per_slide_art: perSlideArt, artwork_source: artworkSource, artwork_error: artworkError, artwork_qa: artworkQa, copy_qa: copyQa, claim_qa: claimQa, requirement_coverage: coverage,
         timings: { ...timings, total_ms: Date.now() - t0 },
-        usage, fact_health: factHealth, rewrite, routing,
+        usage, fact_health: factHealth, rewrite, routing, progress,
         // The source ledger. Coverage and claim-support records reference these ids, so a published
         // sentence can be traced to the page it came off long after the run.
         research_sources: sources.map((x) => ({
@@ -1957,7 +2073,7 @@ async function runPlannedCarousel(opts: {
       },
       completed_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-    }).eq('id', genId).eq('agency_id', agencyId);
+    }).eq('id', genId).eq('agency_id', agencyId).eq('status', 'processing');
 
     const { error: qErr } = await supabaseAdmin.rpc('image_gen_increment_usage', {
       p_agency_id: agencyId, p_generation_type: 'social_post',
@@ -1981,9 +2097,12 @@ async function runPlannedCarousel(opts: {
       // die?" for any generation, finished or not.
       result_metadata: {
         engine: 'carousel', carousel_type: opts.type, failed: true,
+        // The outcome survives on the error, so a hang is recorded as TIMED_OUT rather than as a
+        // generic failure — the distinction the orchestrator branches on.
+        error_code: (err as { outcome?: string })?.outcome ?? undefined,
         error: String((err as Error)?.message ?? err).slice(0, 600),
         timings: { ...timings, total_ms: Date.now() - t0 },
-        usage, fact_health: factHealth, rewrite, routing,
+        usage, fact_health: factHealth, rewrite, routing, progress,
         claim_qa: claimQa, copy_qa: copyQa, requirement_coverage: coverage,
         research_sources: sources.map((x) => ({
           source_id: x.id, url: x.url, title: x.title, domain: x.domain,
@@ -1996,7 +2115,7 @@ async function runPlannedCarousel(opts: {
       },
       completed_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-    }).eq('id', genId).eq('agency_id', agencyId);
+    }).eq('id', genId).eq('agency_id', agencyId).eq('status', 'processing');
   }
 }
 

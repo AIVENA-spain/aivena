@@ -1591,6 +1591,8 @@ async function runPlannedCarousel(opts: {
     firstClaimField?: string; firstClaim?: string;
     when?: 'before_editor' | 'after_editor';
     claimsFlagged?: number; claimsResearched?: number;
+    /** the exact sentences that were sent for verification */
+    claims?: string[];
     resolvedFromExistingEvidence?: boolean;
     repairedOrRemoved?: number;
   } | undefined;
@@ -1968,7 +1970,7 @@ async function runPlannedCarousel(opts: {
         } else {
           escalationCycles++;
           escalationDetail = { ...escalationDetail, claimsResearched: claims.length,
-            resolvedFromExistingEvidence: false };
+            claims: claims.map((c) => c.slice(0, 220)), resolvedFromExistingEvidence: false };
           // The agent's "Research checked" mark is about what happened, not about the tier. An
           // escalated LOW post DID have external research done for it, and saying otherwise would
           // be the one thing on that line that is false. Christian, 2026-09-09.

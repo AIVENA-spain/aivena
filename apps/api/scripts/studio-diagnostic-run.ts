@@ -73,6 +73,33 @@ async function readOut(id: string): Promise<void> {
     ['failure', r.failure_reason ?? '(succeeded)'],
   ] as Array<[string, unknown]>) console.log(`${k.padEnd(20)} ${String(v)}`);
 
+  const esc = m.escalation; const su = m.semantic_unit;
+  console.log('\n══ ESCALATION ══');
+  console.log(`  deck writes          ${m.deck_writes ?? '(not recorded)'}`);
+  console.log(`  research cycles      ${m.escalation_cycles ?? 0}`);
+  console.log(`  when                 ${esc?.when ?? 'did not escalate'}`);
+  console.log(`  first claim          ${esc?.firstClaimField ?? '—'}  "${(esc?.firstClaim ?? '').slice(0, 90)}"`);
+  console.log(`  claims flagged       ${esc?.claimsFlagged ?? 0}`);
+  console.log(`  claims researched    ${esc?.claimsResearched ?? 0}`);
+  for (const c of esc?.claims ?? []) console.log(`      · ${String(c).slice(0, 100)}`);
+  console.log(`  reused evidence      ${esc?.resolvedFromExistingEvidence === true ? 'yes' : 'no'}`);
+  console.log(`  repaired/removed     ${esc?.repairedOrRemoved ?? 0}`);
+  console.log(`  recovery suppressed  ${m.recovery_suppressed ?? 'no'}`);
+  console.log('\n══ SEMANTIC UNIT ══');
+  if (!su) console.log('  not run — no slide lost a material sentence');
+  else {
+    console.log(`  slides inspected     ${(su.inspected ?? []).join(', ') || 'none'}`);
+    for (const d of su.decisions ?? []) console.log(`      tip ${d.index}  ${String(d.decision).padEnd(8)} ${String(d.why).slice(0, 90)}`);
+    if (su.checkerFailed) console.log(`  CHECKER FAILED       ${su.failureCode}`);
+  }
+  if (m.pre_escalation_plan) {
+    console.log('\n══ LOW DRAFT (before any evidence work) ══');
+    console.log(`hook   ${m.pre_escalation_plan.hook_title ?? ''}`);
+    (m.pre_escalation_plan.tips ?? []).forEach((t: any, i: number) => {
+      console.log(`\n  SLIDE ${i + 1}\n    title  ${t.title}\n    body   ${t.body}`);
+    });
+  }
+
   console.log('\n══ COST BY STAGE ══');
   for (const s of u.byStage ?? []) {
     console.log(`  ${String(s.stage).padEnd(28)} ${money(s.costUsd).padStart(9)} ${String(s.calls).padStart(3)} calls`

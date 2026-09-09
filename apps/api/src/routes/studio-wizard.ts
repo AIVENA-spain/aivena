@@ -33,8 +33,9 @@ import {
 import type { CarouselBrand } from '../../../../studio/engine/renderCarousel';
 import { planCarousel, editPlan, remixHook, topicIdeas, listingCopy, listingStory, pickBankCard, researchClaims, PlanSchema, normalisePlan, type Audience } from '../lib/studio-carousel-plan';
 import { POLICED_TYPES, checkBankContradictions, checkIntent, extractClaims, gatePlan,
-  type ExtractedClaim, type GateReport } from '../lib/studio-claim-gate';
+  type ExtractedClaim, type GateReport , titleStillAsserts } from '../lib/studio-claim-gate';
 import { finishCopy } from '../lib/studio-publish';
+import { dropTips, tipsThatLostAClaim } from '../lib/studio-copy-gate';
 import { randomUUID } from 'node:crypto';
 import {
   mayEscalate, mayRewriteDeck, needsEscalation, researches, routeTopic, type Tier,
@@ -1580,6 +1581,17 @@ async function runPlannedCarousel(opts: {
   let deckWrites = 0;
   let escalationCycles = 0;
   let recoverySuppressed: string | undefined;
+  /**
+   * WHAT ESCALATION ACTUALLY DID. Without this we cannot tell whether the targeted architecture is
+   * behaving as designed or quietly doing the old thing under a new name.
+   */
+  let escalationDetail: {
+    firstClaimField?: string; firstClaim?: string;
+    when?: 'before_editor' | 'after_editor';
+    claimsFlagged?: number; claimsResearched?: number;
+    resolvedFromExistingEvidence?: boolean;
+    repairedOrRemoved?: number;
+  } | undefined;
   /** The LOW draft as it read before any evidence work — so its voice can be judged separately. */
   let preEscalationDraft: CarouselPlan | undefined;
   /**
@@ -1865,6 +1877,35 @@ async function runPlannedCarousel(opts: {
           }
           console.warn(`[studio/carousel] final gate removed ${qa.dropped} sentence(s) the editor reintroduced`);
         }
+        // THE SEMANTIC UNIT. A body that lost a material claim leaves a headline that may still be
+        // asserting it — a live deck shipped "The buyers looking in your season are not the same
+        // buyers" over a body from which exactly that claim had been removed. The lexical atomicity
+        // rule cannot see it, because a title and its body paraphrase each other.
+        const orphanCandidates = tipsThatLostAClaim(claimQa?.blocked ?? []);
+        if (orphanCandidates.length) {
+          const guilty: number[] = [];
+          for (const i of orphanCandidates) {
+            const tip = plan.tips?.[i];
+            const lost = (claimQa?.blocked ?? []).find((b) => b.field === `tips[${i}].body`);
+            if (!tip?.title || !lost) continue;
+            const verdict = await stage('orphaned_title',
+              () => titleStillAsserts(tip.title, lost.text));
+            if (verdict.guilty) {
+              guilty.push(i);
+              claimQa?.blocked.push({
+                field: `tips[${i}].title`, text: tip.title, verdict: 'UNSUPPORTED',
+                problem: `the body's claim was removed and the headline still asserts it: ${verdict.why}`,
+                outcome: 'slide removed — a headline is not a slide without the point underneath it',
+              });
+              console.warn(`[studio/carousel] orphaned headline on tip ${i}: ${verdict.why}`);
+            }
+          }
+          if (guilty.length) {
+            plan = dropTips(plan, guilty);
+            if (claimQa) claimQa.dropped += guilty.length;
+          }
+        }
+
         // Absolutely last: caps, complete sentences, nothing dangling. Everything above can rewrite
         // copy, so this has to come after all of it or it cleans a draft that no longer exists.
 
@@ -1888,11 +1929,20 @@ async function runPlannedCarousel(opts: {
        */
       const resolveClaims = async (claims: string[]): Promise<void> => {
         const allowed = mayEscalate({ deckWrites, escalationCycles });
+        const droppedBefore = claimQa?.dropped ?? 0;
         if (!allowed.ok) {
           recoverySuppressed = `${allowed.why} (${claims.length} claim(s))`;
           console.warn(`[studio/carousel] ${recoverySuppressed}`);
+          escalationDetail = { ...escalationDetail, resolvedFromExistingEvidence: true };
         } else {
           escalationCycles++;
+          escalationDetail = { ...escalationDetail, claimsResearched: claims.length,
+            resolvedFromExistingEvidence: false };
+          // The agent's "Research checked" mark is about what happened, not about the tier. An
+          // escalated LOW post DID have external research done for it, and saying otherwise would
+          // be the one thing on that line that is false. Christian, 2026-09-09.
+          routing = { ...routing!, researched: true };
+          progress = { ...progress, researched: true };
           research = await stage('escalated_research', () => researchClaims({
             claims, topic: opts.topic ?? '', language: opts.language,
             region: opts.agency.name ? (opts.marketBrief ?? '') : '',
@@ -1918,6 +1968,8 @@ async function runPlannedCarousel(opts: {
             claimQa.bankContradictions.push(...gated.report.bankContradictions);
           } else { claimQa = gated.report; }
         }
+        escalationDetail = { ...escalationDetail,
+          repairedOrRemoved: (claimQa?.dropped ?? 0) - droppedBefore };
         lastPlan = plan;
       };
 
@@ -1945,20 +1997,35 @@ async function runPlannedCarousel(opts: {
           routing = { ...routing!, escalated: true, escalatedWhy: first.why };
           progress = { ...progress, escalated: true };
           await beat();
+          escalationDetail = {
+            firstClaimField: first.triggers[0]?.field,
+            firstClaim: first.triggers[0]?.text?.slice(0, 200),
+            when: 'before_editor',
+            claimsFlagged: first.triggers.length,
+          };
           await resolveClaims(first.triggers.map((t) => t.text));
         }
 
         // The readability pass, on whatever the deck now says. It touches no evidence.
         plan = await refine(plan, true);
 
-        // THE EDITOR IS A WRITER TOO. Scanned again — but with no new research, because the one
-        // escalation cycle this generation is allowed has already been spent.
+        // THE EDITOR IS A WRITER TOO, and the one research cycle belongs to the FIRST material
+        // claim wherever it appears. If the writer stayed clean the cycle is still unspent, so an
+        // editor-introduced claim gets it — a good factual point the editor added is verified, not
+        // sterilised. If the writer already spent it, this resolves against the evidence already
+        // gathered instead of researching twice.
         const afterEdit = needsEscalation(plan);
         if (afterEdit.escalate) {
           console.warn(`[studio/carousel] the editor introduced a checkable claim — ${afterEdit.why}`);
           routing = { ...routing!, escalated: true,
             escalatedWhy: `${routing?.escalatedWhy ? `${routing.escalatedWhy}; then ` : ''}${afterEdit.why}` };
           progress = { ...progress, escalated: true };
+          escalationDetail = escalationDetail ?? {
+            firstClaimField: afterEdit.triggers[0]?.field,
+            firstClaim: afterEdit.triggers[0]?.text?.slice(0, 200),
+            when: 'after_editor',
+            claimsFlagged: afterEdit.triggers.length,
+          };
           await resolveClaims(afterEdit.triggers.map((t) => t.text));
         }
         if (!first.escalate && !afterEdit.escalate) {
@@ -2154,6 +2221,7 @@ async function runPlannedCarousel(opts: {
         timings: { ...timings, total_ms: Date.now() - t0 },
         usage, fact_health: factHealth, rewrite, routing, progress,
         deck_writes: deckWrites, escalation_cycles: escalationCycles, recovery_suppressed: recoverySuppressed,
+        escalation: escalationDetail,
         // The LOW draft before any evidence work touched it, so its voice can be judged apart from
         // what the gate did to it.
         pre_escalation_plan: preEscalationDraft,
@@ -2200,6 +2268,7 @@ async function runPlannedCarousel(opts: {
         timings: { ...timings, total_ms: Date.now() - t0 },
         usage, fact_health: factHealth, rewrite, routing, progress,
         deck_writes: deckWrites, escalation_cycles: escalationCycles, recovery_suppressed: recoverySuppressed,
+        escalation: escalationDetail,
         pre_escalation_plan: preEscalationDraft,
         claim_qa: claimQa, copy_qa: copyQa, requirement_coverage: coverage,
         research_sources: sources.map((x) => ({

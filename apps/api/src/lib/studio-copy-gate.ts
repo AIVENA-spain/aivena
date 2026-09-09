@@ -1274,3 +1274,42 @@ export function fitCtaKeyword(text: string, subject: string): string {
   const better = keywordFromTopic(subject);
   return better ? text.replace(current, better) : text;
 }
+
+/* ── THE SEMANTIC UNIT ─────────────────────────────────────────────────────────────────────── */
+
+/**
+ * Which slides just lost a material claim from their body.
+ *
+ * A live deck (ebc34869) published "The buyers looking in your season are not the same buyers" over
+ * "Ask your agent which months bring the buyers" — the seasonal claim underneath had been removed
+ * for want of evidence, and the headline went on asserting it.
+ *
+ * The existing atomicity rule missed it because it is LEXICAL: it asks whether the title repeats the
+ * removed sentence's distinctive words. A title and its body paraphrase each other — "buyers /
+ * season" against "searching / year" — so the overlap was zero. Measured against this run, no
+ * deterministic signal separates that title from the two innocent ones on the same deck: all three
+ * score tier `medium`, `mechanismAllowed` true, and zero shared words. The inverse test ("does the
+ * surviving body still carry the title's terms") deletes the innocent slides and keeps the guilty
+ * one.
+ *
+ * So this function does the half that IS deterministic — which slides are even in question — and
+ * the judgement itself is asked once per affected slide, of the model that already reads this copy.
+ */
+export function tipsThatLostAClaim(
+  blocked: ReadonlyArray<{ field: string; outcome?: string }>,
+): number[] {
+  const idx = new Set<number>();
+  for (const b of blocked) {
+    if (!/removed/i.test(b.outcome ?? '')) continue;
+    const m = /^tips\[(\d+)\]\.body$/.exec(b.field);
+    if (m) idx.add(Number(m[1]));
+  }
+  return [...idx].sort((a, b) => a - b);
+}
+
+/** Take the whole semantic unit — a headline whose evidence has gone is not a shorter slide. */
+export function dropTips<T extends PlanLike>(plan: T, indices: readonly number[]): T {
+  if (!indices.length) return plan;
+  const drop = new Set(indices);
+  return { ...plan, tips: (plan.tips ?? []).filter((_, i) => !drop.has(i)) } as T;
+}

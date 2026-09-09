@@ -243,3 +243,29 @@ describe('one generation cannot regenerate itself repeatedly', () => {
     expect(mayRewriteDeck(budget).ok).toBe(false);                // ← the write that must not happen
   });
 });
+
+/**
+ * THE ONE RESEARCH CYCLE BELONGS TO THE FIRST MATERIAL CLAIM — wherever it appears.
+ *
+ * Christian, 2026-09-09: "writer stays LOW, editor triggers first → research once after editor."
+ * The cycle is a budget for the generation, not a reward for the writer being first.
+ */
+describe('where the one research cycle gets spent', () => {
+  it('writer triggers first — the cycle is available before the editor', () => {
+    expect(mayEscalate({ deckWrites: 1, escalationCycles: 0 }).ok).toBe(true);
+  });
+
+  it('writer stays clean, editor introduces a claim — the cycle is STILL unspent', () => {
+    const afterCleanWriter = { deckWrites: 1, escalationCycles: 0 };
+    expect(mayEscalate(afterCleanWriter).ok).toBe(true);
+    expect(mayEscalate(afterCleanWriter).why).toMatch(/first escalation/i);
+  });
+
+  it('writer already spent it, editor adds another — reuse, never a second cycle', () => {
+    const spent = { deckWrites: 1, escalationCycles: 1 };
+    const second = mayEscalate(spent);
+    expect(second.ok).toBe(false);
+    expect(second.why).toMatch(/reusing the evidence already gathered/);
+    expect(mayRewriteDeck(spent).ok).toBe(false);
+  });
+});

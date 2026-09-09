@@ -1451,3 +1451,53 @@ export async function gatePlan<T extends PlanLike>(
   return { plan: finishCopy(current, report), report };
 }
 
+/* ── DOES THE HEADLINE STILL SAY IT? ───────────────────────────────────────────────────────── */
+
+const ORPHAN_SYSTEM =
+  'A sentence was removed from a carousel slide because nothing could establish it. You are given '
+  + 'the slide TITLE and the sentence that was removed. Answer one question: does the title, read on '
+  + 'its own, still assert the same thing the removed sentence claimed?\n\n'
+  + 'YES only when the title makes the same factual assertion in different words — a paraphrase, a '
+  + 'compressed version, or the same claim implied. A reader seeing only the title would come away '
+  + 'believing the thing we could not establish.\n'
+  + 'NO when the title is an instruction, a question, a general principle, an opinion, or a '
+  + 'different point that merely sits nearby. A title that survives on its own is not guilty by '
+  + 'proximity — most titles on a slide whose body was edited are innocent, and deleting them would '
+  + 'cost good slides for nothing.';
+
+const ORPHAN_TOOL = {
+  name: 'judge_title',
+  description: 'Say whether the title still asserts the removed claim.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      still_asserts: { type: 'boolean' },
+      why: { type: 'string', description: 'one short sentence' },
+    },
+    required: ['still_asserts', 'why'],
+  },
+} as const;
+
+/**
+ * Ask whether a headline is still making the claim its body just lost.
+ *
+ * One cheap call, and only for slides that actually lost a material sentence — at most a handful
+ * per deck, and none at all on a clean one. It exists because the deterministic route was measured
+ * and does not work: the guilty title and the innocent ones on the same deck are identical to every
+ * signal available.
+ *
+ * Fails OPEN on purpose. If the judgement is unavailable the slide stays, because deleting a good
+ * slide on a failed call is the worse error — and the deterministic caps still run after this.
+ */
+export async function titleStillAsserts(
+  title: string, removed: string,
+): Promise<{ guilty: boolean; why: string }> {
+  if (!title.trim() || !removed.trim()) return { guilty: false, why: 'nothing to judge' };
+  const out = await callTool('orphaned title', ORPHAN_SYSTEM,
+    `TITLE: ${title}\n\nREMOVED SENTENCE: ${removed}`,
+    ORPHAN_TOOL as unknown as Record<string, unknown>, 45_000, 300, 'CLAIM_CLASSIFIER');
+  if (!out || typeof out.still_asserts !== 'boolean') {
+    return { guilty: false, why: 'the check was unavailable — the slide stays' };
+  }
+  return { guilty: out.still_asserts, why: String(out.why ?? '').slice(0, 200) };
+}

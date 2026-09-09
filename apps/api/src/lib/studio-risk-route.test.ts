@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LOW_RISK_BRIEF, needsEscalation, researches, routeTopic } from './studio-risk-route';
+import { LOW_RISK_BRIEF, mayEscalate, mayRewriteDeck, needsEscalation, researches, routeTopic } from './studio-risk-route';
 import { DEFAULT_MODELS, ROLES, describeRouting, envKeyFor, modelFor, roleOverrides } from './studio-models';
 
 /**
@@ -171,5 +171,75 @@ describe('roles, not model names', () => {
   it('is quiet when nothing is overridden', () => {
     expect(roleOverrides({})).toEqual([]);
     expect(describeRouting({})).toMatch(/default/i);
+  });
+});
+
+/**
+ * Christian's exact examples, 2026-09-09. A timing QUESTION is checkable but not a performance
+ * claim; a timing CLAIM with a measurable outcome is HIGH even with no digits in it.
+ *
+ * The topic that cost $1.94 — "listing in the wrong month can add years, not weeks, to the sale" —
+ * routed LOW because nothing looked for written duration.
+ */
+describe('market timing: the question and the claim are not the same risk', () => {
+  it.each([
+    'Listing your home in the wrong month can add years, not weeks, to the sale',
+    'Homes sell 30% faster in spring',
+    'December listings take twice as long',
+    'The wrong month can add years to your sale',
+    'Selling in August dramatically increases time on market',
+  ])('treats a measurable outcome as HIGH: %s', (t) => {
+    expect(routeTopic(t).tier).toBe('high');
+  });
+
+  it.each([
+    'What is the best time of year to list?',
+    'Does seasonality matter when selling?',
+    'Which season brings the buyers who are actually ready',
+  ])('treats a timing question as MEDIUM, not HIGH: %s', (t) => {
+    expect(routeTopic(t).tier).toBe('medium');
+  });
+
+  it('records measurable_outcome so the reason is in the data', () => {
+    const d = routeTopic('Listing in the wrong month can add years to the sale');
+    expect(d.signal).toBe('measurable_outcome');
+    expect(d.why).toMatch(/measurable outcome/i);
+  });
+
+  it('keeps ordinary lifestyle copy out of it', () => {
+    expect(routeTopic('Why people fall in love with Moraira').tier).toBe('low');
+    expect(routeTopic('What nobody tells you about choosing a neighbourhood').tier).toBe('low');
+  });
+});
+
+/**
+ * One carousel was written THREE times — a LOW draft, a researched rewrite, then a minimum-viable
+ * recovery on top — because nothing counted. These are the counters, as rules.
+ */
+describe('one generation cannot regenerate itself repeatedly', () => {
+  it('allows the first escalation and refuses the second', () => {
+    expect(mayEscalate({ deckWrites: 1, escalationCycles: 0 }).ok).toBe(true);
+    const second = mayEscalate({ deckWrites: 1, escalationCycles: 1 });
+    expect(second.ok).toBe(false);
+    expect(second.why).toMatch(/reusing the evidence already gathered/);
+  });
+
+  it('refuses a deck rewrite once targeted repair has reshaped the deck', () => {
+    const r = mayRewriteDeck({ deckWrites: 1, escalationCycles: 1 });
+    expect(r.ok).toBe(false);
+    expect(r.why).toMatch(/already reshaped/);
+  });
+
+  it('allows exactly one deck-level recovery when nothing else has run', () => {
+    expect(mayRewriteDeck({ deckWrites: 1, escalationCycles: 0 }).ok).toBe(true);
+    expect(mayRewriteDeck({ deckWrites: 2, escalationCycles: 0 }).ok).toBe(false);
+  });
+
+  // The exact shape of the $1.94 run: LOW write → escalation → recovery. The third write is refused.
+  it('refuses the third write in the sequence that cost $1.94', () => {
+    let budget = { deckWrites: 1, escalationCycles: 0 };          // the LOW draft
+    expect(mayEscalate(budget).ok).toBe(true);
+    budget = { ...budget, escalationCycles: 1 };                  // targeted verification
+    expect(mayRewriteDeck(budget).ok).toBe(false);                // ← the write that must not happen
   });
 });

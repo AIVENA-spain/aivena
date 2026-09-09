@@ -41,8 +41,9 @@ export interface RouteDecision {
   /** plain-language reason, for the record and the log */
   why: string;
   /** the signal that decided it, so a false positive can be found in the data later */
-  signal: 'empty' | 'ranking_question' | 'currency_question' | 'risk_class' | 'figure_or_rule'
-    | 'card_needs_agency_data' | 'nothing_checkable';
+  signal: 'empty' | 'measurable_outcome' | 'timing_question' | 'ranking_question'
+    | 'currency_question' | 'risk_class' | 'figure_or_rule' | 'card_needs_agency_data'
+    | 'nothing_checkable';
 }
 
 /** Whether this tier goes and looks things up. */
@@ -57,6 +58,37 @@ export const researches = (t: Tier): boolean => t !== 'low';
  * pattern would make "most people choose the postcard" — puffery — an evidence claim everywhere.
  * Here it only decides whether to research, where being wrong costs money rather than truth.
  */
+/**
+ * A MEASURABLE OUTCOME stated as fact — the class that cost $1.94.
+ *
+ * "Listing your home in the wrong month can add years, not weeks, to the sale" routed LOW because
+ * it contains no digits. It is a measurable claim about how long a sale takes, the writer correctly
+ * wrote about seasonal demand, and the whole deck then had to be researched from scratch mid-run.
+ *
+ * Christian, 2026-09-09: "any explicit measurable outcome, ranking, numeric/time magnitude or
+ * strong causal performance claim" is HIGH — with or without a number in it.
+ */
+const MEASURABLE_OUTCOME = new RegExp([
+  // "can add years", "saves you weeks", "costs you months"
+  /\b(?:add|adds|adding|save|saves|saving|cut|cuts|cost|costs|lose|loses)\b[^.?!]{0,40}\b(?:days?|weeks?|months?|years?)\b/,
+  // "sells faster", "takes longer to sell", "slower sale"
+  /\b(?:sell|sells|sold|selling|sale|market|listing|listings)\b[^.?!]{0,30}\b(?:faster|slower|quicker|longer|sooner)\b/,
+  /\b(?:faster|slower|quicker|longer|sooner)\b[^.?!]{0,30}\b(?:sell|sells|sold|selling|sale|market|listing|listings)\b/,
+  // "twice as long", "doubles the time on market", "halves the wait"
+  /\b(?:twice|three times|double|doubles|doubling|halve|halves|triple|triples)\b[^.?!]{0,30}\b(?:as long|as fast|the time|time|sale|days?|weeks?|months?|years?)\b/,
+  // "dramatically increases", "significantly shortens"
+  /\b(?:dramatically|significantly|drastically)\b[^.?!]{0,20}\b(?:increase\w*|reduce\w*|shorten\w*|lengthen\w*|longer|faster|slower)\b/,
+].map((r) => r.source).join('|'), 'i');
+
+/**
+ * Timing as a QUESTION rather than a claim. Real, checkable, but not a performance assertion.
+ *
+ * Christian's line: "What is the best time of year to list?" is MEDIUM; "listing in the wrong month
+ * adds years" is HIGH. Checked after the measurable test, so a topic that does both lands HIGH.
+ */
+const TIMING_QUESTION =
+  /\b(?:best|worst|right|wrong|ideal|which)\s+(?:time|month|season|moment|window|quarter)\b|\bseasonal\w*|\bseasonality\b|\btime of year\b/i;
+
 const ASKS_FOR_A_RANKING =
   /\b(?:which|what|who|how many|how much)\b[^.?]{0,60}\b(?:most|least|best|biggest|largest|cheapest|highest|lowest|fastest|top|rank\w*|majority|share)\b/i;
 /** A question about how things stand right now, which goes stale and has to be checked. */
@@ -74,6 +106,16 @@ const ASKS_ABOUT_NOW =
 export function routeTopic(topic: string, opts: { cardRisky?: boolean } = {}): RouteDecision {
   const t = (topic ?? '').trim();
   if (!t) return { tier: 'high', why: 'no topic given', signal: 'empty' };
+  // Measurable first: a topic can be both a timing question and a performance claim, and the
+  // claim is what decides.
+  if (MEASURABLE_OUTCOME.test(t)) {
+    return { tier: 'high', why: 'the topic claims a measurable outcome — how long, how much faster',
+      signal: 'measurable_outcome' };
+  }
+  if (TIMING_QUESTION.test(t)) {
+    return { tier: 'medium', why: 'the topic asks about timing, which is checkable but not a performance claim',
+      signal: 'timing_question' };
+  }
   if (ASKS_FOR_A_RANKING.test(t)) {
     return { tier: 'high', why: 'the topic asks which one is the most or the biggest',
       signal: 'ranking_question' };
@@ -165,3 +207,45 @@ export const LOW_RISK_BRIEF = [
   'sent for checking rather than cut. Do not hedge it into meaninglessness to slip it past. A vague',
   'sentence is worse than a checkable one.',
 ].join('\n');
+
+/* ── STRUCTURAL COST CONTAINMENT ──────────────────────────────────────────────────────────── */
+
+/**
+ * How much work one generation is allowed to do, as a rule rather than as an accident.
+ *
+ * A LOW post that turned out to make a checkable claim was thrown away, written again WITH
+ * research, gated, edited, re-gated, and then written a THIRD time by the minimum-viable recovery:
+ * 71 calls, 892 seconds, $1.94. Nothing was counting, so nothing stopped it.
+ *
+ * Christian, 2026-09-09: "one generation cannot enter repeated full-deck regeneration loops."
+ */
+export interface RunBudget {
+  /** whole-carousel writes so far */
+  deckWrites: number;
+  /** research-and-gate cycles spent verifying a draft */
+  escalationCycles: number;
+}
+
+/** Research may be gathered for flagged claims once. A second finding reuses what is already there. */
+export function mayEscalate(b: RunBudget): { ok: boolean; why: string } {
+  if (b.escalationCycles >= 1) {
+    return { ok: false, why: 'one escalation cycle per generation — reusing the evidence already gathered' };
+  }
+  return { ok: true, why: 'first escalation of this generation' };
+}
+
+/**
+ * May the whole deck be written again?
+ *
+ * Only when nothing else has already reshaped it. After targeted repair the deck is no longer the
+ * one the recovery was designed for, and rewriting it is how three writes stacked.
+ */
+export function mayRewriteDeck(b: RunBudget): { ok: boolean; why: string } {
+  if (b.escalationCycles > 0) {
+    return { ok: false, why: 'targeted repair has already reshaped this deck — use the best safe draft' };
+  }
+  if (b.deckWrites > 1) {
+    return { ok: false, why: `${b.deckWrites} deck writes already — one recovery is the limit` };
+  }
+  return { ok: true, why: 'one deck-level recovery is still available' };
+}

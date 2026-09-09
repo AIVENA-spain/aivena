@@ -499,6 +499,37 @@ async function openCited(findings: ResearchCall, risk: RiskClass): Promise<void>
     + ` for a ${risk} topic)`);
 }
 
+/**
+ * RESEARCH ONLY WHAT THE DRAFT ACTUALLY CLAIMED.
+ *
+ * A LOW post whose finished copy turned out to assert something checkable used to be thrown away
+ * and written again from scratch WITH research — three deck writes, 71 calls, $1.94 and fifteen
+ * minutes for one carousel. The good copy around the flagged lines was destroyed to verify four
+ * sentences.
+ *
+ * Christian, 2026-09-09: "verify the flagged claims, not rewrite the entire carousel." So the
+ * flagged sentences become the research questions, the surrounding draft is left alone, and the
+ * existing claim gate then keeps, repairs or reframes ONLY what it cannot support.
+ */
+export async function researchClaims(opts: {
+  claims: string[];
+  topic: string;
+  language: string;
+  region: string;
+  markets?: string;
+  onSources?: (s: ResearchSource[]) => void;
+}): Promise<string> {
+  const claims = opts.claims.map((c) => c.trim()).filter(Boolean).slice(0, 8);
+  if (!claims.length) return '';
+  // The claims ARE the brief. Passed as the required points so the research chases these sentences
+  // rather than re-researching the whole subject the post happens to be about.
+  const must = claims.map((c) => `· Is this true, and what does a primary source actually say: "${c}"`).join('\n');
+  return researchTopic(
+    `Verify these specific statements from a draft post about: ${opts.topic}`,
+    opts.language, opts.region, opts.markets ?? '', must, opts.onSources,
+  ).catch(() => '');
+}
+
 async function researchTopic(
   topic: string, lang: string, region: string, markets = '', cardMust = '',
   onSources?: (s: ResearchSource[]) => void,

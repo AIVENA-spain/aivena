@@ -31,12 +31,14 @@ import {
   renderPlannedStyled, renderListingStyled, vibraListing, PLANNED_STYLES, LISTING_STYLES, TYPE_EDITIONS, type CarouselStyle,
 } from '../../../../studio/engine/carouselStyles';
 import type { CarouselBrand } from '../../../../studio/engine/renderCarousel';
-import { planCarousel, editPlan, remixHook, topicIdeas, listingCopy, listingStory, pickBankCard, PlanSchema, normalisePlan, type Audience } from '../lib/studio-carousel-plan';
+import { planCarousel, editPlan, remixHook, topicIdeas, listingCopy, listingStory, pickBankCard, researchClaims, PlanSchema, normalisePlan, type Audience } from '../lib/studio-carousel-plan';
 import { POLICED_TYPES, checkBankContradictions, checkIntent, extractClaims, gatePlan,
   type ExtractedClaim, type GateReport } from '../lib/studio-claim-gate';
 import { finishCopy } from '../lib/studio-publish';
 import { randomUUID } from 'node:crypto';
-import { needsEscalation, researches, routeTopic, type Tier } from '../lib/studio-risk-route';
+import {
+  mayEscalate, mayRewriteDeck, needsEscalation, researches, routeTopic, type Tier,
+} from '../lib/studio-risk-route';
 import {
   STALE_AFTER_MS, STALLED_CODE, STALLED_MESSAGE, beginStage, describeStall, endStage, isStalled,
   openProgress, ownsRun, type ProgressRecord,
@@ -1568,6 +1570,19 @@ async function runPlannedCarousel(opts: {
   const attemptId = randomUUID();
   let progress: ProgressRecord = openProgress({ attemptId, at: new Date().toISOString() });
   /**
+   * STRUCTURAL COST CONTAINMENT. One generation may not enter repeated full-deck regeneration.
+   *
+   * `deckWrites` counts whole-carousel writes; `escalationCycles` counts research-and-gate cycles
+   * spent verifying a LOW draft. Both are hard, and a suppressed recovery is recorded as an event
+   * rather than being silently skipped — $1.94 happened because three deck writes stacked with
+   * nothing counting them.
+   */
+  let deckWrites = 0;
+  let escalationCycles = 0;
+  let recoverySuppressed: string | undefined;
+  /** The LOW draft as it read before any evidence work — so its voice can be judged separately. */
+  let preEscalationDraft: CarouselPlan | undefined;
+  /**
    * HOW DEEP THIS POST WENT. A lifestyle post that skipped research is a different product decision
    * from one that researched and found nothing, and the bill will not explain which happened unless
    * the route is written down next to it.
@@ -1681,7 +1696,9 @@ async function runPlannedCarousel(opts: {
     progress = { ...progress, tier: route.tier, signal: route.signal, researched: researches(route.tier) };
     await beat();
 
-    const writeDeck = (saferAngle: boolean, skipResearch = !researches(route.tier)) => planCarousel({
+    const writeDeck = (saferAngle: boolean, skipResearch = !researches(route.tier)) => {
+      deckWrites++;
+      return planCarousel({
       saferAngle, skipResearch,
       // The rewrite is the same topic on different arguments — it reuses the research rather than
       // paying for it twice and ending up with less than the first pass had.
@@ -1704,6 +1721,7 @@ async function runPlannedCarousel(opts: {
       onSources: (src) => { sources = src; },
       onFactHealth: (h) => { factHealth = h; },
     });
+    };
     let plan = await stage('research_palette_and_write', () => writeDeck(false));
     lastPlan = plan;
     // EDITOR pass (Christian 2026-08-28): a skeptical second read of the copy — sense, value,
@@ -1860,30 +1878,95 @@ async function runPlannedCarousel(opts: {
       // behind it at all. So the finished copy is scanned, deterministically and for free, and a
       // post that turns out to assert something checkable goes and gets it CHECKED. It is never
       // quietly deleted: a strong factual point is worth verifying, not sterilising.
-      if (!researches(route.tier)) {
-        // THE READABILITY PASS STILL RUNS. Skipping research does not mean skipping the editor —
-        // this is the copy that ships most often, and the reader-first standard is the whole
-        // product. It touches no evidence, so it is safe on a post that has none.
-        plan = await refine(plan, true);
-        const esc = needsEscalation(plan);
-        if (!esc.escalate) {
-          console.log('[studio/carousel] low-risk post stayed low-risk — publishing without the evidence engine');
-          routing = { ...routing!, escalated: false };
-          lastPlan = plan;
-          // No refine(): no gate, no editor, no re-gate, no bank check. The structural pass at the
-          // end of this function still runs on it, so caps, CTA capability and deck invariants hold.
+      /**
+       * Verify the sentences that were flagged — and only those.
+       *
+       * One research cycle per generation, scoped to the flagged claim texts rather than to the
+       * topic. The existing claim gate then does what it already does well per claim: keep what the
+       * evidence supports, repair what needs different wording, remove what cannot be established.
+       * The surrounding LOW copy is never touched, because the gate only acts on failing claims.
+       */
+      const resolveClaims = async (claims: string[]): Promise<void> => {
+        const allowed = mayEscalate({ deckWrites, escalationCycles });
+        if (!allowed.ok) {
+          recoverySuppressed = `${allowed.why} (${claims.length} claim(s))`;
+          console.warn(`[studio/carousel] ${recoverySuppressed}`);
         } else {
-          console.warn(`[studio/carousel] low-risk post made a checkable claim — ${esc.why}`);
-          for (const t of esc.triggers) console.warn(`    ${t.field}: "${t.text.slice(0, 90)}"`);
-          routing = { ...routing!, escalated: true, escalatedWhy: esc.why };
+          escalationCycles++;
+          research = await stage('escalated_research', () => researchClaims({
+            claims, topic: opts.topic ?? '', language: opts.language,
+            region: opts.agency.name ? (opts.marketBrief ?? '') : '',
+            markets: opts.marketBrief,
+            onSources: (src) => { sources = src; },
+          }));
+        }
+        // The gate runs either way. With fresh evidence it can support the claims; without it, it
+        // repairs or reframes them — which is still far cheaper than writing the deck again.
+        const gated = await stage('targeted_gate', () => gatePlan(plan, {
+          language: opts.language, topic: opts.topic ?? '', research,
+          cardRules: card ? cardRules(card) : '',
+          agencyEvidence: opts.agencyEvidence ?? '', uncovered,
+          sources, coverage, cardId: card?.id, bank: card?.bank, facts: paletteFacts,
+          claimCache,
+        }, 1).catch(() => null));
+        if (gated) {
+          plan = gated.plan;
+          if (claimQa) {
+            claimQa.repairs += gated.report.repairs;
+            claimQa.dropped += gated.report.dropped;
+            claimQa.blocked.push(...gated.report.blocked);
+            claimQa.bankContradictions.push(...gated.report.bankContradictions);
+          } else { claimQa = gated.report; }
+        }
+        lastPlan = plan;
+      };
+
+      if (!researches(route.tier)) {
+        /**
+         * TARGETED ESCALATION — verify the flagged sentences, never rewrite the deck.
+         *
+         * The old path threw the LOW draft away and wrote the whole carousel again WITH research,
+         * then gated it, edited it, re-gated it, and let the minimum-viable rewrite write it a
+         * THIRD time: 71 calls, 892 seconds and $1.94 to check four sentences. The good copy around
+         * them was destroyed to do it.
+         *
+         * Christian, 2026-09-09: "verify the flagged claims, not rewrite the entire carousel."
+         *
+         * The scan now runs BEFORE the editor, so no editor call is ever spent polishing a draft
+         * that is about to change. The editor runs after, and is scanned again — it is a writer too
+         * and can introduce a claim of its own — but a second finding reuses the evidence already
+         * gathered and never researches twice.
+         */
+        const lowDraft = plan;                       // kept for the record: the voice before any gate
+        const first = needsEscalation(plan);
+        if (first.escalate) {
+          console.warn(`[studio/carousel] low-risk draft made a checkable claim — ${first.why}`);
+          for (const t of first.triggers) console.warn(`    ${t.field}: "${t.text.slice(0, 90)}"`);
+          routing = { ...routing!, escalated: true, escalatedWhy: first.why };
           progress = { ...progress, escalated: true };
           await beat();
-          // Write it again WITH research, then refine normally. The cheap draft is spent, but the
-          // claim the writer wanted to make now has evidence behind it rather than being cut.
-          plan = await stage('escalated_rewrite', () => writeDeck(false, false));
-          lastPlan = plan;
-          plan = await refine(plan);
+          await resolveClaims(first.triggers.map((t) => t.text));
         }
+
+        // The readability pass, on whatever the deck now says. It touches no evidence.
+        plan = await refine(plan, true);
+
+        // THE EDITOR IS A WRITER TOO. Scanned again — but with no new research, because the one
+        // escalation cycle this generation is allowed has already been spent.
+        const afterEdit = needsEscalation(plan);
+        if (afterEdit.escalate) {
+          console.warn(`[studio/carousel] the editor introduced a checkable claim — ${afterEdit.why}`);
+          routing = { ...routing!, escalated: true,
+            escalatedWhy: `${routing?.escalatedWhy ? `${routing.escalatedWhy}; then ` : ''}${afterEdit.why}` };
+          progress = { ...progress, escalated: true };
+          await resolveClaims(afterEdit.triggers.map((t) => t.text));
+        }
+        if (!first.escalate && !afterEdit.escalate) {
+          console.log('[studio/carousel] low-risk post stayed low-risk — publishing without the evidence engine');
+          routing = { ...routing!, escalated: false };
+        }
+        lastPlan = plan;
+        preEscalationDraft = escalationCycles > 0 ? lowDraft : undefined;
       } else {
         plan = await refine(plan);
       }
@@ -1914,7 +1997,16 @@ async function runPlannedCarousel(opts: {
       // stands up better. Only give up if neither does.
       const wanted = Math.min(7, Math.max(1, opts.slideCount ?? 5));
       const floor = wanted >= 5 ? 4 : Math.max(2, wanted - 1);
-      if ((plan.tips?.length ?? 0) < floor) {
+      // NO STACKING. A deck-level recovery on top of an escalation is how one carousel got written
+      // three times. At most one full-deck write beyond the first, and never after targeted repair
+      // has already reshaped the deck — take the best safe draft instead.
+      const recovery = mayRewriteDeck({ deckWrites, escalationCycles });
+      if ((plan.tips?.length ?? 0) < floor && !recovery.ok) {
+        recoverySuppressed = `${plan.tips?.length ?? 0} of ${wanted} slides survived — `
+          + `deck-level rewrite suppressed: ${recovery.why}`;
+        console.warn(`[studio/carousel] ${recoverySuppressed}`);
+      }
+      if ((plan.tips?.length ?? 0) < floor && recovery.ok) {
         console.warn(`[studio/carousel] ${plan.tips?.length ?? 0} of ${wanted} slides survived — `
           + `rewriting the topic on arguments that do not need a figure`);
         const kept = plan;
@@ -2061,6 +2153,10 @@ async function runPlannedCarousel(opts: {
         image_paths: imagePaths, image_scheme: opts.scheme, per_slide_art: perSlideArt, artwork_source: artworkSource, artwork_error: artworkError, artwork_qa: artworkQa, copy_qa: copyQa, claim_qa: claimQa, requirement_coverage: coverage,
         timings: { ...timings, total_ms: Date.now() - t0 },
         usage, fact_health: factHealth, rewrite, routing, progress,
+        deck_writes: deckWrites, escalation_cycles: escalationCycles, recovery_suppressed: recoverySuppressed,
+        // The LOW draft before any evidence work touched it, so its voice can be judged apart from
+        // what the gate did to it.
+        pre_escalation_plan: preEscalationDraft,
         // The source ledger. Coverage and claim-support records reference these ids, so a published
         // sentence can be traced to the page it came off long after the run.
         research_sources: sources.map((x) => ({
@@ -2103,6 +2199,8 @@ async function runPlannedCarousel(opts: {
         error: String((err as Error)?.message ?? err).slice(0, 600),
         timings: { ...timings, total_ms: Date.now() - t0 },
         usage, fact_health: factHealth, rewrite, routing, progress,
+        deck_writes: deckWrites, escalation_cycles: escalationCycles, recovery_suppressed: recoverySuppressed,
+        pre_escalation_plan: preEscalationDraft,
         claim_qa: claimQa, copy_qa: copyQa, requirement_coverage: coverage,
         research_sources: sources.map((x) => ({
           source_id: x.id, url: x.url, title: x.title, domain: x.domain,

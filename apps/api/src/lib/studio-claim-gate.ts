@@ -32,7 +32,8 @@ import {
   RESOLVED_HARD_FAIL, RESOLVED_OK,
   type CoverageStatus, type GateHit, type PlanLike, type Requirement, type RequirementCoverage,
   type Resolution, type SemanticUnitCase, type SemanticUnitVerdict,
-  dropAllUnverified, type SemanticUnitResult,
+  dropAllUnverified, claimTouchesRequirement,
+  type SemanticUnitResult, type RejectedProposition, type Restatement,
 } from './studio-copy-gate';
 import { getCard, retrieveBankFacts } from './studio-bank-match';
 import { modelFor, type Role } from './studio-models';
@@ -1546,3 +1547,94 @@ export async function judgeSemanticUnits(
   return { verdicts: [...byIndex.values()].sort((a, b) => a.index - b.index), failed: false };
 }
 
+/* ── DID A REFUSED PROPOSITION COME BACK IN SOFTER CLOTHES? ────────────────────────────────── */
+
+const LINEAGE_SYSTEM =
+  'Some propositions in a draft could not be established, and were removed. The writer or editor '
+  + 'then rewrote the copy. Your job is to catch a refused proposition that has come back in '
+  + 'different words.\n\n'
+  + 'For each line of the FINAL copy, decide whether it asserts the same underlying proposition as '
+  + 'any REFUSED one — or a stronger version of it. Wording, hedging and the presence or absence of '
+  + 'a number are irrelevant. "Attention peaks in the first two to three weeks" and "the opening '
+  + 'window matters more than which month it falls in" are the SAME proposition about market '
+  + 'behaviour; dropping the figure does not make it a different claim.\n\n'
+  + 'Answer NO for a line that merely shares a topic, is weaker in kind (an instruction, a question, '
+  + 'a positioning line, advice about what to ask), or makes a genuinely different point. Most lines '
+  + 'are NO. Only flag a real restatement of the refused proposition.';
+
+const LINEAGE_TOOL = {
+  name: 'find_restatements',
+  description: 'Name the final lines that revive a refused proposition.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      restatements: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            field: { type: 'string', description: 'the field id of the final line' },
+            rejected_index: { type: 'number', description: 'which refused proposition it restates' },
+            why: { type: 'string', description: 'one short sentence' },
+          },
+          required: ['field', 'rejected_index', 'why'],
+        },
+      },
+    },
+    required: ['restatements'],
+  },
+} as const;
+
+/**
+ * ONE call for the whole deck: does any published line revive something we refused?
+ *
+ * Batched deliberately — Christian, 2026-09-09: "Do this in a bounded/batched way. Do not create
+ * one model call per sentence." It runs only when the gate actually refused something, so a clean
+ * deck never pays for it.
+ *
+ * FAILS SAFE in the direction of truth: if the check is unavailable, every line that merely shares
+ * distinctive content with a refused HIGH proposition is treated as a restatement, because the
+ * alternative is republishing exactly what we just refused.
+ */
+export async function findRestatements(
+  plan: PlanLike, rejected: readonly RejectedProposition[], language: string,
+): Promise<{ restatements: Restatement[]; failed: boolean }> {
+  const material = rejected.filter((r) => r.tier === 'high');
+  if (!material.length) return { restatements: [], failed: false };
+  const fields = planFields(plan).filter((f) => fieldPolicy(f.field) === 'claim');
+  if (!fields.length) return { restatements: [], failed: false };
+
+  const fallback = (): { restatements: Restatement[]; failed: boolean } => ({
+    failed: true,
+    restatements: fields.flatMap((f) => {
+      const hit = material.find((r) => claimTouchesRequirement(f.text, r.text));
+      return hit ? [{ field: f.field, text: f.text, rejected: hit.text,
+        why: 'the lineage check was unavailable and this line shares the refused claim\'s content' }] : [];
+    }),
+  });
+
+  const body = [
+    'REFUSED PROPOSITIONS:',
+    ...material.map((r, i) => `  [${i}] "${r.text}"  (${r.why})`),
+    '',
+    'FINAL COPY:',
+    ...fields.map((f) => `  [${f.field}] ${f.text}`),
+  ].join('\n');
+
+  const out = await callTool('claim lineage', LINEAGE_SYSTEM,
+    `The post is written in ${language}.\n\n${body}`,
+    LINEAGE_TOOL as unknown as Record<string, unknown>, 45_000, 1000, 'CLAIM_CLASSIFIER');
+  const list = out && coerceList(out.restatements, 'restatements');
+  if (!list) return fallback();
+
+  const byField = new Map(fields.map((f) => [f.field, f.text]));
+  const found: Restatement[] = [];
+  for (const raw of list as Array<Record<string, unknown>>) {
+    const field = String(raw.field ?? '');
+    const idx = Number(raw.rejected_index);
+    const text = byField.get(field);
+    if (!text || !material[idx]) continue;
+    found.push({ field, text, rejected: material[idx].text, why: String(raw.why ?? '').slice(0, 180) });
+  }
+  return { restatements: found, failed: false };
+}

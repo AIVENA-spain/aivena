@@ -33,10 +33,11 @@ import {
 import type { CarouselBrand } from '../../../../studio/engine/renderCarousel';
 import { planCarousel, editPlan, remixHook, topicIdeas, listingCopy, listingStory, pickBankCard, researchClaims, PlanSchema, normalisePlan, type Audience } from '../lib/studio-carousel-plan';
 import { POLICED_TYPES, checkBankContradictions, checkIntent, extractClaims, gatePlan,
-  type ExtractedClaim, type GateReport , judgeSemanticUnits } from '../lib/studio-claim-gate';
+  type ExtractedClaim, type GateReport , judgeSemanticUnits, findRestatements } from '../lib/studio-claim-gate';
 import { finishCopy } from '../lib/studio-publish';
 import {
-  SEMANTIC_UNIT_CHECK_FAILED, applySemanticVerdicts, tipsThatLostAClaim,
+  SEMANTIC_UNIT_CHECK_FAILED, applySemanticVerdicts, rejectedPropositions, stripVagueAuthority,
+  tipsThatLostAClaim, type RejectedProposition, type Restatement,
 } from '../lib/studio-copy-gate';
 import { randomUUID } from 'node:crypto';
 import {
@@ -1596,6 +1597,13 @@ async function runPlannedCarousel(opts: {
     resolvedFromExistingEvidence?: boolean;
     repairedOrRemoved?: number;
   } | undefined;
+  /**
+   * PROPOSITIONS THIS RUN COULD NOT ESTABLISH. Kept for the whole generation, because a refusal
+   * attaches to the claim and not to the sentence that carried it — a softer restatement must
+   * inherit the same bar rather than escape it by dropping the number.
+   */
+  let rejectedLedger: RejectedProposition[] = [];
+  let lineage: { rejected: number; restatements: Restatement[]; checkFailed?: boolean } | undefined;
   /** What the semantic-unit check inspected and decided, per slide. */
   let semanticUnit: {
     inspected: number[];
@@ -1810,6 +1818,14 @@ async function runPlannedCarousel(opts: {
         // NO_CHANGES needs no re-gate: the copy the gate already cleared is the copy that publishes.
         if (edit.outcome === 'EDITED' && edit.plan) {
           plan = edit.plan;
+          // BEFORE the re-gate, not after: strip any authority the editor invented so the bare
+          // claim underneath is what gets judged, rather than a hedge wearing a source's clothes.
+          for (const f of planFields(plan)) {
+            const stripped = stripVagueAuthority(f.text);
+            if (!stripped.changed) continue;
+            plan = writeField(plan, f.field, stripped.text) as typeof plan;
+            console.warn(`[studio/carousel] editor invented authority in ${f.field}: "${stripped.phrase}"`);
+          }
 
           // THE EDITOR IS A WRITER TOO. Everything it rewrote is copy the claim gate never saw.
           // On a low-risk post there is no research to check it against; the escalation scan on the
@@ -1936,6 +1952,28 @@ async function runPlannedCarousel(opts: {
             const droppedCount = applied.filter((a) => a.decision === 'DROP').length;
             if (claimQa) claimQa.dropped += droppedCount;
             plan = settled;
+          }
+        }
+
+        // CLAIM LINEAGE. Everything above can rewrite copy, and a rewrite is exactly how a refused
+        // proposition gets back in: drop the figure, keep the assertion, and it scores MEDIUM.
+        // One batched call, only when something was actually refused.
+        rejectedLedger = rejectedPropositions(claimQa?.blocked ?? []);
+        if (rejectedLedger.some((r) => r.tier === 'high')) {
+          const found = await stage('claim_lineage',
+            () => findRestatements(plan, rejectedLedger, opts.language));
+          lineage = { rejected: rejectedLedger.length, restatements: found.restatements,
+            checkFailed: found.failed || undefined };
+          for (const r of found.restatements) {
+            const removal = removeClaim(plan, r.field, r.text);
+            plan = removal.plan;
+            if (removal.outcome !== 'left' && claimQa) claimQa.dropped++;
+            claimQa?.blocked.push({
+              field: r.field, text: r.text, verdict: 'UNSUPPORTED',
+              problem: `restates a proposition this post could not establish: "${r.rejected.slice(0, 90)}" — ${r.why}`,
+              outcome: `${removal.outcome} — changing the shape of a claim does not lower its bar`,
+            });
+            console.warn(`[studio/carousel] ${r.field} revived a refused claim: ${r.why}`);
           }
         }
 
@@ -2254,7 +2292,7 @@ async function runPlannedCarousel(opts: {
         timings: { ...timings, total_ms: Date.now() - t0 },
         usage, fact_health: factHealth, rewrite, routing, progress,
         deck_writes: deckWrites, escalation_cycles: escalationCycles, recovery_suppressed: recoverySuppressed,
-        escalation: escalationDetail, semantic_unit: semanticUnit,
+        escalation: escalationDetail, semantic_unit: semanticUnit, claim_lineage: lineage,
         // The LOW draft before any evidence work touched it, so its voice can be judged apart from
         // what the gate did to it.
         pre_escalation_plan: preEscalationDraft,
@@ -2301,7 +2339,7 @@ async function runPlannedCarousel(opts: {
         timings: { ...timings, total_ms: Date.now() - t0 },
         usage, fact_health: factHealth, rewrite, routing, progress,
         deck_writes: deckWrites, escalation_cycles: escalationCycles, recovery_suppressed: recoverySuppressed,
-        escalation: escalationDetail, semantic_unit: semanticUnit,
+        escalation: escalationDetail, semantic_unit: semanticUnit, claim_lineage: lineage,
         pre_escalation_plan: preEscalationDraft,
         claim_qa: claimQa, copy_qa: copyQa, requirement_coverage: coverage,
         research_sources: sources.map((x) => ({

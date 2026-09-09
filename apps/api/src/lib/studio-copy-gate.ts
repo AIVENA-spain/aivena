@@ -855,7 +855,15 @@ const NARRATION_ANY = /\b(?:we|i)\s+(?:couldn'?t|could not|can'?t|cannot|didn'?t
  * is narration wearing a fact's clothes — it tells the reader the state of opinion instead of the
  * state of the world, and it is what a writer reaches for when the briefing gave it a soft finding.
  */
-const VAGUE_AUTHORITY = /\b(?:practitioner\s+consensus|practitioners?\s+(?:report|say|agree|note|find)|experts?\s+(?:agree|say|report)|industry\s+consensus|commonly\s+(?:reported|held|believed|understood)|widely\s+(?:reported|believed|held)|reportedly|it is (?:said|believed|reported|understood)|is (?:said|believed|thought|reported) to\b|anecdotally|conventional wisdom|\b\w+s\s+(?:broadly|generally|widely|largely|mostly|commonly|typically)\s+(?:agree|report|say|hold|find))/i;
+/**
+ * Authority attributed to nobody in particular.
+ *
+ * Widened 2026-09-09: the list knew "experts say" but not "agents say" or "agencies report", and a
+ * live deck published both. The trades themselves — agents, agencies, brokers, realtors, analysts —
+ * are exactly who a property post would borrow credibility from, and the adverb the last branch
+ * required ("agencies GENERALLY say") is the version nobody writes.
+ */
+const VAGUE_AUTHORITY = /\b(?:practitioner\s+consensus|practitioners?\s+(?:report|say|agree|note|find)|(?:most |many |some |local |industry |experienced )?(?:experts?|agents?|estate agents?|agencies|realtors?|brokers?|analysts?|professionals?)\s+(?:agree|agrees|say|says|said|report|reports|reported|note|notes|believe|believes|suggest|suggests|find|finds|confirm|confirms|will tell you|tell you)|industry\s+consensus|research\s+(?:suggests?|shows?|indicates?|finds?)|studies\s+(?:show|suggest|indicate|find)|commonly\s+(?:reported|held|believed|understood)|widely\s+(?:reported|believed|held)|reportedly|it is (?:said|believed|reported|understood)|is (?:said|believed|thought|reported) to\b|anecdotally|conventional wisdom|\b\w+s\s+(?:broadly|generally|widely|largely|mostly|commonly|typically)\s+(?:agree|report|say|hold|find))/i;
 
 /** Hedging that reveals the checking rather than the subject. */
 const PROCESS_HEDGE = /\b(?:depend\w*\s+on\s+which\s+\w+\s+you\s+(?:read|use|pick|choose)|which\s+\w+\s+you\s+read|sources?\s+(?:vary|differ)\s+by|varies?\s+by\s+(?:method|source|publisher)|what(?:'s| is)\s+(?:genuinely\s+)?established|what\s+(?:nobody|no\s?one)(?:'s| has)?\s+measured|the exact number shifts)\b/i;
@@ -1416,3 +1424,86 @@ export interface SemanticUnitResult {
 
 /** Internal code for the record when the judgement itself could not be obtained. */
 export const SEMANTIC_UNIT_CHECK_FAILED = 'SEMANTIC_UNIT_CHECK_FAILED';
+
+/* ── MANUFACTURED AUTHORITY ────────────────────────────────────────────────────────────────── */
+
+/**
+ * Strip borrowed authority and keep the sentence.
+ *
+ * A researched deck published "Agencies say a listing that sits for months becomes ripe for
+ * negotiation" and "Agents report that sellers... often accept less". Neither phrase was in the
+ * copy the gate cleared — the EDITOR added them afterwards, inventing a source for a claim that had
+ * been allowed as ordinary reasoning. `VAGUE_AUTHORITY` above knew "experts say" and not "agents
+ * say", so nothing fired.
+ *
+ * Removing the attribution does not weaken anything: the claim underneath still faces the ordinary
+ * evidence bar. It stops a hedge from posing as a source. Christian, 2026-09-09: "Research should
+ * make AIVENA MORE confident and clear, not make the prose sound like a journalist hiding unnamed
+ * sources."
+ */
+export function stripVagueAuthority(text: string): { text: string; changed: boolean; phrase: string } {
+  const t = text ?? '';
+  const m = VAGUE_AUTHORITY.exec(t);
+  if (!m) return { text: t, changed: false, phrase: '' };
+  let out = t.replace(new RegExp(VAGUE_AUTHORITY.source, 'gi'), '').replace(/\s{2,}/g, ' ');
+  // "Agencies say that a listing…" leaves a dangling "that"; a leading comma is left the same way.
+  out = out.replace(/(^|[.!?]\s+)\s*that\s+/gi, '$1').replace(/(^|[.!?]\s+)\s*[,;]\s*/g, '$1').trim();
+  out = out.replace(/(^|[.!?]\s+)([a-z])/g, (_x, p, c) => `${p}${String(c).toUpperCase()}`);
+  return { text: out, changed: out !== t && out.length >= 20, phrase: m[0] };
+}
+
+/** Does this field lean on authority it cannot name? */
+export const hasVagueAuthority = (text: string): boolean => VAGUE_AUTHORITY.test(text ?? '');
+
+/* ── CLAIM LINEAGE ─────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * A proposition this generation could NOT establish.
+ *
+ * Kept for the rest of the run, because rejection has to attach to the PROPOSITION and not to the
+ * sentence that happened to carry it.
+ */
+export interface RejectedProposition {
+  /** the sentence as it was written when it failed */
+  text: string;
+  field: string;
+  /** the bar it had to clear — inherited by any restatement */
+  tier: string;
+  why: string;
+}
+
+/**
+ * Collect what the gate refused, so a softer version of it cannot walk back in.
+ *
+ * THE HOLE THIS CLOSES. A researched deck had "buyer attention peaks hard in the first two to three
+ * weeks" refused as a HIGH market claim with nothing behind it — and then published "that opening
+ * window matters more than which month it falls in". Same proposition, no number, so it scored
+ * MEDIUM and passed as ordinary reasoning.
+ *
+ * Christian, 2026-09-09: "The truth obligation belongs to the underlying proposition, not to
+ * whether the sentence contains a number. Changing the shape of a claim must never lower its truth
+ * requirement."
+ */
+export function rejectedPropositions(
+  blocked: ReadonlyArray<{ field: string; text: string; verdict?: string; problem?: string; outcome?: string }>,
+): RejectedProposition[] {
+  return blocked
+    // Only evidence failures. A CTA rewritten for capability, or a headline cut for length, says
+    // nothing about whether the proposition is true.
+    .filter((b) => b.verdict === 'UNSUPPORTED' && /removed/i.test(b.outcome ?? '')
+      && !/cap of|boundary|keyword|hashtag|attributes this to nobody/i.test(b.problem ?? ''))
+    .map((b) => ({
+      text: b.text, field: b.field,
+      tier: /high-risk|may not rest on unknown/i.test(b.problem ?? '') ? 'high' : 'medium',
+      why: (b.problem ?? '').slice(0, 180),
+    }));
+}
+
+/** One restatement the check found: a published line that revives a refused proposition. */
+export interface Restatement {
+  field: string;
+  text: string;
+  /** which rejected proposition it restates */
+  rejected: string;
+  why: string;
+}

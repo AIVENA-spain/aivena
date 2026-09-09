@@ -832,7 +832,18 @@ export function agencyOverreach(claim: string, profile: string): string {
  * facts wearing a qualitative coat.
  */
 /** Stated as a law of nature rather than a tendency. An industry mechanism is never universal. */
-const UNIVERSAL = /\b(?:always|never|every (?:buyer|seller|listing|home|time)|all (?:buyers|sellers|listings|homes)|guarantee[sd]?|guaranteed|will (?:definitely|certainly)|invariably|without exception|in every case)\b/i;
+/**
+ * Wording that promises a RELIABLE OUTCOME, not a tendency.
+ *
+ * "What consistently works is launching the moment the home is ready" published on a researched
+ * deck: a universal performance promise that slipped a detector knowing only always/never/every.
+ * Christian, 2026-09-09: "claims of universal/reliable outcomes should require evidence appropriate
+ * to the strength of the wording."
+ *
+ * Deliberately about the PROMISE, not the enthusiasm. "Consistently works", "reliably produces" and
+ * "proven to work every time" assert a rate of success; "a strong listing sells well" does not.
+ */
+const UNIVERSAL = /\b(?:always|never|every (?:buyer|seller|listing|home|time)|all (?:buyers|sellers|listings|homes)|guarantee[sd]?|guaranteed|will (?:definitely|certainly)|invariably|without exception|in every case|consistently (?:works?|delivers?|produces?|sells?|wins?)|reliably (?:produces?|delivers?|works?|sells?)|inevitably|without fail|proven to work|works? every time|every single time)\b/i;
 
 /** Modal qualification — the register a tendency belongs in. */
 const QUALIFIED = /\b(?:can|may|might|often|usually|typically|tend(?:s)? to|generally|frequently|sometimes|commonly|in many cases|more likely|less likely|risks?|could)\b/i;

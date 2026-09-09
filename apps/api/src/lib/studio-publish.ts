@@ -10,7 +10,8 @@
 import { checkCta } from './studio-evidence';
 import {
   capFor, checkHashtags, ctaKeyword, endsMidThought, fieldPolicy, fitCtaKeyword, incompleteBody,
-  planFields, readField, settleDeck, shortenToBoundary, writeField, type PlanLike,
+  planFields, readField, settleDeck, shortenToBoundary, stripVagueAuthority, writeField,
+  type PlanLike,
 } from './studio-copy-gate';
 
 /**
@@ -117,6 +118,19 @@ export function finishCopy<T extends PlanLike>(
       }
     }
   }
+  // NO BORROWED AUTHORITY. The editor added "Agencies say" and "Agents report" to two claims after
+  // the gate had cleared them — inventing a source for something that was ordinary reasoning. The
+  // claim underneath keeps whatever standing it had; only the false attribution goes.
+  for (const f of planFields(current)) {
+    const stripped = stripVagueAuthority(f.text);
+    if (stripped.changed) {
+      current = writeField(current, f.field, stripped.text);
+      report?.blocked.push({ field: f.field, text: f.text, verdict: 'UNSUPPORTED',
+        problem: `"${stripped.phrase}" attributes this to nobody in particular`,
+        outcome: 'attribution removed — the statement stands on its own or not at all' });
+    }
+  }
+
   for (const f of planFields(current)) {
     if (endsMidThought(f.text)) {
       current = writeField(current, f.field,

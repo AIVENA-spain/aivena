@@ -13,7 +13,7 @@ import type { BankCard } from './studio-bank.generated';
 import { buildPalette } from './studio-palette';
 import { modelFor } from './studio-models';
 import { CALL_BUDGET_MS, ModelCallError, boundedCall } from './studio-bounded-call';
-import { LOW_RISK_BRIEF, ideasNeedingCheck } from './studio-risk-route';
+import { LOW_RISK_BRIEF, ideasNeedingCheck, routeTopic } from './studio-risk-route';
 import { classifySource, domainOf, policyUnmetFor, riskOf, SOURCE_POLICY,
   type SourceFact,
   type ResearchSource as Source, type RiskClass } from './studio-evidence';
@@ -502,7 +502,7 @@ async function openCited(findings: ResearchCall, risk: RiskClass): Promise<void>
 /* ── CAN THE HEADLINE SURVIVE? ─────────────────────────────────────────────────────────────── */
 
 export interface PremiseVerdict {
-  verdict: 'CAN_SUPPORT' | 'CANNOT_SUPPORT' | 'NEEDS_SOFTER_FORM';
+  verdict: 'CAN_SUPPORT' | 'CANNOT_SUPPORT' | 'NEEDS_SOFTER_FORM' | 'PREFLIGHT_FAILED';
   why: string;
   /** the angle to write instead, when the original premise cannot stand as stated */
   supportedPremise?: string;
@@ -555,9 +555,18 @@ export async function premisePreflight(opts: {
   const sources: ResearchSource[] = [];
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), 120_000);
+  /**
+   * A FAILED PREFLIGHT IS NOT A PASS.
+   *
+   * Christian, 2026-09-09: "The preflight is a COST/INTENT optimisation. It must not become a
+   * safety dependency whose failure lowers the evidence standard." An unavailable check means we
+   * learned nothing about the premise, so the post takes the full strict HIGH research path it
+   * would have taken before this optimisation existed — and the failure is recorded rather than
+   * disguised as a clearance.
+   */
   const bail = (why: string): PremiseVerdict =>
-    ({ verdict: 'CAN_SUPPORT', why: `preflight unavailable (${why}) — proceeding as before`,
-       sources, ms: Date.now() - started });
+    ({ verdict: 'PREFLIGHT_FAILED', why: `the premise check was unavailable (${why}) — taking the `
+       + 'full research path', sources, ms: Date.now() - started });
 
   const system =
     'You are checking ONE thing before an estate agency writes a post: can its central promise be '
@@ -2187,26 +2196,45 @@ export async function vetIdeas(opts: {
   bankFacts?: string;
   /** ceiling on premise checks for one batch of suggestions */
   maxChecks?: number;
-}): Promise<{ ideas: string[]; checked: number; replaced: Array<{ from: string; to: string; why: string }> }> {
+}): Promise<{
+  ideas: string[]; checked: number;
+  replaced: Array<{ from: string; to: string; why: string }>;
+  dropped: Array<{ idea: string; why: string }>;
+}> {
   const max = opts.maxChecks ?? 2;
   const replaced: Array<{ from: string; to: string; why: string }> = [];
+  const dropped: Array<{ idea: string; why: string }> = [];
   const out: string[] = [];
   let checked = 0;
 
   const { check } = ideasNeedingCheck(opts.ideas, max);
   const needsCheck = new Set(check);
+
   for (const idea of opts.ideas) {
-    // The same router the generation uses. Most inspiration is opinion and never reaches a check.
-    if (!needsCheck.has(idea)) { out.push(idea); continue; }
+    const factual = routeTopic(idea).tier !== 'low';
+    if (!factual) { out.push(idea); continue; }
+    // A FACTUAL HOOK IS NEVER SHOWN UNCHECKED. Christian, 2026-09-09: "If AIVENA presents a factual
+    // hook as an Inspiration option, AIVENA already has a basis for believing the hook is
+    // supportable." Beyond the batch ceiling there is no basis, so the idea does not appear —
+    // showing it would recreate the defect this whole change exists to remove.
+    if (!needsCheck.has(idea)) {
+      dropped.push({ idea, why: 'a factual hook beyond this batch\'s check budget — not shown unchecked' });
+      continue;
+    }
     checked++;
     const pre = await premisePreflight({
       topic: idea, language: opts.language,
       region: opts.region ?? '', bankFacts: opts.bankFacts,
     });
-    if (pre.verdict === 'CAN_SUPPORT' || !pre.supportedPremise) { out.push(idea); continue; }
-    // Replace it BEFORE the agent ever sees it, rather than abandoning their choice later.
-    replaced.push({ from: idea, to: pre.supportedPremise, why: pre.why });
-    out.push(pre.supportedPremise);
+    if (pre.verdict === 'CAN_SUPPORT') { out.push(idea); continue; }
+    if (pre.supportedPremise) {
+      replaced.push({ from: idea, to: pre.supportedPremise, why: pre.why });
+      out.push(pre.supportedPremise);
+      continue;
+    }
+    // Could not be supported and nothing better was offered — including when the check itself
+    // failed. An unverified factual promise is exactly what we must not put in front of an agent.
+    dropped.push({ idea, why: pre.why || 'the premise could not be established' });
   }
-  return { ideas: out, checked, replaced };
+  return { ideas: out, checked, replaced, dropped };
 }

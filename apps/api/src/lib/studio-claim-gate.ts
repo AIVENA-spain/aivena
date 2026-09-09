@@ -40,6 +40,7 @@ import { modelFor, type Role } from './studio-models';
 import { finishCopy } from './studio-publish';
 import {
   EXTRACTOR_VERSION, SUPPORT_TYPES, canonicalWithinExcerpt, checkCta, excerptOccursIn,
+  isMarketBehaviour,
   rankFacts, riskTier,
   verifySupport,
   type ClaimSupport, type ProposedSupport, type ResearchSource, type SourceFact,
@@ -1604,12 +1605,32 @@ export async function findRestatements(
   const fields = planFields(plan).filter((f) => fieldPolicy(f.field) === 'claim');
   if (!fields.length) return { restatements: [], failed: false };
 
+  /**
+   * FAIL SAFE — and NOT on word overlap.
+   *
+   * The investigation that produced this function already proved overlap is structurally weak for a
+   * paraphrase: the refused claim and its restatement shared no distinctive terms at all. Falling
+   * back to overlap would therefore clear almost everything, which is the opposite of safe.
+   *
+   * Christian, 2026-09-09: "I would rather suppress the potentially related mutated claim than
+   * publish a semantic restatement of something we explicitly failed to establish."
+   *
+   * So when the check itself fails, every line that could carry a market-shaped assertion is
+   * treated as a restatement and removed. An instruction, a question or a positioning line is not
+   * an assertion and survives — the deck gets shorter, not sterilised, and if too little is left
+   * the minimum-viable rules turn it into an honest friendly failure.
+   */
   const fallback = (): { restatements: Restatement[]; failed: boolean } => ({
     failed: true,
     restatements: fields.flatMap((f) => {
-      const hit = material.find((r) => claimTouchesRequirement(f.text, r.text));
-      return hit ? [{ field: f.field, text: f.text, rejected: hit.text,
-        why: 'the lineage check was unavailable and this line shares the refused claim\'s content' }] : [];
+      const assertive = riskTier(f.text) === 'high' || isMarketBehaviour(f.text)
+        || material.some((r) => claimTouchesRequirement(f.text, r.text));
+      if (!assertive) return [];
+      return [{
+        field: f.field, text: f.text, rejected: material[0].text,
+        why: 'the lineage check was unavailable, and this line asserts something about the market '
+          + 'while a refused proposition is outstanding',
+      }];
     }),
   });
 

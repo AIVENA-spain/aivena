@@ -7,12 +7,29 @@ import { canonicalWithinExcerpt, checkCta, isSpecificLocalOrCurrent, mechanismAl
  */
 describe('what may stand without a source', () => {
   it.each([
-    'Launching too high can make buyers hesitate.',
     'Five versions of the same property can create conflicting messaging.',
-    'A listing that sits for a long time can make buyers wonder why.',
     'A description full of square metres reads like a spec sheet.',
     'One accountable agent means one line of proof.',
+    'A home that feels cared for photographs better.',
+    'Photograph the room people will actually sit in.',
   ])('allows ordinary reasoning: %s', (t) => expect(mechanismAllowed(t).ok).toBe(true));
+
+  /**
+   * RECLASSIFIED 2026-09-09, deliberately. These two were approved here as ordinary reasoning under
+   * the earlier policy. Christian's rule after generation 22d45453 supersedes it: "These are not
+   * harmless generic reasoning just because they have no number. They are claims about buyer
+   * behaviour, negotiation, sale outcomes and financial consequences."
+   *
+   * Both say how buyers actually react to a price or to time on the market. They stay MEDIUM — they
+   * are not figures — but MEDIUM now means "grounded in something", not "waved through".
+   */
+  it.each([
+    'Launching too high can make buyers hesitate.',
+    'A listing that sits for a long time can make buyers wonder why.',
+  ])('now asks for grounding on a claim about how the market behaves: %s', (t) => {
+    expect(mechanismAllowed(t).ok).toBe(false);
+    expect(mechanismAllowed(t).why).toMatch(/how buyers, sellers or listings actually behave/);
+  });
 
   it.each([
     'Moraira is quieter in winter than Calpe.',

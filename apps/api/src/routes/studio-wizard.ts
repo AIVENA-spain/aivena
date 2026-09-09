@@ -1750,12 +1750,20 @@ async function runPlannedCarousel(opts: {
         region: opts.marketBrief ?? '',
         bankFacts: card ? cardRules(card) : '',
       }));
-      const replaced = pre.verdict !== 'CAN_SUPPORT' && !!pre.supportedPremise;
+      // PREFLIGHT_FAILED never replaces the angle and never counts as a clearance — the deck takes
+      // the ordinary full HIGH path, exactly as it would if no preflight existed.
+      const replaced = pre.verdict !== 'CAN_SUPPORT' && pre.verdict !== 'PREFLIGHT_FAILED'
+        && !!pre.supportedPremise;
       premise = {
         original: angle, verdict: pre.verdict, why: pre.why,
         supportedPremise: pre.supportedPremise, rewritten: replaced, ms: pre.ms,
       };
-      console.log(`[studio/carousel] premise ${pre.verdict} — ${pre.why}`);
+      if (pre.verdict === 'PREFLIGHT_FAILED') {
+        console.error(`[studio/carousel] PREFLIGHT_FAILED — ${pre.why}. The evidence standard is `
+          + 'unchanged; only the saving is lost.');
+      } else {
+        console.log(`[studio/carousel] premise ${pre.verdict} — ${pre.why}`);
+      }
       if (replaced) {
         console.warn(`[studio/carousel] writing a supported angle instead: "${pre.supportedPremise}"`);
         angle = pre.supportedPremise!;
@@ -2811,13 +2819,34 @@ route.post('/carousel/topic-ideas', async (c) => {
     // wrong month can add years to the sale", the agent picked it, and the engine then spent $0.80
     // discovering its own suggestion could not be supported. A factual hook is checked BEFORE it is
     // offered; opinion and lifestyle ideas — most of them — cost nothing and appear as they always did.
-    const vetted = await vetIdeas({
-      ideas: proposed, language,
-      region: typeof prefs.region === 'string' ? prefs.region : '',
-    }).catch(() => ({ ideas: proposed, checked: 0, replaced: [] as Array<{ from: string; to: string; why: string }> }));
-    const topics = vetted.ideas;
+    const region = typeof prefs.region === 'string' ? prefs.region : '';
+    const vetted = await vetIdeas({ ideas: proposed, language, region })
+      .catch(() => ({ ideas: proposed, checked: 0,
+        replaced: [] as Array<{ from: string; to: string; why: string }>,
+        dropped: [] as Array<{ idea: string; why: string }> }));
+    let topics = vetted.ideas;
     for (const r of vetted.replaced) {
       console.warn(`[studio/ideas] replaced an unsupportable suggestion: "${r.from}" → "${r.to}" (${r.why})`);
+    }
+    for (const d of vetted.dropped) {
+      console.warn(`[studio/ideas] withheld an unchecked factual hook: "${d.idea}" — ${d.why}`);
+    }
+
+    // TOP UP WITH IDEAS THAT NEED NO CHECKING. Dropping an unverified factual hook must not leave
+    // the agent staring at three suggestions — Christian, 2026-09-09: "fill the remaining slots
+    // with LOW-risk opinion/lifestyle/positioning hooks that need no research." One extra call, and
+    // only when vetting actually removed something.
+    if (topics.length < 4 && vetted.dropped.length) {
+      const more = await topicIdeas(language,
+        [...new Set([...exclude, ...seen, ...shown, ...proposed])].slice(0, 120), audience)
+        .catch(() => null);
+      const lowOnly = (more ?? []).filter((t) => routeTopic(t).tier === 'low');
+      topics = [...topics, ...lowOnly].slice(0, 6);
+      console.log(`[studio/ideas] topped up with ${lowOnly.length} idea(s) that need no checking`);
+    }
+    if (!topics.length) {
+      return c.json({ ok: false, error: 'ideas_failed',
+        message: "Couldn't think of ideas right now — please try again." }, 502);
     }
 
     // remember what we just offered. Newest first, capped — an agency that has seen 400 ideas does

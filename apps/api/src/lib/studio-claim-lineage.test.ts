@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   hasVagueAuthority, rejectedPropositions, stripVagueAuthority,
 } from './studio-copy-gate';
-import { mechanismAllowed } from './studio-evidence';
+import { isMarketBehaviour, mechanismAllowed, policyAllows, riskOf } from './studio-evidence';
 
 /**
  * GENERATION 22d45453, verbatim — the deck that cost $0.7973, opened 16 pages, and published four
@@ -143,9 +143,77 @@ describe('a promise of a reliable outcome is not a tendency', () => {
   it.each([
     'A home that draws interest early tends to keep drawing it.',
     'People who buy for the pool often discover they wanted neighbours instead.',
-    'Launching too high can make buyers hesitate.',
     'A well-prepared listing usually shows better.',
+    'A description full of square metres reads like a spec sheet.',
   ])('leaves an honest tendency alone: %s', (t) => {
     expect(mechanismAllowed(t).ok).toBe(true);
+  });
+});
+
+/**
+ * The second half of what generation 22d45453 exposed: four of five published claims stood on
+ * "ordinary reasoning about how selling works", and the one that did have a source had it from a
+ * competitor estate agency's blog, classified `unknown`.
+ *
+ * Christian, 2026-09-09: "I want the source hierarchy enforced at CLAIM SUPPORT time, not merely
+ * stored as metadata."
+ */
+describe('a claim about the market is not ordinary reasoning', () => {
+  it.each([
+    'A listing that sits for months becomes ripe for negotiation.',
+    'Buyers start to see a lingering listing as a problem.',
+    'Sellers who let a listing drag often accept less just to close.',
+    'Even good homes get read as overpriced once they sit, which pulls in lower offers.',
+    'Buyer demand peaks over summer and drops away after.',
+  ])('needs grounding, number or no number: %s', (t) => {
+    expect(isMarketBehaviour(t)).toBe(true);
+    expect(mechanismAllowed(t).ok).toBe(false);
+  });
+
+  it.each([
+    'Momentum is easier to build than to rebuild.',
+    'One accountable agent means one line of proof.',
+    'A description full of square metres reads like a spec sheet.',
+    'Walk the route you would take on a rainy Tuesday.',
+    'Ask what the community fee actually covers before you sign.',
+  ])('leaves craft, advice and positioning free: %s', (t) => {
+    expect(isMarketBehaviour(t)).toBe(false);
+    expect(mechanismAllowed(t).ok).toBe(true);
+  });
+
+  it('routes a market-behaviour claim through the source policy rather than around it', () => {
+    expect(riskOf('A listing that sits becomes ripe for negotiation.')).not.toBe('none');
+  });
+});
+
+describe('an unclassified blog cannot establish how a market behaves', () => {
+  const src = (id: string, sourceClass: string, opened = true) => ({
+    id, url: `https://${id}.example`, title: id, domain: `${id}.example`,
+    sourceClass, opened, openedAt: null, contentChars: 8000, excerpts: [] as string[],
+  }) as unknown as Parameters<typeof policyAllows>[1][number];
+
+  // The exact shape of the live failure: oceanhome.es, class `unknown`, used to establish
+  // "sellers may accept 10-15% below asking price".
+  it('refuses an unknown-class page as the sole basis for a medium market claim', () => {
+    expect(policyAllows('local_fact', [src('oceanhome', 'unknown')], 'medium')).toBe(false);
+  });
+
+  it('refuses a blog on its own too', () => {
+    expect(policyAllows('local_fact', [src('someblog', 'blog')], 'medium')).toBe(false);
+  });
+
+  it('accepts press, industry and official sources at medium', () => {
+    for (const cls of ['press', 'industry', 'official_statistics', 'professional_body']) {
+      expect(policyAllows('local_fact', [src('s', cls)], 'medium')).toBe(true);
+    }
+  });
+
+  it('still accepts a good source sitting alongside a weak one', () => {
+    expect(policyAllows('local_fact', [src('blog', 'unknown'), src('ine', 'official_statistics')], 'medium'))
+      .toBe(true);
+  });
+
+  it('refuses a source that was never opened, whatever its class', () => {
+    expect(policyAllows('local_fact', [src('ine', 'official_statistics', false)], 'medium')).toBe(false);
   });
 });

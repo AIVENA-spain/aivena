@@ -289,6 +289,31 @@ const HAS_FIGURE = /(?:\d[\d.,]*\s?%|\b\d[\d.,]*\s?(?:€|eur|euros?|k|m|million
  * opened exactly this gap — the test caught it before it shipped.
  */
 const QUANTIFIED_CHANGE = /\b(?:doubl\w*|tripl\w*|quadrupl\w*|halv\w*|multipli\w*|ten ?fold|fivefold|per capita)\b/i;
+/**
+ * A claim about how THIS MARKET behaves — buyers, sellers, negotiation, sale outcomes.
+ *
+ * "A listing that sits becomes ripe for negotiation", "buyers start to see a lingering listing as a
+ * problem", "sellers often accept less". No figure in any of them, so they scored MEDIUM and
+ * published on "ordinary reasoning about how selling works" with nothing behind them.
+ *
+ * Christian, 2026-09-09: "These are not harmless generic reasoning just because they have no
+ * number. They are claims about buyer behaviour, negotiation, sale outcomes and financial
+ * consequences." They stay MEDIUM — but MEDIUM has never meant "no evidence required".
+ */
+const MARKET_BEHAVIOUR = new RegExp([
+  // what buyers or sellers do, as a group
+  /\b(?:buyers?|sellers?|owners?|vendors?|the market)\b[^.?!]{0,60}\b(?:offer|offers|bid|bids|negotiat\w*|walk away|hesitat\w*|accept|accepts?|reject\w*|lowball|push back|expect|assume|see|treat|read)\b/,
+  /\b(?:offer|offers|negotiat\w*|accept\w*|discount\w*|reduc\w*|knock\w* off|below asking|under asking|lower offers?|overpriced)\b[^.?!]{0,60}\b(?:buyers?|sellers?|owners?|listings?|propert(?:y|ies)|homes?|market)\b/,
+  // a listing's fate on the market
+  /\b(?:listings?|propert(?:y|ies)|homes?|houses?)\b[^.?!]{0,55}\b(?:sits?|sitting|sat|lingers?|lingering|stale|drags?|dragging|stagnat\w*|ripe for|time on (?:the )?market)\b/,
+  /\b(?:ripe for negotiation|room to negotiate|negotiating position|bargaining power)\b/,
+  // demand and appetite as a market state
+  /\b(?:demand|appetite|interest|enquir\w*|viewings?|footfall)\b[^.?!]{0,40}\b(?:peaks?|surges?|drops?|falls?|rises?|dries up|strongest|weakest|highest|lowest)\b/,
+].map((r) => r.source).join('|'), 'i');
+
+/** Is this a claim about market behaviour rather than a general principle? */
+export const isMarketBehaviour = (text: string): boolean => MARKET_BEHAVIOUR.test(text ?? '');
+
 /** A ranking or a superlative about a group — "the British still lead the province". */
 const RANKING = /\b(?:largest|biggest|leading|leads?\b|lead the|top(?:s)?\b|ranked?|ranking|first place|ahead of|overtaken|overtook|outnumber\w*|majority|most (?:buyers|owners|sales|popular)|fastest|highest|lowest|cheapest)\b/i;
 /**
@@ -336,6 +361,8 @@ export function riskOf(text: string, claimType?: string): RiskClass {
   if (claimType === 'QUANTIFIED_CLAIM' || claimType === 'TIME_SENSITIVE_FACT'
       || hitsAny(MARKET_STATS, t)) return 'market_statistics';
   if (claimType === 'LOCAL_FACT' || hitsAny(LOCAL_FACT, t)) return 'local_fact';
+  // Buyer behaviour, negotiation and sale outcomes are claims about this market, not about life.
+  if (MARKET_BEHAVIOUR.test(t)) return 'local_fact';
   if (claimType === 'FACTUAL_MATERIAL' || claimType === 'CAUSAL_INFERENCE') return 'market_statistics';
   return 'none';
 }
@@ -371,9 +398,17 @@ export function policyAllows(
   risk: RiskClass, cited: readonly ResearchSource[], tier: RiskTier = 'high',
 ): boolean {
   if (risk === 'none' || tier === 'low') return true;
-  // A medium-risk claim may rest on any reliable published source. Only high-risk claims are held
-  // to the producer of the fact.
-  if (tier === 'medium') return cited.some((s) => s.opened);
+  // A medium-risk claim may rest on any RELIABLE published source — and "reliable" has to mean
+  // something. A live deck established "sellers often accept less" from a competitor estate
+  // agency's own blog, classified `unknown`, and printed it as market truth. An unclassified page
+  // or a blog is anecdote; it may colour a post, it may not establish how a market behaves.
+  // Christian, 2026-09-09: "I want the source hierarchy enforced at CLAIM SUPPORT time, not merely
+  // stored as metadata."
+  if (tier === 'medium') {
+    const opened = cited.filter((s) => s.opened);
+    if (!opened.length) return false;
+    return opened.some((s) => s.sourceClass !== 'unknown' && s.sourceClass !== 'blog');
+  }
   const allowed = SOURCE_POLICY[risk];
   return cited.some((s) => s.opened && allowed.includes(s.sourceClass));
 }
@@ -869,6 +904,10 @@ export function mechanismAllowed(text: string): { ok: boolean; why: string } {
   }
   if (LEGAL_TAX.some((r) => r.test(t))) {
     return { ok: false, why: 'a rule of law or tax is never ordinary reasoning' };
+  }
+  if (MARKET_BEHAVIOUR.test(t)) {
+    return { ok: false, why: 'this says how buyers, sellers or listings actually behave — a claim '
+      + 'about the market, not a general principle' };
   }
   if (UNIVERSAL.test(t) && !QUALIFIED.test(t)) {
     return { ok: false, why: 'stated as a universal rule rather than a tendency' };

@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { dropTips, tipsThatLostAClaim } from './studio-copy-gate';
+import {
+  SEMANTIC_UNIT_CHECK_FAILED, applySemanticVerdicts, dropAllUnverified, tipsThatLostAClaim,
+} from './studio-copy-gate';
 import { riskOf, riskTier, mechanismAllowed } from './studio-evidence';
+
 import { claimTouchesRequirement } from './studio-copy-gate';
 
 /**
@@ -74,27 +77,113 @@ describe('what IS deterministic: which slides are even in question', () => {
   });
 });
 
-describe('taking the whole semantic unit', () => {
-  const deck = {
+describe('KEEP, REWRITE or DROP — and never manufacture a headline', () => {
+  const material = (t: string) => riskTier(t) === 'high';
+  const deck = () => ({
     tips: [
       { title: INNOCENT[0], body: 'A home that draws interest early tends to keep drawing it.' },
       { title: GUILTY_TITLE, body: SURVIVING_BODY },
       { title: INNOCENT[1], body: 'A home that lingers starts to raise questions.' },
     ],
-  };
-
-  it('removes the guilty slide and leaves the innocent ones untouched', () => {
-    const out = dropTips(deck, [1]);
-    expect(out.tips).toHaveLength(2);
-    expect(out.tips.map((t) => t.title)).toEqual(INNOCENT);
-    expect(JSON.stringify(out)).not.toContain('not the same buyers');
   });
 
-  it('renumbers for free, because every count reads off tips.length', () => {
-    expect(dropTips(deck, [0, 1]).tips).toHaveLength(1);
+  it('keeps the innocent slides untouched', () => {
+    const { plan, applied } = applySemanticVerdicts(deck(),
+      [{ index: 0, decision: 'KEEP', why: 'a general principle' }], material);
+    expect(plan.tips).toHaveLength(3);
+    expect(applied[0].decision).toBe('KEEP');
   });
 
-  it('changes nothing when no slide is guilty — the common case', () => {
-    expect(dropTips(deck, [])).toBe(deck);
+  it('rewrites a guilty headline to something the surviving body supports', () => {
+    const { plan, applied } = applySemanticVerdicts(deck(), [{
+      index: 1, decision: 'REWRITE', why: 'the title still asserted the seasonal claim',
+      replacementTitle: 'Ask which months bring buyers, not browsers',
+    }], material);
+    expect(plan.tips).toHaveLength(3);                       // the deck keeps its length
+    expect(plan.tips[1].title).toBe('Ask which months bring buyers, not browsers');
+    expect(applied[0].decision).toBe('REWRITE');
+  });
+
+  // The replacement is written by the same kind of model that just had a claim removed.
+  it('drops rather than accept a replacement that smuggles a new claim in', () => {
+    const { plan, applied } = applySemanticVerdicts(deck(), [{
+      index: 1, decision: 'REWRITE', why: 'still asserts it',
+      replacementTitle: 'Homes listed in spring sell 30% faster',
+    }], material);
+    expect(plan.tips).toHaveLength(2);
+    expect(applied[0].decision).toBe('DROP');
+    expect(applied[0].why).toMatch(/makes a claim of its own/);
+  });
+
+  it('drops rather than accept a replacement over the cap', () => {
+    const { applied } = applySemanticVerdicts(deck(), [{
+      index: 1, decision: 'REWRITE', why: 'still asserts it',
+      replacementTitle: 'A very long replacement headline that runs well past the sixty-two character ceiling',
+    }], material);
+    expect(applied[0].decision).toBe('DROP');
+    expect(applied[0].why).toMatch(/against a cap of/);
+  });
+
+  it('drops rather than accept a REWRITE with no headline offered', () => {
+    const { applied } = applySemanticVerdicts(deck(),
+      [{ index: 1, decision: 'REWRITE', why: 'still asserts it' }], material);
+    expect(applied[0].decision).toBe('DROP');
+    expect(applied[0].why).toMatch(/none offered/);
+  });
+
+  it('takes the whole slide when nothing left can carry a headline', () => {
+    const { plan } = applySemanticVerdicts(deck(),
+      [{ index: 1, decision: 'DROP', why: 'the body no longer makes a point' }], material);
+    expect(plan.tips).toHaveLength(2);
+    expect(plan.tips.map((t) => t.title)).toEqual(INNOCENT);
+    expect(JSON.stringify(plan)).not.toContain('not the same buyers');
+  });
+
+  it('drops several at once without the indices shifting under it', () => {
+    const { plan } = applySemanticVerdicts(deck(), [
+      { index: 0, decision: 'DROP', why: 'x' },
+      { index: 2, decision: 'DROP', why: 'y' },
+    ], material);
+    expect(plan.tips.map((t) => t.title)).toEqual([GUILTY_TITLE]);
+  });
+
+  it('changes nothing when there is nothing to judge', () => {
+    expect(applySemanticVerdicts(deck(), [], material).plan.tips).toHaveLength(3);
+  });
+});
+
+/**
+ * Christian, 2026-09-09: "If the semantic checker is unavailable, publishing the headline anyway is
+ * the riskier failure mode. Losing one potentially good slide is preferable to publishing an
+ * unsupported factual headline."
+ *
+ * My first version failed OPEN and kept the slide. That was backwards: the slide is already known
+ * to have carried a claim we could not establish, so silence is not neutral.
+ */
+describe('when the check itself is unavailable', () => {
+  const cases = [
+    { index: 1, title: GUILTY_TITLE, body: SURVIVING_BODY, removed: [REMOVED] },
+    { index: 3, title: 'Another headline', body: 'What is left.', removed: ['Something removed.'] },
+  ];
+
+  it('drops every slide it could not clear, rather than keeping them', () => {
+    const r = dropAllUnverified(cases, 'no usable answer');
+    expect(r.failed).toBe(true);
+    expect(r.verdicts.map((v) => v.decision)).toEqual(['DROP', 'DROP']);
+    expect(r.verdicts.map((v) => v.index)).toEqual([1, 3]);
+  });
+
+  it('says why in words that name the risk, not the mechanism', () => {
+    const r = dropAllUnverified(cases, 'timed out');
+    expect(r.verdicts[0].why).toMatch(/unverified headline may not publish/);
+    expect(r.failure).toBe('timed out');
+  });
+
+  it('carries an internal code so the record can distinguish this from a normal drop', () => {
+    expect(SEMANTIC_UNIT_CHECK_FAILED).toBe('SEMANTIC_UNIT_CHECK_FAILED');
+  });
+
+  it('affects nothing when there was nothing to check', () => {
+    expect(dropAllUnverified([], 'whatever').verdicts).toEqual([]);
   });
 });

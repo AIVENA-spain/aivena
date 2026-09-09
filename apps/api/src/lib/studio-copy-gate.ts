@@ -1313,3 +1313,106 @@ export function dropTips<T extends PlanLike>(plan: T, indices: readonly number[]
   const drop = new Set(indices);
   return { ...plan, tips: (plan.tips ?? []).filter((_, i) => !drop.has(i)) } as T;
 }
+
+/** What the semantic-unit check is asked about: one slide that lost a material sentence. */
+export interface SemanticUnitCase {
+  index: number;
+  title: string;
+  /** what is left of the body after the removal */
+  body: string;
+  /** the material sentence(s) taken out of it */
+  removed: string[];
+}
+
+/**
+ * What to do with that slide.
+ *
+ * KEEP    the headline never asserted the removed claim — most slides, and they must survive.
+ * REWRITE the headline did, but the surviving body genuinely supports a different, useful one.
+ * DROP    the headline did, and nothing left underneath can carry a title worth printing.
+ */
+export interface SemanticUnitVerdict {
+  index: number;
+  decision: 'KEEP' | 'REWRITE' | 'DROP';
+  why: string;
+  replacementTitle?: string;
+}
+
+/**
+ * Apply the verdicts, refusing any replacement that would smuggle a new claim in.
+ *
+ * A rewritten headline is written by the same kind of model that just had a claim removed, so it is
+ * checked before it is trusted: it must fit the cap, and it must not itself be material. A
+ * replacement that fails either test is not repaired again — the slide is dropped, because
+ * manufacturing a headline is exactly the failure this whole path exists to prevent.
+ *
+ * `isMaterial` is injected rather than imported: the risk tests live a layer above this file.
+ */
+export function applySemanticVerdicts<T extends PlanLike>(
+  plan: T,
+  verdicts: readonly SemanticUnitVerdict[],
+  isMaterial: (text: string) => boolean,
+): { plan: T; applied: Array<{ index: number; decision: 'KEEP' | 'REWRITE' | 'DROP'; why: string }> } {
+  const applied: Array<{ index: number; decision: 'KEEP' | 'REWRITE' | 'DROP'; why: string }> = [];
+  const drop = new Set<number>();
+  let tips = [...(plan.tips ?? [])];
+  const cap = capFor('tips[0].title') ?? 62;
+
+  for (const v of verdicts) {
+    const tip = tips[v.index];
+    if (!tip) continue;
+    if (v.decision === 'KEEP') { applied.push({ index: v.index, decision: 'KEEP', why: v.why }); continue; }
+    if (v.decision === 'REWRITE') {
+      const t = (v.replacementTitle ?? '').trim();
+      const usable = t.length >= 3 && t.length <= cap && !isMaterial(t);
+      if (usable) {
+        tips[v.index] = { ...tip, title: t };
+        applied.push({ index: v.index, decision: 'REWRITE', why: v.why });
+        continue;
+      }
+      // A replacement that is too long, too short, or itself a claim is not a repair.
+      drop.add(v.index);
+      applied.push({
+        index: v.index, decision: 'DROP',
+        why: `${v.why} — the proposed headline could not be used (${!t ? 'none offered'
+          : t.length > cap ? `${t.length} characters against a cap of ${cap}` : 'it makes a claim of its own'})`,
+      });
+      continue;
+    }
+    drop.add(v.index);
+    applied.push({ index: v.index, decision: 'DROP', why: v.why });
+  }
+
+  if (drop.size) tips = tips.filter((_, i) => !drop.has(i));
+  return { plan: { ...plan, tips } as T, applied };
+}
+
+/**
+ * FAIL SAFE, NOT OPEN.
+ *
+ * This check only ever runs on a slide that ALREADY carried a material claim nothing could
+ * establish. If the judgement is unavailable we know the slide contained a failed claim and cannot
+ * know whether its headline still asserts it. Christian, 2026-09-09: "losing one potentially good
+ * slide is preferable to publishing an unsupported factual headline."
+ */
+export function dropAllUnverified(
+  cases: readonly SemanticUnitCase[], why: string,
+): SemanticUnitResult {
+  return {
+    failed: true, failure: why,
+    verdicts: cases.map((c) => ({
+      index: c.index, decision: 'DROP' as const,
+      why: `the semantic-unit check was unavailable (${why}) — an unverified headline may not publish`,
+    })),
+  };
+}
+
+export interface SemanticUnitResult {
+  verdicts: SemanticUnitVerdict[];
+  /** true when the judgement could not be obtained — every affected slide is then dropped */
+  failed: boolean;
+  failure?: string;
+}
+
+/** Internal code for the record when the judgement itself could not be obtained. */
+export const SEMANTIC_UNIT_CHECK_FAILED = 'SEMANTIC_UNIT_CHECK_FAILED';

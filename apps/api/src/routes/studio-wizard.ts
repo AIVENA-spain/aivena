@@ -33,9 +33,11 @@ import {
 import type { CarouselBrand } from '../../../../studio/engine/renderCarousel';
 import { planCarousel, editPlan, remixHook, topicIdeas, listingCopy, listingStory, pickBankCard, researchClaims, PlanSchema, normalisePlan, type Audience } from '../lib/studio-carousel-plan';
 import { POLICED_TYPES, checkBankContradictions, checkIntent, extractClaims, gatePlan,
-  type ExtractedClaim, type GateReport , titleStillAsserts } from '../lib/studio-claim-gate';
+  type ExtractedClaim, type GateReport , judgeSemanticUnits } from '../lib/studio-claim-gate';
 import { finishCopy } from '../lib/studio-publish';
-import { dropTips, tipsThatLostAClaim } from '../lib/studio-copy-gate';
+import {
+  SEMANTIC_UNIT_CHECK_FAILED, applySemanticVerdicts, tipsThatLostAClaim,
+} from '../lib/studio-copy-gate';
 import { randomUUID } from 'node:crypto';
 import {
   mayEscalate, mayRewriteDeck, needsEscalation, researches, routeTopic, type Tier,
@@ -1592,6 +1594,13 @@ async function runPlannedCarousel(opts: {
     resolvedFromExistingEvidence?: boolean;
     repairedOrRemoved?: number;
   } | undefined;
+  /** What the semantic-unit check inspected and decided, per slide. */
+  let semanticUnit: {
+    inspected: number[];
+    decisions: Array<{ index: number; decision: string; why: string }>;
+    checkerFailed?: boolean;
+    failureCode?: string;
+  } | undefined;
   /** The LOW draft as it read before any evidence work — so its voice can be judged separately. */
   let preEscalationDraft: CarouselPlan | undefined;
   /**
@@ -1881,28 +1890,50 @@ async function runPlannedCarousel(opts: {
         // asserting it — a live deck shipped "The buyers looking in your season are not the same
         // buyers" over a body from which exactly that claim had been removed. The lexical atomicity
         // rule cannot see it, because a title and its body paraphrase each other.
-        const orphanCandidates = tipsThatLostAClaim(claimQa?.blocked ?? []);
-        if (orphanCandidates.length) {
-          const guilty: number[] = [];
-          for (const i of orphanCandidates) {
+        //
+        // ONE call for every affected slide, and it FAILS SAFE: this only ever runs on a slide that
+        // already carried a claim we could not establish, so an unavailable judgement means the
+        // headline is unverified — and an unverified factual headline may not publish.
+        const affected = tipsThatLostAClaim(claimQa?.blocked ?? []);
+        if (affected.length) {
+          const cases = affected.flatMap((i) => {
             const tip = plan.tips?.[i];
-            const lost = (claimQa?.blocked ?? []).find((b) => b.field === `tips[${i}].body`);
-            if (!tip?.title || !lost) continue;
-            const verdict = await stage('orphaned_title',
-              () => titleStillAsserts(tip.title, lost.text));
-            if (verdict.guilty) {
-              guilty.push(i);
-              claimQa?.blocked.push({
-                field: `tips[${i}].title`, text: tip.title, verdict: 'UNSUPPORTED',
-                problem: `the body's claim was removed and the headline still asserts it: ${verdict.why}`,
-                outcome: 'slide removed — a headline is not a slide without the point underneath it',
-              });
-              console.warn(`[studio/carousel] orphaned headline on tip ${i}: ${verdict.why}`);
+            if (!tip?.title) return [];
+            const removed = (claimQa?.blocked ?? [])
+              .filter((b) => b.field === `tips[${i}].body` && /removed/i.test(b.outcome ?? ''))
+              .map((b) => b.text);
+            return removed.length ? [{ index: i, title: tip.title, body: tip.body ?? '', removed }] : [];
+          });
+          if (cases.length) {
+            const judged = await stage('semantic_unit',
+              () => judgeSemanticUnits(cases, opts.language));
+            if (judged.failed) {
+              console.error(`[studio/carousel] ${SEMANTIC_UNIT_CHECK_FAILED}: ${judged.failure} — `
+                + `dropping ${cases.length} slide(s) rather than publishing an unverified headline`);
             }
-          }
-          if (guilty.length) {
-            plan = dropTips(plan, guilty);
-            if (claimQa) claimQa.dropped += guilty.length;
+            const { plan: settled, applied } = applySemanticVerdicts(
+              plan, judged.verdicts, (t) => riskTier(t) === 'high');
+            semanticUnit = {
+              inspected: cases.map((c) => c.index),
+              decisions: applied,
+              checkerFailed: judged.failed || undefined,
+              failureCode: judged.failed ? SEMANTIC_UNIT_CHECK_FAILED : undefined,
+            };
+            for (const a of applied) {
+              if (a.decision === 'KEEP') continue;
+              const tip = plan.tips?.[a.index];
+              claimQa?.blocked.push({
+                field: `tips[${a.index}].title`, text: tip?.title ?? '', verdict: 'UNSUPPORTED',
+                problem: `the body's claim was removed and the headline still asserted it: ${a.why}`,
+                outcome: a.decision === 'REWRITE'
+                  ? `headline rewritten to what the surviving body supports`
+                  : 'slide removed — a headline is not a slide without the point underneath it',
+              });
+              console.warn(`[studio/carousel] semantic unit tip ${a.index}: ${a.decision} — ${a.why}`);
+            }
+            const droppedCount = applied.filter((a) => a.decision === 'DROP').length;
+            if (claimQa) claimQa.dropped += droppedCount;
+            plan = settled;
           }
         }
 
@@ -2221,7 +2252,7 @@ async function runPlannedCarousel(opts: {
         timings: { ...timings, total_ms: Date.now() - t0 },
         usage, fact_health: factHealth, rewrite, routing, progress,
         deck_writes: deckWrites, escalation_cycles: escalationCycles, recovery_suppressed: recoverySuppressed,
-        escalation: escalationDetail,
+        escalation: escalationDetail, semantic_unit: semanticUnit,
         // The LOW draft before any evidence work touched it, so its voice can be judged apart from
         // what the gate did to it.
         pre_escalation_plan: preEscalationDraft,
@@ -2268,7 +2299,7 @@ async function runPlannedCarousel(opts: {
         timings: { ...timings, total_ms: Date.now() - t0 },
         usage, fact_health: factHealth, rewrite, routing, progress,
         deck_writes: deckWrites, escalation_cycles: escalationCycles, recovery_suppressed: recoverySuppressed,
-        escalation: escalationDetail,
+        escalation: escalationDetail, semantic_unit: semanticUnit,
         pre_escalation_plan: preEscalationDraft,
         claim_qa: claimQa, copy_qa: copyQa, requirement_coverage: coverage,
         research_sources: sources.map((x) => ({

@@ -31,7 +31,8 @@ import {
   shortenToBoundary, writeField,
   RESOLVED_HARD_FAIL, RESOLVED_OK,
   type CoverageStatus, type GateHit, type PlanLike, type Requirement, type RequirementCoverage,
-  type Resolution,
+  type Resolution, type SemanticUnitCase, type SemanticUnitVerdict,
+  dropAllUnverified, type SemanticUnitResult,
 } from './studio-copy-gate';
 import { getCard, retrieveBankFacts } from './studio-bank-match';
 import { modelFor, type Role } from './studio-models';
@@ -1453,51 +1454,95 @@ export async function gatePlan<T extends PlanLike>(
 
 /* ── DOES THE HEADLINE STILL SAY IT? ───────────────────────────────────────────────────────── */
 
-const ORPHAN_SYSTEM =
-  'A sentence was removed from a carousel slide because nothing could establish it. You are given '
-  + 'the slide TITLE and the sentence that was removed. Answer one question: does the title, read on '
-  + 'its own, still assert the same thing the removed sentence claimed?\n\n'
-  + 'YES only when the title makes the same factual assertion in different words — a paraphrase, a '
-  + 'compressed version, or the same claim implied. A reader seeing only the title would come away '
-  + 'believing the thing we could not establish.\n'
-  + 'NO when the title is an instruction, a question, a general principle, an opinion, or a '
-  + 'different point that merely sits nearby. A title that survives on its own is not guilty by '
-  + 'proximity — most titles on a slide whose body was edited are innocent, and deleting them would '
-  + 'cost good slides for nothing.';
+const UNIT_SYSTEM =
+  'A carousel slide is one semantic unit: a headline and the body that makes its point. Sentences '
+  + 'have been removed from some slides because nothing could establish them. For each slide you are '
+  + 'given the title, what is LEFT of the body, and what was removed.\n\n'
+  + 'Decide, per slide:\n'
+  + '· KEEP — the title never asserted the removed claim. It is an instruction, a question, a '
+  + 'general principle, an opinion, or a different point. MOST SLIDES ARE THIS. Deleting them costs '
+  + 'good work for nothing, so keep unless the title genuinely carries the removed claim.\n'
+  + '· REWRITE — the title does still assert it, BUT the surviving body genuinely supports a '
+  + 'different headline worth printing. Give that headline in replacement_title: short, concrete, '
+  + 'and saying only what the surviving body already says. It may not introduce any new fact, '
+  + 'figure, rule or market claim, and it must be under 62 characters.\n'
+  + '· DROP — the title still asserts it and nothing left underneath can carry a useful headline. '
+  + 'Do not manufacture one; a shorter honest deck beats an invented line.\n\n'
+  + 'Judge each slide on its own. Answer for every slide you are given.';
 
-const ORPHAN_TOOL = {
-  name: 'judge_title',
-  description: 'Say whether the title still asserts the removed claim.',
+const UNIT_TOOL = {
+  name: 'judge_semantic_units',
+  description: 'Say what to do with each slide whose body lost a material sentence.',
   input_schema: {
     type: 'object',
     properties: {
-      still_asserts: { type: 'boolean' },
-      why: { type: 'string', description: 'one short sentence' },
+      slides: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            index: { type: 'number' },
+            decision: { type: 'string', enum: ['KEEP', 'REWRITE', 'DROP'] },
+            why: { type: 'string', description: 'one short sentence' },
+            replacement_title: { type: 'string', description: 'only when decision is REWRITE' },
+          },
+          required: ['index', 'decision', 'why'],
+        },
+      },
     },
-    required: ['still_asserts', 'why'],
+    required: ['slides'],
   },
 } as const;
 
 /**
- * Ask whether a headline is still making the claim its body just lost.
+ * Judge every affected slide in ONE call, and fail SAFE.
  *
- * One cheap call, and only for slides that actually lost a material sentence — at most a handful
- * per deck, and none at all on a clean one. It exists because the deterministic route was measured
- * and does not work: the guilty title and the innocent ones on the same deck are identical to every
- * signal available.
+ * Batched because two or three slides can lose sentences on the same deck, and one request is both
+ * cheaper and better informed — the model sees the whole set rather than each slide in isolation.
  *
- * Fails OPEN on purpose. If the judgement is unavailable the slide stays, because deleting a good
- * slide on a failed call is the worse error — and the deterministic caps still run after this.
+ * FAILS SAFE, not open. Christian, 2026-09-09: this check only ever runs on a slide that ALREADY
+ * carried a material claim we could not establish. If the judgement is unavailable we know the
+ * slide contained a failed claim and cannot know whether its headline still asserts it — so
+ * publishing the headline is the riskier error. Losing one possibly-good slide beats shipping an
+ * unsupported factual headline.
  */
-export async function titleStillAsserts(
-  title: string, removed: string,
-): Promise<{ guilty: boolean; why: string }> {
-  if (!title.trim() || !removed.trim()) return { guilty: false, why: 'nothing to judge' };
-  const out = await callTool('orphaned title', ORPHAN_SYSTEM,
-    `TITLE: ${title}\n\nREMOVED SENTENCE: ${removed}`,
-    ORPHAN_TOOL as unknown as Record<string, unknown>, 45_000, 300, 'CLAIM_CLASSIFIER');
-  if (!out || typeof out.still_asserts !== 'boolean') {
-    return { guilty: false, why: 'the check was unavailable — the slide stays' };
+export async function judgeSemanticUnits(
+  cases: readonly SemanticUnitCase[], language: string,
+): Promise<SemanticUnitResult> {
+  if (!cases.length) return { verdicts: [], failed: false };
+  const bail = (why: string): SemanticUnitResult => dropAllUnverified(cases, why);
+
+  const body = cases.map((c) => [
+    `SLIDE ${c.index}`,
+    `  TITLE: ${c.title}`,
+    `  BODY LEFT: ${c.body || '(nothing)'}`,
+    `  REMOVED: ${c.removed.map((r) => `"${r}"`).join(' | ')}`,
+  ].join('\n')).join('\n\n');
+
+  const out = await callTool('semantic unit', UNIT_SYSTEM,
+    `The post is written in ${language}.\n\n${body}`,
+    UNIT_TOOL as unknown as Record<string, unknown>, 45_000, 1200, 'CLAIM_CLASSIFIER');
+  const list = out && coerceList(out.slides, 'slides');
+  if (!list) return bail('no usable answer');
+
+  const byIndex = new Map<number, SemanticUnitVerdict>();
+  for (const raw of list as Array<Record<string, unknown>>) {
+    const index = Number(raw.index);
+    const decision = String(raw.decision ?? '').toUpperCase();
+    if (!Number.isInteger(index) || !['KEEP', 'REWRITE', 'DROP'].includes(decision)) continue;
+    byIndex.set(index, {
+      index, decision: decision as SemanticUnitVerdict['decision'],
+      why: String(raw.why ?? '').slice(0, 200),
+      replacementTitle: typeof raw.replacement_title === 'string' ? raw.replacement_title : undefined,
+    });
   }
-  return { guilty: out.still_asserts, why: String(out.why ?? '').slice(0, 200) };
+  // A slide the checker skipped is a slide it did not clear.
+  const missing = cases.filter((c: SemanticUnitCase) => !byIndex.has(c.index));
+  if (missing.length === cases.length) return bail('answered about no slide we asked about');
+  for (const m of missing) {
+    byIndex.set(m.index, { index: m.index, decision: 'DROP',
+      why: 'the check returned no verdict for this slide — an uncleared headline may not publish' });
+  }
+  return { verdicts: [...byIndex.values()].sort((a, b) => a.index - b.index), failed: false };
 }
+

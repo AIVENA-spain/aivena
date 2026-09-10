@@ -50,7 +50,9 @@
       "vsLast7Days": "rispetto agli ultimi 7 giorni",
       "soon": "Presto",
       "sellersTeaser": "parte quando il modulo di valutazione è attivo",
-      "callsTeaser": "parte quando la voce è attiva"
+      "callsTeaser": "parte quando la voce è attiva",
+      "notLive": "Non attivo",
+      "scoringTeaser": "inizia quando il punteggio dei lead è attivo"
     },
     "needsAction": {
       "title": "Da gestire · Risposte pronte",
@@ -393,7 +395,10 @@
       "technicalDetails": "Dettagli del contatto (tecnico)",
       "lastCheckinFailedShort": "Ultimo contatto non riuscito: {reason}",
       "lastCheckinFailedLabel": "Ultimo contatto non riuscito",
-      "subCooldown": "Contatto inviato di recente — aspetta una risposta"
+      "subCooldown": "Contatto inviato di recente — aspetta una risposta",
+      "followUpsNotActive": "I follow-up automatici non sono attivi.",
+      "scoringNotRunning": "Il punteggio dei lead non viene eseguito automaticamente al momento.",
+      "scoreUnavailable": "Punteggio non disponibile finché non viene attivato."
     },
     "searchPlaceholder": "Cerca conversazioni…",
     "searchNoResults": "Nessuna conversazione corrisponde alla tua ricerca."

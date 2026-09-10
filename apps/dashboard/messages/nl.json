@@ -50,7 +50,9 @@
       "vsLast7Days": "t.o.v. afgelopen 7 dagen",
       "soon": "Binnenkort",
       "sellersTeaser": "start zodra het waardebepalingsformulier live staat",
-      "callsTeaser": "start zodra voice live staat"
+      "callsTeaser": "start zodra voice live staat",
+      "notLive": "Niet actief",
+      "scoringTeaser": "start zodra leadscoring is ingeschakeld"
     },
     "needsAction": {
       "title": "Actie nodig · Antwoorden klaar",
@@ -393,7 +395,10 @@
       "technicalDetails": "Contactdetails (technisch)",
       "lastCheckinFailedShort": "Laatste contactpoging mislukt: {reason}",
       "lastCheckinFailedLabel": "Laatste contactpoging mislukt",
-      "subCooldown": "Recent contact opgenomen — wacht op een reactie"
+      "subCooldown": "Recent contact opgenomen — wacht op een reactie",
+      "followUpsNotActive": "Automatische opvolging is niet actief.",
+      "scoringNotRunning": "Leadscoring draait momenteel niet automatisch.",
+      "scoreUnavailable": "Score niet beschikbaar totdat scoring is ingeschakeld."
     },
     "searchPlaceholder": "Gesprekken zoeken…",
     "searchNoResults": "Geen gesprekken komen overeen met je zoekopdracht."

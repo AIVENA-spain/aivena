@@ -50,7 +50,9 @@
       "vsLast7Days": "vs 7 derniers jours",
       "soon": "Bientôt",
       "sellersTeaser": "démarre dès que le formulaire d'estimation est en ligne",
-      "callsTeaser": "démarre dès que la voix est active"
+      "callsTeaser": "démarre dès que la voix est active",
+      "notLive": "Non actif",
+      "scoringTeaser": "démarre lorsque le scoring des leads est activé"
     },
     "needsAction": {
       "title": "À traiter · Réponses prêtes",
@@ -393,7 +395,10 @@
       "technicalDetails": "Détails de la prise de contact (technique)",
       "lastCheckinFailedShort": "Dernière prise de contact échouée : {reason}",
       "lastCheckinFailedLabel": "Dernière prise de contact échouée",
-      "subCooldown": "Contact envoyé récemment — attends une réponse"
+      "subCooldown": "Contact envoyé récemment — attends une réponse",
+      "followUpsNotActive": "Les relances automatiques ne sont pas actives.",
+      "scoringNotRunning": "Le scoring des leads ne s'exécute pas automatiquement pour le moment.",
+      "scoreUnavailable": "Score indisponible tant que le scoring n'est pas activé."
     },
     "searchPlaceholder": "Rechercher des conversations…",
     "searchNoResults": "Aucune conversation ne correspond à ta recherche."

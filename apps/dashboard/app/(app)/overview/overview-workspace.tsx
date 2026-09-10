@@ -35,6 +35,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { leadStatusTone, temperatureTone } from "@/lib/ui-tone";
+import { scoringIsLive } from "@/lib/automation-status";
 import { Button } from "@/components/ui/button";
 import { RelativeTime } from "@/components/ui/relative-time";
 import { approveTaskAction } from "@/app/(app)/approvals/[taskId]/actions";
@@ -298,9 +299,14 @@ export function OverviewWorkspace({
         />
         <KpiCard
           icon={Flame}
-          tone="rose"
+          tone={scoringIsLive() ? "rose" : "muted"}
           label={t("kpi.hotLeads")}
           value={kpis?.hot_leads.value ?? 0}
+          {...(scoringIsLive()
+            ? {}
+            : // Scoring is not running, so this count can only reflect stale June values.
+              // Reuse the existing honest-empty-state form rather than showing a live number.
+              { soonLabel: t("kpi.notLive"), soonTeaser: t("kpi.scoringTeaser") })}
         />
         <KpiCard
           icon={Home}
@@ -460,7 +466,7 @@ function NeedsYouCard({
                       </td>
                       <td className="px-2 py-3 align-middle">
                         {r.temperature || typeof r.score === "number" ? (
-                          <Badge tone={temperatureTone(r.temperature)} size="sm">
+                          <Badge tone={scoringIsLive() ? temperatureTone(r.temperature) : "neutral"} size="sm">
                             {formatTemperatureScore(r.temperature, r.score)}
                           </Badge>
                         ) : (

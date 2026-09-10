@@ -50,7 +50,9 @@
       "vsLast7Days": "vs. viime 7 päivää",
       "soon": "Pian",
       "sellersTeaser": "alkaa, kun arviolomake on käytössä",
-      "callsTeaser": "alkaa, kun puhelut ovat käytössä"
+      "callsTeaser": "alkaa, kun puhelut ovat käytössä",
+      "notLive": "Ei käytössä",
+      "scoringTeaser": "alkaa, kun liidien pisteytys otetaan käyttöön"
     },
     "needsAction": {
       "title": "Vaatii toimia · Valmiit vastaukset",
@@ -393,7 +395,10 @@
       "technicalDetails": "Yhteydenoton tiedot (tekninen)",
       "lastCheckinFailedShort": "Viimeisin yhteydenotto epäonnistui: {reason}",
       "lastCheckinFailedLabel": "Viimeisin yhteydenotto epäonnistui",
-      "subCooldown": "Yhteydenotto lähetettiin äskettäin — odota vastausta"
+      "subCooldown": "Yhteydenotto lähetettiin äskettäin — odota vastausta",
+      "followUpsNotActive": "Automaattiset seurannat eivät ole käytössä.",
+      "scoringNotRunning": "Liidien pisteytys ei tällä hetkellä toimi automaattisesti.",
+      "scoreUnavailable": "Pisteet eivät ole saatavilla ennen kuin pisteytys otetaan käyttöön."
     },
     "searchPlaceholder": "Hae keskusteluja…",
     "searchNoResults": "Yksikään keskustelu ei vastaa hakuasi."

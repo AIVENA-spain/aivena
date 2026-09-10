@@ -50,7 +50,9 @@
       "vsLast7Days": "ggü. letzten 7 Tagen",
       "soon": "Bald",
       "sellersTeaser": "startet, sobald das Bewertungsformular live ist",
-      "callsTeaser": "startet, sobald die Telefonie live ist"
+      "callsTeaser": "startet, sobald die Telefonie live ist",
+      "notLive": "Nicht aktiv",
+      "scoringTeaser": "startet, sobald die Lead-Bewertung aktiviert ist"
     },
     "needsAction": {
       "title": "Aktion erforderlich · Antworten bereit",
@@ -393,7 +395,10 @@
       "technicalDetails": "Kontaktdetails (technisch)",
       "lastCheckinFailedShort": "Letzte Kontaktaufnahme fehlgeschlagen: {reason}",
       "lastCheckinFailedLabel": "Letzte Kontaktaufnahme fehlgeschlagen",
-      "subCooldown": "Kürzlich Kontakt aufgenommen — warte auf eine Antwort"
+      "subCooldown": "Kürzlich Kontakt aufgenommen — warte auf eine Antwort",
+      "followUpsNotActive": "Automatische Follow-ups sind nicht aktiv.",
+      "scoringNotRunning": "Die Lead-Bewertung läuft derzeit nicht automatisch.",
+      "scoreUnavailable": "Bewertung nicht verfügbar, bis sie aktiviert wird."
     },
     "searchPlaceholder": "Konversationen suchen…",
     "searchNoResults": "Keine Konversation passt zu deiner Suche."

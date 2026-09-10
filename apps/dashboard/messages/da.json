@@ -50,7 +50,9 @@
       "vsLast7Days": "ift. sidste 7 dage",
       "soon": "Snart",
       "sellersTeaser": "starter, når vurderingsformularen er live",
-      "callsTeaser": "starter, når tale er live"
+      "callsTeaser": "starter, når tale er live",
+      "notLive": "Ikke aktiv",
+      "scoringTeaser": "starter, når lead-scoring slås til"
     },
     "needsAction": {
       "title": "Kræver handling · Klar til svar",
@@ -393,7 +395,10 @@
       "technicalDetails": "Kontaktdetaljer (teknisk)",
       "lastCheckinFailedShort": "Seneste kontakt mislykkedes: {reason}",
       "lastCheckinFailedLabel": "Seneste kontakt mislykkedes",
-      "subCooldown": "En kontakt blev sendt for nylig — vent på svar"
+      "subCooldown": "En kontakt blev sendt for nylig — vent på svar",
+      "followUpsNotActive": "Automatiske opfølgninger er ikke aktive.",
+      "scoringNotRunning": "Lead-scoring kører i øjeblikket ikke automatisk.",
+      "scoreUnavailable": "Score utilgængelig, indtil scoring er slået til."
     },
     "searchPlaceholder": "Søg i samtaler…",
     "searchNoResults": "Ingen samtaler matcher din søgning."

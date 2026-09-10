@@ -50,7 +50,9 @@
       "vsLast7Days": "mot senaste 7 dagarna",
       "soon": "Snart",
       "sellersTeaser": "startar när värderingsformuläret är live",
-      "callsTeaser": "startar när rösten är live"
+      "callsTeaser": "startar när rösten är live",
+      "notLive": "Inte aktivt",
+      "scoringTeaser": "startar när leadpoängsättning aktiveras"
     },
     "needsAction": {
       "title": "Kräver åtgärd · Färdiga svar",
@@ -393,7 +395,10 @@
       "technicalDetails": "Avstämningsdetaljer (tekniskt)",
       "lastCheckinFailedShort": "Senaste avstämningen misslyckades: {reason}",
       "lastCheckinFailedLabel": "Senaste avstämningen misslyckades",
-      "subCooldown": "En avstämning skickades nyligen — vänta på svar"
+      "subCooldown": "En avstämning skickades nyligen — vänta på svar",
+      "followUpsNotActive": "Automatiska uppföljningar är inte aktiva.",
+      "scoringNotRunning": "Leadpoängsättning körs för närvarande inte automatiskt.",
+      "scoreUnavailable": "Poäng inte tillgänglig förrän poängsättning aktiveras."
     },
     "searchPlaceholder": "Sök konversationer…",
     "searchNoResults": "Inga konversationer matchar din sökning."

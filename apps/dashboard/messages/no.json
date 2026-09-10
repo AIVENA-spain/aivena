@@ -50,7 +50,9 @@
       "vsLast7Days": "mot siste 7 dager",
       "soon": "Snart",
       "sellersTeaser": "starter når verdivurderingsskjemaet er aktivt",
-      "callsTeaser": "starter når tale er aktivt"
+      "callsTeaser": "starter når tale er aktivt",
+      "notLive": "Ikke aktiv",
+      "scoringTeaser": "starter når poengsetting av leads slås på"
     },
     "needsAction": {
       "title": "Trenger handling · Klare svar",
@@ -393,7 +395,10 @@
       "technicalDetails": "Innsjekkdetaljer (teknisk)",
       "lastCheckinFailedShort": "Siste innsjekk feilet: {reason}",
       "lastCheckinFailedLabel": "Siste innsjekk feilet",
-      "subCooldown": "En innsjekk ble sendt nylig — vent på svar"
+      "subCooldown": "En innsjekk ble sendt nylig — vent på svar",
+      "followUpsNotActive": "Automatiske oppfølginger er ikke aktive.",
+      "scoringNotRunning": "Poengsetting av leads kjøres for øyeblikket ikke automatisk.",
+      "scoreUnavailable": "Poeng utilgjengelig til poengsetting er slått på."
     },
     "searchPlaceholder": "Søk i samtaler…",
     "searchNoResults": "Ingen samtaler samsvarer med søket ditt."

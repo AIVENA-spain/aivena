@@ -50,7 +50,9 @@
       "vsLast7Days": "w stosunku do ostatnich 7 dni",
       "soon": "Wkrótce",
       "sellersTeaser": "rusza po uruchomieniu formularza wyceny",
-      "callsTeaser": "rusza po uruchomieniu modułu połączeń"
+      "callsTeaser": "rusza po uruchomieniu modułu połączeń",
+      "notLive": "Nieaktywne",
+      "scoringTeaser": "zacznie działać po włączeniu oceny leadów"
     },
     "needsAction": {
       "title": "Wymaga działania · Gotowe odpowiedzi",
@@ -393,7 +395,10 @@
       "technicalDetails": "Szczegóły kontaktu (techniczne)",
       "lastCheckinFailedShort": "Ostatni kontakt nie powiódł się: {reason}",
       "lastCheckinFailedLabel": "Ostatni kontakt nie powiódł się",
-      "subCooldown": "Kontakt wysłano niedawno — poczekaj na odpowiedź"
+      "subCooldown": "Kontakt wysłano niedawno — poczekaj na odpowiedź",
+      "followUpsNotActive": "Automatyczne kontakty nie są aktywne.",
+      "scoringNotRunning": "Ocena leadów nie jest obecnie uruchamiana automatycznie.",
+      "scoreUnavailable": "Ocena niedostępna, dopóki nie zostanie włączona."
     },
     "searchPlaceholder": "Szukaj rozmów…",
     "searchNoResults": "Żadna rozmowa nie pasuje do wyszukiwania."

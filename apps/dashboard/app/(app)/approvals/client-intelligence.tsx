@@ -26,6 +26,7 @@ import {
 
 import type { ContactReadiness, InboxRow, LeadIntel } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
+import { followUpState, scoreState } from "@/lib/automation-status";
 import { RelativeTime } from "@/components/ui/relative-time";
 import { Button } from "@/components/ui/button";
 import { langLabel, typeLabel } from "@/app/(app)/matches/_shared";
@@ -613,6 +614,7 @@ function BuyerTiles({
   const isBuyer = (lead.leadType ?? "buyer").toLowerCase() !== "seller";
   const canEdit = isBuyer && !loading && data != null;
 
+  const scState = scoreState({ score: lead.score, temperature: lead.temperature });
   const scoreVal =
     lead.score != null
       ? lead.temperature
@@ -660,7 +662,11 @@ function BuyerTiles({
       ) : (
         <div className="grid grid-cols-2 gap-2 @[360px]:grid-cols-3">
           <Tile icon={Wallet} label={t("budget")} value={fmtEur(data?.budget_extracted ?? null)} loading={loading} />
-          <Tile icon={Gauge} label={t("score")} value={scoreVal} />
+          <Tile
+            icon={Gauge}
+            label={t("score")}
+            value={scState === "unavailable" ? null : scoreVal}
+          />
           <Tile icon={Flame} label={t("urgency")} value={titleCaseWord(data?.urgency ?? null)} loading={loading} />
           <Tile icon={CalendarClock} label={t("timeframe")} value={titleCaseWord(data?.timeframe ?? null)} loading={loading} />
           <Tile icon={MapPin} label={t("location")} value={data?.location_interest_extracted ?? null} loading={loading} />
@@ -670,6 +676,13 @@ function BuyerTiles({
           <Tile icon={Languages} label={t("language")} value={langLabel(lead.language)} />
         </div>
       )}
+      {/* Scoring is not running (lib/automation-status.ts). A number with no caption reads as
+          live intelligence; say plainly what it is, or that there is none. */}
+      {scState !== "live" && (
+        <p className="mt-2 text-[11.5px] leading-snug text-muted-foreground">
+          {scState === "unavailable" ? t("scoreUnavailable") : t("scoringNotRunning")}
+        </p>
+      )}
     </section>
   );
 }
@@ -677,8 +690,10 @@ function BuyerTiles({
 // ── 5. follow-up (compact) ───────────────────────────────────────────────────
 
 function FollowUp({ data, loading, t }: { data: LeadIntel | null; loading: boolean; t: Tr }) {
-  const paused = data?.followup_paused === true;
+  // Follow-up may only read as active when something is REALLY scheduled. `followup_paused`
+  // is false by default, so it is not evidence of anything — see lib/automation-status.ts.
   const next = data?.next_followup_at ?? null;
+  const fuState = followUpState({ nextFollowUpAt: next, paused: data?.followup_paused });
   return (
     <section className="flex flex-col gap-2 rounded-2xl border border-border bg-card p-3.5">
       <h3 className="flex items-center gap-2 text-[13.5px] font-semibold tracking-tight text-foreground">
@@ -690,9 +705,19 @@ function FollowUp({ data, loading, t }: { data: LeadIntel | null; loading: boole
       ) : (
         <ul className="flex flex-col gap-1.5 text-[12px]">
           <li className="flex items-baseline gap-2 leading-tight">
-            <span className={cn("mt-1 h-1.5 w-1.5 shrink-0 rounded-full", paused ? "bg-amber-500" : "bg-brand")} aria-hidden />
-            <span className={paused ? "text-muted-foreground" : "text-foreground"}>
-              {paused ? t("followUpPaused") : t("followUpActive")}
+            <span
+              className={cn(
+                "mt-1 h-1.5 w-1.5 shrink-0 rounded-full",
+                fuState === "scheduled" ? "bg-brand" : fuState === "paused" ? "bg-amber-500" : "bg-muted-foreground/40",
+              )}
+              aria-hidden
+            />
+            <span className={fuState === "scheduled" ? "text-foreground" : "text-muted-foreground"}>
+              {fuState === "paused"
+                ? t("followUpPaused")
+                : fuState === "scheduled"
+                  ? t("followUpActive")
+                  : t("followUpsNotActive")}
             </span>
           </li>
           <li className="flex items-baseline gap-2 leading-tight">

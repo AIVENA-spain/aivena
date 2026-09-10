@@ -50,7 +50,9 @@
       "vsLast7Days": "vs last 7 days",
       "soon": "Soon",
       "sellersTeaser": "starts when valuation form is live",
-      "callsTeaser": "starts when voice is live"
+      "callsTeaser": "starts when voice is live",
+      "notLive": "Not live",
+      "scoringTeaser": "starts when lead scoring is enabled"
     },
     "needsAction": {
       "title": "Needs Action · Ready Replies",
@@ -393,7 +395,10 @@
       "technicalDetails": "Check-in details (technical)",
       "lastCheckinFailedShort": "Last check-in failed: {reason}",
       "lastCheckinFailedLabel": "Last check-in failed",
-      "subCooldown": "A check-in was sent recently — wait for a reply"
+      "subCooldown": "A check-in was sent recently — wait for a reply",
+      "followUpsNotActive": "Automatic follow-ups are not active.",
+      "scoringNotRunning": "Lead scoring is not currently running automatically.",
+      "scoreUnavailable": "Score unavailable until scoring is enabled."
     },
     "searchPlaceholder": "Search conversations…",
     "searchNoResults": "No conversations match your search."

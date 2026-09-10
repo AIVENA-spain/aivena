@@ -398,7 +398,8 @@
       "subCooldown": "Yhteydenotto lähetettiin äskettäin — odota vastausta",
       "followUpsNotActive": "Automaattiset seurannat eivät ole käytössä.",
       "scoringNotRunning": "Liidien pisteytys ei tällä hetkellä toimi automaattisesti.",
-      "scoreUnavailable": "Pisteet eivät ole saatavilla ennen kuin pisteytys otetaan käyttöön."
+      "scoreUnavailable": "Pisteet eivät ole saatavilla ennen kuin pisteytys otetaan käyttöön.",
+      "scoreStoredOn": "Tallennettu {date} vanhassa järjestelmässä; ei päivitetty sen jälkeen."
     },
     "searchPlaceholder": "Hae keskusteluja…",
     "searchNoResults": "Yksikään keskustelu ei vastaa hakuasi."

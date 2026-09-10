@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useNow, useTranslations } from "next-intl";
+import { useLocale, useNow, useTranslations } from "next-intl";
 import {
   Sparkles,
   RefreshCw,
@@ -26,7 +26,7 @@ import {
 
 import type { ContactReadiness, InboxRow, LeadIntel } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
-import { followUpState, scoreState } from "@/lib/automation-status";
+import { AUTOMATION, followUpState, scoreState } from "@/lib/automation-status";
 import { RelativeTime } from "@/components/ui/relative-time";
 import { Button } from "@/components/ui/button";
 import { langLabel, typeLabel } from "@/app/(app)/matches/_shared";
@@ -614,6 +614,7 @@ function BuyerTiles({
   const isBuyer = (lead.leadType ?? "buyer").toLowerCase() !== "seller";
   const canEdit = isBuyer && !loading && data != null;
 
+  const locale = useLocale();
   const scState = scoreState({ score: lead.score, temperature: lead.temperature });
   const scoreVal =
     lead.score != null
@@ -680,7 +681,18 @@ function BuyerTiles({
           live intelligence; say plainly what it is, or that there is none. */}
       {scState !== "live" && (
         <p className="mt-2 text-[11.5px] leading-snug text-muted-foreground">
-          {scState === "unavailable" ? t("scoreUnavailable") : t("scoringNotRunning")}
+          {scState === "unavailable" ? (
+            t("scoreUnavailable")
+          ) : (
+            <>
+              {t("scoringNotRunning")}{" "}
+              {/* A number with no age reads as fresh. Say when it was stored and by what. */}
+              {t("scoreStoredOn", {
+                date: new Intl.DateTimeFormat(locale, { day: "numeric", month: "long", year: "numeric" })
+                  .format(new Date(AUTOMATION.leadScoringLastObservedRun)),
+              })}
+            </>
+          )}
         </p>
       )}
     </section>

@@ -398,7 +398,8 @@
       "subCooldown": "En kontakt blev sendt for nylig — vent på svar",
       "followUpsNotActive": "Automatiske opfølgninger er ikke aktive.",
       "scoringNotRunning": "Lead-scoring kører i øjeblikket ikke automatisk.",
-      "scoreUnavailable": "Score utilgængelig, indtil scoring er slået til."
+      "scoreUnavailable": "Score utilgængelig, indtil scoring er slået til.",
+      "scoreStoredOn": "Gemt {date} af det gamle system; ikke opdateret siden."
     },
     "searchPlaceholder": "Søg i samtaler…",
     "searchNoResults": "Ingen samtaler matcher din søgning."

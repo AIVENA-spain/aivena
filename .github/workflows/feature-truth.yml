@@ -1,0 +1,47 @@
+name: Feature truth
+
+# Runs while the main CI workflow is disabled (npm/Arborist crashes on the Linux runner —
+# see ci.yml). This guard needs NO dependencies: plain Node reading two files in the repo.
+# That is deliberate, so the one check that stops the product claiming something untrue
+# cannot be blocked by an unrelated packaging problem.
+
+on:
+  pull_request:
+    branches: ['**']
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  feature-truth:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Blocks on: invented labels · missing required fields · FALSE_UI_CLAIM with no fix path ·
+      # a not-live status with no real_feature_fix ("not live" is temporary, never success) ·
+      # VERIFIED_REAL_LIVE / LIVE_DEMO_VERIFIED without evidence.
+      # Does NOT block on NOT_YET_AUDITED — that is backlog, not a build failure.
+      - name: Feature-truth register
+        run: node tools/feature-truth-lint.mjs
+
+      # A new or changed product promise must come with a truth row. The engine declaration and
+      # the register have to move together, or the UI can drift out of step with reality again.
+      - name: Engine declaration and register must move together
+        if: github.event_name == 'pull_request'
+        run: |
+          BASE="${{ github.event.pull_request.base.sha }}"
+          CHANGED=$(git diff --name-only "$BASE"...HEAD)
+          echo "$CHANGED" | sed 's/^/  changed: /'
+          if echo "$CHANGED" | grep -q 'apps/dashboard/lib/automation-status.ts' \
+             && ! echo "$CHANGED" | grep -q 'apps/dashboard/lib/feature-truth.json'; then
+            echo ""
+            echo "FAIL: automation-status.ts changed but feature-truth.json did not."
+            echo "If what is running changed, the promises it backs must be re-labelled."
+            exit 1
+          fi

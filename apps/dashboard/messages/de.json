@@ -398,7 +398,8 @@
       "subCooldown": "Kürzlich Kontakt aufgenommen — warte auf eine Antwort",
       "followUpsNotActive": "Automatische Follow-ups sind nicht aktiv.",
       "scoringNotRunning": "Die Lead-Bewertung läuft derzeit nicht automatisch.",
-      "scoreUnavailable": "Bewertung nicht verfügbar, bis sie aktiviert wird."
+      "scoreUnavailable": "Bewertung nicht verfügbar, bis sie aktiviert wird.",
+      "scoreStoredOn": "Am {date} vom alten System gespeichert; seitdem nicht aktualisiert."
     },
     "searchPlaceholder": "Konversationen suchen…",
     "searchNoResults": "Keine Konversation passt zu deiner Suche."

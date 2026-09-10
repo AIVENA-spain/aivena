@@ -398,7 +398,8 @@
       "subCooldown": "A check-in was sent recently — wait for a reply",
       "followUpsNotActive": "Automatic follow-ups are not active.",
       "scoringNotRunning": "Lead scoring is not currently running automatically.",
-      "scoreUnavailable": "Score unavailable until scoring is enabled."
+      "scoreUnavailable": "Score unavailable until scoring is enabled.",
+      "scoreStoredOn": "Stored {date} by the legacy pipeline; not refreshed since."
     },
     "searchPlaceholder": "Search conversations…",
     "searchNoResults": "No conversations match your search."

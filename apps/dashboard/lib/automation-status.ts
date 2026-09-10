@@ -28,9 +28,20 @@ export const AUTOMATION: {
   leadScoring: EngineStatus;
   /** 3A Follow-Up Engine v2 — schedules and enqueues automatic follow-ups. */
   automaticFollowUps: EngineStatus;
+  /**
+   * When scoring was last observed to run, and what ran it. INTERIM: the honest per-lead answer is
+   * leads.scored_at, which the API does not currently expose to the dashboard. Until it does, a
+   * score on screen can only be dated by when the engine last ran — which is sound precisely
+   * BECAUSE the engine is stopped: nothing has written a score since. Re-check this if that
+   * changes. Per-lead score age + source is question 6 of the make-it-live plan.
+   */
+  leadScoringLastObservedRun: string;   // ISO date
+  leadScoringSource: "legacy_n8n_2a" | "amanda_engine" | "unknown";
 } = {
   leadScoring: "not_running",
   automaticFollowUps: "not_running",
+  leadScoringLastObservedRun: "2026-06-19",
+  leadScoringSource: "legacy_n8n_2a",
 };
 
 /* ── follow-up ─────────────────────────────────────────────────────────────── */

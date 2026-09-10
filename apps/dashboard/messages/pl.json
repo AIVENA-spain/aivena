@@ -398,7 +398,8 @@
       "subCooldown": "Kontakt wysłano niedawno — poczekaj na odpowiedź",
       "followUpsNotActive": "Automatyczne kontakty nie są aktywne.",
       "scoringNotRunning": "Ocena leadów nie jest obecnie uruchamiana automatycznie.",
-      "scoreUnavailable": "Ocena niedostępna, dopóki nie zostanie włączona."
+      "scoreUnavailable": "Ocena niedostępna, dopóki nie zostanie włączona.",
+      "scoreStoredOn": "Zapisano {date} przez stary system; od tego czasu nieaktualizowane."
     },
     "searchPlaceholder": "Szukaj rozmów…",
     "searchNoResults": "Żadna rozmowa nie pasuje do wyszukiwania."

@@ -398,7 +398,8 @@
       "subCooldown": "Contacto enviado há pouco — espera uma resposta",
       "followUpsNotActive": "Os seguimentos automáticos não estão ativos.",
       "scoringNotRunning": "A pontuação de leads não está a ser executada automaticamente.",
-      "scoreUnavailable": "Pontuação indisponível até a pontuação ser ativada."
+      "scoreUnavailable": "Pontuação indisponível até a pontuação ser ativada.",
+      "scoreStoredOn": "Guardado a {date} pelo sistema antigo; não foi atualizado desde então."
     },
     "searchPlaceholder": "Pesquisar conversas…",
     "searchNoResults": "Nenhuma conversa corresponde à tua pesquisa."

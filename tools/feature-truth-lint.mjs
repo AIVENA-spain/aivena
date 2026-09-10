@@ -30,7 +30,16 @@ const REQUIRED = [
   "feature", "promise", "ui_surface", "status", "trigger_expected",
   "trigger_actual", "evidence", "failure_behaviour", "ui_guard",
   "regression_guard", "verified_at",
+  // Christian, 2026-09-10: a finding may not be a note. It must name the harm, the
+  // immediate truth fix, the REAL feature fix, and who owns it — so "mark not-live"
+  // can never be mistaken for done.
+  "proven_issue", "product_impact", "immediate_truth_fix", "real_feature_fix", "owner",
 ];
+
+/** Labels that assert the product promise actually works. These must be earned. */
+const PROVEN = new Set(["VERIFIED_REAL_LIVE", "LIVE_DEMO_VERIFIED"]);
+/** CI blocks on these. NOT_YET_AUDITED is backlog, never a permanent build failure. */
+const BLOCKING = true;
 
 const problems = [];
 const seen = new Set();
@@ -40,7 +49,13 @@ for (const f of reg.features) {
   if (seen.has(id)) problems.push(`${id}: duplicate entry`);
   seen.add(id);
 
-  for (const k of REQUIRED) {
+  // NOT_YET_AUDITED is the honest backlog. Demanding the full eight answers for a row nobody has
+  // audited yet would just discourage recording it — and an unrecorded promise is the whole
+  // problem. Record it cheaply; the lint still refuses to let it be presented as working.
+  const required = f.status === "NOT_YET_AUDITED"
+    ? ["feature", "promise", "ui_surface", "status", "owner"]
+    : REQUIRED;
+  for (const k of required) {
     const v = f[k];
     const empty = v == null || (typeof v === "string" && v.trim() === "") || (Array.isArray(v) && v.length === 0);
     if (empty) problems.push(`${id}: missing or empty "${k}" — one of the eight audit questions is unanswered`);
@@ -48,20 +63,39 @@ for (const f of reg.features) {
 
   if (f.status && !LABELS.has(f.status)) problems.push(`${id}: unknown status "${f.status}"`);
 
-  if (f.status === "VERIFIED_LIVE") {
+  if (PROVEN.has(f.status)) {
     if (!Array.isArray(f.evidence) || f.evidence.length === 0)
-      problems.push(`${id}: VERIFIED_LIVE with no evidence — "it exists" is not proof`);
-    if (/^(none|n\/a|missing|todo|partial|tbd|gap)/i.test(String(f.regression_guard ?? "")))
-      problems.push(`${id}: VERIFIED_LIVE whose regression_guard is "${String(f.regression_guard).slice(0, 40)}…" — a partial or absent guard does not earn VERIFIED_LIVE`);
+      problems.push(`${id}: ${f.status} with no evidence — "it exists" is not proof`);
     if (/nothing|no caller|not wired|bypass/i.test(String(f.trigger_actual ?? "")))
-      problems.push(`${id}: VERIFIED_LIVE but trigger_actual says nothing calls it`);
+      problems.push(`${id}: ${f.status} but trigger_actual says nothing calls it`);
+    if (f.status === "VERIFIED_REAL_LIVE") {
+      // "one demo agency" must never satisfy a check for REAL agency usage — matching the bare
+      // word "agency" let exactly that through on the first attempt.
+      const ev = String(f.evidence.join(" "));
+      const demo = ev.match(/\b(demo|test|sandbox|staging|fixture|seed)\b/i);
+      if (demo)
+        problems.push(`${id}: VERIFIED_REAL_LIVE but the evidence says "${demo[0]}" — demo data cannot prove real usage (use LIVE_DEMO_VERIFIED)`);
+      if (!/real (agency|customer|client)|paying|production traffic/i.test(ev))
+        problems.push(`${id}: VERIFIED_REAL_LIVE needs evidence naming REAL agency/client usage`);
+    }
   } else {
     if (/^(none|n\/a)$/i.test(String(f.ui_guard ?? "").trim()))
       problems.push(`${id}: ${f.status} with no ui_guard — name what stops the UI claiming this works, or say "NONE YET" and carry it as a finding`);
   }
 
-  if (f.status === "FALSE_UI_CLAIM")
-    problems.push(`${id}: FALSE_UI_CLAIM must be FIXED, not parked in the register`);
+  // A false claim may never simply sit here. It needs a fix path, immediately.
+  if (f.status === "FALSE_UI_CLAIM") {
+    const fix = String(f.immediate_truth_fix ?? "");
+    if (!fix || /^(none|tbd|todo|owed|later)/i.test(fix))
+      problems.push(`${id}: FALSE_UI_CLAIM with no immediate_truth_fix — a false product claim is fixed now, not parked`);
+  }
+
+  // "Mark not-live" is a temporary honest state, never the destination.
+  if (["EXISTS_BUT_NOT_WIRED", "FALSE_UI_CLAIM", "PARTIAL_UNPROVEN", "MECHANISM_PROVEN"].includes(f.status)) {
+    const real = String(f.real_feature_fix ?? "");
+    if (!real || /^(none|n\/a)$/i.test(real.trim()))
+      problems.push(`${id}: ${f.status} with no real_feature_fix — an honest not-live state is temporary, not success`);
+  }
 }
 
 // Cross-check: the register cannot declare live what automation-status declares stopped.

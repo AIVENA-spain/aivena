@@ -398,7 +398,8 @@
       "subCooldown": "En innsjekk ble sendt nylig — vent på svar",
       "followUpsNotActive": "Automatiske oppfølginger er ikke aktive.",
       "scoringNotRunning": "Poengsetting av leads kjøres for øyeblikket ikke automatisk.",
-      "scoreUnavailable": "Poeng utilgjengelig til poengsetting er slått på."
+      "scoreUnavailable": "Poeng utilgjengelig til poengsetting er slått på.",
+      "scoreStoredOn": "Lagret {date} av det gamle systemet; ikke oppdatert siden."
     },
     "searchPlaceholder": "Søk i samtaler…",
     "searchNoResults": "Ingen samtaler samsvarer med søket ditt."

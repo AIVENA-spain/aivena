@@ -398,7 +398,8 @@
       "subCooldown": "Recent contact opgenomen — wacht op een reactie",
       "followUpsNotActive": "Automatische opvolging is niet actief.",
       "scoringNotRunning": "Leadscoring draait momenteel niet automatisch.",
-      "scoreUnavailable": "Score niet beschikbaar totdat scoring is ingeschakeld."
+      "scoreUnavailable": "Score niet beschikbaar totdat scoring is ingeschakeld.",
+      "scoreStoredOn": "Op {date} opgeslagen door de oude pijplijn; sindsdien niet ververst."
     },
     "searchPlaceholder": "Gesprekken zoeken…",
     "searchNoResults": "Geen gesprekken komen overeen met je zoekopdracht."

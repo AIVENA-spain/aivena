@@ -398,7 +398,8 @@
       "subCooldown": "Contact envoyé récemment — attends une réponse",
       "followUpsNotActive": "Les relances automatiques ne sont pas actives.",
       "scoringNotRunning": "Le scoring des leads ne s'exécute pas automatiquement pour le moment.",
-      "scoreUnavailable": "Score indisponible tant que le scoring n'est pas activé."
+      "scoreUnavailable": "Score indisponible tant que le scoring n'est pas activé.",
+      "scoreStoredOn": "Enregistré le {date} par l'ancien système ; non actualisé depuis."
     },
     "searchPlaceholder": "Rechercher des conversations…",
     "searchNoResults": "Aucune conversation ne correspond à ta recherche."

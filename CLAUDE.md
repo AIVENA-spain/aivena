@@ -93,13 +93,27 @@ because the claim lives in the gap between layers.
 
 ### Every audited feature gets exactly one label
 
-`VERIFIED_LIVE` · `EXISTS_BUT_NOT_WIRED` · `PARTIAL_UNPROVEN` · `STALE` · `FALSE_UI_CLAIM` ·
-`NOT_LIVE_COMING_LATER` · `NOT_YET_AUDITED`
+`VERIFIED_REAL_LIVE` (proven with real agency/client usage) · `LIVE_DEMO_VERIFIED` (full path proven
+in the live environment with demo/test data) · `MECHANISM_PROVEN` (worker/cron/send path has
+evidence, product promise not proven) · `PARTIAL_UNPROVEN` · `EXISTS_BUT_NOT_WIRED` ·
+`FALSE_UI_CLAIM` · `NOT_LIVE_COMING_LATER` · `NOT_YET_AUDITED` (backlog, never presented as working).
 
-Record it in **`apps/dashboard/lib/feature-truth.json`** and run `node tools/feature-truth-lint.mjs`.
-`VERIFIED_LIVE` requires real evidence and a regression guard; anything else must name what stops the
-UI overclaiming. The lint cross-checks the register against `lib/automation-status.ts`, so a feature
-cannot be declared live while the engine it depends on is declared stopped.
+**Pilot readiness does not require `VERIFIED_REAL_LIVE`** — there is no real agency traffic yet. A
+feature is pilot-ready at `LIVE_DEMO_VERIFIED` when the full path is proven in the live environment
+with test data, it is regression-guarded, it cannot send for real without approval, and the UI truth
+matches the engine.
+
+### "Mark not-live" is never the finish line
+
+It is the immediate truth fix so the product stops lying **while** the real feature is built. The
+goal is still an AIVENA that feels intelligent and automated — automation that is real, safe,
+explainable and verified. **Every finding must carry:** proven issue · product impact · immediate
+truth fix · real feature fix · owner · status · regression guard. A `FALSE_UI_CLAIM` is fixed now,
+never parked.
+
+Record it in **`apps/dashboard/lib/feature-truth.json`**; `node tools/feature-truth-lint.mjs` enforces
+all of the above and runs in CI. It cross-checks `lib/automation-status.ts`, so nothing can be
+declared live while the engine behind it is declared stopped.
 
 ## Decisions
 Default to **research-first**: research → compare options → pick the most maintainable solution →

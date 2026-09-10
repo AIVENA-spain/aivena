@@ -398,7 +398,8 @@
       "subCooldown": "En avstämning skickades nyligen — vänta på svar",
       "followUpsNotActive": "Automatiska uppföljningar är inte aktiva.",
       "scoringNotRunning": "Leadpoängsättning körs för närvarande inte automatiskt.",
-      "scoreUnavailable": "Poäng inte tillgänglig förrän poängsättning aktiveras."
+      "scoreUnavailable": "Poäng inte tillgänglig förrän poängsättning aktiveras.",
+      "scoreStoredOn": "Sparad {date} av det gamla systemet; inte uppdaterad sedan dess."
     },
     "searchPlaceholder": "Sök konversationer…",
     "searchNoResults": "Inga konversationer matchar din sökning."

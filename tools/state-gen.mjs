@@ -16,16 +16,32 @@
  *
  * Read-only. It never writes to Supabase, n8n, or any provider.
  */
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, readdirSync } from "node:fs";
 import { execSync } from "node:child_process";
 import { homedir } from "node:os";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), "..");
-const DOCS = join(homedir(), "Library/CloudStorage/GoogleDrive-christian@aivena.es",
-                  "My Drive/aivena docs/master doc and changelog");
-const STATE = join(DOCS, "STATE.md");
+/**
+ * Resolve the AIVENA docs folder WITHOUT hardcoding a personal path.
+ * This repository is public: no home-directory paths, no email addresses.
+ *   1. $AIVENA_DOCS_DIR if set (preferred — set it in your shell profile)
+ *   2. otherwise glob the Google Drive mount, which varies per machine
+ */
+function resolveDocsDir() {
+  if (process.env.AIVENA_DOCS_DIR) return process.env.AIVENA_DOCS_DIR;
+  const base = join(homedir(), "Library", "CloudStorage");
+  if (existsSync(base)) {
+    for (const d of readdirSync(base)) {
+      if (!d.startsWith("GoogleDrive-")) continue;
+      const p = join(base, d, "My Drive", "aivena docs", "master doc and changelog");
+      if (existsSync(p)) return p;
+    }
+  }
+  throw new Error("Cannot find the AIVENA docs folder. Set AIVENA_DOCS_DIR to it.");
+}
+const STATE = join(resolveDocsDir(), "STATE.md");
 const BEGIN = "<!-- BEGIN GENERATED -->";
 const END = "<!-- END GENERATED -->";
 
@@ -70,7 +86,13 @@ const manifest = probe("edge-function manifest", () => {
 });
 
 // ─── 3. live database (needs credentials — expected UNKNOWN on most machines) ─
-const dbUrl = process.env.DATABASE_URL ?? process.env.SUPABASE_DB_URL;
+// Prefer a READ-ONLY connection. state-gen only ever inspects; it must never hold a
+// URL that can write. STATE_DATABASE_URL should point at a read-only role.
+// The URL itself is NEVER printed, logged, or written into STATE.md.
+const dbUrl = process.env.STATE_DATABASE_URL ?? process.env.DATABASE_URL ?? process.env.SUPABASE_DB_URL;
+const dbUrlSource = process.env.STATE_DATABASE_URL ? "STATE_DATABASE_URL (read-only)"
+                  : process.env.DATABASE_URL ? "DATABASE_URL"
+                  : process.env.SUPABASE_DB_URL ? "SUPABASE_DB_URL" : null;
 const psql = (sql) => sh(`psql "${dbUrl}" -At -F'|' -c "${sql.replace(/"/g, '\\"')}"`);
 const db = dbUrl
   ? probe("supabase (psql)", () => ({
@@ -83,9 +105,11 @@ const db = dbUrl
       issues: psql(`select count(*) from public.dashboard_tasks where task_type='send_issue' and status='pending'`),
       audit: psql(`select count(*), max(created_at) from public.provider_audit_log where created_at > now() - interval '7 days'`),
       modes: psql(`select agency_id, amanda_mode from public.agency_settings order by agency_id`),
+      readonly: psql(`select current_setting('transaction_read_only')`),
+      role: psql(`select current_user`),
     }))
   : (probes.push({ name: "supabase (psql)", status: "BLOCKED",
-      detail: "no DATABASE_URL/SUPABASE_DB_URL in env — cron health, send-queue backlog, stuck rows, send_issue tasks and agency modes are UNKNOWN" }), null);
+      detail: "no STATE_DATABASE_URL in env — cron health, send-queue backlog, stuck rows, send_issue tasks and agency modes are UNKNOWN" }), null);
 
 // ─── 4. n8n (needs API key) ──────────────────────────────────────────────────
 if (!process.env.N8N_API_KEY) {
@@ -144,11 +168,13 @@ if (db) {
   say(`- open \`send_issue\` tasks: **${db.issues}**`);
   say(`- provider_audit_log, last 7 days: ${db.audit.replace("|", " rows, most recent ")}`);
   say(`- agency Amanda modes: ${db.modes.split("\n").filter(Boolean).map((r) => r.replace("|", "=")).join(" · ")}`);
+  say(`- _read via **${dbUrlSource}** as role \`${db.role}\`; session read_only=\`${db.readonly}\`. The connection string is never printed or stored._`);
+  if (db.readonly !== "on") say(`- ⚠️ **this connection is NOT read-only.** state-gen only inspects, but it should be given a read-only role — set \`STATE_DATABASE_URL\`.`);
 } else {
   say("- **BLOCKED — cannot read the live database from this machine.**");
   say("  Unknown right now: pg_cron health, send_queue backlog, stuck `processing` rows, open");
   say("  `send_issue` tasks, provider_audit_log activity, and each agency's `amanda_mode`.");
-  say("  To make these generate: set `DATABASE_URL` (the `aivena_app` role, never `postgres`) and re-run.");
+  say("  To make these generate: set `STATE_DATABASE_URL` to a READ-ONLY connection and re-run.");
 }
 say(END);
 

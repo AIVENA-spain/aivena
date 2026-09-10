@@ -12,19 +12,35 @@
  *
  * Exit 1 on any failure. Archives are never linted — they are history, frozen as written.
  */
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
-const DOCS = join(homedir(), "Library/CloudStorage/GoogleDrive-christian@aivena.es",
-                  "My Drive/aivena docs/master doc and changelog");
+/**
+ * Resolve the AIVENA docs folder WITHOUT hardcoding a personal path.
+ * This repository is public: no home-directory paths, no email addresses.
+ *   1. $AIVENA_DOCS_DIR if set (preferred — set it in your shell profile)
+ *   2. otherwise glob the Google Drive mount, which varies per machine
+ */
+function resolveDocsDir() {
+  if (process.env.AIVENA_DOCS_DIR) return process.env.AIVENA_DOCS_DIR;
+  const base = join(homedir(), "Library", "CloudStorage");
+  if (existsSync(base)) {
+    for (const d of readdirSync(base)) {
+      if (!d.startsWith("GoogleDrive-")) continue;
+      const p = join(base, d, "My Drive", "aivena docs", "master doc and changelog");
+      if (existsSync(p)) return p;
+    }
+  }
+  throw new Error("Cannot find the AIVENA docs folder. Set AIVENA_DOCS_DIR to it.");
+}
 
 const MAX_TLDR_BULLETS = 5;
 const MAX_TLDR_WORDS   = 120;
 const MAX_FILE_TOKENS  = 40_000;   // beyond this, split an archive off
 
 const argIdx = process.argv.indexOf("--file");
-const file = argIdx !== -1 ? process.argv[argIdx + 1] : join(DOCS, "AIVENA_CHANGELOG.md");
+const file = argIdx !== -1 ? process.argv[argIdx + 1] : join(resolveDocsDir(), "AIVENA_CHANGELOG.md");
 
 if (!existsSync(file)) {
   console.error(`changelog not found: ${file}`);

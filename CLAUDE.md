@@ -67,11 +67,13 @@ over a fragile shortcut.
 
 ## The docs — where they are and which are alive
 
-**Canonical folder** (Google Drive for Desktop mount; auto-syncs to the cloud, where the claude.ai
-web chats read it via the connector). **Claude Code is the only writer** — edit the files *there*.
-Web chats read Drive and *propose* changes; CC applies them.
+**Canonical folder:** the AIVENA docs folder configured locally as **`AIVENA_DOCS_DIR`** — a Google
+Drive for Desktop mount that auto-syncs to the cloud, where the claude.ai web chats read it via the
+connector. **Do not hardcode personal home-directory paths in this repo; it is public.** The tools
+resolve it from `AIVENA_DOCS_DIR`, falling back to a glob of the local Drive mount.
 
-`~/Library/CloudStorage/GoogleDrive-christian@aivena.es/My Drive/aivena docs/master doc and changelog/`
+**Claude Code is the only writer** — edit the files *there*. Web chats read Drive and *propose*
+changes; CC applies them.
 
 | Alive | File | Job |
 |---|---|---|

@@ -7,7 +7,8 @@
  * agency "Follow-up active". The finding was right; nothing carried it through to the promise.
  *
  * So the register is not prose. Each row must answer the eight audit questions in CLAUDE.md, and
- * VERIFIED_LIVE must be earned: real evidence plus a regression guard. Anything that is NOT live
+ * A proven label (VERIFIED_REAL_LIVE / LIVE_DEMO_VERIFIED) must be earned: real evidence plus a
+ * regression guard, and demo data can never prove real usage. Anything that is NOT live
  * must name what stops the UI overclaiming — because that gap is where the lie lives.
  *
  *   node tools/feature-truth-lint.mjs
@@ -71,7 +72,10 @@ for (const f of reg.features) {
     if (f.status === "VERIFIED_REAL_LIVE") {
       // "one demo agency" must never satisfy a check for REAL agency usage — matching the bare
       // word "agency" let exactly that through on the first attempt.
-      const ev = String(f.evidence.join(" "));
+      // Scan every field where a demo caveat can hide, not just `evidence`. Found during the
+      // 2026-09-10 self-audit: inbound-whatsapp's demo context sat in trigger_actual, so the
+      // demo check missed it and only a second rule caught the relabel — by luck.
+      const ev = [f.evidence.join(" "), f.trigger_actual, f.note ?? "", f.product_impact ?? ""].join(" ");
       const demo = ev.match(/\b(demo|test|sandbox|staging|fixture|seed)\b/i);
       if (demo)
         problems.push(`${id}: VERIFIED_REAL_LIVE but the evidence says "${demo[0]}" — demo data cannot prove real usage (use LIVE_DEMO_VERIFIED)`);
@@ -105,8 +109,11 @@ for (const engine of stopped) {
   const feat = DEPENDS[engine];
   if (!feat) continue;
   const row = reg.features.find((f) => f.feature === feat);
-  if (row && row.status === "VERIFIED_LIVE")
-    problems.push(`${feat}: register says VERIFIED_LIVE but automation-status.ts says ${engine} is "not_running"`);
+  // MUST use the PROVEN set, not a hardcoded label. This line read `=== "VERIFIED_LIVE"` after
+  // the taxonomy changed, so the most important guard in the file silently stopped firing —
+  // found by the 2026-09-10 self-audit. A dead check is worse than no check.
+  if (row && PROVEN.has(row.status))
+    problems.push(`${feat}: register says ${row.status} but automation-status.ts says ${engine} is "not_running"`);
 }
 
 console.log(`feature-truth: ${reg.features.length} features registered`);

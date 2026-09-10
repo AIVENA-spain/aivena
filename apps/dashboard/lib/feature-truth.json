@@ -1,0 +1,113 @@
+{
+  "how_to_read_this": "One row per user-facing promise. A feature is only VERIFIED_LIVE when the live product path reaches it AND evidence shows it ran. Seeded 2026-09-10 with ONLY what was actually proven; everything not listed is NOT_YET_AUDITED by definition, which is the honest backlog rather than a silent assumption. Enforced by tools/feature-truth-lint.mjs.",
+  "labels": {
+    "VERIFIED_LIVE": "Live path reaches it and evidence shows it ran. Requires evidence + a regression guard.",
+    "EXISTS_BUT_NOT_WIRED": "Code/workflow exists and may even be 'active', but nothing in the live path calls it.",
+    "PARTIAL_UNPROVEN": "Runs on some paths or only in demo conditions; not proven under real use.",
+    "STALE": "Ran once, produces data that is no longer refreshed.",
+    "FALSE_UI_CLAIM": "The UI asserts something untrue. Must be fixed, not documented.",
+    "NOT_LIVE_COMING_LATER": "Deliberately gated off; the UI says so.",
+    "NOT_YET_AUDITED": "No one has walked the eight questions. Never present as working."
+  },
+  "features": [
+    {
+      "feature": "automatic-follow-ups",
+      "promise": "AIVENA follows up with leads by itself.",
+      "ui_surface": [
+        "approvals/client-intelligence.tsx follow-up block"
+      ],
+      "status": "EXISTS_BUT_NOT_WIRED",
+      "trigger_expected": "3A Follow-Up Engine v2, called by 2A, called by 1A Lead Intake Hub",
+      "trigger_actual": "NOTHING. 1A's webhook is called by no code, cron, Edge Function, RPC or dashboard action; the live path (Twilio -> twilio-whatsapp-inbound -> amanda-engine) bypasses the chain entirely.",
+      "evidence": [
+        "n8n executions for 1A/2A/3A: 0 each, against a retained store of 1,469 (2026-09-10)",
+        "leads with next_followup_at set: 0 of 6 (2026-09-10)",
+        "grep for 1A's webhook id across repo: no callers"
+      ],
+      "failure_behaviour": "Silent. Nothing schedules, nothing errors, nothing is surfaced to the agency.",
+      "ui_guard": "followUpState() in lib/automation-status.ts — 'active' requires a real future next_followup_at, never the followup_paused default.",
+      "regression_guard": "apps/dashboard/lib/automation-status.test.ts pins the defect and trips if AUTOMATION is flipped without re-checking surfaces.",
+      "verified_at": "2026-09-10"
+    },
+    {
+      "feature": "automatic-lead-scoring",
+      "promise": "Leads are scored and given a temperature automatically (Score, Temperature, Hot Leads KPI).",
+      "ui_surface": [
+        "overview-workspace.tsx Hot Leads KPI",
+        "overview-workspace.tsx Needs Action score column",
+        "approvals/client-intelligence.tsx score tile"
+      ],
+      "status": "EXISTS_BUT_NOT_WIRED",
+      "trigger_expected": "2A Lead Scoring + Enrichment v2, called by 1A Lead Intake Hub",
+      "trigger_actual": "NOTHING — same dead entry point as automatic-follow-ups.",
+      "evidence": [
+        "last lead scored 2026-06-19, the day 2A was last edited (leads.scored_at max)",
+        "5 of 6 leads carry June scores; 1 lead has never been scored",
+        "n8n executions for 2A: 0"
+      ],
+      "failure_behaviour": "Silent. A new agency's leads simply never receive a score; the KPI reads 0 forever.",
+      "ui_guard": "scoreState() + scoringIsLive() in lib/automation-status.ts — scores render captioned as not-live, an absent score says so, and Hot Leads uses the honest-empty-state form.",
+      "regression_guard": "apps/dashboard/lib/automation-status.test.ts",
+      "verified_at": "2026-09-10"
+    },
+    {
+      "feature": "operator-approved-outbound-send",
+      "promise": "When an agent approves a reply, it is sent on WhatsApp or email.",
+      "ui_surface": [
+        "approvals inbox approve action",
+        "overview Follow-ups Sent KPI"
+      ],
+      "status": "PARTIAL_UNPROVEN",
+      "trigger_expected": "approve_dashboard_task -> send_queue -> pg_cron send-queue-due-tick -> 3C Send-Pusher -> whatsapp-send-execute / Resend",
+      "trigger_actual": "Exactly that. pg_cron 'send-queue-due-tick' runs every minute and POSTs the Send-Pusher wake with the vault secret.",
+      "evidence": [
+        "pg_cron send-queue-due-tick: 10,897 runs, 0 failures, last run 2026-09-10",
+        "3C Send-Pusher: 27 executions, all webhook mode, most recent 2026-08-31",
+        "send_queue: 37 delivered rows; provider_audit_log 78 rows; 38 lead_events of type followup_sent"
+      ],
+      "failure_behaviour": "sweep_stuck_send_jobs (pg_cron, every 5 min) raises operator-visible send_issue dashboard tasks for stuck, expired and failed rows.",
+      "ui_guard": "NONE YET — the approve action does not tell an agent whether the send actually left the building; they learn from the conversation view.",
+      "regression_guard": "MISSING — no automated test asserts the pg_cron -> wake -> Send-Pusher -> provider chain. Recorded as a finding.",
+      "verified_at": "2026-09-10",
+      "note": "Downgraded from VERIFIED_LIVE on 2026-09-10 by tools/feature-truth-lint.mjs, which refused a VERIFIED_LIVE row whose regression guard was only PARTIAL. The MECHANISM is proven (10,897 cron runs 0 failures; 27 Send-Pusher executions; 37 delivered send_queue rows), but it has only ever run in demo conditions for one demo agency, last on 2026-08-31, and nothing automated would notice if the chain broke. Proven-by-history is not proven-under-real-use."
+    },
+    {
+      "feature": "inbound-whatsapp-amanda-reply",
+      "promise": "A buyer messages on WhatsApp and Amanda answers.",
+      "ui_surface": [
+        "inbox / approvals conversation view",
+        "settings Amanda mode dial"
+      ],
+      "status": "PARTIAL_UNPROVEN",
+      "trigger_expected": "Twilio -> twilio-whatsapp-inbound EF -> amanda_inbound_queue -> outbox worker -> send_queue",
+      "trigger_actual": "That path is real and has run, but only for one demo agency under demo conditions.",
+      "evidence": [
+        "26 amanda_engine send_queue rows delivered 2026-08-27..31",
+        "15 inbound conversation_messages in all of production history, one agency",
+        "0 orphans: every inbound message has a queue row"
+      ],
+      "failure_behaviour": "A known P1 gap: if the Edge Function dies between storing the message and enqueuing it, a redelivery is treated as a duplicate and the enqueue is skipped. Nothing reconciles the two tables. Latent, never yet triggered.",
+      "ui_guard": "NONE YET — the inbox does not distinguish 'Amanda answered' from 'Amanda never got the turn'.",
+      "regression_guard": "MISSING — no test covers the duplicate_ignored path. Recorded in the parking lot as P1.",
+      "verified_at": "2026-09-10"
+    },
+    {
+      "feature": "public-valuation-capture",
+      "promise": "A seller submits the valuation widget and becomes a lead.",
+      "ui_surface": [
+        "aivena.es valuation widget"
+      ],
+      "status": "NOT_LIVE_COMING_LATER",
+      "trigger_expected": "widget -> property-valuation Edge Function -> create_property_valuation RPC",
+      "trigger_actual": "Deliberately gated. Both AIVENA_VALUATION_LAUNCH and AIVENA_VALUATION_TEST_KEY are unset, so every request returns 503 and nothing is written.",
+      "evidence": [
+        "live POST returns HTTP 503 valuation_unavailable (2026-09-10, v11)",
+        "POST with a wrong test key also 503s"
+      ],
+      "failure_behaviour": "Fails closed by design; a friendly message tells the visitor to contact the agency.",
+      "ui_guard": "The gate itself. STANDING ORDER: never set either secret without Christian's explicit full-launch approval.",
+      "regression_guard": "supabase/functions/property-valuation/constant-time.test.ts covers the key comparison; the 503 gate is proven by live smoke.",
+      "verified_at": "2026-09-10"
+    }
+  ]
+}

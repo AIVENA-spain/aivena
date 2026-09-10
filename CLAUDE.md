@@ -59,6 +59,48 @@ workflows or expensive live API tests need an estimated cost **before** they run
 
 *Lower the bar for saying an idea out loud; keep the bar high for claiming it works.*
 
+## Auditing a feature — "active" is not "working"
+
+**The lesson, paid for on 2026-09-10.** The 2026-08-24 audit wrote *"no scheduled caller exists for
+3A — autonomous follow-ups structurally cannot fire"*, and it was right. Meanwhile the dashboard told
+every agency **"Follow-up active"** with a green dot, above the line "No follow-up scheduled". The
+finding was correct and the product still lied for seventeen days, because nobody carried a backend
+truth through to the front-end promise. The same audit also called Send-Pusher unscheduled — false,
+because it read n8n and never checked pg_cron. **Both errors have one cause: reasoning from a single
+layer.**
+
+- An **active workflow** is not a working feature.
+- A **green UI state** is not proof.
+- A **workflow existing** is not proof.
+- **Green tests** are not proof of a live path.
+- A feature is real only when the live product path reaches it **and** evidence shows it ran.
+
+**Audit inward from the promise, not outward from the code.** Start at what the UI claims and walk
+back to the rows that prove it. A component-first audit can be complete and still miss a false claim,
+because the claim lives in the gap between layers.
+
+### The eight questions — answer ALL of them, or the feature is not audited
+
+1. What does the UI / product copy **claim**?
+2. What **should** trigger it?
+3. What **actually** triggers it in the live system? (repo, pg_cron, n8n, Edge Functions, RPCs,
+   triggers, dashboard actions — check every one, not the first that looks right)
+4. What **database rows or events** prove it ran? Give counts and the most recent timestamp.
+5. What **queue / provider / audit-log** evidence proves the action happened — or did not?
+6. What happens when it **fails**? Is the failure visible to anyone?
+7. What stops the **UI claiming it works** when it does not?
+8. What **automated check** stops this coming back?
+
+### Every audited feature gets exactly one label
+
+`VERIFIED_LIVE` · `EXISTS_BUT_NOT_WIRED` · `PARTIAL_UNPROVEN` · `STALE` · `FALSE_UI_CLAIM` ·
+`NOT_LIVE_COMING_LATER` · `NOT_YET_AUDITED`
+
+Record it in **`apps/dashboard/lib/feature-truth.json`** and run `node tools/feature-truth-lint.mjs`.
+`VERIFIED_LIVE` requires real evidence and a regression guard; anything else must name what stops the
+UI overclaiming. The lint cross-checks the register against `lib/automation-status.ts`, so a feature
+cannot be declared live while the engine it depends on is declared stopped.
+
 ## Decisions
 Default to **research-first**: research → compare options → pick the most maintainable solution →
 recommend → build safely → verify → document. Do **not** ask Christian routine technical questions;

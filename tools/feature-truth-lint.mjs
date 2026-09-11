@@ -130,6 +130,22 @@ try {
   const dashLive = /leadScoring:\s*"running"/.test(autoSrc);
   if (apiLive !== dashLive)
     problems.push(`lead scoring: API LEAD_SCORING_LIVE=${apiLive} but dashboard says "${dashLive ? "running" : "not_running"}" — the two declarations must agree`);
+  // Lead scoring switch (Stage 1, 2026-09-11). The scorer may run only for agencies listed in LEAD_SCORING_AGENCIES,
+  // and the register must name exactly the same agencies, so the switch can never move without a record.
+  const agencyList = apiSrc.match(/export const LEAD_SCORING_AGENCIES[^=]*=\s*\[([^\]]*)\]/);
+  const agencies = agencyList ? [...agencyList[1].matchAll(/['"]([^'"]+)['"]/g)].map((m) => m[1]).sort() : null;
+  if (!agencies) {
+    problems.push("apps/api/src/lib/automation-status.ts: LEAD_SCORING_AGENCIES is missing or not a plain list");
+  } else {
+    const scoringRow = reg.features.find((f) => f.feature === "automatic-lead-scoring");
+    const named = [...(scoringRow?.scoring_enabled_for ?? [])].sort();
+    if (JSON.stringify(agencies) !== JSON.stringify(named))
+      problems.push(`lead scoring: LEAD_SCORING_AGENCIES=[${agencies.join(", ")}] but the register's scoring_enabled_for=[${named.join(", ")}]: the switch must be recorded in the register`);
+  }
+  const scoringMode = apiSrc.match(/export const LEAD_SCORING_MODE[^=]*=\s*['"](\w+)['"]/)?.[1];
+  if (!scoringMode) problems.push("apps/api/src/lib/automation-status.ts: LEAD_SCORING_MODE is missing");
+  if (scoringMode === "write" && !apiLive)
+    problems.push("lead scoring: LEAD_SCORING_MODE is 'write' while LEAD_SCORING_LIVE is false: scores would reach leads while the product says scoring is not live");
 } catch {
   problems.push("apps/api/src/lib/automation-status.ts is missing — the API cannot know whether scoring is live");
 }

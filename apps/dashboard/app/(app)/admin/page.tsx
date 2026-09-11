@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Building2, ChevronRight } from "lucide-react";
+import { Building2, ChevronRight, Gauge } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
 import { PageHeading } from "./_components/page-heading";
@@ -16,6 +16,13 @@ export default function AdminHome() {
       title: "Agencies",
       description:
         "Onboard new agencies, manage plans, branding, team, and invitations.",
+    },
+    {
+      href: "/admin/scoring-check",
+      icon: Gauge,
+      title: "Scoring check",
+      description:
+        "Internal. Run the 11 practice conversations through the real lead scorer. Writes nothing.",
     },
   ];
 

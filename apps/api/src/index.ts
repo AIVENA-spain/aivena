@@ -41,6 +41,11 @@ import { processTurnDb } from './amanda-engine/process-turn-db';
 import { sweepViewingReminders } from './amanda-engine/viewing-reminders';
 import { pingTick } from './amanda-engine/agent-ping';
 import { safeErr } from './lib/safe-error';
+import { withAgency } from '../../../packages/db/client';
+import { getLlmKey } from './routes/amanda-llm';
+import { anthropicCaller } from './lead-scoring/extract';
+import { runScoringTick, shouldStartScoringWorker, TICK_MS as SCORING_TICK_MS } from './lead-scoring/worker';
+import { LEAD_SCORING_AGENCIES } from './lib/automation-status';
 
 Sentry.init({
   dsn: env.SENTRY_DSN,
@@ -224,6 +229,23 @@ if (googleConfig() !== null) {
     firstTickMs: CALENDAR_SYNC_FIRST_TICK_MS,
     intervalMs: CALENDAR_SYNC_INTERVAL_MS,
   });
+}
+
+// Lead scoring (Stage 1, approved by Christian 2026-09-11): BUILT WITH EVERYTHING OFF. The real-lead scorer starts
+// only when LEAD_SCORING_AGENCIES (lib/automation-status.ts) names an agency. It is empty, so this block never runs.
+// Even when an agency is added it runs in shadow mode: one internal audit row per scoring run, never a lead write.
+if (shouldStartScoringWorker()) {
+  const scoringCall = anthropicCaller(getLlmKey);
+  const scoringTick = async () => {
+    try {
+      const r = await runScoringTick({ withAgency, call: scoringCall });
+      if (r.scored + r.failed > 0) logger.info('Lead scoring (shadow) ran', r);
+    } catch (err) {
+      console.error('[lead-scoring] tick failed', safeErr(err));
+    }
+  };
+  setInterval(() => { void scoringTick(); }, SCORING_TICK_MS);
+  logger.info('Lead scoring worker scheduled (shadow mode)', { agencies: LEAD_SCORING_AGENCIES.length });
 }
 
 // Amanda auto-mode engine worker (Packet 2 · P0) — DOUBLY inert by default:

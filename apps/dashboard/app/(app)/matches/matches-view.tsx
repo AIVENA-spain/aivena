@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { temperatureTone } from "@/lib/ui-tone";
 import { formatArea, formatPrice } from "@/lib/format";
 import { humanizeToken } from "@/app/(app)/overview/overview-format";
+import { scoringIsLive } from "@/lib/automation-status";
 import type { LeadWithMatch, Match } from "@/lib/api/types";
 
 import {
@@ -121,7 +122,8 @@ export function MatchesView({
           icon={Users}
           label={copy.kpiBuyers}
           value={kpis.buyers}
-          caption={`${kpis.highIntent} high-intent`}
+          // 'High-intent' counts stored temperatures; no claim while scoring is not running.
+          caption={scoringIsLive() ? `${kpis.highIntent} high-intent` : undefined}
         />
         <MetricCard icon={Gauge} label={copy.kpiAvg} value={`${kpis.avg}%`} />
         <MetricCard icon={Trophy} label={copy.kpiTop} value={`${kpis.top}%`} />
@@ -158,7 +160,7 @@ export function MatchesView({
               className={selectCls}
             >
               <option value="best">{copy.sortBest}</option>
-              <option value="score">{copy.sortScore}</option>
+              {scoringIsLive() ? <option value="score">{copy.sortScore}</option> : null}
             </select>
           </div>
         </FilterBar>
@@ -219,6 +221,8 @@ function BuyerRow({
           >
             {lead.full_name}
           </Link>
+          {/* Temperature and score come from scoring, which is not running (lib/automation-status.ts). */}
+          {scoringIsLive() ? (
           <div className="flex flex-wrap items-center gap-1.5">
             <Badge tone={temperatureTone(lead.temperature)} size="sm">
               {[humanizeToken(lead.temperature), lead.score]
@@ -226,6 +230,7 @@ function BuyerRow({
                 .join(" · ")}
             </Badge>
           </div>
+          ) : null}
           {lead.language ? (
             <span className="text-[12px] text-muted-foreground">
               {langLabel(lead.language)}

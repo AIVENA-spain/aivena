@@ -22,6 +22,8 @@
  *    sends. Fallback-task CREATION on send failure is F3 (Chat 3).
  */
 
+import { LEAD_SCORING_LIVE } from "../automation-status";
+
 // --- delivery-status vocab (live `conversation_messages.status`) -------------
 // received | queued | sent | read | undelivered | failed | cancelled.
 // The last three mean the message did NOT reach the buyer.
@@ -291,7 +293,9 @@ export function classifyLead(
           : 'Has an unresolved failed send',
     };
   }
-  if (pending && row.temperature && HOT_TEMPS.has(row.temperature)) {
+  // 'Hot' comes from scoring. While scoring is not running (lib/automation-status.ts) a stored 'hot' is a
+  // June artefact, and 'Hot lead waiting on a decision' would be a false claim written by the server.
+  if (LEAD_SCORING_LIVE && pending && row.temperature && HOT_TEMPS.has(row.temperature)) {
     return { bucket: 'at_risk', reason: 'Hot lead waiting on a decision' };
   }
   if (pending && taskAgeH !== null && taskAgeH >= STUCK_HOURS) {

@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/card";
 import { PageLoadError } from "@/components/shell/page-error";
 import { ReviewForm } from "./review-form";
+import { scoringIsLive } from "@/lib/automation-status";
 
 export const dynamic = "force-dynamic";
 
@@ -179,11 +180,14 @@ export default async function ReviewPage({
           <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground ring-1 ring-inset ring-border">
             {languageLabel(lead.language)}
           </span>
-          <TemperatureBadge
+          {/* Scoring is not running (lib/automation-status.ts): no stale temperature/score here. */}
+{scoringIsLive() ? (
+<TemperatureBadge
             temperature={lead.temperature}
             score={lead.score}
             noTempLabel={t("noTemperature")}
           />
+) : null}
           {lead.listingId ? (
             <span className="inline-flex items-center rounded-full bg-foreground px-2 py-0.5 font-mono text-[10px] font-medium uppercase tracking-wide text-background">
               {lead.listingId}

@@ -1,6 +1,7 @@
 "use client";
 
 import { type ConvoState, resolveConvoState, needsAction } from "./conversation-state";
+import { scoringIsLive } from "@/lib/automation-status";
 import { useHandoffLeadIds } from "./handoff-context";
 
 import {
@@ -109,6 +110,8 @@ function avatarTone(seed: string | null | undefined): string {
   return tones[Math.abs(hash) % tones.length];
 }
 
+// Only rendered while scoring is live (lib/automation-status.ts). A colour derived from stale June
+// scoring is a false live signal — found on the Cards view and list rows, 2026-09-11.
 function temperatureDot(temp: string | null): string {
   // Redesign: semantic scale — hot = high-intent (brand green), warm = worth
   // attention (amber), cold/unknown = neutral. No rose/sky rainbow.
@@ -1004,13 +1007,15 @@ function BuyersConvoView({
                   </span>
                   <div className="ml-auto flex shrink-0 items-center gap-1.5">
                     {state ? <StateBadge state={state} /> : null}
-                    <span
+                    {scoringIsLive() ? (
+<span
                       className={cn(
                         "h-1.5 w-1.5 shrink-0 rounded-full",
                         temperatureDot(r.temperature),
                       )}
                       aria-hidden
                     />
+) : null}
                   </div>
                 </div>
                 <div className="truncate text-[11.5px] text-muted-foreground">
@@ -2325,13 +2330,15 @@ function BuyersCardsView({
                   {t("pendingBadge", { n: pendingCount })}
                 </span>
               ) : null}
-              <span
+              {scoringIsLive() ? (
+<span
                 className={cn(
                   "h-2 w-2 shrink-0 rounded-full",
                   temperatureDot(r.temperature),
                 )}
                 aria-hidden
               />
+) : null}
             </div>
           </div>
           <CardKV label={tSum("area")} value={r.area ?? "—"} />

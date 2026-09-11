@@ -16,6 +16,7 @@ import type {
   OpsHealthBucket,
   OpsProviderState,
 } from "@/lib/api/types";
+import { scoringIsLive } from "@/lib/automation-status";
 
 /**
  * Command center / operations (F1 + F2 + F4) — pure display of the read-only
@@ -226,7 +227,7 @@ export function OperationsWorkspace({ data }: { data: OperationsResponse }) {
                   <li key={t.taskId} className="flex flex-wrap items-center gap-x-2 gap-y-1 py-2 first:pt-0 last:pb-0">
                     <Pill className="bg-muted text-foreground">{t.label}</Pill>
                     <span className="text-[13px] font-medium text-foreground">{t.leadName ?? "Unknown lead"}</span>
-                    {t.temperature ? (
+                    {scoringIsLive() && t.temperature ? (
                       <span className="text-[11px] uppercase tracking-[0.04em] text-muted-foreground">{t.temperature}</span>
                     ) : null}
                     {age ? <span className="text-[11px] text-muted-foreground">· {age}</span> : null}
@@ -292,7 +293,7 @@ export function OperationsWorkspace({ data }: { data: OperationsResponse }) {
                       />
                       <span className="text-[13px] font-medium text-foreground">{r.leadName ?? "Unknown lead"}</span>
                       <span className="text-[12px] text-muted-foreground">{r.reason}</span>
-                      {r.temperature ? (
+                      {scoringIsLive() && r.temperature ? (
                         <span className="text-[11px] uppercase tracking-[0.04em] text-muted-foreground">{r.temperature}</span>
                       ) : null}
                       {age ? <span className="text-[11px] text-muted-foreground">· {age}</span> : null}

@@ -418,7 +418,7 @@ function NeedsYouCard({
                   <th className="px-2 py-2.5 text-left">
                     {t("columnChannel")}
                   </th>
-                  <th className="px-2 py-2.5 text-left">{t("columnScore")}</th>
+                  {scoringIsLive() ? <th className="px-2 py-2.5 text-left">{t("columnScore")}</th> : null}
                   <th className="px-4 py-2.5 text-left">
                     {t("columnActivity")}
                   </th>
@@ -464,7 +464,8 @@ function NeedsYouCard({
                           <ChannelIcon channel={r.channel} />
                         </span>
                       </td>
-                      <td className="px-2 py-3 align-middle">
+                      {scoringIsLive() ? (
+<td className="px-2 py-3 align-middle">
                         {r.temperature || typeof r.score === "number" ? (
                           <Badge tone={scoringIsLive() ? temperatureTone(r.temperature) : "neutral"} size="sm">
                             {formatTemperatureScore(r.temperature, r.score)}
@@ -473,6 +474,7 @@ function NeedsYouCard({
                           <span className="text-muted-foreground">—</span>
                         )}
                       </td>
+) : null}
                       <td className="px-4 py-3 align-middle">
                         <div className="flex items-center gap-1.5">
                           <RelativeTime
@@ -559,11 +561,7 @@ function SelectedLeadPanel({ lead }: { lead: NeedsYouRow | null }) {
               </span>
               <StatusPill status={lead.leadStatus} />
             </div>
-            {formatTemperatureScore(
-              lead.temperature,
-              lead.score,
-              t("leadScore"),
-            ) ? (
+            {scoringIsLive() && formatTemperatureScore(lead.temperature, lead.score, t("leadScore")) ? (
               <div className="mt-0.5 font-mono text-[11px] text-muted-foreground">
                 {formatTemperatureScore(
                   lead.temperature,

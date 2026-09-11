@@ -39,11 +39,17 @@
       "feature": "automatic-lead-scoring",
       "promise": "Leads are scored and given a temperature automatically (Score, Temperature, Hot Leads KPI).",
       "ui_surface": [
-        "overview-workspace.tsx Hot Leads KPI",
-        "overview-workspace.tsx Needs Action score column",
-        "approvals/client-intelligence.tsx score tile",
+        "approvals/client-intelligence.tsx score tile — the ONE remaining display, captioned as legacy (interim)",
+        "overview-workspace.tsx Hot Leads KPI (honest empty state)",
+        "overview-workspace.tsx Needs Action score column and the lead side panel score line",
+        "approvals/inbox-workspace.tsx temperature dot in the Buyers list and the Cards view",
+        "approvals/[taskId]/page.tsx TemperatureBadge",
+        "matches/matches-view.tsx temperature · score badge, 'sort by score', 'N high-intent' caption",
+        "operations-workspace.tsx temperature tags (action queue and at-risk list)",
+        "API lib/operations/compute.ts at-risk reason 'Hot lead waiting on a decision'",
         "AIVENA Brief summary text (lead-summary-lib.ts: LeadFacts.score / LeadFacts.temperature)",
-        "inbox rows (dashboard_inbox returns COALESCE(dt.temperature, l.temperature))"
+        "LATENT, nothing live can reach it: super_hot_alert task copy in lib/assistant/operations-summary.ts and app/(app)/tasks/tasks-model.ts",
+        "Settings AI rules: per-temperature lanes ('Auto-send to cold leads', 'Require approval for hot leads')"
       ],
       "status": "EXISTS_BUT_NOT_WIRED",
       "trigger_expected": "2A Lead Scoring + Enrichment v2, called by 1A Lead Intake Hub",
@@ -51,16 +57,18 @@
       "evidence": [
         "last lead scored 2026-06-19, the day 2A was last edited (leads.scored_at max)",
         "5 of 6 leads carry June scores; 1 lead has never been scored",
-        "n8n executions for 2A: 0"
+        "n8n executions for 2A: 0",
+        "2026-09-11 sweep: 0 open super_hot_alert tasks; no live DB function creates them (admin_create_agency / admin_update_agency_settings only store the send_super_hot_alerts setting); the creator was n8n 2A",
+        "demo agency reply_rules: every by_temperature lane is review_first, so the temperature lanes cannot misfire today"
       ],
       "failure_behaviour": "Silent. A new agency's leads simply never receive a score; the KPI reads 0 forever.",
-      "ui_guard": "scoreState() + scoringIsLive() in lib/automation-status.ts — scores render captioned as not-live, an absent score says so, and Hot Leads uses the honest-empty-state form. API: LEAD_SCORING_LIVE in apps/api/src/lib/automation-status.ts withholds score and temperature from the Brief, and mentionsStaleScoring() rejects any Brief that mentions them.",
-      "regression_guard": "apps/dashboard/lib/automation-status.test.ts; apps/api/src/routes/lead-summary-lib.test.ts (4 stale-scoring tests, including the text that shipped); feature-truth-lint fails if the API and dashboard declarations disagree.",
+      "ui_guard": "One declaration: scoringIsLive() in lib/automation-status.ts (dashboard) and LEAD_SCORING_LIVE in apps/api/src/lib/automation-status.ts (API). While scoring is not running every surface that rendered score or temperature as a live signal is hidden; the score tile is the only display left, captioned as legacy. The Brief never receives score or temperature, and mentionsStaleScoring() rejects any Brief that mentions them.",
+      "regression_guard": "apps/dashboard/lib/automation-status.test.ts; apps/api/src/routes/lead-summary-lib.test.ts (4 stale-scoring tests, including the text that shipped); apps/api/src/lib/operations/compute.test.ts (every hot-dependent expectation holds in both states of LEAD_SCORING_LIVE); feature-truth-lint fails if the API and dashboard declarations disagree. GAP: the dashboard gates are JSX conditionals with no render test — the single declaration plus the lint is the guard.",
       "verified_at": "2026-09-11",
       "proven_issue": "2A has not run since 2026-06-19; new leads are never scored.",
       "product_impact": "Score, Temperature and Hot Leads are dead surfaces for any new agency. AIVENA looks manual, not intelligent.",
-      "immediate_truth_fix": "Confirmed by Christian 2026-09-11: the score tile caption. Done, deployed, awaiting eyes: the Hot Leads KPI, the Needs Action column, and the AIVENA Brief (4dd1705 — the model never receives score or temperature, and a guard rejects any Brief mentioning them; the exact screenshot text is now rejected; Railway serving 6c511f8). NOT YET CHECKED: dashboard_inbox still returns the stale temperature (COALESCE), and whether the Cards view renders it.",
-      "permanent_product_fix": "OWED — make-it-live plan, including per-lead score age/source from leads.scored_at (the API does not expose it yet).",
+      "immediate_truth_fix": "Confirmed by Christian 2026-09-11: the score tile caption, and the Brief no longer saying score 75 / warm lead. Done 2026-09-11, awaiting eyes (see that day's changelog entry): hidden while scoring is not running — the Cards view and Buyers-list dot, the Overview panel line and Score column, the task page badge, the Matches badge / score sort / high-intent caption, the Operations tags, and the API's 'Hot lead waiting on a decision' reason. The score tile keeps its legacy caption as the only interim display. This is the immediate fix only; the issue stays open.",
+      "permanent_product_fix": "OWED — the make-it-live build, approved in principle 2026-09-11 and started only after this truth pass is confirmed: port scoring (and follow-ups) into the Amanda/send_queue path, with per-lead score age and source from leads.scored_at; then decide the super_hot_alert task type and the Settings per-temperature lanes against the new scorer. n8n 1A→2A→3A stays LEGACY UNDER REVIEW and is retired only after the new path is proven.",
       "owner": "Christian decides direction; Packet 2 builds."
     },
     {
@@ -144,7 +152,7 @@
       "ui_surface": [
         "approvals/inbox-workspace.tsx StateBadge in the Buyers list"
       ],
-      "status": "PARTIAL_UNPROVEN",
+      "status": "LIVE_DEMO_VERIFIED",
       "trigger_expected": "Any lead with an open human review or escalation reads 'Needs you'.",
       "trigger_actual": "Since 2026-09-11 (e32c91a, live as dpl_3GoFZW6gjvXG6MvBnjZsTX4icBn6): the banner publishes its Needs-a-human lead ids through a shared context, and resolveConvoState() returns needsHuman for any of them, ahead of every other state. On its own the list still cannot see human_review_needed tasks — dashboard_inbox filters task_type='suggested_reply'.",
       "evidence": [
@@ -154,7 +162,8 @@
         "dashboard_inbox source: both branches filter dt.task_type='suggested_reply'",
         "Christian's screenshot of aivena.es/dashboard/approvals, 2026-09-11: list badge AUTO-HANDLED while the banner says 'Needs a human (1)'",
         "fix deployed via the sanctioned script: aivena.es/dashboard/login serves dpl_3GoFZW6gjvXG6MvBnjZsTX4icBn6 (commit 6c511f8), matched 2026-09-11",
-        "conversation-state.test.ts: Marte's exact rows read needsHuman in the queue, autoHandled out of it"
+        "conversation-state.test.ts: Marte's exact rows read needsHuman in the queue, autoHandled out of it",
+        "Christian's visual check on aivena.es/dashboard/approvals, 2026-09-11: Marte Brenno (demo agency data) reads NEEDS A HUMAN in the Buyers list, matching the banner"
       ],
       "failure_behaviour": "Silent. An agent scanning the list sees 'handled' on the one lead that was explicitly handed to a human.",
       "ui_guard": "resolveConvoState() + needsAction() in app/(app)/approvals/conversation-state.ts, fed the banner's own queue via handoff-context.tsx.",
@@ -162,8 +171,8 @@
       "verified_at": "2026-09-11",
       "proven_issue": "The list and the banner read different sources: the list only knows suggested_reply tasks, the banner knows escalations.",
       "product_impact": "The lead told 'I'll get right back to you' eleven days ago is labelled handled. For a real agency that is a lost lead hidden in plain sight.",
-      "immediate_truth_fix": "DONE 2026-09-11 (e32c91a), deployed via the sanctioned script and proven by deployment id on aivena.es/dashboard. Awaiting Christian's visual check; flips to LIVE_DEMO_VERIFIED when he confirms Marte reads 'Needs a human'.",
-      "permanent_product_fix": "One source of truth for conversation state (the list reads escalations too), plus ageing and escalation for review tasks that a holding reply has promised to answer.",
+      "immediate_truth_fix": "DONE 2026-09-11 (e32c91a), deployed via the sanctioned script, confirmed visually by Christian the same day.",
+      "permanent_product_fix": "Hardening, still owed and tracked in the parking lot: one source of truth for conversation state (the list reads escalations itself, not via the banner), plus ageing and escalation for review tasks that a holding reply has promised to answer.",
       "owner": "Packet 2.",
       "note": "FALSE_UI_CLAIM from 2026-09-11 (found in Christian's screenshot) until the same day's fix."
     }

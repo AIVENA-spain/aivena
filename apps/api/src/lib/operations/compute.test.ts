@@ -10,6 +10,11 @@ import {
   type OperationsSignals,
   type LifecycleRow,
 } from './compute';
+import { LEAD_SCORING_LIVE } from '../automation-status';
+
+// 'Hot' is a scoring output. While scoring is not running a stored 'hot' is a June artefact and must
+// not make a lead at-risk. Every hot-dependent expectation below holds in BOTH states of the flag.
+const HOT_COUNTS = LEAD_SCORING_LIVE;
 
 // Fixed "now" so age maths are deterministic (2026-06-27T12:00:00Z).
 const NOW = Date.parse('2026-06-27T12:00:00.000Z');
@@ -23,7 +28,7 @@ function demoSignals(over: Partial<OperationsSignals> = {}): OperationsSignals {
   const lifecycle: LifecycleRow[] = [
     // at_risk via failed send (lead-A is in failedSends below)
     { lead_id: 'lead-A', lead_name: 'Ana', channel: 'whatsapp', temperature: 'warm', task_status: 'pending', age_seconds: 3600, latest_inbound_at: hoursAgo(1), last_outbound_at: hoursAgo(2), lead_status: 'active' },
-    // at_risk via hot + pending
+    // hot + pending: at_risk only while scoring is live; otherwise a fresh pending → waiting_on_you
     { lead_id: 'lead-B', lead_name: 'Ben', channel: 'whatsapp', temperature: 'super_hot', task_status: 'pending', age_seconds: 3600, latest_inbound_at: hoursAgo(1), last_outbound_at: null, lead_status: 'active' },
     // stuck (pending aged past STUCK_HOURS)
     { lead_id: 'lead-C', lead_name: 'Cara', channel: 'email', temperature: 'warm', task_status: 'pending', age_seconds: 30 * 3600, latest_inbound_at: hoursAgo(30), last_outbound_at: null, lead_status: 'active' },
@@ -90,8 +95,10 @@ describe('classifyLead — lifecycle truth table', () => {
   it('failed send → at_risk (highest priority)', () => {
     expect(classifyLead({ ...base, task_status: 'pending' }, failed, NOW).bucket).toBe('at_risk');
   });
-  it('hot + pending → at_risk', () => {
-    expect(classifyLead({ ...base, task_status: 'pending', temperature: 'hot' }, none, NOW).bucket).toBe('at_risk');
+  it('hot + pending → at_risk only while scoring is live (a stale hot is not a signal)', () => {
+    const hot = classifyLead({ ...base, task_status: 'pending', temperature: 'hot', age_seconds: 3600 }, none, NOW);
+    expect(hot.bucket).toBe(HOT_COUNTS ? 'at_risk' : 'waiting_on_you');
+    if (!HOT_COUNTS) expect(hot.reason ?? '').not.toMatch(/hot/i);
   });
   it('pending aged past STUCK_HOURS → stuck', () => {
     expect(classifyLead({ ...base, task_status: 'pending', age_seconds: (STUCK_HOURS + 1) * 3600 }, none, NOW).bucket).toBe('stuck');
@@ -117,7 +124,7 @@ describe('computeOperations — demo live fixture', () => {
   it('attention headline counts are correct', () => {
     expect(res.attention.failedSends).toBe(1);
     expect(res.attention.openTasks).toBe(4);
-    expect(res.attention.atRiskLeads).toBe(3); // at_risk (A,B) + stuck (C)
+    expect(res.attention.atRiskLeads).toBe(HOT_COUNTS ? 3 : 2); // at_risk (A, +B only while scoring is live) + stuck (C)
     expect(res.attention.providerIssues).toBe(0); // whatsapp unavailable ≠ issue; email unknown ≠ issue
     expect(res.attention.openActionItems).toBe(5); // 4 tasks + 1 failed send
   });
@@ -154,13 +161,13 @@ describe('computeOperations — demo live fixture', () => {
 
   it('lifecycle buckets + at-risk list (sorted by age desc) are derived honestly', () => {
     const counts = Object.fromEntries(res.lifecycle.buckets.map((b) => [b.key, b.count]));
-    expect(counts['at_risk']).toBe(2);
+    expect(counts['at_risk']).toBe(HOT_COUNTS ? 2 : 1);
     expect(counts['stuck']).toBe(1);
-    expect(counts['waiting_on_you']).toBe(1);
+    expect(counts['waiting_on_you']).toBe(HOT_COUNTS ? 1 : 2);
     expect(counts['awaiting_reply']).toBe(1);
     expect(counts['healthy']).toBe(1);
     // at-risk surface = at_risk + stuck, most-aged first (Cara 30h leads)
-    expect(res.lifecycle.atRisk.map((r) => r.leadId)).toEqual(['lead-C', 'lead-A', 'lead-B']);
+    expect(res.lifecycle.atRisk.map((r) => r.leadId)).toEqual(HOT_COUNTS ? ['lead-C', 'lead-A', 'lead-B'] : ['lead-C', 'lead-A']);
     expect(res.lifecycle.atRisk[0].reason).toContain('Pending for');
   });
 
@@ -337,7 +344,7 @@ describe('computeOperations — failed-send at-risk uses the FAILURE age + clear
     expect(r.ageHours).toBe(5); // most-recent failure (failedRows are newest-first)
   });
 
-  it('a NON-failed at-risk (hot lead) still ages from its pending task, not a failure', () => {
+  it('a hot pending lead is at-risk (aged from its task) only while scoring is live', () => {
     const res = computeOperations('demo', {
       failedSends: [],
       openTasks: [],
@@ -346,9 +353,50 @@ describe('computeOperations — failed-send at-risk uses the FAILURE age + clear
       email: null,
       nowMs: NOW,
     });
+
+    if (HOT_COUNTS) {
+
+      const r = res.lifecycle.atRisk[0];
+
+      expect(r.reason).toBe('Hot lead waiting on a decision');
+
+      expect(r.ageHours).toBe(3);
+
+    } else {
+
+      // A stored 'super_hot' is a June artefact while scoring is not running: not a reason on its own.
+
+      expect(res.lifecycle.atRisk).toHaveLength(0);
+
+    }
+
+  });
+
+
+  it('a NON-failed at-risk (stuck pending) still ages from its pending task, not a failure', () => {
+
+    const res = computeOperations('demo', {
+
+      failedSends: [],
+
+      openTasks: [],
+
+      lifecycle: [lc({ lead_id: 'slow', lead_name: 'Slow', task_status: 'pending', age_seconds: (STUCK_HOURS + 2) * 3600 })],
+
+      whatsapp: null,
+
+      email: null,
+
+      nowMs: NOW,
+
+    });
+
     const r = res.lifecycle.atRisk[0];
-    expect(r.reason).toBe('Hot lead waiting on a decision');
-    expect(r.ageHours).toBe(3);
+
+    expect(r.reason).toContain('Pending for');
+
+    expect(r.ageHours).toBe(STUCK_HOURS + 2);
+
   });
 });
 

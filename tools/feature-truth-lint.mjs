@@ -116,6 +116,20 @@ for (const engine of stopped) {
     problems.push(`${feat}: register says ${row.status} but automation-status.ts says ${engine} is "not_running"`);
 }
 
+// The API carries its own scoring declaration (it deploys separately). It must agree with the
+// dashboard's, or the Brief and the panel beside it can tell two different stories — which is how
+// "warm lead (score 75)" survived the 2026-09-10 truth fix.
+const API_AUTO = join(REPO, "apps/api/src/lib/automation-status.ts");
+try {
+  const apiSrc = readFileSync(API_AUTO, "utf8");
+  const apiLive = /LEAD_SCORING_LIVE\s*=\s*true/.test(apiSrc);
+  const dashLive = /leadScoring:\s*"running"/.test(autoSrc);
+  if (apiLive !== dashLive)
+    problems.push(`lead scoring: API LEAD_SCORING_LIVE=${apiLive} but dashboard says "${dashLive ? "running" : "not_running"}" — the two declarations must agree`);
+} catch {
+  problems.push("apps/api/src/lib/automation-status.ts is missing — the API cannot know whether scoring is live");
+}
+
 console.log(`feature-truth: ${reg.features.length} features registered`);
 const byStatus = {};
 for (const f of reg.features) byStatus[f.status] = (byStatus[f.status] ?? 0) + 1;

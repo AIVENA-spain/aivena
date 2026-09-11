@@ -108,7 +108,7 @@ describe("deterministicSummary — grounded, never invents", () => {
 
 describe("resolveSummary — LLM primary, deterministic fallback", () => {
   it("uses grounded LLM prose when it passes the guards", () => {
-    const good = "Marte is a warm Norwegian-speaking buyer after a house, 2–3 beds, around €500,000. Her WhatsApp window is closed and no approved Norwegian template exists yet.";
+    const good = "Marte is a Norwegian-speaking buyer after a house, 2–3 beds, around €500,000. Her WhatsApp window is closed and no approved Norwegian template exists yet.";
     const r = resolveSummary(good, MARTE);
     expect(r.source).toBe("llm");
     expect(r.summary).toBe(good);
@@ -149,5 +149,34 @@ describe("helpers", () => {
     ).toContain("Norwegian");
     expect(contactabilitySentence({ recommended_action: "do_not_contact" })).toContain("opted out");
     expect(contactabilitySentence(null)).toContain("verified");
+  });
+});
+
+import * as LSL from "./lead-summary-lib";
+
+describe("stale scoring never reaches the Brief (scoring not running, 2026-09-11)", () => {
+  it("withholds score and temperature from the facts the model sees", () => {
+    const f = LSL.normalizeFacts(MARTE);
+    expect(f.score).toBeNull();
+    expect(f.temperature).toBeNull();
+    expect(LSL.buildSummaryUser(MARTE)).not.toMatch(/"score":\s*75|warm/);
+  });
+
+  it("rejects prose that was ACCEPTED before this fix — the same text, failing only on the stale temperature", () => {
+    // Until 2026-09-11 this exact string passed every guard and shipped as the Brief.
+    const old = "Marte is a warm Norwegian-speaking buyer after a house, 2–3 beds, around €500,000. Her WhatsApp window is closed and no approved Norwegian template exists yet.";
+    expect(LSL.resolveSummary(old, MARTE).source).toBe("deterministic");
+  });
+
+  it("rejects the score stated as a number — what the live Brief actually said", () => {
+    const r = LSL.resolveSummary("Marte is a warm lead (score 75) looking for a 2–3 bedroom house around €500,000.", MARTE);
+    expect(r.source).toBe("deterministic");
+    expect(r.summary).not.toMatch(/warm|score|75/i);
+  });
+
+  it("the deterministic fallback states no temperature, no score, and no invented gender", () => {
+    const s = LSL.deterministicSummary(MARTE);
+    expect(s).not.toMatch(/warm|score|75/i);
+    expect(s).not.toMatch(/\bShe\b|\bHe\b/);
   });
 });

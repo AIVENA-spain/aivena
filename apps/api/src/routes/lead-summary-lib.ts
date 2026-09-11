@@ -19,6 +19,8 @@ export const MAX_SUMMARY_CHARS = 600;
 
 /** The ONLY facts the model may use. Every field is what we actually captured;
  *  null/absent = unknown, and the model is told to omit unknowns, never guess. */
+import { LEAD_SCORING_LIVE } from "../lib/automation-status";
+
 export type LeadFacts = {
   first_name: string | null;
   language: string | null; // display name, e.g. "Norwegian"
@@ -67,8 +69,11 @@ export function normalizeFacts(f: LeadFacts): LeadFacts {
   return {
     first_name: sanitizeFreeText(f.first_name, 40),
     language: clean(f.language),
-    temperature: clean(f.temperature),
-    score: Number.isFinite(f.score as number) ? (f.score as number) : null,
+    // Scoring is not running (lib/automation-status.ts): a stored score is a June artefact, and the
+    // Brief must never present it as current intelligence. Withhold it entirely rather than ask the
+    // model to phrase it carefully — a model that never sees it cannot repeat it.
+    temperature: LEAD_SCORING_LIVE ? clean(f.temperature) : null,
+    score: LEAD_SCORING_LIVE && Number.isFinite(f.score as number) ? (f.score as number) : null,
     property_type: clean(f.property_type),
     bedrooms: clean(f.bedrooms),
     bathrooms: clean(f.bathrooms),
@@ -106,6 +111,13 @@ export function buildSummaryUser(facts: LeadFacts): string {
 }
 
 // ── output verification (deterministic) ─────────────────────────────────────
+
+/** While scoring is not running, the Brief may not mention a score or a temperature at all — even one
+ *  the model invented. A second line of defence behind normalizeFacts withholding them. */
+const STALE_SCORING = /\b(scores?|scored|scoring|lukewarm|warm|hot|cold|super[\s_-]?hot|very[\s_-]?hot)\b/i;
+export function mentionsStaleScoring(text: string): boolean {
+  return !LEAD_SCORING_LIVE && STALE_SCORING.test(text);
+}
 
 const BANNED = [/<[a-z/!]/i, /https?:\/\//i, /\]\(/, /x-api-key/i, /anthropic/i, /system prompt/i, /lead_facts/i];
 
@@ -203,7 +215,7 @@ export function properNounsGrounded(text: string, facts: LeadFacts): boolean {
  *  grounded, no ungrounded proper nouns. */
 export function summaryPasses(text: string, facts: LeadFacts): boolean {
   const f = normalizeFacts(facts);
-  return outputIsSafe(text) && noInventedClaims(text) && numbersGrounded(text, f) && properNounsGrounded(text, f);
+  return outputIsSafe(text) && noInventedClaims(text) && numbersGrounded(text, f) && properNounsGrounded(text, f) && !mentionsStaleScoring(text);
 }
 
 // ── deterministic fallback (always grounded, never empty) ───────────────────
@@ -234,7 +246,8 @@ export function deterministicSummary(facts: LeadFacts): string {
   if (budget) wants.push(`budget around ${budget}`);
   if (f.location) wants.push(`in ${f.location}`);
 
-  const search = wants.length ? ` She's looking for a ${wants.join(", ")}.` : "";
+  // Never assume a gender — the facts don't carry one (found 2026-09-11).
+  const search = wants.length ? ` They're looking for a ${wants.join(", ")}.` : "";
   const contact = f.contactability ? ` ${f.contactability}` : "";
   return `${lead}.${search}${contact}`.replace(/\s+/g, " ").trim();
 }

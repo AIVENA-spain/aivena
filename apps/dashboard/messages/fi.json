@@ -52,11 +52,13 @@
       "sellersTeaser": "alkaa, kun arviolomake on käytössä",
       "callsTeaser": "alkaa, kun puhelut ovat käytössä",
       "notLive": "Ei käytössä",
-      "scoringTeaser": "alkaa, kun liidien pisteytys otetaan käyttöön"
+      "scoringTeaser": "alkaa, kun liidien pisteytys otetaan käyttöön",
+      "followupsTeaser": "alkaa, kun automaattiset seurannat otetaan käyttöön"
     },
     "needsAction": {
       "title": "Vaatii toimia · Valmiit vastaukset",
       "emptyTitle": "Ei mitään jonossa",
+      "noReadyReplies": "Ei valmiita vastauksia",
       "emptyText": "Tekoälyn luonnokset ilmestyvät tähän, kun ostajat vastaavat.",
       "columnLead": "Liidi",
       "columnType": "Tyyppi",

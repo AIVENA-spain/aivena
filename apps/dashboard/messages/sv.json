@@ -52,11 +52,13 @@
       "sellersTeaser": "startar när värderingsformuläret är live",
       "callsTeaser": "startar när rösten är live",
       "notLive": "Inte aktivt",
-      "scoringTeaser": "startar när leadpoängsättning aktiveras"
+      "scoringTeaser": "startar när leadpoängsättning aktiveras",
+      "followupsTeaser": "startar när automatiska uppföljningar aktiveras"
     },
     "needsAction": {
       "title": "Kräver åtgärd · Färdiga svar",
       "emptyTitle": "Inget väntar",
+      "noReadyReplies": "Inga färdiga svar",
       "emptyText": "AI-utkast dyker upp här när köpare svarar.",
       "columnLead": "Lead",
       "columnType": "Typ",

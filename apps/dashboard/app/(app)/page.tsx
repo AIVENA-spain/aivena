@@ -10,6 +10,7 @@ import type {
   OverviewKpisResponse,
 } from "@/lib/api/types";
 import { OverviewWorkspace } from "./overview/overview-workspace";
+import { getHandoffQueueAction, type HandoffRow } from "./approvals/handoff-actions";
 
 export const dynamic = "force-dynamic";
 
@@ -22,10 +23,14 @@ export default async function OverviewPage() {
   let kpis: OverviewKpisResponse | null = null;
   let needs: NeedsYouResponse = { rows: [] };
   let activity: ActivityResponse = { rows: [] };
+  // The Needs-a-human queue — the SAME call the Inbox banner makes, so Overview and Inbox cannot
+  // disagree (2026-09-11: Overview said "Needs Action 0" while the banner said "Needs a human (1)").
+  // A failure leaves it null: the Needs Action tile then shows a dash, never a false 0.
+  let handoffs: HandoffRow[] | null = null;
   let loadFailed = false;
 
   try {
-    const [kpisRes, needsRes, activityRes] = await Promise.all([
+    const [kpisRes, needsRes, activityRes, handoffRes] = await Promise.all([
       apiFetch<OverviewKpisResponse>(
         "/api/v1/overview/kpis?period_days=7",
       ),
@@ -33,10 +38,12 @@ export default async function OverviewPage() {
       apiFetch<ActivityResponse>(
         "/api/v1/overview/recent-activity?limit=20",
       ),
+      getHandoffQueueAction().catch(() => null),
     ]);
     kpis = kpisRes;
     needs = needsRes;
     activity = activityRes;
+    handoffs = handoffRes && handoffRes.ok ? handoffRes.data : null;
   } catch (err) {
     loadFailed = true;
     const detail =
@@ -58,6 +65,7 @@ export default async function OverviewPage() {
       kpis={kpis}
       needsYou={needs.rows}
       activity={activity.rows}
+      handoffs={handoffs}
     />
   );
 }

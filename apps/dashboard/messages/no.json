@@ -52,11 +52,13 @@
       "sellersTeaser": "starter når verdivurderingsskjemaet er aktivt",
       "callsTeaser": "starter når tale er aktivt",
       "notLive": "Ikke aktiv",
-      "scoringTeaser": "starter når poengsetting av leads slås på"
+      "scoringTeaser": "starter når poengsetting av leads slås på",
+      "followupsTeaser": "starter når automatiske oppfølginger slås på"
     },
     "needsAction": {
       "title": "Trenger handling · Klare svar",
       "emptyTitle": "Ingenting venter",
+      "noReadyReplies": "Ingen klare svar",
       "emptyText": "AI-utkast dukker opp her når kjøpere svarer.",
       "columnLead": "Lead",
       "columnType": "Type",

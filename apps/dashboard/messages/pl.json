@@ -52,11 +52,13 @@
       "sellersTeaser": "rusza po uruchomieniu formularza wyceny",
       "callsTeaser": "rusza po uruchomieniu modułu połączeń",
       "notLive": "Nieaktywne",
-      "scoringTeaser": "zacznie działać po włączeniu oceny leadów"
+      "scoringTeaser": "zacznie działać po włączeniu oceny leadów",
+      "followupsTeaser": "zacznie działać po włączeniu automatycznych kontaktów"
     },
     "needsAction": {
       "title": "Wymaga działania · Gotowe odpowiedzi",
       "emptyTitle": "Nic nie czeka",
+      "noReadyReplies": "Brak gotowych odpowiedzi",
       "emptyText": "Wersje robocze AI pojawią się tutaj, gdy kupujący odpowiedzą.",
       "columnLead": "Kontakt",
       "columnType": "Typ",

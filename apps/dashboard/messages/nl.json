@@ -52,11 +52,13 @@
       "sellersTeaser": "start zodra het waardebepalingsformulier live staat",
       "callsTeaser": "start zodra voice live staat",
       "notLive": "Niet actief",
-      "scoringTeaser": "start zodra leadscoring is ingeschakeld"
+      "scoringTeaser": "start zodra leadscoring is ingeschakeld",
+      "followupsTeaser": "start zodra automatische opvolging is ingeschakeld"
     },
     "needsAction": {
       "title": "Actie nodig · Antwoorden klaar",
       "emptyTitle": "Niets in de wacht",
+      "noReadyReplies": "Geen antwoorden klaar",
       "emptyText": "AI-concepten verschijnen hier zodra kopers reageren.",
       "columnLead": "Lead",
       "columnType": "Type",

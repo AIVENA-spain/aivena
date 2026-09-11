@@ -52,11 +52,13 @@
       "sellersTeaser": "parte quando il modulo di valutazione è attivo",
       "callsTeaser": "parte quando la voce è attiva",
       "notLive": "Non attivo",
-      "scoringTeaser": "inizia quando il punteggio dei lead è attivo"
+      "scoringTeaser": "inizia quando il punteggio dei lead è attivo",
+      "followupsTeaser": "inizia quando i follow-up automatici sono attivi"
     },
     "needsAction": {
       "title": "Da gestire · Risposte pronte",
       "emptyTitle": "Nessuna attività in attesa",
+      "noReadyReplies": "Nessuna risposta pronta",
       "emptyText": "Le bozze AI compaiono qui quando gli acquirenti rispondono.",
       "columnLead": "Lead",
       "columnType": "Tipo",

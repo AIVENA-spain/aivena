@@ -52,11 +52,13 @@
       "sellersTeaser": "começa quando o formulário de avaliação estiver ativo",
       "callsTeaser": "começa quando a voz estiver ativa",
       "notLive": "Não ativo",
-      "scoringTeaser": "começa quando a pontuação de leads for ativada"
+      "scoringTeaser": "começa quando a pontuação de leads for ativada",
+      "followupsTeaser": "começa quando os seguimentos automáticos forem ativados"
     },
     "needsAction": {
       "title": "Requer ação · Respostas prontas",
       "emptyTitle": "Nada em espera",
+      "noReadyReplies": "Sem respostas prontas",
       "emptyText": "Os rascunhos da IA aparecem aqui à medida que os compradores respondem.",
       "columnLead": "Lead",
       "columnType": "Tipo",

@@ -52,11 +52,13 @@
       "sellersTeaser": "starter, når vurderingsformularen er live",
       "callsTeaser": "starter, når tale er live",
       "notLive": "Ikke aktiv",
-      "scoringTeaser": "starter, når lead-scoring slås til"
+      "scoringTeaser": "starter, når lead-scoring slås til",
+      "followupsTeaser": "starter, når automatiske opfølgninger slås til"
     },
     "needsAction": {
       "title": "Kræver handling · Klar til svar",
       "emptyTitle": "Intet venter",
+      "noReadyReplies": "Ingen svar klar",
       "emptyText": "AI-udkast dukker op her, når købere svarer.",
       "columnLead": "Lead",
       "columnType": "Type",

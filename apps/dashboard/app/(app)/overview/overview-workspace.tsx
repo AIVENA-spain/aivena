@@ -35,7 +35,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { leadStatusTone, temperatureTone } from "@/lib/ui-tone";
-import { scoringIsLive } from "@/lib/automation-status";
+import { followUpsAreLive, scoringIsLive } from "@/lib/automation-status";
+import type { HandoffRow } from "../approvals/handoff-actions";
+import { needsActionCount, rowsWaitingOnHuman } from "./needs-action";
 import { Button } from "@/components/ui/button";
 import { RelativeTime } from "@/components/ui/relative-time";
 import { approveTaskAction } from "@/app/(app)/approvals/[taskId]/actions";
@@ -161,12 +163,14 @@ function KpiCard({
   icon: LucideIcon;
   tone: KpiTone;
   label: string;
-  value: number;
+  /** Null renders a dash: the number is unknown, or not honest to show (see soonLabel). */
+  value: number | null;
   /** When set, an arrow + |delta| + vsLabel is rendered. */
   delta?: number;
   vsLabel?: string;
-  /** When set, the card is rendered in its honest-empty-state form: greyed
-      number, "Soon" pill, subtext, no delta arrow. */
+  /** When set, the card is rendered in its honest-empty-state form: a dash instead of a number,
+      the pill, subtext, no delta arrow. (A greyed stale number still read as live intelligence —
+      Christian, 2026-09-11, on "Hot Leads 2 · Not live".) */
   soonLabel?: string;
   soonTeaser?: string;
 }) {
@@ -202,13 +206,13 @@ function KpiCard({
             isSoon ? "text-muted-foreground" : "text-foreground",
           )}
         >
-          {value}
+          {isSoon || value === null ? "—" : value}
         </div>
         {isSoon ? (
           <div className="text-[10.5px] text-muted-foreground">
             {soonTeaser}
           </div>
-        ) : typeof delta === "number" ? (
+        ) : value !== null && typeof delta === "number" ? (
           <div
             className={cn(
               "flex items-center gap-1 text-[11px] font-medium",
@@ -250,11 +254,14 @@ export function OverviewWorkspace({
   kpis,
   needsYou,
   activity,
+  handoffs,
 }: {
   locale: string;
   kpis: OverviewKpisResponse | null;
   needsYou: NeedsYouRow[];
   activity: ActivityRow[];
+  /** The Inbox banner's Needs-a-human queue. Null when it could not be read. */
+  handoffs: HandoffRow[] | null;
 }) {
   const t = useTranslations("overview");
 
@@ -279,6 +286,17 @@ export function OverviewWorkspace({
   const vsLabel = t("kpi.vsLast7Days");
   const soonLabel = t("kpi.soon");
 
+  // Needs Action counts the Needs-a-human queue too — the same queue the Inbox banner shows.
+  const needsCount = needsActionCount(
+    kpis?.needs_you.value,
+    sortedNeeds.map((r) => r.leadId),
+    handoffs,
+  );
+  const waitingOnHuman = useMemo(
+    () => rowsWaitingOnHuman(activity, handoffs),
+    [activity, handoffs],
+  );
+
   return (
     <div className="flex flex-col gap-3.5">
       {/* 6-card KPI row */}
@@ -295,7 +313,7 @@ export function OverviewWorkspace({
           icon={Bell}
           tone="amber"
           label={t("kpi.needsAction")}
-          value={kpis?.needs_you.value ?? 0}
+          value={needsCount}
         />
         <KpiCard
           icon={Flame}
@@ -318,11 +336,14 @@ export function OverviewWorkspace({
         />
         <KpiCard
           icon={Send}
-          tone="violet"
+          tone={followUpsAreLive() ? "violet" : "muted"}
           label={t("kpi.followupsSent")}
           value={kpis?.followups_sent.value ?? 0}
-          delta={kpis?.followups_sent.delta}
-          vsLabel={vsLabel}
+          {...(followUpsAreLive()
+            ? { delta: kpis?.followups_sent.delta, vsLabel }
+            : // Automatic follow-ups are not running, and the count behind this tile is every WhatsApp
+              // message sent — lead_events.followup_sent is written for all of them, replies included.
+              { soonLabel: t("kpi.notLive"), soonTeaser: t("kpi.followupsTeaser") })}
         />
         {/*
           Calls Recovered — voice_calls pipeline isn't live yet (no Twilio/Vapi
@@ -333,7 +354,7 @@ export function OverviewWorkspace({
           icon={PhoneCall}
           tone="muted"
           label={t("kpi.callsRecovered")}
-          value={0}
+          value={null}
           soonLabel={soonLabel}
           soonTeaser={t("kpi.callsTeaser")}
         />
@@ -348,13 +369,19 @@ export function OverviewWorkspace({
       */}
       <section className="grid grid-cols-1 items-start gap-3.5 lg:grid-cols-3">
         <div className="flex flex-col gap-3.5 lg:col-span-2">
+          {handoffs && handoffs.length > 0 ? <NeedsHumanCard rows={handoffs} /> : null}
           <NeedsYouCard
             rows={sortedNeeds}
+            hasHandoffs={(handoffs?.length ?? 0) > 0}
             selectedId={selectedId}
             onSelect={setSelectedId}
             locale={locale}
           />
-          <RecentActivityCard rows={activity} locale={locale} />
+          <RecentActivityCard
+            rows={activity}
+            locale={locale}
+            waitingOnHuman={waitingOnHuman}
+          />
         </div>
         <div className="flex flex-col gap-3.5 lg:col-span-1">
           <SelectedLeadPanel lead={selected} />
@@ -365,15 +392,88 @@ export function OverviewWorkspace({
   );
 }
 
+// ---------- needs a human (the Inbox banner's own queue) ----------
+
+/**
+ * The Needs-a-human queue on Overview: the same rows the Inbox banner shows (GET /api/v1/handoffs),
+ * so the two pages cannot disagree. Answering stays in the Inbox, where the full hand-off card lives.
+ */
+function NeedsHumanCard({ rows }: { rows: HandoffRow[] }) {
+  const t = useTranslations("handoffs");
+  const tp = useTranslations("overview.panel");
+  return (
+    <Card size="sm">
+      <CardHeader className="border-b border-border px-4 pb-3">
+        <CardTitle className="flex items-center gap-2 text-[14px] font-bold">
+          <span>{t("title")}</span>
+          <span className="rounded-full bg-rose-500/12 px-2 py-0.5 text-[10.5px] font-semibold text-rose-700 dark:text-rose-300">
+            {rows.length}
+          </span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-0">
+        <ul className="divide-y divide-border">
+          {rows.map((r) => {
+            const said = r.buyer_asked ?? r.last_message;
+            return (
+              <li key={r.lead_id} className="flex items-start gap-3 px-4 py-2.5">
+                <span
+                  className={cn(
+                    "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10.5px] font-semibold text-white",
+                    avatarTone(r.full_name ?? r.lead_id),
+                  )}
+                >
+                  {initialsOf(r.full_name ?? t("unknownVisitor"))}
+                </span>
+                <div className="flex min-w-0 flex-1 flex-col leading-snug">
+                  <span className="truncate text-[12.5px] font-semibold text-foreground">
+                    {r.full_name ?? t("unknownVisitor")}
+                  </span>
+                  {said ? (
+                    <span className="line-clamp-2 text-[11px] italic text-muted-foreground/80">
+                      “{said}”
+                    </span>
+                  ) : null}
+                  {r.human_claimed_by ? (
+                    <span className="text-[11px] text-muted-foreground">
+                      {t("claimedBy", { agent: r.human_claimed_by })}
+                    </span>
+                  ) : null}
+                </div>
+                <div className="flex shrink-0 flex-col items-end gap-1">
+                  <RelativeTime
+                    iso={r.needs_human_since}
+                    className="whitespace-nowrap font-mono text-[10px] text-muted-foreground"
+                  />
+                  <Link
+                    href={`/approvals?leadId=${encodeURIComponent(r.lead_id)}`}
+                    className="inline-flex items-center gap-1 text-[12px] font-semibold text-brand hover:underline"
+                  >
+                    {tp("openInInbox")}
+                    <ExternalLink className="h-3 w-3 opacity-70" aria-hidden />
+                  </Link>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </CardContent>
+    </Card>
+  );
+}
+
 // ---------- needs you table ----------
 
 function NeedsYouCard({
   rows,
+  hasHandoffs,
   selectedId,
   onSelect,
   locale,
 }: {
   rows: NeedsYouRow[];
+  /** True when the Needs-a-human queue is not empty — then "Nothing waiting" would be false. */
+  hasHandoffs: boolean;
   selectedId: string | null;
   onSelect: (id: string) => void;
   locale: string;
@@ -396,7 +496,7 @@ function NeedsYouCard({
         {rows.length === 0 ? (
           <EmptyState
             icon={Inbox}
-            title={t("emptyTitle")}
+            title={hasHandoffs ? t("noReadyReplies") : t("emptyTitle")}
             description={t("emptyText")}
           />
         ) : (
@@ -731,11 +831,15 @@ const ACTIVITY_VISIBLE = 6;
 function RecentActivityCard({
   rows,
   locale,
+  waitingOnHuman,
 }: {
   rows: ActivityRow[];
   locale: string;
+  /** Rows that happened while their lead was waiting for a person (see needs-action.ts). */
+  waitingOnHuman: ReadonlySet<string>;
 }) {
   const t = useTranslations("overview.activity");
+  const tHandoffs = useTranslations("handoffs");
   const [expanded, setExpanded] = useState(false);
 
   const hasMore = rows.length > ACTIVITY_VISIBLE;
@@ -760,8 +864,16 @@ function RecentActivityCard({
                   <EventIcon eventType={r.eventType} channel={r.channel} />
                 </span>
                 <div className="flex min-w-0 flex-1 flex-col leading-snug">
-                  <span className="truncate text-[12.5px] text-foreground">
-                    {r.label}
+                  <span className="flex min-w-0 items-center gap-1.5">
+                    <span className="truncate text-[12.5px] text-foreground">
+                      {r.label}
+                    </span>
+                    {waitingOnHuman.has(r.eventId) ? (
+                      // Sent while this lead waits for a person: an automatic reply is not a resolution.
+                      <Badge tone="danger" size="sm" uppercase>
+                        {tHandoffs("title")}
+                      </Badge>
+                    ) : null}
                   </span>
                   {r.fullName ? (
                     <span className="truncate text-[11px] text-muted-foreground">

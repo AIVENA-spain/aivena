@@ -1,5 +1,8 @@
 import { Hono } from 'hono';
 import { sql } from 'drizzle-orm';
+import type { Tx } from '../../../../packages/db/client';
+import { correctedOutboundKind, originOf, sentLabel, type OutboundOrigin } from '../lib/outbound-origin';
+import { safeErr } from '../lib/safe-error';
 
 const route = new Hono();
 
@@ -26,6 +29,53 @@ function clampInt(value: string | undefined, fallback: number, min: number, max:
 function toIso(value: Date | string | null): string | null {
   if (value === null || value === undefined) return null;
   return value instanceof Date ? value.toISOString() : String(value);
+}
+
+type OriginRow = { id: string; requested_by: string | null };
+
+/**
+ * Who asked for a set of messages (send_queue.requested_by — see lib/outbound-origin.ts), read in its
+ * own savepoint: the request is one agency-context transaction, so an un-savepointed failure would
+ * abort it. A failure returns null and the caller degrades honestly — it never guesses "automatic".
+ */
+async function readOrigins(tx: Tx, query: ReturnType<typeof sql>): Promise<Map<string, OutboundOrigin> | null> {
+  try {
+    return await tx.transaction(async (sp) => {
+      const rows = (await (sp as unknown as Tx).execute(query)) as unknown as OriginRow[];
+      return new Map(rows.map((r) => [r.id, originOf(r.requested_by)]));
+    });
+  } catch (err) {
+    console.error('[/api/v1/overview] message-origin lookup skipped:', safeErr(err));
+    return null;
+  }
+}
+
+/** Who asked for the message behind each followup_sent event. */
+function originsByEvent(tx: Tx, eventIds: string[]): Promise<Map<string, OutboundOrigin> | null> {
+  if (eventIds.length === 0) return Promise.resolve(new Map());
+  return readOrigins(tx, sql`
+    SELECT le.id::text AS id, sq.requested_by
+      FROM lead_events le
+      JOIN conversation_messages cm
+        ON cm.provider_message_id = le.external_message_id AND cm.agency_id = le.agency_id
+      LEFT JOIN send_queue sq ON sq.id = cm.send_queue_id
+     WHERE le.agency_id = current_setting('app.current_agency_id', true)
+       AND le.id = ANY(string_to_array(${eventIds.join(',')}, ',')::uuid[])
+  `);
+}
+
+/** Who asked for each lead's latest outbound message. */
+function lastOutboundOriginByLead(tx: Tx, leadIds: string[]): Promise<Map<string, OutboundOrigin> | null> {
+  if (leadIds.length === 0) return Promise.resolve(new Map());
+  return readOrigins(tx, sql`
+    SELECT DISTINCT ON (cm.lead_id) cm.lead_id::text AS id, sq.requested_by
+      FROM conversation_messages cm
+      LEFT JOIN send_queue sq ON sq.id = cm.send_queue_id
+     WHERE cm.agency_id = current_setting('app.current_agency_id', true)
+       AND cm.direction = 'outbound'
+       AND cm.lead_id = ANY(string_to_array(${leadIds.join(',')}, ',')::uuid[])
+     ORDER BY cm.lead_id, cm.created_at DESC
+  `);
 }
 
 type NeedsYouRow = {
@@ -148,6 +198,11 @@ route.get('/inbox', async (c) => {
       SELECT * FROM dashboard_inbox(${limit}::int, ${days}::int)
     `);
     const rows = result as unknown as DashboardInboxRow[];
+    // dashboard_inbox maps every followup_sent to 'auto', but the send path writes followup_sent for
+    // EVERY delivered message — a reply a person sent ("Answer it" → operator_custom_reply) would read
+    // "Auto-handled". Correct it from send_queue.requested_by; if that can't be read, keep the RPC's answer.
+    const autoLeads = [...new Set(rows.filter((r) => r.last_outbound_kind === 'auto').map((r) => r.lead_id))];
+    const kindOrigins = await lastOutboundOriginByLead(tx, autoLeads);
     return c.json({
       rows: rows.map((r) => ({
         taskId: r.task_id,
@@ -171,7 +226,7 @@ route.get('/inbox', async (c) => {
         ageSeconds: r.age_seconds,
         latestInboundPreview: r.latest_inbound_preview,
         latestInboundAt: toIso(r.latest_inbound_at),
-        lastOutboundKind: r.last_outbound_kind,
+        lastOutboundKind: correctedOutboundKind(r.last_outbound_kind, kindOrigins?.get(r.lead_id)),
         lastOutboundAt: toIso(r.last_outbound_at),
         leadType: r.lead_type,
         area: r.area,
@@ -213,13 +268,20 @@ route.get('/recent-activity', async (c) => {
       SELECT * FROM dashboard_recent_activity(${limit}::int)
     `);
     const rows = result as unknown as ActivityRow[];
+    // followup_sent is written for EVERY delivered WhatsApp message, whoever asked for it, and the RPC
+    // labels them all "Auto-reply sent". Label each by who actually requested it; if that can't be read,
+    // say "WhatsApp message sent" rather than guess "automatic".
+    const origins = await originsByEvent(
+      tx,
+      rows.filter((r) => r.event_type === 'followup_sent').map((r) => r.event_id),
+    );
     return c.json({
       rows: rows.map((r) => ({
         eventId: r.event_id,
         leadId: r.lead_id,
         fullName: r.full_name,
         eventType: r.event_type,
-        label: r.label,
+        label: r.event_type === 'followup_sent' ? sentLabel(origins?.get(r.event_id) ?? 'unknown') : r.label,
         channel: r.channel,
         excerpt: (r as Record<string, unknown>).excerpt ?? null,
         excerptTranslated: (r as Record<string, unknown>).excerpt_translated ?? null,

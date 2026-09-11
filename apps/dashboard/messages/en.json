@@ -52,11 +52,13 @@
       "sellersTeaser": "starts when valuation form is live",
       "callsTeaser": "starts when voice is live",
       "notLive": "Not live",
-      "scoringTeaser": "starts when lead scoring is enabled"
+      "scoringTeaser": "starts when lead scoring is enabled",
+      "followupsTeaser": "starts when automatic follow-ups are enabled"
     },
     "needsAction": {
       "title": "Needs Action · Ready Replies",
       "emptyTitle": "Nothing waiting",
+      "noReadyReplies": "No ready replies",
       "emptyText": "AI drafts appear here as buyers reply.",
       "columnLead": "Lead",
       "columnType": "Type",

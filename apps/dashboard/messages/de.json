@@ -52,11 +52,13 @@
       "sellersTeaser": "startet, sobald das Bewertungsformular live ist",
       "callsTeaser": "startet, sobald die Telefonie live ist",
       "notLive": "Nicht aktiv",
-      "scoringTeaser": "startet, sobald die Lead-Bewertung aktiviert ist"
+      "scoringTeaser": "startet, sobald die Lead-Bewertung aktiviert ist",
+      "followupsTeaser": "startet, sobald automatische Follow-ups aktiviert sind"
     },
     "needsAction": {
       "title": "Aktion erforderlich · Antworten bereit",
       "emptyTitle": "Nichts in Wartestellung",
+      "noReadyReplies": "Keine Antworten bereit",
       "emptyText": "KI-Entwürfe erscheinen hier, sobald Interessenten antworten.",
       "columnLead": "Lead",
       "columnType": "Typ",

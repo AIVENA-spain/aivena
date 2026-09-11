@@ -6,6 +6,8 @@ import { apiFetch } from "@/lib/api/client";
 import { LOCALE_COOKIE, catalogLocaleFor, catalogLocaleOrNull } from "@/lib/i18n/config";
 import { intlLocaleFor } from "@/lib/i18n/date-locale";
 import type { SettingsResponse, TasksResponse } from "@/lib/api/types";
+import { getHandoffQueueAction } from "./approvals/handoff-actions";
+import { needsActionCount } from "./overview/needs-action";
 import { getCurrentUserContext } from "@/lib/auth/context";
 import { NoAgencyState } from "@/components/shell/no-agency-state";
 import { Sidebar } from "@/components/shell/sidebar";
@@ -38,12 +40,18 @@ async function getTasksCount(): Promise<number | null> {
   }
 }
 
+/** Inbox badge: ready replies plus every Needs-a-human lead not already counted — the same rule as
+ *  Overview's Needs Action (overview/needs-action.ts). Until 2026-09-11 it counted drafts only, so a
+ *  lead handed to a person added nothing to the badge. If the queue can't be read, it falls back to
+ *  ready replies. */
 async function getInboxCount(): Promise<number | null> {
   try {
-    const res = await apiFetch<TasksResponse>(
-      "/api/v1/tasks?type=suggested_reply&status=pending",
-    );
-    return res.tasks.length;
+    const [res, handoffs] = await Promise.all([
+      apiFetch<TasksResponse>("/api/v1/tasks?type=suggested_reply&status=pending"),
+      getHandoffQueueAction().catch(() => null),
+    ]);
+    if (!handoffs || !handoffs.ok) return res.tasks.length;
+    return needsActionCount(res.tasks.length, res.tasks.map((t) => t.lead.id), handoffs.data);
   } catch {
     // Silent fallback — the badge just doesn't show. The technical error
     // is already logged downstream by apiFetch's caller pattern.

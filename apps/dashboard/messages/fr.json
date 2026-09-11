@@ -52,11 +52,13 @@
       "sellersTeaser": "démarre dès que le formulaire d'estimation est en ligne",
       "callsTeaser": "démarre dès que la voix est active",
       "notLive": "Non actif",
-      "scoringTeaser": "démarre lorsque le scoring des leads est activé"
+      "scoringTeaser": "démarre lorsque le scoring des leads est activé",
+      "followupsTeaser": "démarre lorsque les relances automatiques sont activées"
     },
     "needsAction": {
       "title": "À traiter · Réponses prêtes",
       "emptyTitle": "Rien en attente",
+      "noReadyReplies": "Aucune réponse prête",
       "emptyText": "Les brouillons de l'IA apparaissent ici dès qu'un acheteur répond.",
       "columnLead": "Prospect",
       "columnType": "Type",

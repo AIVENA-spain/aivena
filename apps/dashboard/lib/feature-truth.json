@@ -15,7 +15,8 @@
       "feature": "automatic-follow-ups",
       "promise": "AIVENA follows up with leads by itself.",
       "ui_surface": [
-        "approvals/client-intelligence.tsx follow-up block"
+        "approvals/client-intelligence.tsx follow-up block",
+        "overview-workspace.tsx Follow-ups Sent KPI — Not live with a dash since 2026-09-11"
       ],
       "status": "EXISTS_BUT_NOT_WIRED",
       "trigger_expected": "3A Follow-Up Engine v2, called by 2A, called by 1A Lead Intake Hub",
@@ -23,16 +24,17 @@
       "evidence": [
         "n8n executions for 1A/2A/3A: 0 each, against a retained store of 1,469 (2026-09-10)",
         "leads with next_followup_at set: 0 of 6 (2026-09-10)",
-        "grep for 1A's webhook id across repo: no callers"
+        "grep for 1A's webhook id across repo: no callers",
+        "Follow-ups Sent counts lead_events.followup_sent, which the send path writes for EVERY delivered WhatsApp message: 38 of 38 are 'whatsapp_sent via Twilio' — Amanda replies (amanda_engine) and person-approved sends (operator_approved, operator_reengage). None is a follow-up."
       ],
       "failure_behaviour": "Silent. Nothing schedules, nothing errors, nothing is surfaced to the agency.",
       "ui_guard": "followUpState() in lib/automation-status.ts — 'active' requires a real future next_followup_at, never the followup_paused default.",
       "regression_guard": "apps/dashboard/lib/automation-status.test.ts pins the defect and trips if AUTOMATION is flipped without re-checking surfaces.",
-      "verified_at": "2026-09-10",
+      "verified_at": "2026-09-11",
       "proven_issue": "1A→2A→3A is wired inside n8n but nothing calls 1A's webhook; 0 executions for all three.",
       "product_impact": "AIVENA does not follow up by itself. For a pilot agency this is a core promise that silently does nothing.",
-      "immediate_truth_fix": "DONE 2026-09-10 (f95becd): 'Follow-up active' now requires a real future next_followup_at. Served on aivena.es/dashboard by dpl_BTDKsF4WQ5ev2UBLjTPyekAxkVDM (deployment-id match, 2026-09-11); this block has NOT yet been confirmed by eye.",
-      "permanent_product_fix": "OWED — make-it-live plan: reuse 1A/2A/3A, port into the Amanda/send_queue architecture, or retire. Not decided.",
+      "immediate_truth_fix": "DONE 2026-09-10 (f95becd): 'Follow-up active' now requires a real future next_followup_at. Served on aivena.es/dashboard by dpl_BTDKsF4WQ5ev2UBLjTPyekAxkVDM (deployment-id match, 2026-09-11); this block has NOT yet been confirmed by eye. Also 2026-09-11: the Follow-ups Sent tile renders Not live with a dash while followUpsAreLive() is false; it had shown a live-styled count of every message sent.",
+      "permanent_product_fix": "OWED — make-it-live plan: reuse 1A/2A/3A, port into the Amanda/send_queue architecture, or retire. Not decided. The tile must then count real follow-ups only — followup_sent is not that signal.",
       "owner": "Christian decides direction; Packet 2 builds."
     },
     {
@@ -40,7 +42,7 @@
       "promise": "Leads are scored and given a temperature automatically (Score, Temperature, Hot Leads KPI).",
       "ui_surface": [
         "approvals/client-intelligence.tsx score tile — the ONE remaining display, captioned as legacy (interim)",
-        "overview-workspace.tsx Hot Leads KPI (honest empty state)",
+        "overview-workspace.tsx Hot Leads KPI — a dash with the Not live pill (a greyed stale count still read as intelligence)",
         "overview-workspace.tsx Needs Action score column and the lead side panel score line",
         "approvals/inbox-workspace.tsx temperature dot in the Buyers list and the Cards view",
         "approvals/[taskId]/page.tsx TemperatureBadge",
@@ -59,7 +61,8 @@
         "5 of 6 leads carry June scores; 1 lead has never been scored",
         "n8n executions for 2A: 0",
         "2026-09-11 sweep: 0 open super_hot_alert tasks; no live DB function creates them (admin_create_agency / admin_update_agency_settings only store the send_super_hot_alerts setting); the creator was n8n 2A",
-        "demo agency reply_rules: every by_temperature lane is review_first, so the temperature lanes cannot misfire today"
+        "demo agency reply_rules: every by_temperature lane is review_first, so the temperature lanes cannot misfire today",
+        "dashboard_overview_kpis.hot_leads counts temperature = 'hot' only: the '2' on screen was 2 of the 3 June-hot leads (super_hot excluded)"
       ],
       "failure_behaviour": "Silent. A new agency's leads simply never receive a score; the KPI reads 0 forever.",
       "ui_guard": "One declaration: scoringIsLive() in lib/automation-status.ts (dashboard) and LEAD_SCORING_LIVE in apps/api/src/lib/automation-status.ts (API). While scoring is not running every surface that rendered score or temperature as a live signal is hidden; the score tile is the only display left, captioned as legacy. The Brief never receives score or temperature, and mentionsStaleScoring() rejects any Brief that mentions them.",
@@ -67,7 +70,7 @@
       "verified_at": "2026-09-11",
       "proven_issue": "2A has not run since 2026-06-19; new leads are never scored.",
       "product_impact": "Score, Temperature and Hot Leads are dead surfaces for any new agency. AIVENA looks manual, not intelligent.",
-      "immediate_truth_fix": "Confirmed by Christian 2026-09-11: the score tile caption, and the Brief no longer saying score 75 / warm lead. Done 2026-09-11, awaiting eyes (see that day's changelog entry): hidden while scoring is not running — the Cards view and Buyers-list dot, the Overview panel line and Score column, the task page badge, the Matches badge / score sort / high-intent caption, the Operations tags, and the API's 'Hot lead waiting on a decision' reason. The score tile keeps its legacy caption as the only interim display. This is the immediate fix only; the issue stays open.",
+      "immediate_truth_fix": "Confirmed by Christian 2026-09-11: the score tile caption, and the Brief no longer saying score 75 / warm lead. Done 2026-09-11, awaiting eyes (see that day's changelog entry): hidden while scoring is not running — the Cards view and Buyers-list dot, the Overview panel line and Score column, the task page badge, the Matches badge / score sort / high-intent caption, the Operations tags, and the API's 'Hot lead waiting on a decision' reason. The score tile keeps its legacy caption as the only interim display. This is the immediate fix only; the issue stays open. Also 2026-09-11 (Christian's Overview check): Hot Leads shows a dash instead of the stale '2'.",
       "permanent_product_fix": "OWED — the make-it-live build, approved in principle 2026-09-11 and started only after this truth pass is confirmed: port scoring (and follow-ups) into the Amanda/send_queue path, with per-lead score age and source from leads.scored_at; then decide the super_hot_alert task type and the Settings per-temperature lanes against the new scorer. n8n 1A→2A→3A stays LEGACY UNDER REVIEW and is retired only after the new path is proven.",
       "owner": "Christian decides direction; Packet 2 builds."
     },
@@ -163,11 +166,12 @@
         "Christian's screenshot of aivena.es/dashboard/approvals, 2026-09-11: list badge AUTO-HANDLED while the banner says 'Needs a human (1)'",
         "fix deployed via the sanctioned script: aivena.es/dashboard/login serves dpl_3GoFZW6gjvXG6MvBnjZsTX4icBn6 (commit 6c511f8), matched 2026-09-11",
         "conversation-state.test.ts: Marte's exact rows read needsHuman in the queue, autoHandled out of it",
-        "Christian's visual check on aivena.es/dashboard/approvals, 2026-09-11: Marte Brenno (demo agency data) reads NEEDS A HUMAN in the Buyers list, matching the banner"
+        "Christian's visual check on aivena.es/dashboard/approvals, 2026-09-11: Marte Brenno (demo agency data) reads NEEDS A HUMAN in the Buyers list, matching the banner",
+        "2026-09-11: dashboard_inbox maps every followup_sent to 'auto', and the send path writes followup_sent for every delivered message — a person's 'Answer it' reply (requested_by operator_custom_reply) would have read 'Auto-handled'. Latent: Marte's last send is amanda_engine."
       ],
       "failure_behaviour": "Silent. An agent scanning the list sees 'handled' on the one lead that was explicitly handed to a human.",
-      "ui_guard": "resolveConvoState() + needsAction() in app/(app)/approvals/conversation-state.ts, fed the banner's own queue via handoff-context.tsx.",
-      "regression_guard": "app/(app)/approvals/conversation-state.test.ts — built from Marte's rows; fails if an escalated lead can resolve to anything but needsHuman.",
+      "ui_guard": "resolveConvoState() + needsAction() in app/(app)/approvals/conversation-state.ts, fed the banner's own queue via handoff-context.tsx. Since 2026-09-11 the API corrects last_outbound_kind from send_queue.requested_by (lib/outbound-origin.ts), so a person's reply is never 'auto'.",
+      "regression_guard": "app/(app)/approvals/conversation-state.test.ts — built from Marte's rows; fails if an escalated lead can resolve to anything but needsHuman. apps/api/src/lib/outbound-origin.test.ts — fails if a person-requested send can read as automatic.",
       "verified_at": "2026-09-11",
       "proven_issue": "The list and the banner read different sources: the list only knows suggested_reply tasks, the banner knows escalations.",
       "product_impact": "The lead told 'I'll get right back to you' eleven days ago is labelled handled. For a real agency that is a lost lead hidden in plain sight.",
@@ -175,6 +179,71 @@
       "permanent_product_fix": "Hardening, still owed and tracked in the parking lot: one source of truth for conversation state (the list reads escalations itself, not via the banner), plus ageing and escalation for review tasks that a holding reply has promised to answer.",
       "owner": "Packet 2.",
       "note": "FALSE_UI_CLAIM from 2026-09-11 (found in Christian's screenshot) until the same day's fix."
+    },
+    {
+      "feature": "overview-needs-action",
+      "promise": "Overview's Needs Action tile and list tell the agency how much is waiting on them.",
+      "ui_surface": [
+        "overview-workspace.tsx Needs Action KPI",
+        "overview-workspace.tsx Needs Action · Ready Replies card (its 'Nothing waiting' empty state)",
+        "overview-workspace.tsx Needs-a-human card (added 2026-09-11)",
+        "layout.tsx sidebar and mobile Inbox badge"
+      ],
+      "status": "PARTIAL_UNPROVEN",
+      "trigger_expected": "Every pending ready reply and every open hand-off counts.",
+      "trigger_actual": "Since 2026-09-11 the Overview page loads the Inbox banner's own queue (getHandoffQueueAction → GET /api/v1/handoffs), and needsActionCount() adds hand-off leads not already counted as ready replies. dashboard_overview_kpis.needs_you and dashboard_needs_you still count suggested_reply only.",
+      "evidence": [
+        "Christian's screenshot of aivena.es/dashboard, 2026-09-11: Needs Action 0 while the Inbox banner said Needs a human (1)",
+        "dashboard_overview_kpis: needs_you = count(dashboard_tasks) WHERE task_type = 'suggested_reply' AND status = 'pending'",
+        "live 2026-09-11: 0 pending suggested_reply tasks; 1 pending human_review_needed (Marte, needs_human_since 2026-08-31 15:07:15, demo agency)",
+        "the sidebar and mobile Inbox badge (layout.tsx getInboxCount) counted suggested_reply only too — fixed the same day with the same rule"
+      ],
+      "failure_behaviour": "If the hand-off queue cannot be read, the tile shows a dash (unknown), never 0.",
+      "ui_guard": "needsActionCount() and rowsWaitingOnHuman() in app/(app)/overview/needs-action.ts, fed the banner's own queue; 'Nothing waiting' renders only when the queue is empty too.",
+      "regression_guard": "app/(app)/overview/needs-action.test.ts — built from Marte's rows; fails if a Needs-a-human lead can make Needs Action read 0.",
+      "verified_at": "2026-09-11",
+      "proven_issue": "Overview's Needs Action read a different source from the Inbox banner: it knew drafts, not escalations.",
+      "product_impact": "The page an owner opens first said nothing needed them while a buyer had waited eleven days for a person.",
+      "immediate_truth_fix": "Done 2026-09-11: Needs Action counts the hand-off queue, a Needs-a-human card lists it with a link into the Inbox, and 'Nothing waiting' shows only when nothing is. Awaiting Christian's visual check.",
+      "permanent_product_fix": "One source for 'what needs the agency' — one read that the Overview tile and list, the Inbox list and banner, Operations and the sidebar badges all use — plus ageing and escalation for review tasks that nobody answers.",
+      "owner": "Packet 2.",
+      "note": "FALSE_UI_CLAIM from Christian's 2026-09-11 screenshot until the same day's fix."
+    },
+    {
+      "feature": "overview-recent-activity",
+      "promise": "Recent Activity tells the agency, truthfully, what happened with their leads.",
+      "ui_surface": [
+        "overview-workspace.tsx Recent Activity (labels come from dashboard_recent_activity, relabelled by the API)"
+      ],
+      "status": "PARTIAL_UNPROVEN",
+      "trigger_expected": "Each row names what happened and who did it; a lead still waiting for a person is visibly unresolved.",
+      "trigger_actual": "dashboard_recent_activity labels every followup_sent 'Auto-reply sent'. Since 2026-09-11 the API relabels each from send_queue.requested_by (Auto-reply sent / Sent by your team / Viewing reminder sent / WhatsApp message sent), and the dashboard badges rows sent while the lead waits for a person.",
+      "evidence": [
+        "the 20 rows on screen 2026-09-11 were all Marte's, all requested_by amanda_engine — the 'Auto-reply sent' labels were true",
+        "the newest row is the holding reply at 15:07:20, five seconds after needs_human_since 15:07:15 — shown as a finished auto-reply",
+        "followup_sent is written for every delivered message: send_queue also holds operator_approved (10) and operator_reengage (2) sends, which the old label would have called automatic",
+        "labels are English strings built in SQL — not translated into the other 12 languages"
+      ],
+      "failure_behaviour": "If the origin lookup fails, sends read 'WhatsApp message sent' — never guessed automatic.",
+      "ui_guard": "apps/api/src/lib/outbound-origin.ts (sentLabel) in routes/overview.ts; rowsWaitingOnHuman() in app/(app)/overview/needs-action.ts.",
+      "regression_guard": "apps/api/src/lib/outbound-origin.test.ts; app/(app)/overview/needs-action.test.ts (the holding-reply case).",
+      "verified_at": "2026-09-11",
+      "proven_issue": "The feed reported a holding reply as a finished auto-reply, and its label called every send automatic whoever asked for it.",
+      "product_impact": "An owner scanning activity sees work done where a buyer is actually waiting — the unresolved lead hides in plain sight.",
+      "immediate_truth_fix": "Done 2026-09-11: labels by who requested the send, and a Needs-a-human badge on rows sent while the lead waits. Awaiting Christian's visual check.",
+      "permanent_product_fix": "Escalations and holding replies become first-class events from the one conversation-state source; labels are translated; and 'answered' metrics (Performance 'Response coverage') stop counting a holding reply as an answer.",
+      "owner": "Packet 2."
+    },
+    {
+      "feature": "voice-missed-call-recovery",
+      "promise": "Missed calls are recovered with an instant WhatsApp (Overview Calls Recovered; Performance Calls recovered and Missed-call recovery).",
+      "ui_surface": [
+        "overview-workspace.tsx Calls Recovered — Soon, a dash (it showed a hardcoded greyed 0 until 2026-09-11)",
+        "performance-workspace.tsx Calls recovered and the Missed-call recovery card"
+      ],
+      "status": "NOT_YET_AUDITED",
+      "owner": "Christian decides when voice goes live (a pilot requirement in the 2026-07-03 packet plan); Packet 2 audits it then.",
+      "note": "Found in the 2026-09-11 Overview audit. The Performance card's line 'Every missed call triggers an instant WhatsApp in the caller's language' is present tense on a not-live card — wording to fix in that audit. Revisit: when voice is scheduled."
     }
   ],
   "pilot_ready_rule": "Pilot readiness does NOT require VERIFIED_REAL_LIVE — there is no real agency traffic yet. A feature is pilot-ready when it is at least LIVE_DEMO_VERIFIED, the full path is proven in the live environment with test/demo data, it is regression-guarded, it cannot send for real without approval, and the UI truth matches the engine.",

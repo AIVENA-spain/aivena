@@ -42,7 +42,7 @@ echo "── recent dashboard commits on main (context — know whose work you'r
 git log --oneline -5 origin/main -- apps/dashboard | sed 's/^/    /'
 
 echo "── building dashboard…"
-(cd apps/dashboard && npx next build > /tmp/dashboard-build.log 2>&1) || {
+(cd apps/dashboard && npx next build --webpack > /tmp/dashboard-build.log 2>&1) || {
   echo "✗ REFUSED: build failed. Last lines:"; tail -5 /tmp/dashboard-build.log; exit 1; }
 echo "── build clean. Deploying…"
 

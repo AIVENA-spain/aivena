@@ -34,7 +34,7 @@ const REQUIRED = [
   // Christian, 2026-09-10: a finding may not be a note. It must name the harm, the
   // immediate truth fix, the REAL feature fix, and who owns it — so "mark not-live"
   // can never be mistaken for done.
-  "proven_issue", "product_impact", "immediate_truth_fix", "real_feature_fix", "owner",
+  "proven_issue", "product_impact", "immediate_truth_fix", "permanent_product_fix", "owner",
 ];
 
 /** Labels that assert the product promise actually works. These must be earned. */
@@ -87,6 +87,10 @@ for (const f of reg.features) {
       problems.push(`${id}: ${f.status} with no ui_guard — name what stops the UI claiming this works, or say "NONE YET" and carry it as a finding`);
   }
 
+  // Closing rule (C): "not part of AIVENA now" is a decision, so it needs an owner and a revisit status.
+  if (f.status === "NOT_LIVE_COMING_LATER" && !String(f.revisit ?? "").trim())
+    problems.push(`${id}: NOT_LIVE_COMING_LATER with no revisit status — coming-later needs an owner and a revisit, or it is just parked`);
+
   // A false claim may never simply sit here. It needs a fix path, immediately.
   if (f.status === "FALSE_UI_CLAIM") {
     const fix = String(f.immediate_truth_fix ?? "");
@@ -96,9 +100,9 @@ for (const f of reg.features) {
 
   // "Mark not-live" is a temporary honest state, never the destination.
   if (["EXISTS_BUT_NOT_WIRED", "FALSE_UI_CLAIM", "PARTIAL_UNPROVEN", "MECHANISM_PROVEN"].includes(f.status)) {
-    const real = String(f.real_feature_fix ?? "");
+    const real = String(f.permanent_product_fix ?? "");
     if (!real || /^(none|n\/a)$/i.test(real.trim()))
-      problems.push(`${id}: ${f.status} with no real_feature_fix — an honest not-live state is temporary, not success`);
+      problems.push(`${id}: ${f.status} with no permanent_product_fix — a caption or not-live label is the immediate truth fix, never the permanent one`);
   }
 }
 

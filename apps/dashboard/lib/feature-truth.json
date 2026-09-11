@@ -32,7 +32,7 @@
       "proven_issue": "1A→2A→3A is wired inside n8n but nothing calls 1A's webhook; 0 executions for all three.",
       "product_impact": "AIVENA does not follow up by itself. For a pilot agency this is a core promise that silently does nothing.",
       "immediate_truth_fix": "DONE 2026-09-10 (f95becd): 'Follow-up active' now requires a real future next_followup_at. Served on aivena.es/dashboard by dpl_BTDKsF4WQ5ev2UBLjTPyekAxkVDM (deployment-id match, 2026-09-11); this block has NOT yet been confirmed by eye.",
-      "real_feature_fix": "OWED — make-it-live plan: reuse 1A/2A/3A, port into the Amanda/send_queue architecture, or retire. Not decided.",
+      "permanent_product_fix": "OWED — make-it-live plan: reuse 1A/2A/3A, port into the Amanda/send_queue architecture, or retire. Not decided.",
       "owner": "Christian decides direction; Packet 2 builds."
     },
     {
@@ -60,7 +60,7 @@
       "proven_issue": "2A has not run since 2026-06-19; new leads are never scored.",
       "product_impact": "Score, Temperature and Hot Leads are dead surfaces for any new agency. AIVENA looks manual, not intelligent.",
       "immediate_truth_fix": "Confirmed by Christian 2026-09-11: the score tile caption. Done, deployed, awaiting eyes: the Hot Leads KPI, the Needs Action column, and the AIVENA Brief (4dd1705 — the model never receives score or temperature, and a guard rejects any Brief mentioning them; the exact screenshot text is now rejected; Railway serving 6c511f8). NOT YET CHECKED: dashboard_inbox still returns the stale temperature (COALESCE), and whether the Cards view renders it.",
-      "real_feature_fix": "OWED — make-it-live plan, including per-lead score age/source from leads.scored_at (the API does not expose it yet).",
+      "permanent_product_fix": "OWED — make-it-live plan, including per-lead score age/source from leads.scored_at (the API does not expose it yet).",
       "owner": "Christian decides direction; Packet 2 builds."
     },
     {
@@ -86,7 +86,7 @@
       "proven_issue": "The cron→wake→Send-Pusher→provider chain has real evidence but no automated regression test, and has only run with demo data.",
       "product_impact": "If the chain broke, approved replies would stop leaving the building and nothing automated would notice.",
       "immediate_truth_fix": "None needed — the UI does not overclaim here.",
-      "real_feature_fix": "Add a regression test asserting the chain; then re-label.",
+      "permanent_product_fix": "Add a regression test asserting the chain; then re-label.",
       "owner": "Packet 2."
     },
     {
@@ -111,7 +111,7 @@
       "proven_issue": "Proven end-to-end in the live environment with demo data (26 delivered engine replies). A latent P1 remains: a redelivered webhook can skip the Amanda enqueue, and nothing reconciles it.",
       "product_impact": "The core customer path works in demo conditions. The P1 would silently lose a lead's turn.",
       "immediate_truth_fix": "None — the UI does not overclaim; but it cannot distinguish 'Amanda answered' from 'Amanda never got the turn'.",
-      "real_feature_fix": "Fix the duplicate_ignored gate + add a reconciliation sweep (parking lot P1).",
+      "permanent_product_fix": "Fix the duplicate_ignored gate + add a reconciliation sweep (parking lot P1).",
       "owner": "Packet 2."
     },
     {
@@ -134,8 +134,9 @@
       "proven_issue": "Deliberately gated; both secrets unset, every request 503s.",
       "product_impact": "None — intended state, and the widget says so.",
       "immediate_truth_fix": "Already honest.",
-      "real_feature_fix": "Full launch only on Christian's explicit approval (STANDING ORDER).",
-      "owner": "Christian."
+      "permanent_product_fix": "Full launch only on Christian's explicit approval (STANDING ORDER).",
+      "owner": "Christian.",
+      "revisit": "Only on Christian's explicit full-launch approval (STANDING ORDER). No date set."
     },
     {
       "feature": "inbox-conversation-state",
@@ -162,7 +163,7 @@
       "proven_issue": "The list and the banner read different sources: the list only knows suggested_reply tasks, the banner knows escalations.",
       "product_impact": "The lead told 'I'll get right back to you' eleven days ago is labelled handled. For a real agency that is a lost lead hidden in plain sight.",
       "immediate_truth_fix": "DONE 2026-09-11 (e32c91a), deployed via the sanctioned script and proven by deployment id on aivena.es/dashboard. Awaiting Christian's visual check; flips to LIVE_DEMO_VERIFIED when he confirms Marte reads 'Needs a human'.",
-      "real_feature_fix": "One source of truth for conversation state (the list reads escalations too), plus ageing and escalation for review tasks that a holding reply has promised to answer.",
+      "permanent_product_fix": "One source of truth for conversation state (the list reads escalations too), plus ageing and escalation for review tasks that a holding reply has promised to answer.",
       "owner": "Packet 2.",
       "note": "FALSE_UI_CLAIM from 2026-09-11 (found in Christian's screenshot) until the same day's fix."
     }
@@ -172,9 +173,10 @@
     "proven_issue",
     "product_impact",
     "immediate_truth_fix",
-    "real_feature_fix",
+    "permanent_product_fix",
     "owner",
     "status",
     "regression_guard"
-  ]
+  ],
+  "closing_rule": "Christian, 2026-09-11: a caption, warning or not-live label is an IMMEDIATE TRUTH FIX, never the permanent fix. An issue closes only when (A) the feature works end-to-end and is verified, (B) it is intentionally retired and the product promise removed, or (C) it is explicitly not part of AIVENA now — NOT_LIVE_COMING_LATER with an owner and a revisit status."
 }

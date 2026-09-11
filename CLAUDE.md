@@ -108,8 +108,13 @@ matches the engine.
 It is the immediate truth fix so the product stops lying **while** the real feature is built. The
 goal is still an AIVENA that feels intelligent and automated — automation that is real, safe,
 explainable and verified. **Every finding must carry:** proven issue · product impact · immediate
-truth fix · real feature fix · owner · status · regression guard. A `FALSE_UI_CLAIM` is fixed now,
-never parked.
+truth fix · **permanent product fix** · owner · status · regression guard. A `FALSE_UI_CLAIM` is fixed
+now, never parked.
+
+**A caption, warning or not-live label is the immediate truth fix, never the permanent one** (Christian,
+2026-09-11). An issue closes only when **(A)** the feature works end-to-end and is verified, **(B)** it is
+intentionally retired and the product promise removed, or **(C)** it is explicitly not part of AIVENA now —
+`NOT_LIVE_COMING_LATER` with an owner and a revisit status. "We labelled it honestly" is never (A).
 
 Record it in **`apps/dashboard/lib/feature-truth.json`**; `node tools/feature-truth-lint.mjs` enforces
 all of the above and runs in CI. It cross-checks `lib/automation-status.ts`, so nothing can be

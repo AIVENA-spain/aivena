@@ -127,7 +127,8 @@
       "needsYou": "Kræver dig",
       "replied": "Besvaret",
       "autoHandled": "Auto-håndteret",
-      "waiting": "Venter"
+      "waiting": "Venter",
+      "needsHuman": "Kræver menneske"
     },
     "handledDivider": "Håndteret",
     "buyers": {

@@ -127,7 +127,8 @@
       "needsYou": "Jouw actie nodig",
       "replied": "Beantwoord",
       "autoHandled": "Automatisch afgehandeld",
-      "waiting": "In de wacht"
+      "waiting": "In de wacht",
+      "needsHuman": "Mens nodig"
     },
     "handledDivider": "Afgehandeld",
     "buyers": {

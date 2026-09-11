@@ -127,7 +127,8 @@
       "needsYou": "Te necesita",
       "replied": "Respondido",
       "autoHandled": "Gestionado automáticamente",
-      "waiting": "En espera"
+      "waiting": "En espera",
+      "needsHuman": "Atención humana"
     },
     "handledDivider": "Gestionados",
     "buyers": {

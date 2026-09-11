@@ -127,7 +127,8 @@
       "needsYou": "Vaatii sinua",
       "replied": "Vastattu",
       "autoHandled": "Automaattikäsitelty",
-      "waiting": "Odottaa"
+      "waiting": "Odottaa",
+      "needsHuman": "Tarvitsee ihmisen"
     },
     "handledDivider": "Käsitelty",
     "buyers": {

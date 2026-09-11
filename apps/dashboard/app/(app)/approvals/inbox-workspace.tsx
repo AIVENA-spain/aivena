@@ -1,5 +1,8 @@
 "use client";
 
+import { type ConvoState, resolveConvoState, needsAction } from "./conversation-state";
+import { useHandoffLeadIds } from "./handoff-context";
+
 import {
   Fragment,
   useCallback,
@@ -236,7 +239,7 @@ function linkifyText(text: string): React.ReactNode {
  * `resolveConvoState`: anything needing the operator ("needsYou") wins over
  * the handled states.
  */
-type ConvoState = "needsYou" | "replied" | "autoHandled" | "waiting";
+// ConvoState, resolveConvoState and needsAction live in ./conversation-state (pure + tested).
 
 /** Per-conversation grouping metadata, keyed by the representative task id. */
 type ConvoGroupInfo = Map<
@@ -244,19 +247,6 @@ type ConvoGroupInfo = Map<
   { taskIds: string[]; pendingCount: number; state: ConvoState }
 >;
 
-function resolveConvoState(rep: InboxRow, pendingCount: number): ConvoState {
-  // A buyer reply that landed AFTER our last outbound needs attention again,
-  // even if no task is pending yet.
-  const newInboundAfterOutbound =
-    rep.latestInboundAt != null &&
-    rep.lastOutboundAt != null &&
-    new Date(rep.latestInboundAt).getTime() >
-      new Date(rep.lastOutboundAt).getTime();
-  if (pendingCount > 0 || newInboundAfterOutbound) return "needsYou";
-  if (rep.lastOutboundKind === "operator") return "replied";
-  if (rep.lastOutboundKind === "auto") return "autoHandled";
-  return "waiting";
-}
 
 /**
  * Collapse every task row of a conversation into one list row.
@@ -273,7 +263,10 @@ function resolveConvoState(rep: InboxRow, pendingCount: number): ConvoState {
  * full `taskIds` list lets the row stay highlighted when the selected task is
  * a non-representative member of the group.
  */
-function groupConversations(rows: InboxRow[]): {
+function groupConversations(
+  rows: InboxRow[],
+  needsHumanLeadIds: ReadonlySet<string> = new Set(),
+): {
   dedupedRows: InboxRow[];
   groupInfo: ConvoGroupInfo;
 } {
@@ -299,14 +292,15 @@ function groupConversations(rows: InboxRow[]): {
     groupInfo.set(rep.taskId, {
       taskIds: groupRows.map((r) => r.taskId),
       pendingCount: pendingRows.length,
-      state: resolveConvoState(rep, pendingRows.length),
+      state: resolveConvoState(rep, pendingRows.length, needsHumanLeadIds.has(rep.leadId)),
     });
   }
   // Surface actionable conversations first, handled ones below. filter() is
   // stable, so the server's recency order is preserved within each group.
   const sorted = [
+    ...dedupedRows.filter((r) => groupInfo.get(r.taskId)!.state === "needsHuman"),
     ...dedupedRows.filter((r) => groupInfo.get(r.taskId)!.state === "needsYou"),
-    ...dedupedRows.filter((r) => groupInfo.get(r.taskId)!.state !== "needsYou"),
+    ...dedupedRows.filter((r) => !needsAction(groupInfo.get(r.taskId)!.state)),
   ];
   return { dedupedRows: sorted, groupInfo };
 }
@@ -330,6 +324,9 @@ export function InboxWorkspace({
 }) {
   const t = useTranslations("inbox");
   const router = useRouter();
+  // The banner's Needs-a-human queue — the SAME data it shows, so the list can never call one of
+  // those leads "Auto-handled" (the false claim found on 2026-09-11).
+  const needsHumanLeadIds = useHandoffLeadIds();
 
   // Mirror the selected lead into the URL (?lead=<taskId>) so a reload restores
   // the same lead instead of falling back to buyers[0]. The page already reads
@@ -361,15 +358,15 @@ export function InboxWorkspace({
 
   // Both streams are deduped by conversation, ordered needs-you-first, and
   // carry per-conversation state for the badges + the "Handled" divider.
-  const buyerGroups = useMemo(() => groupConversations(buyers), [buyers]);
-  const sellerGroups = useMemo(() => groupConversations(sellers), [sellers]);
+  const buyerGroups = useMemo(() => groupConversations(buyers, needsHumanLeadIds), [buyers, needsHumanLeadIds]);
+  const sellerGroups = useMemo(() => groupConversations(sellers, needsHumanLeadIds), [sellers, needsHumanLeadIds]);
 
   // Buyers tab badge = conversations still needing the operator (not the raw
   // task-row count, which now includes handled history).
   const buyerNeedsYouCount = useMemo(
     () =>
       buyerGroups.dedupedRows.filter(
-        (r) => buyerGroups.groupInfo.get(r.taskId)?.state === "needsYou",
+        (r) => needsAction(buyerGroups.groupInfo.get(r.taskId)?.state),
       ).length,
     [buyerGroups],
   );
@@ -936,7 +933,7 @@ function BuyersConvoView({
   // Rows arrive needs-you-first; the divider marks where handled rows begin.
   // Only shown when both groups are non-empty (index > 0 ⇒ ≥1 needs-you above).
   const firstHandledIdx = groupInfo
-    ? visibleRows.findIndex((r) => groupInfo.get(r.taskId)?.state !== "needsYou")
+    ? visibleRows.findIndex((r) => !needsAction(groupInfo.get(r.taskId)?.state))
     : -1;
 
   return (
@@ -2274,7 +2271,7 @@ function BuyersCardsView({
   }
 
   const firstHandledIdx = groupInfo
-    ? rows.findIndex((r) => groupInfo.get(r.taskId)?.state !== "needsYou")
+    ? rows.findIndex((r) => !needsAction(groupInfo.get(r.taskId)?.state))
     : -1;
 
   return (

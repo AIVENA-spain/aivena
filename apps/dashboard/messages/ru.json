@@ -127,7 +127,8 @@
       "needsYou": "Требует вас",
       "replied": "Отвечено",
       "autoHandled": "Авто-обработка",
-      "waiting": "Ожидает"
+      "waiting": "Ожидает",
+      "needsHuman": "Нужен человек"
     },
     "handledDivider": "Обработано",
     "buyers": {

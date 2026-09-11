@@ -127,7 +127,8 @@
       "needsYou": "À traiter",
       "replied": "Répondu",
       "autoHandled": "Traité automatiquement",
-      "waiting": "En attente"
+      "waiting": "En attente",
+      "needsHuman": "Humain requis"
     },
     "handledDivider": "Traité",
     "buyers": {

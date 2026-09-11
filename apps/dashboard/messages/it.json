@@ -127,7 +127,8 @@
       "needsYou": "Richiede il tuo intervento",
       "replied": "Risposto",
       "autoHandled": "Gestito in automatico",
-      "waiting": "In attesa"
+      "waiting": "In attesa",
+      "needsHuman": "Serve una persona"
     },
     "handledDivider": "Gestiti",
     "buyers": {

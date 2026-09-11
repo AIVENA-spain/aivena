@@ -6,6 +6,7 @@ import type { InboxResponse, MeResponse, SettingsResponse } from "@/lib/api/type
 
 import { InboxWorkspace } from "./inbox-workspace";
 import { HandoffQueue } from "./handoff-queue";
+import { HandoffLeadsProvider } from "./handoff-context";
 
 /**
  * Build an author_user_id → email map from the team read-contract so notes can
@@ -80,7 +81,7 @@ export default async function InboxPage({
   }
 
   return (
-    <>
+    <HandoffLeadsProvider>
       {agencyId ? <HandoffQueue agencyId={agencyId} /> : null}
       <InboxWorkspace
         locale={locale}
@@ -89,6 +90,6 @@ export default async function InboxPage({
         initialLeadId={leadId}
         authors={authors}
       />
-    </>
+    </HandoffLeadsProvider>
   );
 }

@@ -57,6 +57,9 @@ export function leadStatusTone(status: string | null | undefined): Tone {
 /** Conversation state in the Inbox list. */
 export function conversationStateTone(state: string | null | undefined): Tone {
   switch ((state ?? "").trim().toLowerCase()) {
+    case "needshuman":
+    case "needs_human":
+      return "danger";
     case "needsyou":
     case "needs_you":
     case "waiting":

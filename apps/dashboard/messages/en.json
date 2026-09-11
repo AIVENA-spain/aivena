@@ -127,7 +127,8 @@
       "needsYou": "Needs you",
       "replied": "Replied",
       "autoHandled": "Auto-handled",
-      "waiting": "Waiting"
+      "waiting": "Waiting",
+      "needsHuman": "Needs a human"
     },
     "handledDivider": "Handled",
     "buyers": {

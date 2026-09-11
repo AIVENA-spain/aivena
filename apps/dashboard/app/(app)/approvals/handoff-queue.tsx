@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { RelativeTime } from "@/components/ui/relative-time";
 import { sendFreeformAction } from "./composer-actions";
 import { setConversationModeAction } from "./amanda-mode-actions";
+import { usePublishHandoffLeadIds } from "./handoff-context";
 import {
   getHandoffQueueAction,
   claimHandoffAction,
@@ -38,6 +39,12 @@ export function HandoffQueue({ agencyId }: { agencyId: string }) {
   const router = useRouter();
   const t = useTranslations("handoffs");
   const [rows, setRows] = useState<HandoffRow[]>([]);
+  // Share who is in this queue with the conversation list, so the list can never label one of these
+  // leads "Auto-handled" while this panel says they need a human (found 2026-09-11).
+  const publishHandoffLeads = usePublishHandoffLeadIds();
+  useEffect(() => {
+    publishHandoffLeads(new Set(rows.map((r) => r.lead_id)));
+  }, [rows, publishHandoffLeads]);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const knownIds = useRef<Set<string>>(new Set());

@@ -3,6 +3,7 @@
  * never used, so a discarded fact can never appear here (Christian, 2026-09-11: unverified facts must never "be shown
  * as proof").
  */
+import { parseQuote } from './lead-messages';
 import { FLAG_KEYS, STATE_DEFAULTS, type FlagKey, type StateKey } from './rubric';
 import type { Band, Fact, Facts, ScoreResult } from './types';
 
@@ -84,9 +85,9 @@ export function explain(result: ScoreResult, facts: Facts): string {
         ? STATE_LABEL[k]?.[v.state]
         : undefined;
     if (!label) continue;
-    const pieces = String(v.quote ?? '')
-      .split('|')
-      .map((x) => x.trim())
+    // The message numbers ("L22:") are for the quote check only: people see the lead's words.
+    const pieces = parseQuote(v.quote)
+      .map((p) => p.text)
       .filter(Boolean);
     parts.push(pieces.length ? `${label}: ${pieces.map((p) => `“${p}”`).join(' … ')}` : label);
   }

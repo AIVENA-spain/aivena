@@ -68,10 +68,10 @@ describe('shadow mode (for a later, separately approved stage): one audit row, n
     } as unknown as Tx;
     const answer = {
       real_lead: true, not_a_lead_reason: null, intent: 'real',
-      budget: { state: 'clear', quote: 'Our budget is up to €400,000' }, area: { state: 'none', quote: null }, need: { state: 'none', quote: null },
-      specific_property: { state: 'discussed', quote: 'is the villa IC-81596 still available' },
+      budget: { state: 'clear', quote: 'L1: Our budget is up to €400,000' }, area: { state: 'none', quote: null }, need: { state: 'none', quote: null },
+      specific_property: { state: 'discussed', quote: 'L1: is the villa IC-81596 still available' },
       concrete_question: { present: false, quote: null }, asked_for_listings_or_photos: { present: false, quote: null },
-      timing: { state: 'within_30_days', quote: 'this Thursday' }, viewing: { state: 'wants_to_view', within_7_days: null, quote: 'We would like to view it this Thursday' },
+      timing: { state: 'within_30_days', quote: 'L1: this Thursday' }, viewing: { state: 'wants_to_view', within_7_days: null, quote: 'L1: We would like to view it this Thursday' },
       financing_ready: { present: false, quote: null }, decision: { state: 'none', quote: null }, negative: { state: 'none', quote: null }, reason: 'x',
     };
     const call: ModelCall = async () => ({ status: 200, body: { content: [{ text: JSON.stringify(answer) }], usage: { input_tokens: 1000, output_tokens: 200 }, stop_reason: 'end_turn' } });

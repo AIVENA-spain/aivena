@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { computeScore, temperatureOf } from './rubric';
 import { SCORING_FIXTURES } from './fixtures';
-import { leadMessagesOf } from './score-conversation';
+import { leadMessagesOf } from './lead-messages';
 import type { Facts } from './types';
 
 describe('rubric v1.3: the approved scale, in code', () => {

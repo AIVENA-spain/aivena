@@ -8,7 +8,8 @@
  */
 import type { Band, Facts, ScoreResult, Temperature } from './types';
 
-export const RUBRIC_VERSION = 'v1.3';
+// v1.4 (2026-09-11): the scoring table is unchanged; every quote must now name the lead message it comes from.
+export const RUBRIC_VERSION = 'v1.4';
 
 /** The "nothing found" value of every state fact. */
 export const STATE_DEFAULTS = {

@@ -5,6 +5,7 @@
 import { checkEvidence, norm } from './evidence';
 import { explain } from './explain';
 import { extractFacts, type ModelCall } from './extract';
+import { leadMessagesOf } from './lead-messages';
 import { computeScore, temperatureOf } from './rubric';
 import type { Band, Facts, ScoringInput, Temperature } from './types';
 
@@ -25,14 +26,6 @@ export type ScoredConversation = {
   costUsd: number;
   stopReason: string | null;
 };
-
-/** Every message the lead wrote: the earlier ones first, then the lead's side of the conversation. */
-export function leadMessagesOf(input: ScoringInput): string[] {
-  return [
-    ...(input.earlierLeadMessages ?? []).map((m) => m.text),
-    ...input.conversation.filter((m) => m.from === 'lead').map((m) => m.text),
-  ];
-}
 
 export async function scoreConversation(input: ScoringInput, call: ModelCall): Promise<ScoredConversation> {
   const x = await extractFacts(input, call);

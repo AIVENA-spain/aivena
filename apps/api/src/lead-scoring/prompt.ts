@@ -1,7 +1,9 @@
 /**
- * The fact-extraction instructions (rubric v1.3): the exact text proven in the 2026-09-11 practice runs.
- * The AI only extracts facts, each backed by the lead's own words; code (rubric.ts) turns facts into a score.
+ * The fact-extraction instructions. v1.3 was the text proven in the 2026-09-11 practice runs; v1.4 (the same day, after
+ * the first Scoring check caught the AI quoting the agency's words as the lead's) numbers every lead message and makes
+ * each quote name the one message it comes from. The AI only extracts facts; code (rubric.ts) turns them into a score.
  */
+import { leadLabel, leadMessagesOf } from './lead-messages';
 import type { ScoringInput } from './types';
 
 export const SYSTEM_PROMPT = `You extract facts from a conversation between a real-estate agency on the Costa Blanca and a lead. The conversation can be in any language. You do NOT score the lead; code does that from your facts.
@@ -9,7 +11,7 @@ export const SYSTEM_PROMPT = `You extract facts from a conversation between a re
 Rules:
 - Use only what the LEAD wrote. Agency messages are context only.
 - Never guess. If unsure, choose the weaker option.
-- Evidence: for every fact you mark (any value other than none, unknown or false), "quote" = the lead's exact words, copied character for character in the original language from ONE of the lead's messages, at most 10 words. If the evidence is spread over several messages, give up to 3 exact pieces separated by " | ", each copied from one message. Never join words from different messages into one piece, never translate, and never include the agency's words, prices or reference numbers the lead did not write. No quote means no fact: leave it at none, unknown or false. Otherwise "quote": null.
+- Evidence: "lead_messages" lists every message the lead wrote, numbered L1, L2 and so on; it is the ONLY text you may quote. For every fact you mark (any value other than none, unknown or false), "quote" = up to 3 pieces separated by " | ". Each piece is the number of ONE lead message, a colon, then the lead's exact words from that message, copied character for character in the original language, at most 10 words. Example: "L2: max 350k | L6: Sounds good, see you then". Never join words from different messages into one piece, and never translate. Never quote the agency: its messages, prices, reference numbers and listing details are never evidence, even when the lead agrees to them. When the lead agrees to something the agency proposed, quote the lead's own reply (such as "L6: Sounds good, see you then"), not the proposal. No quote means no fact: leave it at none, unknown or false. Otherwise "quote": null.
 - "now" is the moment of scoring. Judge dates against it.
 
 Definitions:
@@ -31,12 +33,18 @@ Definitions:
 Reply with ONE compact JSON object on a single line, with no code fences and no other text, using exactly these keys. Every value must be one of the options shown:
 {"real_lead": true|false, "not_a_lead_reason": null|"spam"|"wrong_number"|"supplier_or_job"|"no_buy_or_sell_intent", "intent": "real"|"curious", "budget": {"state": "clear"|"vague"|"none", "quote": ...}, "area": {"state": "clear"|"vague"|"none", "quote": ...}, "need": {"state": "clear"|"vague"|"none", "quote": ...}, "specific_property": {"state": "none"|"availability_only"|"discussed", "quote": ...}, "concrete_question": {"present": true|false, "quote": ...}, "asked_for_listings_or_photos": {"present": true|false, "quote": ...}, "timing": {"state": "within_30_days"|"later"|"unknown", "quote": ...}, "viewing": {"state": "none"|"wants_to_view"|"requested"|"agreed_settled"|"agreed_change_pending", "within_7_days": true|false|null, "quote": ...}, "financing_ready": {"present": true|false, "quote": ...}, "decision": {"state": "none"|"asks_how_to_proceed"|"offer_or_negotiation"|"agrees_to_reserve_pay_or_documents"|"ready_to_close_now"|"already_committed", "quote": ...}, "negative": {"state": "none"|"not_interested"|"bought_elsewhere"|"stop_contact", "quote": ...}, "reason": "<one sentence, max 25 words, in English>"}`;
 
-/** The model's input, in the exact shape used in the practice runs. */
+/**
+ * The model's input: the practice-run shape, plus (v1.4) every lead message numbered, both where it sits in the
+ * conversation and as "lead_messages", the one list it may quote from. Agency messages carry no number.
+ */
 export function buildUserContent(input: ScoringInput): string {
+  const earlier = input.earlierLeadMessages ?? [];
+  let n = earlier.length;
   return JSON.stringify({
     now: input.now,
-    conversation: input.conversation,
-    ...(input.earlierLeadMessages?.length ? { earlier_lead_messages: input.earlierLeadMessages } : {}),
+    conversation: input.conversation.map((m) => (m.from === 'lead' ? { id: leadLabel(n++), ...m } : m)),
+    ...(earlier.length ? { earlier_lead_messages: earlier.map((m, i) => ({ id: leadLabel(i), ...m })) } : {}),
+    lead_messages: leadMessagesOf(input).map((text, i) => ({ id: leadLabel(i), text })),
   });
 }
 

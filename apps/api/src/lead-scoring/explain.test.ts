@@ -20,9 +20,14 @@ describe('explain: built by code from verified facts only', () => {
     expect(s).not.toContain('THE MODEL SENTENCE');
   });
   it('evidence from several messages reads as separate quotes', () => {
-    expect(explain({ score: 89, band: 'super_hot' }, { real_lead: true, need: { state: 'clear', quote: 'hus | med basseng' } })).toBe(
+    expect(explain({ score: 89, band: 'super_hot' }, { real_lead: true, need: { state: 'clear', quote: 'L3: hus | L5: med basseng' } })).toBe(
       'Super-hot 89: looking for: “hus” … “med basseng”',
     );
+  });
+  it('the message numbers are for the quote check only: people never see them', () => {
+    const s = explain({ score: 89, band: 'super_hot' }, { real_lead: true, viewing: { state: 'agreed_change_pending', within_7_days: true, quote: 'L22: Ja det passer | L23: Kunne vi faktisk tatt det imrg isteden' } });
+    expect(s).toBe('Super-hot 89: viewing agreed, change pending: “Ja det passer” … “Kunne vi faktisk tatt det imrg isteden”');
+    expect(s).not.toMatch(/L2\d/);
   });
   it('lost reads as lost, with its evidence', () => {
     expect(explain({ score: null, band: 'lost' }, { real_lead: true, negative: { state: 'bought_elsewhere', quote: 'bought a house through another agency' } })).toBe(

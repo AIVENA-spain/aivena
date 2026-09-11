@@ -11,6 +11,8 @@ export const SCORING_MODEL = 'claude-haiku-4-5-20251001';
 /** Anthropic's list price for Claude Haiku 4.5, USD per million tokens (checked on Anthropic's pricing page, 2026-09-11). */
 export const PRICE_IN_PER_MTOK = 1;
 export const PRICE_OUT_PER_MTOK = 5;
+/** v1.4: 0, so the same conversation gets the same answer run after run. The first Scoring check ran at the API default of 1.0. */
+export const SCORING_TEMPERATURE = 0;
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
 
 export type ModelRequest = { system: string; user: string; maxTokens: number };
@@ -36,7 +38,7 @@ export function anthropicCaller(getKey: () => Promise<string | null>, timeoutMs 
         method: 'POST',
         signal: controller.signal,
         headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-        body: JSON.stringify({ model: SCORING_MODEL, max_tokens: maxTokens, system, messages: [{ role: 'user', content: user }] }),
+        body: JSON.stringify({ model: SCORING_MODEL, max_tokens: maxTokens, temperature: SCORING_TEMPERATURE, system, messages: [{ role: 'user', content: user }] }),
       });
       const body = (await resp.json().catch(() => ({}))) as ModelResponse['body'];
       return { status: resp.status, body };

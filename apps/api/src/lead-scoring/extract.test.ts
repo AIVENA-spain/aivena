@@ -75,6 +75,13 @@ describe("anthropicCaller: the server's key, and nothing else", () => {
     expect((init.headers as Record<string, string>)['x-api-key']).toBe('test-key-not-real');
     expect(String(init.body)).not.toContain('test-key-not-real');
   });
+  it('asks for temperature 0, so the same conversation gets the same answer (v1.4; the first check ran at the default 1.0)', async () => {
+    const fetchSpy = vi.fn(async () => new Response(JSON.stringify({ content: [{ text: '{}' }], usage: {} }), { status: 200 }));
+    vi.stubGlobal('fetch', fetchSpy);
+    await anthropicCaller(async () => 'test-key-not-real')({ system: 's', user: 'u', maxTokens: 10 });
+    const init = (fetchSpy.mock.calls[0] as unknown as [string, RequestInit])[1];
+    expect(JSON.parse(String(init.body))).toMatchObject({ temperature: 0 });
+  });
   it('a network failure never throws, and never includes the key', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => {
       throw new Error('connect ECONNREFUSED');

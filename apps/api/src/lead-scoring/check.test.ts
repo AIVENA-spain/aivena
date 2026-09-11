@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { computeVerdict, matchesExpected, runScoringCheck, type CheckCase } from './check';
 import { SCORING_FIXTURES } from './fixtures';
 import type { ModelCall } from './extract';
+import { leadMessagesOf } from './lead-messages';
 
 const c = (over: Partial<CheckCase>): CheckCase => ({
   id: 1,
@@ -76,10 +77,11 @@ describe('runScoringCheck: fixtures only, capped, never throws', () => {
   });
   it('a perfect answer scores its case exactly', async () => {
     const fx = SCORING_FIXTURES.find((f) => f.id === 3)!;
+    const l = leadMessagesOf(fx.input).findIndex((t) => t.includes('still available')) + 1;
     const answer = {
       real_lead: true, not_a_lead_reason: null, intent: 'real',
       budget: { state: 'none', quote: null }, area: { state: 'none', quote: null }, need: { state: 'none', quote: null },
-      specific_property: { state: 'availability_only', quote: 'is this villa still available?' },
+      specific_property: { state: 'availability_only', quote: `L${l}: is this villa still available?` },
       concrete_question: { present: false, quote: null }, asked_for_listings_or_photos: { present: false, quote: null },
       timing: { state: 'unknown', quote: null }, viewing: { state: 'none', within_7_days: null, quote: null },
       financing_ready: { present: false, quote: null }, decision: { state: 'none', quote: null }, negative: { state: 'none', quote: null },

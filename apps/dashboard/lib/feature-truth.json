@@ -31,7 +31,7 @@
       "verified_at": "2026-09-10",
       "proven_issue": "1A→2A→3A is wired inside n8n but nothing calls 1A's webhook; 0 executions for all three.",
       "product_impact": "AIVENA does not follow up by itself. For a pilot agency this is a core promise that silently does nothing.",
-      "immediate_truth_fix": "DONE 2026-09-10 (f95becd): 'Follow-up active' now requires a real future next_followup_at.",
+      "immediate_truth_fix": "DONE 2026-09-10 (f95becd): 'Follow-up active' now requires a real future next_followup_at. Served on aivena.es/dashboard by dpl_BTDKsF4WQ5ev2UBLjTPyekAxkVDM (deployment-id match, 2026-09-11); this block has NOT yet been confirmed by eye.",
       "real_feature_fix": "OWED — make-it-live plan: reuse 1A/2A/3A, port into the Amanda/send_queue architecture, or retire. Not decided.",
       "owner": "Christian decides direction; Packet 2 builds."
     },
@@ -41,7 +41,9 @@
       "ui_surface": [
         "overview-workspace.tsx Hot Leads KPI",
         "overview-workspace.tsx Needs Action score column",
-        "approvals/client-intelligence.tsx score tile"
+        "approvals/client-intelligence.tsx score tile",
+        "AIVENA Brief summary text (lead-summary-lib.ts: LeadFacts.score / LeadFacts.temperature)",
+        "inbox rows (dashboard_inbox returns COALESCE(dt.temperature, l.temperature))"
       ],
       "status": "EXISTS_BUT_NOT_WIRED",
       "trigger_expected": "2A Lead Scoring + Enrichment v2, called by 1A Lead Intake Hub",
@@ -57,7 +59,7 @@
       "verified_at": "2026-09-10",
       "proven_issue": "2A has not run since 2026-06-19; new leads are never scored.",
       "product_impact": "Score, Temperature and Hot Leads are dead surfaces for any new agency. AIVENA looks manual, not intelligent.",
-      "immediate_truth_fix": "DONE 2026-09-10 (f95becd + follow-up commit): scores captioned as legacy, dated and sourced; absent score says so; Hot Leads uses the honest-empty-state form.",
+      "immediate_truth_fix": "PARTIAL. Done and confirmed by Christian on aivena.es/dashboard/approvals 2026-09-11: the score tile caption ('Stored June 19, 2026 by the legacy pipeline; not refreshed since'). Done on the same deployment, not yet checked by eye: Hot Leads KPI and the Needs Action column. NOT DONE: the AIVENA Brief still states 'Marte is a warm lead (score 75)' as current — LeadFacts feeds score and temperature into both the model prompt and the deterministic fallback (lead-summary-lib.ts lines 25-26, 70-71, 222); dashboard_inbox also returns the stale temperature. Proposed fix awaiting Christian's go (an API change, so it deploys through main).",
       "real_feature_fix": "OWED — make-it-live plan, including per-lead score age/source from leads.scored_at (the API does not expose it yet).",
       "owner": "Christian decides direction; Packet 2 builds."
     },
@@ -134,6 +136,32 @@
       "immediate_truth_fix": "Already honest.",
       "real_feature_fix": "Full launch only on Christian's explicit approval (STANDING ORDER).",
       "owner": "Christian."
+    },
+    {
+      "feature": "inbox-conversation-state",
+      "promise": "The conversation list tells the agent which leads need them.",
+      "ui_surface": [
+        "approvals/inbox-workspace.tsx StateBadge in the Buyers list"
+      ],
+      "status": "FALSE_UI_CLAIM",
+      "trigger_expected": "Any lead with an open human review or escalation reads 'Needs you'.",
+      "trigger_actual": "resolveConvoState() only sees suggested_reply tasks, because dashboard_inbox filters task_type='suggested_reply'. A human_review_needed task never counts, and the engine's holding reply is the last outbound (kind 'auto'), so the list shows 'Auto-handled'.",
+      "evidence": [
+        "Marte Brenno: human_review_needed task pending since 2026-08-31 15:07:15",
+        "last outbound 2026-08-31 15:07:20 is the engine's holding reply: 'La meg dobbeltsjekke det ordentlig, så kommer jeg straks tilbake til deg.'",
+        "latest inbound 15:06:51 is earlier than that outbound, so no 'newer inbound' rescue",
+        "dashboard_inbox source: both branches filter dt.task_type='suggested_reply'",
+        "Christian's screenshot of aivena.es/dashboard/approvals, 2026-09-11: list badge AUTO-HANDLED while the banner says 'Needs a human (1)'"
+      ],
+      "failure_behaviour": "Silent. An agent scanning the list sees 'handled' on the one lead that was explicitly handed to a human.",
+      "ui_guard": "NONE YET — the banner above the list is right; the list contradicts it.",
+      "regression_guard": "MISSING — no test covers an open escalation on a conversation whose last outbound was automatic.",
+      "verified_at": "2026-09-11",
+      "proven_issue": "The list and the banner read different sources: the list only knows suggested_reply tasks, the banner knows escalations.",
+      "product_impact": "The lead told 'I'll get right back to you' eleven days ago is labelled handled. For a real agency that is a lost lead hidden in plain sight.",
+      "immediate_truth_fix": "PROPOSED 2026-09-11, awaiting Christian's go: the page already loads the Needs-a-human set for the banner — pass those lead ids into groupConversations so any lead with an open escalation resolves to needsYou. Dashboard-only, no SQL change.",
+      "real_feature_fix": "One source of truth for conversation state (the list reads escalations too), plus ageing and escalation for review tasks that a holding reply has promised to answer.",
+      "owner": "Packet 2."
     }
   ],
   "pilot_ready_rule": "Pilot readiness does NOT require VERIFIED_REAL_LIVE — there is no real agency traffic yet. A feature is pilot-ready when it is at least LIVE_DEMO_VERIFIED, the full path is proven in the live environment with test/demo data, it is regression-guarded, it cannot send for real without approval, and the UI truth matches the engine.",

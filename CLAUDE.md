@@ -144,6 +144,25 @@ changes; CC applies them.
 **Never read or edit `~/Documents/aivena-archive/`** — superseded 2026-06-21. A path containing
 `aivena-archive` is the wrong file.
 
+## Deploying and verifying the dashboard (verified 2026-09-11)
+
+**Canonical surface: `https://aivena.es/dashboard`** — what agencies open, behind the app's own login.
+A rewrite in `marketing/v2/vercel.json` (the `aivena-public` project) serves it from
+`aivena-app.vercel.app/dashboard/*`, the production alias of `aivena-app`. The app runs under the
+`/dashboard` basePath, so a bare `aivena-app.vercel.app/` 404s **by design**. **Never remove or rename
+`aivena-app.vercel.app`** — the customer dashboard depends on it.
+
+- **Deploy ONLY with `./scripts/deploy-dashboard.sh`** (Christian's hard rule, 2026-07-15). It refuses
+  if the tree is behind `origin/main`, builds, deploys with `--cwd apps/dashboard`, and checks the live
+  `aivena.es/dashboard` pages. **Never call `vercel --prod` directly.** Known gap: its local
+  `next build` fails inside git worktrees — fix the script, never bypass it.
+- **A dashboard change is live only when** the `dpl_` id on the public page `aivena.es/dashboard/login`
+  equals `vercel inspect <deploy-url>`'s id — and, for UI changes, Christian confirms it on
+  `aivena.es/dashboard`.
+- **Not evidence:** a `*.vercel.app` deployment URL on its own, or `aivena-app-aivena.vercel.app`
+  (internal, behind Vercel SSO). A bare `vercel` at the repo root has created stray projects twice;
+  the root is unlinked.
+
 ## Writing a changelog entry — the format is enforced
 
 Run `node tools/changelog-lint.mjs` before finishing. It fails on a missing or oversized TL;DR.

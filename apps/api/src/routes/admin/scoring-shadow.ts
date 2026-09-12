@@ -67,6 +67,7 @@ route.get('/', async (c) => {
           explanation?: string | null;
           discarded?: unknown;
           guards?: unknown;
+          time_notes?: unknown;
           rubric_version?: string | null;
           input?: { messages?: number; earlier_lead_messages?: number; trimmed?: string | null } | null;
         };
@@ -84,6 +85,7 @@ route.get('/', async (c) => {
           explanation: out.explanation ?? null,
           discarded: strings(out.discarded),
           guards: strings(out.guards),
+          timeNotes: strings(out.time_notes),
           rubricVersion: out.rubric_version ?? null,
           messagesSeen: out.input?.messages ?? null,
           earlierMessagesSeen: out.input?.earlier_lead_messages ?? null,

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { computeVerdict, matchesExpected, runScoringCheck, type CheckCase } from './check';
+import { computeVerdict, factDiffs, matchesExpected, runScoringCheck, type CheckCase } from './check';
 import { SCORING_FIXTURES } from './fixtures';
 import type { ModelCall } from './extract';
 import { leadMessagesOf } from './lead-messages';
@@ -14,6 +14,8 @@ const c = (over: Partial<CheckCase>): CheckCase => ({
   explanation: 'Warm 50',
   discarded: [],
   guards: [],
+  factDiffs: [],
+  timeNotes: [],
   inputTokens: 0,
   outputTokens: 0,
   costUsd: 0,
@@ -46,6 +48,27 @@ describe("computeVerdict: Christian's acceptance standard, including the quote r
     const v = computeVerdict([c({ id: 10, expected: { score: null, band: 'lost', why: '' }, actual: { score: 20, band: 'very_cold', temperature: 'cold' }, ok: false })]);
     expect(v.verdict).toBe('NOT ACCEPTABLE');
     expect(v.namedChecks).toEqual([{ label: 'Bought elsewhere is lost: no score, no temperature', pass: false }]);
+  });
+});
+
+describe('fact by fact, not only the band (Christian, 2026-09-12)', () => {
+  it('a fact that differs is reported, and GREEN is no longer possible', () => {
+    const v = computeVerdict([c({ factDiffs: ['timing: expected later, got within_30_days'] })]);
+    expect(v.verdict).toBe('ACCEPTABLE');
+    expect(v.reasons.join(' ')).toMatch(/facts differ: #1 \(timing: expected later, got within_30_days\)/);
+  });
+  it('#6 and #9 are named checks now: reading "next spring" as near, or an offer as a question, fails the run', () => {
+    const six = computeVerdict([c({ id: 6, expected: { score: 76, band: 'hot', why: '' }, actual: { score: 78, band: 'hot', temperature: 'hot' }, factDiffs: ['timing: expected later, got within_30_days'] })]);
+    expect(six.verdict).toBe('NOT ACCEPTABLE');
+    expect(six.namedChecks.some((n) => n.label.includes('Next spring') && !n.pass)).toBe(true);
+    const nine = computeVerdict([c({ id: 9, expected: { score: 97, band: 'ready_to_act', why: '' }, actual: { score: 95, band: 'ready_to_act', temperature: 'super_hot' }, factDiffs: ['decision: expected offer_or_negotiation, got asks_how_to_proceed'] })]);
+    expect(nine.verdict).toBe('NOT ACCEPTABLE');
+  });
+  it('only the facts a case names are compared, and a missing fact reads as none', () => {
+    expect(factDiffs({ need: { state: 'clear' } }, { need: { state: 'clear' }, budget: { state: 'clear' } })).toEqual([]);
+    expect(factDiffs({ need: { state: 'clear' } }, {})).toEqual(['need: expected clear, got none']);
+    expect(factDiffs({ concrete_question: { present: false } }, { concrete_question: { present: true } })).toEqual(['concrete_question: expected no, got yes']);
+    expect(factDiffs({ viewing: { state: 'agreed_settled', within_7_days: true } }, { viewing: { state: 'agreed_settled', within_7_days: false } })).toEqual(['viewing within 7 days: expected yes, got no']);
   });
 });
 

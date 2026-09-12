@@ -25,7 +25,12 @@ describe('what the AI is shown uses the same lead-message numbers as the quote c
 
 describe('the quoting examples in the instructions are made up', () => {
   it("none appears in any practice conversation, so the check is never shown its own answers", () => {
-    const examples = [...SYSTEM_PROMPT.matchAll(/L\d+: ([^"|]+)/g)].map((m) => m[1].trim().toLowerCase());
+    const quoted = [...SYSTEM_PROMPT.matchAll(/"([^"]{6,})"/g)].map((m) => m[1].trim().toLowerCase());
+    const examples = [
+      ...[...SYSTEM_PROMPT.matchAll(/L\d+: ([^"|]+)/g)].map((m) => m[1].trim().toLowerCase()),
+      // Every quoted phrase of three words or more: the wording examples in the definitions.
+      ...quoted.filter((q) => q.split(/\s+/).length >= 3),
+    ];
     expect(examples.length).toBeGreaterThan(0);
     const everything = SCORING_FIXTURES.flatMap((f) => [...f.input.conversation, ...(f.input.earlierLeadMessages ?? [])].map((m) => m.text))
       .join('\n')

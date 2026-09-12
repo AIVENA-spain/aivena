@@ -275,6 +275,7 @@ export async function writeShadowRecord(
     facts: s.facts,
     discarded: s.discarded,
     guards: s.guards,
+    time_notes: s.timeNotes,
     input: built
       ? {
           messages: built.input.conversation.length,

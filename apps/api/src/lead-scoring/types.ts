@@ -13,8 +13,17 @@ export type ScoringInput = {
   earlierLeadMessages?: EarlierLeadMessage[];
 };
 
-/** One extracted fact. State facts use `state`; yes/no facts use `present`. */
-export type Fact = { state?: string; present?: boolean; quote?: string | null; within_7_days?: boolean | null };
+/**
+ * One extracted fact. State facts use `state`; yes/no facts use `present`. `date` (v1.5) is the day the AI worked out
+ * from the message it quoted, as YYYY-MM-DD; code (dates.ts) decides what that date means today.
+ */
+export type Fact = {
+  state?: string;
+  present?: boolean;
+  quote?: string | null;
+  date?: string | null;
+  within_7_days?: boolean | null;
+};
 
 /** Facts as the model returns them. evidence.invalidValues() rejects any answer outside the allowed values. */
 export type Facts = {

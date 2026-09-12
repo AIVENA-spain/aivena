@@ -17,7 +17,10 @@ const scoreBand = (score: number | null, b: string | null): string => `${score ?
 function Row({ run }: { run: ShadowRun }) {
   return (
     <tr className="border-t border-border align-top">
-      <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">{when(run.classifiedAt)}</td>
+      <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">
+        {when(run.classifiedAt)}
+        {run.rubricVersion ? <div className="text-[11px]">rubric {run.rubricVersion}</div> : null}
+      </td>
       <td className="px-2 py-3 font-medium text-foreground">{run.leadName ?? run.leadId?.slice(0, 8) ?? "—"}</td>
       <td className="whitespace-nowrap px-2 py-3 font-semibold text-foreground">
         {run.ok ? scoreBand(run.score, run.band) : <span className="text-rose-700 dark:text-rose-300">did not finish</span>}
@@ -36,6 +39,11 @@ function Row({ run }: { run: ShadowRun }) {
         {run.guards.map((g) => (
           <div key={g} className="mt-1 text-[11.5px] text-muted-foreground">
             Guard: {g}
+          </div>
+        ))}
+        {run.timeNotes.map((n) => (
+          <div key={n} className="mt-1 text-[11.5px] text-muted-foreground">
+            Dates: {n}
           </div>
         ))}
         {run.trimmed ? <div className="mt-1 text-[11.5px] text-muted-foreground">Input: {run.trimmed}</div> : null}

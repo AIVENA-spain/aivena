@@ -27,6 +27,39 @@ export const SCORING_FIXTURES: ScoringFixture[] = [
     },
     "expectedFacts": {
       "real_lead": false,
+      "budget": {
+        "state": "none"
+      },
+      "area": {
+        "state": "none"
+      },
+      "need": {
+        "state": "none"
+      },
+      "specific_property": {
+        "state": "none"
+      },
+      "timing": {
+        "state": "unknown"
+      },
+      "viewing": {
+        "state": "none"
+      },
+      "decision": {
+        "state": "none"
+      },
+      "negative": {
+        "state": "none"
+      },
+      "concrete_question": {
+        "present": false
+      },
+      "asked_for_listings_or_photos": {
+        "present": false
+      },
+      "financing_ready": {
+        "present": false
+      },
       "not_a_lead_reason": "spam"
     },
     "input": {
@@ -52,8 +85,38 @@ export const SCORING_FIXTURES: ScoringFixture[] = [
     "expectedFacts": {
       "real_lead": true,
       "intent": "curious",
+      "budget": {
+        "state": "none"
+      },
       "area": {
         "state": "vague"
+      },
+      "need": {
+        "state": "none"
+      },
+      "specific_property": {
+        "state": "none"
+      },
+      "timing": {
+        "state": "later"
+      },
+      "viewing": {
+        "state": "none"
+      },
+      "decision": {
+        "state": "none"
+      },
+      "negative": {
+        "state": "none"
+      },
+      "concrete_question": {
+        "present": false
+      },
+      "asked_for_listings_or_photos": {
+        "present": false
+      },
+      "financing_ready": {
+        "present": false
       }
     },
     "input": {
@@ -88,8 +151,38 @@ export const SCORING_FIXTURES: ScoringFixture[] = [
     "expectedFacts": {
       "real_lead": true,
       "intent": "real",
+      "budget": {
+        "state": "none"
+      },
+      "area": {
+        "state": "none"
+      },
+      "need": {
+        "state": "none"
+      },
       "specific_property": {
         "state": "availability_only"
+      },
+      "timing": {
+        "state": "unknown"
+      },
+      "viewing": {
+        "state": "none"
+      },
+      "decision": {
+        "state": "none"
+      },
+      "negative": {
+        "state": "none"
+      },
+      "concrete_question": {
+        "present": false
+      },
+      "asked_for_listings_or_photos": {
+        "present": false
+      },
+      "financing_ready": {
+        "present": false
       }
     },
     "input": {
@@ -114,14 +207,38 @@ export const SCORING_FIXTURES: ScoringFixture[] = [
     "expectedFacts": {
       "real_lead": true,
       "intent": "real",
+      "budget": {
+        "state": "none"
+      },
+      "area": {
+        "state": "none"
+      },
+      "need": {
+        "state": "none"
+      },
       "specific_property": {
         "state": "discussed"
+      },
+      "timing": {
+        "state": "unknown"
+      },
+      "viewing": {
+        "state": "none"
+      },
+      "decision": {
+        "state": "none"
+      },
+      "negative": {
+        "state": "none"
       },
       "concrete_question": {
         "present": true
       },
       "asked_for_listings_or_photos": {
         "present": true
+      },
+      "financing_ready": {
+        "present": false
       }
     },
     "input": {
@@ -156,14 +273,38 @@ export const SCORING_FIXTURES: ScoringFixture[] = [
     "expectedFacts": {
       "real_lead": true,
       "intent": "real",
+      "budget": {
+        "state": "none"
+      },
       "area": {
         "state": "clear"
       },
       "need": {
         "state": "clear"
       },
+      "specific_property": {
+        "state": "none"
+      },
+      "timing": {
+        "state": "unknown"
+      },
+      "viewing": {
+        "state": "none"
+      },
+      "decision": {
+        "state": "none"
+      },
+      "negative": {
+        "state": "none"
+      },
+      "concrete_question": {
+        "present": false
+      },
       "asked_for_listings_or_photos": {
         "present": true
+      },
+      "financing_ready": {
+        "present": false
       }
     },
     "input": {
@@ -207,8 +348,29 @@ export const SCORING_FIXTURES: ScoringFixture[] = [
       "need": {
         "state": "clear"
       },
+      "specific_property": {
+        "state": "none"
+      },
       "timing": {
         "state": "later"
+      },
+      "viewing": {
+        "state": "none"
+      },
+      "decision": {
+        "state": "none"
+      },
+      "negative": {
+        "state": "none"
+      },
+      "concrete_question": {
+        "present": false
+      },
+      "asked_for_listings_or_photos": {
+        "present": true
+      },
+      "financing_ready": {
+        "present": false
       }
     },
     "input": {
@@ -247,7 +409,10 @@ export const SCORING_FIXTURES: ScoringFixture[] = [
         "state": "clear"
       },
       "area": {
-        "state": "clear"
+        "state": "none"
+      },
+      "need": {
+        "state": "none"
       },
       "specific_property": {
         "state": "discussed"
@@ -258,6 +423,18 @@ export const SCORING_FIXTURES: ScoringFixture[] = [
       "viewing": {
         "state": "agreed_settled",
         "within_7_days": true
+      },
+      "decision": {
+        "state": "none"
+      },
+      "negative": {
+        "state": "none"
+      },
+      "concrete_question": {
+        "present": false
+      },
+      "asked_for_listings_or_photos": {
+        "present": false
       },
       "financing_ready": {
         "present": true
@@ -313,6 +490,21 @@ export const SCORING_FIXTURES: ScoringFixture[] = [
       "viewing": {
         "state": "agreed_change_pending",
         "within_7_days": true
+      },
+      "decision": {
+        "state": "none"
+      },
+      "negative": {
+        "state": "none"
+      },
+      "concrete_question": {
+        "present": true
+      },
+      "asked_for_listings_or_photos": {
+        "present": true
+      },
+      "financing_ready": {
+        "present": false
       }
     },
     "input": {
@@ -521,11 +713,35 @@ export const SCORING_FIXTURES: ScoringFixture[] = [
     "expectedFacts": {
       "real_lead": true,
       "intent": "real",
+      "area": {
+        "state": "none"
+      },
+      "need": {
+        "state": "none"
+      },
       "specific_property": {
         "state": "discussed"
       },
+      "timing": {
+        "state": "within_30_days"
+      },
+      "viewing": {
+        "state": "none"
+      },
       "decision": {
         "state": "offer_or_negotiation"
+      },
+      "negative": {
+        "state": "none"
+      },
+      "concrete_question": {
+        "present": true
+      },
+      "asked_for_listings_or_photos": {
+        "present": false
+      },
+      "financing_ready": {
+        "present": false
       }
     },
     "input": {
@@ -564,8 +780,29 @@ export const SCORING_FIXTURES: ScoringFixture[] = [
       "need": {
         "state": "clear"
       },
+      "specific_property": {
+        "state": "none"
+      },
+      "timing": {
+        "state": "unknown"
+      },
+      "viewing": {
+        "state": "none"
+      },
+      "decision": {
+        "state": "none"
+      },
       "negative": {
         "state": "bought_elsewhere"
+      },
+      "concrete_question": {
+        "present": false
+      },
+      "asked_for_listings_or_photos": {
+        "present": false
+      },
+      "financing_ready": {
+        "present": false
       }
     },
     "input": {
@@ -605,11 +842,38 @@ export const SCORING_FIXTURES: ScoringFixture[] = [
     "expectedFacts": {
       "real_lead": true,
       "intent": "real",
+      "budget": {
+        "state": "none"
+      },
+      "area": {
+        "state": "none"
+      },
       "need": {
         "state": "clear"
       },
+      "specific_property": {
+        "state": "none"
+      },
+      "timing": {
+        "state": "unknown"
+      },
+      "viewing": {
+        "state": "none"
+      },
+      "decision": {
+        "state": "none"
+      },
+      "negative": {
+        "state": "none"
+      },
+      "concrete_question": {
+        "present": false
+      },
       "asked_for_listings_or_photos": {
         "present": true
+      },
+      "financing_ready": {
+        "present": false
       }
     },
     "input": {

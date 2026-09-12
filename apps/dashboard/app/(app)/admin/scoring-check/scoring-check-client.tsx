@@ -76,7 +76,7 @@ export function ScoringCheckClient() {
       <Card className="flex flex-col gap-3 px-5 py-4">
         <p className="text-[13px] leading-relaxed text-muted-foreground">
           Runs the 11 practice conversations through the real lead scorer, using the server&apos;s own AI key. It reads no
-          leads and writes nothing. About 40 seconds and $0.035 per run; at most 10 runs a day.
+          leads and writes nothing. About 40 seconds and $0.04 per run; at most 10 runs a day.
         </p>
         <div className="flex flex-wrap items-center gap-3">
           <button
@@ -174,6 +174,16 @@ export function ScoringCheckClient() {
                       {c.guards.map((g) => (
                         <div key={g} className="mt-1 text-[11.5px] text-muted-foreground">
                           Guard: {g}
+                        </div>
+                      ))}
+                      {c.factDiffs.map((d) => (
+                        <div key={d} className="mt-1 text-[11.5px] text-amber-800 dark:text-amber-200">
+                          Fact differs: {d}
+                        </div>
+                      ))}
+                      {c.timeNotes.map((n) => (
+                        <div key={n} className="mt-1 text-[11.5px] text-muted-foreground">
+                          Dates: {n}
                         </div>
                       ))}
                     </td>

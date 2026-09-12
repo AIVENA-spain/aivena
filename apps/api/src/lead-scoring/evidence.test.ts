@@ -124,6 +124,11 @@ describe('strict values: an answer outside the allowed list is rejected, never g
   it('run 1: an invented not-a-lead reason is rejected', () => {
     expect(invalidValues(base({ real_lead: false, not_a_lead_reason: 'bought_elsewhere' }))).toContain('not_a_lead_reason="bought_elsewhere"');
   });
+  it('v1.5: a date must be a real date, or nothing', () => {
+    expect(invalidValues(base({ timing: { state: 'within_30_days', date: 'next Thursday' } }))).toContain('timing.date="next Thursday"');
+    expect(invalidValues(base({ viewing: { state: 'requested', date: '2026-9-3', within_7_days: null } }))).toContain('viewing.date="2026-9-3"');
+    expect(invalidValues(base({ timing: { state: 'within_30_days', date: '2026-09-25' } }))).toEqual([]);
+  });
   it('a yes/no fact must be a real true or false', () => {
     expect(invalidValues(base({ concrete_question: { present: 'yes' as unknown as boolean, quote: null } }))).toContain('concrete_question="yes"');
   });

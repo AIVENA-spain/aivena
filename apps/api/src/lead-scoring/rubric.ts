@@ -9,7 +9,8 @@
 import type { Band, Facts, ScoreResult, Temperature } from './types';
 
 // v1.4 (2026-09-11): the scoring table is unchanged; every quote must now name the lead message it comes from.
-export const RUBRIC_VERSION = 'v1.4';
+// v1.5 (2026-09-12): the table is still unchanged; the AI resolves dates and code (dates.ts) decides what they mean.
+export const RUBRIC_VERSION = 'v1.5';
 
 /** The "nothing found" value of every state fact. */
 export const STATE_DEFAULTS = {

@@ -4,7 +4,7 @@ import { join } from 'node:path';
 
 const read = (rel: string): string => readFileSync(join(__dirname, rel), 'utf8');
 // Every file the internal scoring check runs through.
-const CHECK_PATH = ['types.ts', 'rubric.ts', 'evidence.ts', 'prompt.ts', 'extract.ts', 'explain.ts', 'score-conversation.ts', 'fixtures.ts', 'check.ts', 'lead-messages.ts'];
+const CHECK_PATH = ['types.ts', 'rubric.ts', 'evidence.ts', 'prompt.ts', 'extract.ts', 'explain.ts', 'score-conversation.ts', 'fixtures.ts', 'check.ts', 'lead-messages.ts', 'dates.ts'];
 const DB = /packages\/db\/client|from ['"]drizzle-orm['"]/;
 
 describe('the internal scoring check cannot touch real leads', () => {

@@ -53,7 +53,7 @@ describe('Stage 2: the demo agency only, shadow only, and every brake before the
   it('the scorer refuses an agency that is not allowed, before touching the database', async () => {
     expect(scoringAllowedFor('some-other-agency')).toBe(false);
     const tx = { execute: mustNotRun } as unknown as Tx;
-    const scored = { ok: true, error: null, score: 50, band: 'warm', temperature: 'warm', explanation: 'Warm 50', facts: {}, discarded: [], guards: [], inputTokens: 1, outputTokens: 1, costUsd: 0, stopReason: 'end_turn' } as ScoredConversation;
+    const scored = { ok: true, error: null, score: 50, band: 'warm', temperature: 'warm', explanation: 'Warm 50', facts: {}, discarded: [], guards: [], timeNotes: [], inputTokens: 1, outputTokens: 1, costUsd: 0, stopReason: 'end_turn' } as ScoredConversation;
     await expect(writeShadowRecord(tx, 'some-other-agency', '00000000-0000-0000-0000-000000000000', scored)).rejects.toThrow('not allowed');
   });
   it('write mode does not exist in Stage 2', async () => {

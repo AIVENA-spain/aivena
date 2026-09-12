@@ -7,6 +7,7 @@
  * piece must now name the ONE lead message it comes from ("L22: Ja det passer"), and it is checked inside that message
  * only, so borrowed, stitched or agency-sourced words can no longer pass.
  */
+import { isDate } from './dates';
 import { leadLabel, parseQuote } from './lead-messages';
 import { FLAG_KEYS, STATE_DEFAULTS, type StateKey } from './rubric';
 import type { Facts } from './types';
@@ -35,6 +36,11 @@ export function invalidValues(f: Facts): string[] {
   for (const k of FLAG_KEYS) if (typeof f[k]?.present !== 'boolean') bad.push(`${k}=${JSON.stringify(f[k]?.present)}`);
   const w = f.viewing?.within_7_days ?? null;
   if (w !== null && typeof w !== 'boolean') bad.push(`viewing.within_7_days=${JSON.stringify(w)}`);
+  // v1.5: a date is a real date or nothing. A half-written one is never guessed at.
+  for (const k of ['timing', 'viewing'] as const) {
+    const d = f[k]?.date ?? null;
+    if (d !== null && !isDate(d)) bad.push(`${k}.date=${JSON.stringify(d)}`);
+  }
   return bad;
 }
 

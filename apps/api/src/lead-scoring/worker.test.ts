@@ -4,7 +4,11 @@ import type { SQL } from 'drizzle-orm';
 import type { Tx } from '../../../../packages/db/client';
 import { LEAD_SCORING_AGENCIES, LEAD_SCORING_MODE } from '../lib/automation-status';
 import {
+  KEEP_NEWEST_MESSAGES,
+  MAX_INPUT_CHARS,
+  MAX_RUN_COST_USD,
   QUIET_MINUTES,
+  buildScoringInput,
   burstIsMeaningful,
   isTrivialMessage,
   pickDueLeads,
@@ -13,25 +17,26 @@ import {
   shouldStartScoringWorker,
   writeShadowRecord,
 } from './worker';
-import type { ModelCall } from './extract';
+import { worstCaseCostUsd, type ModelCall } from './extract';
 import type { ScoredConversation } from './score-conversation';
 
 const dialect = new PgDialect();
 const sqlText = (q: SQL): string => dialect.sqlToQuery(q).sql;
-const NOW = Date.parse('2026-09-11T12:00:00Z');
+const NOW = Date.parse('2026-09-12T12:00:00Z');
 const mustNotRun = async (): Promise<never> => {
   throw new Error('must not run');
 };
 
-describe('OFF means off (Stage 1)', () => {
-  it('Stage 1 ships with no agency allowed, in shadow mode, and the worker does not start', () => {
-    expect(LEAD_SCORING_AGENCIES).toEqual([]);
+describe('Stage 2: the demo agency only, shadow only, and every brake before the database', () => {
+  it('scoring is switched on for exactly one agency, in shadow mode', () => {
+    expect(LEAD_SCORING_AGENCIES).toEqual(['demo-costa-homes-pilot01']);
     expect(LEAD_SCORING_MODE).toBe('shadow');
-    expect(shouldStartScoringWorker()).toBe(false);
+    expect(shouldStartScoringWorker()).toBe(true);
   });
   it('with no agency allowed, a tick makes ZERO database calls and never calls the model', async () => {
     let transactions = 0;
     const r = await runScoringTick({
+      allowed: [],
       withAgency: async () => {
         transactions += 1;
         throw new Error('must not open a transaction');
@@ -41,18 +46,22 @@ describe('OFF means off (Stage 1)', () => {
     expect(transactions).toBe(0);
     expect(r).toEqual({ agencies: 0, scored: 0, failed: 0, skippedTrivial: 0 });
   });
+  it('the stop-only brake stops a tick before any database call', async () => {
+    const r = await runScoringTick({ allowed: ['demo-costa-homes-pilot01'], paused: () => true, withAgency: mustNotRun, call: mustNotRun });
+    expect(r).toEqual({ agencies: 0, scored: 0, failed: 0, skippedTrivial: 0 });
+  });
   it('the scorer refuses an agency that is not allowed, before touching the database', async () => {
-    expect(scoringAllowedFor('demo-costa-homes-pilot01')).toBe(false);
+    expect(scoringAllowedFor('some-other-agency')).toBe(false);
     const tx = { execute: mustNotRun } as unknown as Tx;
     const scored = { ok: true, error: null, score: 50, band: 'warm', temperature: 'warm', explanation: 'Warm 50', facts: {}, discarded: [], guards: [], inputTokens: 1, outputTokens: 1, costUsd: 0, stopReason: 'end_turn' } as ScoredConversation;
-    await expect(writeShadowRecord(tx, 'demo-costa-homes-pilot01', '00000000-0000-0000-0000-000000000000', scored)).rejects.toThrow('not allowed');
+    await expect(writeShadowRecord(tx, 'some-other-agency', '00000000-0000-0000-0000-000000000000', scored)).rejects.toThrow('not allowed');
   });
-  it('write mode does not exist in Stage 1', async () => {
+  it('write mode does not exist in Stage 2', async () => {
     await expect(runScoringTick({ allowed: ['a'], mode: 'write', withAgency: mustNotRun, call: mustNotRun })).rejects.toThrow('only shadow mode');
   });
 });
 
-describe('shadow mode (for a later, separately approved stage): one audit row, nothing else', () => {
+describe('shadow mode: one audit row, nothing else', () => {
   it('a full tick for an allowed agency writes only INSERT INTO ai_classifications', async () => {
     const statements: string[] = [];
     const message = 'Hi, is the villa IC-81596 still available? We would like to view it this Thursday. Our budget is up to €400,000.';
@@ -81,6 +90,50 @@ describe('shadow mode (for a later, separately approved stage): one audit row, n
     expect(writes[0]).toMatch(/^\s*INSERT INTO ai_classifications/);
     expect(statements.join('\n')).not.toMatch(/UPDATE leads|send_queue|dashboard_tasks|INSERT INTO lead_events|summary\s*=/i);
     expect(r).toMatchObject({ agencies: 1, scored: 1, failed: 0 });
+  });
+});
+
+describe("the input: the check's shape, under a hard cap (Christian, 2026-09-12)", () => {
+  const msg = (i: number, chars: number, from: 'lead' | 'agency' = 'lead') => ({
+    at: new Date(NOW - (500 - i) * 60_000).toISOString(),
+    from,
+    text: `m${i} ${'x'.repeat(chars)}`,
+  });
+  const earlierMsg = (i: number, chars: number) => ({ at: new Date(NOW - (2000 - i) * 60_000).toISOString(), text: `e${i} ${'y'.repeat(chars)}` });
+
+  it('a normal conversation is passed through whole, with the older lead messages and no note', () => {
+    const built = buildScoringInput('2026-09-12T12:00:00Z', [msg(1, 50), msg(2, 50, 'agency')], [earlierMsg(1, 50)]);
+    expect(built.input.conversation).toHaveLength(2);
+    expect(built.input.earlierLeadMessages).toHaveLength(1);
+    expect(built.trimmed).toBeNull();
+  });
+  it('a very long history drops the older messages first, then the oldest of the window, and says so', () => {
+    const built = buildScoringInput(
+      '2026-09-12T12:00:00Z',
+      Array.from({ length: 30 }, (_, i) => msg(i, 1_000)),
+      Array.from({ length: 20 }, (_, i) => earlierMsg(i, 1_000)),
+    );
+    expect(built.input.earlierLeadMessages ?? []).toHaveLength(0);
+    expect(built.input.conversation.length).toBeLessThan(30);
+    expect(built.trimmed).toMatch(/left out .*older lead messages/);
+    expect(built.trimmed).toMatch(/left out the .*oldest messages/);
+    // The newest message is always kept, whatever was dropped.
+    expect(built.input.conversation[built.input.conversation.length - 1]?.text).toContain('m29');
+  });
+  it('the newest messages are never dropped: a huge one is shortened instead, and reported', () => {
+    const built = buildScoringInput('2026-09-12T12:00:00Z', Array.from({ length: 10 }, (_, i) => msg(i, 9_000)), []);
+    expect(built.input.conversation).toHaveLength(KEEP_NEWEST_MESSAGES);
+    expect(built.trimmed).toMatch(/shortened .*very long messages/);
+    expect(built.input.conversation[built.input.conversation.length - 1]?.text.startsWith('m9 ')).toBe(true);
+  });
+  it('however long the conversation, one run can never cost more than the cap', () => {
+    const built = buildScoringInput(
+      '2026-09-12T12:00:00Z',
+      Array.from({ length: 200 }, (_, i) => msg(i, 5_000)),
+      Array.from({ length: 50 }, (_, i) => earlierMsg(i, 5_000)),
+    );
+    expect(worstCaseCostUsd(built.input)).toBeLessThanOrEqual(MAX_RUN_COST_USD);
+    expect(JSON.stringify(built.input).length).toBeLessThan(MAX_INPUT_CHARS * 2);
   });
 });
 

@@ -1,11 +1,11 @@
 "use server";
 
 import { apiFetch, ApiError } from "@/lib/api/client";
-import type { ScoringCheckRun } from "./types";
+import type { ScoringCheckRun, ShadowStatus } from "./types";
 
 /**
  * Admin → Scoring check. Staff-only twice over: the admin layout returns "not found" to everyone else, and the API
- * route sits behind requireAivenaStaff, which answers non-staff with 404. The AI key never reaches the dashboard.
+ * routes sit behind requireAivenaStaff, which answers non-staff with 404. The AI key never reaches the dashboard.
  */
 
 type Ok<T> = { ok: true; data: T };
@@ -39,5 +39,17 @@ export async function getScoringCheckAction(runId: string): Promise<Ok<ScoringCh
     return res.ok && res.run ? { ok: true, data: res.run } : { ok: false, error: res.error ?? friendly(null) };
   } catch (err) {
     return { ok: false, error: friendly(err) };
+  }
+}
+
+/** Shadow results: what the scorer made of real conversations. Read-only; it changes nothing. */
+export async function getShadowResultsAction(): Promise<Ok<ShadowStatus> | Err> {
+  try {
+    const res = await apiFetch<ShadowStatus & { ok: boolean; error?: string }>("/api/v1/admin/scoring-shadow");
+    return res.ok
+      ? { ok: true, data: { agencies: res.agencies ?? [], mode: res.mode, paused: res.paused, runs: res.runs ?? [] } }
+      : { ok: false, error: res.error ?? "Could not load the shadow results." };
+  } catch {
+    return { ok: false, error: "Could not load the shadow results." };
   }
 }

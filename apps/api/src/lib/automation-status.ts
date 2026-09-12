@@ -14,14 +14,22 @@ export const LEAD_SCORING_LIVE = false;
 
 /**
  * LEAD_SCORING_AGENCIES — which agencies the real-lead scorer (lead-scoring/worker.ts) may run for.
- * EMPTY = OFF (Stage 1, approved by Christian 2026-09-11): the worker is never started, and the scorer refuses every
- * agency before any database call. Changing it takes a reviewed commit, and tools/feature-truth-lint.mjs fails unless
- * the register's automatic-lead-scoring row names exactly the same agencies (scoring_enabled_for).
+ * Stage 2 (approved by Christian 2026-09-12): the demo agency ONLY, in shadow mode. The scorer writes one internal
+ * record per run and never touches the lead, and every other agency is refused before any database call. Changing this
+ * list takes a reviewed commit, and tools/feature-truth-lint.mjs fails unless the register's automatic-lead-scoring
+ * row names exactly the same agencies (scoring_enabled_for).
  */
-export const LEAD_SCORING_AGENCIES: readonly string[] = [];
+export const LEAD_SCORING_AGENCIES: readonly string[] = ['demo-costa-homes-pilot01'];
 
 /**
  * LEAD_SCORING_MODE — 'shadow' writes only an internal audit record (ai_classifications), never the lead. 'write'
  * (Stage 3) does not exist yet, and the lint refuses it while LEAD_SCORING_LIVE is false.
  */
 export const LEAD_SCORING_MODE: 'shadow' | 'write' = 'shadow';
+
+/**
+ * The stop-only brake (Christian, 2026-09-12). With LEAD_SCORING_PAUSED=true on the server, every run stops before any
+ * database call. It can only stop scoring: no setting can start it, because the agency list above lives in code and
+ * the truth register must name exactly the same agencies.
+ */
+export const scoringPaused = (): boolean => String(process.env.LEAD_SCORING_PAUSED ?? '').trim().toLowerCase() === 'true';

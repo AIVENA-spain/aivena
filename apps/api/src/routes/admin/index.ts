@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import agenciesRoute from './agencies';
 import scoringCheckRoute from './scoring-check';
+import scoringShadowRoute from './scoring-shadow';
 
 /**
  * Admin surface — mounted at /api/v1/admin, gated by requireAivenaStaff.
@@ -12,5 +13,7 @@ const admin = new Hono();
 admin.route('/agencies', agenciesRoute);
 // Internal lead-scoring check (Stage 1, 2026-09-11): fixtures only, writes nothing. Staff-only via requireAivenaStaff.
 admin.route('/scoring-check', scoringCheckRoute);
+// Staff-only, read-only view of the scorer's own shadow records (Stage 2, 2026-09-12).
+admin.route('/scoring-shadow', scoringShadowRoute);
 
 export default admin;

@@ -75,7 +75,9 @@
       "immediate_truth_fix": "Confirmed by Christian 2026-09-11: the score tile caption, and the Brief no longer saying score 75 / warm lead. Done 2026-09-11, awaiting eyes (see that day's changelog entry): hidden while scoring is not running — the Cards view and Buyers-list dot, the Overview panel line and Score column, the task page badge, the Matches badge / score sort / high-intent caption, the Operations tags, and the API's 'Hot lead waiting on a decision' reason. The score tile keeps its legacy caption as the only interim display. This is the immediate fix only; the issue stays open. Also 2026-09-11 (Christian's Overview check): Hot Leads shows a dash instead of the stale '2'.",
       "permanent_product_fix": "IN PROGRESS. Stage 1 (built, OFF, internal staff-only check) 2026-09-11. Stage 2 (the demo agency in shadow mode: audit rows only, leads untouched) and Stage 3 (scores written to demo leads, June scores re-scored, score surfaces restored with per-lead provenance, Hot Leads counting super-hot) each need Christian's approval. n8n 1A→2A→3A stays LEGACY UNDER REVIEW until the new path is proven.",
       "owner": "Christian decides direction; Packet 2 builds.",
-      "scoring_enabled_for": []
+      "scoring_enabled_for": [
+        "demo-costa-homes-pilot01"
+      ]
     },
     {
       "feature": "operator-approved-outbound-send",

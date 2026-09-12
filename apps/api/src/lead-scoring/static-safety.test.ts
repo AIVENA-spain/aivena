@@ -20,18 +20,23 @@ describe('the internal scoring check cannot touch real leads', () => {
 });
 
 describe('staff only', () => {
-  it('the check lives under /api/v1/admin, behind the staff gate that answers everyone else with 404', () => {
+  it('both internal pages live under /api/v1/admin, behind the staff gate that answers everyone else with 404', () => {
     const index = read('../index.ts');
     const gate = index.indexOf("app.use('/api/v1/admin/*', requireAivenaStaff)");
     const mount = index.indexOf("app.route('/api/v1/admin', adminRoute)");
     expect(gate).toBeGreaterThan(-1);
     expect(mount).toBeGreaterThan(gate);
-    expect(read('../routes/admin/index.ts')).toMatch(/admin\.route\('\/scoring-check', scoringCheckRoute\)/);
+    const admin = read('../routes/admin/index.ts');
+    expect(admin).toMatch(/admin\.route\('\/scoring-check', scoringCheckRoute\)/);
+    expect(admin).toMatch(/admin\.route\('\/scoring-shadow', scoringShadowRoute\)/);
   });
 });
 
-describe('the real-lead scorer is off', () => {
-  it('index.ts starts it only behind shouldStartScoringWorker(), which is false while no agency is allowed', () => {
+describe('Stage 2: shadow results can only be read', () => {
+  it('the shadow view never writes anything', () => {
+    expect(read('../routes/admin/scoring-shadow.ts')).not.toMatch(/\b(INSERT|UPDATE|DELETE|TRUNCATE)\b/i);
+  });
+  it('the scorer starts only behind shouldStartScoringWorker(), which reads the agency list in code', () => {
     expect(read('../index.ts')).toMatch(/if \(shouldStartScoringWorker\(\)\)/);
   });
 });

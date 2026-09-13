@@ -262,7 +262,7 @@ export function StudioHome({
     { img: asset("style-minimal.jpg"), name: "Minimal Luxury", desc: "Clean, elegant and high-end aesthetic.", swatches: ["#F2EEE6", "#C9B79C", "#6B6B6B", "#1A1A1A"] },
     { img: asset("style-mediterranean.jpg"), name: "Mediterranean Editorial", desc: "Warm, natural and timeless storytelling.", swatches: ["#D8C3A5", "#8A9A7B", "#2D6E8E", "#B5623C"] },
     { img: asset("style-poster.jpg"), name: "Bold Spanish Poster", desc: "Strong typography and vibrant Mediterranean energy.", swatches: ["#E07A3E", "#F4E9D8", "#14294B", "#1A1A1A"] },
-    { img: asset("style-brochure.jpg"), name: "Clean Property Brochure", desc: "Refined layouts for listings and brochures.", swatches: ["#B8BFC2", "#D8C3A5", "#4A6B4E", "#14294B"] },
+    { img: asset("style-brochure.jpg"), name: "Clean Listing Layout", desc: "Refined layouts for property listings.", swatches: ["#B8BFC2", "#D8C3A5", "#4A6B4E", "#14294B"] },
   ];
 
   return (
@@ -290,7 +290,7 @@ export function StudioHome({
       <div className="mt-8 grid gap-5 md:grid-cols-3">
         <HeroCard img={asset("hero-property.jpg")} tint="text-emerald-600 dark:text-emerald-400"
           icon={<HomeIcon className="h-5 w-5" />} title="Create from a property"
-          desc="Turn a listing into posts, carousels and brochures." onClick={() => setView("templates")} />
+          desc="Turn a listing into posts and carousels." onClick={() => setView("templates")} />
         <HeroCard img={asset("hero-advice.jpg")} tint="text-violet-600 dark:text-violet-400"
           icon={<SquarePen className="h-5 w-5" />} title="Create advice content"
           desc="Generate buyer tips, seller advice and market posts." onClick={() => { setPendingTopic(""); setPendingLang(undefined); setResumeGenId(undefined); setView("carousel"); }} />

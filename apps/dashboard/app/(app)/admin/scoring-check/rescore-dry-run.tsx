@@ -1,5 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { RescoreExecute } from "./rescore-execute";
 import type { RescoreAction, RescoreDryRun } from "./types";
 
 /**
@@ -82,6 +83,7 @@ export function RescoreDryRunView({ dryRun, error }: { dryRun: RescoreDryRun | n
               </tbody>
             </table>
           </Card>
+          {dryRun.canExecute ? <RescoreExecute totals={dryRun.totals} /> : null}
         </>
       )}
     </div>

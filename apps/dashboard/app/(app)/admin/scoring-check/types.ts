@@ -107,3 +107,13 @@ export type RescoreDryRun = {
     maxCostUsd: number;
   };
 };
+
+/** What the go-live re-score did, lead by lead (Stage 3c). */
+export type RescoreExecuteResult = {
+  results: Array<{
+    agencyId: string;
+    leadId: string;
+    action: RescoreAction;
+    outcome: { ok: boolean; score: number | null; band: string | null; error: string | null } | null;
+  }>;
+};

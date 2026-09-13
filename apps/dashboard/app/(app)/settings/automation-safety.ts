@@ -5,24 +5,15 @@ import type { ReplyLanes } from "@/lib/api/types";
  * setup checklist (server). Pure, no React/hooks, so both boundaries can import.
  */
 
-const TEMPS = ["cold", "warm", "hot", "super_hot"] as const;
-
 /**
- * True when ANY lead temperature (or the default lane) is set to `auto_send` —
- * i.e. AIVENA would send replies to clients without human approval. This is the
- * "unsafe for pilot" condition that drives the warning banner + checklist state.
+ * True when the default reply lane is `auto_send`.
+ *
+ * Per-temperature lanes (`by_temperature`) are deliberately NOT read (Christian, 2026-09-13): no code path sends,
+ * queues, alerts or follows up on a lead's temperature, and the per-temperature picker was removed in June 2026. Once
+ * lead scores are live, a temperature-driven "sends automatically" claim would look believable while nothing of the sort
+ * happens. Temperature must never control sending, so it must not appear to either. (The never-used isFullAutoSend,
+ * which also read temperatures, was removed with it.)
  */
 export function hasAutoSend(lanes: ReplyLanes | undefined): boolean {
-  if (!lanes) return false;
-  if (lanes.default_lane === "auto_send") return true;
-  const t = lanes.by_temperature ?? {};
-  return TEMPS.some((k) => t[k] === "auto_send");
-}
-
-/** True when EVERY temperature is auto-send ("everything sends automatically"). */
-export function isFullAutoSend(lanes: ReplyLanes | undefined): boolean {
-  if (!lanes) return false;
-  if (lanes.default_lane === "auto_send") return true;
-  const t = lanes.by_temperature ?? {};
-  return TEMPS.every((k) => t[k] === "auto_send");
+  return lanes?.default_lane === "auto_send";
 }

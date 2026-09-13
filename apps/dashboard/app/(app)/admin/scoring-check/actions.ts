@@ -1,7 +1,7 @@
 "use server";
 
 import { apiFetch, ApiError } from "@/lib/api/client";
-import type { RescoreDryRun, ScoringCheckRun, ShadowStatus } from "./types";
+import type { RescoreDryRun, RescoreExecuteResult, ScoringCheckRun, ShadowStatus } from "./types";
 
 /**
  * Admin → Scoring check. Staff-only twice over: the admin layout returns "not found" to everyone else, and the API
@@ -61,5 +61,22 @@ export async function getRescoreDryRunAction(): Promise<Ok<RescoreDryRun> | Err>
     return res.ok ? { ok: true, data: res } : { ok: false, error: res.error ?? "Could not prepare the re-score dry run." };
   } catch {
     return { ok: false, error: "Could not prepare the re-score dry run." };
+  }
+}
+
+/**
+ * Go-live re-score (Stage 3c): archives and clears June's legacy scoring data, then scores leads with messages to read.
+ * The API refuses unless scoring is live and writing, and requires the explicit confirmation token.
+ */
+export async function executeRescoreAction(): Promise<Ok<RescoreExecuteResult> | Err> {
+  try {
+    const res = await apiFetch<RescoreExecuteResult & { ok: boolean; error?: string }>("/api/v1/admin/scoring-rescore/execute", {
+      method: "POST",
+      body: JSON.stringify({ confirm: "RESCORE" }),
+    });
+    return res.ok ? { ok: true, data: { results: res.results ?? [] } } : { ok: false, error: res.error ?? "The re-score did not run." };
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 409) return { ok: false, error: "Scoring is not live yet. Re-scoring runs only at go-live." };
+    return { ok: false, error: "The re-score could not be reached. Run the dry run again to see where it stands." };
   }
 }

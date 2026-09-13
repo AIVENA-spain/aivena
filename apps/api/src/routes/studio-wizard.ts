@@ -32,6 +32,7 @@ import {
 } from '../../../../studio/engine/carouselStyles';
 import type { CarouselBrand } from '../../../../studio/engine/renderCarousel';
 import { planCarousel, editPlan, remixHook, topicIdeas, listingCopy, listingStory, pickBankCard, researchClaims, premisePreflight, vetIdeas, PlanSchema, normalisePlan, type Audience } from '../lib/studio-carousel-plan';
+import { deriveTrustSignal } from '../lib/studio-trust';
 import { POLICED_TYPES, checkBankContradictions, checkIntent, extractClaims, gatePlan,
   type ExtractedClaim, type GateReport , judgeSemanticUnits, findRestatements } from '../lib/studio-claim-gate';
 import { finishCopy } from '../lib/studio-publish';
@@ -357,6 +358,10 @@ function metaNum(meta: Record<string, unknown> | null, ...path: string[]): numbe
 function shapeStatus(r: GenRow) {
   const composed = !!(r.result_metadata && r.result_metadata.composed === true);
   const meta = r.result_metadata;
+  // The honest trust signal. `researched` = the engine looked something up; `claims_checked` = the
+  // stronger claim that every material claim survived the gate cleanly. The dashboard mark is gated
+  // on claims_checked, never on researched alone (Christian, 2026-09-13).
+  const trust = deriveTrustSignal(meta);
   // Vega v0.4.2: the slot is reserved atomically at accept-time, so
   // `revisions_remaining` (= 2 - revisions_started) is authoritative and
   // accounts for the in-flight one — use it directly, never recompute from
@@ -374,7 +379,10 @@ function shapeStatus(r: GenRow) {
     // A TRUST SIGNAL, NOT A STATUS BADGE (Christian, 2026-09-08). True only when the engine actually
     // went and looked something up. The agent never sees LOW/MEDIUM/HIGH, a gate, or any word from
     // the compliance vocabulary — an ordinary lifestyle post simply shows nothing at all.
-    researched: (meta as { routing?: { researched?: boolean } } | null)?.routing?.researched === true,
+    researched: trust.researched,
+    // The mark the agent sees only when every material claim resolved as supported and nothing was
+    // removed, repaired, contradicted, degraded or timed out — a remix is never checked.
+    claims_checked: trust.claimsChecked,
     content_type:
       (r.raw_request && typeof r.raw_request.content_type === 'string'
         ? (r.raw_request.content_type as string)

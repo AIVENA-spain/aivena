@@ -56,8 +56,8 @@ describe('Stage 2: the demo agency only, shadow only, and every brake before the
     const scored = { ok: true, error: null, score: 50, band: 'warm', temperature: 'warm', explanation: 'Warm 50', facts: {}, discarded: [], guards: [], tolerated: [], timeNotes: [], inputTokens: 1, outputTokens: 1, costUsd: 0, stopReason: 'end_turn' } as ScoredConversation;
     await expect(writeShadowRecord(tx, 'some-other-agency', '00000000-0000-0000-0000-000000000000', scored)).rejects.toThrow('not allowed');
   });
-  it('write mode does not exist in Stage 2', async () => {
-    await expect(runScoringTick({ allowed: ['a'], mode: 'write', withAgency: mustNotRun, call: mustNotRun })).rejects.toThrow('only shadow mode');
+  it('write mode cannot run while scoring is not declared live (the switch values in code today)', async () => {
+    await expect(runScoringTick({ allowed: ['a'], mode: 'write', withAgency: mustNotRun, call: mustNotRun })).rejects.toThrow('requires scoring to be declared live');
   });
 });
 
@@ -167,5 +167,90 @@ describe('cadence (Christian, 2026-09-11)', () => {
     ];
     expect(burstIsMeaningful(conv(20), 0)).toBe(true);
     expect(burstIsMeaningful(conv(24 * 60), 0)).toBe(false);
+  });
+});
+
+describe('Stage 3b: the production write path exists, and is guarded', () => {
+  const message = 'Hi, is the villa IC-81596 still available? We would like to view it this Thursday. Our budget is up to €400,000.';
+  const answer = {
+    real_lead: true, not_a_lead_reason: null, intent: 'real',
+    budget: { state: 'clear', quote: 'L1: Our budget is up to €400,000' }, area: { state: 'none', quote: null }, need: { state: 'none', quote: null },
+    specific_property: { state: 'discussed', quote: 'L1: is the villa IC-81596 still available' },
+    concrete_question: { present: false, quote: null }, asked_for_listings_or_photos: { present: false, quote: null },
+    timing: { state: 'within_30_days', date: null, quote: 'L1: this Thursday' },
+    viewing: { state: 'wants_to_view', date: null, within_7_days: null, quote: 'L1: We would like to view it this Thursday' },
+    financing_ready: { present: false, quote: null }, decision: { state: 'none', quote: null }, negative: { state: 'none', quote: null }, reason: 'x',
+  };
+  const call: ModelCall = async () => ({ status: 200, body: { content: [{ text: JSON.stringify(answer) }], usage: { input_tokens: 1000, output_tokens: 200 }, stop_reason: 'end_turn' } });
+  const fakeDb = (statements: string[]) =>
+    ({
+      execute: async (q: SQL) => {
+        const s = sqlText(q);
+        statements.push(s);
+        if (/count\(\*\)::int AS n FROM ai_classifications/.test(s)) return [{ n: 0 }];
+        if (/FROM leads l/.test(s)) return [{ lead_id: '11111111-1111-1111-1111-111111111111', last_inbound_at: new Date(NOW - 45 * 60_000).toISOString(), last_run_at: null, runs_today: 0 }];
+        if (/FROM conversation_messages/.test(s)) return [{ direction: 'inbound', content: message, created_at: new Date(NOW - 45 * 60_000).toISOString() }];
+        if (/INSERT INTO ai_classifications/.test(s)) return [{ id: '22222222-2222-2222-2222-222222222222' }];
+        return [];
+      },
+    }) as unknown as Tx;
+
+  it('write mode refuses to run while scoring is not declared live', async () => {
+    await expect(runScoringTick({ allowed: ['agency-a'], mode: 'write', live: false, withAgency: mustNotRun, call: mustNotRun })).rejects.toThrow('requires scoring to be declared live');
+  });
+
+  it('write mode, live: the internal record, then ONE lead update with only the score fields and provenance', async () => {
+    const statements: string[] = [];
+    const tx = fakeDb(statements);
+    const r = await runScoringTick({ allowed: ['agency-a'], mode: 'write', live: true, withAgency: async (_a, fn) => fn(tx), call, nowMs: () => NOW });
+    expect(r).toMatchObject({ scored: 1, failed: 0 });
+    const writes = statements.filter((s) => /^\s*(insert|update|delete)\b/i.test(s));
+    expect(writes).toHaveLength(2);
+    expect(writes[0]).toMatch(/^\s*INSERT INTO ai_classifications/);
+    expect(writes[1]).toMatch(/^\s*UPDATE leads/);
+    const setColumns = [...(writes[1]!.match(/SET([\s\S]*?)WHERE/)?.[1] ?? '').matchAll(/(\w+)\s*=/g)].map((m) => m[1]).sort();
+    expect(setColumns).toEqual([
+      'reasoning_summary', 'score', 'score_band', 'score_cost_usd', 'score_message_count', 'score_model', 'score_rubric_version',
+      'score_run_id', 'score_source', 'score_viewing_date', 'scored_at', 'temperature',
+    ]);
+    const all = statements.join('\n');
+    expect(all).not.toMatch(/send_queue|dashboard_tasks|lead_events|conversation_messages\s+SET|INSERT INTO conversation_messages/i);
+    expect(writes[1]).not.toMatch(/\b(status|intent|urgency|summary|pipeline_stage|next_followup_at|followup_paused)\s*=/);
+  });
+
+  it('a run that did not finish never touches the lead: its last real score stays', async () => {
+    const statements: string[] = [];
+    const tx = fakeDb(statements);
+    const failing: ModelCall = async () => ({ status: 500, body: {} });
+    await runScoringTick({ allowed: ['agency-a'], mode: 'write', live: true, withAgency: async (_a, fn) => fn(tx), call: failing, nowMs: () => NOW });
+    expect(statements.filter((s) => /^\s*UPDATE leads/.test(s))).toHaveLength(0);
+    expect(statements.filter((s) => /^\s*INSERT INTO ai_classifications/.test(s))).toHaveLength(1);
+  });
+
+  it('all active agencies: exactly the agencies the database lists, and no other', async () => {
+    const touched: string[] = [];
+    const statements: string[] = [];
+    const tx = fakeDb(statements);
+    await runScoringTick({
+      allActive: true,
+      listActiveAgencies: async () => ['active-one', 'active-two'],
+      withAgency: async (agencyId, fn) => {
+        touched.push(agencyId);
+        return fn(tx);
+      },
+      call,
+      nowMs: () => NOW,
+    });
+    expect(touched).toEqual(['active-one', 'active-two']);
+  });
+
+  it('the global daily cap stops the model being called at all once reached', async () => {
+    const calls: number[] = [];
+    const counting: ModelCall = async (req) => {
+      calls.push(1);
+      return call(req);
+    };
+    await runScoringTick({ allowed: ['agency-a'], globalDailyCap: 0, withAgency: async (_a, fn) => fn(fakeDb([])), call: counting, nowMs: () => NOW });
+    expect(calls).toHaveLength(0);
   });
 });

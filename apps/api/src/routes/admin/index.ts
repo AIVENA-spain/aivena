@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import agenciesRoute from './agencies';
 import scoringCheckRoute from './scoring-check';
 import scoringShadowRoute from './scoring-shadow';
+import scoringRescoreRoute from './scoring-rescore';
 
 /**
  * Admin surface — mounted at /api/v1/admin, gated by requireAivenaStaff.
@@ -15,5 +16,7 @@ admin.route('/agencies', agenciesRoute);
 admin.route('/scoring-check', scoringCheckRoute);
 // Staff-only, read-only view of the scorer's own shadow records (Stage 2, 2026-09-12).
 admin.route('/scoring-shadow', scoringShadowRoute);
+// Staff-only re-score: a read-only dry run now; the execute action refuses until scoring is live (Stage 3c).
+admin.route('/scoring-rescore', scoringRescoreRoute);
 
 export default admin;

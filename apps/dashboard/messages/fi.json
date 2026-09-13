@@ -400,9 +400,14 @@
       "lastCheckinFailedLabel": "Viimeisin yhteydenotto epäonnistui",
       "subCooldown": "Yhteydenotto lähetettiin äskettäin — odota vastausta",
       "followUpsNotActive": "Automaattiset seurannat eivät ole käytössä.",
-      "scoringNotRunning": "Liidien pisteytys ei tällä hetkellä toimi automaattisesti.",
       "scoreUnavailable": "Pisteet eivät ole saatavilla ennen kuin pisteytys otetaan käyttöön.",
-      "scoreStoredOn": "Tallennettu {date} vanhassa järjestelmässä; ei päivitetty sen jälkeen."
+      "scoredAt": "Pisteytetty {date} · {count, plural, one {# viestin} other {# viestin}} perusteella",
+      "notScoredYet": "Ei vielä pisteytetty. Liidi pisteytetään 30 minuuttia viimeisen viestin jälkeen.",
+      "urgencyWaiting": "Odottaa vastausta · {days, plural, one {# päivä} other {# päivää}}",
+      "urgencyWaitingToday": "Odottaa vastausta · tänään",
+      "urgencyViewingPassed": "Näyttöpäivä on mennyt ({date})",
+      "urgencyInactive": "Ei aktiivinen · {days} päivää",
+      "urgencyDormant": "Lepotilassa · {days} päivää"
     },
     "searchPlaceholder": "Hae keskusteluja…",
     "searchNoResults": "Yksikään keskustelu ei vastaa hakuasi."

@@ -400,9 +400,14 @@
       "lastCheckinFailedLabel": "Letzte Kontaktaufnahme fehlgeschlagen",
       "subCooldown": "Kürzlich Kontakt aufgenommen — warte auf eine Antwort",
       "followUpsNotActive": "Automatische Follow-ups sind nicht aktiv.",
-      "scoringNotRunning": "Die Lead-Bewertung läuft derzeit nicht automatisch.",
       "scoreUnavailable": "Bewertung nicht verfügbar, bis sie aktiviert wird.",
-      "scoreStoredOn": "Am {date} vom alten System gespeichert; seitdem nicht aktualisiert."
+      "scoredAt": "Bewertet {date} · aus {count, plural, one {# Nachricht} other {# Nachrichten}}",
+      "notScoredYet": "Noch nicht bewertet. Ein Lead wird 30 Minuten nach seiner letzten Nachricht bewertet.",
+      "urgencyWaiting": "Wartet auf Antwort · {days, plural, one {# Tag} other {# Tage}}",
+      "urgencyWaitingToday": "Wartet auf Antwort · heute",
+      "urgencyViewingPassed": "Besichtigungstermin verstrichen ({date})",
+      "urgencyInactive": "Inaktiv · {days} Tage",
+      "urgencyDormant": "Ruhend · {days} Tage"
     },
     "searchPlaceholder": "Konversationen suchen…",
     "searchNoResults": "Keine Konversation passt zu deiner Suche."

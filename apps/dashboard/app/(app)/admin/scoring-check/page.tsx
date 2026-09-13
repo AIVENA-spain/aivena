@@ -1,5 +1,6 @@
 import { PageHeading } from "../_components/page-heading";
-import { getShadowResultsAction } from "./actions";
+import { getRescoreDryRunAction, getShadowResultsAction } from "./actions";
+import { RescoreDryRunView } from "./rescore-dry-run";
 import { ScoringCheckClient } from "./scoring-check-client";
 import { ShadowResults } from "./shadow-results";
 
@@ -10,7 +11,7 @@ export const dynamic = "force-dynamic";
  * staff, and it never appears in an agency's navigation. English-only like the rest of Admin.
  */
 export default async function ScoringCheckPage() {
-  const shadow = await getShadowResultsAction();
+  const [shadow, rescore] = await Promise.all([getShadowResultsAction(), getRescoreDryRunAction()]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -22,6 +23,7 @@ export default async function ScoringCheckPage() {
       />
       <ScoringCheckClient />
       <ShadowResults status={shadow.ok ? shadow.data : null} error={shadow.ok ? null : shadow.error} />
+      <RescoreDryRunView dryRun={rescore.ok ? rescore.data : null} error={rescore.ok ? null : rescore.error} />
     </div>
   );
 }

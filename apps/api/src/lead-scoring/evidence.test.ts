@@ -186,3 +186,35 @@ describe("guards: a listing's own details are not the lead's search", () => {
     expect(ev.guards).toEqual([]);
   });
 });
+
+describe('guard 4 (v1.6): search budget, offer price, listing price and financing are four different things', () => {
+  const lead = ["Hi again! We viewed the villa on Saturday and we love it.", "We'd like to offer 318,000 for it. Our budget was up to 340,000 anyway.", "Our mortgage is approved for 250,000."];
+  const texts = lead.map(norm);
+  const factsWith = (over: Partial<Facts>): Facts => base({ specific_property: { state: 'discussed', quote: 'L1: We viewed the villa on Saturday' }, ...over });
+  it('a budget quoted from their offer is thrown out as a budget, and the offer stands', () => {
+    const ev = checkEvidence(factsWith({
+      decision: { state: 'offer_or_negotiation', quote: "L2: We'd like to offer 318,000 for it" },
+      budget: { state: 'clear', quote: "L2: We'd like to offer 318,000" },
+    }), texts, lead);
+    expect(ev.facts.budget?.state).toBe('none');
+    expect(ev.facts.decision?.state).toBe('offer_or_negotiation');
+    expect(ev.guards.join(' ')).toMatch(/is their offer on a listing, not their search budget/);
+  });
+  it('a budget they state separately is kept alongside the offer', () => {
+    const ev = checkEvidence(factsWith({
+      decision: { state: 'offer_or_negotiation', quote: "L2: We'd like to offer 318,000 for it" },
+      budget: { state: 'clear', quote: 'L2: Our budget was up to 340,000' },
+    }), texts, lead);
+    expect(ev.facts.budget?.state).toBe('clear');
+    expect(ev.guards).toEqual([]);
+  });
+  it('a mortgage amount is financing, not a search budget', () => {
+    const ev = checkEvidence(factsWith({
+      financing_ready: { present: true, quote: 'L3: Our mortgage is approved for 250,000' },
+      budget: { state: 'clear', quote: 'L3: approved for 250,000' },
+    }), texts, lead);
+    expect(ev.facts.budget?.state).toBe('none');
+    expect(ev.facts.financing_ready?.present).toBe(true);
+    expect(ev.guards.join(' ')).toMatch(/is their financing, not their search budget/);
+  });
+});

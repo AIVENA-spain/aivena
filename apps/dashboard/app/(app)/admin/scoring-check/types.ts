@@ -80,3 +80,30 @@ export type ShadowStatus = {
   paused: boolean;
   runs: ShadowRun[];
 };
+
+/** Go-live re-score dry run (Stage 3b built; Stage 3c executes). */
+export type RescoreAction = "rescore_and_clear_legacy" | "clear_legacy" | "rescore" | "nothing";
+
+export type RescorePlan = {
+  leadId: string;
+  name: string | null;
+  action: RescoreAction;
+  reason: string;
+  legacyFields: string[];
+};
+
+export type RescoreDryRun = {
+  live: boolean;
+  mode: string;
+  canExecute: boolean;
+  agencies: Array<{ agencyId: string; leads: RescorePlan[] }>;
+  totals: {
+    leads: number;
+    rescoreAndClearLegacy: number;
+    clearLegacy: number;
+    rescore: number;
+    nothing: number;
+    estimatedCostUsd: number;
+    maxCostUsd: number;
+  };
+};

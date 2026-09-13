@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { sql } from 'drizzle-orm';
+import { leadScoreViews, viewFor } from '../lead-scoring/live-scores-db';
 import type { Tx } from '../../../../packages/db/client';
 import { WhatsAppReadinessSchema } from './whatsapp';
 import { safeErr } from '../lib/safe-error';
@@ -184,14 +185,16 @@ route.get('/', async (c) => {
          ORDER BY dt.created_at DESC
          LIMIT 200
       `);
-      return rows<RawTask>(r).map((x) => ({
+      const taskRows = rows<RawTask>(r);
+      const scores = await leadScoreViews(sp, taskRows.map((x) => x.lead_id));
+      return taskRows.map((x) => ({
         task_id: x.task_id,
         lead_id: x.lead_id,
         lead_name: x.lead_name,
         task_type: x.task_type,
         status: x.status,
         priority: x.priority,
-        temperature: x.temperature,
+        temperature: viewFor(scores, x.lead_id).temperature,
         title: x.title,
         body: x.body,
         created_at: toIso(x.created_at),
@@ -221,11 +224,13 @@ route.get('/', async (c) => {
                age_seconds, latest_inbound_at, last_outbound_at, lead_status
           FROM dashboard_inbox(200::int, 30::int)
       `);
-      return rows<RawLife>(r).map((x) => ({
+      const lifeRows = rows<RawLife>(r);
+      const scores = await leadScoreViews(sp, lifeRows.map((x) => x.lead_id));
+      return lifeRows.map((x) => ({
         lead_id: x.lead_id,
         lead_name: x.lead_name,
         channel: x.channel,
-        temperature: x.temperature,
+        temperature: viewFor(scores, x.lead_id).temperature,
         task_status: x.task_status,
         age_seconds: x.age_seconds,
         latest_inbound_at: toIso(x.latest_inbound_at),

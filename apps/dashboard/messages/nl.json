@@ -400,9 +400,14 @@
       "lastCheckinFailedLabel": "Laatste contactpoging mislukt",
       "subCooldown": "Recent contact opgenomen — wacht op een reactie",
       "followUpsNotActive": "Automatische opvolging is niet actief.",
-      "scoringNotRunning": "Leadscoring draait momenteel niet automatisch.",
       "scoreUnavailable": "Score niet beschikbaar totdat scoring is ingeschakeld.",
-      "scoreStoredOn": "Op {date} opgeslagen door de oude pijplijn; sindsdien niet ververst."
+      "scoredAt": "Gescoord {date} · op basis van {count, plural, one {# bericht} other {# berichten}}",
+      "notScoredYet": "Nog niet gescoord. Een lead wordt 30 minuten na het laatste bericht gescoord.",
+      "urgencyWaiting": "Wacht op antwoord · {days, plural, one {# dag} other {# dagen}}",
+      "urgencyWaitingToday": "Wacht op antwoord · vandaag",
+      "urgencyViewingPassed": "Bezichtigingsdatum verstreken ({date})",
+      "urgencyInactive": "Inactief · {days} dagen",
+      "urgencyDormant": "Slapend · {days} dagen"
     },
     "searchPlaceholder": "Gesprekken zoeken…",
     "searchNoResults": "Geen gesprekken komen overeen met je zoekopdracht."

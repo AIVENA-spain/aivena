@@ -400,9 +400,14 @@
       "lastCheckinFailedLabel": "Ostatni kontakt nie powiódł się",
       "subCooldown": "Kontakt wysłano niedawno — poczekaj na odpowiedź",
       "followUpsNotActive": "Automatyczne kontakty nie są aktywne.",
-      "scoringNotRunning": "Ocena leadów nie jest obecnie uruchamiana automatycznie.",
       "scoreUnavailable": "Ocena niedostępna, dopóki nie zostanie włączona.",
-      "scoreStoredOn": "Zapisano {date} przez stary system; od tego czasu nieaktualizowane."
+      "scoredAt": "Oceniono {date} · na podstawie {count, plural, one {# wiadomości} few {# wiadomości} many {# wiadomości} other {# wiadomości}}",
+      "notScoredYet": "Jeszcze nie oceniono. Kontakt jest oceniany 30 minut po ostatniej wiadomości.",
+      "urgencyWaiting": "Czeka na odpowiedź · {days, plural, one {# dzień} few {# dni} many {# dni} other {# dnia}}",
+      "urgencyWaitingToday": "Czeka na odpowiedź · dziś",
+      "urgencyViewingPassed": "Termin oglądania minął ({date})",
+      "urgencyInactive": "Nieaktywny · {days} dni",
+      "urgencyDormant": "Uśpiony · {days} dni"
     },
     "searchPlaceholder": "Szukaj rozmów…",
     "searchNoResults": "Żadna rozmowa nie pasuje do wyszukiwania."

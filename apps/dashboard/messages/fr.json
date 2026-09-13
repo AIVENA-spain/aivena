@@ -400,9 +400,14 @@
       "lastCheckinFailedLabel": "Dernière prise de contact échouée",
       "subCooldown": "Contact envoyé récemment — attends une réponse",
       "followUpsNotActive": "Les relances automatiques ne sont pas actives.",
-      "scoringNotRunning": "Le scoring des leads ne s'exécute pas automatiquement pour le moment.",
       "scoreUnavailable": "Score indisponible tant que le scoring n'est pas activé.",
-      "scoreStoredOn": "Enregistré le {date} par l'ancien système ; non actualisé depuis."
+      "scoredAt": "Évalué le {date} · à partir de {count, plural, one {# message} other {# messages}}",
+      "notScoredYet": "Pas encore évalué. Un contact est évalué 30 minutes après son dernier message.",
+      "urgencyWaiting": "En attente de réponse · {days, plural, one {# jour} other {# jours}}",
+      "urgencyWaitingToday": "En attente de réponse · aujourd'hui",
+      "urgencyViewingPassed": "Date de visite dépassée ({date})",
+      "urgencyInactive": "Inactif · {days} jours",
+      "urgencyDormant": "En sommeil · {days} jours"
     },
     "searchPlaceholder": "Rechercher des conversations…",
     "searchNoResults": "Aucune conversation ne correspond à ta recherche."

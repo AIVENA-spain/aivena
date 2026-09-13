@@ -27,9 +27,9 @@ describe("followUpState — the defect this replaces", () => {
 describe("scoreState — a stale number must not read as live", () => {
   it("with the engine stopped, an existing score is LEGACY, never live", () => {
     expect(AUTOMATION.leadScoring).toBe("not_running");   // pin the current reality
-    expect(scoreState({ score: 82, temperature: "hot" })).toBe("legacy");
-    expect(scoreState({ score: 82 })).toBe("legacy");
-    expect(scoreState({ temperature: "warm" })).toBe("legacy");
+    expect(scoreState({ score: 82, temperature: "hot" })).toBe("unavailable");
+    expect(scoreState({ score: 82 })).toBe("unavailable");
+    expect(scoreState({ temperature: "warm" })).toBe("unavailable");
   });
 
   it("with the engine stopped and no score, it is UNAVAILABLE", () => {

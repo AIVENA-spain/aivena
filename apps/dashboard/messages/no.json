@@ -400,9 +400,14 @@
       "lastCheckinFailedLabel": "Siste innsjekk feilet",
       "subCooldown": "En innsjekk ble sendt nylig — vent på svar",
       "followUpsNotActive": "Automatiske oppfølginger er ikke aktive.",
-      "scoringNotRunning": "Poengsetting av leads kjøres for øyeblikket ikke automatisk.",
       "scoreUnavailable": "Poeng utilgjengelig til poengsetting er slått på.",
-      "scoreStoredOn": "Lagret {date} av det gamle systemet; ikke oppdatert siden."
+      "scoredAt": "Poengsatt {date} · ut fra {count, plural, one {# melding} other {# meldinger}}",
+      "notScoredYet": "Ikke poengsatt ennå. En lead poengsettes 30 minutter etter siste melding.",
+      "urgencyWaiting": "Venter på svar · {days, plural, one {# dag} other {# dager}}",
+      "urgencyWaitingToday": "Venter på svar · i dag",
+      "urgencyViewingPassed": "Visningsdatoen har passert ({date})",
+      "urgencyInactive": "Inaktiv · {days} dager",
+      "urgencyDormant": "Hvilende · {days} dager"
     },
     "searchPlaceholder": "Søk i samtaler…",
     "searchNoResults": "Ingen samtaler samsvarer med søket ditt."

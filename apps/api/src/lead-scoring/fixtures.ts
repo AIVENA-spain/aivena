@@ -713,6 +713,9 @@ export const SCORING_FIXTURES: ScoringFixture[] = [
     "expectedFacts": {
       "real_lead": true,
       "intent": "real",
+      "budget": {
+        "state": "none"
+      },
       "area": {
         "state": "none"
       },

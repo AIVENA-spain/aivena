@@ -400,9 +400,14 @@
       "lastCheckinFailedLabel": "Последняя попытка связаться не удалась",
       "subCooldown": "Сообщение отправлено недавно — дождитесь ответа",
       "followUpsNotActive": "Автоматические напоминания не активны.",
-      "scoringNotRunning": "Оценка лидов сейчас не выполняется автоматически.",
       "scoreUnavailable": "Оценка недоступна, пока она не включена.",
-      "scoreStoredOn": "Сохранено {date} прежней системой; с тех пор не обновлялось."
+      "scoredAt": "Оценено {date} · по {count, plural, one {# сообщению} few {# сообщениям} many {# сообщениям} other {# сообщения}}",
+      "notScoredYet": "Ещё не оценено. Контакт оценивается через 30 минут после последнего сообщения.",
+      "urgencyWaiting": "Ждёт ответа · {days, plural, one {# день} few {# дня} many {# дней} other {# дня}}",
+      "urgencyWaitingToday": "Ждёт ответа · сегодня",
+      "urgencyViewingPassed": "Дата просмотра прошла ({date})",
+      "urgencyInactive": "Неактивен · {days} дн.",
+      "urgencyDormant": "Спящий · {days} дн."
     },
     "searchPlaceholder": "Поиск бесед…",
     "searchNoResults": "Ни одна беседа не соответствует поиску."

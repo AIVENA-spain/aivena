@@ -133,7 +133,12 @@ try {
   // Lead scoring switch (Stage 1, 2026-09-11). The scorer may run only for agencies listed in LEAD_SCORING_AGENCIES,
   // and the register must name exactly the same agencies, so the switch can never move without a record.
   const agencyList = apiSrc.match(/export const LEAD_SCORING_AGENCIES[^=]*=\s*\[([^\]]*)\]/);
-  const agencies = agencyList ? [...agencyList[1].matchAll(/['"]([^'"]+)['"]/g)].map((m) => m[1]).sort() : null;
+  const listed = agencyList ? [...agencyList[1].matchAll(/['"]([^'"]+)['"]/g)].map((m) => m[1]).sort() : null;
+  // Production (Stage 3c): every active agency. The register must then say exactly that, and no list may linger.
+  const allActive = /export const LEAD_SCORING_ALL_ACTIVE_AGENCIES[^=]*=\s*true/.test(apiSrc);
+  if (allActive && listed && listed.length)
+    problems.push("lead scoring: LEAD_SCORING_ALL_ACTIVE_AGENCIES is true but LEAD_SCORING_AGENCIES still lists agencies — one switch, not two");
+  const agencies = allActive ? ["all_active_agencies"] : listed;
   if (!agencies) {
     problems.push("apps/api/src/lib/automation-status.ts: LEAD_SCORING_AGENCIES is missing or not a plain list");
   } else {

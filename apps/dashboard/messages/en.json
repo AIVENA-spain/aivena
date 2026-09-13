@@ -400,9 +400,14 @@
       "lastCheckinFailedLabel": "Last check-in failed",
       "subCooldown": "A check-in was sent recently — wait for a reply",
       "followUpsNotActive": "Automatic follow-ups are not active.",
-      "scoringNotRunning": "Lead scoring is not currently running automatically.",
       "scoreUnavailable": "Score unavailable until scoring is enabled.",
-      "scoreStoredOn": "Stored {date} by the legacy pipeline; not refreshed since."
+      "scoredAt": "Scored {date} · from {count, plural, one {# message} other {# messages}}",
+      "notScoredYet": "Not scored yet. A lead is scored 30 minutes after their last message.",
+      "urgencyWaiting": "Waiting for a reply · {days, plural, one {# day} other {# days}}",
+      "urgencyWaitingToday": "Waiting for a reply · today",
+      "urgencyViewingPassed": "Viewing date passed ({date})",
+      "urgencyInactive": "Inactive · {days} days",
+      "urgencyDormant": "Dormant · {days} days"
     },
     "searchPlaceholder": "Search conversations…",
     "searchNoResults": "No conversations match your search."

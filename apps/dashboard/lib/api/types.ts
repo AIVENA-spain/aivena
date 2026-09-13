@@ -22,6 +22,27 @@ export type MeResponse = {
   agencies: ApiMembership[];
 };
 
+/** A live score's provenance. The API sends it only for scores the AIVENA scorer wrote while scoring is live. */
+export type ScoreProvenance = {
+  score: number | null;
+  temperature: string | null;
+  band: string | null;
+  scoredAt: string;
+  rubricVersion: string | null;
+  model: string | null;
+  messageCount: number | null;
+  costUsd: number | null;
+  viewingDate: string | null;
+  reason: string | null;
+};
+
+/** Urgency beside the score, computed live by the API. It never changes the score (Christian, 2026-09-13). */
+export type UrgencySignal =
+  | { kind: "waiting_for_reply"; days: number }
+  | { kind: "viewing_date_passed"; date: string }
+  | { kind: "inactive"; days: number }
+  | { kind: "dormant"; days: number };
+
 export type ApiTask = {
   id: string;
   taskType: string;
@@ -42,6 +63,8 @@ export type ApiTask = {
     intent: string | null;
     listingId: string | null;
     summary: string | null;
+    scoring?: ScoreProvenance | null;
+    urgency?: UrgencySignal[];
   };
 };
 
@@ -389,6 +412,8 @@ export interface LeadWithMatch {
   language: string | null;
   score: number | null;
   temperature: 'super_hot' | 'hot' | 'warm' | 'cold' | string;
+  scoring?: ScoreProvenance | null;
+  urgency?: UrgencySignal[];
   property_type_pref: string | null;
   bedrooms_min: number | null;
   bedrooms_max: number | null;
@@ -568,6 +593,8 @@ export type NeedsYouRow = {
   /** WhatsApp 24h send-window state (null for non-WhatsApp / no history). */
   whatsappWindowOpen: boolean | null;
   lastInboundWhatsappAt: string | null;
+  scoring?: ScoreProvenance | null;
+  urgency?: UrgencySignal[];
 };
 
 export type NeedsYouResponse = { rows: NeedsYouRow[] };
@@ -605,6 +632,8 @@ export type InboxRow = {
   area: string | null;
   source: string | null;
   score: number | null;
+  scoring?: ScoreProvenance | null;
+  urgency?: UrgencySignal[];
 };
 
 export type InboxResponse = { rows: InboxRow[] };
@@ -784,6 +813,9 @@ export type LeadIntel = {
   // deterministic extractor and the LLM intent path). NULL when it never was.
   preferences_update_summary: string | null;
   preferences_updated_from_message_at: string | null;
+  /** The live score's provenance; `urgency` above is June's legacy column and is always null now. */
+  scoring?: ScoreProvenance | null;
+  score_urgency?: UrgencySignal[];
 };
 
 export type LeadIntelResponse = { ok: true; data: LeadIntel };

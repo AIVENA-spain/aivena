@@ -26,7 +26,8 @@ import {
 
 import type { ContactReadiness, InboxRow, LeadIntel } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
-import { AUTOMATION, followUpState, scoreState } from "@/lib/automation-status";
+import { followUpState, scoreState, scoringIsLive } from "@/lib/automation-status";
+import { formatDay, formatScoredAt, urgencyMessages } from "@/lib/scoring-display";
 import { RelativeTime } from "@/components/ui/relative-time";
 import { Button } from "@/components/ui/button";
 import { langLabel, typeLabel } from "@/app/(app)/matches/_shared";
@@ -616,6 +617,13 @@ function BuyerTiles({
 
   const locale = useLocale();
   const scState = scoreState({ score: lead.score, temperature: lead.temperature });
+  // The API sends a score only with its provenance, and only while scoring is live.
+  const scoring = lead.scoring ?? data?.scoring ?? null;
+  const urgencyText = scoringIsLive()
+    ? urgencyMessages(lead.urgency ?? data?.score_urgency, (d) => formatDay(d, locale))
+        .map((m) => t(m.key, m.values))
+        .join(" · ") || null
+    : null;
   const scoreVal =
     lead.score != null
       ? lead.temperature
@@ -668,7 +676,8 @@ function BuyerTiles({
             label={t("score")}
             value={scState === "unavailable" ? null : scoreVal}
           />
-          <Tile icon={Flame} label={t("urgency")} value={titleCaseWord(data?.urgency ?? null)} loading={loading} />
+          {/* Urgency is live, beside the score and never inside it; June's stored urgency is never shown. */}
+          <Tile icon={Flame} label={t("urgency")} value={urgencyText} loading={loading} />
           <Tile icon={CalendarClock} label={t("timeframe")} value={titleCaseWord(data?.timeframe ?? null)} loading={loading} />
           <Tile icon={MapPin} label={t("location")} value={data?.location_interest_extracted ?? null} loading={loading} />
           <Tile icon={BedDouble} label={t("bedrooms")} value={fmtBedrooms(data?.bedrooms_min ?? null, data?.bedrooms_max ?? null)} loading={loading} />
@@ -677,24 +686,14 @@ function BuyerTiles({
           <Tile icon={Languages} label={t("language")} value={langLabel(lead.language)} />
         </div>
       )}
-      {/* Scoring is not running (lib/automation-status.ts). A number with no caption reads as
-          live intelligence; say plainly what it is, or that there is none. */}
-      {scState !== "live" && (
-        <p className="mt-2 text-[11.5px] leading-snug text-muted-foreground">
-          {scState === "unavailable" ? (
-            t("scoreUnavailable")
-          ) : (
-            <>
-              {t("scoringNotRunning")}{" "}
-              {/* A number with no age reads as fresh. Say when it was stored and by what. */}
-              {t("scoreStoredOn", {
-                date: new Intl.DateTimeFormat(locale, { day: "numeric", month: "long", year: "numeric" })
-                  .format(new Date(AUTOMATION.leadScoringLastObservedRun)),
-              })}
-            </>
-          )}
-        </p>
-      )}
+      {/* Every score says when it was calculated and from how many messages; with none, say so plainly. */}
+      <p className="mt-2 text-[11.5px] leading-snug text-muted-foreground">
+        {!scoringIsLive()
+          ? t("scoreUnavailable")
+          : scState === "live" && scoring
+            ? t("scoredAt", { date: formatScoredAt(scoring.scoredAt, locale), count: scoring.messageCount ?? 0 })
+            : t("notScoredYet")}
+      </p>
     </section>
   );
 }

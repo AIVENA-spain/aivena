@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { sql } from 'drizzle-orm';
+import { leadScoreViews, viewFor } from '../lead-scoring/live-scores-db';
 import { getLeadSummary } from './lead-summary';
 import {
   contactabilitySentence,
@@ -255,7 +256,10 @@ route.get('/:leadId/intel', async (c) => {
       // Missing or wrong-tenant lead — calm, not an error surface.
       return c.json({ ok: false, error: "Couldn't load this lead's details." }, 404);
     }
-    return c.json({ ok: true, data: rows[0] });
+    // June's reasoning sentence and urgency are legacy scoring output. Only a live score's own verified reason is
+    // shown, and urgency is computed live beside the score — never read from the stored column.
+    const view = viewFor(await leadScoreViews(tx, [leadId]), leadId);
+    return c.json({ ok: true, data: { ...rows[0], reasoning_summary: view.scoring?.reason ?? null, urgency: null, scoring: view.scoring, score_urgency: view.urgency } });
   } catch (err) {
     console.error('[leads/intel] read failed:', leadId, err);
     return c.json({ ok: false, error: GENERIC }, 500);
@@ -350,11 +354,12 @@ route.get('/:leadId/brief-summary', async (c) => {
       whatsapp_window?: { state?: string | null } | null;
       last_failed_reason?: string | null;
     } | null;
+    const view = viewFor(await leadScoreViews(tx, [leadId]), leadId);
     const facts: LeadFacts = {
       first_name: r.full_name ? String(r.full_name).trim().split(/\s+/)[0] : null,
       language: languageDisplayName(r.language as string | null),
-      temperature: (r.temperature as string | null) ?? null,
-      score: r.score != null ? Number(r.score) : null,
+      temperature: view.temperature,
+      score: view.score,
       property_type: (r.property_type_pref as string | null) ?? null,
       bedrooms: formatBedrooms(
         r.bedrooms_min != null ? Number(r.bedrooms_min) : null,
@@ -363,7 +368,8 @@ route.get('/:leadId/brief-summary', async (c) => {
       bathrooms: formatBathrooms(r.bathrooms_min != null ? Number(r.bathrooms_min) : null),
       budget_eur: r.budget_extracted != null ? Number(r.budget_extracted) : null,
       location: (r.location_interest_extracted as string | null) ?? null,
-      urgency: (r.urgency as string | null) ?? null,
+      // The stored urgency is June's legacy output: never fed to the Brief.
+      urgency: null,
       timeframe: (r.timeframe as string | null) ?? null,
       // Only make a WhatsApp contactability claim for WhatsApp leads — the panel
       // hides all WhatsApp cards for other channels, so the summary must too.

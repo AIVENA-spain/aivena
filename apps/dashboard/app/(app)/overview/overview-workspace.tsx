@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useActionState, useMemo, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { formatDay, formatScoredAt, urgencyMessages } from "@/lib/scoring-display";
 import {
   Activity,
   ArrowDownRight,
@@ -608,6 +609,8 @@ function NeedsYouCard({
 
 function SelectedLeadPanel({ lead }: { lead: NeedsYouRow | null }) {
   const t = useTranslations("overview.panel");
+  const tIntel = useTranslations("inbox.intel");
+  const locale = useLocale();
   const [copied, setCopied] = useState(false);
   const [sendState, sendAction, sending] = useActionState(
     approveTaskAction,
@@ -668,6 +671,16 @@ function SelectedLeadPanel({ lead }: { lead: NeedsYouRow | null }) {
                   lead.score,
                   t("leadScore"),
                 )}
+              </div>
+            ) : null}
+            {scoringIsLive() && lead.scoring ? (
+              <div className="mt-0.5 text-[11px] text-muted-foreground">
+                {tIntel("scoredAt", { date: formatScoredAt(lead.scoring.scoredAt, locale), count: lead.scoring.messageCount ?? 0 })}
+                {urgencyMessages(lead.urgency, (d) => formatDay(d, locale)).map((m) => (
+                  <span key={m.key} className="ml-1.5 font-medium text-amber-700 dark:text-amber-300">
+                    · {tIntel(m.key, m.values)}
+                  </span>
+                ))}
               </div>
             ) : null}
           </div>

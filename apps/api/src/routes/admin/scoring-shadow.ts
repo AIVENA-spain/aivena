@@ -53,6 +53,7 @@ route.get('/', async (c) => {
             LEFT JOIN leads l ON l.id = ac.lead_id
            WHERE ac.agency_id = current_setting('app.current_agency_id', true)
              AND ac.service_source = ${SERVICE_SOURCE}
+             AND ac.classification_type = 'lead_scoring'
            ORDER BY ac.classified_at DESC
            LIMIT ${LIMIT}`),
       )) as unknown as Row[];

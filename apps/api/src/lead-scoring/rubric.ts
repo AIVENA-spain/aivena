@@ -12,7 +12,8 @@ import type { Band, Facts, ScoreResult, Temperature } from './types';
 // v1.5 (2026-09-12): the table is still unchanged; the AI resolves dates and code (dates.ts) decides what they mean.
 // v1.5.1 (2026-09-13): "I don't know yet" is no budget, not a vague one.
 // v1.5.2 (2026-09-13): one narrow one-letter copying slip is tolerated and logged; asking about a type or feature is real interest.
-export const RUBRIC_VERSION = 'v1.5.2';
+// v1.6 (2026-09-13): search budget, offer price, listing price and financing kept apart (prompt + guard 4).
+export const RUBRIC_VERSION = 'v1.6';
 
 /** The "nothing found" value of every state fact. */
 export const STATE_DEFAULTS = {

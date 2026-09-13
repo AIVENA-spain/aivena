@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { sql } from 'drizzle-orm';
+import { withLiveScores } from '../lead-scoring/live-scores-db';
 
 /**
  * Matches (W20 reverse-prospecting, read-only). Two SECURITY INVOKER RPCs,
@@ -28,7 +29,7 @@ route.get('/', async (c) => {
   try {
     const result = await tx.execute(sql`SELECT * FROM get_leads_with_matches()`);
     const rows = result as unknown as Array<Record<string, unknown>>;
-    return c.json({ ok: true, data: rows });
+    return c.json({ ok: true, data: await withLiveScores(tx, rows, 'lead_id') });
   } catch (err) {
     console.error('[matches/list] read failed:', err);
     return c.json({ ok: false, error: FRIENDLY }, 500);
@@ -49,7 +50,7 @@ route.get('/property/:propertyId/buyers', async (c) => {
       sql`SELECT * FROM public.match_leads_for_property(${propertyId}::uuid, 10)`,
     );
     const rows = result as unknown as Array<Record<string, unknown>>;
-    return c.json({ ok: true, data: rows });
+    return c.json({ ok: true, data: await withLiveScores(tx, rows, 'lead_id') });
   } catch (err) {
     console.error('[matches/reverse] read failed:', err);
     return c.json({ ok: false, error: FRIENDLY }, 500);

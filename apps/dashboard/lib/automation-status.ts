@@ -28,20 +28,12 @@ export const AUTOMATION: {
   leadScoring: EngineStatus;
   /** 3A Follow-Up Engine v2 — schedules and enqueues automatic follow-ups. */
   automaticFollowUps: EngineStatus;
-  /**
-   * When scoring was last observed to run, and what ran it. INTERIM: the honest per-lead answer is
-   * leads.scored_at, which the API does not currently expose to the dashboard. Until it does, a
-   * score on screen can only be dated by when the engine last ran — which is sound precisely
-   * BECAUSE the engine is stopped: nothing has written a score since. Re-check this if that
-   * changes. Per-lead score age + source is question 6 of the make-it-live plan.
-   */
-  leadScoringLastObservedRun: string;   // ISO date
-  leadScoringSource: "legacy_n8n_2a" | "amanda_engine" | "unknown";
 } = {
+  // Lead scoring is the AIVENA scorer (apps/api/src/lead-scoring). Stage 3c turns this on together with the API's
+  // LEAD_SCORING_LIVE; every score then arrives with its own provenance (when, from how many messages), so no global
+  // "last run" date exists any more.
   leadScoring: "not_running",
   automaticFollowUps: "not_running",
-  leadScoringLastObservedRun: "2026-06-19",
-  leadScoringSource: "legacy_n8n_2a",
 };
 
 /* ── follow-up ─────────────────────────────────────────────────────────────── */
@@ -77,9 +69,8 @@ export function followUpState(input: {
 /* ── scoring ───────────────────────────────────────────────────────────────── */
 
 export type ScoreState =
-  | "live"        // scoring engine running and this lead has a score
-  | "legacy"      // a score exists, but no engine is running to produce or refresh it
-  | "unavailable"; // no score, and nothing running to produce one
+  | "live"        // scoring is live and this lead has a score (the API sends only live-provenance scores)
+  | "unavailable"; // no score to show
 
 /**
  * A number on screen implies something computed it recently. While the scoring engine is not
@@ -91,8 +82,8 @@ export function scoreState(input: {
   temperature?: string | null;
 }): ScoreState {
   const hasValue = input.score != null || (input.temperature ?? "") !== "";
-  if (AUTOMATION.leadScoring === "running") return hasValue ? "live" : "unavailable";
-  return hasValue ? "legacy" : "unavailable";
+  // Since Stage 3b the API never sends a stored June score, so there is no "legacy" state to label.
+  return AUTOMATION.leadScoring === "running" && hasValue ? "live" : "unavailable";
 }
 
 /** True when the UI may present scoring output as current, live intelligence. */

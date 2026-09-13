@@ -41,7 +41,7 @@ import { processTurnDb } from './amanda-engine/process-turn-db';
 import { sweepViewingReminders } from './amanda-engine/viewing-reminders';
 import { pingTick } from './amanda-engine/agent-ping';
 import { safeErr } from './lib/safe-error';
-import { withAgency } from '../../../packages/db/client';
+import { db, withAgency } from '../../../packages/db/client';
 import { getLlmKey } from './routes/amanda-llm';
 import { anthropicCaller } from './lead-scoring/extract';
 import { runScoringTick, shouldStartScoringWorker, TICK_MS as SCORING_TICK_MS } from './lead-scoring/worker';
@@ -238,7 +238,13 @@ if (shouldStartScoringWorker()) {
   const scoringCall = anthropicCaller(getLlmKey);
   const scoringTick = async () => {
     try {
-      const r = await runScoringTick({ withAgency, call: scoringCall });
+      const r = await runScoringTick({
+        withAgency,
+        call: scoringCall,
+        // Every active agency, listed by the one read-only function built for it (Stage 3b, 2026-09-13).
+        listActiveAgencies: async () =>
+          ((await db.execute(sql`SELECT public.lead_scoring_active_agencies() AS id`)) as unknown as Array<{ id: string }>).map((x) => String(x.id)),
+      });
       if (r.scored + r.failed > 0) logger.info('Lead scoring (shadow) ran', r);
     } catch (err) {
       console.error('[lead-scoring] tick failed', safeErr(err));

@@ -400,9 +400,14 @@
       "lastCheckinFailedLabel": "Seneste kontakt mislykkedes",
       "subCooldown": "En kontakt blev sendt for nylig — vent på svar",
       "followUpsNotActive": "Automatiske opfølgninger er ikke aktive.",
-      "scoringNotRunning": "Lead-scoring kører i øjeblikket ikke automatisk.",
       "scoreUnavailable": "Score utilgængelig, indtil scoring er slået til.",
-      "scoreStoredOn": "Gemt {date} af det gamle system; ikke opdateret siden."
+      "scoredAt": "Scoret {date} · ud fra {count, plural, one {# besked} other {# beskeder}}",
+      "notScoredYet": "Ikke scoret endnu. Et lead scores 30 minutter efter sin seneste besked.",
+      "urgencyWaiting": "Venter på svar · {days, plural, one {# dag} other {# dage}}",
+      "urgencyWaitingToday": "Venter på svar · i dag",
+      "urgencyViewingPassed": "Fremvisningsdatoen er passeret ({date})",
+      "urgencyInactive": "Inaktiv · {days} dage",
+      "urgencyDormant": "Hvilende · {days} dage"
     },
     "searchPlaceholder": "Søg i samtaler…",
     "searchNoResults": "Ingen samtaler matcher din søgning."

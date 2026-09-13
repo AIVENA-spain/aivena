@@ -400,9 +400,14 @@
       "lastCheckinFailedLabel": "Ultimo contatto non riuscito",
       "subCooldown": "Contatto inviato di recente — aspetta una risposta",
       "followUpsNotActive": "I follow-up automatici non sono attivi.",
-      "scoringNotRunning": "Il punteggio dei lead non viene eseguito automaticamente al momento.",
       "scoreUnavailable": "Punteggio non disponibile finché non viene attivato.",
-      "scoreStoredOn": "Salvato il {date} dal sistema precedente; non aggiornato da allora."
+      "scoredAt": "Valutato il {date} · in base a {count, plural, one {# messaggio} other {# messaggi}}",
+      "notScoredYet": "Non ancora valutato. Un contatto viene valutato 30 minuti dopo il suo ultimo messaggio.",
+      "urgencyWaiting": "In attesa di risposta · {days, plural, one {# giorno} other {# giorni}}",
+      "urgencyWaitingToday": "In attesa di risposta · oggi",
+      "urgencyViewingPassed": "La data della visita è passata ({date})",
+      "urgencyInactive": "Inattivo · {days} giorni",
+      "urgencyDormant": "Dormiente · {days} giorni"
     },
     "searchPlaceholder": "Cerca conversazioni…",
     "searchNoResults": "Nessuna conversazione corrisponde alla tua ricerca."

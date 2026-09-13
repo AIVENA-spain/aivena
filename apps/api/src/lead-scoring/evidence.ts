@@ -304,6 +304,21 @@ export function checkEvidence(
     }
   }
 
+  // Guard 4 (v1.6, Christian 2026-09-13): search budget, offer price, listing price and financing are four different
+  // things. A budget quoted from inside their offer on a listing, or from inside their financing, is not their search
+  // budget (a listing's own price is already caught by guard 2).
+  for (const [k, label] of [['decision', 'their offer on a listing'], ['financing_ready', 'their financing']] as const) {
+    const v = out[k];
+    const active = k === 'decision' ? v?.state === 'offer_or_negotiation' : v?.present === true;
+    const source = wordsOf(v?.quote);
+    const b = out.budget;
+    const bq = wordsOf(b?.quote);
+    if (active && source && b && b.state !== 'none' && bq && (source.includes(bq) || bq.includes(source))) {
+      guards.push(`budget "${b.quote}" is ${label}, not their search budget`);
+      out.budget = { ...b, state: 'none' };
+    }
+  }
+
   // Guard 3 (run 3, #4): an area or need whose words sit ONLY in messages naming a listing reference is that listing's
   // detail, whichever message the model named. Budget is left alone: "up to €400k" is the lead's.
   const listingMessage = leadRaw.map((t) => REF_CODE.test(t) || REF_WORD.test(t));

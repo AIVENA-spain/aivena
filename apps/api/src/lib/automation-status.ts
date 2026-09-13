@@ -22,6 +22,15 @@ export const LEAD_SCORING_LIVE = false;
 export const LEAD_SCORING_AGENCIES: readonly string[] = ['demo-costa-homes-pilot01'];
 
 /**
+ * LEAD_SCORING_ALL_ACTIVE_AGENCIES — production scoring (Christian 2026-09-13: "all active agencies, not demo-only").
+ * When true, the scorer runs for every agency whose status is 'active' (public.lead_scoring_active_agencies()), so a newly
+ * onboarded agency is scored without anyone remembering to add it, and LEAD_SCORING_AGENCIES must be empty. Stage 3b
+ * ships it false; Stage 3c turns it on. The lint requires the register's scoring_enabled_for to read
+ * ['all_active_agencies'] whenever it is true.
+ */
+export const LEAD_SCORING_ALL_ACTIVE_AGENCIES: boolean = false;
+
+/**
  * LEAD_SCORING_MODE — 'shadow' writes only an internal audit record (ai_classifications), never the lead. 'write'
  * (Stage 3) does not exist yet, and the lint refuses it while LEAD_SCORING_LIVE is false.
  */

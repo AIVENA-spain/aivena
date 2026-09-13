@@ -400,9 +400,14 @@
       "lastCheckinFailedLabel": "Senaste avstämningen misslyckades",
       "subCooldown": "En avstämning skickades nyligen — vänta på svar",
       "followUpsNotActive": "Automatiska uppföljningar är inte aktiva.",
-      "scoringNotRunning": "Leadpoängsättning körs för närvarande inte automatiskt.",
       "scoreUnavailable": "Poäng inte tillgänglig förrän poängsättning aktiveras.",
-      "scoreStoredOn": "Sparad {date} av det gamla systemet; inte uppdaterad sedan dess."
+      "scoredAt": "Poängsatt {date} · utifrån {count, plural, one {# meddelande} other {# meddelanden}}",
+      "notScoredYet": "Inte poängsatt än. En lead poängsätts 30 minuter efter sitt senaste meddelande.",
+      "urgencyWaiting": "Väntar på svar · {days, plural, one {# dag} other {# dagar}}",
+      "urgencyWaitingToday": "Väntar på svar · i dag",
+      "urgencyViewingPassed": "Visningsdatumet har passerat ({date})",
+      "urgencyInactive": "Inaktiv · {days} dagar",
+      "urgencyDormant": "Vilande · {days} dagar"
     },
     "searchPlaceholder": "Sök konversationer…",
     "searchNoResults": "Inga konversationer matchar din sökning."

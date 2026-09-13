@@ -17,13 +17,21 @@
  */
 import { sql } from 'drizzle-orm';
 import type { Tx } from '../../../../packages/db/client';
-import { LEAD_SCORING_AGENCIES, LEAD_SCORING_MODE, scoringPaused } from '../lib/automation-status';
+import {
+  LEAD_SCORING_AGENCIES,
+  LEAD_SCORING_ALL_ACTIVE_AGENCIES,
+  LEAD_SCORING_LIVE,
+  LEAD_SCORING_MODE,
+  scoringPaused,
+} from '../lib/automation-status';
+import { isDate } from './dates';
 import { SCORING_MODEL, type ModelCall } from './extract';
+import { SERVICE_SOURCE } from './source';
 import { RUBRIC_VERSION } from './rubric';
 import { scoreConversation, type ScoredConversation } from './score-conversation';
 import type { ConversationMessage, EarlierLeadMessage, ScoringInput } from './types';
 
-export const SERVICE_SOURCE = 'aivena_scoring_v1';
+export { SERVICE_SOURCE };
 export const QUIET_MINUTES = 30;
 export const MAX_RUNS_PER_LEAD_PER_DAY = 2;
 export const AGENCY_DAILY_CAP = 200;
@@ -41,8 +49,13 @@ export const MAX_MESSAGE_CHARS = 1_500;
 /** With those caps, one run can never cost more than this (proved in worker.test.ts). */
 export const MAX_RUN_COST_USD = 0.02;
 export const TICK_MS = 60_000;
+/** Cost safety across every agency together (per API process, reset at Madrid midnight): about $10 a day at the worst case. */
+export const MAX_RUNS_PER_DAY_ALL_AGENCIES = 500;
 
-export const shouldStartScoringWorker = (allowed: readonly string[] = LEAD_SCORING_AGENCIES): boolean => allowed.length > 0;
+export const shouldStartScoringWorker = (
+  allowed: readonly string[] = LEAD_SCORING_AGENCIES,
+  allActive: boolean = LEAD_SCORING_ALL_ACTIVE_AGENCIES,
+): boolean => allActive || allowed.length > 0;
 export const scoringAllowedFor = (agencyId: string, allowed: readonly string[] = LEAD_SCORING_AGENCIES): boolean =>
   allowed.includes(agencyId);
 
@@ -150,9 +163,20 @@ export function pickDueLeads(rows: DueRow[], nowMs: number, limit = LEADS_PER_TI
 /** Leads whose only new messages were trivial are not re-examined until a newer inbound arrives (per process). */
 const trivialUntil = new Map<string, number>();
 
+/** Runs across all agencies today (per process). */
+const globalRuns = { day: '', count: 0 };
+const madridDay = (ms: number): string => new Date(ms).toLocaleDateString('en-CA', { timeZone: 'Europe/Madrid' });
+
 export type WorkerDeps = {
   allowed?: readonly string[];
+  /** Score every active agency instead of a list (production). */
+  allActive?: boolean;
+  /** Lists active agencies across the whole system (public.lead_scoring_active_agencies()); required when allActive. */
+  listActiveAgencies?: () => Promise<string[]>;
   mode?: 'shadow' | 'write';
+  /** Whether scoring is declared live; write mode refuses otherwise. */
+  live?: boolean;
+  globalDailyCap?: number;
   paused?: () => boolean;
   withAgency: <T>(agencyId: string, fn: (tx: Tx) => Promise<T>) => Promise<T>;
   call: ModelCall;
@@ -165,15 +189,65 @@ const toIso = (v: string | Date): string => (v instanceof Date ? v.toISOString()
 // Today in Madrid, as a timestamp: the per-lead and per-agency caps reset at local midnight.
 const MADRID_TODAY = sql`(date_trunc('day', now() AT TIME ZONE 'Europe/Madrid') AT TIME ZONE 'Europe/Madrid')`;
 
+/**
+ * The lead's conversation exactly as the scorer reads it, for the worker and the Admin re-score alike: the last 30
+ * messages, plus the lead's own older messages when that window is full.
+ */
+export async function readLeadConversation(
+  tx: Tx,
+  leadId: string,
+): Promise<{ conversation: ConversationMessage[]; earlier: EarlierLeadMessage[] }> {
+  const messages = rows<{ direction: string; content: string | null; created_at: string | Date }>(
+    await tx.execute(sql`
+      SELECT direction, content, created_at FROM conversation_messages
+       WHERE agency_id = current_setting('app.current_agency_id', true) AND lead_id = ${leadId}::uuid
+       ORDER BY created_at DESC LIMIT ${MESSAGES_PER_RUN}`),
+  ).reverse();
+  const conversation: ConversationMessage[] = messages.map((m) => ({
+    at: toIso(m.created_at),
+    from: m.direction === 'inbound' ? 'lead' : 'agency',
+    text: m.content ?? '',
+  }));
+  let earlier: EarlierLeadMessage[] = [];
+  if (messages.length === MESSAGES_PER_RUN && messages[0]) {
+    earlier = rows<{ content: string | null; created_at: string | Date }>(
+      await tx.execute(sql`
+        SELECT content, created_at FROM conversation_messages
+         WHERE agency_id = current_setting('app.current_agency_id', true) AND lead_id = ${leadId}::uuid
+           AND direction = 'inbound' AND created_at < ${toIso(messages[0].created_at)}::timestamptz
+         ORDER BY created_at DESC LIMIT ${EARLIER_LEAD_MESSAGES}`),
+    )
+      .reverse()
+      .map((m) => ({ at: toIso(m.created_at), text: m.content ?? '' }));
+  }
+  return { conversation, earlier };
+}
+
 export async function runScoringTick(deps: WorkerDeps): Promise<TickResult> {
-  const allowed = deps.allowed ?? LEAD_SCORING_AGENCIES;
+  const allActive = deps.allActive ?? LEAD_SCORING_ALL_ACTIVE_AGENCIES;
   const mode = deps.mode ?? LEAD_SCORING_MODE;
+  const live = deps.live ?? LEAD_SCORING_LIVE;
   const paused = deps.paused ?? scoringPaused;
+  const globalCap = deps.globalDailyCap ?? MAX_RUNS_PER_DAY_ALL_AGENCIES;
   const result: TickResult = { agencies: 0, scored: 0, failed: 0, skippedTrivial: 0 };
-  if (!shouldStartScoringWorker(allowed)) return result; // OFF: returns before any database call
+  if (!shouldStartScoringWorker(deps.allowed ?? LEAD_SCORING_AGENCIES, allActive)) return result; // OFF: before any database call
   if (paused()) return result; // the stop-only brake, also before any database call
-  if (mode !== 'shadow') throw new Error('lead scoring: only shadow mode exists in Stage 2');
+  // Writing to leads while the product says scoring is not live would put fresh scores under a "not live" label.
+  if (mode === 'write' && !live) throw new Error('lead scoring: write mode requires scoring to be declared live');
+  if (mode !== 'shadow' && mode !== 'write') throw new Error('lead scoring: unknown mode');
   const now = deps.nowMs ?? Date.now;
+  let allowed: readonly string[];
+  if (allActive) {
+    if (!deps.listActiveAgencies) throw new Error('lead scoring: all active agencies needs listActiveAgencies');
+    allowed = await deps.listActiveAgencies();
+  } else {
+    allowed = deps.allowed ?? LEAD_SCORING_AGENCIES;
+  }
+  const today = madridDay(now());
+  if (globalRuns.day !== today) {
+    globalRuns.day = today;
+    globalRuns.count = 0;
+  }
 
   for (const agencyId of allowed) {
     if (!scoringAllowedFor(agencyId, allowed)) continue;
@@ -183,7 +257,8 @@ export async function runScoringTick(deps: WorkerDeps): Promise<TickResult> {
         await tx.execute(sql`
           SELECT count(*)::int AS n FROM ai_classifications
            WHERE agency_id = current_setting('app.current_agency_id', true)
-             AND service_source = ${SERVICE_SOURCE} AND classified_at >= ${MADRID_TODAY}`),
+             AND service_source = ${SERVICE_SOURCE} AND classification_type = 'lead_scoring'
+             AND classified_at >= ${MADRID_TODAY}`),
       );
       let budget = AGENCY_DAILY_CAP - Number(used[0]?.n ?? 0);
       if (budget <= 0) return;
@@ -195,9 +270,11 @@ export async function runScoringTick(deps: WorkerDeps): Promise<TickResult> {
                    (SELECT max(cm.created_at) FROM conversation_messages cm
                      WHERE cm.lead_id = l.id AND cm.direction = 'inbound') AS last_inbound_at,
                    (SELECT max(ac.classified_at) FROM ai_classifications ac
-                     WHERE ac.lead_id = l.id AND ac.service_source = ${SERVICE_SOURCE}) AS last_run_at,
+                     WHERE ac.lead_id = l.id AND ac.service_source = ${SERVICE_SOURCE}
+                       AND ac.classification_type = 'lead_scoring') AS last_run_at,
                    (SELECT count(*)::int FROM ai_classifications ac
                      WHERE ac.lead_id = l.id AND ac.service_source = ${SERVICE_SOURCE}
+                       AND ac.classification_type = 'lead_scoring'
                        AND ac.classified_at >= ${MADRID_TODAY}) AS runs_today
               FROM leads l
              WHERE l.agency_id = current_setting('app.current_agency_id', true)
@@ -208,42 +285,21 @@ export async function runScoringTick(deps: WorkerDeps): Promise<TickResult> {
       );
 
       for (const d of due) {
-        if (budget <= 0) break;
+        if (budget <= 0 || globalRuns.count >= globalCap) break;
         const inboundMs = toMs(d.last_inbound_at);
         if (trivialUntil.get(d.lead_id) === inboundMs) continue;
-        const messages = rows<{ direction: string; content: string | null; created_at: string | Date }>(
-          await tx.execute(sql`
-            SELECT direction, content, created_at FROM conversation_messages
-             WHERE agency_id = current_setting('app.current_agency_id', true) AND lead_id = ${d.lead_id}::uuid
-             ORDER BY created_at DESC LIMIT ${MESSAGES_PER_RUN}`),
-        ).reverse();
-        const conversation: ConversationMessage[] = messages.map((m) => ({
-          at: toIso(m.created_at),
-          from: m.direction === 'inbound' ? 'lead' : 'agency',
-          text: m.content ?? '',
-        }));
+        const { conversation, earlier } = await readLeadConversation(tx, d.lead_id);
         const lastRunMs = toMs(d.last_run_at);
         if (!burstIsMeaningful(conversation, Number.isNaN(lastRunMs) ? 0 : lastRunMs)) {
           trivialUntil.set(d.lead_id, inboundMs);
           result.skippedTrivial += 1;
           continue;
         }
-        // Only when the window is full can older messages exist; the lead's own are worth keeping, capped.
-        let earlier: EarlierLeadMessage[] = [];
-        if (messages.length === MESSAGES_PER_RUN && messages[0]) {
-          earlier = rows<{ content: string | null; created_at: string | Date }>(
-            await tx.execute(sql`
-              SELECT content, created_at FROM conversation_messages
-               WHERE agency_id = current_setting('app.current_agency_id', true) AND lead_id = ${d.lead_id}::uuid
-                 AND direction = 'inbound' AND created_at < ${toIso(messages[0].created_at)}::timestamptz
-               ORDER BY created_at DESC LIMIT ${EARLIER_LEAD_MESSAGES}`),
-          )
-            .reverse()
-            .map((m) => ({ at: toIso(m.created_at), text: m.content ?? '' }));
-        }
         const built = buildScoringInput(new Date(now()).toISOString(), conversation, earlier);
         const scored = await scoreConversation(built.input, deps.call);
-        await writeShadowRecord(tx, agencyId, d.lead_id, scored, allowed, built);
+        globalRuns.count += 1;
+        const runId = await writeShadowRecord(tx, agencyId, d.lead_id, scored, allowed, built, mode);
+        if (mode === 'write' && live && scored.ok) await writeLeadScore(tx, agencyId, d.lead_id, scored, runId, built, allowed);
         budget -= 1;
         if (scored.ok) result.scored += 1;
         else result.failed += 1;
@@ -253,7 +309,7 @@ export async function runScoringTick(deps: WorkerDeps): Promise<TickResult> {
   return result;
 }
 
-/** The ONLY write the scorer can make in Stage 2: one internal audit row. Refuses any agency not allowed in code. */
+/** The internal record of every run, in both modes. Refuses any agency not allowed. Returns the record's id. */
 export async function writeShadowRecord(
   tx: Tx,
   agencyId: string,
@@ -261,10 +317,11 @@ export async function writeShadowRecord(
   s: ScoredConversation,
   allowed: readonly string[] = LEAD_SCORING_AGENCIES,
   built?: BuiltInput,
-): Promise<void> {
+  mode: 'shadow' | 'write' = 'shadow',
+): Promise<string | null> {
   if (!scoringAllowedFor(agencyId, allowed)) throw new Error('lead scoring: agency not allowed');
   const output = {
-    mode: 'shadow',
+    mode,
     rubric_version: RUBRIC_VERSION,
     ok: s.ok,
     error: s.error,
@@ -285,12 +342,54 @@ export async function writeShadowRecord(
         }
       : null,
   };
-  await tx.execute(sql`
+  const inserted = rows<{ id: string }>(await tx.execute(sql`
     INSERT INTO ai_classifications
       (agency_id, lead_id, service_source, classification_type, output, classification, requires_human_review,
        model_used, tokens_used, cost_usd, classified_at)
     VALUES
       (current_setting('app.current_agency_id', true), ${leadId}::uuid, ${SERVICE_SOURCE}, 'lead_scoring',
        ${JSON.stringify(output)}::jsonb, ${s.ok && s.band ? s.band : 'failed'}, false,
-       ${SCORING_MODEL}, ${s.inputTokens + s.outputTokens}, ${s.costUsd}, now())`);
+       ${SCORING_MODEL}, ${s.inputTokens + s.outputTokens}, ${s.costUsd}, now())
+    RETURNING id::text AS id`));
+  return inserted[0]?.id ?? null;
+}
+
+/** How many messages a score was calculated from. */
+export const messageCountOf = (built: BuiltInput): number =>
+  built.input.conversation.length + (built.input.earlierLeadMessages?.length ?? 0);
+
+/**
+ * The ONLY lead write the scorer can make (write mode, production): the score, temperature, when it was calculated, the
+ * verified reason, and its provenance. Never the lead's status, intent, urgency, summary, preferences or anything that
+ * sends. A run that did not finish never touches the lead: its last real score stays, dated.
+ */
+export async function writeLeadScore(
+  tx: Tx,
+  agencyId: string,
+  leadId: string,
+  s: ScoredConversation,
+  runId: string | null,
+  built: BuiltInput,
+  allowed: readonly string[] = LEAD_SCORING_AGENCIES,
+): Promise<void> {
+  if (!scoringAllowedFor(agencyId, allowed)) throw new Error('lead scoring: agency not allowed');
+  if (!s.ok || !s.band) return;
+  const v = s.facts?.viewing;
+  const viewingDate = v && v.state && v.state !== 'none' && isDate(v.date) ? v.date : null;
+  await tx.execute(sql`
+    UPDATE leads
+       SET score = ${s.score}::int,
+           temperature = ${s.temperature},
+           scored_at = now(),
+           reasoning_summary = ${s.explanation},
+           score_source = ${SERVICE_SOURCE},
+           score_rubric_version = ${RUBRIC_VERSION},
+           score_model = ${SCORING_MODEL},
+           score_run_id = ${runId}::uuid,
+           score_band = ${s.band},
+           score_message_count = ${messageCountOf(built)}::int,
+           score_cost_usd = ${s.costUsd},
+           score_viewing_date = ${viewingDate}::date
+     WHERE id = ${leadId}::uuid
+       AND agency_id = current_setting('app.current_agency_id', true)`);
 }

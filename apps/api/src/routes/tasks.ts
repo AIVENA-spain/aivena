@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { sql } from 'drizzle-orm';
+import { leadScoreViews, noScore, viewFor, type LeadScoreView } from '../lead-scoring/live-scores-db';
 import { executeBookingFromPendingAction } from '../amanda-engine/booking-exec';
 import { scrubKnowledge } from '../amanda-engine/knowledge-scrub';
 import { nudgeCalendarSync } from './calendar-worker';
@@ -108,7 +109,7 @@ function toIso(value: Date | string): string {
   return value instanceof Date ? value.toISOString() : String(value);
 }
 
-function mapTask(r: TaskListRow) {
+function mapTask(r: TaskListRow, view: LeadScoreView = noScore()) {
   return {
     id: r.id,
     taskType: r.task_type,
@@ -124,9 +125,12 @@ function mapTask(r: TaskListRow) {
       language: r.language,
       source: r.source,
       sourceType: r.source_type,
-      score: r.score,
-      temperature: r.temperature,
-      intent: r.intent,
+      // Only the lead's live score; June's stored intent is legacy scoring output and is never shown.
+      score: view.score,
+      temperature: view.temperature,
+      intent: null,
+      scoring: view.scoring,
+      urgency: view.urgency,
       listingId: r.listing_id,
       summary: r.summary,
     },
@@ -216,7 +220,8 @@ route.get('/', async (c) => {
   `);
 
   const rows = result as unknown as TaskListRow[];
-  return c.json({ tasks: rows.map(mapTask) });
+  const scores = await leadScoreViews(tx, rows.map((r) => r.lead_id));
+  return c.json({ tasks: rows.map((r) => mapTask(r, viewFor(scores, r.lead_id))) });
 });
 
 // GET /api/v1/tasks/:id — single task with conversation thread
@@ -287,7 +292,7 @@ route.get('/:id', async (c) => {
     console.error('[tasks/:id] whatsapp_state failed:', r.lead_id, err);
   }
 
-  const task = mapTask(r);
+  const task = mapTask(r, viewFor(await leadScoreViews(tx, [r.lead_id]), r.lead_id));
 
   return c.json({
     task: {

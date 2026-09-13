@@ -1,7 +1,7 @@
 "use server";
 
 import { apiFetch, ApiError } from "@/lib/api/client";
-import type { ScoringCheckRun, ShadowStatus } from "./types";
+import type { RescoreDryRun, ScoringCheckRun, ShadowStatus } from "./types";
 
 /**
  * Admin → Scoring check. Staff-only twice over: the admin layout returns "not found" to everyone else, and the API
@@ -51,5 +51,15 @@ export async function getShadowResultsAction(): Promise<Ok<ShadowStatus> | Err> 
       : { ok: false, error: res.error ?? "Could not load the shadow results." };
   } catch {
     return { ok: false, error: "Could not load the shadow results." };
+  }
+}
+
+/** The go-live re-score dry run: lead by lead, what go-live would do. Read-only. */
+export async function getRescoreDryRunAction(): Promise<Ok<RescoreDryRun> | Err> {
+  try {
+    const res = await apiFetch<RescoreDryRun & { ok: boolean; error?: string }>("/api/v1/admin/scoring-rescore/dry-run");
+    return res.ok ? { ok: true, data: res } : { ok: false, error: res.error ?? "Could not prepare the re-score dry run." };
+  } catch {
+    return { ok: false, error: "Could not prepare the re-score dry run." };
   }
 }

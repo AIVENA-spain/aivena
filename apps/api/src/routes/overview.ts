@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { sql } from 'drizzle-orm';
+import { countLiveHotLeads, leadScoreViews, viewFor } from '../lead-scoring/live-scores-db';
 import type { Tx } from '../../../../packages/db/client';
 import { correctedOutboundKind, originOf, sentLabel, type OutboundOrigin } from '../lib/outbound-origin';
 import { safeErr } from '../lib/safe-error';
@@ -145,7 +146,10 @@ route.get('/kpis', async (c) => {
       SELECT dashboard_overview_kpis(${periodDays}::int) AS kpis
     `);
     const rows = result as unknown as Array<{ kpis: unknown }>;
-    return c.json(rows[0]?.kpis ?? null);
+    const kpis = (rows[0]?.kpis ?? null) as Record<string, unknown> | null;
+    // Hot Leads counts live scores only, hot AND super-hot. The RPC counts every stored 'hot', June's included.
+    if (kpis && typeof kpis === 'object') kpis.hot_leads = { value: await countLiveHotLeads(tx), point_in_time: true };
+    return c.json(kpis);
   } catch (err) {
     console.error('[/api/v1/overview/kpis] RPC failed:', err);
     return c.json({ error: 'Failed to load KPIs' }, 500);
@@ -161,6 +165,8 @@ route.get('/needs-you', async (c) => {
       SELECT * FROM dashboard_needs_you(${limit}::int)
     `);
     const rows = result as unknown as NeedsYouRow[];
+    // The RPC prefers a score the TASK saved earlier; only the lead's own live score may be shown.
+    const scores = await leadScoreViews(tx, rows.map((r) => r.lead_id));
     return c.json({
       rows: rows.map((r) => ({
         taskId: r.task_id,
@@ -172,8 +178,10 @@ route.get('/needs-you', async (c) => {
         channel: r.channel,
         language: r.language,
         leadStatus: r.lead_status,
-        temperature: r.temperature,
-        score: r.score,
+        temperature: viewFor(scores, r.lead_id).temperature,
+        score: viewFor(scores, r.lead_id).score,
+        scoring: viewFor(scores, r.lead_id).scoring,
+        urgency: viewFor(scores, r.lead_id).urgency,
         aiReplySubject: r.ai_reply_subject,
         aiReplyBody: r.ai_reply_body,
         priority: r.priority,
@@ -198,6 +206,7 @@ route.get('/inbox', async (c) => {
       SELECT * FROM dashboard_inbox(${limit}::int, ${days}::int)
     `);
     const rows = result as unknown as DashboardInboxRow[];
+    const scores = await leadScoreViews(tx, rows.map((r) => r.lead_id));
     // dashboard_inbox maps every followup_sent to 'auto', but the send path writes followup_sent for
     // EVERY delivered message — a reply a person sent ("Answer it" → operator_custom_reply) would read
     // "Auto-handled". Correct it from send_queue.requested_by; if that can't be read, keep the RPC's answer.
@@ -211,7 +220,7 @@ route.get('/inbox', async (c) => {
         fullName: r.full_name,
         channel: r.channel,
         language: r.language,
-        temperature: r.temperature,
+        temperature: viewFor(scores, r.lead_id).temperature,
         leadStatus: r.lead_status,
         taskStatus: r.task_status,
         bucket: r.bucket,
@@ -231,7 +240,9 @@ route.get('/inbox', async (c) => {
         leadType: r.lead_type,
         area: r.area,
         source: r.source,
-        score: r.score,
+        score: viewFor(scores, r.lead_id).score,
+        scoring: viewFor(scores, r.lead_id).scoring,
+        urgency: viewFor(scores, r.lead_id).urgency,
       })),
     });
   } catch (err) {

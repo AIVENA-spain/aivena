@@ -176,6 +176,11 @@ export function ScoringCheckClient() {
                           Guard: {g}
                         </div>
                       ))}
+                      {c.tolerated.map((s) => (
+                        <div key={s} className="mt-1 text-[11.5px] text-amber-800 dark:text-amber-200">
+                          Slip tolerated: {s}
+                        </div>
+                      ))}
                       {c.factDiffs.map((d) => (
                         <div key={d} className="mt-1 text-[11.5px] text-amber-800 dark:text-amber-200">
                           Fact differs: {d}

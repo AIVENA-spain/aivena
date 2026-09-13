@@ -11,7 +11,8 @@ import type { Band, Facts, ScoreResult, Temperature } from './types';
 // v1.4 (2026-09-11): the scoring table is unchanged; every quote must now name the lead message it comes from.
 // v1.5 (2026-09-12): the table is still unchanged; the AI resolves dates and code (dates.ts) decides what they mean.
 // v1.5.1 (2026-09-13): "I don't know yet" is no budget, not a vague one.
-export const RUBRIC_VERSION = 'v1.5.1';
+// v1.5.2 (2026-09-13): one narrow one-letter copying slip is tolerated and logged; asking about a type or feature is real interest.
+export const RUBRIC_VERSION = 'v1.5.2';
 
 /** The "nothing found" value of every state fact. */
 export const STATE_DEFAULTS = {

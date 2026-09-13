@@ -3,7 +3,7 @@
  * the real-lead scorer (worker.ts). The model call is passed in, so tests run without any AI or key.
  */
 import { applyDates } from './dates';
-import { checkEvidence, norm } from './evidence';
+import { capitalisedWords, checkEvidence, norm } from './evidence';
 import { explain } from './explain';
 import { extractFacts, type ModelCall } from './extract';
 import { leadMessagesOf } from './lead-messages';
@@ -16,12 +16,14 @@ export type ScoredConversation = {
   score: number | null;
   band: Band | null;
   temperature: Temperature;
-  /** Built from verified facts only. */
+  /** Built from verified facts only, in the lead's own words. */
   explanation: string | null;
   /** The facts that counted, after the evidence check, the guards and the dates. */
   facts: Facts | null;
   discarded: string[];
   guards: string[];
+  /** One-letter copying slips that were tolerated under Christian's limits (v1.5.2): logged, never silent. */
+  tolerated: string[];
   /** What code made of the dates: a passed viewing, a horizon read from a real date. */
   timeNotes: string[];
   inputTokens: number;
@@ -36,11 +38,13 @@ export async function scoreConversation(input: ScoringInput, call: ModelCall): P
   if (!x.ok) {
     return {
       ok: false, error: x.error, score: null, band: null, temperature: null, explanation: null, facts: null,
-      discarded: [], guards: [], timeNotes: [], ...usage,
+      discarded: [], guards: [], tolerated: [], timeNotes: [], ...usage,
     };
   }
   const raw = leadMessagesOf(input);
-  const ev = checkEvidence(x.facts, raw.map(norm), raw);
+  // Both sides of the conversation: a name the agency capitalises is a name even where the lead wrote it in lower case.
+  const everyText = [...(input.earlierLeadMessages ?? []).map((m) => m.text), ...input.conversation.map((m) => m.text)];
+  const ev = checkEvidence(x.facts, raw.map(norm), raw, capitalisedWords(everyText));
   const dated = applyDates(ev.facts, input.now);
   const r = computeScore(dated.facts, raw.length);
   return {
@@ -53,6 +57,7 @@ export async function scoreConversation(input: ScoringInput, call: ModelCall): P
     facts: dated.facts,
     discarded: ev.discarded,
     guards: ev.guards,
+    tolerated: ev.tolerated,
     timeNotes: dated.notes,
     ...usage,
   };

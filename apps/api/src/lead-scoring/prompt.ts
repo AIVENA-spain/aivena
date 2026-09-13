@@ -25,7 +25,7 @@ Definitions:
 - area: "clear" = one or more named towns or areas they want; "vague" = only a country or region ("we might retire abroad one day", "the Costa Blanca"); "none".
 - need: "clear" = a property type plus a size or key feature, also when asked as a question ("do you have townhouses with a roof terrace?"); "vague" = only a type; "none".
 - real_lead: false only for spam, wrong numbers, suppliers, job seekers, or someone who never wanted to buy, sell or rent. A genuine buyer or seller who bought elsewhere or lost interest is still a real lead: record that under negative.
-- intent: "real" if they want to buy, sell or rent; "curious" if vague ("one of these years", "having a look", "no plans yet").
+- intent: "real" if they want to buy, sell or rent, INCLUDING when they simply ask whether you have a type of property or a feature: that is real early interest. "curious" only when they say plainly that they are only browsing or have no plans ("one of these years", "having a look", "no plans yet").
 - specific_property: "availability_only" = they only asked whether a listing is available; "discussed" = they asked about it or showed interest beyond availability; "none".
 - concrete_question: a concrete question about a property or the purchase (parking, distance, costs, process). NOT asking whether it is available, NOT asking what listings you have, and NOT asking to view it.
 - asked_for_listings_or_photos: they asked to see options, listings, photos or details, or said yes when offered them.

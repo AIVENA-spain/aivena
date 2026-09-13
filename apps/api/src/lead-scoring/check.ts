@@ -22,6 +22,8 @@ export type CheckCase = {
   explanation: string | null;
   discarded: string[];
   guards: string[];
+  /** One-letter copying slips tolerated under Christian's limits: always reported, never silent. */
+  tolerated: string[];
   /** Facts that came out differently from what a perfect reader should have found. */
   factDiffs: string[];
   /** What code made of the dates (Stage 3a): a viewing date that has passed, a horizon read from a real date. */
@@ -115,6 +117,7 @@ export function computeVerdict(cases: CheckCase[]): Pick<CheckReport, 'verdict' 
   const scoreOff = cases.filter((c) => c.actual && !c.ok && c.actual.band === c.expected.band);
   const withDiscards = cases.filter((c) => c.discarded.length > 0);
   const factsOff = cases.filter((c) => c.factDiffs.length > 0);
+  const withSlips = cases.filter((c) => c.tolerated.length > 0);
   const namedChecks = NAMED.filter((n) => cases.some((c) => c.id === n.id)).map(({ id, label, test }) => {
     const c = cases.find((x) => x.id === id);
     return { label, pass: !!c && test(c) };
@@ -127,6 +130,7 @@ export function computeVerdict(cases: CheckCase[]): Pick<CheckReport, 'verdict' 
   if (bandWrong.length) reasons.push(`band slip on a minor case: ${ids(bandWrong)}`);
   if (factsOff.length) reasons.push(`facts differ: ${factsOff.map((c) => `#${c.id} (${c.factDiffs.join('; ')})`).join(' · ')}`);
   if (scoreOff.length) reasons.push(`same-band score difference: ${ids(scoreOff)}`);
+  if (withSlips.length) reasons.push(`one-letter copying slips tolerated (the lead's real words are shown): ${ids(withSlips)}`);
   if (withDiscards.length) reasons.push(`quotes caught and discarded (never scored, never shown): ${ids(withDiscards)}`);
   return { verdict: reasons.length ? 'ACCEPTABLE' : 'GREEN', reasons, namedChecks };
 }
@@ -144,7 +148,7 @@ export async function runScoringCheck(
     const base = { id: fx.id, title: fx.title, minor: fx.minor === true, expected: fx.expected };
     // Checked before every call: a call runs only if even its worst case cannot take the run past the cap.
     if (spent + worstCaseCostUsd(fx.input) > capUsd) {
-      cases.push({ ...base, actual: null, ok: false, explanation: null, discarded: [], guards: [], factDiffs: [], timeNotes: [], inputTokens: 0, outputTokens: 0, costUsd: 0, error: 'not run: it could have passed the cost cap' });
+      cases.push({ ...base, actual: null, ok: false, explanation: null, discarded: [], guards: [], tolerated: [], factDiffs: [], timeNotes: [], inputTokens: 0, outputTokens: 0, costUsd: 0, error: 'not run: it could have passed the cost cap' });
       opts.onProgress?.(cases.length, fixtures.length);
       continue;
     }
@@ -158,6 +162,7 @@ export async function runScoringCheck(
       explanation: r.explanation,
       discarded: r.discarded,
       guards: r.guards,
+      tolerated: r.tolerated,
       factDiffs: factDiffs(fx.expectedFacts, r.facts),
       timeNotes: r.timeNotes,
       inputTokens: r.inputTokens,

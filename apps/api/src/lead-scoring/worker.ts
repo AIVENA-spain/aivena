@@ -275,6 +275,7 @@ export async function writeShadowRecord(
     facts: s.facts,
     discarded: s.discarded,
     guards: s.guards,
+    tolerated: s.tolerated,
     time_notes: s.timeNotes,
     input: built
       ? {

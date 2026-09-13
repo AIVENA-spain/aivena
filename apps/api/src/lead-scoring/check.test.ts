@@ -14,6 +14,7 @@ const c = (over: Partial<CheckCase>): CheckCase => ({
   explanation: 'Warm 50',
   discarded: [],
   guards: [],
+  tolerated: [],
   factDiffs: [],
   timeNotes: [],
   inputTokens: 0,

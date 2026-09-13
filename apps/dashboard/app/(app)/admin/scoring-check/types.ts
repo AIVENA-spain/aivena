@@ -12,6 +12,7 @@ export type ScoringCheckCase = {
   explanation: string | null;
   discarded: string[];
   guards: string[];
+  tolerated: string[];
   factDiffs: string[];
   timeNotes: string[];
   inputTokens: number;
@@ -60,6 +61,7 @@ export type ShadowRun = {
   explanation: string | null;
   discarded: string[];
   guards: string[];
+  tolerated: string[];
   timeNotes: string[];
   rubricVersion: string | null;
   messagesSeen: number | null;

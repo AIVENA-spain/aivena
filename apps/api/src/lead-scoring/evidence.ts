@@ -6,6 +6,12 @@
  * v1.4 (after the first Scoring check, 2026-09-11): the AI had quoted the agency's words as the lead's. Every quote
  * piece must now name the ONE lead message it comes from ("L22: Ja det passer"), and it is checked inside that message
  * only, so borrowed, stitched or agency-sourced words can no longer pass.
+ *
+ * v1.5.2 (Christian, 2026-09-13): the AI copied the lead's "isteden" as "istenden" and a true, agreed viewing was
+ * thrown away. ONE word per fact may now differ by ONE letter from a word in the named lead message — and only when it
+ * has 5+ letters, holds no digit, sits in a piece with no number, price, reference, phone number or email, is not a
+ * day or month word in any dashboard language, and is written in lower case everywhere in the conversation (so never
+ * a name or a place). The quote is then corrected to the lead's real word, and the slip is logged as tolerated.
  */
 import { isDate } from './dates';
 import { leadLabel, parseQuote } from './lead-messages';
@@ -52,6 +58,8 @@ export const norm = (s: unknown): string =>
     .replace(/\s+/g, ' ')
     .trim();
 
+const rawWordsOf = (s: string): string[] => s.split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+
 /** Whether a piece's words sit in one (normalised) message: word for word, or every word of it (3+ letters, or a number). */
 function inMessage(text: string, message: string): boolean {
   const q = norm(text);
@@ -62,19 +70,158 @@ function inMessage(text: string, message: string): boolean {
   return words.length > 0 && words.every((w) => tokens.has(w));
 }
 
-/** Why a quote cannot count, or null when it can: 1 to 3 pieces, each naming one lead message that holds its words. */
-export function quoteProblem(quote: unknown, leadTexts: readonly string[]): string | null {
-  const pieces = parseQuote(quote);
-  if (pieces.length === 0) return 'no quote';
-  if (pieces.length > 3) return `more than 3 pieces (${JSON.stringify(quote)})`;
-  for (const p of pieces) {
-    if (p.index === null) return `"${p.text}" does not say which lead message it comes from`;
-    if (p.index < 0 || p.index >= leadTexts.length) return `${leadLabel(p.index)} is not one of the lead's messages ("${p.text}")`;
-    if (!inMessage(p.text, leadTexts[p.index])) return `"${p.text}" is not in the lead's message ${leadLabel(p.index)}`;
+// ── The one-letter slip (v1.5.2) ───────────────────────────────────────────────────────────────────────────────────
+
+/** The dashboard's 13 languages (Norwegian is "nb" to the calendar data). */
+const LOCALES = ['en', 'es', 'nl', 'de', 'fr', 'nb', 'sv', 'da', 'fi', 'pl', 'pt', 'it', 'ru'] as const;
+
+/** Day, month, today and tomorrow words in every dashboard language, from the runtime's own calendar data. */
+function buildCalendarWords(): Set<string> {
+  const out = new Set<string>();
+  const add = (s: string) => {
+    for (const w of norm(s.replace(/\p{N}/gu, ' ')).split(' ')) if (w.length >= 3) out.add(w);
+  };
+  for (const locale of LOCALES) {
+    try {
+      for (let d = 0; d < 7; d++) {
+        const day = new Date(Date.UTC(2026, 8, 7 + d));
+        for (const weekday of ['long', 'short'] as const) add(new Intl.DateTimeFormat(locale, { weekday, timeZone: 'UTC' }).format(day));
+      }
+      for (let m = 0; m < 12; m++) {
+        const date = new Date(Date.UTC(2026, m, 15));
+        for (const month of ['long', 'short'] as const) {
+          add(new Intl.DateTimeFormat(locale, { month, timeZone: 'UTC' }).format(date));
+          // With a day, several languages use another form of the month ("15 września", "15 сентября").
+          add(new Intl.DateTimeFormat(locale, { day: 'numeric', month, timeZone: 'UTC' }).format(date));
+        }
+      }
+      const relative = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
+      for (const n of [-1, 0, 1, 2]) add(relative.format(n, 'day'));
+      for (const n of [-1, 0, 1]) add(relative.format(n, 'week'));
+    } catch {
+      // A language the runtime lacks adds nothing, and slipToleranceReady() then refuses every slip.
+    }
   }
-  return null;
+  return out;
+}
+const CALENDAR_WORDS = buildCalendarWords();
+
+/** Fails closed: without real calendar data in these languages, no slip is tolerated at all. */
+export const slipToleranceReady = (): boolean =>
+  CALENDAR_WORDS.has('torsdag') && CALENDAR_WORDS.has('czwartek') && CALENDAR_WORDS.has('september');
+
+const LETTERS = /^\p{L}+$/u;
+/** A piece holding a number, price, reference, phone number, email or link is never given any tolerance. */
+const PROTECTED_PIECE = /[\p{N}€$£¥@]|https?:\/\/|www\./iu;
+const letterCount = (w: string): number => [...w].length;
+const firstFive = (w: string): string => [...w].slice(0, 5).join('');
+const CALENDAR_PREFIXES = new Set([...CALENDAR_WORDS].filter((w) => letterCount(w) >= 5).map(firstFive));
+/**
+ * A day or month word, INCLUDING its inflected forms ("we wrześniu", "в сентябре", "syyskuussa"), which the calendar data
+ * does not list: any word sharing its first five letters with one. It blocks a few unrelated words too, which only
+ * means fewer slips are tolerated, never more.
+ */
+const isCalendarLike = (w: string): boolean => CALENDAR_WORDS.has(w) || (letterCount(w) >= 5 && CALENDAR_PREFIXES.has(firstFive(w)));
+
+function editDistance(a: string, b: string): number {
+  const x = [...a];
+  const y = [...b];
+  let prev = Array.from({ length: y.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= x.length; i++) {
+    const cur = [i];
+    for (let j = 1; j <= y.length; j++) {
+      cur[j] = Math.min(prev[j]! + 1, cur[j - 1]! + 1, prev[j - 1]! + (x[i - 1] === y[j - 1] ? 0 : 1));
+    }
+    prev = cur;
+  }
+  return prev[y.length]!;
 }
 
+/**
+ * Every word written with a capital anywhere in the conversation, on either side. A lead may write a place in lower
+ * case ("Ciudad quesada") while the agency writes "Quesada": such a word is a name, and a slip in it is never tolerated.
+ */
+export function capitalisedWords(texts: readonly string[]): Set<string> {
+  const out = new Set<string>();
+  for (const t of texts) for (const w of rawWordsOf(t)) if (w[0] !== w[0]!.toLocaleLowerCase()) out.add(norm(w));
+  return out;
+}
+
+type Slip = { typed: string; lead: string };
+type PieceMatch = { ok: true; slip: Slip | null } | { ok: false };
+
+function matchPiece(text: string, message: string, rawMessage: string | undefined, capitalised: ReadonlySet<string>): PieceMatch {
+  const q = norm(text);
+  if (!q) return { ok: false };
+  if (message.includes(q)) return { ok: true, slip: null };
+  const words = q.split(' ').filter((w) => w.length >= 3 || /\d/.test(w));
+  if (words.length === 0) return { ok: false };
+  const tokens = new Set(message.split(' '));
+  const missing = words.filter((w) => !tokens.has(w));
+  if (missing.length === 0) return { ok: true, slip: null };
+
+  // Exactly one word may be a one-letter slip, and only inside every limit Christian set.
+  if (rawMessage === undefined || missing.length !== 1 || !slipToleranceReady() || PROTECTED_PIECE.test(text)) return { ok: false };
+  const word = missing[0]!;
+  if (!LETTERS.test(word) || letterCount(word) < 5 || isCalendarLike(word) || capitalised.has(word)) return { ok: false };
+  const typed = rawWordsOf(text).find((r) => norm(r) === word);
+  if (!typed || typed !== typed.toLocaleLowerCase()) return { ok: false };
+  const near = [...tokens].filter(
+    (t) => LETTERS.test(t) && letterCount(t) >= 5 && !isCalendarLike(t) && !capitalised.has(t) && editDistance(t, word) === 1,
+  );
+  if (near.length !== 1) return { ok: false }; // no such word, or more than one: not a slip we can be sure of
+  const lead = rawWordsOf(rawMessage).find((r) => norm(r) === near[0]);
+  if (!lead || lead !== lead.toLocaleLowerCase()) return { ok: false };
+  return { ok: true, slip: { typed, lead } };
+}
+
+const escapeRe = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const replaceWord = (text: string, from: string, to: string): string =>
+  text.replace(new RegExp(`(^|[^\\p{L}\\p{N}])${escapeRe(from)}(?=[^\\p{L}\\p{N}]|$)`, 'u'), `$1${to}`);
+
+export type QuoteCheck = {
+  /** Why the quote cannot count, or null when it can. */
+  problem: string | null;
+  /** One-letter slips that were tolerated (at most one per fact). */
+  slips: Array<Slip & { message: string }>;
+  /** The quote rewritten with the lead's real words, when a slip was tolerated. */
+  corrected: string | null;
+};
+
+/**
+ * 1 to 3 pieces, each naming one lead message that holds its words. The slip tolerance applies only when the lead's
+ * raw messages and the conversation's capitalised words are both supplied (the scorer supplies them); without them the
+ * check is strictly word for word.
+ */
+export function checkQuote(
+  quote: unknown,
+  leadTexts: readonly string[],
+  leadRaw?: readonly string[],
+  capitalised?: ReadonlySet<string>,
+): QuoteCheck {
+  const fail = (problem: string): QuoteCheck => ({ problem, slips: [], corrected: null });
+  const pieces = parseQuote(quote);
+  if (pieces.length === 0) return fail('no quote');
+  if (pieces.length > 3) return fail(`more than 3 pieces (${JSON.stringify(quote)})`);
+  const tolerant = leadRaw !== undefined && capitalised !== undefined;
+  const slips: QuoteCheck['slips'] = [];
+  const rebuilt: string[] = [];
+  for (const p of pieces) {
+    if (p.index === null) return fail(`"${p.text}" does not say which lead message it comes from`);
+    if (p.index < 0 || p.index >= leadTexts.length) return fail(`${leadLabel(p.index)} is not one of the lead's messages ("${p.text}")`);
+    const m = matchPiece(p.text, leadTexts[p.index]!, tolerant ? leadRaw[p.index] : undefined, capitalised ?? new Set());
+    if (!m.ok) return fail(`"${p.text}" is not in the lead's message ${leadLabel(p.index)}`);
+    if (m.slip) slips.push({ ...m.slip, message: leadLabel(p.index) });
+    rebuilt.push(`${leadLabel(p.index)}: ${m.slip ? replaceWord(p.text, m.slip.typed, m.slip.lead) : p.text}`);
+  }
+  // More than one differing word is not a typo: it is a different sentence.
+  if (slips.length > 1) {
+    return fail(`more than one word differs from the lead's messages (${slips.map((s) => `"${s.typed}"`).join(', ')})`);
+  }
+  return { problem: null, slips, corrected: slips.length ? rebuilt.join(' | ') : null };
+}
+
+export const quoteProblem = (quote: unknown, leadTexts: readonly string[]): string | null => checkQuote(quote, leadTexts).problem;
 export const quoteFound = (quote: unknown, leadTexts: readonly string[]): boolean => quoteProblem(quote, leadTexts) === null;
 
 /** A quote's words without the message numbers, for comparing one fact's evidence with another's. */
@@ -90,31 +237,51 @@ export type Evidence = {
   discarded: string[];
   /** Facts neutralised by a guard (a listing's detail is not the lead's search). */
   guards: string[];
+  /** Facts kept although the AI's copy had a one-letter slip: logged, and the quote corrected to the lead's words. */
+  tolerated: string[];
 };
 
-/** leadTexts = the lead's messages after norm(); leadRaw = the same messages as written. Both in lead-messages.ts order. */
-export function checkEvidence(f: Facts, leadTexts: readonly string[], leadRaw: readonly string[]): Evidence {
+const slipNote = (s: QuoteCheck['slips'][number]): string =>
+  `"${s.typed}" read as "${s.lead}" in the lead's message ${s.message} (a one-letter copying slip)`;
+
+/**
+ * leadTexts = the lead's messages after norm(); leadRaw = the same messages as written; capitalised = the conversation's
+ * capitalised words (capitalisedWords()). Without `capitalised` the check stays strictly word for word.
+ */
+export function checkEvidence(
+  f: Facts,
+  leadTexts: readonly string[],
+  leadRaw: readonly string[],
+  capitalised?: ReadonlySet<string>,
+): Evidence {
   const out: Facts = JSON.parse(JSON.stringify(f)) as Facts;
   const discarded: string[] = [];
   const guards: string[] = [];
+  const tolerated: string[] = [];
 
   for (const k of Object.keys(STATE_DEFAULTS) as StateKey[]) {
     const v = out[k];
     const def = STATE_DEFAULTS[k];
     if (!v || v.state === def) continue;
-    const problem = quoteProblem(v.quote, leadTexts);
-    if (problem) {
-      discarded.push(`${k}=${v.state}: ${problem}`);
+    const q = checkQuote(v.quote, leadTexts, leadRaw, capitalised);
+    if (q.problem) {
+      discarded.push(`${k}=${v.state}: ${q.problem}`);
       out[k] = { ...v, state: def, ...(k === 'viewing' ? { within_7_days: null } : {}) };
+    } else if (q.corrected) {
+      tolerated.push(`${k}=${v.state}: ${slipNote(q.slips[0]!)}`);
+      out[k] = { ...v, quote: q.corrected };
     }
   }
   for (const k of FLAG_KEYS) {
     const v = out[k];
     if (!v?.present) continue;
-    const problem = quoteProblem(v.quote, leadTexts);
-    if (problem) {
-      discarded.push(`${k}: ${problem}`);
+    const q = checkQuote(v.quote, leadTexts, leadRaw, capitalised);
+    if (q.problem) {
+      discarded.push(`${k}: ${q.problem}`);
       out[k] = { ...v, present: false };
+    } else if (q.corrected) {
+      tolerated.push(`${k}: ${slipNote(q.slips[0]!)}`);
+      out[k] = { ...v, quote: q.corrected };
     }
   }
 
@@ -152,5 +319,5 @@ export function checkEvidence(f: Facts, leadTexts: readonly string[], leadRaw: r
     }
   }
 
-  return { facts: out, discarded, guards };
+  return { facts: out, discarded, guards, tolerated };
 }

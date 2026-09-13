@@ -253,6 +253,38 @@
       "status": "NOT_YET_AUDITED",
       "owner": "Christian decides when voice goes live (a pilot requirement in the 2026-07-03 packet plan); Packet 2 audits it then.",
       "note": "Found in the 2026-09-11 Overview audit. The Performance card's line 'Every missed call triggers an instant WhatsApp in the caller's language' is present tense on a not-live card — wording to fix in that audit. Revisit: when voice is scheduled."
+    },
+    {
+      "feature": "studio-carousel-content",
+      "promise": "Studio generates a multi-slide carousel whose factual and market claims are checked against real evidence before it can be published; a claim that fails is removed everywhere it appears, not hidden on one slide.",
+      "ui_surface": [
+        "studio carousel wizard (create + edit)",
+        "the generated post's 'what this was built on' box and the research-checked mark"
+      ],
+      "status": "LIVE_DEMO_VERIFIED",
+      "trigger_expected": "agent picks a topic -> /api/studio/carousel -> runPlannedCarousel: risk route (low/medium/high) -> research on medium/high -> writer from an evidence palette -> claim gate on the finished draft -> repair or remove -> publish",
+      "trigger_actual": "That path is real and has run end to end on real generations Christian produced in the live Studio. Medium and high risk decks have been exercised; the low-risk path has never been measured on a real post.",
+      "evidence": [
+        "generation 22d45453: HIGH-risk deck, $0.7973, 16 pages opened; the gate removed unsupported market claims and blocked a numberless restatement of a refused claim",
+        "generation ebc34869: escalation run recorded at 892s/$1.94 before the containment fixes, used to build the reaper and the escalation caps",
+        "1,161 apps/api tests green, including regression cases: publish-after-removal, title+body as one semantic unit, claim lineage, vague-authority strip, the 15-day and 48-hour myths",
+        "LOW tier: no real generation on record — estimated ~$0.10, UNMEASURED (Christian will run a real low-risk post later)"
+      ],
+      "failure_behaviour": "The gates fail safe by design: a failed semantic-unit or claim check drops the unverified slide or claim rather than publishing it (SEMANTIC_UNIT_CHECK_FAILED, PREFLIGHT_FAILED), and a generation that cannot finish keeps the slides that passed and shows a plain failure message naming what it dropped. NOT YET PROVEN: that every gate failure is recorded and that no gate can fail open — a Truth Audit concern, see open_findings.",
+      "ui_guard": "PARTIAL. A 'research checked' mark and a 'what this was built on' box exist, but they signal that research ran, not that each individual claim is evidenced, so the trust signal can outrun the evidence (audit finding). There is no per-slide evidence badge yet, and the mark is not gated on per-claim support.",
+      "regression_guard": "1,161 apps/api unit tests (studio-reliability, studio-publication-seam, studio-risk-route, studio-semantic-unit, studio-claim-lineage, studio-medium-risk, studio-usage, studio-card-scope). Unit-level only: no automated check proves the gate actually ran on each published deck in the live path.",
+      "verified_at": "2026-09-13",
+      "proven_issue": "The generation + evidence-gate path is proven in the live environment on real generations and is unit-guarded. Four customer-visible truth gaps remain, flagged by the Truth Audit: (1) the research/trust badge may outrun actual per-claim evidence; (2) an honesty-gate failure must be recorded and must never fail open, not yet proven for every gate; (3) a remix (Otra Vuelta) must not carry a checked/research badge onto a stronger, unchecked claim; (4) copy can promise a brochure with no brochure delivery path behind it.",
+      "product_impact": "Agencies can generate carousels whose claims are checked before publishing, which is the core promise. But a customer could trust a 'research checked' badge more than the evidence warrants, or receive a post promising a brochure that never arrives.",
+      "immediate_truth_fix": "The green label is scoped to the generation + evidence-gate path only, not to the badge or the brochure promise; the four gaps are recorded here as open findings and named as the next Packet 4 tasks, so the register does not present them as solved.",
+      "permanent_product_fix": "Per finding: (1) make the badge reflect per-claim evidence by tying a 'where this came from' per-slide view to the claim-support records the engine already stores; (2) record every gate failure and prove no gate fails open; (3) re-run the gate on a remix and re-derive its badge; (4) gate the brochure/deliverable CTA against a real delivery path or reword it. Packet 4 next-task candidates, badge first (audit says it is the most customer-visible).",
+      "owner": "Packet 4.",
+      "open_findings": [
+        "research/trust badge may outrun actual per-claim evidence (customer-visible)",
+        "honesty-gate failure must be recorded, never fail open — prove it for every gate",
+        "remix must not keep a checked/research badge if it creates a stronger unchecked claim",
+        "brochure promises exist in copy but no brochure delivery path exists"
+      ]
     }
   ],
   "pilot_ready_rule": "Pilot readiness does NOT require VERIFIED_REAL_LIVE — there is no real agency traffic yet. A feature is pilot-ready when it is at least LIVE_DEMO_VERIFIED, the full path is proven in the live environment with test/demo data, it is regression-guarded, it cannot send for real without approval, and the UI truth matches the engine.",

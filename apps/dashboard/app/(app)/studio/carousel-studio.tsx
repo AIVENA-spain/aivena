@@ -149,8 +149,12 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
   // name — so they can read what it was built on. Collapsed by default: available, not in the way.
   const [research, setResearch] = useState<string>("");
   const [researchOpen, setResearchOpen] = useState(false);
-  /** True only when the engine actually looked something up. Nothing shows when it didn't. */
-  const [researched, setResearched] = useState(false);
+  /**
+   * The trust mark. True only when research ran AND every material claim survived the gate cleanly
+   * (nothing removed, repaired, contradicted, degraded or timed out) — and never on a remix. A post
+   * that researched but had a claim removed shows the sources box below, but not this mark.
+   */
+  const [claimsChecked, setClaimsChecked] = useState(false);
   const [hashtags, setHashtags] = useState<string[]>([]);
   const [plan, setPlan] = useState<Plan | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -255,7 +259,7 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
     setSlides(Array.isArray(s.slides) ? (s.slides as string[]) : s.image_url ? [s.image_url as string] : []);
     setCaption(typeof s.caption === "string" ? s.caption : "");
     setResearch(typeof s.research === "string" ? s.research : "");
-    setResearched(s.researched === true);
+    setClaimsChecked(s.claims_checked === true);
     setHashtags(Array.isArray(s.hashtags) ? (s.hashtags as string[]) : []);
     setPlan(s.plan && typeof s.plan === "object" ? (s.plan as Plan) : null);
     if (typeof s.carousel_style === "string") setResultStyle(s.carousel_style);
@@ -758,11 +762,13 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
             className="mb-4 flex items-center gap-1.5 text-sm text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100"><ArrowLeft className="h-4 w-4" /> New carousel</button>
           <div className="mb-2 flex items-center gap-2 text-sm font-medium text-emerald-700"><Check className="h-4 w-4" /> {slides.length} slides ready — swipe order left to right</div>
           {/*
-            Only when the engine genuinely went and checked something. A quiet mark of confidence,
-            not a status badge — an ordinary lifestyle post shows nothing here at all, and the agent
-            never sees a risk tier or any of our internal vocabulary.
+            Only when every material claim survived the gate cleanly — not merely when research ran.
+            A quiet mark of confidence, not a status badge: a lifestyle post, a post that had a claim
+            removed, and a remix all show nothing here, and the agent never sees a risk tier or any of
+            our internal vocabulary. The "what this post was built on" box below still shows the
+            sources for any researched post.
           */}
-          {researched && (
+          {claimsChecked && (
             <div className="mb-2 flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400">
               <Check className="h-3.5 w-3.5" /> Research checked
             </div>

@@ -723,7 +723,7 @@ export const SCORING_FIXTURES: ScoringFixture[] = [
         "state": "discussed"
       },
       "timing": {
-        "state": "within_30_days"
+        "state": "unknown"
       },
       "viewing": {
         "state": "none"

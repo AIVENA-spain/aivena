@@ -21,7 +21,7 @@ Rules:
 
 Definitions:
 - budget, area and need describe the lead's OWN search. The price, location or features of a listing they ask about are NOT their budget, area or need; that is specific_property. For example, "Is the bungalow in Benijófar, ref AB123, still available?" gives area "none" and need "none": the town and the type describe that listing.
-- budget: "clear" = an amount or range, including approximate ("around €265,000", "under 180k", "max 312.500"); "vague" = e.g. "not too expensive"; "none".
+- budget: "clear" = an amount or range, including approximate ("around €265,000", "under 180k", "max 312.500"); "vague" = a level with no amount ("nothing too expensive", "a modest place"); "none" = no budget, INCLUDING when they say they do not know yet, or that it depends on what is available. Not knowing is not a vague budget.
 - area: "clear" = one or more named towns or areas they want; "vague" = only a country or region ("we might retire abroad one day", "the Costa Blanca"); "none".
 - need: "clear" = a property type plus a size or key feature, also when asked as a question ("do you have townhouses with a roof terrace?"); "vague" = only a type; "none".
 - real_lead: false only for spam, wrong numbers, suppliers, job seekers, or someone who never wanted to buy, sell or rent. A genuine buyer or seller who bought elsewhere or lost interest is still a real lead: record that under negative.

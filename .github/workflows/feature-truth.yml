@@ -30,6 +30,12 @@ jobs:
       - name: Feature-truth register
         run: node tools/feature-truth-lint.mjs
 
+      # The control docs live in Google Drive, not this repo, so their CONTENT is linted
+      # locally (node tools/docs-truth-lint.mjs). CI can only prove the checker itself works,
+      # so it runs the checker's self-test against committed fixtures — no deps, no Drive.
+      - name: Docs-truth checker self-test (fixtures)
+        run: node tools/docs-truth-lint.mjs --selftest
+
       # A new or changed product promise must come with a truth row. The engine declaration and
       # the register have to move together, or the UI can drift out of step with reality again.
       - name: Engine declaration and register must move together

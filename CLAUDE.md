@@ -191,6 +191,34 @@ Record it in **`apps/dashboard/lib/feature-truth.json`**; `node tools/feature-tr
 all of the above and runs in CI. It cross-checks `lib/automation-status.ts`, so nothing can be
 declared live while the engine behind it is declared stopped.
 
+## Working invariants (kept short; checked where possible)
+
+The general form of four failures we keep repeating. Worked instances stay in their own sections
+("active is not working" above; deploy-by-stamp below) — this is the shared rule, stated once.
+
+1. **Ground it, or mark it unknown.** A load-bearing claim traces to the source that proves it —
+   code and the live system over docs and labels, the plan over memory — or it is written literally
+   as "unknown — needs a check". Never guess a number, price or mechanism.
+2. **One owner per mutable fact.** A fact that can change has one canonical home; elsewhere, link to
+   it. Where it must be duplicated, change every copy in the same pass and stamp anything time-bound
+   or superseded (`as-of`, `superseded by D-NN`, `docs-truth: snapshot=STALE`).
+3. **Done means independently verified.** A command succeeding proves the command ran, not that the
+   AIVENA outcome is right. After a material change, read the resulting state back from something
+   other than the action: the diff after an edit, the file after a doc change, the `/health` commit
+   after a deploy, the value after a DB write, the schema after a migration, the provider state after
+   a settings change. Close-out is one line when it matches — *"Intended X; independently verified by
+   Y; matches; no residual"* — and expands only when the task is large, live state changed, something
+   is unknown, verification was partial, or it did not fully match.
+4. **Boundaries bind the mechanism, not the memory.** Hard constraints (forbidden paths, private
+   data, no-write orders) are encoded into the command or a subagent's tools and passed explicitly
+   into any subagent — a parent's final scan cannot stop a subagent's forbidden write.
+
+Objective doc invariants are enforced, not remembered: `node tools/docs-truth-lint.mjs` after any
+control-doc change (it fails closed; CI runs its `--selftest`). What it cannot judge — whether a
+claim is true, whether a label fits its evidence, semantic contradiction — stays invariants 1–3.
+
+**Trigger — run before declaring done:** after any change to STATE.md, a control document, or active AIVENA memory, run `node tools/docs-truth-lint.mjs` before declaring the task done.
+
 ## Decisions
 Default to **research-first**: research → compare options → pick the most maintainable solution →
 recommend → build safely → verify → document. Do **not** ask Christian routine technical questions;
@@ -321,8 +349,8 @@ A rewrite in `marketing/v2/vercel.json` (the `aivena-public` project) serves it 
 
 ### API (Railway) and Edge Functions
 
-- **A push to `main` is also an API deploy** on Railway. Prove what runs with the commit stamp on
-  `/health`, never with file dates or a bare 200.
+- **A push to `main` is also an API deploy** on Railway. Prove what runs with the `/health` commit
+  stamp (invariant 3 — never a file date or a bare 200).
 - Edge Function deploys follow the rules under "Database, migrations and Edge Functions".
 
 ## Writing a changelog entry — the format is enforced

@@ -1,0 +1,7 @@
+{
+  "mode": "memory",
+  "expect": "fail",
+  "allow": [
+    "christian@aivena.es"
+  ]
+}

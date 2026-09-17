@@ -1,0 +1,8 @@
+{
+  "stateFile": "master doc and changelog/STATE.md",
+  "current_required": [
+    "master doc and changelog/STATE.md",
+    "control/PARKING_LOT.md"
+  ],
+  "planned": []
+}

@@ -1,0 +1,22 @@
+{
+  "note": "Which AIVENA control docs exist now (CURRENT_REQUIRED) vs are planned but not yet applied (PLANNED). The checker fails closed if any CURRENT_REQUIRED file is missing; PLANNED files may be referenced without being present. Paths are relative to the 'aivena docs' root.",
+  "stateFile": "master doc and changelog/STATE.md",
+  "current_required": [
+    "master doc and changelog/STATE.md",
+    "control/LAUNCH_READINESS.md",
+    "control/SYSTEM_MAP.md",
+    "control/FEATURE_STATUS.md",
+    "control/PARKING_LOT.md",
+    "control/BRANCH_PRESERVATION_LEDGER.md",
+    "control/cost_and_billing_control.md"
+  ],
+  "planned": [
+    "START_HERE.md",
+    "archive/2026-09/ARTIFACT_INDEX.md"
+  ],
+  "memory_allow": [
+    "christian@aivena.es",
+    "john.smith@sandbox.com",
+    "+34 600 999 066"
+  ]
+}

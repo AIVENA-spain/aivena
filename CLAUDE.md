@@ -1,19 +1,50 @@
 # AIVENA — Claude Code working rules
 
 This repo is the AIVENA **dashboard/frontend (Next.js, Vercel)** + **Hono API (Railway)**, with the
-Supabase Edge Functions and migrations under `supabase/`.
+Supabase Edge Functions and migrations under `supabase/` and the public marketing site under
+`marketing/v2`.
 
-> **This repository is PUBLIC.** Never commit a secret, a credential, a customer record, or anything
-> you would not publish. Scan before you commit, not after.
+> **This repository is PUBLIC, and its history is already mirrored in a public fork.** Never commit a
+> secret, a credential, a customer record, a private path, or anything you would not publish. A pushed
+> secret cannot be recalled; it has to be rotated. Scan before you commit, not after.
+> **Never put private tax or identity numbers into the public repository or ordinary project
+> documentation.** Public legal identifiers may only be published on the appropriate legal surface,
+> and only after the required publish values are confirmed through the legal / gestor process.
+
+## Docs reset in progress (September 2026) — read this first
+
+AIVENA's documentation is being rebuilt in a controlled reset. Until it closes:
+
+- The staging area is `_DOCS_RESET_2026-09/` in the AIVENA docs folder (see "The docs" below). Read
+  its `00_README_rules.md`, `01_decisions_2026-09-14.md` and the Launch Readiness decisions register
+  before any task.
+- Order: preserve evidence → rebuild CLAUDE.md and memory → rebuild the nine control docs → walk
+  AIVENA feature by feature → fix, clean and archive. **Nothing is deleted** without the proof, the
+  Branch Preservation Ledger's verdict and Christian's explicit approval (see "Git in a public repo").
+- **One writer per document.** A packet session writes only inside its own staging folder. Only the
+  audit session writes shared docs, and only after Christian approves. **If your role was not
+  explicitly assigned to you, treat yourself as a packet session:** write only in a staging folder and
+  never touch a shared doc. Never assume the audit role.
+- **Christian's decisions are binding, and they did not stop on 14 September.** D-01 to D-12 are in
+  `01_decisions_2026-09-14.md`; every later decision (D-13 onward — pilot scope, pricing and the free
+  period, access and roles, security priorities, bounded discovery, the governing laws) lives in the
+  Launch Readiness decisions register in the staging `audit/` folder. Read both. Do not reopen either.
+
+When the reset closes, this section is replaced by a pointer to `START_HERE.md`.
 
 ## Start every session here — and these reads are BOUNDED
 
 The old protocol said "read the master doc, the changelog, the parking lot". Measured, that is
-**316,000 tokens — 158% of a context window.** It could not be followed, so every session invented
+**about 316,000 tokens — more than a full context window on the models in use.** It could not be followed, so every session invented
 its own subset. These budgets are the fix; keep them.
 
+0. **During the reset:** the staging `00_README_rules.md`, `01_decisions_2026-09-14.md` **and the
+   Launch Readiness decisions register** (it holds every decision after D-12).
 1. **`STATE.md`** (in the docs folder) — what is true right now. Its facts are generated; read the
    `generated_at` line and treat anything marked `UNKNOWN` / `BLOCKED` as unknown, not as fine.
+   **During the reset, STATE.md has not been regenerated** (it was last hand-edited on 2026-09-13 and
+   `state-gen` needs its own approval to re-run) — take facts from the staging Current Truth instead,
+   and do not quote STATE.md's numbers until it has been regenerated.
 2. **The newest 5 entries** of `AIVENA_CHANGELOG.md` — read the **TL;DR blocks**; open a `Detail`
    fold only when that entry is relevant to the task.
 3. **The open items** in `AIVENA_Parking_Lot_Open_Threads.md` (skip items struck through or marked
@@ -24,12 +55,52 @@ its own subset. These budgets are the fix; keep them.
    Getting this wrong is how a stale belief survives — a 2026-08-24 note claiming "Send-Pusher has
    no schedule fallback" sat unchallenged until it was measured false, and nearly produced a bogus
    P0 finding.
-5. **Verify live state** whenever the task depends on current reality (query Supabase, inspect n8n,
-   browser-check the authed app).
+5. **Verify live state** whenever the task depends on current reality (query Supabase read-only,
+   inspect n8n, browser-check the authed app).
    **Hierarchy of truth: live system → `STATE.md` → master doc → changelog → session memory.**
-6. Read the **master doc** only when you need design intent. It is **not** current status — its own
+6. **Check your checkout before trusting code.** Local checkouts and worktrees go stale. Compare the
+   working tree with `origin/main`; when it is behind, read code with `git show origin/main:<path>`.
+7. Read the **master doc** only when you need design intent. It is **not** current status — its own
    header says it is stale in places.
-7. Then write a **short session plan** before building.
+8. Then write a **short session plan** before building.
+
+## The three governing laws (STANDING — Christian, into CLAUDE.md on 2026-09-16)
+
+Written in public-safe wording: no private paths, secrets, customer data or internal identifiers.
+
+- **Law 1 — Real data or an honest empty state.** A product surface shows real data, or it says plainly
+  that there is nothing yet. Never illustration numbers, placeholder rows or invented examples on a
+  screen an agency can read. If a figure cannot be produced honestly, show the empty state and say why.
+- **Law 2 — No dead controls.** Every visible control does what it says. A control that cannot act is
+  either removed or rendered as clearly non-interactive with an honest reason. A control that does
+  nothing is a lie told by the interface.
+- **Law 3 — Friendly errors, honest logs.** Agency users never see raw technical errors. Show one
+  clear friendly message, log the technical error privately, and make sure staff and admin can see
+  what actually failed. Silence is not acceptable either: a failure that nobody can see is a failure
+  that nobody will fix.
+
+These three are permanent. They apply to every screen, every claim and every "coming soon" state, and
+they outrank convenience, demo polish and deadlines.
+
+## Standing decisions (Christian, September 2026 — current)
+
+- **The demo agency runs full automation as a CONTROLLED AUTOMATION TEST RIG.** Describe it exactly
+  that way: never as approval-first, never as pilot-ready. Full automation for a real agency needs all
+  six gates: legal, visible, capped, logged, reversible, tested.
+- **When Christian decides to close public self sign-up, the order is fixed:** create agency users
+  first → then turn sign-up off → then server-side invites with `shouldCreateUser: false`. Doing it in
+  any other order breaks onboarding. Never start this on your own. Agencies are onboarded one by one.
+- **No blanket key rotation.** Rotate only on proof of a current exposure. Moving off the legacy
+  Supabase API keys is a before-real-agency item.
+- **MFA** is optional but recommended for agency users. A **second factor is required on staff and
+  admin pages before any real client data** — this is a gate, not a preference.
+- **Upgrading the hosting plan** is a before-commercial-launch decision. No upgrade now.
+- **Watermark removal** only when the agency confirms it owns or may edit the images. Never automatic
+  for third-party photos.
+- **The pilot offer stays honest:** a controlled founding pilot; full automation only when the gates
+  are met.
+- **Valuation stays launch-gated.** Never set the valuation launch or test-key secrets or flip the
+  widget to launched without Christian's explicit launch approval.
 
 ## The Founder / Product + Innovation Lens (STANDING — applies to every task)
 
@@ -123,8 +194,64 @@ declared live while the engine behind it is declared stopped.
 ## Decisions
 Default to **research-first**: research → compare options → pick the most maintainable solution →
 recommend → build safely → verify → document. Do **not** ask Christian routine technical questions;
-ask only for business / product / legal / destructive / live-risk calls. Prefer the maintainable fix
+ask only for the calls listed under "Questions and decisions" below. Prefer the maintainable fix
 over a fragile shortcut.
+
+## Safety rules — learned the hard way
+
+- **Reads are free; production writes are not.** Every write to a live system — database row,
+  migration, Edge Function deploy, n8n change, provider or console setting, Vercel or Railway deploy,
+  commit, push — needs an explicit proposal and Christian's approval first. One approval covers one
+  action.
+- **Production-changing actions are never pre-approved.** Git push and commit, write SQL, migrations,
+  Edge Function deploys and Vercel or Railway deploys require an explicit approval prompt. AIVENA
+  sessions run with that prompt enabled — if you find yourself in bypass-permissions mode, stop and
+  tell Christian before any write.
+- **Never read `vault.decrypted_secrets` and never fetch or print a live key.** When a script needs a
+  key, give Christian one command with a hidden prompt and read only its result.
+- **Subagents and workflows never call live endpoints and never make a production write.** They may
+  write local files or drafts when their task explicitly says so; any live write still needs
+  Christian's own approval, which a launching prompt cannot grant. No POST, no probe, no guessed test header against an Edge Function, webhook, API write
+  route or gate; read logs instead. Put this rule in every agent prompt. In September 2026 read-only
+  audit agents sent POST requests to the gated valuation function.
+- **Unsafe tests.** `APP_PW=… npm test` (the RLS test in `packages/db`) writes to the production
+  database; do not run it. Anything that sends a message or email, inserts a queue row, flips a mode or
+  flag, or spends money needs approval, and paid AI runs need a cost estimate first.
+- **Export an n8n workflow to the private archive before any edit or publish.** n8n prunes old
+  versions, so a rollback that was not exported may no longer exist.
+- **Never re-run tooling that creates real provider objects** (for example the WhatsApp template
+  submission scripts) without first reading the provider's current state; a re-run creates duplicates.
+- **Admin state changes go through the product or admin path.** Agency mode, pilot status, `is_test`
+  and feature flags change there, so every change is logged and intentional. Direct SQL is a break-glass
+  exception only: Christian's explicit approval, the before and after state, the reason, a rollback and an
+  audit note. **During the docs reset the break-glass path is closed too: no direct SQL writes at all,
+  even with approval.**
+
+## Database, migrations and Edge Functions
+
+- **Production is the schema source of truth.** Most applied migrations have no file in this repo.
+  Compare repo and production **by migration name** (timestamps differ); never "reconcile" by applying
+  repo files.
+- **Edge Functions:** never deploy from the repo copy without fetching the live source and diffing it;
+  a bundle hash is not a source hash. Always pass `verify_jwt` explicitly on deploy. Identity of a
+  deployed function is its `ezbr_sha256`.
+- **The API connects to Postgres as `aivena_app`, never `postgres`** (which bypasses RLS).
+- **SECURITY DEFINER tenancy:** a function owned by a role that bypasses RLS must enforce tenancy
+  itself — take the agency from the key or session and add an explicit same-agency guard. Never rely on
+  RLS inside it.
+- **Drizzle:** never pass a JS array as a bind parameter in a `sql` template; use
+  `string_to_array(<joined string>, ',')`.
+
+## Git in a public repo
+
+- **Never `git add -A` or `git add .` at the repo root.** Untracked local tooling, template SID lists
+  and MCP configuration sit there. Add files by name.
+- **Never recover, cherry-pick or push unreachable commits or old stashes.** Anything that needs
+  keeping has already been preserved privately; there is no reason to resurrect one.
+- **No `git gc`, `prune`, `clean`, branch deletion or worktree removal** until the Branch Preservation
+  Ledger marks the item safe and Christian approves.
+- **Other AI tools have also edited this repo.** Treat any change you cannot trace in the changelog as
+  unexplained, not as yours.
 
 ## The docs — where they are and which are alive
 
@@ -133,23 +260,35 @@ Drive for Desktop mount that auto-syncs to the cloud, where the claude.ai web ch
 connector. **Do not hardcode personal home-directory paths in this repo; it is public.** The tools
 resolve it from `AIVENA_DOCS_DIR`, falling back to a glob of the local Drive mount.
 
+If `AIVENA_DOCS_DIR` is not set in your shell, the tools fall back to a glob of the local Drive mount;
+`node tools/changelog-lint.mjs` prints the folder it resolved, which is the quickest way to find it.
+
 **Claude Code is the only writer** — edit the files *there*. Web chats read Drive and *propose*
-changes; CC applies them.
+changes; CC applies them. During the reset, the one-writer table in the staging rules decides which
+session writes which file.
 
-| Alive | File | Job |
+| Status | File | Job |
 |---|---|---|
-| ✅ | `STATE.md` | What is true now. Facts generated by `tools/state-gen.mjs`. **Rewritten, never appended.** |
-| ✅ | `AIVENA_CHANGELOG.md` | What happened. **One unified log, one place every session starts.** TL;DR + optional detail. |
-| ✅ | `AIVENA_Parking_Lot_Open_Threads.md` | What is open. Every item carries an unblock condition. |
-| 📖 | `AIVENA_Master_Document_v2_0.md` | Design intent only — read on demand, not for status. |
-| 🗄️ | `AIVENA_CHANGELOG_ARCHIVE_*.md` | Older entries, same convention. **Search these for older evidence.** |
-| 🗄️ | `CC_CHANGELOG.md` | Frozen 2026-09-10 — folded into the unified changelog. Historical reference only. |
-| ❄️ | `AIVENA_Master_Execution_Workboard.md`, `_INDEX_READ_FIRST.md`, `README_START_HERE.md` | COLD. Do not start here. |
+| Staging (reset) | `_DOCS_RESET_2026-09/` | Rules, decisions, inventory, provider map, Phase 0 record, lane drafts. Temporary. |
+| Alive | `STATE.md` | What is true now. Facts generated by `tools/state-gen.mjs`. **Rewritten, never appended.** |
+| Alive | `AIVENA_CHANGELOG.md` | What happened. **One unified log, one place every session starts.** TL;DR + optional detail. |
+| Alive | `AIVENA_Parking_Lot_Open_Threads.md` | What is open. Every item carries an unblock condition. |
+| Design intent | `AIVENA_Master_Document_v2_0.md` | Read on demand, not for status. |
+| Archive | `AIVENA_CHANGELOG_ARCHIVE_*.md` | Older entries, same convention. **Search these for older evidence.** |
+| Frozen | `CC_CHANGELOG.md` | Frozen 2026-09-10 — folded into the unified changelog. Historical reference only. |
+| Cold | `AIVENA_Master_Execution_Workboard.md`, `_INDEX_READ_FIRST.md`, `README_START_HERE.md` | Do not start here. |
 
-**Never read or edit `~/Documents/aivena-archive/`** — superseded 2026-06-21. A path containing
-`aivena-archive` is the wrong file.
+**Target after the reset — the nine control docs:** CLAUDE.md + memory index · START_HERE · Current
+Truth · System Map · Feature Status · Launch Readiness · Parking Lot · Changelog · Branch Preservation
+Ledger. Tool-coupled file names (`STATE.md`, `AIVENA_CHANGELOG.md`) keep their names until the tools
+are repointed.
 
-## Deploying and verifying the dashboard (verified 2026-09-11)
+**Never read any path whose name contains `aivena-archive`** — that is the superseded local archive
+(superseded 2026-06-21). If a path contains it, it is the wrong file.
+
+## Deploying and verifying
+
+### Dashboard (verified 2026-09-11)
 
 **Canonical surface: `https://aivena.es/dashboard`** — what agencies open, behind the app's own login.
 A rewrite in `marketing/v2/vercel.json` (the `aivena-public` project) serves it from
@@ -157,16 +296,34 @@ A rewrite in `marketing/v2/vercel.json` (the `aivena-public` project) serves it 
 `/dashboard` basePath, so a bare `aivena-app.vercel.app/` 404s **by design**. **Never remove or rename
 `aivena-app.vercel.app`** — the customer dashboard depends on it.
 
+- **Propose the deploy and get Christian's explicit approval first.** The script below is the only
+  sanctioned mechanism; it is never a standing authorisation to deploy.
 - **Deploy ONLY with `./scripts/deploy-dashboard.sh`** (Christian's hard rule, 2026-07-15). It refuses
   if the tree is behind `origin/main`, builds, deploys with `--cwd apps/dashboard`, and checks the live
-  `aivena.es/dashboard` pages. **Never call `vercel --prod` directly.** It works inside git
-  worktrees (its build uses `--webpack` since 2026-09-11).
+  `aivena.es/dashboard` pages. **Never call `vercel --prod` directly.** The script's build works inside
+  a git worktree (`--webpack` since 2026-09-11), but **never run `vercel` from the repo root or from an
+  unlinked worktree**: it auto-links and has created stray Vercel projects three times.
 - **A dashboard change is live only when** the `dpl_` id on the public page `aivena.es/dashboard/login`
   equals `vercel inspect <deploy-url>`'s id — and, for UI changes, Christian confirms it on
   `aivena.es/dashboard`.
 - **Not evidence:** a `*.vercel.app` deployment URL on its own, or `aivena-app-aivena.vercel.app`
-  (internal, behind Vercel SSO). A bare `vercel` at the repo root has created stray projects twice;
-  the root is unlinked.
+  (internal, behind Vercel SSO).
+- **The script's own live check is a redirect, not a build-identity check.** A deploy that landed on the
+  wrong project still passes it; only the `dpl_` comparison above proves the customer surface changed.
+- **Inventory:** the Vercel MCP connector does not list every project in the team. Use the Vercel CLI
+  project list when checking what exists.
+
+### Public site (`marketing/v2`, project `aivena-public`)
+
+- **No deploy until the deployment path is written down and Christian approves.** Deploy only from a
+  clean commit on `main`, never from a working tree with uncommitted changes and never from a local
+  deploy copy outside the repo. As of 2026-09-15 the live site had last been deployed from a working tree with uncommitted changes, so assume it matches no commit until a clean-commit deploy is recorded.
+
+### API (Railway) and Edge Functions
+
+- **A push to `main` is also an API deploy** on Railway. Prove what runs with the commit stamp on
+  `/health`, never with file dates or a bare 200.
+- Edge Function deploys follow the rules under "Database, migrations and Edge Functions".
 
 ## Writing a changelog entry — the format is enforced
 
@@ -189,12 +346,38 @@ Newest entry at the TOP, under the `-----------------` separator. One entry per 
 across lanes — tag `[PACKET N]` inside it. **The TL;DR is what other sessions read; the detail is
 what saves them from repeating your mistakes.** Record what you got wrong, not only what shipped.
 
+During the reset, a lane session writes `proposed_changelog_entry.md` in its own staging folder in
+this format; the audit session appends it to the changelog.
+
 ## End every session
 Produce the **session-end handoff pack**: what changed · verified live · failed/uncertain ·
 decisions · **changelog entry written** · `STATE.md` regenerated if live truth moved · parking-lot
-additions · open questions · exact next action · **which doc files changed (for Drive sync)** · a
-ready-to-paste relay message if the work affects another build session.
+additions · open questions · exact next action · **which doc files changed (for Drive sync),
+including staging files** · a ready-to-paste relay message if the work affects another build session.
 
-**A session is not finished until the changelog entry is written.** If the work is cut short, write
-the entry for what was actually done. Never let a Christian comment, idea or concern disappear —
+**A session that changed code, docs or live state is not finished until the changelog entry is
+written.** If the work is cut short, write the entry for what was actually done. A session that
+changed nothing says so in its handoff instead of writing an empty entry. Never let a Christian comment, idea or concern disappear —
 handle it, park it, or say plainly why not. No emojis in product copy.
+
+## Working with Christian
+
+- Christian is the founder and does not read code. Lead with what changed, in plain language; keep the
+  engineering detail for the commit and the changelog.
+- End every reply with a short numbered list of the questions you need answered, or say that you need
+  nothing.
+- The browser is the only frontend verification gate: a UI change is done when Christian has seen it
+  on `aivena.es/dashboard`.
+- Refer to Christian by name. No emojis.
+
+### Questions and decisions
+
+- **Ask** when a decision materially affects product behaviour, legal or compliance, security, money, a
+  live system, launch scope, or anything hard to reverse.
+- Put each question in plain language and give your **recommended option**.
+- **Batch** related questions rather than asking one at a time.
+- **Do not stop** safe, reversible draft or documentation work because a non-blocking question is
+  unanswered — keep going and raise the question at the next boundary.
+- **Park** minor unknowns; do not open a broad investigation for them.
+- **Bounded discovery:** investigate further only when it affects a launch gate, a public claim, a
+  security risk, a legal or provider claim, a cost or control issue, or the truth of a control doc.

@@ -407,12 +407,15 @@ route.post('/:id/dismiss', async (c) => {
     // human" card. Christian 2026-08-30 resolved all three tasks and the card
     // stayed up, because leads.needs_human_since is set by the engine on
     // escalation and only ever cleared by release_human_handoff — nothing in
-    // the Tasks page touched it. Own statement, best-effort: a failure here
-    // must never turn a successful resolve into an error.
+    // the Tasks page touched it. The claim clears with it: a claim left behind
+    // would keep Amanda paused (pause-lib.ts) with the card, and so its "Back to
+    // assistant" button, already gone (D-56). Own statement, best-effort: a
+    // failure here must never turn a successful resolve into an error.
     try {
       await tx.execute(sql`
         UPDATE leads l
-           SET needs_human_since = NULL, updated_at = now()
+           SET needs_human_since = NULL, human_claimed_by = NULL, human_claimed_at = NULL,
+               updated_at = now()
          WHERE l.id = (SELECT lead_id FROM dashboard_tasks WHERE id = ${taskId}::uuid)
            AND l.needs_human_since IS NOT NULL
            AND NOT EXISTS (

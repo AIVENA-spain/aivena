@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { sql } from 'drizzle-orm';
 import { scrubKnowledge } from '../amanda-engine/knowledge-scrub';
 import { parseAmandaMode, AMANDA_MODES } from '../amanda-engine/modes';
+import { pauseReason } from '../amanda-engine/pause-lib';
 import { parseAmandaSettings } from '../amanda-engine/backends-db';
 
 /**
@@ -217,9 +218,11 @@ route.get('/conversations/:id/mode', async (c) => {
   const id = c.req.param('id');
   if (!/^[0-9a-f-]{36}$/i.test(id)) return c.json({ error: 'bad_id' }, 400);
   const rows = (await tx.execute(sql`
-    SELECT c.amanda_mode_override, c.ai_muted_at, c.human_claimed_at, s.amanda_mode AS agency_mode
+    SELECT c.amanda_mode_override, c.ai_muted_at, c.human_claimed_at, s.amanda_mode AS agency_mode,
+           l.needs_human_since, l.human_claimed_at AS lead_claimed_at
       FROM conversations c
       JOIN agency_settings s ON s.agency_id = current_setting('app.current_agency_id', true)
+      LEFT JOIN leads l ON l.id = c.lead_id
      WHERE c.id = ${id}::uuid
      LIMIT 1
   `)) as unknown as Array<Record<string, unknown>>;
@@ -227,7 +230,14 @@ route.get('/conversations/:id/mode', async (c) => {
   if (!r) return c.json({ error: 'not_found' }, 404);
   const agencyMode = parseAmandaMode(r.agency_mode);
   const override = typeof r.amanda_mode_override === 'string' ? parseAmandaMode(r.amanda_mode_override) : null;
-  const paused = Boolean(r.ai_muted_at) || Boolean(r.human_claimed_at);
+  // The engine's own rule (pause-lib.ts), so the switch can never show Amanda
+  // on while an escalated lead is waiting for a person (D-56).
+  const paused = pauseReason({
+    convMutedAt: r.ai_muted_at,
+    convClaimedAt: r.human_claimed_at,
+    leadClaimedAt: r.lead_claimed_at,
+    leadNeedsHumanSince: r.needs_human_since,
+  }) !== null;
   return c.json({
     ok: true,
     agency_mode: agencyMode,
@@ -277,6 +287,21 @@ route.post('/conversations/:id/mode', async (c) => {
              human_claimed_by = NULL,
              updated_at = now()
        WHERE id = ${id}::uuid
+    `);
+    // Handing back must also clear the LEAD-level stops, or the switch flips and
+    // the engine stays paused (D-56). release_human_handoff clears
+    // needs_human_since + the claim and logs human_handoff_released; the second
+    // statement covers a claim left behind without needs_human_since.
+    await tx.execute(sql`
+      SELECT public.release_human_handoff(c.lead_id, ${'dashboard:' + actor.slice(0, 80)})
+        FROM conversations c
+       WHERE c.id = ${id}::uuid AND c.lead_id IS NOT NULL
+    `);
+    await tx.execute(sql`
+      UPDATE leads l
+         SET human_claimed_by = NULL, human_claimed_at = NULL, updated_at = now()
+        FROM conversations c
+       WHERE c.id = ${id}::uuid AND l.id = c.lead_id AND l.human_claimed_at IS NOT NULL
     `);
   }
   return c.json({ ok: true, override: raw === 'inherit' ? null : raw });

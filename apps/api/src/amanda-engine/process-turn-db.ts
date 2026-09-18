@@ -12,6 +12,7 @@ import { makeDbBackends, parseAmandaSettings, slotLabel, type AmandaAgencySettin
 import { upcomingCalendarNotes } from './availability-lib';
 import { agencyHosts } from './site-link';
 import { isHumanSender } from './sender-lib';
+import { pauseReason, type PauseReason } from './pause-lib';
 
 export { isHumanSender } from './sender-lib';
 import { productionModelCall, productionVerifier, ENGINE_MODEL } from './llm';
@@ -33,7 +34,7 @@ interface LoadedWorld {
   leadPhone: string | null;
   leadFullName: string | null;
   leadState: LeadStateData;
-  aiMuted: boolean;
+  paused: PauseReason | null;
   optedOut: boolean;
   recentTurns: TurnContext['recentTurns'];
   /** Whole days since the newest PRIOR message (null = no history). */
@@ -69,7 +70,7 @@ async function loadWorld(row: QueueRow): Promise<LoadedWorld | { skip: string }>
     if (agencyMode === 'off') return { skip: 'amanda_mode_off' };
 
     const leadRows = await tx.execute(sql`
-      SELECT full_name, phone, language, opt_in_status, human_claimed_at
+      SELECT full_name, phone, language, opt_in_status, human_claimed_at, needs_human_since
         FROM leads WHERE id = ${row.lead_id}::uuid LIMIT 1
     `);
     const lead = (leadRows as unknown as Array<Record<string, unknown>>)[0];
@@ -146,16 +147,17 @@ async function loadWorld(row: QueueRow): Promise<LoadedWorld | { skip: string }>
       leadPhone: (lead.phone as string) ?? null,
       leadLanguage: (lead.language as string) || 'en',
       leadState,
-      // THREE claims, not two. The handoff queue's "I'll take it" writes
-      // leads.human_claimed_at, and the dashboard then tells the agent "the
-      // assistant is paused for these clients — a person must reply". The
-      // engine only ever read the CONVERSATION flags, so that promise was
-      // false: Amanda would keep answering over a colleague who had taken the
-      // conversation (found live 2026-08-30). Any of the three pauses her.
-      aiMuted:
-        Boolean(conv.ai_muted_at) ||
-        Boolean(conv.human_claimed_at) ||
-        Boolean(lead.human_claimed_at),
+      // FOUR stops (pause-lib.ts). The handoff queue's "I'll take it" writes
+      // leads.human_claimed_at (found ignored live 2026-08-30), and escalation
+      // writes leads.needs_human_since (found ignored live 2026-09-18, D-56):
+      // both put the lead on the "Needs a human" card, which tells the agent
+      // "the assistant is paused". Any of the four pauses her.
+      paused: pauseReason({
+        convMutedAt: conv.ai_muted_at,
+        convClaimedAt: conv.human_claimed_at,
+        leadClaimedAt: lead.human_claimed_at,
+        leadNeedsHumanSince: lead.needs_human_since,
+      }),
       optedOut: lead.opt_in_status === 'opted_out',
       recentTurns: messages.map((m) => ({
         // Human-sent outbound (operator approvals carry sent_by) is 'agent' —
@@ -205,7 +207,7 @@ export async function processTurnDb(row: QueueRow): Promise<TurnOutcome> {
   // the 24h window anyway).
   const world = await loadWorld(row);
   if ('skip' in world) return { result: 'skip', reason: world.skip };
-  if (world.aiMuted) return { result: 'skip', reason: 'ai_muted_or_human_claimed' };
+  if (world.paused) return { result: 'skip', reason: world.paused };
   if (world.optedOut) return { result: 'skip', reason: 'lead_opted_out' };
 
   // Typing indicator + read receipt (fire-and-forget): only when a reply is

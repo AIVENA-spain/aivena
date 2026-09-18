@@ -5,8 +5,10 @@ import { sql } from 'drizzle-orm';
 /**
  * Human handoffs (Amanda Live L1) — the dashboard's "Needs a human" queue.
  *
- * A website visitor who asks for a person flags their lead needs-human (AI muted
- * via ai_autoreply_blocked until an agent releases it). These authenticated,
+ * A website visitor who asks for a person, or an Amanda escalation, flags the
+ * lead needs-human. The WhatsApp engine pauses on that flag (pause-lib.ts) until
+ * an agent releases it; ai_autoreply_blocked() reads the same flag but nothing
+ * calls it (checked 2026-09-18). These authenticated,
  * RLS-fenced routes let agents see the queue, claim a handoff (first click wins),
  * and release the lead back to the assistant. NO send happens here — the actual
  * client contact is WhatsApp/phone/email, gated elsewhere (Phase C).

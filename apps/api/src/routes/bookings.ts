@@ -208,6 +208,10 @@ route.get('/lead-search', async (c) => {
 // POST /api/v1/bookings/quick-lead — inline lead creation from the viewing
 // modal: name + at least one contact detail. Fenced by the leads_isolation
 // RLS policy (agency GUC) on the agency-context tx.
+//
+// The conflict target MUST match leads_agency_dedup_uniq (agency_id, dedup_key).
+// From 2026-06-12 to 2026-09-18 it targeted dedup_key alone, which Postgres
+// rejects with 42P10 before running anything, so no lead was ever created here.
 route.post('/quick-lead', async (c) => {
   const tx = c.get('tx');
   const agencyId = c.get('agencyId');
@@ -231,7 +235,7 @@ route.post('/quick-lead', async (c) => {
         'dashboard_manual', 'manual', 'manual', 'buyer', 'new', 'intake',
         true, ${dedup}, now()
       )
-      ON CONFLICT (dedup_key) DO UPDATE
+      ON CONFLICT (agency_id, dedup_key) DO UPDATE
         SET full_name = COALESCE(leads.full_name, EXCLUDED.full_name),
             updated_at = now()
       RETURNING id, full_name, email, phone, language

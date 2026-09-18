@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { Users, Gauge, Trophy } from "lucide-react";
 
@@ -43,11 +43,9 @@ export type MatchRow = { lead: LeadWithMatch; matches: Match[] };
 
 export function MatchesView({
   rows,
-  labels,
   copy,
 }: {
   rows: MatchRow[];
-  labels: MatchLabels;
   copy: {
     title: string;
     subtitle: string;
@@ -65,6 +63,21 @@ export function MatchesView({
     noMatchFilter: string;
   };
 }) {
+  // Build the unit-label bag here in the client (NOT on the server page): the
+  // `more` entry is a function, and a function prop cannot cross the RSC
+  // server→client boundary — passing it from the server threw and 500'd this
+  // whole page. The sibling <MatchedProperties> panel builds its bag the same
+  // way. All strings come from the same `matches` i18n namespace.
+  const t = useTranslations("matches");
+  const labels: MatchLabels = {
+    bed: t("unitBed"),
+    bath: t("unitBath"),
+    studio: t("unitStudio"),
+    priceOnRequest: t("priceOnRequest"),
+    match: t("match"),
+    more: (n: number) => t("more", { n }),
+  };
+
   const [query, setQuery] = useState("");
   const [lang, setLang] = useState("all");
   const [sort, setSort] = useState<"best" | "score">("best");

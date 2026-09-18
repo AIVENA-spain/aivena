@@ -6,7 +6,6 @@ import type { LeadWithMatch, Match } from "@/lib/api/types";
 
 import { getLeadMatchesAction } from "./matches-actions";
 import { MatchesView, type MatchRow } from "./matches-view";
-import type { MatchLabels } from "./_shared";
 
 export const dynamic = "force-dynamic";
 
@@ -60,19 +59,9 @@ export default async function MatchesPage() {
     return { lead, matches: got.length > 0 ? got : [topAsMatch(lead)] };
   });
 
-  const labels: MatchLabels = {
-    bed: t("unitBed"),
-    bath: t("unitBath"),
-    studio: t("unitStudio"),
-    priceOnRequest: t("priceOnRequest"),
-    match: t("match"),
-    more: (n: number) => t("more", { n }),
-  };
-
   return (
     <MatchesView
       rows={rows}
-      labels={labels}
       copy={{
         title: t("title"),
         subtitle: t("subtitle"),

@@ -49,7 +49,51 @@ describe('agent loop — the whole reply reaches the buyer (live demo 2026-08-28
       usage: { input_tokens: 10, output_tokens: 10 },
     };
     const emptyFinal: ModelResponse = { content: [], stop_reason: 'end_turn', usage: { input_tokens: 1, output_tokens: 1 } };
-    const r = await runAgentLoop(scripted([withTool, emptyFinal]), 'full', new FakeBackends(), 's', 'u');
+    // The answer-now call (2026-09-19) also comes back empty.
+    const r = await runAgentLoop(scripted([withTool, emptyFinal, emptyFinal]), 'full', new FakeBackends(), 's', 'u');
     expect(r.text).toBeNull();   // the orchestrator escalates rather than sending a stale pre-tool line
+  });
+});
+
+describe('agent loop — never ends a worked turn without asking for the answer (live 2026-09-19)', () => {
+  const lookup = (n: number): ModelResponse => ({
+    content: [{ type: 'tool_use', id: `t${n}`, name: 'get_area_info', input: { area: `Quesada ${n}` } }],
+    stop_reason: 'tool_use',
+    usage: { input_tokens: 10, output_tokens: 10 },
+  });
+
+  it('six lookups hit the cap: one tools-free call gets the answer from the gathered facts', async () => {
+    const requests: Array<{ messages: unknown[]; tools: unknown[] }> = [];
+    const q: ModelResponse[] = [lookup(1), lookup(2), lookup(3), lookup(4), lookup(5), lookup(6), say('Quesada has a lovely park.')];
+    const call = async (req: { system: string; messages: unknown[]; tools: unknown[] }) => {
+      requests.push({ messages: req.messages, tools: req.tools });
+      const next = q.shift();
+      if (!next) throw new Error('scripted model exhausted');
+      return next;
+    };
+    const r = await runAgentLoop(call, 'full', new FakeBackends(), 's', 'u');
+    expect(r.text).toBe('Quesada has a lovely park.');
+    expect(r.toolEvents).toHaveLength(6);
+    expect(r.iterations).toBe(7);
+    const final = requests[6];
+    expect(final.tools).toEqual([]);                                    // no tools offered
+    const body = JSON.stringify(final.messages);
+    expect(body).not.toMatch(/tool_use|tool_result/);                   // no tool blocks: the API would reject them
+    expect(body).toContain('get_area_info');                            // the facts ride along as text
+    expect(body).toContain('Do not promise to check');
+  });
+
+  it('a worked turn that ends with no text also gets one answer-now call', async () => {
+    const r = await runAgentLoop(
+      scripted([lookup(1), { content: [], stop_reason: 'end_turn', usage: {} }, say('Here is what I found.')]),
+      'full', new FakeBackends(), 's', 'u',
+    );
+    expect(r.text).toBe('Here is what I found.');
+  });
+
+  it('a turn with no lookups that ends silent is NOT given a second call', async () => {
+    const r = await runAgentLoop(scripted([{ content: [], stop_reason: 'end_turn', usage: {} }]), 'full', new FakeBackends(), 's', 'u');
+    expect(r.text).toBeNull();
+    expect(r.iterations).toBe(1);
   });
 });

@@ -47,24 +47,27 @@ const RELATIVE_DAY_WRONG = 'relative_day_does_not_match_the_proposed_times_NAME_
  * escalate; this text was speaking for her. It also manufactured office work
  * for agents out of what were, every time, OUR bugs.
  *
- * It now promises only what is actually true: a human task IS filed, so
- * somebody will come back. No third party is invoked, no office is blamed, and
- * an agent is not handed a fake errand.
+ * It states only what has happened (Christian 2026-09-19): the buyer's message
+ * was passed to a colleague for review. It is sent only when that is TRUE — the
+ * human task was created (see handOver). It promises nothing about the future:
+ * not a reply, not a time, not a speed. The previous line ("let me double-check
+ * that one properly and come straight back to you") was Amanda promising her own
+ * immediate return; a person may pick the task up hours later.
  */
 export const GATE_FALLBACK: Record<string, string> = {
-  en: 'Let me double-check that one properly and come straight back to you.',
-  es: 'Deja que lo confirme bien y te respondo enseguida.',
-  de: 'Das schaue ich mir kurz genau an und melde mich gleich bei dir.',
-  nl: 'Ik zoek dat even goed uit en kom er zo bij je op terug.',
-  fr: 'Je vérifie cela correctement et je reviens vers vous tout de suite.',
-  it: 'Lo controllo bene e ti rispondo subito.',
-  pt: 'Deixe-me confirmar isso bem e volto já com a resposta.',
-  pl: 'Sprawdzę to dokładnie i zaraz wracam z odpowiedzią.',
-  sv: 'Jag dubbelkollar det ordentligt och återkommer strax.',
-  nb: 'La meg dobbeltsjekke det ordentlig, så kommer jeg straks tilbake til deg.',
-  da: 'Lad mig lige tjekke det ordentligt, så vender jeg tilbage med det samme.',
-  fi: 'Tarkistan sen kunnolla ja palaan asiaan heti.',
-  ru: 'Уточню это как следует и сразу вернусь к вам с ответом.',
+  en: "I want to get this exactly right, so I've passed this to a colleague for review.",
+  es: 'Quiero que esto sea exacto, así que se lo he pasado a un compañero para que lo revise.',
+  de: 'Ich möchte das ganz genau richtig machen, deshalb habe ich es einem Kollegen zur Prüfung weitergegeben.',
+  nl: 'Ik wil dit precies goed hebben, dus ik heb het ter beoordeling doorgegeven aan een collega.',
+  fr: "Je tiens à ce que ce soit parfaitement exact, j'ai donc transmis votre demande à un collègue pour vérification.",
+  it: "Voglio che sia tutto esatto, quindi l'ho passato a un collega perché lo verifichi.",
+  pt: 'Quero que isto fique exatamente certo, por isso passei-o a um colega para revisão.',
+  pl: 'Chcę, żeby to było dokładnie tak, jak trzeba, więc przekazałam to koledze do sprawdzenia.',
+  sv: 'Jag vill att det här blir helt rätt, så jag har lämnat över det till en kollega för granskning.',
+  nb: 'Jeg vil at dette skal bli helt riktig, så jeg har sendt det videre til en kollega for gjennomgang.',
+  da: 'Jeg vil gerne have det helt rigtigt, så jeg har givet det videre til en kollega til gennemgang.',
+  fi: 'Haluan, että tämä menee täsmälleen oikein, joten välitin asian kollegalle tarkistettavaksi.',
+  ru: 'Хочу, чтобы всё было точно, поэтому передала это коллеге на проверку.',
 };
 
 export interface PendingActionView {
@@ -229,11 +232,50 @@ export async function runTurn(
     }
   };
 
+  // Never dead air: whenever a turn is handed to a person, the buyer gets the
+  // deterministic holding line, which says exactly that and promises nothing
+  // more. It used to be sent only when the gates failed; an empty draft (live
+  // 2026-09-19, the first ever) left the buyer in silence. Only ever called
+  // after handOver() succeeded.
+  const sendHoldingLine = async (): Promise<string> => {
+    const fallback = GATE_FALLBACK[normalizeLeadLanguage(ctx.leadLanguage) ?? 'en'] ?? GATE_FALLBACK.en;
+    await runActionTool(mode, 'reply', async () => deps.sendReply(fallback), {
+      simulatedData: { simulated: true },
+      queue: async (kind) => deps.queueDraft(fallback, kind),
+    }).catch(() => { /* the escalation task already covers the human path */ });
+    return fallback;
+  };
+
+  // Hand the buyer to a person, and only THEN say so (Christian 2026-09-19): the
+  // holding line states that a colleague has it, so it is sent only when the
+  // human task really exists. A handoff that throws is a real failure — logged
+  // loudly and re-thrown, so the outbox retries the message — never a false
+  // reassurance. Unseen proposals are released first either way.
+  const handOver = async (
+    reason: string,
+    detail: string,
+    context?: { buyerAsked?: string; blockedDraft?: string; propertyRefs?: string[] },
+  ): Promise<boolean> => {
+    await releaseProposed();
+    let result: Awaited<ReturnType<typeof escalate>>;
+    try {
+      result = await escalate(reason, detail, context);
+    } catch (err) {
+      console.error('[amanda-engine] HANDOFF FAILED — no holding line sent', reason, err instanceof Error ? err.message.split('\n')[0].slice(0, 160) : 'error');
+      throw err;
+    }
+    if (!result.ok) {
+      console.error('[amanda-engine] HANDOFF REFUSED — no holding line sent', reason, result.refused);
+      return false;
+    }
+    return true;
+  };
+
   let draft = loop.text?.trim() ?? '';
   if (!draft) {
-    await escalate('empty_draft', 'engine produced no reply text');
-    await releaseProposed();
-    return { ...base, bookingQueued, outcome: 'escalated', loop, bookingId };
+    const handed = await handOver('empty_draft', 'engine produced no reply text');
+    const fallback = handed ? await sendHoldingLine() : null;
+    return { ...base, bookingQueued, outcome: handed ? 'escalated' : 'refused', replyText: fallback, loop, bookingId };
   }
   base.turnClass = classifyDraft(draft);
 
@@ -379,21 +421,18 @@ export async function runTurn(
         })
         .filter((r): r is string => typeof r === 'string' && r.length > 0),
     )).slice(0, 4);
-    await escalate('gates_failed', failures.join(', '), {
+    const handed = await handOver('gates_failed', failures.join(', '), {
       buyerAsked: inbound.text,
       blockedDraft: draft,
       propertyRefs: refsSeen,
     });
-    await releaseProposed();
-    // Never dead air: the human-review task is real, so the office-framed
-    // holding line is an honest promise. Deterministic, number-free,
-    // pre-vetted — dispatched under the same mode law (shadow simulates,
-    // approval drafts, assisted/full sends).
-    const fallback = GATE_FALLBACK[normalizeLeadLanguage(ctx.leadLanguage) ?? 'en'] ?? GATE_FALLBACK.en;
-    await runActionTool(mode, 'reply', async () => deps.sendReply(fallback), {
-      simulatedData: { simulated: true },
-      queue: async (kind) => deps.queueDraft(fallback, kind),
-    }).catch(() => { /* the escalation task already covers the human path */ });
+    if (!handed) {
+      return { ...base, bookingQueued, outcome: 'refused', replyText: null, gateFailures: failures, loop, bookingId };
+    }
+    // Never dead air: the human-review task now exists, so the holding line is a
+    // true statement. Deterministic, number-free, pre-vetted — dispatched under
+    // the same mode law (shadow simulates, approval drafts, assisted/full sends).
+    const fallback = await sendHoldingLine();
     return { ...base, bookingQueued, outcome: 'escalated', replyText: fallback, gateFailures: failures, loop, bookingId };
   }
 

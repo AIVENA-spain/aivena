@@ -37,6 +37,46 @@ export interface LoopResult {
 
 const MAX_ITERATIONS = 6;
 
+/**
+ * The last word when the loop ends WITHOUT a reply (live 2026-09-19: six
+ * read-only lookups, the cap was reached, no text — the buyer got silence and
+ * the turn escalated as "empty_draft"). One more call, with NO tools and NO tool
+ * blocks (the API rejects tool_use/tool_result blocks when no tools are
+ * defined): the facts gathered this turn are handed over as text and the model
+ * answers now. It is still judged by every gate in the orchestrator, against the
+ * same tool events, so nothing ungrounded gets through that way.
+ */
+export const ANSWER_NOW_INSTRUCTION =
+  'You have used all your lookups for this message. Reply to the buyer NOW, in their language, using ONLY the facts above. ' +
+  'If viewing times were proposed, list every one with its day. Never make up a fact, price, date or time. ' +
+  'Do not call tools. Do not promise to check, confirm or come back later. ' +
+  'If these facts do not let you answer safely, output nothing at all — a colleague will be asked instead.';
+
+async function answerNow(
+  callModel: ModelCall,
+  system: string,
+  userContext: string,
+  toolEvents: ToolEvent[],
+): Promise<ModelResponse> {
+  let budget = 8000;
+  const facts: string[] = [];
+  for (const ev of toolEvents) {
+    if (!ev.result.ok || ev.result.refused) continue;
+    const line = `${ev.tool}: ${JSON.stringify(ev.result.data ?? null)}`.slice(0, 2000);
+    if (line.length > budget) break;
+    budget -= line.length;
+    facts.push(line);
+  }
+  return callModel({
+    system,
+    messages: [{
+      role: 'user',
+      content: `${userContext}\n\n[Facts from your lookups for this message]\n${facts.join('\n') || '(none)'}\n\n${ANSWER_NOW_INSTRUCTION}`,
+    }],
+    tools: [],
+  });
+}
+
 export async function runAgentLoop(
   callModel: ModelCall,
   mode: AmandaMode,
@@ -60,12 +100,16 @@ export async function runAgentLoop(
       .filter((t) => t.length > 0)
       .join('\n\n') || null;
 
+  const addUsage = (r: ModelResponse) => {
+    usage.inputTokens += r.usage?.input_tokens ?? 0;
+    usage.outputTokens += r.usage?.output_tokens ?? 0;
+    usage.cacheReadTokens += r.usage?.cache_read_input_tokens ?? 0;
+    usage.cacheWriteTokens += r.usage?.cache_creation_input_tokens ?? 0;
+  };
+
   for (let i = 1; i <= MAX_ITERATIONS; i++) {
     const resp = await callModel({ system, messages, tools });
-    usage.inputTokens += resp.usage?.input_tokens ?? 0;
-    usage.outputTokens += resp.usage?.output_tokens ?? 0;
-    usage.cacheReadTokens += resp.usage?.cache_read_input_tokens ?? 0;
-    usage.cacheWriteTokens += resp.usage?.cache_creation_input_tokens ?? 0;
+    addUsage(resp);
 
     // The reply is EVERY text block of the turn, joined — not just the last
     // one. A model that writes "here are two homes: 1)… 2)…" and then a
@@ -80,7 +124,13 @@ export async function runAgentLoop(
     if (resp.stop_reason !== 'tool_use' || toolUses.length === 0) {
       // Final turn: the reply is THIS turn's text. Never fall back to text the
       // model wrote before its tools ran — that text predates the facts.
-      return { text: turnText, toolEvents, cannotAnswer, handedOff, usage, iterations: i };
+      if (turnText || toolEvents.length === 0) {
+        return { text: turnText, toolEvents, cannotAnswer, handedOff, usage, iterations: i };
+      }
+      // It stopped after doing real work but wrote nothing: ask for the answer.
+      const last = await answerNow(callModel, system, userContext, toolEvents);
+      addUsage(last);
+      return { text: joinText(last), toolEvents, cannotAnswer, handedOff, usage, iterations: i + 1 };
     }
 
     const resultBlocks: Array<Record<string, unknown>> = [];
@@ -99,7 +149,11 @@ export async function runAgentLoop(
     messages.push({ role: 'assistant', content: resp.content });
     messages.push({ role: 'user', content: resultBlocks });
   }
-  // Loop cap reached with tools still pending — return what we have; the
-  // orchestrator treats a missing final text as a gate failure (fail closed).
-  return { text: lastText, toolEvents, cannotAnswer, handedOff, usage, iterations: MAX_ITERATIONS };
+  // Loop cap reached with tools still pending: one tools-free call for the
+  // answer (see answerNow). If even that yields nothing, the orchestrator
+  // escalates as empty_draft and sends the holding line (fail closed, never
+  // silent).
+  const last = await answerNow(callModel, system, userContext, toolEvents);
+  addUsage(last);
+  return { text: joinText(last) ?? lastText, toolEvents, cannotAnswer, handedOff, usage, iterations: MAX_ITERATIONS + 1 };
 }

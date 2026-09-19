@@ -73,6 +73,7 @@ export class FakeBackends implements ToolBackends {
         { label: 'Friday 28 August, 17:00', startISO: '2026-08-28T15:00:00.000Z', pendingActionId: a },
         { label: 'Saturday 29 August, 11:00', startISO: '2026-08-29T09:00:00.000Z', pendingActionId: b },
       ],
+      timezone: 'Europe/Madrid',
     };
   }
   async askAgency(question: string, propertyId: string | null, category?: string | null): Promise<TicketRef> {

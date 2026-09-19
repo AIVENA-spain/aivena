@@ -24,6 +24,13 @@ import { runActionTool, type AmandaMode } from './modes';
 import { buildSystemPrompt, buildUserContext, type TurnContext, PROMPT_VERSION } from './prompt';
 import { normalizeLeadLanguage, isShapeOnly, trimToBudget, SHORT_MAX_WORDS, MEDIUM_MAX_WORDS, LONG_MAX_WORDS } from './validators';
 import type { ToolBackends } from './tools';
+import { proposedSlotsThisTurn, slotsNotShown, relativeDayMismatches, slotLine } from './slot-truth';
+
+// Christian 2026-09-19 (binding): proposed viewing times must be SEEN in the
+// reply that proposed them, and "today/tomorrow" must match their real days.
+// Stable prefixes: the retry prompt quotes them, the rescue below keys on them.
+const SLOTS_HIDDEN = 'proposed_times_not_shown_LIST_EVERY_PROPOSED_TIME_WITH_ITS_DAY_IN_THIS_REPLY';
+const RELATIVE_DAY_WRONG = 'relative_day_does_not_match_the_proposed_times_NAME_THE_REAL_DAY';
 
 // Dead-air law (live demo 2026-08-28: a gate-blocked reply left the buyer in
 // SILENCE): when the draft dies at the gates and a human-review task exists,
@@ -212,9 +219,20 @@ export async function runTurn(
     context?: { buyerAsked?: string; blockedDraft?: string; propertyRefs?: string[] },
   ) => runActionTool(mode, 'internal_write', () => deps.escalateToHuman(reason, detail, context));
 
+  // Slots proposed in THIS turn. If the reply cannot carry them, they are
+  // released: a proposal the buyer never saw must not sit holding the calendar.
+  const proposed = proposedSlotsThisTurn(loop.toolEvents);
+  const releaseProposed = async () => {
+    for (const s of proposed.slots) {
+      await runActionTool(mode, 'internal_write', () => deps.releasePendingAction(s.pendingActionId, 'superseded'))
+        .catch(() => { /* best-effort: the proposal also expires on its own */ });
+    }
+  };
+
   let draft = loop.text?.trim() ?? '';
   if (!draft) {
     await escalate('empty_draft', 'engine produced no reply text');
+    await releaseProposed();
     return { ...base, bookingQueued, outcome: 'escalated', loop, bookingId };
   }
   base.turnClass = classifyDraft(draft);
@@ -270,8 +288,20 @@ export async function runTurn(
       .map((t) => t.text)
       .filter((t) => t.trim().length > 0);
     const g = await runGates(text, loop.toolEvents, deps.verifier, authoritative, [inbound.text], alreadyTold);
-    return [...v.violations, ...g.failures];
+    const slotFailures: string[] = [];
+    if (proposed.slots.length > 0) {
+      const hidden = slotsNotShown(text, proposed, ctx.leadLanguage);
+      if (hidden.length > 0) slotFailures.push(`${SLOTS_HIDDEN}: ${hidden.map((h) => h.label).join(' | ')}`);
+      const wrongDays = relativeDayMismatches(text, proposed, inbound.atMs);
+      if (wrongDays.length > 0) {
+        slotFailures.push(`${RELATIVE_DAY_WRONG}: "${[...new Set(wrongDays)].join('", "')}" — the proposed times are ${proposed.slots.map((h) => h.label).join(' | ')}`);
+      }
+    }
+    return [...v.violations, ...g.failures, ...slotFailures];
   };
+  // Failures the deterministic slot line can repair: times missing (and shape).
+  const slotRescuable = (fs: string[]) =>
+    fs.length > 0 && fs.some((f) => f.startsWith(SLOTS_HIDDEN)) && fs.every((f) => f.startsWith(SLOTS_HIDDEN) || isShapeOnly([f]));
   let failures = await judge(draft);
   if (failures.length > 0) {
     const retry = await deps.callModel({
@@ -289,6 +319,11 @@ export async function runTurn(
       if (fixedFailures.length === 0) {
         draft = fixed;
         failures = [];
+      } else if (slotRescuable(fixedFailures)) {
+        // The rewrite fixed everything except showing the times: keep IT (not the
+        // original, which may still carry the promise) for the slot rescue below.
+        draft = fixed;
+        failures = fixedFailures;
       } else {
         failures = fixedFailures;
       }
@@ -317,6 +352,23 @@ export async function runTurn(
       }
     }
   }
+  // SLOT-VISIBILITY RESCUE. The answer is sound and only the proposed times are
+  // missing: keep it, trimmed to budget if that was also the problem, and append
+  // the times as a deterministic, pre-vetted line in the buyer's language. A
+  // time proposed in this turn is never left invisible.
+  if (failures.length > 0 && proposed.slots.length > 0) {
+    const current = await judge(draft);
+    if (slotRescuable(current)) {
+      const budget = fullFormTurn || authoritative.length > 0
+        ? LONG_MAX_WORDS
+        : mediumFormTurn
+          ? MEDIUM_MAX_WORDS
+          : SHORT_MAX_WORDS;
+      const kept = current.some((f) => isShapeOnly([f])) ? (trimToBudget(draft, budget) || draft) : draft;
+      draft = `${kept}\n\n${slotLine(proposed, ctx.leadLanguage, !/[?？]/.test(kept))}`;
+      failures = [];
+    }
+  }
   if (failures.length > 0) {
     const refsSeen = Array.from(new Set(
       loop.toolEvents
@@ -332,6 +384,7 @@ export async function runTurn(
       blockedDraft: draft,
       propertyRefs: refsSeen,
     });
+    await releaseProposed();
     // Never dead air: the human-review task is real, so the office-framed
     // holding line is an honest promise. Deterministic, number-free,
     // pre-vetted — dispatched under the same mode law (shadow simulates,

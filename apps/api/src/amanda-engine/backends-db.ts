@@ -308,7 +308,17 @@ export function makeDbBackends(ctx: BackendCtx): ToolBackends {
           `);
         }).catch(() => { /* contested hold (23P01) = fine; the arbiter decides at booking */ });
       }
-      return { slots: created };
+      // The buyer's day had nothing free: say so explicitly, so the reply offers
+      // the other days instead of promising to "check tomorrow" (live 2026-09-19).
+      const requestedDayUnavailable =
+        wantedDay && !created.some((slot) => {
+          const wc = wallClockInZone(Date.parse(slot.startISO), s.timezone);
+          return wc.year === wantedDay.year && wc.month === wantedDay.month && wc.day === wantedDay.day;
+        })
+          ? new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' })
+              .format(Date.UTC(wantedDay.year, wantedDay.month - 1, wantedDay.day, 12))
+          : null;
+      return { slots: created, timezone: s.timezone, requested_day_unavailable: requestedDayUnavailable };
     },
 
     async askAgency(question: string, propertyId: string | null, category?: string | null): Promise<TicketRef> {

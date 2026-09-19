@@ -44,6 +44,12 @@ export interface SlotProposal {
    *  construction (the confirmation law re-asks). Labels are the explicit echo
    *  forms the model MUST use verbatim ("Friday 28 August, 17:00"). */
   slots: Array<{ label: string; startISO: string; pendingActionId: string }>;
+  /** The agency clock the labels are written in — lets the turn check "today /
+   *  tomorrow" against the real days (2026-09-19). */
+  timezone?: string;
+  /** Set when the buyer's day had no free time, e.g. "Sunday 20 September": the
+   *  returned slots are on OTHER days and the reply must say so, not defer. */
+  requested_day_unavailable?: string | null;
 }
 
 export interface TicketRef { ticketId: string; shortCode: number }
@@ -139,7 +145,7 @@ export const TOOL_SPECS: ToolSpec[] = [
     toolClass: 'internal_write',
     schema: {
       name: 'propose_viewing_slots',
-      description: 'Propose viewing slots for a property. Returns explicit slot labels you MUST echo verbatim. The booking itself only happens after the buyer explicitly confirms a proposed slot — never claim a viewing is booked. If the buyer already named a day/time, pass their words in preferred_time_phrase.',
+      description: 'Propose viewing slots for a property. Returns explicit slot labels: show EVERY returned time, with its day, to the buyer in THIS reply — never say you will check or come back with times; you already have them. If requested_day_unavailable is set, say that day has no free time and offer the returned days instead. The booking itself only happens after the buyer explicitly confirms a proposed slot — never claim a viewing is booked. Pass preferred_time_phrase ONLY when the buyer named a day/time, in their own words; never invent one.',
       input_schema: {
         type: 'object',
         properties: { property_id: { type: 'string' }, preferred_time_phrase: { type: 'string', description: "The buyer's own words for when, e.g. 'viernes a las 17' — the system resolves it, never you" } },

@@ -38,12 +38,34 @@ export const LONG_MAX_WORDS = 120;
 export const MEDIUM_MAX_WORDS = 65;
 const MEDIUM_MAX_SENTENCES = 5;
 
-/** Sentence split that survives multilingual punctuation (., !, ?, ¿…). */
+/** Sentence split that survives multilingual punctuation (., !, ?, ¿…).
+ *  A full stop after a number or a common abbreviation is NOT a sentence end
+ *  when the text carries on in lower case or digits: Nordic, German and Finnish
+ *  dates and times ("fredag 28. august kl. 17:00", "21.9. klo 11.00") used to
+ *  count as three or four sentences and trip the shape law — which, once
+ *  proposed times had to be shown with their day (2026-09-19), would have
+ *  punished exactly the replies that get it right. */
+// German capitalises months: "21. September" continues the sentence.
+const GERMAN_MONTH_RE = /^(?:Januar|Jänner|Februar|März|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember)(?![\p{L}])/u;
+const SOFT_STOP_RE = /(?:\d|(?:^|[\s(])(?:kl|klo|ca|cca|nr|bl\.a|f\.eks|osv|mv|dvs|evt|inkl|st|dr|mr|mrs|ms|z\.b|u\.a|ggf|bzw|usw|etc|vs|approx|sr|sra|p\.ex|n[ºo]))\.$/iu;
 export function splitSentences(text: string): string[] {
-  return text
-    .split(/(?<=[.!?…])\s+|\n+/)
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0);
+  const parts = text.split(/(\n+|(?<=[.!?…])\s+)/u);
+  const out: string[] = [];
+  let cur = '';
+  for (let i = 0; i < parts.length; i += 2) {
+    cur += parts[i] ?? '';
+    const sep = parts[i + 1];
+    const next = parts[i + 2] ?? '';
+    const continues = /^[\p{Ll}\p{N}]/u.test(next) || (/\d\.$/.test(cur) && GERMAN_MONTH_RE.test(next));
+    if (sep !== undefined && !/\n/.test(sep) && SOFT_STOP_RE.test(cur) && continues) {
+      cur += sep;
+      continue;
+    }
+    if (cur.trim()) out.push(cur.trim());
+    cur = '';
+  }
+  if (cur.trim()) out.push(cur.trim());
+  return out;
 }
 
 export function countWords(text: string): number {
@@ -137,20 +159,134 @@ const BANNED_PATTERNS: Array<{ id: string; re: RegExp }> = [
   { id: 'fake_deadline',         re: /\b(offer (ends|expires)|only (today|this week)|price goes up|solo (hoy|esta semana)|la oferta (termina|caduca)|el precio subir[áa])\b/i },
 ];
 
-// ── Deliver-now law: Amanda may not promise HER OWN future delivery ("I'll come
-// right back with options") — she acts inside this reply or offers and asks.
-// The OFFICE promising to come back is legitimate (§3b — the ticket machinery
-// keeps that promise), so drafts naming the office/team are exempt.
-const SELF_FUTURE_PROMISE: RegExp[] = [
-  /\b(i(?:'ll| will)|let me)\s+(?:get|come|be|circle)\s+(?:right\s+)?back(?:\s+to\s+you)?[^.!?]{0,40}\bwith\b/i,
-  /\b(?:kommer|er)\s+(?:straks|snart)\s+tilbake(?:\s+til\s+deg)?\s+med\b/i,                    // no/da
-  /\bsender\s+(?:deg|dere)\b[^.!?]{0,50}\b(?:straks|snart|om litt)\b/i,                          // no/da
-  /\bkommer\s+tillbaka\s+(?:strax|snart)\s+med\b|\bskickar\s+(?:dig|er)\b[^.!?]{0,40}\b(?:strax|snart)\b/i, // sv
-  /\b(?:te|os)\s+(?:env[ií]o|mando|paso)\b[^.!?]{0,50}\b(?:enseguida|ahora mismo|en un momento|pronto)\b/i,     // es
-  /\bmelde mich\s+(?:gleich|bald)\s+mit\b|\bschicke dir\s+(?:gleich|bald)\b/i,                 // de
-  /\bkom\s+(?:zo|straks)\s+(?:bij je\s+)?terug\s+met\b|\bstuur je\s+(?:zo|straks)\b/i,       // nl
-  /\b(?:coming|getting)\s+(?:right\s+)?back\s+(?:to you\s+)?(?:shortly|soon|right away)\s+with\b/i,
-];
+// ── Deliver-now law: Amanda may not promise HER OWN future action ("I'll come
+// right back with options", "let me check and get back to you") — nothing in the
+// system can perform it (no follow-up engine is scheduled; Christian 2026-09-19:
+// "offer now or don't promise"). She acts inside this reply, or offers and asks.
+// A promise made on behalf of the OFFICE is legitimate only when the ticket
+// machinery will keep it (§3b; the office-promise law checks that a ticket
+// exists), so a sentence that names the office/team is judged by that law.
+//
+// 2026-09-19 live miss: the old fixed-word-order list caught 2 of 9 natural
+// phrasings. "…så kommer JEG straks tilbake med tider" slipped because Norwegian
+// puts the verb before the subject after "så". These patterns allow the subject
+// on either side of the verb, a few words in between, and subject-dropped
+// sentence starts, across all 13 supported languages. First person only: "a
+// colleague will reply to you" (a human action) and "when you come back to
+// Spain" (the buyer) are not promises by Amanda.
+const UW = String.raw`[\p{L}\p{N}_]`;
+// \b is ASCII-only in JS; these edges work next to ø, ę, ü, Cyrillic.
+const uni = (src: string): RegExp =>
+  new RegExp(src.replace(/\\b/g, String.raw`(?:(?<!${UW})(?=${UW})|(?<=${UW})(?!${UW}))`), 'iu');
+const GAP = String.raw`(?:\s+[^\s.!?]+){0,3}?`;           // up to 3 words
+const SPAN = String.raw`[^.!?\n]{0,50}?`;                  // same sentence, short reach
+const FUTURE_PROMISE: Record<string, RegExp[]> = {
+  en: [
+    uni(String.raw`\b(?:i'll|i will|i shall|we'll|we will|let me|i'm going to|i am going to)\b${SPAN}\b(?:come|get|circle|be|report|write|return)\s+(?:(?:straight|right|directly)\s+)?back\b`),
+    uni(String.raw`\bget back to you\b|\breturn to you\b`),
+    uni(String.raw`\b(?:come|get|circle|report|write)\s+(?:(?:straight|right)\s+)?back\s+to\s+you\b`),
+    uni(String.raw`\b(?:i'm|i am|we're|we are)\s+(?:coming|getting)\s+(?:(?:straight|right)\s+)?back\b`),
+    uni(String.raw`\b(?:i'll|i will|we'll|we will)${GAP}\s+(?:let you know|update you|keep you posted|follow up|reach out|be in touch|drop you a line|revert)\b`),
+    uni(String.raw`\b(?:i'll|i will|we'll|we will)${GAP}\s+(?:send|text|message|email)\b${SPAN}\b(?:later|shortly|soon|in a (?:bit|moment|minute|while)|as soon as|once i)\b`),
+  ],
+  es: [
+    uni(String.raw`\b(?:vuelvo|volveré|regreso)\b${SPAN}\b(?:contigo|con usted|con (?:la|las|los|el|una|unos|unas)\b|a escribirte|a contactarte|enseguida|en seguida|pronto)`),
+    uni(String.raw`\b(?:te|le|os|les)\s+(?:escribiré|avisaré|responderé|contestaré|contactaré|diré|confirmaré)\b`),
+    uni(String.raw`\bme pondré en contacto\b|\b(?:me pongo|nos ponemos) en contacto\b${SPAN}\b(?:enseguida|pronto|luego|más tarde)\b`),
+    uni(String.raw`\b(?:te|le|os|les)\s+(?:respondo|contesto|escribo|aviso|confirmo|digo algo|cuento)\b${SPAN}\b(?:enseguida|en seguida|luego|más tarde|pronto|en breve|en un (?:momento|rato)|cuanto antes)\b`),
+    uni(String.raw`\b(?:te|le|os|les)\s+(?:envío|mando|paso|enviaré|mandaré|pasaré)\b${SPAN}\b(?:enseguida|en seguida|luego|más tarde|pronto|en breve|en un (?:momento|rato))\b`),
+  ],
+  de: [
+    uni(String.raw`\b(?:ich|wir)\b${GAP}\s+(?:melde|melden)\s+(?:mich|uns)\b|\b(?:melde|melden)\s+(?:ich|wir)\s+(?:mich|uns)\b`),
+    uni(String.raw`\b(?:ich|wir)\b${GAP}\s+(?:komme|kommen)\b${SPAN}\bzurück\b|\b(?:komme|kommen)\s+(?:ich|wir)\b${SPAN}\bzurück\b`),
+    uni(String.raw`\b(?:gebe|geben|sage|sagen)\s+(?:ich\s+|wir\s+)?(?:dir|ihnen|euch)\b${GAP}\s+bescheid\b`),
+    uni(String.raw`\b(?:schicke|sende|schicken|senden)\s+(?:ich\s+|wir\s+)?(?:dir|ihnen|euch)\b${SPAN}\b(?:gleich|bald|später|nachher|in kürze)\b`),
+    uni(String.raw`\b(?:rückmeldung|antwort)\s+von\s+(?:mir|uns)\b|\bvon\s+(?:mir|uns)\b${GAP}\s+(?:rückmeldung|antwort)\b`),
+    uni(String.raw`\b(?:komme|kommen)\b${SPAN}\bauf\s+(?:dich|sie|euch)\s+zurück\b`),
+  ],
+  nl: [
+    uni(String.raw`\b(?:kom|komen)\s+(?:ik|we|wij)\b${SPAN}\bterug\b|\b(?:ik|we|wij)\b${GAP}\s+(?:kom|komen)\b${SPAN}\bterug\b`),
+    uni(String.raw`\b(?:laat|laten)\s+(?:ik\s+|we\s+|wij\s+)?(?:het\s+)?(?:je|jou|u|jullie)\b${GAP}\s+(?:weten|horen)\b|\b(?:ik|we|wij)\s+laat\b${SPAN}\b(?:weten|horen)\b`),
+    uni(String.raw`\b(?:stuur|sturen)\s+(?:ik\s+|we\s+|wij\s+)?(?:je|jou|u|jullie)\b${SPAN}\b(?:zo|straks|later|zo snel mogelijk|zo spoedig mogelijk)\b`),
+    uni(String.raw`\b(?:ik|we|wij)\s+neem\w*\b${SPAN}\bcontact\b|\bneem\s+(?:ik|we)\b${SPAN}\bcontact\b`),
+    uni(String.raw`\bkom\w*\b${SPAN}\bbij\s+(?:je|jou|u|jullie)\s+(?:op\s+)?terug\b`),
+  ],
+  fr: [
+    uni(String.raw`\bje\s+(?:vous|te)\s+(?:recontacte|recontacterai|rappelle|rappellerai|réécris|réécrirai|redis|redirai|fais signe|ferai signe|tiens (?:au courant|informée?)|tiendrai (?:au courant|informée?))\b`),
+    uni(String.raw`\bje\s+(?:reviens|reviendrai|repasse)\s+vers\s+(?:vous|toi)\b|\bje\s+(?:reviens|reviendrai)\b${SPAN}\b(?:rapidement|tout de suite|très vite|vite|bientôt|avec)\b`),
+    uni(String.raw`\b(?:je|nous)\s+(?:vous|te)\s+(?:envoie|enverrai|envoyons|enverrons|transmets|transmettrai)\b${SPAN}\b(?:rapidement|tout de suite|très vite|plus tard|bientôt|dans (?:la journée|un instant|un moment))\b`),
+  ],
+  it: [
+    uni(String.raw`\b(?:ti|le|vi)\s+(?:faccio|farò|facciamo|faremo)\s+sapere\b`),
+    uni(String.raw`\b(?:ti|la|vi)\s+(?:ricontatto|ricontatterò|richiamo|richiamerò|riscrivo|riscriverò|aggiorno|aggiornerò)\b`),
+    uni(String.raw`\b(?:ti|le|vi)\s+(?:rispondo|risponderò|scrivo|scriverò|mando|manderò|invio|invierò)\b${SPAN}\b(?:subito|a breve|appena|presto|più tardi|dopo|tra poco)\b`),
+    uni(String.raw`\btorno\s+(?:da te|da lei|subito|a breve|con)\b|\bmi faccio (?:vivo|viva|sentire)\b`),
+  ],
+  pt: [
+    uni(String.raw`\b(?:volto|voltarei|regresso)\b${SPAN}\b(?:já|logo|em breve|com|contigo|a falar|a escrever)\b`),
+    uni(String.raw`\b(?:entro|entrarei|entramos|entraremos)\s+em\s+(?:contacto|contato)\b`),
+    uni(String.raw`\b(?:te|lhe|vos)\s+(?:digo|direi|aviso|avisarei|informo|informarei|respondo|responderei|escrevo|escreverei|envio|enviarei|mando|mandarei)\b${SPAN}\b(?:já|logo|em breve|mais tarde|depois|assim que)\b`),
+    uni(String.raw`\bdou-?(?:te|lhe)\s+notícias\b|\bdarei notícias\b`),
+    uni(String.raw`\b(?:aviso|avisarei|digo|direi|informo|informarei|respondo|responderei|escrevo|escreverei)-(?:te|lhe|vos)\b|\b(?:envio|enviarei|mando|mandarei)-(?:te|lhe|vos)\b${SPAN}\b(?:já|logo|em breve|mais tarde|depois|assim que)\b`),
+  ],
+  pl: [
+    uni(String.raw`\bwrócę\b|\bwracam\s+(?:z|do|niedługo|zaraz|za chwilę)\b`),
+    uni(String.raw`\bodezwę się\b|\bodpiszę\b|\bskontaktuję się\b|\bdam\s+(?:ci\s+|pani\s+|panu\s+|państwu\s+)?znać\b`),
+    uni(String.raw`\b(?:prześlę|wyślę|podeślę)\b${SPAN}\b(?:później|zaraz|wkrótce|niedługo|za chwilę)\b`),
+  ],
+  sv: [
+    uni(String.raw`\båterkommer\b(?!\s+(?:du|ni)\b)`),
+    uni(String.raw`\b(?:kommer|återvänder)\b${SPAN}\btillbaka\s+till\s+(?:dig|er)\b`),
+    uni(String.raw`\b(?:kommer|återvänder)\s+(?:jag|vi)\b${SPAN}\btillbaka\b|\b(?:jag|vi)\b${GAP}\s+(?:kommer|återvänder)\b${SPAN}\btillbaka\b|^\s*kommer\s+(?:tillbaka|strax|snart)\b`),
+    uni(String.raw`\bhör\s+(?:jag\s+|vi\s+)?av\s+(?:mig|oss)\b|\b(?:ger|meddelar)\s+(?:jag\s+|vi\s+)?(?:dig|er)\s+(?:besked|veta)\b|\b(?:jag|vi)\s+(?:ger|meddelar)\s+(?:dig|er)\b`),
+    uni(String.raw`\b(?:skickar|mejlar)\s+(?:jag\s+|vi\s+)?(?:dig|er)?\b${SPAN}\b(?:strax|snart|senare|om en stund)\b|\b(?:jag|vi)\s+tar\s+kontakt\b|\btar\s+(?:jag|vi)\s+kontakt\b`),
+  ],
+  nb: [
+    uni(String.raw`\b(?:kommer|vender)\s+(?:jeg|vi)\b${SPAN}\btilbake\b|\b(?:jeg|vi)\b${GAP}\s+(?:kommer|vender)\b${SPAN}\btilbake\b|^\s*(?:kommer|vender)\s+(?:straks\s+|snart\s+)?tilbake\b`),
+    uni(String.raw`\b(?:gir|sender)\s+(?:jeg\s+|vi\s+)?(?:deg|dere)\s+(?:\S+\s+)?(?:beskjed|svar)\b|\b(?:jeg|vi)\s+(?:gir|sender)\s+(?:deg|dere)\s+(?:\S+\s+)?(?:beskjed|svar)\b`),
+    uni(String.raw`\b(?:sender|mailer)\s+(?:jeg\s+|vi\s+)?(?:deg\s+|dere\s+)?${SPAN}\b(?:straks|snart|senere|om litt|etterpå)\b`),
+    uni(String.raw`\bhører\s+fra\s+(?:meg|oss)\b|\bmelder\s+(?:jeg|vi)\b${GAP}\s+tilbake\b|\b(?:jeg|vi)\b${GAP}\s+melder\b${GAP}\s+tilbake\b|\b(?:jeg|vi)\s+tar\s+kontakt\b|\btar\s+(?:jeg|vi)\s+kontakt\b`),
+    uni(String.raw`\b(?:kommer|vender)\b${SPAN}\btilbake\s+til\s+(?:deg|dere)\b`),
+  ],
+  da: [
+    uni(String.raw`\b(?:vender|kommer)\s+(?:jeg|vi)\b${SPAN}\btilbage\b|\b(?:jeg|vi)\b${GAP}\s+(?:vender|kommer)\b${SPAN}\btilbage\b|^\s*(?:vender|kommer)\s+(?:straks\s+|snart\s+)?tilbage\b`),
+    uni(String.raw`\b(?:giver|sender)\s+(?:jeg\s+|vi\s+)?(?:dig|jer)\s+(?:\S+\s+)?(?:besked|svar)\b|\b(?:jeg|vi)\s+(?:giver|sender)\s+(?:dig|jer)\s+(?:\S+\s+)?(?:besked|svar)\b`),
+    uni(String.raw`\b(?:sender|mailer)\s+(?:jeg\s+|vi\s+)?(?:dig\s+|jer\s+)?${SPAN}\b(?:straks|snart|senere|om lidt|bagefter)\b`),
+    uni(String.raw`\bhører\s+fra\s+(?:mig|os)\b|\bmelder\s+(?:jeg|vi)\b${GAP}\s+tilbage\b|\b(?:jeg|vi)\s+tager\s+kontakt\b|\btager\s+(?:jeg|vi)\s+kontakt\b`),
+    uni(String.raw`\b(?:kommer|vender)\b${SPAN}\btilbage\s+til\s+(?:dig|jer)\b`),
+  ],
+  fi: [
+    uni(String.raw`\bpalaan\b|\bpalaamme\b|\bilmoitan\b|\bilmoitamme\b`),
+    uni(String.raw`\b(?:otan|otamme)\s+(?:sinuun\s+|teihin\s+)?yhteyttä\b`),
+    uni(String.raw`\b(?:lähetän|lähetämme|kerron|kerromme)\b${SPAN}\b(?:myöhemmin|pian|kohta|hetken päästä)\b`),
+  ],
+  ru: [
+    uni(String.raw`\b(?:вернусь|вернёмся|вернемся)\b`),
+    uni(String.raw`\b(?:сообщу|сообщим|напишу|напишем|отвечу|ответим|свяжусь|свяжемся|перезвоню|отпишусь)\b|\bдам\s+(?:вам\s+|тебе\s+)?знать\b`),
+    uni(String.raw`\b(?:пришлю|пришлём|пришлем|отправлю|отправим)\b${SPAN}\b(?:позже|скоро|чуть позже|вскоре)\b`),
+  ],
+};
+
+/** Languages the deliver-now law covers — every supported language (13). */
+export const FUTURE_PROMISE_LANGUAGES = Object.keys(FUTURE_PROMISE);
+
+/**
+ * True when a sentence of the draft promises Amanda's own future action. A
+ * sentence naming the office/team is left to the office-promise law — except
+ * when the caller knows NO ticket exists (officeContextPresent === false):
+ * then nothing is keeping that promise either, and it is flagged here too.
+ */
+export function screenFuturePromise(draft: string, officeContextPresent?: boolean): { ok: boolean; sentence: string | null } {
+  const normalized = draft.replace(/[’‘]/g, "'");
+  for (const sentence of splitSentences(normalized)) {
+    const namesOffice = OFFICE_EXEMPT_RE.test(sentence) || OFFICE_WORD_RE.test(sentence);
+    if (namesOffice && officeContextPresent !== false) continue;
+    for (const res of Object.values(FUTURE_PROMISE)) {
+      if (res.some((re) => re.test(sentence))) return { ok: false, sentence };
+    }
+  }
+  return { ok: true, sentence: null };
+}
 const OFFICE_EXEMPT_RE = /\b(office|team|kontoret?|oficina|equipo|b[üu]ro|kantoor|the agency|byr[åa]et)\b/i;
 
 // ── Language law: normalize a lead's language code before ANY table lookup —
@@ -271,11 +407,11 @@ const RENTAL_CLAIM_RE: RegExp[] = [
   /\bje kunt het (?:gewoon |zonder problemen )?verhuren\b/i,                          // nl
 ];
 
-export function screenBannedPatterns(draft: string): { ok: boolean; matched: string[] } {
+export function screenBannedPatterns(draft: string, officeContextPresent?: boolean): { ok: boolean; matched: string[] } {
   // Curly apostrophes (what phones actually type) must match the ASCII patterns.
   const normalized = draft.replace(/[’‘]/g, "'");
   const matched = BANNED_PATTERNS.filter((p) => p.re.test(normalized)).map((p) => p.id);
-  if (!OFFICE_EXEMPT_RE.test(normalized) && SELF_FUTURE_PROMISE.some((re) => re.test(normalized))) {
+  if (!screenFuturePromise(normalized, officeContextPresent).ok) {
     matched.push('self_future_promise_PRESENT_YOUR_RESULTS_NOW_instead');
   }
   if (!OFFICE_EXEMPT_RE.test(normalized) && RENTAL_CLAIM_RE.some((re) => re.test(normalized))) {
@@ -317,7 +453,7 @@ export function validateDraft(draft: string, opts: LintOptions = {}): { ok: bool
   const violations: string[] = [];
   const lint = lintDraft(draft, opts);
   violations.push(...lint.violations);
-  const banned = screenBannedPatterns(draft);
+  const banned = screenBannedPatterns(draft, opts.officeContextPresent);
   if (!banned.ok) violations.push(...banned.matched.map((m) => `banned:${m}`));
   const pay = screenPaymentDetails(draft);
   if (!pay.ok) violations.push(`payment_floor:${pay.reason}`);

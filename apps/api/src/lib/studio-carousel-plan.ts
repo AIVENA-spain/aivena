@@ -14,7 +14,8 @@ import { buildPalette } from './studio-palette';
 import { modelFor } from './studio-models';
 import { CALL_BUDGET_MS, ModelCallError, boundedCall } from './studio-bounded-call';
 import { LOW_RISK_BRIEF, ideasNeedingCheck, routeTopic } from './studio-risk-route';
-import { classifySource, domainOf, policyUnmetFor, riskOf, SOURCE_POLICY,
+import { classifySource, domainOf, enforcesOfficialSources, policyUnmetFor, riskOf, SOURCE_POLICY,
+  SOURCE_POLICY_BRIEF,
   type SourceFact,
   type ResearchSource as Source, type RiskClass } from './studio-evidence';
 
@@ -364,43 +365,11 @@ interface ResearchCall { text: string; failure: string | null; ms: number; sourc
 export type { ResearchSource } from './studio-evidence';
 type ResearchSource = Source;
 
-/**
- * What the research must open before it may answer, by what the topic is about.
- *
- * H1 told a reader that agreeing a price by phone binds nobody, and H2 told a seller a late Modelo
- * 210 forfeits their refund. Both are false, both were written confidently, and neither topic had a
- * bank card. A legal or tax proposition has an official text behind it; the research has to go and
- * open that text rather than assemble the answer from whatever a search summarised.
- */
-function SOURCE_POLICY_BRIEF(risk: RiskClass): string {
-  if (risk === 'legal_tax') {
-    return `\n\nTHIS TOPIC TURNS ON SPANISH LAW OR TAX, SO SEARCH RESULTS ARE NOT ENOUGH. For every `
-      + `legal or tax proposition you are going to state, OPEN the official text with web_fetch and `
-      + `read it: boe.es for the law itself (Código Civil, Código Penal, LAU, LEC, the decree), `
-      + `sede.agenciatributaria.gob.es for anything about tax, filing, withholding, deadlines or `
-      + `refunds, fiscal.es or poderjudicial.es where a prosecution or court practice is at issue, `
-      + `and gva.es or the ayuntamiento for a regional or municipal rule. Quote the article or the `
-      + `rule as it is actually written. A summary on a law firm's blog is where you FIND the `
-      + `article; it is not where the answer comes from. Distinguish carefully between a filing `
-      + `deadline and the period in which a right prescribes — they are different clocks and `
-      + `confusing them is how a seller gets told they have lost money they have not lost.`;
-  }
-  if (risk === 'market_statistics') {
-    return `\n\nTHIS TOPIC TURNS ON NUMBERS, SO OPEN THE DATASET. Use web_fetch on the actual `
-      + `publisher — ine.es, registradores.org, notariado.org, the Colegio Notarial, the Ministerio `
-      + `del Interior series — and read the figure off the source rather than off an article about `
-      + `it. State the geography the figure is published at, and never move a number to a geography `
-      + `it was not published for: a national ranking is not a province ranking, and a province `
-      + `figure is not a town's.`;
-  }
-  if (risk === 'local_fact') {
-    return `\n\nTHIS TOPIC MAKES CONCRETE CLAIMS ABOUT REAL PLACES. Open the municipal or `
-      + `statistical source with web_fetch — the ayuntamiento, INE's padrón tables, the official `
-      + `regional data — rather than repeating a figure from a listing site or a travel page. Say `
-      + `which year each population or distance figure belongs to.`;
-  }
-  return '';
-}
+// SOURCE_POLICY_BRIEF, NEUTRAL_LEGAL_BRIEF and enforcesOfficialSources now live in studio-evidence.ts
+// (co-located with SOURCE_POLICY / RiskClass / policyUnmetFor) and are imported above. The legal/tax
+// research path is RETIRED there (Christian, 2026-09-19): legal_tax gets the neutral "confirm with your
+// gestor" brief, and enforcesOfficialSources excludes legal_tax so the official-source enforcement loop
+// and openCited legal fetch never run for it. The claim gate still drops any specific legal/tax claim.
 
 /**
  * The writer's copy of the briefing: the same facts with the provenance taken off.
@@ -831,7 +800,7 @@ async function researchTopic(
       { type: 'web_fetch_20250910', name: 'web_fetch', max_uses: 6, max_content_tokens: 12_000 },
     ],
     messages: [{ role: 'user', content:
-      (risk !== 'none'
+      (enforcesOfficialSources(risk)
         ? `BEFORE ANYTHING ELSE, READ THIS. Search engines are how you FIND the source. They are not `
           + `the source. For every proposition you are going to write down, you must CALL web_fetch ON `
           + `THE PAGE THAT ACTUALLY CARRIES IT and read it. A briefing assembled from search snippets `
@@ -882,8 +851,9 @@ async function researchTopic(
   // none was read, go back with the draft briefing and require it — twice, then give up loudly and
   // let the claim gate refuse the propositions that needed it.
   let findings = f;
-  await openCited(findings, risk);
-  for (let attempt = 0; attempt < 2 && policyUnmetFor(risk, findings.sources); attempt++) {
+  // Legal/tax retired: never open legal pages nor force official legal sources for a legal_tax topic.
+  if (risk !== 'legal_tax') await openCited(findings, risk);
+  for (let attempt = 0; attempt < 2 && risk !== 'legal_tax' && policyUnmetFor(risk, findings.sources); attempt++) {
     console.warn(`[studio/carousel] ${risk} topic and nothing authoritative was opened — `
       + `enforcement pass ${attempt + 1}`);
     const forced = await call('sourcing', {
@@ -898,15 +868,11 @@ async function researchTopic(
         + `factual line in it is currently unusable.\n\n${findings.text}\n\n`
         + `Your job is to go and read the actual sources, then rewrite the briefing.\n`
         + `CALL web_fetch on the pages themselves. `
-        + (risk === 'legal_tax'
-          ? `For each legal or tax proposition: find the governing article or rule, then FETCH `
-            + `boe.es for the legislation (Código Civil, Código Penal, LAU, LEC, LECrim, the decree) `
-            + `or sede.agenciatributaria.gob.es for anything about tax, filing, withholding or `
-            + `refunds, and quote what it actually says. If the draft has the rule backwards, say so `
-            + `plainly and give the correct rule.\n`
-          : `For each figure: FETCH the publisher's own page — ine.es, registradores.org, `
-            + `notariado.org, the Colegio Notarial, the Ministerio del Interior series — and read `
-            + `the number off it, with the geography it is published at.\n`)
+        // Legal/tax is retired, so this enforcement pass only ever runs for market_statistics /
+        // local_fact (see enforcesOfficialSources); the figures instruction is all that is needed.
+        + `For each figure: FETCH the publisher's own page — ine.es, registradores.org, `
+        + `notariado.org, the Colegio Notarial, the Ministerio del Interior series — and read `
+        + `the number off it, with the geography it is published at.\n`
         + `Rewrite the briefing as plain established facts. END EVERY FACTUAL LINE WITH THE URL YOU `
         + `FETCHED IT FROM in square brackets. Do not name the institution inside the sentence. `
         + `Anything you could not open, drop or mark "UNCLEAR:". Under 400 words.` }],

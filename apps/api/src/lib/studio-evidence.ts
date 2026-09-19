@@ -391,6 +391,57 @@ export const SOURCE_POLICY: Readonly<Record<RiskClass, readonly SourceClass[]>> 
 };
 
 /**
+ * What the research must open before it may answer, by what the topic is about.
+ *
+ * H1 told a reader that agreeing a price by phone binds nobody, and H2 told a seller a late Modelo
+ * 210 forfeits their refund. Both are false, both were written confidently, and neither topic had a
+ * bank card. A legal or tax proposition has an official text behind it; the research has to go and
+ * open that text rather than assemble the answer from whatever a search summarised.
+ *
+ * LEGAL/TAX RESEARCH RETIRED (Christian, 2026-09-19). Studio must not research or state specific
+ * Spanish legal or tax rules on a public post: a regional rule stated wrong is real legal exposure,
+ * and it is not Studio's job. A legal/tax topic is now written in general terms only and steered to a
+ * professional; the claim gate still drops any specific legal/tax claim as unsupported, because no
+ * legal research backs it. `enforcesOfficialSources` therefore no longer includes 'legal_tax', so the
+ * official-source enforcement loop and openCited legal fetch never run for it. Reconsider region-locked
+ * legal/tax research later, with strong geographic locking + validation (see P4_research_relevance_design).
+ */
+export const NEUTRAL_LEGAL_BRIEF =
+  `\n\nTHIS TOPIC MAY TOUCH SPANISH LAW OR TAX. Do NOT state any specific legal or tax rule, article, `
+  + `figure, rate, percentage, deadline, prescription period or amount, and do NOT go and research `
+  + `legal or tax specifics. Write helpfully in GENERAL, practical terms only, and tell the reader to `
+  + `confirm the specifics with their own gestor or legal/tax adviser. If a point cannot be made `
+  + `without stating a specific legal or tax rule as fact, leave it out.`;
+
+/** After the 2026-09-19 legal/tax retire, only market-statistics and local-fact topics require the
+ *  official-primary-source enforcement loop. 'legal_tax' is deliberately excluded (retired), 'none'
+ *  never needed it. */
+export function enforcesOfficialSources(risk: RiskClass): boolean {
+  return risk === 'market_statistics' || risk === 'local_fact';
+}
+
+export function SOURCE_POLICY_BRIEF(risk: RiskClass): string {
+  if (risk === 'legal_tax') {
+    return NEUTRAL_LEGAL_BRIEF;
+  }
+  if (risk === 'market_statistics') {
+    return `\n\nTHIS TOPIC TURNS ON NUMBERS, SO OPEN THE DATASET. Use web_fetch on the actual `
+      + `publisher — ine.es, registradores.org, notariado.org, the Colegio Notarial, the Ministerio `
+      + `del Interior series — and read the figure off the source rather than off an article about `
+      + `it. State the geography the figure is published at, and never move a number to a geography `
+      + `it was not published for: a national ranking is not a province ranking, and a province `
+      + `figure is not a town's.`;
+  }
+  if (risk === 'local_fact') {
+    return `\n\nTHIS TOPIC MAKES CONCRETE CLAIMS ABOUT REAL PLACES. Open the municipal or `
+      + `statistical source with web_fetch — the ayuntamiento, INE's padrón tables, the official `
+      + `regional data — rather than repeating a figure from a listing site or a travel page. Say `
+      + `which year each population or distance figure belongs to.`;
+  }
+  return '';
+}
+
+/**
  * May these sources carry this proposition? A blog can be where you find out an issue exists; it is
  * not where a reader's tax deadline comes from.
  */

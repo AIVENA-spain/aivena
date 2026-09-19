@@ -255,12 +255,15 @@ export function explainWhatsApp(d: OperationsResponse): string {
     case "ready":
       return "✅ WhatsApp looks healthy — connected and able to send.";
     case "degraded":
+      // "degraded" = connected, but no message delivered through it yet (D-54a).
+      // This used to say the channel "isn't fully on" and send the agency to switch
+      // it on in Settings — that switch (channels_enabled) controls no send path.
       return [
         "🛠️ WhatsApp is degraded, not down:",
         "",
         `• ${wa.detail}`,
-        "• In plain terms: the number is connected, but the channel isn't fully on — so AIVENA may not send WhatsApp messages automatically.",
-        "👉 What to do: open Settings → Channels and turn the WhatsApp channel on (or contact AIVENA if it won't enable).",
+        "• In plain terms: the number is connected, but no message has been delivered through it yet, so sending isn't proven.",
+        "👉 What to do: there is nothing to switch on. It shows as healthy after the first delivered message; if messages aren't arriving, contact AIVENA.",
       ].join("\n");
     case "disconnected":
       return [

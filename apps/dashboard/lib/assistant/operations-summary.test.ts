@@ -202,10 +202,12 @@ describe("Amanda / web-chat task types render with real copy (not the generic fa
 });
 
 describe("explainWhatsApp", () => {
-  it("degraded → 'degraded, not down' + what to do", () => {
+  it("degraded → 'degraded, not down' + the true reason, never 'switch the channel on'", () => {
     const s = explainWhatsApp(demo());
     expect(s).toMatch(/degraded, not down/i);
-    expect(s).toMatch(/Settings → Channels/i);
+    expect(s).toMatch(/no message has been delivered/i);
+    // The channel toggle gates no send path (D-54a): advising it would be a dead control.
+    expect(s).not.toMatch(/turn the WhatsApp channel on|isn't fully on/i);
   });
   it("ready → healthy", () => {
     expect(explainWhatsApp(base())).toMatch(/healthy/i);

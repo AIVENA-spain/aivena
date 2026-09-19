@@ -682,7 +682,8 @@
       "toneFormal": "Formalny",
       "toneConcise": "Zwięzły",
       "tonePlayful": "Swobodny",
-      "toneLuxury": "Luksusowy"
+      "toneLuxury": "Luksusowy",
+      "toneProfessional": "Profesjonalny"
     },
     "languages": {
       "title": "Języki i godziny pracy",
@@ -1668,6 +1669,7 @@
     "state_approval": "Wersje robocze dla Ciebie",
     "state_assisted": "Amanda odpowiada",
     "state_full": "Amanda odpowiada i rezerwuje",
+    "state_waiting": "Czeka na człowieka",
     "optInherit": "Zgodnie z biurem ({mode})",
     "optInheritDesc": "To, co mówi Twój poziom automatyzacji.",
     "optFull": "Tym zajmie się Amanda",

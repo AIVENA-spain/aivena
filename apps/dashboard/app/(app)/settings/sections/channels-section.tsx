@@ -65,7 +65,9 @@ export function ChannelsSection({
   }, [replyTo, ti]);
 
   const emailStatus: Status = sendingDomain ? "verified" : "comingSoon";
-  const whatsappStatus: Status = channels.whatsapp.live ? "verified" : "repliesOff";
+  // Fallback only (readiness did not load). channels.whatsapp.live is hardcoded
+  // false in dashboard_settings, so it can never be the signal (D-54a).
+  const whatsappStatus: Status = channels.whatsapp.connected ? "verified" : "repliesOff";
 
   const hasReadiness = Boolean(providers && providers.length > 0);
 

@@ -48,6 +48,9 @@ function demoSignals(over: Partial<ReadinessSignals> = {}): ReadinessSignals {
       reply_rules: { default_lane: 'review_first' },
       human_approval_required: true,
       reply_handling_mode: 'manual',
+      // The live demo agency: full automation beside the old approval-first fields,
+      // which the engine ignores (D-54a).
+      amanda_mode: 'full',
     },
     email: { from_email: 'costahomes@send.aivena.es', send_proven: true, send_proven_at: '2026-06-15T12:24:20.988Z' },
     team: { owners: 2, agents: 0 },
@@ -108,7 +111,9 @@ describe('computeReadiness — demo agency live fixture', () => {
     expect(items['identity.timezone'].status).toBe('live_but_unproven'); // Madrid vs UTC
     expect(items['identity.working_hours'].status).toBe('ready');
     expect(items['identity.tone'].status).toBe('ready');
-    expect(items['posture.approval_first'].status).toBe('ready');
+    // Full automation is never "ready" as a safety posture, whatever the old fields say.
+    expect(items['posture.approval_first'].status).toBe('live_but_unproven');
+    expect(items['posture.approval_first'].uiCopy).not.toMatch(/approval-first/i);
     expect(items['team.owner'].status).toBe('ready');
     expect(items['team.agents'].status).toBe('manual_fallback');
   });
@@ -204,6 +209,13 @@ describe('computeReadiness — WhatsApp present (consumed from Chat 3 RPC)', () 
 
   it('sender connected but send unproven → live_but_unproven (not ready)', () => {
     expect(items['provider.whatsapp'].status).toBe('live_but_unproven');
+  });
+  it('connected + delivered is ready even though channels_enabled leaves WhatsApp out (D-54a, the live demo agency)', () => {
+    const live = computeReadiness('demo-costa-homes-pilot01', demoSignals({ whatsapp: { ...wa, template_send_path_proven: true } }));
+    const item = byId(live.items)['provider.whatsapp'];
+    expect(item.status).toBe('ready');
+    expect(item.uiCopy).not.toMatch(/automation off/i);
+    expect(live.providers.find((p) => p.provider === 'whatsapp')!.detail).toBe('Connected and sending.');
   });
   it('languages_ready drives multilingual (en only → missing)', () => {
     expect(items['provider.templates_multilang'].status).toBe('missing');

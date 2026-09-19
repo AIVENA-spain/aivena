@@ -682,7 +682,8 @@
       "toneFormal": "Formeel",
       "toneConcise": "Bondig",
       "tonePlayful": "Speels",
-      "toneLuxury": "Luxe"
+      "toneLuxury": "Luxe",
+      "toneProfessional": "Professioneel"
     },
     "languages": {
       "title": "Talen en werktijden",
@@ -1668,6 +1669,7 @@
     "state_approval": "Concepten voor jou",
     "state_assisted": "Amanda antwoordt",
     "state_full": "Amanda antwoordt en boekt",
+    "state_waiting": "Wacht op een persoon",
     "optInherit": "Volg het kantoor ({mode})",
     "optInheritDesc": "Wat je automatiseringsniveau zegt.",
     "optFull": "Amanda doet deze",

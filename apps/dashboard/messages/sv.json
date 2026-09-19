@@ -682,7 +682,8 @@
       "toneFormal": "Formell",
       "toneConcise": "Koncis",
       "tonePlayful": "Lekfull",
-      "toneLuxury": "Lyxig"
+      "toneLuxury": "Lyxig",
+      "toneProfessional": "Professionell"
     },
     "languages": {
       "title": "Språk och arbetstider",
@@ -1668,6 +1669,7 @@
     "state_approval": "Utkast till dig",
     "state_assisted": "Amanda svarar",
     "state_full": "Amanda svarar och bokar",
+    "state_waiting": "Väntar på en person",
     "optInherit": "Följ byrån ({mode})",
     "optInheritDesc": "Det din automatiseringsnivå säger.",
     "optFull": "Amanda tar den här",

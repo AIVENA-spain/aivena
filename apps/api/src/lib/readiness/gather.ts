@@ -75,14 +75,16 @@ export async function gatherReadinessSignals(tx: Tx): Promise<ReadinessSignals> 
   );
 
   // Block 2 — targeted signals not in dashboard_settings (each savepoint-isolated).
-  const posture = await safe<{ human_approval_required: boolean | null; default_lane: string | null } | null>(
+  // amanda_mode is what the engine obeys (D-54a); the other two are kept for the
+  // settings echo only and no longer drive any automation claim.
+  const posture = await safe<{ human_approval_required: boolean | null; default_lane: string | null; amanda_mode: string | null } | null>(
     tx,
     async (sp) => {
       const r = await sp.execute(
-        sql`SELECT human_approval_required, reply_rules->>'default_lane' AS default_lane
+        sql`SELECT human_approval_required, reply_rules->>'default_lane' AS default_lane, amanda_mode
             FROM public.agency_settings WHERE agency_id = ${AGENCY_GUC}`,
       );
-      return rows<{ human_approval_required: boolean | null; default_lane: string | null }>(r)[0] ?? null;
+      return rows<{ human_approval_required: boolean | null; default_lane: string | null; amanda_mode: string | null }>(r)[0] ?? null;
     },
     null,
   );
@@ -287,6 +289,7 @@ export async function gatherReadinessSignals(tx: Tx): Promise<ReadinessSignals> 
             reply_rules: posture?.default_lane != null ? { default_lane: posture.default_lane } : null,
             human_approval_required: posture?.human_approval_required ?? config?.approve_before_sending ?? null,
             reply_handling_mode: config?.reply_handling_mode ?? null,
+            amanda_mode: posture?.amanda_mode ?? null,
           }
         : null,
     email: profile ? { from_email: profile.from_email ?? null, send_proven: profile.send_proven ?? null, send_proven_at: profile.send_proven_at ?? null } : null,

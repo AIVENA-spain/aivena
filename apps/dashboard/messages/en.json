@@ -682,7 +682,8 @@
       "toneFormal": "Formal",
       "toneConcise": "Concise",
       "tonePlayful": "Playful",
-      "toneLuxury": "Luxury"
+      "toneLuxury": "Luxury",
+      "toneProfessional": "Professional"
     },
     "languages": {
       "title": "Languages & working hours",
@@ -1668,6 +1669,7 @@
     "state_approval": "Drafts for you",
     "state_assisted": "Amanda replies",
     "state_full": "Amanda replies and books",
+    "state_waiting": "Waiting for a person",
     "optInherit": "Follow the agency ({mode})",
     "optInheritDesc": "Whatever your automation level says.",
     "optFull": "Amanda handles this one",

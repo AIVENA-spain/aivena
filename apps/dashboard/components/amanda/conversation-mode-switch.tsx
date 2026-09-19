@@ -83,7 +83,13 @@ export function ConversationModeSwitch({ conversationId }: { conversationId: str
         } ${saving || agencyOff ? "opacity-60" : "hover:brightness-95"}`}
       >
         {live ? <Bot className="h-3.5 w-3.5" aria-hidden /> : <UserRound className="h-3.5 w-3.5" aria-hidden />}
-        <span>{saving ? t("saving") : t(`state_${state.effective}`)}</span>
+        <span>
+          {saving
+            ? t("saving")
+            : state.paused_reason === "lead_needs_human"
+              ? t("state_waiting")
+              : t(`state_${state.effective}`)}
+        </span>
         {agencyOff ? null : <ChevronDown className="h-3 w-3" aria-hidden />}
       </button>
 

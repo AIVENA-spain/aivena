@@ -177,7 +177,8 @@ export function Topbar({
  * lists what arrived and takes you to the page that can act on it.
  */
 function NotificationBell({ agencyId }: { agencyId: string | null }) {
-  const tBar = useTranslations("shell.topbar");
+  // "shell.topbar" does not exist in the catalogues; the label rendered as its raw key.
+  const tBar = useTranslations("topbar");
   const t = useTranslations("notifications");
   const [notices, setNotices] = useState<ShellNotice[]>([]);
   const [open, setOpen] = useState(false);

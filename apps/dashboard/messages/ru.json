@@ -682,7 +682,8 @@
       "toneFormal": "Официальный",
       "toneConcise": "Лаконичный",
       "tonePlayful": "Игривый",
-      "toneLuxury": "Премиальный"
+      "toneLuxury": "Премиальный",
+      "toneProfessional": "Профессиональный"
     },
     "languages": {
       "title": "Языки и рабочие часы",
@@ -1668,6 +1669,7 @@
     "state_approval": "Черновики для вас",
     "state_assisted": "Amanda отвечает",
     "state_full": "Amanda отвечает и бронирует",
+    "state_waiting": "Ждёт человека",
     "optInherit": "Как у агентства ({mode})",
     "optInheritDesc": "То, что задаёт ваш уровень автоматизации.",
     "optFull": "Пусть ведёт Amanda",

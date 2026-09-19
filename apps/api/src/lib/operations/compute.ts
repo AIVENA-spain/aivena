@@ -23,6 +23,7 @@
  */
 
 import { LEAD_SCORING_LIVE } from "../automation-status";
+import { whatsappProviderView } from "../automation-state";
 
 // --- delivery-status vocab (live `conversation_messages.status`) -------------
 // received | queued | sent | read | undelivered | failed | cancelled.
@@ -369,23 +370,17 @@ function whatsappState(wa: WhatsAppOpsSignal): { state: OpsProviderState; detail
   if (!wa) {
     return {
       state: 'unavailable',
-      detail:
-        'WhatsApp provider readiness not available yet (readiness RPC not deployed — Chat 3 H1/Phase 1c). Not reported as connected.',
+      detail: 'WhatsApp status is not available right now, so it is not reported as connected.',
     };
   }
-  if (!wa.whatsapp_sender_ready) {
-    return { state: 'disconnected', detail: 'WhatsApp sender is not connected.' };
-  }
-  if (!wa.whatsapp_channel_enabled) {
-    return { state: 'degraded', detail: 'Sender connected but the WhatsApp channel is off.' };
-  }
-  if (!wa.template_send_path_proven) {
-    return {
-      state: 'degraded',
-      detail: 'Connected, but the template-send path is not yet proven (no live template send to date).',
-    };
-  }
-  return { state: 'ready', detail: 'WhatsApp connected and template-send proven.' };
+  // The same reading as readiness (lib/automation-state.ts). channels_enabled gates
+  // no send path, so "the WhatsApp channel is off" (and its Assistant echo "Why is
+  // WhatsApp degraded?") was false for an agency whose messages were delivering (D-54a).
+  const v = whatsappProviderView(wa, null);
+  return {
+    state: v.status === 'ready' ? 'ready' : v.status === 'live_but_unproven' ? 'degraded' : 'disconnected',
+    detail: v.detail,
+  };
 }
 
 // --- the compute -------------------------------------------------------------
@@ -555,7 +550,7 @@ export function computeOperations(agencyId: string, s: OperationsSignals): Opera
       count: failedItems.length,
       items: failedItems,
       note:
-        'Undelivered sends are read live from message delivery status. Some failures also create a `send_issue` task (shown in the action queue); guaranteeing a fallback task on EVERY send failure is F3 (Chat 3).',
+        'Messages that were not delivered, read live from their delivery status. Some failures also create a task in the action queue.',
       available: failedAvailable,
     },
     actionQueue: { total: queueItems.length, byType, items: queueItems, available: tasksAvailable },

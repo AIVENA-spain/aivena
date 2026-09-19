@@ -682,7 +682,8 @@
       "toneFormal": "Formel",
       "toneConcise": "Kortfattet",
       "tonePlayful": "Legende",
-      "toneLuxury": "Luksus"
+      "toneLuxury": "Luksus",
+      "toneProfessional": "Professionel"
     },
     "languages": {
       "title": "Sprog og arbejdstider",
@@ -1668,6 +1669,7 @@
     "state_approval": "Udkast til dig",
     "state_assisted": "Amanda svarer",
     "state_full": "Amanda svarer og booker",
+    "state_waiting": "Venter på en person",
     "optInherit": "Følg bureauet ({mode})",
     "optInheritDesc": "Det dit automatiseringsniveau siger.",
     "optFull": "Amanda tager den",

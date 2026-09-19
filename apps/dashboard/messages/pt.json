@@ -682,7 +682,8 @@
       "toneFormal": "Formal",
       "toneConcise": "Conciso",
       "tonePlayful": "Descontraído",
-      "toneLuxury": "Luxo"
+      "toneLuxury": "Luxo",
+      "toneProfessional": "Profissional"
     },
     "languages": {
       "title": "Idiomas e horário de trabalho",
@@ -1668,6 +1669,7 @@
     "state_approval": "Rascunhos para si",
     "state_assisted": "A Amanda responde",
     "state_full": "A Amanda responde e marca",
+    "state_waiting": "À espera de uma pessoa",
     "optInherit": "Seguir a agência ({mode})",
     "optInheritDesc": "O que disser o seu nível de automação.",
     "optFull": "A Amanda trata deste",

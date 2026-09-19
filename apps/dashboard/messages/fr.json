@@ -682,7 +682,8 @@
       "toneFormal": "Formel",
       "toneConcise": "Concis",
       "tonePlayful": "Enjoué",
-      "toneLuxury": "Luxe"
+      "toneLuxury": "Luxe",
+      "toneProfessional": "Professionnel"
     },
     "languages": {
       "title": "Langues et heures de travail",
@@ -1668,6 +1669,7 @@
     "state_approval": "Brouillons pour vous",
     "state_assisted": "Amanda répond",
     "state_full": "Amanda répond et réserve",
+    "state_waiting": "En attente d'une personne",
     "optInherit": "Suivre l'agence ({mode})",
     "optInheritDesc": "Ce que dit votre niveau d'automatisation.",
     "optFull": "Amanda s'en occupe",

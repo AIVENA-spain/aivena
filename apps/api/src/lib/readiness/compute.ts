@@ -17,6 +17,8 @@
  *    eligibility signals and always returns `goLive.eligible=false`.
  */
 
+import { resolveAutomationPosture, whatsappProviderView } from '../automation-state';
+
 export type ReadinessStatus =
   | 'ready'
   | 'live_but_unproven'
@@ -124,6 +126,8 @@ export type ReadinessSignals = {
     reply_rules: Record<string, unknown> | null;
     human_approval_required: boolean | null;
     reply_handling_mode: string | null;
+    /** What the engine obeys. null = not read (shown as unavailable, never guessed). */
+    amanda_mode: string | null;
   } | null;
   email: { from_email: string | null; send_proven: boolean | null; send_proven_at: string | null } | null;
   team: { owners: number; agents: number } | null;
@@ -164,11 +168,6 @@ function anyDayEnabled(wh: Record<string, unknown> | null): boolean {
   return Object.values(wh).some(
     (slot) => slot && typeof slot === 'object' && (slot as { enabled?: unknown }).enabled === true,
   );
-}
-
-function defaultLane(reply_rules: Record<string, unknown> | null): string | null {
-  const dl = reply_rules && typeof reply_rules === 'object' ? (reply_rules as { default_lane?: unknown }).default_lane : null;
-  return typeof dl === 'string' ? dl : null;
 }
 
 // --- the compute -------------------------------------------------------------
@@ -317,14 +316,17 @@ export function computeReadiness(
     blockedBy: [],
   });
 
-  // Approval-first posture (system safety gate).
-  const approvalFirst = !!st && st.reply_handling_mode === 'manual' && st.human_approval_required === true && defaultLane(st.reply_rules) !== 'auto_send';
+  // Automation level (system safety gate) — from amanda_mode, the only field the
+  // engine obeys (D-54a). It read reply_handling_mode / human_approval_required /
+  // default_lane until 2026-09-18 and told the full-automation demo agency
+  // "Approval-first". The id stays posture.approval_first: admin go-live keys on it.
+  const posture = resolveAutomationPosture(st?.amanda_mode ?? null);
   push({
-    id: 'posture.approval_first', label: 'Approval-first safety posture', area: 'A', gate: 'G1', owner: 'system',
+    id: 'posture.approval_first', label: 'Automation level', area: 'A', gate: 'G1', owner: 'system',
     agencyEditable: false, adminApproved: null,
-    status: !st ? 'unavailable' : approvalFirst ? 'ready' : 'live_but_unproven',
-    signal: { source: 'agency_settings.reply_handling_mode + human_approval_required + reply_rules.default_lane', value: st ? `mode=${st.reply_handling_mode} · approval=${st.human_approval_required} · default_lane=${defaultLane(st.reply_rules) ?? '∅'}` : 'unavailable' },
-    uiCopy: approvalFirst ? 'Approval-first — your team reviews before anything sends' : 'Review the automation posture before any pilot',
+    status: posture ? posture.status : 'unavailable',
+    signal: { source: 'agency_settings.amanda_mode (the engine\'s dial)', value: posture ? `amanda_mode=${posture.mode}` : 'unavailable' },
+    uiCopy: posture ? posture.copy : 'Automation level not available',
     blockedBy: [],
   });
 
@@ -436,20 +438,17 @@ export function computeReadiness(
   });
 
   // WhatsApp — CONSUMED from Chat 3's RPC. null = unavailable (RPC not deployed), never faked.
+  // channels_enabled (whatsapp_channel_enabled) gates no send path, so it no
+  // longer decides anything here (D-54a) — see lib/automation-state.ts.
   const wa = s.whatsapp;
-  const waStatus: ReadinessStatus = !wa
-    ? 'unavailable'
-    : wa.whatsapp_sender_ready && wa.whatsapp_channel_enabled && wa.template_send_path_proven
-      ? 'ready'
-      : wa.whatsapp_sender_ready
-        ? 'live_but_unproven'
-        : 'missing';
+  const waView = wa ? whatsappProviderView(wa, posture) : null;
+  const waStatus: ReadinessStatus = waView ? waView.status : 'unavailable';
   push({
     id: 'provider.whatsapp', label: 'WhatsApp sending', area: 'H', gate: 'G2', owner: 'system',
     agencyEditable: false, adminApproved: null,
     status: waStatus,
     signal: { source: 'consumed from get_whatsapp_provider_readiness() via /whatsapp/readiness (Chat 3)', value: wa ? `sender_ready=${wa.whatsapp_sender_ready} · channel_enabled=${wa.whatsapp_channel_enabled} · send_proven=${wa.template_send_path_proven}` : 'unavailable (readiness RPC not deployed yet)' },
-    uiCopy: !wa ? 'WhatsApp status not yet available (provider readiness service pending — Chat 3 H1)' : waStatus === 'ready' ? 'WhatsApp ready' : wa.whatsapp_sender_ready ? 'Sender connected — template send not yet proven; automation off' : 'WhatsApp not connected',
+    uiCopy: waView ? waView.uiCopy : 'WhatsApp status not available yet',
     blockedBy: [],
   });
   providers.push({
@@ -460,13 +459,7 @@ export function computeReadiness(
     // text under the whatsapp one is not very professional" — it was reading
     // "sender_ready=true, channel_enabled=false, send_proven=true, last_sync=…").
     // The engineering values live on the readiness item's `signal` for audits.
-    detail: !wa
-      ? 'WhatsApp status is not available yet.'
-      : waStatus === 'ready'
-        ? 'Connected and sending.'
-        : wa.whatsapp_sender_ready
-          ? 'Your number is connected. Sending is still being switched on.'
-          : 'Not connected yet.',
+    detail: waView ? waView.detail : 'WhatsApp status is not available yet.',
     source: 'get_whatsapp_provider_readiness()',
   });
 

@@ -27,7 +27,6 @@ import type {
 } from "@/lib/api/types";
 
 import { StatusDot, StatusTag } from "./accordion";
-import { hasAutoSend } from "./automation-safety";
 import { ChecklistSection } from "./sections/checklist-section";
 import { SetupProgressSection } from "./sections/setup-progress-section";
 import { BrandingSection } from "./sections/branding-section";
@@ -69,6 +68,7 @@ export default async function SettingsPage({
   const t = await getTranslations("settings");
   const ta = await getTranslations("settings.accordion");
   const tc = await getTranslations("settings.cards");
+  const tauto = await getTranslations("settings.automation");
   const tt = await getTranslations("settings.team");
   const locale = intlLocaleFor(await getLocale());
   // Calendar OAuth round-trip result — the API callback redirects here with
@@ -142,8 +142,13 @@ export default async function SettingsPage({
   const lanes = settings.reply_lanes;
   const langCount = settings.profile.supported_languages.length;
   const memberCount = settings.team.member_count;
-  const aiSafe = !hasAutoSend(lanes);
-  const whatsappLive = Boolean(settings.channels.whatsapp.connected && settings.channels.whatsapp.live);
+  // Automation truth (D-54a): the mode Amanda actually obeys, and WhatsApp health
+  // from readiness. This card read reply_rules.default_lane and a dashboard_settings
+  // "live" flag that is hardcoded false, so the full-automation demo agency showed
+  // "Approval-first" and "replies off" while Amanda was replying to buyers.
+  const amandaMode = amandaSettings?.mode ?? null;
+  const sendsWithoutReview = amandaMode === "assisted" || amandaMode === "full";
+  const waProvider = readiness?.providers.find((p) => p.provider === "whatsapp") ?? null;
   const signedInEmail =
     settings.team.members.find((m) => m.user_id === currentUserId)?.email ?? "";
 
@@ -231,22 +236,19 @@ export default async function SettingsPage({
       id: "communication",
       icon: <Mail className="h-4 w-4" />,
       title: ta("groupCommunication"),
-      // Positive framing: the badge states the safety MODE (approval-first);
-      // channel states live in the rows below (no "replies off" repetition).
-      // Only a real auto-send config flips it to the amber "Action needed".
-      status: aiSafe ? (
+      // The badge names the automation level the engine runs — the same words as
+      // the dial inside. No badge when the level could not be read.
+      status: amandaMode ? (
         <span className="rounded-full bg-brand-soft px-2.5 py-1 text-[11px] font-semibold text-brand">
-          {tc("approvalFirst")}
+          {tauto(`${amandaMode}Label`)}
         </span>
-      ) : (
-        <StatusTag tone="warn">{tc("actionNeeded")}</StatusTag>
-      ),
+      ) : null,
       facts: (
         <div className="flex flex-col">
           <FactRow
-            label={tc("approvalMode")}
-            value={aiSafe ? tc("approvalFirst") : tc("autoSendOn")}
-            tone={aiSafe ? "good" : "warn"}
+            label={tauto("title")}
+            value={amandaMode ? tauto(`${amandaMode}Label`) : "—"}
+            tone={amandaMode && !sendsWithoutReview ? "good" : "neutral"}
           />
           <FactRow
             label={tc("emailLabel")}
@@ -255,8 +257,16 @@ export default async function SettingsPage({
           />
           <FactRow
             label={tc("whatsappLabel")}
-            value={whatsappLive ? tc("ready") : tc("repliesOff")}
-            tone={whatsappLive ? "good" : "warn"}
+            value={
+              !waProvider
+                ? "—"
+                : waProvider.status === "ready"
+                  ? tc("ready")
+                  : waProvider.status === "missing"
+                    ? tc("actionNeeded")
+                    : tc("inProgress")
+            }
+            tone={!waProvider ? "neutral" : waProvider.status === "ready" ? "good" : "warn"}
           />
           <FactRow
             label={tc("languagesLabel")}

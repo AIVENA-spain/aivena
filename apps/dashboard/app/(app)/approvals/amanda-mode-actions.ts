@@ -15,6 +15,8 @@ export type ConversationMode = {
   agency_mode: "off" | "shadow" | "approval" | "assisted" | "full";
   override: "off" | "shadow" | "approval" | "assisted" | "full" | null;
   paused: boolean;
+  /** Why she is paused (D-56 pause-lib): an escalated buyer waiting, or a person who took over. */
+  paused_reason?: "lead_needs_human" | "ai_muted_or_human_claimed" | null;
   effective: "off" | "shadow" | "approval" | "assisted" | "full";
 };
 

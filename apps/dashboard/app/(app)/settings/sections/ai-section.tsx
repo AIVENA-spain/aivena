@@ -131,7 +131,8 @@ export async function AiSection({
   );
 }
 
-type ToneKey = "toneWarm" | "toneFormal" | "toneConcise" | "tonePlayful" | "toneLuxury";
+// "professional" is the stored default for every agency; without its key it rendered raw.
+type ToneKey = "toneWarm" | "toneFormal" | "toneConcise" | "tonePlayful" | "toneLuxury" | "toneProfessional";
 
 function capitalize(v: string): string {
   return v.charAt(0).toUpperCase() + v.slice(1);

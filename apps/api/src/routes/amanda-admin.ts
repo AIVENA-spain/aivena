@@ -232,17 +232,21 @@ route.get('/conversations/:id/mode', async (c) => {
   const override = typeof r.amanda_mode_override === 'string' ? parseAmandaMode(r.amanda_mode_override) : null;
   // The engine's own rule (pause-lib.ts), so the switch can never show Amanda
   // on while an escalated lead is waiting for a person (D-56).
-  const paused = pauseReason({
+  const pausedReason = pauseReason({
     convMutedAt: r.ai_muted_at,
     convClaimedAt: r.human_claimed_at,
     leadClaimedAt: r.lead_claimed_at,
     leadNeedsHumanSince: r.needs_human_since,
-  }) !== null;
+  });
+  const paused = pausedReason !== null;
   return c.json({
     ok: true,
     agency_mode: agencyMode,
     override,
     paused,
+    // Why (D-54a): 'lead_needs_human' renders "Waiting for a person" — an escalated
+    // buyer nobody has picked up yet, not a colleague who chose to take over.
+    paused_reason: pausedReason,
     // What the engine will ACTUALLY do on the next message — the number the UI
     // shows, so the switch can never disagree with behaviour.
     effective: agencyMode === 'off' || paused ? 'off' : (override ?? agencyMode),

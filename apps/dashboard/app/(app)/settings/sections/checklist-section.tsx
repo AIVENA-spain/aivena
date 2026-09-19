@@ -6,7 +6,7 @@ import { hasAutoSend } from "../automation-safety";
 
 /**
  * Setup status strip — top of the Settings page. Six tiles, each driven by real
- * data and truthful: WhatsApp shows "Replies off" while not live; AI rules show
+ * data and truthful: WhatsApp shows whether the number is connected; AI rules show
  * "Review" only if reply_rules still auto-sends; email is "Ready" only when a real
  * send is proven (send_proven — a successful Resend send), NEVER a faked
  * "domain verified" claim; hours derived from the working_hours config.
@@ -29,7 +29,9 @@ export async function ChecklistSection({
   const t = await getTranslations("settings.checklist");
 
   const aiReady = checklist.ai_rules_set.completed && !hasAutoSend(lanes);
-  const whatsappLive = Boolean(channels.whatsapp.connected && channels.whatsapp.live);
+  // channels.whatsapp.live is hardcoded false in dashboard_settings, so the tile
+  // read "Replies off" for every agency (D-54a). Connected is the real signal here.
+  const whatsappConnected = Boolean(channels.whatsapp.connected);
   const whConfigured = WH_DAYS.some((d) => {
     const slot = (workingHours as Record<string, unknown> | null)?.[d];
     return Boolean(slot && typeof slot === "object" && (slot as { enabled?: boolean }).enabled === true);
@@ -40,7 +42,7 @@ export async function ChecklistSection({
     // Honest: green only when a real send is proven (send_proven), never on the old
     // "from_email has an @domain" fake. "Ready" — we never claim "domain verified" (J3).
     { key: "domain", label: t("stepDomain"), done: emailSendProven, status: emailSendProven ? t("stReady") : t("stActionNeeded") },
-    { key: "whatsapp", label: t("stepWhatsapp"), done: whatsappLive, status: whatsappLive ? t("stConnected") : t("stRepliesOff") },
+    { key: "whatsapp", label: t("stepWhatsapp"), done: whatsappConnected, status: whatsappConnected ? t("stConnected") : t("stActionNeeded") },
     { key: "team", label: t("stepTeam"), done: checklist.team_invited.completed, status: checklist.team_invited.completed ? t("stReady") : t("stInviteAgents") },
     { key: "ai_rules", label: t("stepAiRules"), done: aiReady, status: aiReady ? t("stReady") : t("stReview") },
     { key: "working_hours", label: t("stepWorkingHours"), done: whConfigured, status: whConfigured ? t("stReady") : t("stActionNeeded") },

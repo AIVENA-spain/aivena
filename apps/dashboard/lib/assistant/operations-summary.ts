@@ -147,7 +147,8 @@ function buildConcerns(d: OperationsResponse): Concern[] {
     if (p.state === "disconnected") {
       out.push({ priority: 2, emoji: "🛠️", title: `${label} isn't connected`, guidance: "Reconnect it so AIVENA can message buyers.", location: "👉 Open Settings → Channels.", offTab: false, staleFlag: false, leadName: null });
     } else if (p.state === "degraded") {
-      out.push({ priority: 7, emoji: "🛠️", title: `${label} channel is off`, guidance: `${p.detail} AIVENA may not send automatically.`, location: "👉 Open Settings → Channels.", offTab: false, staleFlag: false, leadName: null });
+      // "degraded" now means connected but no message delivered yet (D-54a) — never "off".
+      out.push({ priority: 7, emoji: "🛠️", title: `${label} sending isn't confirmed yet`, guidance: p.detail, location: "👉 Open Settings → Channels.", offTab: false, staleFlag: false, leadName: null });
     }
   }
 

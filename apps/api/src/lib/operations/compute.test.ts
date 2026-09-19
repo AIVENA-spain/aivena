@@ -136,7 +136,9 @@ describe('computeOperations — demo live fixture', () => {
     expect(f.status).toBe('undelivered');
     expect(f.ageHours).toBe(5);
     expect(f.preview!.length).toBeLessThanOrEqual(160);
-    expect(res.failedSends.note.toLowerCase()).toContain('f3');
+    // Agency-facing: the note once named an internal build item ("F3 (Chat 3)") — D-52.
+    expect(res.failedSends.note).not.toMatch(/\bF\d\b|Chat \d/);
+    expect(res.failedSends.note.toLowerCase()).toContain('action queue');
   });
 
   it('action queue groups by type with friendly labels', () => {

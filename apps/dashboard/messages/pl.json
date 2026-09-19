@@ -115,6 +115,12 @@
     }
   },
   "inbox": {
+    "direct": {
+      "notFound": "Nie udało się otworzyć tego klienta. Mógł zostać usunięty albo link jest nieaktualny. Nic innego nie zostało otwarte.",
+      "failed": "Nie udało się teraz wczytać tego klienta. Spróbuj ponownie. Nic innego nie zostało otwarte.",
+      "noContact": "{name} nie ma adresu e-mail ani numeru WhatsApp, więc nie można stąd do niego napisać.",
+      "thisClient": "Ten klient"
+    },
     "tabs": {
       "buyers": "Kupujący",
       "sellers": "Sprzedający",

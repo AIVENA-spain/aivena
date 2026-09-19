@@ -638,6 +638,18 @@ export type InboxRow = {
 
 export type InboxResponse = { rows: InboxRow[] };
 
+/**
+ * GET /api/v1/leads/:leadId/inbox-entry — one named lead opened directly in the
+ * Inbox when it has no task (Option A). `row.taskId` is "lead:<id>"; `channel`
+ * is derived from that lead, and null means there is no way to message them.
+ */
+export type InboxEntryResponse = {
+  ok: true;
+  channel: "whatsapp" | "email" | null;
+  row: InboxRow;
+  detail: TaskDetailResponse;
+};
+
 export type ActivityRow = {
   eventId: string;
   leadId: string | null;

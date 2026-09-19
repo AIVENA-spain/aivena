@@ -115,6 +115,12 @@
     }
   },
   "inbox": {
+    "direct": {
+      "notFound": "Vi kunne ikke åpne den kunden. Kunden kan være fjernet, eller lenken er utdatert. Ingenting annet er åpnet.",
+      "failed": "Vi kunne ikke laste inn den kunden nå. Prøv igjen. Ingenting annet er åpnet.",
+      "noContact": "{name} har verken e-postadresse eller WhatsApp-nummer, så de kan ikke kontaktes herfra.",
+      "thisClient": "Denne kunden"
+    },
     "tabs": {
       "buyers": "Kjøpere",
       "sellers": "Selgere",

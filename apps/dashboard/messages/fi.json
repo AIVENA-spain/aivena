@@ -115,6 +115,12 @@
     }
   },
   "inbox": {
+    "direct": {
+      "notFound": "Asiakasta ei voitu avata. Se on ehkä poistettu, tai linkki on vanhentunut. Mitään muuta ei avattu.",
+      "failed": "Asiakasta ei voitu ladata juuri nyt. Yritä uudelleen. Mitään muuta ei avattu.",
+      "noContact": "Asiakkaalla {name} ei ole sähköpostiosoitetta eikä WhatsApp-numeroa, joten hänelle ei voi lähettää viestiä täältä.",
+      "thisClient": "Tämä asiakas"
+    },
     "tabs": {
       "buyers": "Ostajat",
       "sellers": "Myyjät",

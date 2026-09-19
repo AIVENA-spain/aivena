@@ -1,7 +1,7 @@
 "use server";
 
 import { apiFetch, ApiError } from "@/lib/api/client";
-import type { TaskDetailResponse } from "@/lib/api/types";
+import type { InboxEntryResponse, TaskDetailResponse } from "@/lib/api/types";
 
 /**
  * Inbox thread loader. Called from the client when a lead is selected in the
@@ -34,6 +34,38 @@ export async function loadTaskDetailAction(
           ? err.message
           : String(err);
     console.error("[inbox] failed to load task detail:", taskId, message);
+    return { ok: false, status: "failed" };
+  }
+}
+
+/**
+ * One named lead, opened directly (no task behind it) — Option A. Same stable
+ * shape as the task loader; a missing or other-agency lead is "not_found".
+ */
+export async function loadLeadEntryAction(
+  leadId: string,
+): Promise<
+  | { ok: true; entry: InboxEntryResponse }
+  | { ok: false; status: "not_found" | "failed" }
+> {
+  if (!leadId) return { ok: false, status: "not_found" };
+  try {
+    const entry = await apiFetch<InboxEntryResponse>(
+      `/api/v1/leads/${encodeURIComponent(leadId)}/inbox-entry`,
+    );
+    return { ok: true, entry };
+  } catch (err) {
+    if (err instanceof ApiError && (err.status === 404 || err.status === 400)) {
+      console.error("[inbox] lead entry not found:", leadId);
+      return { ok: false, status: "not_found" };
+    }
+    const message =
+      err instanceof ApiError
+        ? `${err.status} ${err.message}`
+        : err instanceof Error
+          ? err.message
+          : String(err);
+    console.error("[inbox] failed to load lead entry:", leadId, message);
     return { ok: false, status: "failed" };
   }
 }

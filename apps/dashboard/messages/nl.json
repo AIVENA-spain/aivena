@@ -115,6 +115,12 @@
     }
   },
   "inbox": {
+    "direct": {
+      "notFound": "We konden die klant niet openen. Mogelijk is de klant verwijderd, of is de link verouderd. Er is niets anders geopend.",
+      "failed": "We konden die klant nu niet laden. Probeer het opnieuw. Er is niets anders geopend.",
+      "noContact": "{name} heeft geen e-mailadres of WhatsApp-nummer, dus je kunt hen vanaf hier geen bericht sturen.",
+      "thisClient": "Deze klant"
+    },
     "tabs": {
       "buyers": "Kopers",
       "sellers": "Verkopers",

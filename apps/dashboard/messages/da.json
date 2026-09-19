@@ -115,6 +115,12 @@
     }
   },
   "inbox": {
+    "direct": {
+      "notFound": "Vi kunne ikke åbne den kunde. Kunden kan være fjernet, eller linket er forældet. Intet andet er åbnet.",
+      "failed": "Vi kunne ikke indlæse den kunde lige nu. Prøv igen. Intet andet er åbnet.",
+      "noContact": "{name} har hverken e-mailadresse eller WhatsApp-nummer, så de kan ikke kontaktes herfra.",
+      "thisClient": "Denne kunde"
+    },
     "tabs": {
       "buyers": "Købere",
       "sellers": "Sælgere",

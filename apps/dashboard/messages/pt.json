@@ -115,6 +115,12 @@
     }
   },
   "inbox": {
+    "direct": {
+      "notFound": "Não foi possível abrir esse cliente. Pode ter sido removido, ou a ligação está desatualizada. Nada mais foi aberto.",
+      "failed": "Não foi possível carregar esse cliente agora. Tente novamente. Nada mais foi aberto.",
+      "noContact": "{name} não tem endereço de email nem número de WhatsApp, por isso não é possível enviar-lhe mensagens a partir daqui.",
+      "thisClient": "Este cliente"
+    },
     "tabs": {
       "buyers": "Compradores",
       "sellers": "Vendedores",

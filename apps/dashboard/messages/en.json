@@ -115,6 +115,12 @@
     }
   },
   "inbox": {
+    "direct": {
+      "notFound": "We couldn't open that client. They may have been removed, or the link is out of date. Nothing else has been opened.",
+      "failed": "We couldn't load that client right now. Please try again. Nothing else has been opened.",
+      "noContact": "{name} has no email address or WhatsApp number, so there is no way to message them from here.",
+      "thisClient": "This client"
+    },
     "tabs": {
       "buyers": "Buyers",
       "sellers": "Sellers",

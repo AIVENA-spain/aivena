@@ -2,11 +2,13 @@ import { getLocale } from "next-intl/server";
 
 import { apiFetch, ApiError } from "@/lib/api/client";
 import { PageLoadError } from "@/components/shell/page-error";
-import type { InboxResponse, MeResponse, SettingsResponse } from "@/lib/api/types";
+import type { InboxResponse, InboxRow, MeResponse, SettingsResponse, TaskDetailResponse } from "@/lib/api/types";
 
 import { InboxWorkspace } from "./inbox-workspace";
 import { HandoffQueue } from "./handoff-queue";
 import { HandoffLeadsProvider } from "./handoff-context";
+import { loadLeadEntryAction } from "./inbox-actions";
+import type { DirectNotice } from "./inbox-selection";
 
 /**
  * Build an author_user_id → email map from the team read-contract so notes can
@@ -80,6 +82,24 @@ export default async function InboxPage({
     return <PageLoadError />;
   }
 
+  // A link that names a lead with no task behind it (so not in the list) opens
+  // THAT lead directly, or says plainly why it can't — never another client.
+  // Before 2026-09-18 it silently opened the first buyer in the list.
+  let directRow: InboxRow | null = null;
+  let directDetail: TaskDetailResponse | null = null;
+  let directNotice: DirectNotice | null = null;
+  if (!lead && leadId && !rows.some((r) => r.leadId === leadId)) {
+    const res = await loadLeadEntryAction(leadId);
+    if (!res.ok) {
+      directNotice = { kind: res.status === "not_found" ? "notFound" : "failed" };
+    } else if (!res.entry.channel) {
+      directNotice = { kind: "noContact", name: res.entry.row.fullName };
+    } else {
+      directRow = res.entry.row;
+      directDetail = res.entry.detail;
+    }
+  }
+
   return (
     <HandoffLeadsProvider>
       {agencyId ? <HandoffQueue agencyId={agencyId} /> : null}
@@ -88,6 +108,9 @@ export default async function InboxPage({
         rows={rows}
         initialTaskId={lead}
         initialLeadId={leadId}
+        directRow={directRow}
+        directDetail={directDetail}
+        directNotice={directNotice}
         authors={authors}
       />
     </HandoffLeadsProvider>

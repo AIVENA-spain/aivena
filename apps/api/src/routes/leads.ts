@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { sql } from 'drizzle-orm';
 import { leadScoreViews, viewFor } from '../lead-scoring/live-scores-db';
 import { getLeadSummary } from './lead-summary';
+import { inboxChannelFor } from '../lib/inbox-channel';
 import {
   contactabilitySentence,
   formatBathrooms,
@@ -498,6 +499,157 @@ route.patch('/:leadId/preferences', async (c) => {
     const { error, status } = classifyPrefError(err);
     if (status === 500) console.error('[leads/preferences] failed:', leadId, asPgError(err) ?? err);
     return c.json({ ok: false, error }, status);
+  }
+});
+
+// GET /:leadId/inbox-entry — open ONE named lead in the Inbox when it has no
+// suggested-reply task, so it is not in the list (Option A, 2026-09-18). Before
+// this, /approvals?leadId=<id> for such a lead silently opened the FIRST buyer in
+// the list instead — on the demo agency another person's WhatsApp conversation,
+// where Send would have messaged the wrong person. Returns the list row, the
+// thread and the channel to reply on, all derived from THIS lead. Read-only;
+// fenced to the caller's agency by the GUC filter (and RLS), so another
+// agency's lead id finds nothing.
+route.get('/:leadId/inbox-entry', async (c) => {
+  const tx = c.get('tx');
+  const leadId = c.req.param('leadId');
+  if (!UUID_RE.test(leadId)) {
+    return c.json({ ok: false, code: 'not_found', error: 'A valid lead id is required.' }, 400);
+  }
+  try {
+    const leadRows = (await tx.execute(sql`
+      SELECT l.id, l.full_name, l.email, l.email IS NOT NULL AND btrim(l.email) <> '' AS has_email,
+             l.phone IS NOT NULL AND btrim(l.phone) <> '' AS has_phone, l.channel,
+             COALESCE(l.language_detected, l.language) AS language, l.status, l.temperature,
+             l.lead_type, COALESCE(l.location_interest_extracted, l.location_interest_raw) AS area,
+             l.source, l.source_type, l.intent, l.listing_id, l.summary, l.message, l.created_at,
+             c.id AS conversation_id, c.channel AS conversation_channel
+        FROM public.leads l
+        LEFT JOIN LATERAL (
+          SELECT cv.id, cv.channel FROM public.conversations cv
+           WHERE cv.lead_id = l.id AND cv.agency_id = l.agency_id
+           ORDER BY cv.last_message_at DESC NULLS LAST, cv.created_at DESC
+           LIMIT 1
+        ) c ON true
+       WHERE l.id = ${leadId}::uuid
+         AND l.agency_id = current_setting('app.current_agency_id', true)
+    `)) as unknown as Array<Record<string, unknown>>;
+    const l = leadRows[0];
+    if (!l) {
+      return c.json({ ok: false, code: 'not_found', error: "That client couldn't be found." }, 404);
+    }
+    const channel = inboxChannelFor({
+      conversationChannel: (l.conversation_channel as string | null) ?? null,
+      leadChannel: (l.channel as string | null) ?? null,
+      hasEmail: l.has_email === true,
+      hasPhone: l.has_phone === true,
+    });
+    const conversationId = (l.conversation_id as string | null) ?? null;
+    const iso = (v: unknown) => (v instanceof Date ? v.toISOString() : v == null ? null : String(v));
+
+    const thread = conversationId
+      ? ((await tx.execute(sql`
+          SELECT id, direction, message_type, content, body_clean, body_translated_owner, status, created_at
+            FROM public.conversation_messages
+           WHERE conversation_id = ${conversationId}::uuid
+           ORDER BY created_at ASC
+        `)) as unknown as Array<Record<string, unknown>>)
+      : [];
+
+    let whatsappState: unknown = null;
+    if (channel === 'whatsapp') {
+      try {
+        const st = (await tx.execute(sql`SELECT dashboard_lead_whatsapp_state(${leadId}::uuid) AS state`)) as unknown as Array<{ state: unknown }>;
+        whatsappState = st[0]?.state ?? null;
+      } catch (err) {
+        console.error('[leads/inbox-entry] whatsapp_state failed:', leadId, err);
+      }
+    }
+
+    const view = viewFor(await leadScoreViews(tx, [leadId]), leadId);
+    const inbound = thread.filter((m) => m.direction === 'inbound');
+    const outbound = thread.filter((m) => m.direction === 'outbound');
+    const lastIn = inbound[inbound.length - 1];
+    const createdAt = iso(l.created_at) ?? '';
+    const directId = `lead:${leadId}`;
+
+    return c.json({
+      ok: true,
+      channel,
+      // An InboxRow the list renders like any other; the "lead:" id marks it as
+      // opened directly (no task behind it), so no task action is ever offered.
+      row: {
+        taskId: directId,
+        leadId,
+        conversationId,
+        fullName: l.full_name ?? null,
+        channel,
+        language: l.language ?? null,
+        temperature: view.temperature ?? null,
+        leadStatus: l.status ?? null,
+        taskStatus: null,
+        bucket: 'direct',
+        aiReplySubject: null,
+        aiReplyBody: null,
+        priority: 'normal',
+        taskCreatedAt: createdAt,
+        handledAt: null,
+        handledBy: null,
+        ageSeconds: null,
+        latestInboundPreview: lastIn ? ((lastIn.body_clean ?? lastIn.content) as string | null) : null,
+        latestInboundAt: lastIn ? iso(lastIn.created_at) : null,
+        lastOutboundKind: null,
+        lastOutboundAt: outbound.length ? iso(outbound[outbound.length - 1].created_at) : null,
+        leadType: l.lead_type ?? null,
+        area: l.area ?? null,
+        source: l.source ?? null,
+        score: view.score,
+        scoring: view.scoring,
+        urgency: view.urgency,
+      },
+      detail: {
+        task: {
+          id: directId,
+          taskType: 'direct',
+          status: 'none',
+          subject: null,
+          body: '',
+          suggestedReplyTranslatedOwner: null,
+          conversationId,
+          createdAt,
+        },
+        lead: {
+          id: leadId,
+          fullName: l.full_name ?? null,
+          email: l.email ?? null,
+          language: l.language ?? null,
+          source: l.source ?? null,
+          sourceType: l.source_type ?? null,
+          score: view.score,
+          temperature: view.temperature ?? null,
+          intent: l.intent ?? null,
+          listingId: l.listing_id ?? null,
+          summary: l.summary ?? null,
+          scoring: view.scoring,
+          urgency: view.urgency,
+        },
+        originalMessage: l.message ?? null,
+        thread: thread.map((m) => ({
+          id: m.id,
+          direction: m.direction,
+          messageType: m.message_type,
+          content: m.content,
+          bodyClean: m.body_clean,
+          bodyTranslatedOwner: m.body_translated_owner,
+          status: m.status,
+          createdAt: iso(m.created_at),
+        })),
+        whatsappState,
+      },
+    });
+  } catch (err) {
+    console.error('[leads/inbox-entry] read failed:', leadId, err);
+    return c.json({ ok: false, code: 'failed', error: GENERIC }, 500);
   }
 });
 

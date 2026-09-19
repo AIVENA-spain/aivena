@@ -115,6 +115,12 @@
     }
   },
   "inbox": {
+    "direct": {
+      "notFound": "Dieser Kunde konnte nicht geöffnet werden. Er wurde möglicherweise entfernt, oder der Link ist veraltet. Es wurde nichts anderes geöffnet.",
+      "failed": "Dieser Kunde konnte gerade nicht geladen werden. Bitte versuche es erneut. Es wurde nichts anderes geöffnet.",
+      "noContact": "{name} hat weder eine E-Mail-Adresse noch eine WhatsApp-Nummer, daher kann von hier keine Nachricht gesendet werden.",
+      "thisClient": "Dieser Kunde"
+    },
     "tabs": {
       "buyers": "Interessenten",
       "sellers": "Verkäufer",

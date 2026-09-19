@@ -115,6 +115,12 @@
     }
   },
   "inbox": {
+    "direct": {
+      "notFound": "Vi kunde inte öppna den kunden. Kunden kan ha tagits bort, eller så är länken inaktuell. Inget annat har öppnats.",
+      "failed": "Vi kunde inte ladda den kunden just nu. Försök igen. Inget annat har öppnats.",
+      "noContact": "{name} har varken e-postadress eller WhatsApp-nummer, så det går inte att skicka meddelanden härifrån.",
+      "thisClient": "Den här kunden"
+    },
     "tabs": {
       "buyers": "Köpare",
       "sellers": "Säljare",

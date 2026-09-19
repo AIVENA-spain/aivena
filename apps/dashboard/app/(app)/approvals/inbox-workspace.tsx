@@ -50,7 +50,25 @@ import { conversationStateTone } from "@/lib/ui-tone";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RelativeTime } from "@/components/ui/relative-time";
-import { loadTaskDetailAction } from "./inbox-actions";
+import { loadLeadEntryAction, loadTaskDetailAction } from "./inbox-actions";
+import {
+  inboxUrlFor,
+  isDirectTaskId,
+  leadIdOfDirect,
+  resolveInitialSelection,
+  type DirectNotice,
+} from "./inbox-selection";
+
+/** Thread for a list row: a task row by its task, a direct row by its lead. */
+async function loadRowDetail(
+  taskId: string,
+): Promise<{ ok: true; detail: TaskDetailResponse } | { ok: false }> {
+  if (isDirectTaskId(taskId)) {
+    const res = await loadLeadEntryAction(leadIdOfDirect(taskId));
+    return res.ok ? { ok: true, detail: res.entry.detail } : { ok: false };
+  }
+  return loadTaskDetailAction(taskId);
+}
 import {
   getComposerStateAction,
   sendSuggestedAction,
@@ -315,13 +333,21 @@ export function InboxWorkspace({
   rows,
   initialTaskId,
   initialLeadId,
+  directRow,
+  directDetail,
+  directNotice,
   authors,
 }: {
   locale: string;
   rows: InboxRow[];
   initialTaskId?: string;
-  /** Open a specific lead by its leadId (Matches rows link with ?leadId=). */
+  /** Open a specific lead by its leadId (Matches, Operations, Overview and Tasks link with ?leadId=). */
   initialLeadId?: string;
+  /** The named lead, opened directly because it has no task (so is not in `rows`). */
+  directRow?: InboxRow | null;
+  directDetail?: TaskDetailResponse | null;
+  /** Why the named lead could not be opened. Nothing else is opened in its place. */
+  directNotice?: DirectNotice | null;
   /** author_user_id → email, for resolving note authors to a name. */
   authors?: Record<string, string>;
 }) {
@@ -336,7 +362,7 @@ export function InboxWorkspace({
   // ?lead as initialTaskId. replace (not push) keeps Back behaviour sane.
   const syncLeadUrl = useCallback(
     (taskId: string) => {
-      router.replace(`/approvals?lead=${encodeURIComponent(taskId)}`, {
+      router.replace(inboxUrlFor(taskId), {
         scroll: false,
       });
     },
@@ -347,17 +373,19 @@ export function InboxWorkspace({
   // after Approve & Send (its badge flips needs_you → Replied/Auto-handled)
   // instead of vanishing. We show all buckets and let the per-row state badge
   // carry the meaning.
-  const buyers = useMemo(() => rows.filter((r) => !isSeller(r)), [rows]);
-  const sellers = useMemo(() => rows.filter((r) => isSeller(r)), [rows]);
+  // The named lead (if it had no task) sits at the top of the list like any row.
+  const allRows = useMemo(() => (directRow ? [directRow, ...rows] : rows), [directRow, rows]);
+  const buyers = useMemo(() => allRows.filter((r) => !isSeller(r)), [allRows]);
+  const sellers = useMemo(() => allRows.filter((r) => isSeller(r)), [allRows]);
 
-  // Resolve the initial selection to a taskId. ?lead=<taskId> wins; otherwise
-  // ?leadId=<leadId> (used by the Matches surface) maps to the matching row's
-  // taskId. If neither matches a row, fall through to the normal defaults.
+  // A link that names a lead or task opens exactly that one, or NOTHING (with a
+  // notice) — never the first row, which on 2026-09-18 was another client's
+  // WhatsApp conversation (inbox-selection.ts). Only a bare /approvals defaults.
+  const initialSelection = resolveInitialSelection(allRows, initialTaskId, initialLeadId);
   const resolvedInitialTaskId =
-    initialTaskId ??
-    (initialLeadId
-      ? (rows.find((r) => r.leadId === initialLeadId)?.taskId ?? undefined)
-      : undefined);
+    initialSelection.kind === "open" ? initialSelection.taskId : undefined;
+  const notice: DirectNotice | null =
+    directNotice ?? (initialSelection.kind === "unresolved" ? { kind: "notFound" } : null);
 
   // Both streams are deduped by conversation, ordered needs-you-first, and
   // carry per-conversation state for the badges + the "Handled" divider.
@@ -397,20 +425,18 @@ export function InboxWorkspace({
   const [wizardOpen, setWizardOpen] = useState(false);
 
   // Selected lead by stream — independent so switching streams doesn't reset.
-  const initialSelected =
-    resolvedInitialTaskId &&
-    [...buyers, ...sellers].some((r) => r.taskId === resolvedInitialTaskId)
-      ? resolvedInitialTaskId
+  const unresolvedLink = initialSelection.kind === "unresolved";
+  const initialSelected = resolvedInitialTaskId
+    ? resolvedInitialTaskId
+    : unresolvedLink
+      ? null
       : (buyers[0]?.taskId ?? sellers[0]?.taskId ?? null);
+  const initialIsSeller = isSeller(allRows.find((r) => r.taskId === initialSelected) ?? ({} as InboxRow));
   const [selectedBuyerId, setSelectedBuyerId] = useState<string | null>(
-    isSeller(rows.find((r) => r.taskId === initialSelected) ?? ({} as InboxRow))
-      ? (buyers[0]?.taskId ?? null)
-      : initialSelected,
+    unresolvedLink ? null : initialIsSeller ? (buyers[0]?.taskId ?? null) : initialSelected,
   );
   const [selectedSellerId, setSelectedSellerId] = useState<string | null>(
-    isSeller(rows.find((r) => r.taskId === initialSelected) ?? ({} as InboxRow))
-      ? initialSelected
-      : (sellers[0]?.taskId ?? null),
+    unresolvedLink ? null : initialIsSeller ? initialSelected : (sellers[0]?.taskId ?? null),
   );
 
   const activeRows = stream === "buyers" ? buyers : sellers;
@@ -421,11 +447,14 @@ export function InboxWorkspace({
   const selected = activeRows.find((r) => r.taskId === selectedId) ?? null;
 
   // Thread cache keyed by taskId. Lazily filled when a lead is selected.
+  // A direct row arrives with its thread already loaded by the page.
   const [threadCache, setThreadCache] = useState<
     Record<string, { status: "loading" | "ok" | "failed"; data?: TaskDetailResponse }>
-  >({});
+  >(() => (directRow && directDetail ? { [directRow.taskId]: { status: "ok", data: directDetail } } : {}));
   const [, startThreadLoad] = useTransition();
-  const loadedRef = useRef<Set<string>>(new Set());
+  const loadedRef = useRef<Set<string>>(
+    new Set(directRow && directDetail ? [directRow.taskId] : []),
+  );
 
   const loadThread = useCallback(
     (taskId: string) => {
@@ -436,7 +465,7 @@ export function InboxWorkspace({
         [taskId]: { status: "loading" },
       }));
       startThreadLoad(async () => {
-        const result = await loadTaskDetailAction(taskId);
+        const result = await loadRowDetail(taskId);
         setThreadCache((prev) => ({
           ...prev,
           [taskId]: result.ok
@@ -465,7 +494,7 @@ export function InboxWorkspace({
     loadedRef.current.add(taskId); // already loaded; keep the cached bubble up
     startThreadLoad(async () => {
       try {
-        const result = await loadTaskDetailAction(taskId);
+        const result = await loadRowDetail(taskId);
         if (!result.ok) return; // keep the old thread on a transient refetch fail
         setThreadCache((prev) => ({
           ...prev,
@@ -553,7 +582,7 @@ export function InboxWorkspace({
 
     router.refresh();
     const cancel = reconcileThread(sel);
-    router.replace(`/approvals?lead=${encodeURIComponent(sel)}`, {
+    router.replace(inboxUrlFor(sel), {
       scroll: false,
     });
     return cancel;
@@ -584,6 +613,18 @@ export function InboxWorkspace({
 
   return (
     <div className="flex flex-col gap-3.5">
+      {notice ? (
+        <div
+          role="status"
+          className="rounded-lg border border-amber-300/70 bg-amber-50 px-3.5 py-2.5 text-[12.5px] leading-snug text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200"
+        >
+          {notice.kind === "noContact"
+            ? t("direct.noContact", { name: notice.name ?? t("direct.thisClient") })
+            : notice.kind === "failed"
+              ? t("direct.failed")
+              : t("direct.notFound")}
+        </div>
+      ) : null}
       {/* Tabs + view toggle */}
       <div className="flex flex-wrap items-center gap-2">
         <StreamTab

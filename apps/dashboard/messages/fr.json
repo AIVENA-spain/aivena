@@ -115,6 +115,12 @@
     }
   },
   "inbox": {
+    "direct": {
+      "notFound": "Impossible d'ouvrir ce client. Il a peut-être été supprimé, ou le lien n'est plus à jour. Rien d'autre n'a été ouvert.",
+      "failed": "Impossible de charger ce client pour le moment. Veuillez réessayer. Rien d'autre n'a été ouvert.",
+      "noContact": "{name} n'a ni adresse e-mail ni numéro WhatsApp : impossible de lui écrire d'ici.",
+      "thisClient": "Ce client"
+    },
     "tabs": {
       "buyers": "Acheteurs",
       "sellers": "Vendeurs",

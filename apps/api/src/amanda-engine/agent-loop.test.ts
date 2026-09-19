@@ -91,6 +91,24 @@ describe('agent loop — never ends a worked turn without asking for the answer 
     expect(r.text).toBe('Here is what I found.');
   });
 
+  it('at the cap, an empty answer-now returns null — never the half-sentence written before a lookup (live 12:45)', async () => {
+    const fragmentThenLookup: ModelResponse = {
+      content: [
+        { type: 'text', text: 'Beklager, jeg vil bare være sikker på at jeg booker visning til riktig villa – kan du si' },
+        { type: 'tool_use', id: 't0', name: 'search_properties', input: { cities: ['Ciudad Quesada'] } },
+      ],
+      stop_reason: 'tool_use',
+      usage: { input_tokens: 10, output_tokens: 10 },
+    };
+    const empty: ModelResponse = { content: [], stop_reason: 'end_turn', usage: {} };
+    const r = await runAgentLoop(
+      scripted([fragmentThenLookup, lookup(2), lookup(3), lookup(4), lookup(5), lookup(6), empty]),
+      'full', new FakeBackends(), 's', 'u',
+    );
+    expect(r.iterations).toBe(7);
+    expect(r.text).toBeNull();
+  });
+
   it('a turn with no lookups that ends silent is NOT given a second call', async () => {
     const r = await runAgentLoop(scripted([{ content: [], stop_reason: 'end_turn', usage: {} }]), 'full', new FakeBackends(), 's', 'u');
     expect(r.text).toBeNull();

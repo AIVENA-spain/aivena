@@ -30,6 +30,21 @@ describe('never silent — a turn that ends without a reply', () => {
     expect(r.replyText).toBe(GATE_FALLBACK.nb);
   });
 
+  it('live 12:45 replay: a half-sentence written before a lookup is NEVER sent — the buyer gets the holding line', async () => {
+    const backends = new FakeBackends();
+    const fragment = 'Beklager, jeg vil bare være sikker på at jeg booker visning til riktig villa – kan du si';
+    const model = new ScriptedModel([
+      toolResponse('search_properties', { cities: ['Ciudad Quesada'], keywords: ['Calle Sevilla'] }, fragment),
+      ...lookups(5),
+      textResponse(''),
+    ]);
+    const { deps, journal } = makeDeps(model, backends);
+    const r = await runTurn('full', baseContext({ leadLanguage: 'nb' }), inbound('Kan jeg se villaen i Calle Sevilla 14 på mandag kl 12?'), null, deps);
+    expect(r.outcome).toBe('escalated');
+    expect(journal.sent).toEqual([GATE_FALLBACK.nb]);
+    expect(journal.sent.join(' ')).not.toContain('kan du si');
+  });
+
   it('a handoff that FAILS sends no "passed to a colleague" line and fails the turn loudly (retried)', async () => {
     const backends = new FakeBackends();
     const model = new ScriptedModel([...lookups(6), textResponse('')]);

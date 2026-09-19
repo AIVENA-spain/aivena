@@ -92,7 +92,6 @@ export async function runAgentLoop(
   const usage = { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 };
   let cannotAnswer: string | null = null;
   let handedOff = false;
-  let lastText: string | null = null;
   const joinText = (r: ModelResponse): string | null =>
     r.content
       .filter((b) => b.type === 'text' && typeof b.text === 'string')
@@ -118,7 +117,6 @@ export async function runAgentLoop(
     // school" with no homes (live demo 2026-08-28). Blocks are joined in
     // order; blank ones dropped.
     const turnText = joinText(resp);
-    if (turnText) lastText = turnText;
 
     const toolUses = resp.content.filter((b) => b.type === 'tool_use' && b.name && b.id);
     if (resp.stop_reason !== 'tool_use' || toolUses.length === 0) {
@@ -152,8 +150,11 @@ export async function runAgentLoop(
   // Loop cap reached with tools still pending: one tools-free call for the
   // answer (see answerNow). If even that yields nothing, the orchestrator
   // escalates as empty_draft and sends the holding line (fail closed, never
-  // silent).
+  // silent). NEVER fall back to text written in an earlier round: it was
+  // written BEFORE the lookups that followed it, and it can stop mid-sentence
+  // where the model broke off to call a tool (live 2026-09-19 12:45, sent to
+  // the buyer: "…til riktig villa – kan du si").
   const last = await answerNow(callModel, system, userContext, toolEvents);
   addUsage(last);
-  return { text: joinText(last) ?? lastText, toolEvents, cannotAnswer, handedOff, usage, iterations: MAX_ITERATIONS + 1 };
+  return { text: joinText(last), toolEvents, cannotAnswer, handedOff, usage, iterations: MAX_ITERATIONS + 1 };
 }

@@ -17,7 +17,7 @@
  *    eligibility signals and always returns `goLive.eligible=false`.
  */
 
-import { resolveAutomationPosture, whatsappProviderView } from '../automation-state';
+import { emailProviderView, resolveAutomationPosture, whatsappProviderView } from '../automation-state';
 
 export type ReadinessStatus =
   | 'ready'
@@ -406,28 +406,18 @@ export function computeReadiness(
   const emailConfigured = !!s.email && has(s.email.from_email);
   const sendProven = s.email?.send_proven === true;
   const sendProvenAt = s.email?.send_proven_at ?? null;
-  const emailStatus: ReadinessStatus = !s.email
-    ? 'unavailable'
-    : emailConfigured && sendProven
-      ? 'ready'
-      : emailConfigured
-        ? 'live_but_unproven'
-        : 'missing';
-  // Agency-facing: printed verbatim in Settings, so no field names, no ISO
-  // timestamps. The proof and its date stay on the item's `signal` for audits.
-  const emailDetail = !s.email
-    ? 'Email status is not available yet.'
-    : !emailConfigured
-      ? 'Not set up yet.'
-      : sendProven
-        ? 'Set up and sending.'
-        : 'Set up. Sending has not been confirmed yet.';
+  // One rule and one wording with Operations (lib/automation-state.ts). Agency-
+  // facing: printed verbatim in Settings, so no field names, no ISO timestamps.
+  // The proof and its date stay on the item's `signal` for audits.
+  const emailView = s.email ? emailProviderView({ configured: emailConfigured, sendProven }) : null;
+  const emailStatus: ReadinessStatus = emailView ? emailView.status : 'unavailable';
+  const emailDetail = emailView ? emailView.detail : 'Email status is not available yet.';
   push({
     id: 'provider.email', label: 'Email sending', area: 'J', gate: 'G4', owner: 'agency',
     agencyEditable: false, adminApproved: null,
     status: emailStatus,
     signal: { source: 'agency_email_config.from_email + profile.send_proven (real successful Resend send in provider_audit_log)', value: s.email ? `from_email=${s.email.from_email ?? '∅'} · send_proven=${sendProven}${sendProvenAt ? ` · last=${sendProvenAt}` : ''}` : 'unavailable' },
-    uiCopy: emailConfigured ? (sendProven ? 'Email sending proven — a real send succeeded' : 'Email configured — sending not proven') : 'Set up email sending',
+    uiCopy: emailView ? emailView.uiCopy : 'Set up email sending',
     blockedBy: [],
   });
   providers.push({

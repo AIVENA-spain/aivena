@@ -23,7 +23,7 @@
  */
 
 import { LEAD_SCORING_LIVE } from "../automation-status";
-import { whatsappProviderView } from "../automation-state";
+import { emailProviderView, whatsappProviderView } from "../automation-state";
 
 // --- delivery-status vocab (live `conversation_messages.status`) -------------
 // received | queued | sent | read | undelivered | failed | cancelled.
@@ -146,8 +146,8 @@ export type OperationsSignals = {
   openTasks: OpenTaskRow[] | null;
   lifecycle: LifecycleRow[] | null;
   whatsapp: WhatsAppOpsSignal;
-  /** Optional email-config presence; email is NEVER reported "connected"/"verified". */
-  email: { from_email: string | null; domain_verified: boolean | null } | null;
+  /** Email config + the proof signal Settings uses (dashboard_settings profile.send_proven). */
+  email: { from_email: string | null; send_proven: boolean | null } | null;
   nowMs: number;
 };
 
@@ -453,6 +453,7 @@ export function computeOperations(agencyId: string, s: OperationsSignals): Opera
   // ---- Providers ------------------------------------------------------------
   const wa = whatsappState(s.whatsapp);
   const emailConfigured = !!s.email && !!s.email.from_email && s.email.from_email.trim().length > 0;
+  const emailView = s.email ? emailProviderView({ configured: emailConfigured, sendProven: s.email.send_proven === true }) : null;
   const providers: OperationsResponse['providers'] = [
     {
       provider: 'whatsapp',
@@ -462,15 +463,17 @@ export function computeOperations(agencyId: string, s: OperationsSignals): Opera
     },
     {
       provider: 'email',
-      // Email has NO real "verified sending" signal in the DB → never "ready".
-      state: s.email === null ? 'unavailable' : 'unknown',
-      detail:
+      // Same rule and wording as Settings (lib/automation-state.ts). "Ready" only
+      // on a real provider-accepted send; configured-but-unproven stays "unknown"
+      // (not counted as an issue), exactly as before.
+      state:
         s.email === null
-          ? 'Email config not read.'
-          : emailConfigured
-            ? 'Email configured; sending is not provider-proven (no verification signal exists yet).'
-            : 'Email sending not configured.',
-      source: 'agency email config presence (no verified-send signal exists)',
+          ? 'unavailable'
+          : emailView?.status === 'ready'
+            ? 'ready'
+            : 'unknown',
+      detail: s.email === null ? 'Email status is not available right now.' : emailView!.detail,
+      source: 'agency email config + dashboard_settings profile.send_proven (Resend 2xx with a message id)',
     },
   ];
   const providerIssues = providers.filter(

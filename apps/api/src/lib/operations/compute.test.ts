@@ -51,7 +51,8 @@ function demoSignals(over: Partial<OperationsSignals> = {}): OperationsSignals {
     ],
     lifecycle,
     whatsapp: null,
-    email: { from_email: 'costahomes@send.aivena.es', domain_verified: null },
+    // Live 2026-09-19: Resend 2xx with a message id exists → profile.send_proven true.
+    email: { from_email: 'costahomes@send.aivena.es', send_proven: true },
     nowMs: NOW,
     ...over,
   };
@@ -149,14 +150,19 @@ describe('computeOperations — demo live fixture', () => {
     expect(res.actionQueue.items.every((i) => i.label.length > 0)).toBe(true);
   });
 
-  it('NO FAKE STATE: WhatsApp degrades to unavailable, email is unknown', () => {
+  it('NO FAKE STATE: WhatsApp degrades to unavailable; email is ready only on a proven send', () => {
     const wa = res.providers.find((p) => p.provider === 'whatsapp')!;
     const em = res.providers.find((p) => p.provider === 'email')!;
     expect(wa.state).toBe('unavailable');
     expect(wa.state).not.toBe('ready');
     expect(wa.state).not.toBe('disconnected'); // unavailable ≠ asserting disconnected
-    expect(em.state).toBe('unknown');
-    expect(em.state).not.toBe('ready');
+    // Same answer and words as Settings (2026-09-19: Operations said "Unknown" while Settings said "Ready").
+    expect(em.state).toBe('ready');
+    expect(em.detail).toBe('Set up and sending.');
+    const unproven = computeOperations('x', demoSignals({ email: { from_email: 'a@send.example', send_proven: false } }))
+      .providers.find((p) => p.provider === 'email')!;
+    expect(unproven.state).toBe('unknown');
+    expect(unproven.detail).toBe('Set up. Sending has not been confirmed yet.');
     // every provider cites a source
     for (const p of res.providers) expect(p.source.length).toBeGreaterThan(0);
   });

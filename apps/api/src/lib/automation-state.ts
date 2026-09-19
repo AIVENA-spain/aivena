@@ -76,3 +76,30 @@ export function whatsappProviderView(
           : 'Connected and sending.';
   return { status: 'ready', uiCopy: 'WhatsApp connected — messages delivered', detail };
 }
+
+/**
+ * Email provider health — ONE rule for every screen (2026-09-19). Settings said
+ * "Ready — a real send succeeded", the Settings editor "Set up and sending", and
+ * Operations "Unknown — not provider-proven" for the same agency, because
+ * Operations never read the proof signal the other two use. The signal is
+ * dashboard_settings().profile.send_proven: a Resend 2xx with a provider message
+ * id for this agency (live: 2026-06-12, 2026-06-15 and the product-path send of
+ * 2026-09-19 09:30).
+ */
+export type EmailProviderView = {
+  status: 'ready' | 'live_but_unproven' | 'missing';
+  uiCopy: string;
+  detail: string;
+};
+
+export function emailProviderView(e: { configured: boolean; sendProven: boolean }): EmailProviderView {
+  if (!e.configured) return { status: 'missing', uiCopy: 'Set up email sending', detail: 'Not set up yet.' };
+  if (!e.sendProven) {
+    return {
+      status: 'live_but_unproven',
+      uiCopy: 'Email configured — sending not proven',
+      detail: 'Set up. Sending has not been confirmed yet.',
+    };
+  }
+  return { status: 'ready', uiCopy: 'Email sending proven — a real send succeeded', detail: 'Set up and sending.' };
+}

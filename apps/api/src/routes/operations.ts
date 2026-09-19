@@ -261,21 +261,22 @@ route.get('/', async (c) => {
     null,
   );
 
-  // --- Email config presence (never reported as verified/connected) ---------
-  const email = await safe<{ from_email: string | null; domain_verified: boolean | null } | null>(
+  // --- Email: config + proof, from the SAME source Settings reads ----------
+  // dashboard_settings().profile owns "is email proven": send_proven = a Resend
+  // 2xx with a provider message id for this agency. Operations used to read only
+  // agency_email_config and so always said "not provider-proven", while Settings
+  // (same agency, same moment) said "Ready — a real send succeeded" (2026-09-19).
+  const email = await safe<{ from_email: string | null; send_proven: boolean | null } | null>(
     tx,
     async (sp) => {
-      // agency_email_config has NO verified-send flag (domain verification lives
-      // at the provider, not here) — so domain_verified is always null and email
-      // is never reported as "verified"/"connected".
-      const r = await sp.execute(
-        sql`SELECT from_email
-              FROM public.agency_email_config
-             WHERE agency_id = ${AGENCY_GUC}
-             LIMIT 1`,
-      );
-      const row = rows<{ from_email: string | null }>(r)[0];
-      return { from_email: row?.from_email ?? null, domain_verified: null };
+      const r = await sp.execute(sql`SELECT public.dashboard_settings(0)->'profile' AS p`);
+      const p = rows<{ p: unknown }>(r)[0]?.p;
+      const profile = (typeof p === 'string' ? JSON.parse(p) : p) as
+        | { from_email?: string | null; send_proven?: boolean | null }
+        | null
+        | undefined;
+      if (!profile) return null;
+      return { from_email: profile.from_email ?? null, send_proven: profile.send_proven ?? null };
     },
     null,
   );

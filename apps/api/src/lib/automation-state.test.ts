@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { resolveAutomationPosture, whatsappProviderView } from './automation-state';
+import { emailProviderView, resolveAutomationPosture, whatsappProviderView } from './automation-state';
 import { computeOperations } from './operations/compute';
 
 // D-54a (2026-09-18): the demo agency ran amanda_mode=full while five screens,
@@ -85,5 +85,20 @@ describe('no status screen reads the fields the engine ignores', () => {
     const res = computeOperations('x', { failedSends: [], openTasks: [], lifecycle: [], whatsapp: null, email: null, nowMs: 0 });
     const shown = [res.failedSends.note, ...res.providers.map((p) => p.detail)].join(' ');
     expect(shown).not.toMatch(/\bF\d\b|Chat \d|channel is off/);
+  });
+});
+
+describe('emailProviderView — one email answer for Settings and Operations', () => {
+  it('ready only when configured AND a real send is proven', () => {
+    expect(emailProviderView({ configured: true, sendProven: true }).status).toBe('ready');
+    expect(emailProviderView({ configured: true, sendProven: false }).status).toBe('live_but_unproven');
+    expect(emailProviderView({ configured: false, sendProven: true }).status).toBe('missing');
+  });
+
+  it('readiness and Operations both decide email through it, and Operations reads the proof signal', () => {
+    const read = (p: string) => readFileSync(join(__dirname, p), 'utf8');
+    expect(read('readiness/compute.ts')).toMatch(/emailProviderView\(/);
+    expect(read('operations/compute.ts')).toMatch(/emailProviderView\(/);
+    expect(readFileSync(join(__dirname, '../routes/operations.ts'), 'utf8')).toMatch(/dashboard_settings\(0\)->'profile'/);
   });
 });

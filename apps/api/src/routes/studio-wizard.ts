@@ -33,6 +33,7 @@ import {
 import type { CarouselBrand } from '../../../../studio/engine/renderCarousel';
 import { planCarousel, editPlan, remixHook, topicIdeas, listingCopy, listingStory, pickBankCard, researchClaims, premisePreflight, vetIdeas, PlanSchema, normalisePlan, type Audience } from '../lib/studio-carousel-plan';
 import { deriveTrustSignal } from '../lib/studio-trust';
+import { materiallyUsedSources } from '../lib/studio-sources-used';
 import { POLICED_TYPES, checkBankContradictions, checkIntent, extractClaims, gatePlan,
   type ExtractedClaim, type GateReport , judgeSemanticUnits, findRestatements } from '../lib/studio-claim-gate';
 import { finishCopy } from '../lib/studio-publish';
@@ -417,7 +418,9 @@ function shapeStatus(r: GenRow) {
     // per-slide colour overrides, so reopening a deck shows the fine-tuning it was saved with
     slide_colours: (r as any).raw_request?.slide_colours && typeof (r as any).raw_request.slide_colours === 'object'
       ? (r as any).raw_request.slide_colours : undefined,
-    research: typeof (meta as any)?.research === 'string' && (meta as any).research ? (meta as any).research : undefined,
+    // "What this post was built on" shows only the sources a surviving, supported claim actually cited
+    // — never the raw research briefing, which showed research the post never used (Christian, 2026-09-19).
+    sources_used: materiallyUsedSources(meta),
     caption: typeof (meta as any)?.caption === 'string' ? (meta as any).caption : undefined,
     hashtags: Array.isArray((meta as any)?.hashtags) ? (meta as any).hashtags : undefined,
     plan: (meta as any)?.plan && typeof (meta as any).plan === 'object' ? (meta as any).plan : undefined,

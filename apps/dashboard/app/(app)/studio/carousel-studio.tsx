@@ -144,10 +144,11 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
   const [slides, setSlides] = useState<string[]>([]);
   const [genId, setGenId] = useState<string | null>(null);
   const [caption, setCaption] = useState<string>("");
-  // Christian 2026-08-31: "they could have a little box that informs them yes." The deck is now
-  // written FROM live research rather than from memory, and the agent publishes it under their own
-  // name — so they can read what it was built on. Collapsed by default: available, not in the way.
-  const [research, setResearch] = useState<string>("");
+  // Christian 2026-08-31: "they could have a little box that informs them yes." The deck is written
+  // FROM live research and the agent publishes it under their own name — so they can read what it was
+  // built on. Christian 2026-09-19: show ONLY the sources a surviving, supported claim actually cited,
+  // never the raw research briefing (which showed research the post never used). Collapsed by default.
+  const [sourcesUsed, setSourcesUsed] = useState<Array<{ title: string; url: string; domain: string }>>([]);
   const [researchOpen, setResearchOpen] = useState(false);
   /**
    * The trust mark. True only when research ran AND every material claim survived the gate cleanly
@@ -258,7 +259,7 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
   function showResult(s: Record<string, unknown>) {
     setSlides(Array.isArray(s.slides) ? (s.slides as string[]) : s.image_url ? [s.image_url as string] : []);
     setCaption(typeof s.caption === "string" ? s.caption : "");
-    setResearch(typeof s.research === "string" ? s.research : "");
+    setSourcesUsed(Array.isArray(s.sources_used) ? (s.sources_used as Array<{ title: string; url: string; domain: string }>) : []);
     setClaimsChecked(s.claims_checked === true);
     setHashtags(Array.isArray(s.hashtags) ? (s.hashtags as string[]) : []);
     setPlan(s.plan && typeof s.plan === "object" ? (s.plan as Plan) : null);
@@ -398,7 +399,7 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
     setSlides(Array.isArray(r.slides) ? (r.slides as string[]) : slides);
     setPlan((r.plan as Plan) ?? plan);
     setCaption(typeof r.caption === "string" ? r.caption : caption);
-    if (typeof r.research === "string") setResearch(r.research);
+    if (Array.isArray(r.sources_used)) setSourcesUsed(r.sources_used as Array<{ title: string; url: string; domain: string }>);
     setHashtags(Array.isArray(r.hashtags) ? (r.hashtags as string[]) : hashtags);
     if (typeof r.carousel_style === "string") setResultStyle(r.carousel_style);
     setResultPerSlideArt(r.per_slide_art === true);
@@ -758,15 +759,15 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
 
       {phase === "result" && (
         <div>
-          <button onClick={() => { setPhase("form"); setSlides([]); setPlan(null); setCaption(""); setResearch(""); }}
+          <button onClick={() => { setPhase("form"); setSlides([]); setPlan(null); setCaption(""); setSourcesUsed([]); }}
             className="mb-4 flex items-center gap-1.5 text-sm text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100"><ArrowLeft className="h-4 w-4" /> New carousel</button>
           <div className="mb-2 flex items-center gap-2 text-sm font-medium text-emerald-700"><Check className="h-4 w-4" /> {slides.length} slides ready — swipe order left to right</div>
           {/*
             Only when every material claim survived the gate cleanly — not merely when research ran.
             A quiet mark of confidence, not a status badge: a lifestyle post, a post that had a claim
             removed, and a remix all show nothing here, and the agent never sees a risk tier or any of
-            our internal vocabulary. The "what this post was built on" box below still shows the
-            sources for any researched post.
+            our internal vocabulary. The "what this post was built on" box below shows only the
+            sources a surviving, supported claim actually cited — nothing for an opinion post.
           */}
           {claimsChecked && (
             <div className="mb-2 flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400">
@@ -969,22 +970,32 @@ export function CarouselStudio({ initialTopic = "", initialLanguage, resumeGenId
             </div>
           )}
 
-          {research && (
+          {sourcesUsed.length > 0 && (
             <div className="mt-4 max-w-2xl rounded-xl border border-sky-200 bg-sky-50/60 p-4 dark:border-sky-900/50 dark:bg-sky-950/20">
               <button onClick={() => setResearchOpen((v) => !v)}
                 className="flex w-full items-center justify-between text-left">
                 <span className="text-sm font-medium text-sky-900 dark:text-sky-200">
                   What this post was built on
                 </span>
-                <span className="text-xs text-sky-700 dark:text-sky-300">{researchOpen ? "Hide" : "Read it"}</span>
+                <span className="text-xs text-sky-700 dark:text-sky-300">{researchOpen ? "Hide" : `${sourcesUsed.length} source${sourcesUsed.length === 1 ? "" : "s"}`}</span>
               </button>
               {!researchOpen && (
                 <p className="mt-1 text-xs text-sky-800/80 dark:text-sky-300/80">
-                  The topic was researched before the text was written. Worth a look before you post it as your own.
+                  The sources this post&apos;s claims actually rest on. Worth a look before you post it as your own.
                 </p>
               )}
               {researchOpen && (
-                <p className="mt-2 whitespace-pre-wrap text-xs leading-relaxed text-sky-900/90 dark:text-sky-200/90">{research}</p>
+                <ul className="mt-2 space-y-1.5">
+                  {sourcesUsed.map((s, i) => (
+                    <li key={i} className="text-xs leading-relaxed">
+                      <a href={s.url} target="_blank" rel="noopener noreferrer"
+                        className="text-sky-800 underline decoration-sky-300 underline-offset-2 hover:text-sky-900 dark:text-sky-300 dark:hover:text-sky-200">
+                        {s.title}
+                      </a>
+                      {s.domain ? <span className="text-sky-700/70 dark:text-sky-400/70"> · {s.domain}</span> : null}
+                    </li>
+                  ))}
+                </ul>
               )}
             </div>
           )}

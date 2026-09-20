@@ -28,7 +28,7 @@ const POSTURE: Record<AmandaMode, { label: string; copy: string }> = {
   shadow: { label: 'Watching', copy: 'Watching only — Amanda drafts silently and nothing is sent' },
   approval: { label: 'Approval-first', copy: 'Approval-first — your team reviews before anything sends' },
   assisted: { label: 'Assisted', copy: 'Assisted — Amanda sends replies herself; bookings wait for your team' },
-  full: { label: 'Full automation', copy: 'Full automation — Amanda replies and books without review' },
+  full: { label: 'Full automation', copy: 'Full automation — Amanda replies without review; automated viewing booking is being hardened' },
 };
 
 /** `rawMode` null means the mode could not be read: the caller shows "unavailable", never a guess. */

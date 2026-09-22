@@ -11,26 +11,14 @@ Supabase Edge Functions and migrations under `supabase/` and the public marketin
 > documentation.** Public legal identifiers may only be published on the appropriate legal surface,
 > and only after the required publish values are confirmed through the legal / gestor process.
 
-## Docs reset in progress (September 2026) — read this first
+## Docs: start at START_HERE (the September 2026 reset closed on 2026-09-17)
 
-AIVENA's documentation is being rebuilt in a controlled reset. Until it closes:
-
-- The staging area is `_DOCS_RESET_2026-09/` in the AIVENA docs folder (see "The docs" below). Read
-  its `00_README_rules.md`, `01_decisions_2026-09-14.md` and the Launch Readiness decisions register
-  before any task.
-- Order: preserve evidence → rebuild CLAUDE.md and memory → rebuild the nine control docs → walk
-  AIVENA feature by feature → fix, clean and archive. **Nothing is deleted** without the proof, the
-  Branch Preservation Ledger's verdict and Christian's explicit approval (see "Git in a public repo").
-- **One writer per document.** A packet session writes only inside its own staging folder. Only the
-  audit session writes shared docs, and only after Christian approves. **If your role was not
-  explicitly assigned to you, treat yourself as a packet session:** write only in a staging folder and
-  never touch a shared doc. Never assume the audit role.
-- **Christian's decisions are binding, and they did not stop on 14 September.** D-01 to D-12 are in
-  `01_decisions_2026-09-14.md`; every later decision (D-13 onward — pilot scope, pricing and the free
-  period, access and roles, security priorities, bounded discovery, the governing laws) lives in the
-  Launch Readiness decisions register in the staging `audit/` folder. Read both. Do not reopen either.
-
-When the reset closes, this section is replaced by a pointer to `START_HERE.md`.
+`START_HERE.md` in the AIVENA docs folder is the entry point: it maps every kind of truth to its
+document, names the control docs in `control/`, and lists who owns what. Christian's decisions are
+binding and live in the Launch Readiness decisions register (`control/LAUNCH_READINESS.md`, D-01
+onward); do not reopen them. **One writer per shared document:** the owning session writes it, after
+Christian approves; every other session proposes. The reset's staging record is archived under
+`archive/2026-09/` in the docs folder and is history, not instruction.
 
 ## Start every session here — and these reads are BOUNDED
 
@@ -38,17 +26,16 @@ The old protocol said "read the master doc, the changelog, the parking lot". Mea
 **about 316,000 tokens — more than a full context window on the models in use.** It could not be followed, so every session invented
 its own subset. These budgets are the fix; keep them.
 
-0. **During the reset:** the staging `00_README_rules.md`, `01_decisions_2026-09-14.md` **and the
-   Launch Readiness decisions register** (it holds every decision after D-12).
+0. **`START_HERE.md`** (in the docs folder) — where each kind of truth lives, and the Launch Readiness
+   decisions register (`control/LAUNCH_READINESS.md`) for the decisions the task touches.
 1. **`STATE.md`** (in the docs folder) — what is true right now. Its facts are generated; read the
    `generated_at` line and treat anything marked `UNKNOWN` / `BLOCKED` as unknown, not as fine.
-   **During the reset, STATE.md has not been regenerated** (it was last hand-edited on 2026-09-13 and
-   `state-gen` needs its own approval to re-run) — take facts from the staging Current Truth instead,
-   and do not quote STATE.md's numbers until it has been regenerated.
+   Its generated block is a dated snapshot marked `docs-truth: snapshot=STALE` until `state-gen` is
+   re-run (needs its own approval); take current facts from its dated narrative lines and do not quote
+   the stale block's numbers.
 2. **The newest 5 entries** of `AIVENA_CHANGELOG.md` — read the **TL;DR blocks**; open a `Detail`
    fold only when that entry is relevant to the task.
-3. **The open items** in `AIVENA_Parking_Lot_Open_Threads.md` (skip items struck through or marked
-   resolved).
+3. **The open items** in `control/PARKING_LOT.md` (skip items struck through or marked resolved).
 4. **Targeted older evidence — REQUIRED, not optional.** "Newest 5" is a default budget, never a
    blindness rule. If the task touches anything older, **search the changelog and the archives for
    it and read that entry** before acting. Grep beats guessing: the archives are plain files.
@@ -252,8 +239,8 @@ over a fragile shortcut.
 - **Admin state changes go through the product or admin path.** Agency mode, pilot status, `is_test`
   and feature flags change there, so every change is logged and intentional. Direct SQL is a break-glass
   exception only: Christian's explicit approval, the before and after state, the reason, a rollback and an
-  audit note. **During the docs reset the break-glass path is closed too: no direct SQL writes at all,
-  even with approval.**
+  audit note. **The break-glass path is closed: no direct SQL writes at all, even with approval, until
+  Christian reopens it explicitly.**
 
 ## Database, migrations and Edge Functions
 
@@ -292,24 +279,22 @@ If `AIVENA_DOCS_DIR` is not set in your shell, the tools fall back to a glob of 
 `node tools/changelog-lint.mjs` prints the folder it resolved, which is the quickest way to find it.
 
 **Claude Code is the only writer** — edit the files *there*. Web chats read Drive and *propose*
-changes; CC applies them. During the reset, the one-writer table in the staging rules decides which
-session writes which file.
+changes; CC applies them. One writer per shared document (see "Docs: start at START_HERE").
 
 | Status | File | Job |
 |---|---|---|
-| Staging (reset) | `_DOCS_RESET_2026-09/` | Rules, decisions, inventory, provider map, Phase 0 record, lane drafts. Temporary. |
+| Entry point | `START_HERE.md` | Where each kind of truth lives; the control docs in `control/`; owners. Start here. |
 | Alive | `STATE.md` | What is true now. Facts generated by `tools/state-gen.mjs`. **Rewritten, never appended.** |
 | Alive | `AIVENA_CHANGELOG.md` | What happened. **One unified log, one place every session starts.** TL;DR + optional detail. |
-| Alive | `AIVENA_Parking_Lot_Open_Threads.md` | What is open. Every item carries an unblock condition. |
+| Alive | `control/PARKING_LOT.md` | What is open. Every item carries an unblock condition. |
 | Design intent | `AIVENA_Master_Document_v2_0.md` | Read on demand, not for status. |
 | Archive | `AIVENA_CHANGELOG_ARCHIVE_*.md` | Older entries, same convention. **Search these for older evidence.** |
 | Frozen | `CC_CHANGELOG.md` | Frozen 2026-09-10 — folded into the unified changelog. Historical reference only. |
 | Cold | `AIVENA_Master_Execution_Workboard.md`, `_INDEX_READ_FIRST.md`, `README_START_HERE.md` | Do not start here. |
 
-**Target after the reset — the nine control docs:** CLAUDE.md + memory index · START_HERE · Current
-Truth · System Map · Feature Status · Launch Readiness · Parking Lot · Changelog · Branch Preservation
-Ledger. Tool-coupled file names (`STATE.md`, `AIVENA_CHANGELOG.md`) keep their names until the tools
-are repointed.
+**The control docs** (System Map, Feature Status, Launch Readiness, Parking Lot, Branch Preservation
+Ledger, cost and billing control) live in `control/`; `START_HERE.md` lists them. Tool-coupled file names
+(`STATE.md`, `AIVENA_CHANGELOG.md`) keep their names until the tools are repointed.
 
 **Never read any path whose name contains `aivena-archive`** — that is the superseded local archive
 (superseded 2026-06-21). If a path contains it, it is the wrong file.
@@ -374,14 +359,14 @@ Newest entry at the TOP, under the `-----------------` separator. One entry per 
 across lanes — tag `[PACKET N]` inside it. **The TL;DR is what other sessions read; the detail is
 what saves them from repeating your mistakes.** Record what you got wrong, not only what shipped.
 
-During the reset, a lane session writes `proposed_changelog_entry.md` in its own staging folder in
-this format; the audit session appends it to the changelog.
+A session that does not own the changelog writes its entry in this format and hands it to the
+owning session, which appends it.
 
 ## End every session
 Produce the **session-end handoff pack**: what changed · verified live · failed/uncertain ·
 decisions · **changelog entry written** · `STATE.md` regenerated if live truth moved · parking-lot
-additions · open questions · exact next action · **which doc files changed (for Drive sync),
-including staging files** · a ready-to-paste relay message if the work affects another build session.
+additions · open questions · exact next action · **which doc files changed (for Drive sync)** ·
+a ready-to-paste relay message if the work affects another build session.
 
 **A session that changed code, docs or live state is not finished until the changelog entry is
 written.** If the work is cut short, write the entry for what was actually done. A session that
